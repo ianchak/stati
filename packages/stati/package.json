@@ -11,7 +11,8 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "dev": "tsc -p tsconfig.json --watch"
+    "dev": "tsc -p tsconfig.json --watch",
+    "test": "vitest run"
   },
   "dependencies": {
     "yargs": "^17.7.2"
