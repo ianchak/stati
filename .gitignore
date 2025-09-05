@@ -1,0 +1,90 @@
+############################################################
+# Node.js / TypeScript Monorepo .gitignore
+# Generated to cover common tools: npm workspaces, TypeScript,
+# Vitest, ESLint, Prettier, and typical OS/editor files.
+############################################################
+
+### Dependencies
+node_modules/
+
+### Logs & diagnostics
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+report.*.json
+
+### Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+.node_repl_history
+
+### Coverage
+coverage/
+.nyc_output/
+
+### Build outputs
+dist/
+build/
+lib/
+out/
+
+### Temp files
+tmp/
+temp/
+
+### Caches
+.cache/
+.parcel-cache/
+.turbo/
+.eslintcache
+.stylelintcache
+.vite/
+node_modules/.vite/
+
+### TypeScript
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+### Environment files (keep examples tracked)
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+### Package manager artifacts
+*.tgz
+.npm/
+.npmrc
+.pnpm-debug.log*
+.pnpm-store/
+.pnp.*
+
+### Editors & IDEs
+# VSCode intentionally not ignored to allow workspace settings
+.idea/
+*.swp
+*.swo
+.history/
+
+### OS-specific
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+### Test framework artifacts (optional but common)
+test-results/
+playwright-report/
+storybook-static/

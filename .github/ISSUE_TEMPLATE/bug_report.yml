@@ -1,0 +1,21 @@
+name: Bug report
+description: Create a report to help us improve
+title: "[bug]: "
+labels: ["type:bug"]
+body:
+  type: textarea
+  attributes:
+  label: What happened?
+  description: Clear and concise description of the bug.
+
+  type: input
+  attributes:
+  label: Node version
+
+  type: textarea
+  attributes:
+  label: Reproduction steps
+
+  type: textarea
+  attributes:
+  label: Logs / Screenshots
