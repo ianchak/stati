@@ -11,6 +11,8 @@ const {
   mockCopy,
   mockRemove,
   mockPathExists,
+  mockReaddir,
+  mockStat,
   mockLoadConfig,
   mockLoadContent,
   mockCreateMarkdownProcessor,
@@ -23,6 +25,8 @@ const {
   mockCopy: vi.fn(),
   mockRemove: vi.fn(),
   mockPathExists: vi.fn(),
+  mockReaddir: vi.fn(),
+  mockStat: vi.fn(),
   mockLoadConfig: vi.fn(),
   mockLoadContent: vi.fn(),
   mockCreateMarkdownProcessor: vi.fn(),
@@ -38,6 +42,8 @@ vi.mock('fs-extra', () => ({
   copy: mockCopy,
   remove: mockRemove,
   pathExists: mockPathExists,
+  readdir: mockReaddir,
+  stat: mockStat,
 }));
 
 vi.mock('../../config/loader.js', () => ({
@@ -94,6 +100,8 @@ describe('Error Scenario Tests', () => {
     mockWriteFile.mockResolvedValue(undefined);
     mockCopy.mockResolvedValue(undefined);
     mockRemove.mockResolvedValue(undefined);
+    mockReaddir.mockResolvedValue([]);
+    mockStat.mockResolvedValue({ size: 1024 });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (mockPathExists as any).mockResolvedValue(true);
     mockCreateTemplateEngine.mockReturnValue(mockEta as unknown as Eta);

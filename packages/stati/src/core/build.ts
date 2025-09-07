@@ -1,10 +1,10 @@
-import { ensureDir, writeFile, copy, remove, pathExists } from 'fs-extra';
+import { ensureDir, writeFile, copy, remove, pathExists, stat, readdir } from 'fs-extra';
 import { join, dirname } from 'path';
 import { loadConfig } from '../config/loader.js';
 import { loadContent } from './content.js';
 import { createMarkdownProcessor, renderMarkdown } from './markdown.js';
 import { createTemplateEngine, renderPage } from './templates.js';
-import type { BuildContext } from '../types.js';
+import type { BuildContext, BuildStats } from '../types.js';
 
 /**
  * Options for customizing the build process.
@@ -25,6 +25,88 @@ export interface BuildOptions {
   clean?: boolean;
   /** Path to a custom configuration file */
   configPath?: string;
+}
+
+/**
+ * Recursively calculates the total size of a directory in bytes.
+ * Used for build statistics.
+ *
+ * @param dirPath - Path to the directory
+ * @returns Total size in bytes
+ */
+async function getDirectorySize(dirPath: string): Promise<number> {
+  if (!(await pathExists(dirPath))) {
+    return 0;
+  }
+
+  let totalSize = 0;
+  const items = await readdir(dirPath, { withFileTypes: true });
+
+  for (const item of items) {
+    const itemPath = join(dirPath, item.name);
+    if (item.isDirectory()) {
+      totalSize += await getDirectorySize(itemPath);
+    } else {
+      const stats = await stat(itemPath);
+      totalSize += stats.size;
+    }
+  }
+
+  return totalSize;
+}
+
+/**
+ * Counts the number of files in a directory recursively.
+ * Used for build statistics.
+ *
+ * @param dirPath - Path to the directory
+ * @returns Total number of files
+ */
+async function countFilesInDirectory(dirPath: string): Promise<number> {
+  if (!(await pathExists(dirPath))) {
+    return 0;
+  }
+
+  let fileCount = 0;
+  const items = await readdir(dirPath, { withFileTypes: true });
+
+  for (const item of items) {
+    const itemPath = join(dirPath, item.name);
+    if (item.isDirectory()) {
+      fileCount += await countFilesInDirectory(itemPath);
+    } else {
+      fileCount++;
+    }
+  }
+
+  return fileCount;
+}
+
+/**
+ * Formats build statistics for display.
+ *
+ * @param stats - Build statistics to format
+ * @returns Formatted statistics string
+ */
+function formatBuildStats(stats: BuildStats): string {
+  const sizeKB = (stats.outputSizeBytes / 1024).toFixed(1);
+  const timeSeconds = (stats.buildTimeMs / 1000).toFixed(2);
+
+  let output = `📊 Build Statistics:
+  ⏱️  Build time: ${timeSeconds}s
+  📄 Pages built: ${stats.totalPages}
+  📦 Assets copied: ${stats.assetsCount}
+  💾 Output size: ${sizeKB} KB`;
+
+  if (stats.cacheHits !== undefined && stats.cacheMisses !== undefined) {
+    const totalCacheRequests = stats.cacheHits + stats.cacheMisses;
+    const hitRate =
+      totalCacheRequests > 0 ? ((stats.cacheHits / totalCacheRequests) * 100).toFixed(1) : '0';
+    output += `
+  🎯 Cache hits: ${stats.cacheHits}/${totalCacheRequests} (${hitRate}%)`;
+  }
+
+  return output;
 }
 
 /**
@@ -52,12 +134,17 @@ export interface BuildOptions {
  * @throws {Error} When content processing fails
  * @throws {Error} When template rendering fails
  */
-export async function build(options: BuildOptions = {}): Promise<void> {
+export async function build(options: BuildOptions = {}): Promise<BuildStats> {
+  const buildStartTime = Date.now();
   console.log('🏗️  Building site...');
 
   // Load configuration
   const config = await loadConfig(options.configPath ? dirname(options.configPath) : process.cwd());
   const outDir = join(process.cwd(), config.outDir!);
+
+  // Create .stati cache directory
+  const cacheDir = join(process.cwd(), '.stati');
+  await ensureDir(cacheDir);
 
   // Clean output directory if requested
   if (options.clean) {
@@ -118,11 +205,13 @@ export async function build(options: BuildOptions = {}): Promise<void> {
     }
   }
 
-  // Copy static assets
+  // Copy static assets and count them
+  let assetsCount = 0;
   const staticDir = join(process.cwd(), config.staticDir!);
   if (await pathExists(staticDir)) {
     await copy(staticDir, outDir, { overwrite: true });
-    console.log('📦 Copied static assets');
+    assetsCount = await countFilesInDirectory(staticDir);
+    console.log(`📦 Copied ${assetsCount} static assets`);
   }
 
   // Run afterAll hook
@@ -130,5 +219,20 @@ export async function build(options: BuildOptions = {}): Promise<void> {
     await config.hooks.afterAll(buildContext);
   }
 
+  // Calculate build statistics
+  const buildEndTime = Date.now();
+  const buildStats: BuildStats = {
+    totalPages: pages.length,
+    assetsCount,
+    buildTimeMs: buildEndTime - buildStartTime,
+    outputSizeBytes: await getDirectorySize(outDir),
+    // Cache stats would be populated here when caching is implemented
+    cacheHits: 0,
+    cacheMisses: 0,
+  };
+
   console.log('✅ Build complete!');
+  console.log(formatBuildStats(buildStats));
+
+  return buildStats;
 }

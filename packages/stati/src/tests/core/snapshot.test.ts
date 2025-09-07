@@ -16,6 +16,8 @@ vi.mock('fs-extra', () => {
     copy: vi.fn().mockResolvedValue(undefined),
     remove: vi.fn().mockResolvedValue(undefined),
     pathExists: mockPathExists,
+    readdir: vi.fn().mockResolvedValue([]),
+    stat: vi.fn().mockResolvedValue({ size: 1024 }),
   };
 });
 
@@ -37,7 +39,7 @@ vi.mock('../../core/templates.js', () => ({
   renderPage: vi.fn(),
 }));
 
-import { ensureDir, writeFile, copy, remove, pathExists } from 'fs-extra';
+import { ensureDir, writeFile, copy, remove, pathExists, readdir, stat } from 'fs-extra';
 import { loadConfig } from '../../config/loader.js';
 import { createTemplateEngine } from '../../core/templates.js';
 
@@ -46,6 +48,8 @@ const mockWriteFile = vi.mocked(writeFile);
 const mockCopy = vi.mocked(copy);
 const mockRemove = vi.mocked(remove);
 const mockPathExists = vi.mocked(pathExists);
+const mockReaddir = vi.mocked(readdir);
+const mockStat = vi.mocked(stat);
 const mockLoadConfig = vi.mocked(loadConfig);
 const mockLoadContent = vi.mocked(loadContent);
 const mockRenderMarkdown = vi.mocked(renderMarkdown);
@@ -80,6 +84,10 @@ describe('HTML Output Snapshots', () => {
     mockWriteFile.mockResolvedValue(undefined);
     mockCopy.mockResolvedValue(undefined);
     mockRemove.mockResolvedValue(undefined);
+    // @ts-expect-error - Mock type issue
+    mockReaddir.mockResolvedValue([]);
+    // @ts-expect-error - Mock type issue
+    mockStat.mockResolvedValue({ size: 1024 });
     // @ts-expect-error - Mock type issue
     mockPathExists.mockResolvedValue(true);
     mockCreateTemplateEngine.mockReturnValue(mockEta as unknown as Eta);

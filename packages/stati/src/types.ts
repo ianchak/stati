@@ -223,6 +223,37 @@ export interface PageModel {
 }
 
 /**
+ * Statistics collected during the build process.
+ * Provides useful metrics about the site generation.
+ *
+ * @example
+ * ```typescript
+ * const stats: BuildStats = {
+ *   totalPages: 15,
+ *   assetsCount: 8,
+ *   buildTimeMs: 1250,
+ *   outputSizeBytes: 2048576,
+ *   cacheHits: 5,
+ *   cacheMisses: 10
+ * };
+ * ```
+ */
+export interface BuildStats {
+  /** Total number of pages processed */
+  totalPages: number;
+  /** Number of static assets copied */
+  assetsCount: number;
+  /** Total build time in milliseconds */
+  buildTimeMs: number;
+  /** Total size of output directory in bytes */
+  outputSizeBytes: number;
+  /** Number of cache hits (if caching enabled) */
+  cacheHits?: number;
+  /** Number of cache misses (if caching enabled) */
+  cacheMisses?: number;
+}
+
+/**
  * Front matter metadata extracted from content files.
  * Contains page-specific configuration and metadata in YAML format.
  *

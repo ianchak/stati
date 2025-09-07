@@ -20,7 +20,10 @@ export type {
   BuildHooks,
   ISGConfig,
   AgingRule,
+  BuildStats,
 } from './types.js';
+
+export type { BuildOptions } from './core/build.js';
 
 export { build } from './core/build.js';
 export { loadConfig } from './config/loader.js';

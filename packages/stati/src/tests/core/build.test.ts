@@ -9,6 +9,8 @@ const {
   mockCopy,
   mockRemove,
   mockPathExists,
+  mockReaddir,
+  mockStat,
   mockLoadConfig,
   mockLoadContent,
   mockCreateMarkdownProcessor,
@@ -21,6 +23,8 @@ const {
   mockCopy: vi.fn(),
   mockRemove: vi.fn(),
   mockPathExists: vi.fn(),
+  mockReaddir: vi.fn(),
+  mockStat: vi.fn(),
   mockLoadConfig: vi.fn(),
   mockLoadContent: vi.fn(),
   mockCreateMarkdownProcessor: vi.fn(),
@@ -36,6 +40,8 @@ vi.mock('fs-extra', () => ({
   copy: mockCopy,
   remove: mockRemove,
   pathExists: mockPathExists,
+  readdir: mockReaddir,
+  stat: mockStat,
 }));
 
 vi.mock('../../config/loader.js', () => ({
@@ -124,6 +130,8 @@ describe('build.ts', () => {
     mockWriteFile.mockResolvedValue(undefined);
     mockCopy.mockResolvedValue(undefined);
     mockRemove.mockResolvedValue(undefined);
+    mockReaddir.mockResolvedValue([]);
+    mockStat.mockResolvedValue({ size: 1024 });
   });
 
   afterEach(() => {
@@ -140,6 +148,14 @@ describe('build.ts', () => {
       expect(mockCreateTemplateEngine).toHaveBeenCalledWith(mockConfig);
       expect(mockEnsureDir).toHaveBeenCalledWith(
         expect.stringMatching(/[\\/]test[\\/]project[\\/]dist$/),
+      );
+    });
+
+    it('should create cache directory', async () => {
+      await build();
+
+      expect(mockEnsureDir).toHaveBeenCalledWith(
+        expect.stringMatching(/[\\/]test[\\/]project[\\/]\.stati$/),
       );
     });
 
@@ -356,7 +372,7 @@ describe('build.ts', () => {
       expect(consoleSpy).toHaveBeenCalledWith('  Building /');
       expect(consoleSpy).toHaveBeenCalledWith('  Building /about');
       expect(consoleSpy).toHaveBeenCalledWith('  Building /blog/post');
-      expect(consoleSpy).toHaveBeenCalledWith('📦 Copied static assets');
+      expect(consoleSpy).toHaveBeenCalledWith('📦 Copied 0 static assets');
       expect(consoleSpy).toHaveBeenCalledWith('✅ Build complete!');
     });
 
