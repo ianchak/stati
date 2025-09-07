@@ -1,0 +1,228 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`HTML Output Snapshots > should generate API documentation HTML with code examples > api-docs-complete.html 1`] = `
+"<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Reference - Stati Documentation</title>
+  <meta name="description" content="Complete API reference for Stati static site generator">
+  <link rel="stylesheet" href="/css/prism.css">
+</head>
+<body class="docs-layout">
+  <nav>
+    <div class="nav-brand">Stati</div>
+    <ul class="nav-links">
+      <li><a href="/">Home</a></li>
+      <li><a href="/docs" class="active">Documentation</a></li>
+      <li><a href="/api">API</a></li>
+      <li><a href="/blog">Blog</a></li>
+    </ul>
+  </nav>
+  <div class="docs-container">
+    <aside class="sidebar">
+      <ul>
+        <li><a href="/docs/getting-started">Getting Started</a></li>
+        <li><a href="/docs/configuration">Configuration</a></li>
+        <li><a href="/api" class="active">API Reference</a></li>
+        <li><a href="/docs/templates">Templates</a></li>
+        <li><a href="/docs/deployment">Deployment</a></li>
+      </ul>
+    </aside>
+    <main class="docs-content">
+      <h1>API Reference</h1>
+<h2>Configuration</h2>
+<pre><code class="language-typescript">interface Config {
+  contentDir: string;
+  outputDir: string;
+  templateDir?: string;
+  staticDir?: string;
+}
+</code></pre>
+<h2>Build Function</h2>
+<p>The main build function processes your content:</p>
+<pre><code class="language-typescript">import { build } from 'stati';
+
+await build({
+  contentDir: './content',
+  outputDir: './dist'
+});
+</code></pre>
+    </main>
+  </div>
+  <footer>
+    <p>&copy; 2024 Stati Documentation</p>
+  </footer>
+  <script src="/js/prism.js"></script>
+</body>
+</html>"
+`;
+
+exports[`HTML Output Snapshots > should generate HTML with special characters and Unicode content > unicode-special-chars.html 1`] = `
+"<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iñtërnâtiônàlizætiøn &amp; Spéciàl Cháracters</title>
+  <meta name="description" content="Testing special characters and Unicode support">
+</head>
+<body>
+  <main>
+    <h1>Iñtërnâtiônàlizætiøn Test</h1>
+<p>This page tests special characters &amp; Unicode support:</p>
+<ul>
+<li>中文 (Chinese)</li>
+<li>العربية (Arabic)</li>
+<li>Ελληνικά (Greek)</li>
+<li>Русский (Russian)</li>
+<li>🎉 Emoji support!</li>
+</ul>
+<h2>Code with special chars:</h2>
+<pre><code class="language-javascript">const message = "Héllo Wørld! 你好世界";
+console.log(\`Message: \${message}\`);
+</code></pre>
+<blockquote>
+<p>"Quöte with spëcial chars" — Author</p>
+</blockquote>
+<p><strong>Bold tëxt</strong> and <em>italic tëxt</em>.</p>
+  </main>
+</body>
+</html>"
+`;
+
+exports[`HTML Output Snapshots > should generate blog post HTML with proper structure > blog-post-complete.html 1`] = `
+"<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Getting Started with Stati</title>
+  <meta name="description" content="Learn how to get started with Stati static site generator">
+  <meta name="author" content="John Doe">
+  <meta name="date" content="2024-01-15">
+</head>
+<body>
+  <header>
+    <h1>Getting Started with Stati</h1>
+    <p class="meta">By John Doe on January 15, 2024</p>
+    <div class="tags">
+      <span class="tag">tutorial</span>
+      <span class="tag">getting-started</span>
+    </div>
+  </header>
+  <main>
+    <h1>Getting Started</h1>
+<p>Welcome to Stati! This is a simple static site generator.</p>
+<h2>Features</h2>
+<ul>
+<li>Fast and lightweight</li>
+<li>Markdown support</li>
+<li>Template system</li>
+<li>Easy to use</li>
+</ul>
+  </main>
+  <footer>
+    <p>&copy; 2024 Stati Documentation</p>
+  </footer>
+</body>
+</html>"
+`;
+
+exports[`HTML Output Snapshots > should generate homepage HTML with navigation and links > homepage-complete.html 1`] = `
+"<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stati Documentation</title>
+  <meta name="description" content="Modern static site generator built with TypeScript">
+</head>
+<body>
+  <nav>
+    <div class="nav-brand">Stati</div>
+    <ul class="nav-links">
+      <li><a href="/">Home</a></li>
+      <li><a href="/docs">Documentation</a></li>
+      <li><a href="/api">API</a></li>
+      <li><a href="/blog">Blog</a></li>
+    </ul>
+  </nav>
+  <main class="home-layout">
+    <section class="hero">
+      <h1>Welcome to Stati</h1>
+<p>Stati is a modern static site generator built with TypeScript.</p>
+<p><a href="/getting-started">Get Started</a> | <a href="/api">API Reference</a></p>
+    </section>
+    <section class="features">
+      <div class="feature">
+        <h3>TypeScript First</h3>
+        <p>Built with modern TypeScript for better development experience</p>
+      </div>
+      <div class="feature">
+        <h3>Fast Build</h3>
+        <p>Optimized build process for quick site generation</p>
+      </div>
+      <div class="feature">
+        <h3>Flexible Templates</h3>
+        <p>Powerful template system with Eta support</p>
+      </div>
+    </section>
+  </main>
+  <footer>
+    <p>&copy; 2024 Stati Documentation</p>
+  </footer>
+</body>
+</html>"
+`;
+
+exports[`HTML Output Snapshots > should generate list page HTML with multiple items > blog-list-complete.html 1`] = `
+"<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blog Posts - Stati Documentation</title>
+  <meta name="description" content="Latest articles and tutorials">
+</head>
+<body>
+  <header>
+    <h1>Blog Posts</h1>
+    <p>Latest articles and tutorials.</p>
+  </header>
+  <main>
+    <section class="post-list">
+      <article class="post-preview">
+        <h2><a href="/blog/getting-started">Getting Started with Stati</a></h2>
+        <p class="meta">January 15, 2024</p>
+        <p class="excerpt">Learn the basics of Stati</p>
+      </article>
+      <article class="post-preview">
+        <h2><a href="/blog/advanced-config">Advanced Configuration</a></h2>
+        <p class="meta">January 10, 2024</p>
+        <p class="excerpt">Deep dive into Stati configuration</p>
+      </article>
+    </section>
+  </main>
+  <footer>
+    <p>&copy; 2024 Stati Documentation</p>
+  </footer>
+</body>
+</html>"
+`;
+
+exports[`HTML Output Snapshots > should generate minimal page HTML with fallback template > minimal-page.html 1`] = `
+"<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About Us</title>
+</head>
+<body>
+  <h1>About Us</h1>
+  <p>This is a simple about page.</p>
+</body>
+</html>"
+`;
