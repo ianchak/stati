@@ -22,11 +22,17 @@ This predictable structure lowers the learning curve. Authors don’t need to co
 
 ## 3. Flexible Layout System
 
-Templates are co-located with content in the `site/` directory with intelligent organization rules. Any folder starting with `_` (underscore) is excluded from routing, making them perfect for partials, components, and utilities.
+Stati's template system is co-located with content in the `site/` directory with intelligent organization rules and hierarchical inheritance.
 
-The system features **hierarchical partial discovery** - layouts automatically inherit partials from all parent directories in the folder hierarchy. This enables powerful composition where child layouts have access to both global partials and context-specific components.
+> **📖 For complete template system documentation including placement rules and resolution order, see [Template System](configuration.md#template-system)**
 
-Templates can be placed anywhere in the structure: global templates at the root, nested `+layout.eta` files for directory-specific layouts, and partials organized in `_components/`, `_partials/`, or any `_folder` as needed. This flexible co-location keeps related files together while maintaining clear organizational boundaries.
+**Key Features:**
+
+- **Hierarchical layouts**: `+layout.eta` files cascade through directories
+- **Named templates**: Content-type specific templates (e.g., `post.eta`, `article.eta`)
+- **Underscore folders**: Any folder starting with `_` is excluded from routing, perfect for partials and components
+- **Auto-discovery**: Partials are automatically available to templates in their hierarchy
+- **Flexible placement**: Templates can be placed anywhere while maintaining clear organizational boundaries
 
 ---
 
@@ -34,7 +40,10 @@ Templates can be placed anywhere in the structure: global templates at the root,
 
 ISG minimizes unnecessary rebuilds. By default, if a cache exists, only changed or invalidated pages rebuild. Pages can also be set to expire via TTL (time-to-live), with a maximum age cap preventing old content from endless revalidation.
 
-Per-page overrides let authors configure custom `ttlSeconds`, `maxAgeCapDays`, and tags. CLI flags allow targeted invalidation (`--invalidateTag`, `--invalidatePath`) or forcing full rebuilds. This makes large sites efficient to maintain.
+Per-page overrides let authors configure custom `ttlSeconds`, `maxAgeCapDays`, and tags. CLI flags allow targeted invalidation or forcing full rebuilds. This makes large sites efficient to maintain.
+
+> **📖 For ISG configuration options, see [Configuration Guide](configuration.md#incremental-static-generation-isg)**
+> **📖 For CLI commands, see [CLI Reference](configuration.md#cli-reference)**
 
 ---
 
@@ -55,6 +64,8 @@ These templates make it possible to scaffold a working site in minutes, while re
 Markdown is processed with **Markdown-It** and useful default plugins like anchors, task lists, and external links. The user has the option to add other markdown plugins too.
 
 This provides authors with a balance of simplicity and power. Content can stay Markdown-first, while optional syntax expansions enable richer documents when needed.
+
+> **📖 For Markdown configuration options, see [Configuration Guide](configuration.md#markdown-configuration)**
 
 ---
 
@@ -84,9 +95,11 @@ This avoids manual configuration and guarantees that shipped assets are small an
 
 ## 10. Draft Mode
 
-Pages can be marked with `draft: true` in front matter. Drafts are excluded from builds by default. Use `stati build --include-drafts` to include draft pages in the build.
+Pages can be marked with `draft: true` in front matter. Drafts are excluded from builds by default.
 
 This lets authors work on unfinished content without accidentally publishing it. Drafts can be included when needed for review or testing purposes.
+
+> **📖 For CLI options to include drafts, see [CLI Reference](configuration.md#cli-reference)**
 
 ---
 
@@ -135,6 +148,8 @@ This gives authors flexibility: lightweight vanilla CSS for simple sites, or Tai
 If front matter provides standard fields (`title`, `description`, `image`), the STATI injects SEO tags including Open Graph and Twitter cards. Behavior is configurable in `stati.config.ts`.
 
 This improves out-of-the-box SEO and social media previews without requiring additional setup. Developers can override or disable auto-generated tags.
+
+> **📖 For site metadata configuration, see [Configuration Guide](configuration.md#site-configuration)**
 
 ---
 

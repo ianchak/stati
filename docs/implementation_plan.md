@@ -166,34 +166,16 @@ jobs:
 
 **Config API** (`stati.config.ts`)
 
-```ts
-export interface AgingRule {
-  untilDays: number;
-  ttlSeconds: number;
-}
-export interface ISGConfig {
-  enabled?: boolean;
-  ttlSeconds?: number; // default TTL
-  maxAgeCapDays?: number; // freeze threshold
-  aging?: AgingRule[]; // staged TTLs by content age
-}
+The configuration system provides TypeScript interfaces for all options. Key configuration areas include:
 
-export interface StatiConfig {
-  srcDir?: string; // default: "site"
-  outDir?: string; // default: "dist"
-  staticDir?: string; // default: "public"
-  site: { title: string; baseUrl: string; defaultLocale?: string };
-  markdown?: { configure?: (md: import('markdown-it')) => void };
-  eta?: { filters?: Record<string, (x: any) => any> };
-  isg?: ISGConfig;
-  hooks?: Partial<{
-    beforeAll: (ctx: BuildCtx) => Promise<void> | void;
-    afterAll: (ctx: BuildCtx) => Promise<void> | void;
-    beforeRender: (p: PageCtx) => Promise<void> | void;
-    afterRender: (p: PageCtx) => Promise<void> | void;
-  }>;
-}
-```
+- **Directory Structure**: `srcDir`, `outDir`, `staticDir`
+- **Site Metadata**: `site.title`, `site.baseUrl`, `site.defaultLocale`
+- **Markdown Processing**: `markdown.configure` function for MarkdownIt setup
+- **Template Engine**: `eta.filters` for custom template functions
+- **ISG Settings**: `isg.enabled`, `isg.ttlSeconds`, `isg.maxAgeCapDays`, `isg.aging`
+- **Build Hooks**: `hooks.beforeAll`, `hooks.afterAll`, `hooks.beforeRender`, `hooks.afterRender`
+
+> **📖 For complete configuration reference, see [Configuration Guide](configuration.md)**
 
 **CLI skeleton**
 

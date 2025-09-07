@@ -1,4 +1,4 @@
-# Lightweight Static Site Generator with Built-In Editor Concept
+# Lightweight Static Site Generator Concept
 
 ## Vision
 
@@ -12,7 +12,7 @@ Long term, the generator should provide ready-made templates for:
 
 It should also support RSS feeds, sitemaps, and incremental static generation (ISG) at build time.
 
-This SSG is meant to be **distributed as an npm package**, with an **NPX scaffolder (**``**\*\*\*\*)** for easy bootstrapping of new projects.
+This SSG is meant to be **distributed as an npm package**, with an **NPX scaffolder** for easy bootstrapping of new projects.
 
 ---
 
@@ -32,15 +32,15 @@ This SSG is meant to be **distributed as an npm package**, with an **NPX scaffol
 
 4. **Incremental Static Generation (ISG)**
    - Default mode: reuse cache if present; full build if not.
-   - `--force` triggers full rebuild and reseeds cache.
-   - `--clean` wipes cache before building.
-   - TTL with cap (“freeze”): pages revalidate by TTL until max-age is reached (then freeze).
+   - TTL with cap ("freeze"): pages revalidate by TTL until max-age is reached (then freeze).
    - Aging schedule: staged TTLs by content age (e.g., hourly in week 1, daily until 90d, weekly to 1y).
    - Per-page overrides: `ttlSeconds`, `maxAgeCapDays`, `tags`, `publishedAt` in front matter.
-   - Dirty detection: rebuild if inputs changed, TTL expired, tag/path invalidated, or `--force` used.
+   - Dirty detection: rebuild if inputs changed, TTL expired, tag/path invalidated, or forced.
    - Manifest stores metadata: deps, lastBuiltAt, publishedAt, TTL, tags, artifact paths.
-   - CLI supports `--invalidateTag` and `--invalidatePath` for targeted rebuilds.
+   - CLI supports targeted invalidation by tag or path for targeted rebuilds.
    - Global switch: renderer version bump invalidates cache globally.
+
+> **📖 For complete ISG configuration and CLI options, see [Configuration Guide](configuration.md)**
 
 ---
 
@@ -49,18 +49,10 @@ This SSG is meant to be **distributed as an npm package**, with an **NPX scaffol
 ### Filesystem Structure
 
 - **Single root folder:** `site/`
-- **Content routing:**
+- **Routing:**
   - `site/index.md` → `/`
   - `site/about.md` → `/about`
   - `site/posts/hello-world.md` → `/posts/hello-world`
-- **Template organization:**
-  - `site/default.eta` → Global default template
-  - `site/post.eta` → Blog post template
-  - `site/blog/+layout.eta` → Layout for all blog pages
-- **Excluded folders (start with `_`):**
-  - `site/_partials/navbar.eta` → Global navbar partial (not routed)
-  - `site/blog/_components/meta.eta` → Blog-specific partial (not routed)
-  - `site/_assets/` → Any non-content files (not routed)
 
 ### Ordering & Visibility
 
@@ -77,51 +69,16 @@ This SSG is meant to be **distributed as an npm package**, with an **NPX scaffol
 
 ## Layout System
 
-Templates and content files are co-located within the `site/` directory structure with flexible organization:
+Stati provides a flexible hierarchical layout system with cascading templates and auto-discovered partials.
 
-### **Folder Structure Rules:**
+> **📖 For complete template system documentation, see [Template System](configuration.md#template-system)**
 
-- **Content files**: `.md` files create routes based on their path
-- **Template files**: `.eta` files provide layouts and components
-- **Underscore folders**: Any folder starting with `_` is excluded from routing
-- **Partials**: Template components in `_` folders are auto-discovered and provided to layouts
+Key features:
 
-### **Hierarchical Partial Discovery:**
-
-Partials are automatically discovered from underscore folders in the directory hierarchy. Child layouts inherit all partials from parent directories, enabling powerful composition:
-
-```
-site/
-├── default.eta                 # Global layout
-├── _partials/                  # Global partials (excluded from routing)
-│   ├── header.eta             # Available everywhere
-│   └── footer.eta             # Available everywhere
-├── blog/
-│   ├── +layout.eta            # Blog layout (inherits global partials)
-│   ├── _components/           # Blog-specific partials
-│   │   ├── post-meta.eta      # Available to blog+ descendants
-│   │   └── tag-list.eta       # Available to blog+ descendants
-│   ├── first-post.md          # Routes to /blog/first-post
-│   └── categories/
-│       ├── +layout.eta        # Inherits global + blog partials
-│       ├── _widgets/          # Category-specific partials
-│       │   └── category-nav.eta
-│       └── tech.md            # Routes to /blog/categories/tech
-```
-
-### **Template Context:**
-
-Each layout receives a `partials` object containing all discovered partials from the hierarchy:
-
-```eta
-<!-- In any layout file -->
-<%~ include(partials.header) %>
-<main><%~ content %></main>
-<%~ include(partials.footer) %>
-
-<!-- Blog layouts also have access to blog-specific partials -->
-<%~ include(partials['post-meta']) %>
-```
+- **Nested layouts**: `+layout.eta` files cascade through directory hierarchy
+- **Named templates**: Content-specific templates (e.g., `post.eta`, `article.eta`)
+- **Hierarchical partials**: Auto-discovered components and utilities in `_` folders
+- **Flexible placement**: Templates can be placed anywhere in the structure
 
 ---
 
@@ -157,29 +114,38 @@ Each layout receives a `partials` object containing all discovered partials from
 
 ## Config (`stati.config.ts`)
 
+Stati uses a TypeScript configuration file for customization. Here's a basic example:
+
 ```ts
-export default defineConfig({
-  title: 'My Site',
-  baseUrl: 'https://example.com',
+import type { StatiConfig } from 'stati';
+
+const config: StatiConfig = {
+  site: {
+    title: 'My Site',
+    baseUrl: 'https://example.com',
+  },
   outDir: 'dist',
   markdown: {
-    plugins: [
-      'anchor',
-      'task-lists',
-      ['external-links', { externalTarget: '_blank', externalRel: 'noopener noreferrer' }],
-    ],
+    configure: (md) => {
+      // Configure MarkdownIt instance with plugins
+    },
   },
   isg: {
-    defaultTtlSeconds: 3600,
+    enabled: true,
+    ttlSeconds: 3600,
     maxAgeCapDays: 365,
-    agingSchedule: [
+    aging: [
       { untilDays: 7, ttlSeconds: 3600 },
       { untilDays: 90, ttlSeconds: 86400 },
       { untilDays: 365, ttlSeconds: 604800 },
     ],
   },
-});
+};
+
+export default config;
 ```
+
+> **📖 For complete configuration documentation, see [Configuration Guide](configuration.md)**
 
 ---
 
@@ -227,18 +193,18 @@ npx create-stati@latest my-project -- --template blog
 
 ### Template Outputs
 
-- **Blog**: posts list + article pages + RSS
-- **Docs**: sidebar docs layouts
-- **News**: sectioned content lists + RSS
+**Blog**: Posts listing, individual article pages, and RSS feeds
+**Docs**: Sidebar navigation layouts with optional table of contents
+**News**: Sectioned content listings with tag aggregation and RSS feeds
 
 Each template includes:
 
-- `site/` with sample content and co-located templates
-- `site/_partials/` with reusable components (header, footer, nav)
-- `site/default.eta` and template-specific layouts
-- Template-specific `_components/` folders for specialized partials
-- `assets/styles.css`
-- `stati.config.ts` with defaults
+- Sample content structure in `site/`
+- Layout files (`+layout.eta`) and partials (`_partials/`)
+- Stylesheet foundation (`assets/styles.css`)
+- Pre-configured `stati.config.ts` with sensible defaults
+
+> **📖 For template structure and organization details, see [Template System](configuration.md#template-system)**
 
 ---
 

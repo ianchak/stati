@@ -1,5 +1,7 @@
 # Stati Configuration
 
+> **📌 This is the authoritative configuration reference for Stati.** All configuration options are documented here. Other documentation files reference this guide rather than duplicating configuration details.
+
 This document provides comprehensive documentation for all configuration options available in Stati.
 
 ## Configuration File
@@ -9,6 +11,41 @@ Stati looks for configuration files in the following order:
 1. `stati.config.ts` (TypeScript)
 2. `stati.config.js` (JavaScript ES Module)
 3. `stati.config.mjs` (JavaScript ES Module)
+
+### Helper Function
+
+Stati provides a `defineConfig` helper function for better TypeScript IntelliSense and validation:
+
+```typescript
+import { defineConfig } from 'stati';
+
+export default defineConfig({
+  site: {
+    title: 'My Site',
+    baseUrl: 'https://example.com',
+  },
+  // Configuration options...
+});
+```
+
+The `defineConfig` function is a simple helper that returns the configuration object with proper TypeScript typing. It enables:
+
+- **Full IntelliSense**: Autocompletion for all configuration options
+- **Type checking**: Compile-time validation of configuration values
+- **Documentation**: Hover tooltips with option descriptions
+- **Error detection**: Immediate feedback on invalid configurations
+
+You can also use the type directly without the helper:
+
+```typescript
+import type { StatiConfig } from 'stati';
+
+const config: StatiConfig = {
+  // Configuration options...
+};
+
+export default config;
+```
 
 ## Configuration Structure
 
@@ -137,6 +174,89 @@ Default locale for internationalization.
     defaultLocale: 'en-US';
   }
 }
+```
+
+## Template System
+
+Stati uses the Eta template engine for rendering layouts and templates. The template system follows a hierarchical structure with clear placement rules and resolution order.
+
+### Template Types
+
+**Layout Files (`+layout.eta`)**
+
+- Applied automatically to all content in their directory and subdirectories
+- Cascade through the directory hierarchy (child layouts inherit from parent layouts)
+- Can be overridden by placing a new `+layout.eta` file in a subdirectory
+- Perfect for section-specific styling and structure
+
+**Named Template Files (e.g., `post.eta`, `article.eta`)**
+
+- Used when explicitly specified in front matter: `layout: 'post'`
+- Can be placed anywhere in the `srcDir` structure
+- Take precedence over `+layout.eta` files when specified
+- Ideal for content-type-specific templates
+
+**Default Template (`default.eta`)**
+
+- Fallback template when no layout is specified and no `+layout.eta` exists
+- Should be placed at the root of `srcDir`
+- Provides the base HTML structure for all pages
+
+### Template Resolution Order
+
+When Stati processes a markdown file, it looks for templates in this order:
+
+1. **Explicit Layout**: If `layout: 'templatename'` is specified in front matter, use `templatename.eta`
+2. **Directory Layout**: Look for `+layout.eta` in the current directory, then parent directories (cascading up)
+3. **Default Layout**: Use `default.eta` from the root of `srcDir`
+4. **Built-in Fallback**: Use Stati's minimal built-in template if no templates are found
+
+### Template Placement Examples
+
+```
+site/
+├── default.eta              # Global fallback template
+├── post.eta                 # Named template for blog posts
+├── article.eta              # Named template for articles
+├── index.md                 # Uses default.eta
+├── blog/
+│   ├── +layout.eta          # Layout for all blog pages
+│   ├── my-post.md           # Uses blog/+layout.eta
+│   └── tech/
+│       ├── +layout.eta      # Overrides parent layout for tech posts
+│       └── latest.md        # Uses blog/tech/+layout.eta
+└── docs/
+    ├── +layout.eta          # Layout for all documentation
+    ├── guide.md             # Uses docs/+layout.eta
+    └── api.md               # layout: 'article' → uses article.eta
+```
+
+### Partials and Components
+
+**Underscore Folders (`_*`)**
+
+- Any folder starting with `_` is excluded from routing
+- Perfect for organizing partials, components, and utilities
+- Partials are auto-discovered and available to all templates in the hierarchy
+
+**Hierarchical Partial Discovery**
+
+- Templates automatically have access to partials from all parent directories
+- Enables powerful composition where child layouts inherit global and context-specific components
+
+```
+site/
+├── _partials/
+│   ├── navbar.eta           # Available globally
+│   └── footer.eta           # Available globally
+├── blog/
+│   ├── _components/
+│   │   └── post-card.eta    # Available to blog/ and subdirectories
+│   └── +layout.eta          # Can use navbar, footer, and post-card
+└── docs/
+    ├── _widgets/
+    │   └── toc.eta          # Available only to docs/
+    └── +layout.eta          # Can use navbar, footer, and toc
 ```
 
 ## Template Engine Configuration
@@ -352,13 +472,74 @@ const config: StatiConfig = {
 export default config;
 ```
 
+---
+
+## CLI Reference
+
+### `stati build`
+
+Builds the static site with Incremental Static Generation support.
+
+**Usage:**
+
+```bash
+stati build [options]
+```
+
+**Options:**
+
+- `--force` - Forces a full rebuild, ignoring existing cache
+- `--clean` - Wipes the cache directory before building
+- `--include-drafts` - Includes pages marked with `draft: true` in the build
+- `--invalidateTag <tag>` - Invalidates all pages with the specified tag
+- `--invalidatePath <path>` - Invalidates the page at the specified path
+
+**Examples:**
+
+```bash
+# Normal incremental build
+stati build
+
+# Force full rebuild
+stati build --force
+
+# Clean cache and rebuild
+stati build --clean
+
+# Include draft pages
+stati build --include-drafts
+
+# Invalidate specific content
+stati build --invalidateTag "blog"
+stati build --invalidatePath "/posts/my-post"
+```
+
+### `stati dev` _(Planned)_
+
+Starts a development server with live reload and incremental rebuilds.
+
+**Usage:**
+
+```bash
+stati dev [options]
+```
+
+**Features:**
+
+- Serves the built site locally
+- Watches source files for changes
+- Performs incremental rebuilds using ISG
+- Triggers full-page reload on changes
+
+---
+
 ## Complete Example
 
 ```typescript
-import type { StatiConfig } from 'stati';
+import { defineConfig } from 'stati';
 import markdownItAnchor from 'markdown-it-anchor';
 
-const config: StatiConfig = {
+export default defineConfig({
   srcDir: 'site',
   outDir: 'dist',
   staticDir: 'public',
@@ -381,15 +562,18 @@ const config: StatiConfig = {
 
   eta: {
     filters: {
-      formatDate: (date: Date) => {
+      formatDate: (date: unknown) => {
+        if (!(date instanceof Date)) return String(date);
         return new Intl.DateTimeFormat('en-US', {
           year: 'numeric',
           month: 'long',
           day: 'numeric',
         }).format(date);
       },
-      excerpt: (content: string, length = 150) => {
-        return content.slice(0, length) + '...';
+      excerpt: (content: unknown, length: unknown = 150) => {
+        const text = String(content);
+        const maxLength = typeof length === 'number' ? length : 150;
+        return text.length > maxLength ? text.slice(0, maxLength) + '...' : text;
       },
     },
   },
@@ -423,7 +607,5 @@ const config: StatiConfig = {
       console.log(`✅ Build complete! Generated ${ctx.pages.length} pages.`);
     },
   },
-};
-
-export default config;
+});
 ```
