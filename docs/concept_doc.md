@@ -27,7 +27,7 @@ This SSG is meant to be **distributed as an npm package**, with an **NPX scaffol
    - Front matter enriches content with metadata (title, description, tags, etc.).
 
 3. **Extensible Templates**
-   - Support for nested layouts (`+layout.eta` cascading).
+   - Support for nested layouts (`layout.eta` cascading).
    - Templates define overall structure, while widgets can inject lists of tagged content or recent items.
 
 4. **Incremental Static Generation (ISG)**
@@ -75,7 +75,7 @@ Stati provides a flexible hierarchical layout system with cascading templates an
 
 Key features:
 
-- **Nested layouts**: `+layout.eta` files cascade through directory hierarchy
+- **Nested layouts**: `layout.eta` files cascade through directory hierarchy
 - **Named templates**: Content-specific templates (e.g., `post.eta`, `article.eta`)
 - **Hierarchical partials**: Auto-discovered components and utilities in `_` folders
 - **Flexible placement**: Templates can be placed anywhere in the structure
@@ -200,7 +200,7 @@ npx create-stati@latest my-project -- --template blog
 Each template includes:
 
 - Sample content structure in `site/`
-- Layout files (`+layout.eta`) and partials (`_partials/`)
+- Layout files (`layout.eta`) and partials (`_partials/`)
 - Stylesheet foundation (`assets/styles.css`)
 - Pre-configured `stati.config.ts` with sensible defaults
 

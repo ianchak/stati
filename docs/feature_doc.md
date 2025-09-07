@@ -28,7 +28,7 @@ Stati's template system is co-located with content in the `site/` directory with
 
 **Key Features:**
 
-- **Hierarchical layouts**: `+layout.eta` files cascade through directories
+- **Hierarchical layouts**: `layout.eta` files cascade through directories
 - **Named templates**: Content-type specific templates (e.g., `post.eta`, `article.eta`)
 - **Underscore folders**: Any folder starting with `_` is excluded from routing, perfect for partials and components
 - **Auto-discovery**: Partials are automatically available to templates in their hierarchy

@@ -182,23 +182,23 @@ Stati uses the Eta template engine for rendering layouts and templates. The temp
 
 ### Template Types
 
-**Layout Files (`+layout.eta`)**
+**Layout Files (`layout.eta`)**
 
 - Applied automatically to all content in their directory and subdirectories
 - Cascade through the directory hierarchy (child layouts inherit from parent layouts)
-- Can be overridden by placing a new `+layout.eta` file in a subdirectory
+- Can be overridden by placing a new `layout.eta` file in a subdirectory
 - Perfect for section-specific styling and structure
 
 **Named Template Files (e.g., `post.eta`, `article.eta`)**
 
 - Used when explicitly specified in front matter: `layout: 'post'`
 - Can be placed anywhere in the `srcDir` structure
-- Take precedence over `+layout.eta` files when specified
+- Take precedence over `layout.eta` files when specified
 - Ideal for content-type-specific templates
 
 **Default Template (`default.eta`)**
 
-- Fallback template when no layout is specified and no `+layout.eta` exists
+- Fallback template when no layout is specified and no `layout.eta` exists
 - Should be placed at the root of `srcDir`
 - Provides the base HTML structure for all pages
 
@@ -207,7 +207,7 @@ Stati uses the Eta template engine for rendering layouts and templates. The temp
 When Stati processes a markdown file, it looks for templates in this order:
 
 1. **Explicit Layout**: If `layout: 'templatename'` is specified in front matter, use `templatename.eta`
-2. **Directory Layout**: Look for `+layout.eta` in the current directory, then parent directories (cascading up)
+2. **Directory Layout**: Look for `layout.eta` in the current directory, then parent directories (cascading up)
 3. **Default Layout**: Use `default.eta` from the root of `srcDir`
 4. **Built-in Fallback**: Use Stati's minimal built-in template if no templates are found
 
@@ -218,16 +218,17 @@ site/
 ├── default.eta              # Global fallback template
 ├── post.eta                 # Named template for blog posts
 ├── article.eta              # Named template for articles
-├── index.md                 # Uses default.eta
+├── layout.eta               # Root layout for all pages
+├── index.md                 # Uses layout.eta (or default.eta if layout.eta doesn't exist)
 ├── blog/
-│   ├── +layout.eta          # Layout for all blog pages
-│   ├── my-post.md           # Uses blog/+layout.eta
+│   ├── layout.eta           # Layout for all blog pages
+│   ├── my-post.md           # Uses blog/layout.eta
 │   └── tech/
-│       ├── +layout.eta      # Overrides parent layout for tech posts
-│       └── latest.md        # Uses blog/tech/+layout.eta
+│       ├── layout.eta       # Overrides parent layout for tech posts
+│       └── latest.md        # Uses blog/tech/layout.eta
 └── docs/
-    ├── +layout.eta          # Layout for all documentation
-    ├── guide.md             # Uses docs/+layout.eta
+    ├── layout.eta           # Layout for all documentation
+    ├── guide.md             # Uses docs/layout.eta
     └── api.md               # layout: 'article' → uses article.eta
 ```
 

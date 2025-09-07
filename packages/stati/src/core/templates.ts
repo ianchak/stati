@@ -60,6 +60,66 @@ async function discoverPartials(
   return partials;
 }
 
+/**
+ * Discovers the appropriate layout file for a given page path.
+ * Implements the hierarchical layout.eta convention by searching
+ * from the page's directory up to the root.
+ *
+ * @param pagePath - The path to the page (relative to srcDir)
+ * @param config - Stati configuration
+ * @param explicitLayout - Layout specified in front matter (takes precedence)
+ * @returns The layout file path or null if none found
+ */
+async function discoverLayout(
+  pagePath: string,
+  config: StatiConfig,
+  explicitLayout?: string,
+): Promise<string | null> {
+  const srcDir = join(process.cwd(), config.srcDir!);
+
+  // If explicit layout is specified, use it
+  if (explicitLayout) {
+    const layoutPath = join(srcDir, `${explicitLayout}.eta`);
+    if (await pathExists(layoutPath)) {
+      return `${explicitLayout}.eta`;
+    }
+  }
+
+  // Get the directory of the current page
+  const pageDir = dirname(pagePath);
+  const pathSegments = pageDir === '.' ? [] : pageDir.split(/[/\\]/); // Handle both separators
+
+  // Search for layout.eta from current directory up to root
+  const dirsToSearch = [];
+
+  // Add current directory if not root
+  if (pathSegments.length > 0) {
+    for (let i = pathSegments.length; i > 0; i--) {
+      dirsToSearch.push(pathSegments.slice(0, i).join('/'));
+    }
+  }
+
+  // Add root directory
+  dirsToSearch.push('');
+
+  for (const dir of dirsToSearch) {
+    const layoutPath = dir ? join(srcDir, dir, 'layout.eta') : join(srcDir, 'layout.eta');
+    if (await pathExists(layoutPath)) {
+      // Return relative path with forward slashes for Eta
+      const relativePath = dir ? `${dir}/layout.eta` : 'layout.eta';
+      return relativePath.replace(/\\/g, '/'); // Normalize to forward slashes
+    }
+  }
+
+  // Fall back to default.eta at root
+  const defaultLayoutPath = join(srcDir, 'default.eta');
+  if (await pathExists(defaultLayoutPath)) {
+    return 'default.eta';
+  }
+
+  return null;
+}
+
 export function createTemplateEngine(config: StatiConfig): Eta {
   const templateDir = join(process.cwd(), config.srcDir!);
 
@@ -85,13 +145,13 @@ export async function renderPage(
   eta: Eta,
   navigation?: NavNode[],
 ): Promise<string> {
-  const layoutName = page.frontMatter.layout || 'default';
-  const layoutPath = `${layoutName}.eta`;
-
   // Discover partials for this page's directory hierarchy
   const srcDir = join(process.cwd(), config.srcDir!);
   const relativePath = relative(srcDir, page.sourcePath);
   const partials = await discoverPartials(relativePath, config);
+
+  // Discover the appropriate layout using hierarchical layout.eta convention
+  const layoutPath = await discoverLayout(relativePath, config, page.frontMatter.layout);
 
   const context = {
     site: config.site,
@@ -106,17 +166,14 @@ export async function renderPage(
   };
 
   try {
-    const templateDir = join(process.cwd(), config.srcDir!);
-    const fullLayoutPath = join(templateDir, layoutPath);
-
-    if (!(await pathExists(fullLayoutPath))) {
-      console.warn(`Template not found: ${layoutPath}, using fallback`);
+    if (!layoutPath) {
+      console.warn('No layout template found, using fallback');
       return createFallbackHtml(page, body);
     }
 
     return await eta.renderAsync(layoutPath, context);
   } catch (error) {
-    console.error(`Error rendering layout ${layoutPath}:`, error);
+    console.error(`Error rendering layout ${layoutPath || 'unknown'}:`, error);
     return createFallbackHtml(page, body);
   }
 }
