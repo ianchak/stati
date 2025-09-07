@@ -4,6 +4,7 @@ import { loadConfig } from '../config/loader.js';
 import { loadContent } from './content.js';
 import { createMarkdownProcessor, renderMarkdown } from './markdown.js';
 import { createTemplateEngine, renderPage } from './templates.js';
+import { buildNavigation } from './navigation.js';
 import type { BuildContext, BuildStats } from '../types.js';
 
 /**
@@ -158,6 +159,10 @@ export async function build(options: BuildOptions = {}): Promise<BuildStats> {
   const pages = await loadContent(config);
   console.log(`📄 Found ${pages.length} pages`);
 
+  // Build navigation from pages
+  const navigation = buildNavigation(pages);
+  console.log(`🧭 Built navigation with ${navigation.length} top-level items`);
+
   // Create processors
   const md = createMarkdownProcessor(config);
   const eta = createTemplateEngine(config);
@@ -183,7 +188,7 @@ export async function build(options: BuildOptions = {}): Promise<BuildStats> {
     const htmlContent = renderMarkdown(page.content, md);
 
     // Render with template
-    const finalHtml = await renderPage(page, htmlContent, config, eta);
+    const finalHtml = await renderPage(page, htmlContent, config, eta, navigation);
 
     // Determine output path - fix the logic here
     let outputPath: string;

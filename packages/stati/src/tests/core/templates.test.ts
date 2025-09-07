@@ -175,6 +175,7 @@ describe('templates.ts', () => {
           content: body,
         },
         content: body,
+        navigation: [],
       });
       expect(result).toBe('<html>Rendered content</html>');
     });
@@ -216,6 +217,7 @@ describe('templates.ts', () => {
           content: body,
         },
         content: body,
+        navigation: [],
       });
     });
 

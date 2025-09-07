@@ -208,6 +208,7 @@ describe('Error Scenario Tests', () => {
         '<h1>Test Content</h1>',
         mockConfig,
         expect.anything(),
+        expect.any(Array), // navigation parameter
       );
     });
   });
@@ -549,6 +550,7 @@ describe('Error Scenario Tests', () => {
         '<h1>Test Content</h1>',
         mockConfig,
         expect.anything(),
+        expect.any(Array), // navigation parameter
       );
     });
 

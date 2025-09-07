@@ -1,7 +1,7 @@
 import { Eta } from 'eta';
 import { join } from 'path';
 import { pathExists } from 'fs-extra';
-import type { StatiConfig, PageModel } from '../types.js';
+import type { StatiConfig, PageModel, NavNode } from '../types.js';
 
 export function createTemplateEngine(config: StatiConfig): Eta {
   const templateDir = join(process.cwd(), config.templateDir!);
@@ -26,6 +26,7 @@ export async function renderPage(
   body: string,
   config: StatiConfig,
   eta: Eta,
+  navigation?: NavNode[],
 ): Promise<string> {
   const layoutName = page.frontMatter.layout || 'default';
   const layoutPath = `${layoutName}.eta`;
@@ -38,6 +39,7 @@ export async function renderPage(
       content: body,
     },
     content: body,
+    navigation: navigation || [],
   };
 
   try {

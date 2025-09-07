@@ -272,6 +272,7 @@ describe('build.ts', () => {
         '<h1>Rendered markdown</h1>',
         mockConfig,
         mockEta,
+        expect.any(Array), // navigation parameter
       );
     });
 

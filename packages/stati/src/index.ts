@@ -18,6 +18,7 @@ export type {
   BuildContext,
   PageContext,
   BuildHooks,
+  NavNode,
   ISGConfig,
   AgingRule,
   BuildStats,
