@@ -49,10 +49,18 @@ This SSG is meant to be **distributed as an npm package**, with an **NPX scaffol
 ### Filesystem Structure
 
 - **Single root folder:** `site/`
-- **Routing:**
+- **Content routing:**
   - `site/index.md` → `/`
   - `site/about.md` → `/about`
   - `site/posts/hello-world.md` → `/posts/hello-world`
+- **Template organization:**
+  - `site/default.eta` → Global default template
+  - `site/post.eta` → Blog post template
+  - `site/blog/+layout.eta` → Layout for all blog pages
+- **Excluded folders (start with `_`):**
+  - `site/_partials/navbar.eta` → Global navbar partial (not routed)
+  - `site/blog/_components/meta.eta` → Blog-specific partial (not routed)
+  - `site/_assets/` → Any non-content files (not routed)
 
 ### Ordering & Visibility
 
@@ -69,9 +77,51 @@ This SSG is meant to be **distributed as an npm package**, with an **NPX scaffol
 
 ## Layout System
 
-- **Nested layouts**: `+layout.eta` at any level applies to children, cascades until overridden.
-- **Navbar partial**: included in all templates (`partials/navbar.eta`).
-- **Widgets**: layout can render dynamic lists (e.g., recent posts, tagged articles).
+Templates and content files are co-located within the `site/` directory structure with flexible organization:
+
+### **Folder Structure Rules:**
+
+- **Content files**: `.md` files create routes based on their path
+- **Template files**: `.eta` files provide layouts and components
+- **Underscore folders**: Any folder starting with `_` is excluded from routing
+- **Partials**: Template components in `_` folders are auto-discovered and provided to layouts
+
+### **Hierarchical Partial Discovery:**
+
+Partials are automatically discovered from underscore folders in the directory hierarchy. Child layouts inherit all partials from parent directories, enabling powerful composition:
+
+```
+site/
+├── default.eta                 # Global layout
+├── _partials/                  # Global partials (excluded from routing)
+│   ├── header.eta             # Available everywhere
+│   └── footer.eta             # Available everywhere
+├── blog/
+│   ├── +layout.eta            # Blog layout (inherits global partials)
+│   ├── _components/           # Blog-specific partials
+│   │   ├── post-meta.eta      # Available to blog+ descendants
+│   │   └── tag-list.eta       # Available to blog+ descendants
+│   ├── first-post.md          # Routes to /blog/first-post
+│   └── categories/
+│       ├── +layout.eta        # Inherits global + blog partials
+│       ├── _widgets/          # Category-specific partials
+│       │   └── category-nav.eta
+│       └── tech.md            # Routes to /blog/categories/tech
+```
+
+### **Template Context:**
+
+Each layout receives a `partials` object containing all discovered partials from the hierarchy:
+
+```eta
+<!-- In any layout file -->
+<%~ include(partials.header) %>
+<main><%~ content %></main>
+<%~ include(partials.footer) %>
+
+<!-- Blog layouts also have access to blog-specific partials -->
+<%~ include(partials['post-meta']) %>
+```
 
 ---
 
@@ -183,8 +233,10 @@ npx create-stati@latest my-project -- --template blog
 
 Each template includes:
 
-- `site/` with sample content
-- `site/partials/navbar.eta`
+- `site/` with sample content and co-located templates
+- `site/_partials/` with reusable components (header, footer, nav)
+- `site/default.eta` and template-specific layouts
+- Template-specific `_components/` folders for specialized partials
 - `assets/styles.css`
 - `stati.config.ts` with defaults
 

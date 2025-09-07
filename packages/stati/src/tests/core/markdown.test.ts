@@ -6,7 +6,6 @@ describe('markdown.ts', () => {
   const baseConfig: StatiConfig = {
     srcDir: 'src',
     outDir: 'dist',
-    templateDir: 'templates',
     staticDir: 'static',
     site: {
       title: 'Test Site',

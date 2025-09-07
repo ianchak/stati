@@ -38,7 +38,6 @@ describe('config loader', () => {
       const defaultConfig = {
         srcDir: 'site',
         outDir: 'dist',
-        templateDir: 'templates',
         staticDir: 'public',
         site: {
           title: 'My Site',
@@ -66,6 +65,7 @@ describe('config loader', () => {
       const defaultConfig = {
         srcDir: 'site',
         outDir: 'dist',
+        staticDir: 'public',
         site: {
           title: 'My Site',
           baseUrl: 'http://localhost:3000',
@@ -111,6 +111,7 @@ describe('config loader', () => {
       // Arrange
       const defaultConfig = {
         srcDir: 'site',
+        staticDir: 'public',
         site: {
           title: 'My Site',
           baseUrl: 'http://localhost:3000',

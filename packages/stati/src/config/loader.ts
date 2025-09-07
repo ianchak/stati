@@ -10,7 +10,6 @@ import type { StatiConfig } from '../types.js';
 const DEFAULT_CONFIG: StatiConfig = {
   srcDir: 'site',
   outDir: 'dist',
-  templateDir: 'templates',
   staticDir: 'public',
   site: {
     title: 'My Site',

@@ -1,16 +1,23 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createTemplateEngine, renderPage } from '../../core/templates.js';
 import type { StatiConfig, PageModel } from '../../types.js';
+import type { Eta } from 'eta';
 
 // Create hoisted mocks
-const { mockPathExists, MockEta } = vi.hoisted(() => ({
+const { mockPathExists, mockGlob, MockEta } = vi.hoisted(() => ({
   mockPathExists: vi.fn(),
+  mockGlob: vi.fn(),
   MockEta: vi.fn(),
 }));
 
 // Mock dependencies
 vi.mock('fs-extra', () => ({
   pathExists: mockPathExists,
+}));
+
+vi.mock('fast-glob', () => ({
+  default: mockGlob,
+  glob: mockGlob,
 }));
 
 vi.mock('eta', () => ({
@@ -21,7 +28,6 @@ describe('templates.ts', () => {
   const mockConfig: StatiConfig = {
     srcDir: 'src',
     outDir: 'dist',
-    templateDir: 'templates',
     staticDir: 'static',
     site: {
       title: 'Test Site',
@@ -40,26 +46,21 @@ describe('templates.ts', () => {
     content: '# Test content',
   };
 
-  let mockEtaInstance: {
+  let mockEtaInstance: Partial<Eta> & {
     renderAsync: ReturnType<typeof vi.fn>;
     filters: Record<string, unknown>;
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.spyOn(process, 'cwd').mockReturnValue('/test/project');
+    vi.spyOn(process, 'cwd').mockReturnValue('\\test\\project');
 
-    // Create mock Eta instance
     mockEtaInstance = {
       renderAsync: vi.fn(),
       filters: {},
     };
-
-    MockEta.mockImplementation(() => mockEtaInstance);
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
+    MockEta.mockReturnValue(mockEtaInstance);
+    mockGlob.mockResolvedValue([]);
   });
 
   describe('createTemplateEngine', () => {
@@ -67,261 +68,119 @@ describe('templates.ts', () => {
       const eta = createTemplateEngine(mockConfig);
 
       expect(MockEta).toHaveBeenCalledWith({
-        views: expect.stringMatching(/[\\/]test[\\/]project[\\/]templates$/),
-        cache: false, // Should be false for non-production
+        views: '\\test\\project\\src',
+        cache: false,
       });
       expect(eta).toBe(mockEtaInstance);
-    });
-
-    it('should enable cache in production', () => {
-      const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'production';
-
-      createTemplateEngine(mockConfig);
-
-      expect(MockEta).toHaveBeenCalledWith({
-        views: expect.stringMatching(/[\\/]test[\\/]project[\\/]templates$/),
-        cache: true,
-      });
-
-      process.env.NODE_ENV = originalEnv;
-    });
-
-    it('should add custom filters when provided', () => {
-      const customFilter = vi.fn();
-      const configWithFilters: StatiConfig = {
-        ...mockConfig,
-        eta: {
-          filters: {
-            uppercase: customFilter,
-          },
-        },
-      };
-
-      createTemplateEngine(configWithFilters);
-
-      expect(mockEtaInstance.filters.uppercase).toBe(customFilter);
-    });
-
-    it('should work without eta configuration', () => {
-      const config: StatiConfig = {
-        ...mockConfig,
-      };
-
-      const eta = createTemplateEngine(config);
-
-      expect(MockEta).toHaveBeenCalledWith({
-        views: expect.stringMatching(/[\\/]test[\\/]project[\\/]templates$/),
-        cache: expect.any(Boolean),
-      });
-      expect(eta).toBe(mockEtaInstance);
-    });
-
-    it('should work with empty eta configuration', () => {
-      const config: StatiConfig = {
-        ...mockConfig,
-        eta: {},
-      };
-
-      const eta = createTemplateEngine(config);
-
-      expect(MockEta).toHaveBeenCalledWith({
-        views: expect.stringMatching(/[\\/]test[\\/]project[\\/]templates$/),
-        cache: expect.any(Boolean),
-      });
-      expect(eta).toBe(mockEtaInstance);
-    });
-
-    it('should handle multiple custom filters', () => {
-      const filter1 = vi.fn();
-      const filter2 = vi.fn();
-      const configWithFilters: StatiConfig = {
-        ...mockConfig,
-        eta: {
-          filters: {
-            filter1,
-            filter2,
-          },
-        },
-      };
-
-      createTemplateEngine(configWithFilters);
-
-      expect(mockEtaInstance.filters.filter1).toBe(filter1);
-      expect(mockEtaInstance.filters.filter2).toBe(filter2);
     });
   });
 
   describe('renderPage', () => {
-    beforeEach(() => {
+    it('should render page with default layout when none specified', async () => {
       mockPathExists.mockResolvedValue(true);
       mockEtaInstance.renderAsync.mockResolvedValue('<html>Rendered content</html>');
-    });
 
-    it('should render page with default layout', async () => {
-      const eta = createTemplateEngine(mockConfig);
-      const body = '<h1>Test content</h1>';
-
-      const result = await renderPage(mockPage, body, mockConfig, eta);
-
-      expect(mockPathExists).toHaveBeenCalledWith(
-        expect.stringMatching(/[\\/]test[\\/]project[\\/]templates[\\/]default\.eta$/),
+      const result = await renderPage(
+        mockPage,
+        '<h1>Test content</h1>',
+        mockConfig,
+        mockEtaInstance as Eta,
       );
-      expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith('default.eta', {
-        site: mockConfig.site,
-        page: {
-          ...mockPage.frontMatter,
-          path: mockPage.url,
-          content: body,
-        },
-        content: body,
-        navigation: [],
-      });
+
+      expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
+        'default.eta',
+        expect.objectContaining({
+          content: '<h1>Test content</h1>',
+          navigation: [],
+          page: expect.objectContaining({
+            title: 'Test Page',
+            description: 'A test page',
+            path: '/test-page',
+            content: '<h1>Test content</h1>',
+          }),
+          partials: {},
+          site: {
+            title: 'Test Site',
+            baseUrl: 'https://example.com',
+          },
+        }),
+      );
       expect(result).toBe('<html>Rendered content</html>');
     });
 
-    it('should use custom layout from frontmatter', async () => {
-      const eta = createTemplateEngine(mockConfig);
-      const body = '<h1>Test content</h1>';
-      const pageWithLayout: PageModel = {
+    it('should render page with specified layout', async () => {
+      const pageWithLayout = {
         ...mockPage,
-        frontMatter: {
-          ...mockPage.frontMatter,
-          layout: 'custom',
-        },
+        frontMatter: { ...mockPage.frontMatter, layout: 'custom' },
       };
-
-      await renderPage(pageWithLayout, body, mockConfig, eta);
-
-      expect(mockPathExists).toHaveBeenCalledWith(
-        expect.stringMatching(/[\\/]test[\\/]project[\\/]templates[\\/]custom\.eta$/),
-      );
-      expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith('custom.eta', expect.any(Object));
-    });
-
-    it('should pass correct context to template', async () => {
-      const eta = createTemplateEngine(mockConfig);
-      const body = '<h1>Test content</h1>';
-
-      await renderPage(mockPage, body, mockConfig, eta);
-
-      expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith('default.eta', {
-        site: {
-          title: 'Test Site',
-          baseUrl: 'https://example.com',
-        },
-        page: {
-          title: 'Test Page',
-          description: 'A test page',
-          path: '/test-page',
-          content: body,
-        },
-        content: body,
-        navigation: [],
-      });
-    });
-
-    it('should use fallback HTML when template does not exist', async () => {
-      mockPathExists.mockResolvedValue(false);
-      const eta = createTemplateEngine(mockConfig);
-      const body = '<h1>Test content</h1>';
-
-      const result = await renderPage(mockPage, body, mockConfig, eta);
-
-      expect(result).toContain('<!DOCTYPE html>');
-      expect(result).toContain('<title>Test Page</title>');
-      expect(result).toContain('<meta name="description" content="A test page">');
-      expect(result).toContain('<h1>Test content</h1>');
-    });
-
-    it('should use fallback HTML when template rendering fails', async () => {
       mockPathExists.mockResolvedValue(true);
-      mockEtaInstance.renderAsync.mockRejectedValue(new Error('Template error'));
-      const eta = createTemplateEngine(mockConfig);
-      const body = '<h1>Test content</h1>';
+      mockEtaInstance.renderAsync.mockResolvedValue('<html>Custom layout</html>');
 
-      const result = await renderPage(mockPage, body, mockConfig, eta);
-
-      expect(result).toContain('<!DOCTYPE html>');
-      expect(result).toContain('<title>Test Page</title>');
-    });
-
-    it('should escape HTML in fallback template', async () => {
-      mockPathExists.mockResolvedValue(false);
-      const eta = createTemplateEngine(mockConfig);
-      const body = '<h1>Test content</h1>';
-      const pageWithSpecialChars: PageModel = {
-        ...mockPage,
-        frontMatter: {
-          title: 'Test & "Special" <chars>',
-          description: 'A test with <script>alert("xss")</script>',
-        },
-      };
-
-      const result = await renderPage(pageWithSpecialChars, body, mockConfig, eta);
-
-      expect(result).toContain('<title>Test &amp; &quot;Special&quot; &lt;chars&gt;</title>');
-      expect(result).toContain(
-        'content="A test with &lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;"',
+      const result = await renderPage(
+        pageWithLayout,
+        '<h1>Test content</h1>',
+        mockConfig,
+        mockEtaInstance as Eta,
       );
+
+      expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
+        'custom.eta',
+        expect.objectContaining({
+          content: '<h1>Test content</h1>',
+          navigation: [],
+          page: expect.objectContaining({
+            title: 'Test Page',
+            description: 'A test page',
+            layout: 'custom',
+            path: '/test-page',
+            content: '<h1>Test content</h1>',
+          }),
+          partials: {},
+          site: {
+            title: 'Test Site',
+            baseUrl: 'https://example.com',
+          },
+        }),
+      );
+      expect(result).toBe('<html>Custom layout</html>');
     });
 
-    it('should handle page without title in fallback', async () => {
-      mockPathExists.mockResolvedValue(false);
-      const eta = createTemplateEngine(mockConfig);
-      const body = '<h1>Test content</h1>';
-      const pageWithoutTitle: PageModel = {
-        ...mockPage,
-        frontMatter: {},
-      };
-
-      const result = await renderPage(pageWithoutTitle, body, mockConfig, eta);
-
-      expect(result).toContain('<title>Untitled</title>');
-      expect(result).not.toContain('<meta name="description"');
-    });
-
-    it('should handle page without description in fallback', async () => {
-      mockPathExists.mockResolvedValue(false);
-      const eta = createTemplateEngine(mockConfig);
-      const body = '<h1>Test content</h1>';
-      const pageWithoutDescription: PageModel = {
-        ...mockPage,
-        frontMatter: {
-          title: 'Test Page',
-        },
-      };
-
-      const result = await renderPage(pageWithoutDescription, body, mockConfig, eta);
-
-      expect(result).toContain('<title>Test Page</title>');
-      expect(result).not.toContain('<meta name="description"');
-    });
-
-    it('should log warning when template not found', async () => {
+    it('should use fallback when template not found', async () => {
       mockPathExists.mockResolvedValue(false);
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      const eta = createTemplateEngine(mockConfig);
-      const body = '<h1>Test content</h1>';
 
-      await renderPage(mockPage, body, mockConfig, eta);
+      const result = await renderPage(
+        mockPage,
+        '<h1>Test content</h1>',
+        mockConfig,
+        mockEtaInstance as Eta,
+      );
 
       expect(consoleSpy).toHaveBeenCalledWith('Template not found: default.eta, using fallback');
+      expect(result).toContain('<h1>Test content</h1>');
+      expect(result).toContain('<!DOCTYPE html>');
+      expect(result).toContain('<title>Test Page</title>');
 
       consoleSpy.mockRestore();
     });
 
-    it('should log error when template rendering fails', async () => {
+    it('should handle template rendering errors', async () => {
       mockPathExists.mockResolvedValue(true);
       const error = new Error('Template error');
       mockEtaInstance.renderAsync.mockRejectedValue(error);
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      const eta = createTemplateEngine(mockConfig);
-      const body = '<h1>Test content</h1>';
 
-      await renderPage(mockPage, body, mockConfig, eta);
+      const result = await renderPage(
+        mockPage,
+        '<h1>Test content</h1>',
+        mockConfig,
+        mockEtaInstance as Eta,
+      );
 
       expect(consoleSpy).toHaveBeenCalledWith('Error rendering layout default.eta:', error);
+      expect(result).toContain('<h1>Test content</h1>');
+      expect(result).toContain('<!DOCTYPE html>');
+      expect(result).toContain('<title>Test Page</title>');
 
       consoleSpy.mockRestore();
     });

@@ -25,9 +25,12 @@ export async function loadContent(
   includeDrafts?: boolean,
 ): Promise<PageModel[]> {
   const contentDir = join(process.cwd(), config.srcDir!);
+
+  // Exclude folders starting with underscore from content discovery
   const files = await glob('**/*.md', {
     cwd: contentDir,
     absolute: true,
+    ignore: ['**/_*/**', '_*/**'],
   });
 
   const pages: PageModel[] = [];

@@ -20,11 +20,13 @@ This predictable structure lowers the learning curve. Authors don’t need to co
 
 ---
 
-## 3. Layout System
+## 3. Flexible Layout System
 
-Layouts can be nested and overridden at any directory level using `+layout.eta`. Partials like headers, footers, or navbars can be reused across the site, while widgets allow injecting lists of posts or tagged content.
+Templates are co-located with content in the `site/` directory with intelligent organization rules. Any folder starting with `_` (underscore) is excluded from routing, making them perfect for partials, components, and utilities.
 
-This design encourages modularity. Authors can keep templates DRY, define global structures once, and tailor child pages or sections with minimal repetition.
+The system features **hierarchical partial discovery** - layouts automatically inherit partials from all parent directories in the folder hierarchy. This enables powerful composition where child layouts have access to both global partials and context-specific components.
+
+Templates can be placed anywhere in the structure: global templates at the root, nested `+layout.eta` files for directory-specific layouts, and partials organized in `_components/`, `_partials/`, or any `_folder` as needed. This flexible co-location keeps related files together while maintaining clear organizational boundaries.
 
 ---
 

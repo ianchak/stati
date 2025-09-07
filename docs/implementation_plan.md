@@ -181,7 +181,6 @@ export interface ISGConfig {
 export interface StatiConfig {
   srcDir?: string; // default: "site"
   outDir?: string; // default: "dist"
-  templateDir?: string; // default: "templates"
   staticDir?: string; // default: "public"
   site: { title: string; baseUrl: string; defaultLocale?: string };
   markdown?: { configure?: (md: import('markdown-it')) => void };
@@ -234,12 +233,14 @@ cli.parse();
 
 ### 3.3 FS routing, collections & assets (Week 2)
 
-- Route = file path without extension; `index.md` → `/`.
-- Collections: `site/blog/**`, `site/docs/**`, `site/news/**` with collection metadata.
-- Permalinks via front‑matter or defaults; helper to compute canonical URLs.
-- Static assets: copy `public/**` straight; optional hash/fingerprint **(post‑1.0)**.
+- Route = file path without extension; `index.md` → `/`
+- **Underscore folder exclusion**: Folders starting with `_` are excluded from routing
+- **Hierarchical partials**: Auto-discover `.eta` files in `_` folders throughout directory tree
+- Collections: `site/blog/**`, `site/docs/**`, `site/news/**` with collection metadata
+- Permalinks via front‑matter or defaults; helper to compute canonical URLs
+- Static assets: copy `public/**` straight; optional hash/fingerprint **(post‑1.0)**
 
-**Test**: routes match expected slugs; permalinks respected; static copied.
+**Test**: routes match expected slugs; underscore folders excluded; partials discovered; permalinks respected; static copied.
 
 ---
 

@@ -36,7 +36,6 @@ describe('content.ts', () => {
   const mockConfig: StatiConfig = {
     srcDir: 'src',
     outDir: 'dist',
-    templateDir: 'templates',
     staticDir: 'static',
     site: {
       title: 'Test Site',
@@ -283,6 +282,7 @@ describe('content.ts', () => {
       expect(mockGlob).toHaveBeenCalledWith('**/*.md', {
         cwd: expect.stringMatching(/[\\/]test[\\/]project[\\/]src$/),
         absolute: true,
+        ignore: ['**/_*/**', '_*/**'],
       });
     });
 

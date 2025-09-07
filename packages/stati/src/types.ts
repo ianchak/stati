@@ -78,7 +78,6 @@ export interface SiteConfig {
  * const config: StatiConfig = {
  *   srcDir: 'site',
  *   outDir: 'dist',
- *   templateDir: 'templates',
  *   staticDir: 'public',
  *   site: {
  *     title: 'My Blog',
@@ -95,8 +94,6 @@ export interface StatiConfig {
   srcDir?: string;
   /** Output directory for generated site (default: 'dist') */
   outDir?: string;
-  /** Directory containing template files (default: 'templates') */
-  templateDir?: string;
   /** Directory for static assets (default: 'public') */
   staticDir?: string;
   /** Site-wide configuration */
@@ -186,6 +183,27 @@ export interface BuildHooks {
   beforeRender?: (ctx: PageContext) => Promise<void> | void;
   /** Called after rendering each individual page */
   afterRender?: (ctx: PageContext) => Promise<void> | void;
+}
+
+/**
+ * Template rendering context passed to Eta layouts.
+ * Contains all data available to templates during rendering.
+ */
+export interface TemplateContext {
+  /** Site configuration and metadata */
+  site: SiteConfig;
+  /** Current page data including frontmatter and content */
+  page: {
+    path: string;
+    content: string;
+    [key: string]: unknown; // Frontmatter fields
+  };
+  /** Rendered markdown content */
+  content: string;
+  /** Site navigation tree */
+  navigation: NavNode[];
+  /** Discovered partials from underscore folders in hierarchy */
+  partials: Record<string, string>;
 }
 
 /**

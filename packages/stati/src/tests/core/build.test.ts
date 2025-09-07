@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { build } from '../../core/build.js';
 import type { BuildOptions } from '../../core/build.js';
+import type { StatiConfig } from '../../types.js';
 
 // Create hoisted mocks that are available during module hoisting
 const {
@@ -63,10 +64,9 @@ vi.mock('../../core/templates.js', () => ({
 }));
 
 describe('build.ts', () => {
-  const mockConfig = {
+  const mockConfig: StatiConfig = {
     srcDir: 'src',
     outDir: 'dist',
-    templateDir: 'templates',
     staticDir: 'static',
     site: {
       title: 'Test Site',

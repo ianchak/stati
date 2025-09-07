@@ -62,7 +62,6 @@ describe('HTML Output Snapshots', () => {
     srcDir: '/test/project/content',
     outDir: 'dist',
     staticDir: '/test/project/static',
-    templateDir: '/test/project/templates',
     site: {
       title: 'Stati Documentation',
       baseUrl: 'https://example.com',

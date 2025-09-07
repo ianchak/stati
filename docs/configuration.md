@@ -19,7 +19,6 @@ const config: StatiConfig = {
   // Directory configuration
   srcDir: 'site', // Source content directory
   outDir: 'dist', // Output directory for generated site
-  templateDir: 'templates', // Template files directory
   staticDir: 'public', // Static assets directory
 
   // Site metadata
@@ -67,7 +66,14 @@ export default config;
 
 ### `srcDir` (string, default: 'site')
 
-The directory containing your content files (Markdown, etc.).
+The directory containing your content files (Markdown, etc.) and templates.
+
+**Folder Structure Rules:**
+
+- `.md` files create routes based on their path
+- `.eta` files provide layouts and templates
+- Folders starting with `_` are excluded from routing (perfect for partials)
+- Partials in `_` folders are auto-discovered and provided to templates
 
 ```typescript
 {
@@ -82,16 +88,6 @@ The output directory where the generated static site will be placed.
 ```typescript
 {
   outDir: 'build'; // Output to build/ directory
-}
-```
-
-### `templateDir` (string, default: 'templates')
-
-The directory containing your template files (.eta files by default).
-
-```typescript
-{
-  templateDir: 'src/templates';
 }
 ```
 
@@ -363,9 +359,8 @@ import type { StatiConfig } from 'stati';
 import markdownItAnchor from 'markdown-it-anchor';
 
 const config: StatiConfig = {
-  srcDir: 'content',
+  srcDir: 'site',
   outDir: 'dist',
-  templateDir: 'templates',
   staticDir: 'public',
 
   site: {
