@@ -36,7 +36,7 @@ describe('config loader', () => {
     it('should provide sensible defaults', () => {
       // Arrange & Act
       const defaultConfig = {
-        srcDir: 'content',
+        srcDir: 'site',
         outDir: 'dist',
         templateDir: 'templates',
         staticDir: 'public',
@@ -52,7 +52,7 @@ describe('config loader', () => {
       };
 
       // Assert - verify default structure
-      expect(defaultConfig.srcDir).toBe('content');
+      expect(defaultConfig.srcDir).toBe('site');
       expect(defaultConfig.outDir).toBe('dist');
       expect(defaultConfig.site.title).toBe('My Site');
       expect(defaultConfig.isg.enabled).toBe(true);
@@ -64,7 +64,7 @@ describe('config loader', () => {
     it('should merge user config with defaults preserving nested properties', () => {
       // Arrange
       const defaultConfig = {
-        srcDir: 'content',
+        srcDir: 'site',
         outDir: 'dist',
         site: {
           title: 'My Site',
@@ -110,7 +110,7 @@ describe('config loader', () => {
     it('should handle partial user configs', () => {
       // Arrange
       const defaultConfig = {
-        srcDir: 'content',
+        srcDir: 'site',
         site: {
           title: 'My Site',
           baseUrl: 'http://localhost:3000',
@@ -133,7 +133,7 @@ describe('config loader', () => {
       // Assert
       expect(mergedConfig.site.title).toBe('New Title');
       expect(mergedConfig.site.baseUrl).toBe('http://localhost:3000');
-      expect(mergedConfig.srcDir).toBe('content');
+      expect(mergedConfig.srcDir).toBe('site');
     });
   });
 

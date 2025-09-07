@@ -17,7 +17,7 @@ import type { StatiConfig } from 'stati';
 
 const config: StatiConfig = {
   // Directory configuration
-  srcDir: 'content', // Source content directory
+  srcDir: 'site', // Source content directory
   outDir: 'dist', // Output directory for generated site
   templateDir: 'templates', // Template files directory
   staticDir: 'public', // Static assets directory
@@ -65,13 +65,13 @@ export default config;
 
 ## Directory Configuration
 
-### `srcDir` (string, default: 'content')
+### `srcDir` (string, default: 'site')
 
 The directory containing your content files (Markdown, etc.).
 
 ```typescript
 {
-  srcDir: 'src/content'; // Look for content in src/content/
+  srcDir: 'src/site'; // Look for content in src/site/
 }
 ```
 

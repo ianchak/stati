@@ -179,7 +179,7 @@ export interface ISGConfig {
 }
 
 export interface StatiConfig {
-  srcDir?: string; // default: "content"
+  srcDir?: string; // default: "site"
   outDir?: string; // default: "dist"
   templateDir?: string; // default: "templates"
   staticDir?: string; // default: "public"
@@ -223,7 +223,7 @@ cli.parse();
 **Renderer flow**
 
 1. Load config; set dirs.
-2. Scan `content/**/*.md` (front‑matter via `gray-matter`).
+2. Scan `site/**/*.md` (front‑matter via `gray-matter`).
 3. Build `PageModel`: `{ slug, url, fm, content, publishedAt }`.
 4. Convert Markdown → HTML (Markdown‑It + plugins) → pass as `body` to Eta layout.
 5. Emit to `dist`, copy `public/**`.
@@ -235,7 +235,7 @@ cli.parse();
 ### 3.3 FS routing, collections & assets (Week 2)
 
 - Route = file path without extension; `index.md` → `/`.
-- Collections: `content/blog/**`, `content/docs/**`, `content/news/**` with collection metadata.
+- Collections: `site/blog/**`, `site/docs/**`, `site/news/**` with collection metadata.
 - Permalinks via front‑matter or defaults; helper to compute canonical URLs.
 - Static assets: copy `public/**` straight; optional hash/fingerprint **(post‑1.0)**.
 

@@ -19,22 +19,18 @@ This SSG is meant to be **distributed as an npm package**, with an **NPX scaffol
 ## Core Principles
 
 1. **Lightweight First**
-
    - Minimal dependencies, fast builds, no React/JSX overhead.
    - Eta for templating, Markdown-It for content.
 
 2. **Content in Filesystem**
-
    - Drop files in `site/`; routing and aggregation follow directory structure.
    - Front matter enriches content with metadata (title, description, tags, etc.).
 
 3. **Extensible Templates**
-
    - Support for nested layouts (`+layout.eta` cascading).
    - Templates define overall structure, while widgets can inject lists of tagged content or recent items.
 
 4. **Incremental Static Generation (ISG)**
-
    - Default mode: reuse cache if present; full build if not.
    - `--force` triggers full rebuild and reseeds cache.
    - `--clean` wipes cache before building.
@@ -109,21 +105,18 @@ This SSG is meant to be **distributed as an npm package**, with an **NPX scaffol
 
 ---
 
-## Config (`ssg.config.ts`)
+## Config (`stati.config.ts`)
 
 ```ts
 export default defineConfig({
-  title: "My Site",
-  baseUrl: "https://example.com",
-  outDir: "dist",
+  title: 'My Site',
+  baseUrl: 'https://example.com',
+  outDir: 'dist',
   markdown: {
     plugins: [
-      "anchor",
-      "task-lists",
-      [
-        "external-links",
-        { externalTarget: "_blank", externalRel: "noopener noreferrer" },
-      ],
+      'anchor',
+      'task-lists',
+      ['external-links', { externalTarget: '_blank', externalRel: 'noopener noreferrer' }],
     ],
   },
   isg: {
@@ -193,7 +186,7 @@ Each template includes:
 - `site/` with sample content
 - `site/partials/navbar.eta`
 - `assets/styles.css`
-- `ssg.config.ts` with defaults
+- `stati.config.ts` with defaults
 
 ---
 

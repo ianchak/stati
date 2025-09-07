@@ -8,7 +8,7 @@ import type { StatiConfig } from '../types.js';
  * Used as fallback when no configuration file is found.
  */
 const DEFAULT_CONFIG: StatiConfig = {
-  srcDir: 'content',
+  srcDir: 'site',
   outDir: 'dist',
   templateDir: 'templates',
   staticDir: 'public',

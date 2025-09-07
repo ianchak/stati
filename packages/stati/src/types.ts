@@ -76,7 +76,7 @@ export interface SiteConfig {
  * @example
  * ```typescript
  * const config: StatiConfig = {
- *   srcDir: 'content',
+ *   srcDir: 'site',
  *   outDir: 'dist',
  *   templateDir: 'templates',
  *   staticDir: 'public',
@@ -91,7 +91,7 @@ export interface SiteConfig {
  * ```
  */
 export interface StatiConfig {
-  /** Source directory for content files (default: 'content') */
+  /** Source directory for content files (default: 'site') */
   srcDir?: string;
   /** Output directory for generated site (default: 'dist') */
   outDir?: string;
