@@ -191,7 +191,7 @@ export async function build(options: BuildOptions = {}): Promise<BuildStats> {
     const htmlContent = renderMarkdown(page.content, md);
 
     // Render with template
-    const finalHtml = await renderPage(page, htmlContent, config, eta, navigation);
+    const finalHtml = await renderPage(page, htmlContent, config, eta, navigation, pages);
 
     // Determine output path - fix the logic here
     let outputPath: string;

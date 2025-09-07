@@ -269,6 +269,7 @@ describe('build.ts', () => {
         mockConfig,
         mockEta,
         expect.any(Array), // navigation parameter
+        expect.any(Array), // allPages parameter
       );
     });
 

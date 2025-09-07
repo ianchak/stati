@@ -207,6 +207,7 @@ describe('Error Scenario Tests', () => {
         mockConfig,
         expect.anything(),
         expect.any(Array), // navigation parameter
+        expect.any(Array), // allPages parameter
       );
     });
   });
@@ -549,6 +550,7 @@ describe('Error Scenario Tests', () => {
         mockConfig,
         expect.anything(),
         expect.any(Array), // navigation parameter
+        expect.any(Array), // allPages parameter
       );
     });
 

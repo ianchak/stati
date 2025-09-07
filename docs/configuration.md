@@ -189,11 +189,19 @@ Stati uses the Eta template engine for rendering layouts and templates. The temp
 - Can be overridden by placing a new `layout.eta` file in a subdirectory
 - Perfect for section-specific styling and structure
 
+**Collection Index Files (`index.eta`)**
+
+- Specialized templates for collection aggregation pages (pages that list child content)
+- Only applied to pages that contain other pages (collection index pages)
+- Receive full collection data for listing, filtering, and organizing child content
+- Fall back to `layout.eta` if not present
+- Perfect for blog indexes, news aggregation, and documentation overviews
+
 **Named Template Files (e.g., `post.eta`, `article.eta`)**
 
 - Used when explicitly specified in front matter: `layout: 'post'`
 - Can be placed anywhere in the `srcDir` structure
-- Take precedence over `layout.eta` files when specified
+- Take precedence over `layout.eta` and `index.eta` files when specified
 - Ideal for content-type-specific templates
 
 **Default Template (`default.eta`)**
@@ -258,6 +266,52 @@ site/
     ├── _widgets/
     │   └── toc.eta          # Available only to docs/
     └── +layout.eta          # Can use navbar, footer, and toc
+```
+
+### Collection Index Templates
+
+**Using `index.eta` for Collection Pages**
+
+Collection index pages automatically receive aggregated data about their child content. Use `index.eta` to create specialized templates for listing and organizing content.
+
+```eta
+<!-- blog/index.eta - Blog listing page -->
+<h1>Latest Blog Posts</h1>
+
+<% if (it.collection?.recentPages) { %>
+  <div class="posts">
+    <% it.collection.recentPages.forEach(post => { %>
+      <article class="post-card">
+        <h2><a href="<%= post.url %>"><%= post.title %></a></h2>
+        <time><%= post.date %></time>
+        <p><%= post.excerpt || post.description %></p>
+      </article>
+    <% }) %>
+  </div>
+<% } %>
+```
+
+**Collection Data Available to Index Templates**
+
+- `collection.pages` - All child pages
+- `collection.children` - Direct child pages only
+- `collection.recentPages` - Pages sorted by date (newest first)
+- `collection.pagesByTag` - Pages grouped by tags
+
+```eta
+<!-- docs/index.eta - Documentation overview -->
+<h1>Documentation</h1>
+
+<% if (it.collection?.children) { %>
+  <nav class="doc-sections">
+    <% it.collection.children.forEach(section => { %>
+      <div class="section">
+        <h3><a href="<%= section.url %>"><%= section.title %></a></h3>
+        <p><%= section.description %></p>
+      </div>
+    <% }) %>
+  </nav>
+<% } %>
 ```
 
 ## Template Engine Configuration

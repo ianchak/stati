@@ -188,6 +188,32 @@ export interface BuildHooks {
 }
 
 /**
+ * Collection aggregation data available to index page templates.
+ * Provides access to child pages and collection metadata for content listing.
+ */
+export interface CollectionData {
+  /** All pages in the current collection */
+  pages: PageModel[];
+  /** Direct child pages of the collection */
+  children: PageModel[];
+  /** Recent pages sorted by publishedAt (most recent first) */
+  recentPages: PageModel[];
+  /** Pages grouped by tags for aggregation */
+  pagesByTag: Record<string, PageModel[]>;
+  /** Collection metadata */
+  metadata: {
+    /** Total number of pages in collection */
+    totalPages: number;
+    /** Whether collection has child pages */
+    hasChildren: boolean;
+    /** Path of the collection */
+    collectionPath: string;
+    /** Name of the collection (derived from path) */
+    collectionName: string;
+  };
+}
+
+/**
  * Template rendering context passed to Eta layouts.
  * Contains all data available to templates during rendering.
  */
@@ -206,6 +232,8 @@ export interface TemplateContext {
   navigation: NavNode[];
   /** Discovered partials from underscore folders in hierarchy */
   partials: Record<string, string>;
+  /** Collection data for index pages (only available on collection index pages) */
+  collection?: CollectionData;
 }
 
 /**
