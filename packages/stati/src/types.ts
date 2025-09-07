@@ -100,6 +100,8 @@ export interface StatiConfig {
   site: SiteConfig;
   /** Markdown processing configuration */
   markdown?: {
+    /** Array of plugins to load - each item can be a string (plugin name) or [string, options] tuple */
+    plugins?: (string | [string, unknown])[];
     /** Function to configure the MarkdownIt instance */
     configure?: (md: MarkdownIt) => void;
   };

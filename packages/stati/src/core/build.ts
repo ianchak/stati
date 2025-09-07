@@ -167,7 +167,7 @@ export async function build(options: BuildOptions = {}): Promise<BuildStats> {
   console.log(`🧭 Built navigation with ${navigation.length} top-level items`);
 
   // Create processors
-  const md = createMarkdownProcessor(config);
+  const md = await createMarkdownProcessor(config);
   const eta = createTemplateEngine(config);
 
   // Build context

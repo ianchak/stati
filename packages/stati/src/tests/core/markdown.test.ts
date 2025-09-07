@@ -18,8 +18,8 @@ describe('markdown.ts', () => {
   });
 
   describe('createMarkdownProcessor', () => {
-    it('should create MarkdownIt processor with default options', () => {
-      const md = createMarkdownProcessor(baseConfig);
+    it('should create MarkdownIt processor with default options', async () => {
+      const md = await createMarkdownProcessor(baseConfig);
 
       expect(md).toBeDefined();
       expect(md.options.html).toBe(true);
@@ -27,7 +27,7 @@ describe('markdown.ts', () => {
       expect(md.options.typographer).toBe(true);
     });
 
-    it('should apply user configuration when provided', () => {
+    it('should apply user configuration when provided', async () => {
       const configureFn = vi.fn();
       const configWithMarkdown: StatiConfig = {
         ...baseConfig,
@@ -36,35 +36,35 @@ describe('markdown.ts', () => {
         },
       };
 
-      const md = createMarkdownProcessor(configWithMarkdown);
+      const md = await createMarkdownProcessor(configWithMarkdown);
 
       expect(configureFn).toHaveBeenCalledWith(md);
     });
 
-    it('should work without markdown configuration', () => {
+    it('should work without markdown configuration', async () => {
       const config: StatiConfig = {
         ...baseConfig,
       };
 
-      const md = createMarkdownProcessor(config);
+      const md = await createMarkdownProcessor(config);
 
       expect(md).toBeDefined();
       expect(md.options.html).toBe(true);
     });
 
-    it('should work with empty markdown configuration', () => {
+    it('should work with empty markdown configuration', async () => {
       const config: StatiConfig = {
         ...baseConfig,
         markdown: {},
       };
 
-      const md = createMarkdownProcessor(config);
+      const md = await createMarkdownProcessor(config);
 
       expect(md).toBeDefined();
       expect(md.options.html).toBe(true);
     });
 
-    it('should allow custom configuration to override defaults', () => {
+    it('should allow custom configuration to override defaults', async () => {
       const config: StatiConfig = {
         ...baseConfig,
         markdown: {
@@ -74,7 +74,7 @@ describe('markdown.ts', () => {
         },
       };
 
-      const md = createMarkdownProcessor(config);
+      const md = await createMarkdownProcessor(config);
 
       expect(md.options.html).toBe(false);
       expect(md.options.linkify).toBe(false);
@@ -83,8 +83,8 @@ describe('markdown.ts', () => {
   });
 
   describe('renderMarkdown', () => {
-    it('should render basic markdown to HTML', () => {
-      const md = createMarkdownProcessor(baseConfig);
+    it('should render basic markdown to HTML', async () => {
+      const md = await createMarkdownProcessor(baseConfig);
       const content = '# Hello World\n\nThis is a paragraph.';
 
       const result = renderMarkdown(content, md);
@@ -93,8 +93,8 @@ describe('markdown.ts', () => {
       expect(result).toContain('<p>This is a paragraph.</p>');
     });
 
-    it('should render markdown with links', () => {
-      const md = createMarkdownProcessor(baseConfig);
+    it('should render markdown with links', async () => {
+      const md = await createMarkdownProcessor(baseConfig);
       const content = '[GitHub](https://github.com)';
 
       const result = renderMarkdown(content, md);
@@ -102,8 +102,8 @@ describe('markdown.ts', () => {
       expect(result).toContain('<a href="https://github.com">GitHub</a>');
     });
 
-    it('should render markdown with HTML when html option is enabled', () => {
-      const md = createMarkdownProcessor(baseConfig);
+    it('should render markdown with HTML when html option is enabled', async () => {
+      const md = await createMarkdownProcessor(baseConfig);
       const content = '# Title\n\n<div class="custom">Custom HTML</div>';
 
       const result = renderMarkdown(content, md);
@@ -112,8 +112,8 @@ describe('markdown.ts', () => {
       expect(result).toContain('<div class="custom">Custom HTML</div>');
     });
 
-    it('should apply typographer transformations', () => {
-      const md = createMarkdownProcessor(baseConfig);
+    it('should apply typographer transformations', async () => {
+      const md = await createMarkdownProcessor(baseConfig);
       const content = 'Hello "world" -- this is a test...';
 
       const result = renderMarkdown(content, md);
@@ -129,8 +129,8 @@ describe('markdown.ts', () => {
       expect(result).not.toContain('...'); // Triple dot should be converted
     });
 
-    it('should linkify URLs when linkify is enabled', () => {
-      const md = createMarkdownProcessor(baseConfig);
+    it('should linkify URLs when linkify is enabled', async () => {
+      const md = await createMarkdownProcessor(baseConfig);
       const content = 'Visit https://example.com for more info.';
 
       const result = renderMarkdown(content, md);
@@ -138,8 +138,8 @@ describe('markdown.ts', () => {
       expect(result).toContain('<a href="https://example.com">https://example.com</a>');
     });
 
-    it('should handle empty content', () => {
-      const md = createMarkdownProcessor(baseConfig);
+    it('should handle empty content', async () => {
+      const md = await createMarkdownProcessor(baseConfig);
       const content = '';
 
       const result = renderMarkdown(content, md);
@@ -147,8 +147,8 @@ describe('markdown.ts', () => {
       expect(result).toBe('');
     });
 
-    it('should handle content with only whitespace', () => {
-      const md = createMarkdownProcessor(baseConfig);
+    it('should handle content with only whitespace', async () => {
+      const md = await createMarkdownProcessor(baseConfig);
       const content = '   \n\n  \t  \n';
 
       const result = renderMarkdown(content, md);
@@ -156,8 +156,8 @@ describe('markdown.ts', () => {
       expect(result.trim()).toBe('');
     });
 
-    it('should render complex markdown with multiple elements', () => {
-      const md = createMarkdownProcessor(baseConfig);
+    it('should render complex markdown with multiple elements', async () => {
+      const md = await createMarkdownProcessor(baseConfig);
       const content = `# Main Title
 
 ## Subtitle
@@ -184,6 +184,98 @@ console.log('code block');
       expect(result).toContain('<li>List item 1</li>');
       expect(result).toContain('<pre><code class="language-javascript">');
       expect(result).toContain('<blockquote>');
+    });
+  });
+
+  describe('plugin array configuration', () => {
+    it('should handle empty plugins array', async () => {
+      const config: StatiConfig = {
+        ...baseConfig,
+        markdown: {
+          plugins: [],
+        },
+      };
+
+      const md = await createMarkdownProcessor(config);
+
+      expect(md).toBeDefined();
+      expect(md.options.html).toBe(true);
+    });
+
+    it('should warn and continue when plugin fails to load', async () => {
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const config: StatiConfig = {
+        ...baseConfig,
+        markdown: {
+          plugins: ['nonexistent-plugin'],
+        },
+      };
+
+      const md = await createMarkdownProcessor(config);
+
+      expect(md).toBeDefined();
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to load markdown plugin: markdown-it-nonexistent-plugin'),
+        expect.any(Error),
+      );
+
+      consoleSpy.mockRestore();
+    });
+
+    it('should apply both plugins array and configure function', async () => {
+      const configureFn = vi.fn();
+      const config: StatiConfig = {
+        ...baseConfig,
+        markdown: {
+          plugins: [], // Empty array for this test
+          configure: configureFn,
+        },
+      };
+
+      const md = await createMarkdownProcessor(config);
+
+      expect(configureFn).toHaveBeenCalledWith(md);
+    });
+
+    it('should handle plugin array with options', async () => {
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const config: StatiConfig = {
+        ...baseConfig,
+        markdown: {
+          plugins: [['nonexistent-plugin', { option: 'value' }]],
+        },
+      };
+
+      // Should not throw, should warn about missing plugin
+      const md = await createMarkdownProcessor(config);
+
+      expect(md).toBeDefined();
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to load markdown plugin: markdown-it-nonexistent-plugin'),
+        expect.any(Error),
+      );
+
+      consoleSpy.mockRestore();
+    });
+
+    it('should handle mixed plugin formats in array', async () => {
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const config: StatiConfig = {
+        ...baseConfig,
+        markdown: {
+          plugins: ['nonexistent-plugin-1', ['nonexistent-plugin-2', { option: 'value' }]],
+        },
+      };
+
+      const md = await createMarkdownProcessor(config);
+
+      expect(md).toBeDefined();
+      expect(consoleSpy).toHaveBeenCalledTimes(2);
+
+      consoleSpy.mockRestore();
     });
   });
 });

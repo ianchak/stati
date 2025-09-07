@@ -66,6 +66,7 @@ npm run release:publish
 ## 📚 Docs
 
 - [Configuration Guide](./docs/configuration.md) — Complete configuration reference
+- [Error Handling](./docs/error-handling.md) — Error codes, fallbacks, and debugging
 - [Feature Overview](./docs/feature_doc.md)
 - [ISG Concept & TTL Model](./docs/concept_doc.md)
 - [Roadmap & Milestones](./docs/implementation_plan.md)

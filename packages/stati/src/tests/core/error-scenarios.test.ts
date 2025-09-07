@@ -103,7 +103,7 @@ describe('Error Scenario Tests', () => {
     mockStat.mockResolvedValue({ size: 1024 });
     (mockPathExists as ReturnType<typeof vi.fn>).mockResolvedValue(true);
     mockCreateTemplateEngine.mockReturnValue(mockEta as unknown as Eta);
-    mockCreateMarkdownProcessor.mockReturnValue({} as MarkdownIt);
+    mockCreateMarkdownProcessor.mockResolvedValue({} as MarkdownIt);
     mockLoadContent.mockResolvedValue([validPage]);
     mockRenderMarkdown.mockReturnValue('<h1>Test Content</h1>');
     mockRenderPage.mockResolvedValue('<html><body><h1>Test Content</h1></body></html>');
@@ -214,7 +214,7 @@ describe('Error Scenario Tests', () => {
   describe('Markdown Processing Errors', () => {
     it('should handle markdown processor creation failure', async () => {
       const markdownError = new Error('Failed to create markdown processor');
-      mockCreateMarkdownProcessor.mockImplementation(() => {
+      mockCreateMarkdownProcessor.mockImplementation(async () => {
         throw markdownError;
       });
 

@@ -90,7 +90,7 @@ describe('HTML Output Snapshots', () => {
     // @ts-expect-error - Mock type issue
     mockPathExists.mockResolvedValue(true);
     mockCreateTemplateEngine.mockReturnValue(mockEta as unknown as Eta);
-    mockCreateMarkdownProcessor.mockReturnValue({} as MarkdownIt);
+    mockCreateMarkdownProcessor.mockResolvedValue({} as MarkdownIt);
   });
 
   afterEach(() => {

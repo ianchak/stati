@@ -285,9 +285,37 @@ Usage in templates:
 
 ## Markdown Configuration
 
+Stati supports two approaches for configuring markdown processing:
+
+### `markdown.plugins` (array, optional)
+
+Array of markdown-it plugins to load automatically. Each item can be either:
+
+- A string (plugin name without the `markdown-it-` prefix)
+- A tuple `[pluginName, options]` for plugins that require configuration
+
+```typescript
+{
+  markdown: {
+    plugins: [
+      'anchor', // Uses markdown-it-anchor plugin
+      'task-lists', // Uses markdown-it-task-lists plugin
+      [
+        'external-links',
+        {
+          // Uses markdown-it-external-links with options
+          externalTarget: '_blank',
+          externalRel: 'noopener noreferrer',
+        },
+      ],
+    ];
+  }
+}
+```
+
 ### `markdown.configure` (function, optional)
 
-Function to configure the MarkdownIt instance with plugins and options.
+Function to configure the MarkdownIt instance with plugins and options. This provides full control over the markdown processor and runs after any plugins from the `plugins` array.
 
 ```typescript
 import markdownItAnchor from 'markdown-it-anchor';
@@ -306,6 +334,22 @@ import markdownItToc from 'markdown-it-toc-done-right';
         linkify: true,
       });
     };
+  }
+}
+```
+
+### Using Both Approaches Together
+
+You can combine both approaches - plugins from the `plugins` array are loaded first, then the `configure` function runs for any additional customization:
+
+```typescript
+{
+  markdown: {
+    plugins: ['anchor', 'task-lists'],  // Load basic plugins automatically
+    configure: (md) => {                // Additional configuration
+      md.set({ breaks: true });
+      // Add custom rendering rules, etc.
+    }
   }
 }
 ```
@@ -514,6 +558,17 @@ stati build --invalidateTag "blog"
 stati build --invalidatePath "/posts/my-post"
 ```
 
+**Output:**
+
+The build command displays comprehensive statistics upon completion, including:
+
+- Build time and performance metrics
+- Number of pages processed and assets copied
+- Total output size and cache efficiency
+- Cache hit/miss rates (when ISG is enabled)
+
+These statistics help monitor site performance and validate caching strategies.
+
 ### `stati dev` _(Planned)_
 
 Starts a development server with live reload and incremental rebuilds.
@@ -551,6 +606,7 @@ export default defineConfig({
   },
 
   markdown: {
+    plugins: ['task-lists', ['external-links', { externalTarget: '_blank' }]],
     configure: (md) => {
       md.use(markdownItAnchor, {
         permalink: true,

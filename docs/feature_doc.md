@@ -169,7 +169,34 @@ This makes deploys cache-safe. Browsers can cache assets indefinitely, and new b
 
 ---
 
-## 19. Dev / Build / Preview Commands
+## 19. Build Statistics and Performance Metrics
+
+Stati provides detailed build statistics to help developers monitor and optimize their site generation process. After each build, comprehensive metrics are displayed showing performance insights.
+
+**Build Statistics Include:**
+
+- **Build time**: Total time taken to process all content and generate the site
+- **Pages built**: Number of content pages processed and rendered
+- **Assets copied**: Count of static files copied from the public directory
+- **Output size**: Total size of the generated site in the output directory
+- **Cache performance**: Hit rate and efficiency metrics (when ISG caching is enabled)
+
+**Example Output:**
+
+```
+📊 Build Statistics:
+  ⏱️  Build time: 2.15s
+  📄 Pages built: 23
+  📦 Assets copied: 12
+  💾 Output size: 1.2 MB
+  🎯 Cache hits: 15/18 (83.3%)
+```
+
+These metrics help identify performance bottlenecks, track site growth over time, and validate that caching strategies are working effectively. The statistics are also returned programmatically when using Stati as a library.
+
+---
+
+## 20. Dev / Build / Preview Commands
 
 Standard scripts provide a smooth workflow:
 
