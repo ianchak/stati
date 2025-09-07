@@ -6,12 +6,52 @@ import { createMarkdownProcessor, renderMarkdown } from './markdown.js';
 import { createTemplateEngine, renderPage } from './templates.js';
 import type { BuildContext } from '../types.js';
 
+/**
+ * Options for customizing the build process.
+ *
+ * @example
+ * ```typescript
+ * const options: BuildOptions = {
+ *   force: true,        // Force rebuild of all pages
+ *   clean: true,        // Clean output directory before build
+ *   configPath: './custom.config.js'  // Custom config file path
+ * };
+ * ```
+ */
 export interface BuildOptions {
+  /** Force rebuild of all pages, ignoring cache */
   force?: boolean;
+  /** Clean the output directory before building */
   clean?: boolean;
+  /** Path to a custom configuration file */
   configPath?: string;
 }
 
+/**
+ * Builds the static site by processing content files and generating HTML pages.
+ * This is the main entry point for Stati's build process.
+ *
+ * @param options - Build configuration options
+ *
+ * @example
+ * ```typescript
+ * import { build } from 'stati';
+ *
+ * // Basic build
+ * await build();
+ *
+ * // Build with options
+ * await build({
+ *   clean: true,
+ *   force: true,
+ *   configPath: './custom.config.js'
+ * });
+ * ```
+ *
+ * @throws {Error} When configuration loading fails
+ * @throws {Error} When content processing fails
+ * @throws {Error} When template rendering fails
+ */
 export async function build(options: BuildOptions = {}): Promise<void> {
   console.log('🏗️  Building site...');
 

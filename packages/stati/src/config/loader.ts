@@ -3,6 +3,10 @@ import { join, resolve } from 'path';
 import { pathToFileURL } from 'url';
 import type { StatiConfig } from '../types.js';
 
+/**
+ * Default configuration values for Stati.
+ * Used as fallback when no configuration file is found.
+ */
 const DEFAULT_CONFIG: StatiConfig = {
   srcDir: 'content',
   outDir: 'dist',
@@ -19,6 +23,26 @@ const DEFAULT_CONFIG: StatiConfig = {
   },
 };
 
+/**
+ * Loads and validates Stati configuration from the project directory.
+ * Searches for configuration files in order: stati.config.ts, stati.config.js, stati.config.mjs
+ *
+ * @param cwd - Current working directory to search for config files
+ * @returns Promise resolving to the merged configuration object
+ *
+ * @example
+ * ```typescript
+ * import { loadConfig } from 'stati';
+ *
+ * // Load config from current directory
+ * const config = await loadConfig();
+ *
+ * // Load config from specific directory
+ * const config = await loadConfig('/path/to/project');
+ * ```
+ *
+ * @throws {Error} When configuration file exists but contains invalid JavaScript/TypeScript
+ */
 export async function loadConfig(cwd: string = process.cwd()): Promise<StatiConfig> {
   const configPaths = [
     join(cwd, 'stati.config.ts'),
