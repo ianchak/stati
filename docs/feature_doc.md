@@ -20,15 +20,7 @@ This predictable structure lowers the learning curve. Authors don’t need to co
 
 ---
 
-## 3. Built-In Local Editor
-
-STATI ships with a **WYSIWYG Markdown editor** available at `/_editor` during development. It includes a file tree, autosave with debounce, front matter editing, and distraction-free mode.
-
-This feature removes the need for third-party CMS solutions for local editing. Authors can create, rename, or delete files directly from the browser while previewing changes in real time.
-
----
-
-## 4. Layout System
+## 3. Layout System
 
 Layouts can be nested and overridden at any directory level using `+layout.eta`. Partials like headers, footers, or navbars can be reused across the site, while widgets allow injecting lists of posts or tagged content.
 
@@ -36,7 +28,7 @@ This design encourages modularity. Authors can keep templates DRY, define global
 
 ---
 
-## 5. Incremental Static Generation (ISG)
+## 4. Incremental Static Generation (ISG)
 
 ISG minimizes unnecessary rebuilds. By default, if a cache exists, only changed or invalidated pages rebuild. Pages can also be set to expire via TTL (time-to-live), with a maximum age cap preventing old content from endless revalidation.
 
@@ -44,7 +36,7 @@ Per-page overrides let authors configure custom `ttlSeconds`, `maxAgeCapDays`, a
 
 ---
 
-## 6. Templates for Blogs, Docs, and News
+## 5. Templates for Blogs, Docs, and News
 
 The generator ships with **ready-made templates** for common site types:
 
@@ -56,7 +48,7 @@ These templates make it possible to scaffold a working site in minutes, while re
 
 ---
 
-## 7. Markdown Pipeline
+## 6. Markdown Pipeline
 
 Markdown is processed with **Markdown-It** and useful default plugins like anchors, task lists, and external links. The user has the option to add other markdown plugins too.
 
@@ -64,7 +56,7 @@ This provides authors with a balance of simplicity and power. Content can stay M
 
 ---
 
-## 8. NPX Scaffolder
+## 7. NPX Scaffolder
 
 The `create-stati` command scaffolds new projects with a chosen template (`blog`, `docs`, `news`). Options include initializing Tailwind support, adding SCSS support.
 
@@ -72,7 +64,7 @@ This reduces onboarding friction. New users can bootstrap a project with sensibl
 
 ---
 
-## 9. Image Optimization Pipeline
+## 8. Image Optimization Pipeline
 
 The build pipeline processes images into multiple formats (e.g., WebP, JPEG) and sizes, emitting responsive `srcset` attributes. It also compresses files for performance.
 
@@ -80,7 +72,7 @@ This ensures high Lighthouse scores and fast loading times without requiring ext
 
 ---
 
-## 10. CSS/JS Bundling and Minification
+## 9. CSS/JS Bundling and Minification
 
 Thanks to Vite, CSS and JS files are automatically bundled and minified for production. Authors can drop raw CSS/JS in the project, and the pipeline ensures optimized delivery.
 
@@ -88,7 +80,7 @@ This avoids manual configuration and guarantees that shipped assets are small an
 
 ---
 
-## 11. Draft Mode
+## 10. Draft Mode
 
 Pages can be marked with `draft: true` in front matter. Drafts are excluded from builds by default. Use `stati build --include-drafts` to include draft pages in the build.
 
@@ -96,7 +88,7 @@ This lets authors work on unfinished content without accidentally publishing it.
 
 ---
 
-## 12. Search Index Generator (Opt-In)
+## 11. Search Index Generator (Opt-In)
 
 The generator can optionally build a JSON search index compatible with client-side libraries like Lunr.js or MiniSearch. It includes page titles, descriptions, and tags.
 
@@ -104,7 +96,7 @@ This feature is off by default to keep the core lightweight. Developers who want
 
 ---
 
-## 13. Plugin System and Hooks
+## 12. Plugin System and Hooks
 
 A plugin API allows developers to hook into build stages. For example, custom plugins can modify Markdown output, add extra data sources, or transform final HTML.
 
@@ -112,7 +104,7 @@ This makes the STATI extensible and community-friendly. Third-party plugins can 
 
 ---
 
-## 14. Deploy Adapters
+## 13. Deploy Adapters
 
 Pre-configured adapters make it trivial to deploy to **Netlify**, **Vercel**, or **Cloudflare Pages**. These adapters configure redirects, headers, and caching automatically.
 
@@ -120,7 +112,7 @@ This reduces trial-and-error for new users. A single command can publish the sit
 
 ---
 
-## 15. Live Reload and HMR for Content
+## 14. Live Reload and HMR for Content
 
 During development, content and template changes instantly update in the browser without a full rebuild. Markdown edits refresh the preview, and style changes apply live.
 
@@ -128,7 +120,7 @@ This improves developer experience (DX), keeping iteration loops short and fluid
 
 ---
 
-## 16. Theming System with Tailwind Support
+## 15. Theming System with Tailwind Support
 
 A theming system is available with configurable CSS variables and optional **Tailwind CSS** integration. When chosen, the scaffolder sets up Tailwind with a preconfigured config file.
 
@@ -136,7 +128,7 @@ This gives authors flexibility: lightweight vanilla CSS for simple sites, or Tai
 
 ---
 
-## 17. Default SEO Meta Tags
+## 16. Default SEO Meta Tags
 
 If front matter provides standard fields (`title`, `description`, `image`), the STATI injects SEO tags including Open Graph and Twitter cards. Behavior is configurable in `stati.config.ts`.
 
@@ -144,7 +136,7 @@ This improves out-of-the-box SEO and social media previews without requiring add
 
 ---
 
-## 18. Sitemap.xml Generator
+## 17. Sitemap.xml Generator
 
 The build process generates a `sitemap.xml` file including all public routes. It respects exclusions (`hidden: true`, drafts) and supports custom priority/changefreq values.
 
@@ -152,7 +144,7 @@ Search engines use sitemaps to discover content efficiently. This ensures the si
 
 ---
 
-## 19. Asset Hashing and Cache Busting
+## 18. Asset Hashing and Cache Busting
 
 Static assets like CSS, JS, and images are emitted with content hashes in their filenames (e.g., `style.abc123.css`). References in HTML are updated automatically.
 
@@ -160,7 +152,7 @@ This makes deploys cache-safe. Browsers can cache assets indefinitely, and new b
 
 ---
 
-## 20. Dev / Build / Preview Commands
+## 19. Dev / Build / Preview Commands
 
 Standard scripts provide a smooth workflow:
 
