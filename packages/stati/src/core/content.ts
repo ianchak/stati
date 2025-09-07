@@ -4,7 +4,26 @@ import matter from 'gray-matter';
 import { join, relative, dirname, basename } from 'path';
 import type { PageModel, StatiConfig } from '../types.js';
 
-export async function loadContent(config: StatiConfig): Promise<PageModel[]> {
+/**
+ * Loads and parses all content files from the configured source directory.
+ *
+ * @param config - The STATI configuration object
+ * @param includeDrafts - Whether to include draft pages (marked with draft: true)
+ * @returns Array of parsed page models
+ *
+ * @example
+ * ```typescript
+ * // Load all content including drafts
+ * const pages = await loadContent(config, true);
+ *
+ * // Load only published content
+ * const publishedPages = await loadContent(config, false);
+ * ```
+ */
+export async function loadContent(
+  config: StatiConfig,
+  includeDrafts?: boolean,
+): Promise<PageModel[]> {
   const contentDir = join(process.cwd(), config.srcDir!);
   const files = await glob('**/*.md', {
     cwd: contentDir,
@@ -17,8 +36,8 @@ export async function loadContent(config: StatiConfig): Promise<PageModel[]> {
     const content = await readFile(file, 'utf-8');
     const { data: frontMatter, content: markdown } = matter(content);
 
-    // Skip drafts in production builds
-    if (frontMatter.draft && process.env.NODE_ENV === 'production') {
+    // Skip drafts unless explicitly included
+    if (frontMatter.draft && !includeDrafts) {
       continue;
     }
 

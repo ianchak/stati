@@ -116,10 +116,10 @@
 ```js
 module.exports = {
   root: true,
-  parser: "@typescript-eslint/parser",
-  plugins: ["@typescript-eslint"],
-  extends: ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
-  ignorePatterns: ["dist", "coverage"],
+  parser: '@typescript-eslint/parser',
+  plugins: ['@typescript-eslint'],
+  extends: ['eslint:recommended', 'plugin:@typescript-eslint/recommended'],
+  ignorePatterns: ['dist', 'coverage'],
 };
 ```
 
@@ -136,7 +136,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 20, cache: "npm" }
+        with: { node-version: 20, cache: 'npm' }
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
@@ -184,7 +184,7 @@ export interface StatiConfig {
   templateDir?: string; // default: "templates"
   staticDir?: string; // default: "public"
   site: { title: string; baseUrl: string; defaultLocale?: string };
-  markdown?: { configure?: (md: import("markdown-it")) => void };
+  markdown?: { configure?: (md: import('markdown-it')) => void };
   eta?: { filters?: Record<string, (x: any) => any> };
   isg?: ISGConfig;
   hooks?: Partial<{
@@ -294,13 +294,13 @@ export interface CacheManifest {
 
 ```ts
 #!/usr/bin/env node
-import inquirer from "inquirer";
-import { createSite } from "./create";
+import inquirer from 'inquirer';
+import { createSite } from './create';
 
 const answers = await inquirer.prompt([
-  { name: "name", message: "Project name", default: "my-site" },
-  { name: "template", type: "list", choices: ["blog", "docs", "news"] },
-  { name: "tailwind", type: "confirm", default: false },
+  { name: 'name', message: 'Project name', default: 'my-site' },
+  { name: 'template', type: 'list', choices: ['blog', 'docs', 'news'] },
+  { name: 'tailwind', type: 'confirm', default: false },
 ]);
 await createSite(answers);
 ```
@@ -312,7 +312,7 @@ await createSite(answers);
 - SEO defaults: title template, description, `og:`/`twitter:` if present in front‑matter.
 - RSS (Atom) for blog/news collections; configurable limit; uses site `baseUrl`.
 - Sitemap with lastmod from `publishedAt` or file mtime.
-- During build the should respect the draft front matter field and not include these contents into the final build or content lists/collections/indexes
+- Draft pages (marked with `draft: true` in front matter) are excluded from builds by default. Use `stati build --include-drafts` to include them in the build.
 
 **Acceptance**: Validators pass (W3C XML well‑formed); example feeds load.
 
@@ -347,12 +347,12 @@ await createSite(answers);
 Example Vitest for TTL/freeze:
 
 ```ts
-import { describe, it, expect } from "vitest";
-import { computeNextRebuildAt } from "../src/isg/ttl";
+import { describe, it, expect } from 'vitest';
+import { computeNextRebuildAt } from '../src/isg/ttl';
 
-it("freezes after cap", () => {
-  const now = new Date("2025-01-01T00:00:00Z");
-  const publishedAt = new Date("2023-12-15T00:00:00Z");
+it('freezes after cap', () => {
+  const now = new Date('2025-01-01T00:00:00Z');
+  const publishedAt = new Date('2023-12-15T00:00:00Z');
   const ttl = 24 * 3600; // 1d
   const cap = 365; // 1y
   const next = computeNextRebuildAt({
@@ -385,9 +385,9 @@ Dev server behavior (v1.0):
 **Config** `stati.config.ts`
 
 ```ts
-import type { StatiConfig } from "stati";
+import type { StatiConfig } from 'stati';
 const config: StatiConfig = {
-  site: { title: "My Site", baseUrl: "https://example.com" },
+  site: { title: 'My Site', baseUrl: 'https://example.com' },
   isg: {
     enabled: true,
     ttlSeconds: 6 * 3600,

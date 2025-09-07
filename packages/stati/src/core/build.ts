@@ -15,7 +15,8 @@ import type { BuildContext, BuildStats } from '../types.js';
  * const options: BuildOptions = {
  *   force: true,        // Force rebuild of all pages
  *   clean: true,        // Clean output directory before build
- *   configPath: './custom.config.js'  // Custom config file path
+ *   configPath: './custom.config.js',  // Custom config file path
+ *   includeDrafts: true // Include draft pages in build
  * };
  * ```
  */
@@ -26,6 +27,8 @@ export interface BuildOptions {
   clean?: boolean;
   /** Path to a custom configuration file */
   configPath?: string;
+  /** Include draft pages in the build */
+  includeDrafts?: boolean;
 }
 
 /**
@@ -156,7 +159,7 @@ export async function build(options: BuildOptions = {}): Promise<BuildStats> {
   await ensureDir(outDir);
 
   // Load all content
-  const pages = await loadContent(config);
+  const pages = await loadContent(config, options.includeDrafts);
   console.log(`📄 Found ${pages.length} pages`);
 
   // Build navigation from pages

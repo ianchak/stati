@@ -39,11 +39,21 @@ const cli = yargs(hideBin(process.argv))
         .option('config', {
           type: 'string',
           description: 'Path to config file',
+        })
+        .option('include-drafts', {
+          type: 'boolean',
+          description: 'Include draft pages in the build',
         }),
     async (argv) => {
-      const buildOptions: { force: boolean; clean: boolean; configPath?: string } = {
+      const buildOptions: {
+        force: boolean;
+        clean: boolean;
+        configPath?: string;
+        includeDrafts?: boolean;
+      } = {
         force: !!argv.force,
         clean: !!argv.clean,
+        includeDrafts: !!argv['include-drafts'],
       };
 
       if (argv.config) {

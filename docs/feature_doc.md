@@ -90,9 +90,9 @@ This avoids manual configuration and guarantees that shipped assets are small an
 
 ## 11. Draft Mode
 
-Pages can be marked with `draft: true` in front matter. Drafts are excluded from builds unless explicitly included with `--include-drafts`.
+Pages can be marked with `draft: true` in front matter. Drafts are excluded from builds by default. Use `stati build --include-drafts` to include draft pages in the build.
 
-This lets authors work on unfinished content without accidentally publishing it. Drafts can still be previewed locally during development.
+This lets authors work on unfinished content without accidentally publishing it. Drafts can be included when needed for review or testing purposes.
 
 ---
 

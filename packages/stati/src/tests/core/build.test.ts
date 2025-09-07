@@ -113,15 +113,11 @@ describe('build.ts', () => {
     mockLoadConfig.mockResolvedValue(mockConfig);
     mockLoadContent.mockResolvedValue(mockPages);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockMd = { render: vi.fn() } as any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockEta = { renderAsync: vi.fn() } as any;
+    mockMd = { render: vi.fn() };
+    mockEta = { renderAsync: vi.fn() };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockCreateMarkdownProcessor.mockReturnValue(mockMd as any);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockCreateTemplateEngine.mockReturnValue(mockEta as any);
+    mockCreateMarkdownProcessor.mockReturnValue(mockMd);
+    mockCreateTemplateEngine.mockReturnValue(mockEta);
     mockRenderMarkdown.mockReturnValue('<h1>Rendered markdown</h1>');
     mockRenderPage.mockResolvedValue('<html><body>Full page</body></html>');
 
@@ -143,7 +139,7 @@ describe('build.ts', () => {
       await build();
 
       expect(mockLoadConfig).toHaveBeenCalledWith('/test/project');
-      expect(mockLoadContent).toHaveBeenCalledWith(mockConfig);
+      expect(mockLoadContent).toHaveBeenCalledWith(mockConfig, undefined);
       expect(mockCreateMarkdownProcessor).toHaveBeenCalledWith(mockConfig);
       expect(mockCreateTemplateEngine).toHaveBeenCalledWith(mockConfig);
       expect(mockEnsureDir).toHaveBeenCalledWith(
@@ -287,8 +283,7 @@ describe('build.ts', () => {
     });
 
     it('should not copy static assets when static directory does not exist', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (mockPathExists as any).mockResolvedValue(false);
+      (mockPathExists as ReturnType<typeof vi.fn>).mockResolvedValue(false);
 
       await build();
 
@@ -446,6 +441,13 @@ describe('build.ts', () => {
         '<html><body>Full page</body></html>',
         'utf-8',
       );
+    });
+
+    it('should handle includeDrafts option', async () => {
+      const buildOptions: BuildOptions = { includeDrafts: true };
+      await build(buildOptions);
+
+      expect(mockLoadContent).toHaveBeenCalledWith(mockConfig, true);
     });
   });
 });

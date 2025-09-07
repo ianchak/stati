@@ -86,10 +86,7 @@ describe('content.ts', () => {
       });
     });
 
-    it('should skip draft posts in production', async () => {
-      const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'production';
-
+    it('should skip draft posts by default', async () => {
       const mockFiles = ['/test/project/src/published.md', '/test/project/src/draft.md'];
       mockGlob.mockResolvedValue(mockFiles);
 
@@ -107,14 +104,9 @@ describe('content.ts', () => {
 
       expect(pages).toHaveLength(1);
       expect(pages[0]!.frontMatter.title).toBe('Published');
-
-      process.env.NODE_ENV = originalEnv;
     });
 
-    it('should include draft posts in development', async () => {
-      const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'development';
-
+    it('should include draft posts when includeDrafts is true', async () => {
       const mockFiles = ['/test/project/src/published.md', '/test/project/src/draft.md'];
       mockGlob.mockResolvedValue(mockFiles);
 
@@ -128,12 +120,30 @@ describe('content.ts', () => {
           createMockMatterResult({ title: 'Draft', draft: true }, '# Draft content'),
         );
 
-      const pages = await loadContent(mockConfig);
+      const pages = await loadContent(mockConfig, true);
 
       expect(pages).toHaveLength(2);
       expect(pages.find((p) => p.frontMatter.title === 'Draft')).toBeDefined();
+    });
 
-      process.env.NODE_ENV = originalEnv;
+    it('should skip draft posts when includeDrafts is explicitly false', async () => {
+      const mockFiles = ['/test/project/src/published.md', '/test/project/src/draft.md'];
+      mockGlob.mockResolvedValue(mockFiles);
+
+      mockReadFile
+        .mockResolvedValueOnce('---\ntitle: Published\n---\n# Published content')
+        .mockResolvedValueOnce('---\ntitle: Draft\ndraft: true\n---\n# Draft content');
+
+      mockMatter
+        .mockReturnValueOnce(createMockMatterResult({ title: 'Published' }, '# Published content'))
+        .mockReturnValueOnce(
+          createMockMatterResult({ title: 'Draft', draft: true }, '# Draft content'),
+        );
+
+      const pages = await loadContent(mockConfig, false);
+
+      expect(pages).toHaveLength(1);
+      expect(pages[0]!.frontMatter.title).toBe('Published');
     });
 
     it('should parse publishedAt date from frontmatter', async () => {

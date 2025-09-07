@@ -102,8 +102,7 @@ describe('Error Scenario Tests', () => {
     mockRemove.mockResolvedValue(undefined);
     mockReaddir.mockResolvedValue([]);
     mockStat.mockResolvedValue({ size: 1024 });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (mockPathExists as any).mockResolvedValue(true);
+    (mockPathExists as ReturnType<typeof vi.fn>).mockResolvedValue(true);
     mockCreateTemplateEngine.mockReturnValue(mockEta as unknown as Eta);
     mockCreateMarkdownProcessor.mockReturnValue({} as MarkdownIt);
     mockLoadContent.mockResolvedValue([validPage]);
