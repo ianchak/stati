@@ -15,9 +15,16 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "eta": "^3.5.0",
+    "fast-glob": "^3.3.3",
+    "fs-extra": "^11.2.0",
+    "gray-matter": "^4.0.3",
+    "markdown-it": "^14.1.0",
     "yargs": "^17.7.2"
   },
   "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/markdown-it": "^14.1.2",
     "@types/yargs": "^17.0.33"
   }
 }

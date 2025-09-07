@@ -57,6 +57,11 @@ tsconfig.tsbuildinfo
 !.env.example
 !.env.*.example
 
+### Local development files
+*checklist*.md
+*prompt*.md
+
+
 ### Package manager artifacts
 *.tgz
 .npm/

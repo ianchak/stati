@@ -1,0 +1,64 @@
+import { glob } from 'fast-glob';
+import { readFile } from 'fs-extra';
+import matter from 'gray-matter';
+import { join, relative, dirname, basename } from 'path';
+import type { PageModel, StatiConfig } from '../types.js';
+
+export async function loadContent(config: StatiConfig): Promise<PageModel[]> {
+  const contentDir = join(process.cwd(), config.srcDir!);
+  const files = await glob('**/*.md', {
+    cwd: contentDir,
+    absolute: true,
+  });
+
+  const pages: PageModel[] = [];
+
+  for (const file of files) {
+    const content = await readFile(file, 'utf-8');
+    const { data: frontMatter, content: markdown } = matter(content);
+
+    // Skip drafts in production builds
+    if (frontMatter.draft && process.env.NODE_ENV === 'production') {
+      continue;
+    }
+
+    const relativePath = relative(contentDir, file);
+    const slug = computeSlug(relativePath);
+    const url = computeUrl(slug, frontMatter);
+
+    const page: PageModel = {
+      slug,
+      url,
+      sourcePath: file,
+      frontMatter,
+      content: markdown,
+    };
+
+    if (frontMatter.publishedAt && typeof frontMatter.publishedAt === 'string') {
+      page.publishedAt = new Date(frontMatter.publishedAt);
+    }
+
+    pages.push(page);
+  }
+
+  return pages;
+}
+
+function computeSlug(relativePath: string): string {
+  const dir = dirname(relativePath);
+  const name = basename(relativePath, '.md');
+
+  if (name === 'index') {
+    return dir === '.' ? '/' : `/${dir}`;
+  }
+
+  return dir === '.' ? `/${name}` : `/${dir}/${name}`;
+}
+
+function computeUrl(slug: string, frontMatter: Record<string, unknown>): string {
+  if (frontMatter.permalink && typeof frontMatter.permalink === 'string') {
+    return frontMatter.permalink;
+  }
+
+  return slug.replace(/\/index$/, '/');
+}

@@ -1,23 +1,56 @@
 #!/usr/bin/env node
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { build } from './core/build.js';
+import { invalidate } from './core/invalidate.js';
 
-async function build(opts: { force?: boolean; clean?: boolean }) {
-  // stub for now – just to validate wiring
-  console.log('stati build', opts);
-}
-async function invalidate(query?: string) {
-  console.log('stati invalidate', query);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+function getVersion(): string {
+  try {
+    const packageJsonPath = join(__dirname, '../package.json');
+    const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+    return packageJson.version;
+  } catch {
+    return 'unknown';
+  }
 }
 
-yargs(hideBin(process.argv))
+const cli = yargs(hideBin(process.argv))
   .scriptName('stati')
+  .version(getVersion())
   .command(
     'build',
     'Build site',
-    (y) => y.option('force', { type: 'boolean' }).option('clean', { type: 'boolean' }),
+    (y) =>
+      y
+        .option('force', {
+          type: 'boolean',
+          description: 'Force full rebuild without deleting cache',
+        })
+        .option('clean', {
+          type: 'boolean',
+          description: 'Clean cache before building',
+        })
+        .option('config', {
+          type: 'string',
+          description: 'Path to config file',
+        }),
     async (argv) => {
-      await build({ force: !!argv.force, clean: !!argv.clean });
+      const buildOptions: { force: boolean; clean: boolean; configPath?: string } = {
+        force: !!argv.force,
+        clean: !!argv.clean,
+      };
+
+      if (argv.config) {
+        buildOptions.configPath = argv.config as string;
+      }
+
+      await build(buildOptions);
     },
   )
   .command(
@@ -29,5 +62,6 @@ yargs(hideBin(process.argv))
     },
   )
   .demandCommand(1)
-  .help()
-  .parse();
+  .help();
+
+cli.parse();
