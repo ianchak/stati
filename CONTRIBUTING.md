@@ -6,9 +6,9 @@ Thanks for your interest in contributing to **Stati** — a lightweight, TypeScr
 
 ## 🛠 Requirements
 
-- **Node.js** 22+
-- **npm** (with workspace support)
-- Familiarity with TypeScript and monorepo layouts is a plus
+- **Node.js** 22+ (see `engines` in package.json)
+- **npm** with workspace support
+- Familiarity with TypeScript and monorepo layouts is helpful
 
 ---
 
@@ -16,12 +16,13 @@ Thanks for your interest in contributing to **Stati** — a lightweight, TypeScr
 
 ```
 packages/
-├─ stati               → CLI: build, invalidate, dev
-├─ create-stati        → NPX scaffolder (templates, Tailwind opt-in)
+├─ @stati/core         → Core SSG engine (build, dev server, content processing)
+├─ @stati/cli          → Command-line interface (stati build, dev, invalidate)
+├─ create-stati        → NPX scaffolder (templates, Tailwind opt-in) - in development
 examples/
-├─ blog
-├─ docs
-├─ news
+├─ blog                → Complete blog example with navigation and content
+├─ docs                → Documentation site template
+├─ news                → News/article site template
 ```
 
 ---
@@ -32,8 +33,14 @@ examples/
 # Install dependencies
 npm install
 
-# Build everything
+# Build all packages
 npm run build --workspaces
+
+# Run tests to verify setup
+npm run test
+
+# Optional: Run full CI pipeline
+npm run test:ci
 ```
 
 ---
@@ -41,11 +48,20 @@ npm run build --workspaces
 ## 📜 Available Scripts
 
 ```bash
-npm run lint        # ESLint
-npm run typecheck   # TS check
-npm test            # Vitest (TBD)
-npm run build       # Build CLI & scaffolder
-npm run ci          # Lint + typecheck + test + build
+# Code quality and validation
+npm run lint           # ESLint across packages
+npm run typecheck      # TypeScript compilation check
+
+# Testing (Vitest with 154+ tests)
+npm run test           # Run all tests across packages
+npm run test:ci        # CI-specific testing with workspace support
+
+# Building
+npm run build          # Build core, cli, and create-stati packages
+npm run build:demo     # Build packages and example blog
+
+# Full pipeline
+npm run test:ci        # Lint + typecheck + test + build (CI workflow)
 ```
 
 **Testing the Development Server:**
@@ -54,15 +70,22 @@ npm run ci          # Lint + typecheck + test + build
 # Build the packages first
 npm run build --workspaces
 
-# Test the dev server with an example
+# Test the dev server with the blog example
 cd examples/blog
 npx stati dev --port 3000
 
 # Or test with custom options
 npx stati dev --port 8080 --open --host 0.0.0.0
+
+# Test building
+npx stati build --force --clean
 ```
 
-Note: CI runs tests across workspaces but skips packages without a `test` script (uses `--if-present`).
+**CLI Commands Available:**
+
+- `stati build [--force] [--clean] [--include-drafts] [--config path]`
+- `stati dev [--port 3000] [--host localhost] [--open] [--config path]`
+- `stati invalidate [query]` (placeholder for future ISG features)
 
 ---
 
@@ -109,11 +132,26 @@ PRs should be:
 
 ---
 
-## 🧪 Tests (Coming soon)
+## 🧪 Tests
 
-- Use `Vitest` for unit tests
-- Add tests for cache invalidation, routing, front-matter, TTL logic
-- Snapshot-based HTML output tests are acceptable
+- **Framework:** Vitest with comprehensive test coverage (154+ tests)
+- **Coverage:** Unit tests for all core functionality including:
+  - Configuration loading and validation
+  - Content processing and markdown rendering
+  - Template engine and layout system
+  - Navigation building and routing
+  - Build pipeline and asset copying
+  - Development server functionality
+  - Error handling and edge cases
+- **Test Types:** Unit tests, integration tests, and snapshot testing for HTML output
+- **CI Integration:** Tests run automatically on all commits and PRs
+
+**Running Tests:**
+
+```bash
+npm run test           # Run all tests
+npm run test:ci        # Full CI pipeline including tests
+```
 
 ---
 
@@ -129,10 +167,20 @@ PRs should be:
 After merging a PR with a changeset:
 
 ```bash
+# Update versions based on changesets
 npm run release:version
+
+# Push changes and tags
 git push --follow-tags
+
+# Publish packages to npm
 npm run release:publish
+
+# Or run the complete flow
+npm run release
 ```
+
+The project uses [Changesets](https://github.com/changesets/changesets) for version management and publishing.
 
 ---
 
