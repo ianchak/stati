@@ -10,7 +10,7 @@
     "test": "vitest run",
     "lint": "eslint . --ext .ts",
     "typecheck": "tsc -p tsconfig.base.json --noEmit",
-    "build": "npm run build -w packages/stati && npm run build -w packages/create-stati",
+    "build": "npm run build -w packages/core && npm run build -w packages/cli && npm run build -w packages/create-stati",
     "ci": "npm run lint && npm run typecheck && npm run test --workspaces --if-present && npm run build --workspaces",
     "release:version": "changeset version",
     "release:publish": "changeset publish",

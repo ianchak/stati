@@ -1,9 +1,9 @@
 /**
- * @fileoverview Stati - A modern static site generator with TypeScript support
+ * @fileoverview @stati/core - Core engine for Stati static site generator
  *
  * @example
  * ```typescript
- * import { build, loadConfig, defineConfig } from 'stati';
+ * import { build, loadConfig, defineConfig } from '@stati/core';
  *
  * // Define configuration with TypeScript support
  * export default defineConfig({
@@ -37,6 +37,7 @@ export type { BuildOptions } from './core/build.js';
 
 export { build } from './core/build.js';
 export { loadConfig } from './config/loader.js';
+export { invalidate } from './core/invalidate.js';
 
 // Import for implementation use
 import type { StatiConfig } from './types.js';
@@ -50,7 +51,7 @@ import type { StatiConfig } from './types.js';
  *
  * @example
  * ```typescript
- * import { defineConfig } from 'stati';
+ * import { defineConfig } from '@stati/core';
  *
  * export default defineConfig({
  *   site: {

@@ -1,7 +1,8 @@
 import { Eta } from 'eta';
 import { join, dirname, relative, basename } from 'path';
-import { pathExists } from 'fs-extra';
-import { glob } from 'fast-glob';
+import fse from 'fs-extra';
+const { pathExists } = fse;
+import glob from 'fast-glob';
 import type { StatiConfig, PageModel, NavNode, CollectionData } from '../types.js';
 
 /**

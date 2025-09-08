@@ -1,4 +1,5 @@
-import { ensureDir, writeFile, copy, remove, pathExists, stat, readdir } from 'fs-extra';
+import fse from 'fs-extra';
+const { ensureDir, writeFile, copy, remove, pathExists, stat, readdir } = fse;
 import { join, dirname } from 'path';
 import { loadConfig } from '../config/loader.js';
 import { loadContent } from './content.js';

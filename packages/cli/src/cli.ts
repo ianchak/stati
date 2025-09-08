@@ -4,8 +4,7 @@ import { hideBin } from 'yargs/helpers';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { build } from './core/build.js';
-import { invalidate } from './core/invalidate.js';
+import { build, invalidate } from '@stati/core';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

@@ -1,4 +1,4 @@
-import { defineConfig } from 'stati';
+import { defineConfig } from '@stati/core';
 
 export default defineConfig({
   srcDir: 'site',

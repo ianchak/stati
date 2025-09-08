@@ -1,5 +1,6 @@
-import { glob } from 'fast-glob';
-import { readFile } from 'fs-extra';
+import glob from 'fast-glob';
+import fse from 'fs-extra';
+const { readFile } = fse;
 import matter from 'gray-matter';
 import { join, relative, dirname, basename } from 'path';
 import type { PageModel, StatiConfig } from '../types.js';
