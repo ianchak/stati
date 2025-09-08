@@ -37,9 +37,10 @@ vi.mock('../../config/loader.js', () => ({
 
 vi.mock('../../core/build.js', () => ({
   build: vi.fn().mockResolvedValue({
-    pages: 5,
-    assets: 10,
-    buildTime: 1000,
+    totalPages: 5,
+    assetsCount: 10,
+    buildTimeMs: 1000,
+    outputSizeBytes: 1024,
   }),
 }));
 
@@ -67,10 +68,10 @@ describe('Development Server', () => {
     });
 
     mockBuild.mockResolvedValue({
-      pages: 5,
-      buildTime: 1000,
-      staticAssets: 10,
-      totalSize: 1024,
+      totalPages: 5,
+      assetsCount: 10,
+      buildTimeMs: 1000,
+      outputSizeBytes: 1024,
     });
   });
 
