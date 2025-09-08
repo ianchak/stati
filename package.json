@@ -15,9 +15,14 @@
     "build": "npm run build -w packages/core && npm run build -w packages/cli && npm run build -w packages/create-stati",
     "build:demo": "npm run build && cd examples/blog && npm run build",
     "test:ci": "npm run lint:ci && npm run typecheck:ci && npm run test --workspaces --if-present",
+    "changeset": "changeset",
+    "changeset:status": "changeset status",
+    "changeset:generate": "node scripts/generate-changesets.js",
     "release:version": "changeset version",
     "release:publish": "changeset publish",
-    "release": "npm run release:version && npm run release:publish && git push --follow-tags",
+    "release:dry": "changeset version --dry-run",
+    "release": "npm run build && npm run changeset:generate && npm run release:version && npm run release:publish && git push --follow-tags",
+    "release:manual": "npm run build && npm run release:version && npm run release:publish && git push --follow-tags",
     "prepare": "husky"
   },
   "repository": {
@@ -47,6 +52,7 @@
     "@typescript-eslint/eslint-plugin": "^8.42.0",
     "@typescript-eslint/parser": "^8.42.0",
     "@vitest/coverage-v8": "^3.2.4",
+    "conventional-commits-parser": "^6.2.0",
     "eslint": "^9.35.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.6",
