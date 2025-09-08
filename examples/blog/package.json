@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "stati dev",
     "build": "stati build",
-    "build:ci": "npm install -g @stati/cli@latest && stati build",
+    "build:ci": "npm install --no-save @stati/cli@latest @stati/core@latest && npx stati build",
     "preview": "stati preview",
     "clean": "rimraf dist .stati"
   },
