@@ -14,6 +14,7 @@
     "ci": "npm run lint && npm run typecheck && npm run test --workspaces --if-present && npm run build --workspaces",
     "release:version": "changeset version",
     "release:publish": "changeset publish",
+    "release": "npm run release:version && npm run release:publish && git push --follow-tags",
     "prepare": "husky"
   },
   "repository": {
