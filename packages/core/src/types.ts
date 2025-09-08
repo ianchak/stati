@@ -271,6 +271,40 @@ export interface PageModel {
 }
 
 /**
+ * Logger interface for build output.
+ * Allows customization of build logging output.
+ *
+ * @example
+ * ```typescript
+ * const logger: Logger = {
+ *   info: (msg) => console.log(chalk.blue(msg)),
+ *   success: (msg) => console.log(chalk.green(msg)),
+ *   warning: (msg) => console.warn(chalk.yellow(msg)),
+ *   error: (msg) => console.error(chalk.red(msg)),
+ *   building: (msg) => console.log(chalk.blue('🏗️  ' + msg)),
+ *   processing: (msg) => console.log(chalk.gray('  ' + msg)),
+ *   stats: (msg) => console.log(chalk.cyan('📊 ' + msg))
+ * };
+ * ```
+ */
+export interface Logger {
+  /** Log informational messages */
+  info: (message: string) => void;
+  /** Log success messages */
+  success: (message: string) => void;
+  /** Log warning messages */
+  warning: (message: string) => void;
+  /** Log error messages */
+  error: (message: string) => void;
+  /** Log build progress messages */
+  building: (message: string) => void;
+  /** Log file processing messages */
+  processing: (message: string) => void;
+  /** Log statistics and metrics */
+  stats: (message: string) => void;
+}
+
+/**
  * Statistics collected during the build process.
  * Provides useful metrics about the site generation.
  *

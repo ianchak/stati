@@ -32,6 +32,12 @@ export default [
     },
   },
   {
-    ignores: ['dist/**', 'coverage/**', 'node_modules/**'],
+    ignores: [
+      '**/dist/**',
+      '**/coverage/**',
+      '**/node_modules/**',
+      '**/*.d.ts',
+      '**/*.tsbuildinfo',
+    ],
   },
 ];

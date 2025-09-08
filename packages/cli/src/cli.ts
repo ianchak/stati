@@ -5,6 +5,8 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { build, invalidate } from '@stati/core';
+import type { BuildOptions } from '@stati/core';
+import { log } from './colors.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -44,12 +46,7 @@ const cli = yargs(hideBin(process.argv))
           description: 'Include draft pages in the build',
         }),
     async (argv) => {
-      const buildOptions: {
-        force: boolean;
-        clean: boolean;
-        configPath?: string;
-        includeDrafts?: boolean;
-      } = {
+      const buildOptions: BuildOptions = {
         force: !!argv.force,
         clean: !!argv.clean,
         includeDrafts: !!argv['include-drafts'],
@@ -59,7 +56,23 @@ const cli = yargs(hideBin(process.argv))
         buildOptions.configPath = argv.config as string;
       }
 
-      await build(buildOptions);
+      try {
+        const coloredLogger = {
+          info: log.info,
+          success: log.success,
+          warning: log.warning,
+          error: log.error,
+          building: log.building,
+          processing: log.processing,
+          stats: log.stats,
+        };
+
+        buildOptions.logger = coloredLogger;
+        await build(buildOptions);
+      } catch (error) {
+        log.error(`Build failed: ${error instanceof Error ? error.message : String(error)}`);
+        process.exit(1);
+      }
     },
   )
   .command(
@@ -67,7 +80,13 @@ const cli = yargs(hideBin(process.argv))
     'Invalidate by tag= or path=',
     (y) => y.positional('query', { type: 'string' }),
     async (argv) => {
-      await invalidate(argv.query as string | undefined);
+      try {
+        await invalidate(argv.query as string | undefined);
+        log.success('Cache invalidation completed');
+      } catch (error) {
+        log.error(`Invalidation failed: ${error instanceof Error ? error.message : String(error)}`);
+        process.exit(1);
+      }
     },
   )
   .demandCommand(1)

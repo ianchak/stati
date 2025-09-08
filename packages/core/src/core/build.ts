@@ -1,12 +1,12 @@
 import fse from 'fs-extra';
-const { ensureDir, writeFile, copy, remove, pathExists, stat, readdir } = fse;
+const { ensureDir, writeFile, remove, pathExists, stat, readdir, copyFile } = fse;
 import { join, dirname } from 'path';
 import { loadConfig } from '../config/loader.js';
 import { loadContent } from './content.js';
 import { createMarkdownProcessor, renderMarkdown } from './markdown.js';
 import { createTemplateEngine, renderPage } from './templates.js';
 import { buildNavigation } from './navigation.js';
-import type { BuildContext, BuildStats } from '../types.js';
+import type { BuildContext, BuildStats, Logger } from '../types.js';
 
 /**
  * Options for customizing the build process.
@@ -30,6 +30,8 @@ export interface BuildOptions {
   configPath?: string;
   /** Include draft pages in the build */
   includeDrafts?: boolean;
+  /** Custom logger for build output */
+  logger?: Logger;
 }
 
 /**
@@ -61,31 +63,62 @@ async function getDirectorySize(dirPath: string): Promise<number> {
 }
 
 /**
- * Counts the number of files in a directory recursively.
- * Used for build statistics.
+ * Recursively copies static assets from source to destination directory
+ * while logging each file being copied.
  *
- * @param dirPath - Path to the directory
- * @returns Total number of files
+ * @param sourceDir - Source directory containing static assets
+ * @param destDir - Destination directory to copy assets to
+ * @param logger - Logger instance for output
+ * @param basePath - Base path for relative path calculation (for recursion)
+ * @returns Total number of files copied
  */
-async function countFilesInDirectory(dirPath: string): Promise<number> {
-  if (!(await pathExists(dirPath))) {
+async function copyStaticAssetsWithLogging(
+  sourceDir: string,
+  destDir: string,
+  logger: Logger,
+  basePath = '',
+): Promise<number> {
+  let filesCopied = 0;
+
+  if (!(await pathExists(sourceDir))) {
     return 0;
   }
 
-  let fileCount = 0;
-  const items = await readdir(dirPath, { withFileTypes: true });
+  const items = await readdir(sourceDir, { withFileTypes: true });
 
   for (const item of items) {
-    const itemPath = join(dirPath, item.name);
+    const sourcePath = join(sourceDir, item.name);
+    const destPath = join(destDir, basePath, item.name);
+    const relativePath = join(basePath, item.name).replace(/\\/g, '/');
+
     if (item.isDirectory()) {
-      fileCount += await countFilesInDirectory(itemPath);
+      // Recursively copy directories
+      await ensureDir(destPath);
+      filesCopied += await copyStaticAssetsWithLogging(sourcePath, destPath, logger, relativePath);
     } else {
-      fileCount++;
+      // Copy individual files
+      await ensureDir(dirname(destPath));
+      await copyFile(sourcePath, destPath);
+      logger.processing(`📄 ${relativePath}`);
+      filesCopied++;
     }
   }
 
-  return fileCount;
+  return filesCopied;
 }
+
+/**
+ * Default console logger implementation.
+ */
+const defaultLogger: Logger = {
+  info: (message: string) => console.log(message),
+  success: (message: string) => console.log(message),
+  warning: (message: string) => console.warn(message),
+  error: (message: string) => console.error(message),
+  building: (message: string) => console.log(message),
+  processing: (message: string) => console.log(message),
+  stats: (message: string) => console.log(message),
+};
 
 /**
  * Formats build statistics for display.
@@ -141,7 +174,9 @@ function formatBuildStats(stats: BuildStats): string {
  */
 export async function build(options: BuildOptions = {}): Promise<BuildStats> {
   const buildStartTime = Date.now();
-  console.log('🏗️  Building site...');
+  const logger = options.logger || defaultLogger;
+
+  logger.building('Building site...');
 
   // Load configuration
   const config = await loadConfig(options.configPath ? dirname(options.configPath) : process.cwd());
@@ -153,7 +188,7 @@ export async function build(options: BuildOptions = {}): Promise<BuildStats> {
 
   // Clean output directory if requested
   if (options.clean) {
-    console.log('🧹 Cleaning output directory...');
+    logger.info('🧹 Cleaning output directory...');
     await remove(outDir);
   }
 
@@ -161,11 +196,11 @@ export async function build(options: BuildOptions = {}): Promise<BuildStats> {
 
   // Load all content
   const pages = await loadContent(config, options.includeDrafts);
-  console.log(`📄 Found ${pages.length} pages`);
+  logger.info(`📄 Found ${pages.length} pages`);
 
   // Build navigation from pages
   const navigation = buildNavigation(pages);
-  console.log(`🧭 Built navigation with ${navigation.length} top-level items`);
+  logger.info(`🧭 Built navigation with ${navigation.length} top-level items`);
 
   // Create processors
   const md = await createMarkdownProcessor(config);
@@ -181,7 +216,7 @@ export async function build(options: BuildOptions = {}): Promise<BuildStats> {
 
   // Render each page
   for (const page of pages) {
-    console.log(`  Building ${page.url}`);
+    logger.processing(`Building ${page.url}`);
 
     // Run beforeRender hook
     if (config.hooks?.beforeRender) {
@@ -218,9 +253,9 @@ export async function build(options: BuildOptions = {}): Promise<BuildStats> {
   let assetsCount = 0;
   const staticDir = join(process.cwd(), config.staticDir!);
   if (await pathExists(staticDir)) {
-    await copy(staticDir, outDir, { overwrite: true });
-    assetsCount = await countFilesInDirectory(staticDir);
-    console.log(`📦 Copied ${assetsCount} static assets`);
+    logger.info(`📦 Copying static assets from ${config.staticDir}`);
+    assetsCount = await copyStaticAssetsWithLogging(staticDir, outDir, logger);
+    logger.info(`📦 Copied ${assetsCount} static assets`);
   }
 
   // Run afterAll hook
@@ -240,8 +275,8 @@ export async function build(options: BuildOptions = {}): Promise<BuildStats> {
     cacheMisses: 0,
   };
 
-  console.log('✅ Build complete!');
-  console.log(formatBuildStats(buildStats));
+  logger.success('Build complete!');
+  logger.stats(formatBuildStats(buildStats));
 
   return buildStats;
 }

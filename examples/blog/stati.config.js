@@ -35,12 +35,4 @@ export default defineConfig({
       },
     },
   },
-  hooks: {
-    beforeAll: async (ctx) => {
-      console.log(`🚀 Building blog with ${ctx.pages.length} pages...`);
-    },
-    afterAll: async (ctx) => {
-      console.log(`✅ Blog build complete! Generated ${ctx.pages.length} pages.`);
-    },
-  },
 });
