@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "A complete example blog built with Stati static site generator",
   "type": "module",
+  "private": true,
   "scripts": {
     "dev": "stati dev",
     "build": "stati build",
