@@ -17,7 +17,8 @@ import type { BuildContext, BuildStats, Logger } from '../types.js';
  *   force: true,        // Force rebuild of all pages
  *   clean: true,        // Clean output directory before build
  *   configPath: './custom.config.js',  // Custom config file path
- *   includeDrafts: true // Include draft pages in build
+ *   includeDrafts: true, // Include draft pages in build
+ *   version: '1.0.0'    // Version to display in build messages
  * };
  * ```
  */
@@ -32,6 +33,8 @@ export interface BuildOptions {
   includeDrafts?: boolean;
   /** Custom logger for build output */
   logger?: Logger;
+  /** Version information to display in build messages */
+  version?: string;
 }
 
 /**
@@ -176,7 +179,8 @@ export async function build(options: BuildOptions = {}): Promise<BuildStats> {
   const buildStartTime = Date.now();
   const logger = options.logger || defaultLogger;
 
-  logger.building('Building site...');
+  const versionInfo = options.version ? ` v${options.version}` : '';
+  logger.building(`Stati${versionInfo} - Building your site...`);
 
   // Load configuration
   const config = await loadConfig(options.configPath ? dirname(options.configPath) : process.cwd());

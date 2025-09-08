@@ -372,7 +372,9 @@ describe('build.ts', () => {
     it('should log build progress messages', async () => {
       await build();
 
-      expect(consoleSpy).toHaveBeenCalledWith('Building site...');
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'Stati Static Site Generator - Building your site...',
+      );
       expect(consoleSpy).toHaveBeenCalledWith('📄 Found 3 pages');
       expect(consoleSpy).toHaveBeenCalledWith('🧭 Built navigation with 3 top-level items');
       expect(consoleSpy).toHaveBeenCalledWith('Building /');
@@ -381,6 +383,14 @@ describe('build.ts', () => {
       expect(consoleSpy).toHaveBeenCalledWith('📦 Copying static assets from static');
       expect(consoleSpy).toHaveBeenCalledWith('📦 Copied 0 static assets');
       expect(consoleSpy).toHaveBeenCalledWith('Build complete!');
+    });
+
+    it('should include version in build message when provided', async () => {
+      await build({ version: '1.2.3' });
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'Stati Static Site Generator v1.2.3 - Building your site...',
+      );
     });
 
     it('should log clean message when cleaning', async () => {

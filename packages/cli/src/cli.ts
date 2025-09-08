@@ -50,6 +50,7 @@ const cli = yargs(hideBin(process.argv))
         force: !!argv.force,
         clean: !!argv.clean,
         includeDrafts: !!argv['include-drafts'],
+        version: getVersion(),
       };
 
       if (argv.config) {
