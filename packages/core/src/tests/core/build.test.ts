@@ -8,6 +8,7 @@ const {
   mockEnsureDir,
   mockWriteFile,
   mockCopy,
+  mockCopyFile,
   mockRemove,
   mockPathExists,
   mockReaddir,
@@ -22,6 +23,7 @@ const {
   mockEnsureDir: vi.fn(),
   mockWriteFile: vi.fn(),
   mockCopy: vi.fn(),
+  mockCopyFile: vi.fn(),
   mockRemove: vi.fn(),
   mockPathExists: vi.fn(),
   mockReaddir: vi.fn(),
@@ -40,6 +42,7 @@ vi.mock('fs-extra', () => ({
     ensureDir: mockEnsureDir,
     writeFile: mockWriteFile,
     copy: mockCopy,
+    copyFile: mockCopyFile,
     remove: mockRemove,
     pathExists: mockPathExists,
     readdir: mockReaddir,
@@ -127,6 +130,7 @@ describe('build.ts', () => {
     mockEnsureDir.mockResolvedValue(undefined);
     mockWriteFile.mockResolvedValue(undefined);
     mockCopy.mockResolvedValue(undefined);
+    mockCopyFile.mockResolvedValue(undefined);
     mockRemove.mockResolvedValue(undefined);
     mockReaddir.mockResolvedValue([]);
     mockStat.mockResolvedValue({ size: 1024 });
@@ -276,12 +280,14 @@ describe('build.ts', () => {
     });
 
     it('should copy assets to dist directory', async () => {
+      // Mock a static file for testing
+      mockReaddir.mockResolvedValueOnce([{ name: 'style.css', isDirectory: () => false }]);
+
       await build();
 
-      expect(mockCopy).toHaveBeenCalledWith(
-        expect.stringMatching(/[/\\]test[/\\]project[/\\]static$/),
-        expect.stringMatching(/[/\\]test[/\\]project[/\\]dist$/),
-        { overwrite: true },
+      expect(mockCopyFile).toHaveBeenCalledWith(
+        expect.stringMatching(/[/\\]test[/\\]project[/\\]static[/\\]style\.css$/),
+        expect.stringMatching(/[/\\]test[/\\]project[/\\]dist[/\\]style\.css$/),
       );
     });
 
@@ -366,13 +372,15 @@ describe('build.ts', () => {
     it('should log build progress messages', async () => {
       await build();
 
-      expect(consoleSpy).toHaveBeenCalledWith('🏗️  Building site...');
+      expect(consoleSpy).toHaveBeenCalledWith('Building site...');
       expect(consoleSpy).toHaveBeenCalledWith('📄 Found 3 pages');
-      expect(consoleSpy).toHaveBeenCalledWith('  Building /');
-      expect(consoleSpy).toHaveBeenCalledWith('  Building /about');
-      expect(consoleSpy).toHaveBeenCalledWith('  Building /blog/post');
+      expect(consoleSpy).toHaveBeenCalledWith('🧭 Built navigation with 3 top-level items');
+      expect(consoleSpy).toHaveBeenCalledWith('Building /');
+      expect(consoleSpy).toHaveBeenCalledWith('Building /about');
+      expect(consoleSpy).toHaveBeenCalledWith('Building /blog/post');
+      expect(consoleSpy).toHaveBeenCalledWith('📦 Copying static assets from static');
       expect(consoleSpy).toHaveBeenCalledWith('📦 Copied 0 static assets');
-      expect(consoleSpy).toHaveBeenCalledWith('✅ Build complete!');
+      expect(consoleSpy).toHaveBeenCalledWith('Build complete!');
     });
 
     it('should log clean message when cleaning', async () => {

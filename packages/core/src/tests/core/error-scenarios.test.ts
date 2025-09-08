@@ -9,6 +9,7 @@ const {
   mockEnsureDir,
   mockWriteFile,
   mockCopy,
+  mockCopyFile,
   mockRemove,
   mockPathExists,
   mockReaddir,
@@ -23,6 +24,7 @@ const {
   mockEnsureDir: vi.fn(),
   mockWriteFile: vi.fn(),
   mockCopy: vi.fn(),
+  mockCopyFile: vi.fn(),
   mockRemove: vi.fn(),
   mockPathExists: vi.fn(),
   mockReaddir: vi.fn(),
@@ -41,6 +43,7 @@ vi.mock('fs-extra', () => ({
     ensureDir: mockEnsureDir,
     writeFile: mockWriteFile,
     copy: mockCopy,
+    copyFile: mockCopyFile,
     remove: mockRemove,
     pathExists: mockPathExists,
     readdir: mockReaddir,
@@ -100,6 +103,7 @@ describe('Error Scenario Tests', () => {
     mockEnsureDir.mockResolvedValue(undefined);
     mockWriteFile.mockResolvedValue(undefined);
     mockCopy.mockResolvedValue(undefined);
+    mockCopyFile.mockResolvedValue(undefined);
     mockRemove.mockResolvedValue(undefined);
     mockReaddir.mockResolvedValue([]);
     mockStat.mockResolvedValue({ size: 1024 });
@@ -321,8 +325,11 @@ describe('Error Scenario Tests', () => {
     });
 
     it('should handle static directory copy failure', async () => {
+      // Mock files in static directory so copy operations are attempted
+      mockReaddir.mockResolvedValueOnce([{ name: 'style.css', isDirectory: () => false }]);
+
       const copyError = new Error('Failed to copy static assets');
-      mockCopy.mockRejectedValue(copyError);
+      mockCopyFile.mockRejectedValue(copyError);
 
       await expect(build()).rejects.toThrow('Failed to copy static assets');
     });
