@@ -13,6 +13,7 @@
     "typecheck": "tsc -p tsconfig.base.json --noEmit",
     "typecheck:ci": "echo 'No TypeScript files to check in examples'",
     "build": "npm run build -w packages/core && npm run build -w packages/cli && npm run build -w packages/create-stati",
+    "build:demo": "npm run build && cd examples/blog && npm run build",
     "test:ci": "npm run lint:ci && npm run typecheck:ci && npm run test --workspaces --if-present",
     "release:version": "changeset version",
     "release:publish": "changeset publish",

@@ -102,7 +102,11 @@ async function copyStaticAssetsWithLogging(
       // Copy individual files
       await ensureDir(dirname(destPath));
       await copyFile(sourcePath, destPath);
-      logger.processing(`📄 ${relativePath}`);
+      if (logger.file) {
+        logger.file('copy', relativePath);
+      } else {
+        logger.processing(`📄 ${relativePath}`);
+      }
       filesCopied++;
     }
   }
@@ -124,7 +128,7 @@ const defaultLogger: Logger = {
 };
 
 /**
- * Formats build statistics for display.
+ * Formats build statistics for display with prettier output.
  *
  * @param stats - Build statistics to format
  * @returns Formatted statistics string
@@ -133,19 +137,23 @@ function formatBuildStats(stats: BuildStats): string {
   const sizeKB = (stats.outputSizeBytes / 1024).toFixed(1);
   const timeSeconds = (stats.buildTimeMs / 1000).toFixed(2);
 
-  let output = `📊 Build Statistics:
-  ⏱️  Build time: ${timeSeconds}s
-  📄 Pages built: ${stats.totalPages}
-  📦 Assets copied: ${stats.assetsCount}
-  💾 Output size: ${sizeKB} KB`;
+  let output =
+    `📊 Build Statistics:
+┌─────────────────────────────────────────┐
+│  ⏱️  Build time: ${timeSeconds}s`.padEnd(41) + '│';
+  output += `\n│  📄 Pages built: ${stats.totalPages}`.padEnd(42) + '│';
+  output += `\n│  📦 Assets copied: ${stats.assetsCount}`.padEnd(42) + '│';
+  output += `\n│  💾 Output size: ${sizeKB} KB`.padEnd(42) + '│';
 
   if (stats.cacheHits !== undefined && stats.cacheMisses !== undefined) {
     const totalCacheRequests = stats.cacheHits + stats.cacheMisses;
     const hitRate =
       totalCacheRequests > 0 ? ((stats.cacheHits / totalCacheRequests) * 100).toFixed(1) : '0';
-    output += `
-  🎯 Cache hits: ${stats.cacheHits}/${totalCacheRequests} (${hitRate}%)`;
+    output +=
+      `\n│  🎯 Cache hits: ${stats.cacheHits}/${totalCacheRequests} (${hitRate}%)`.padEnd(42) + '│';
   }
+
+  output += '\n└─────────────────────────────────────────┘';
 
   return output;
 }
@@ -179,8 +187,8 @@ export async function build(options: BuildOptions = {}): Promise<BuildStats> {
   const buildStartTime = Date.now();
   const logger = options.logger || defaultLogger;
 
-  const versionInfo = options.version ? ` v${options.version}` : '';
-  logger.building(`Stati${versionInfo} - Building your site...`);
+  logger.building('Building your site...');
+  console.log(); // Add spacing after build start
 
   // Load configuration
   const config = await loadConfig(options.configPath ? dirname(options.configPath) : process.cwd());
@@ -203,10 +211,17 @@ export async function build(options: BuildOptions = {}): Promise<BuildStats> {
   logger.info(`📄 Found ${pages.length} pages`);
 
   // Build navigation from pages
+  console.log(); // Add spacing before navigation step
+  if (logger.step) {
+    logger.step(1, 3, 'Building navigation');
+  }
   const navigation = buildNavigation(pages);
   logger.info(`🧭 Built navigation with ${navigation.length} top-level items`);
 
-  // Create processors
+  // Display navigation tree if the logger supports it
+  if (logger.navigationTree) {
+    logger.navigationTree(navigation);
+  } // Create processors
   const md = await createMarkdownProcessor(config);
   const eta = createTemplateEngine(config);
 
@@ -218,9 +233,21 @@ export async function build(options: BuildOptions = {}): Promise<BuildStats> {
     await config.hooks.beforeAll(buildContext);
   }
 
-  // Render each page
-  for (const page of pages) {
-    logger.processing(`Building ${page.url}`);
+  // Render each page with progress tracking
+  if (logger.step) {
+    logger.step(2, 3, 'Rendering pages');
+  }
+
+  for (let i = 0; i < pages.length; i++) {
+    const page = pages[i];
+    if (!page) continue; // Safety check
+
+    // Show progress for page rendering
+    if (logger.progress) {
+      logger.progress(i + 1, pages.length, `Rendering ${page.url}`);
+    } else {
+      logger.processing(`Building ${page.url}`);
+    }
 
     // Run beforeRender hook
     if (config.hooks?.beforeRender) {
@@ -257,6 +284,10 @@ export async function build(options: BuildOptions = {}): Promise<BuildStats> {
   let assetsCount = 0;
   const staticDir = join(process.cwd(), config.staticDir!);
   if (await pathExists(staticDir)) {
+    console.log(); // Add spacing before asset copying
+    if (logger.step) {
+      logger.step(3, 3, 'Copying static assets');
+    }
     logger.info(`📦 Copying static assets from ${config.staticDir}`);
     assetsCount = await copyStaticAssetsWithLogging(staticDir, outDir, logger);
     logger.info(`📦 Copied ${assetsCount} static assets`);
@@ -279,8 +310,13 @@ export async function build(options: BuildOptions = {}): Promise<BuildStats> {
     cacheMisses: 0,
   };
 
-  logger.success('Build complete!');
-  logger.stats(formatBuildStats(buildStats));
+  console.log(); // Add spacing before statistics
+  // Use table format if available, otherwise fall back to formatted string
+  if (logger.statsTable) {
+    logger.statsTable(buildStats);
+  } else {
+    logger.stats(formatBuildStats(buildStats));
+  }
 
   return buildStats;
 }

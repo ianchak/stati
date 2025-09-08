@@ -6,6 +6,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { build, invalidate } from '@stati/core';
 import type { BuildOptions } from '@stati/core';
+import type { Ora } from 'ora';
 import { log } from './colors.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -58,6 +59,7 @@ const cli = yargs(hideBin(process.argv))
       }
 
       try {
+        // Enhanced logger with new prettier functions
         const coloredLogger = {
           info: log.info,
           success: log.success,
@@ -66,10 +68,44 @@ const cli = yargs(hideBin(process.argv))
           building: log.building,
           processing: log.processing,
           stats: log.stats,
+          // Add new prettier logging methods
+          header: log.header,
+          step: log.step,
+          progress: log.progress,
+          file: log.file,
+          url: log.url,
+          timing: log.timing,
+          statsTable: log.statsTable,
+          navigationTree: log.navigationTree,
+          // Add spinner methods with type compatibility
+          startSpinner: (text: string, type?: 'building' | 'processing' | 'copying') =>
+            log.startSpinner(text, type),
+          succeedSpinner: (spinner: unknown, text?: string) =>
+            log.succeedSpinner(spinner as Ora, text),
+          failSpinner: (spinner: unknown, text?: string) => log.failSpinner(spinner as Ora, text),
+          updateSpinner: (spinner: unknown, text: string) =>
+            log.updateSpinner(spinner as Ora, text),
         };
 
+        // Show a nice header
+        const versionInfo = buildOptions.version ? ` v${buildOptions.version}` : '';
+        log.header(`Stati${versionInfo} - Static Site Generator`);
+
+        // Show build options summary
+        if (buildOptions.force) log.info('⚡ Force rebuild enabled');
+        if (buildOptions.clean) log.info('🧹 Clean build enabled');
+        if (buildOptions.includeDrafts) log.info('📝 Including draft pages');
+        if (buildOptions.configPath) log.info(`⚙️  Using config: ${buildOptions.configPath}`);
+
         buildOptions.logger = coloredLogger;
+        const startTime = Date.now();
+
         await build(buildOptions);
+        const buildTime = Date.now() - startTime;
+
+        console.log(); // Add spacing before final messages
+        log.timing('Total build', buildTime);
+        log.success('Site built successfully! 🎉');
       } catch (error) {
         log.error(`Build failed: ${error instanceof Error ? error.message : String(error)}`);
         process.exit(1);
@@ -82,8 +118,17 @@ const cli = yargs(hideBin(process.argv))
     (y) => y.positional('query', { type: 'string' }),
     async (argv) => {
       try {
+        log.header('Stati Cache Invalidation');
+
+        if (argv.query) {
+          log.info(`🎯 Invalidating cache for: ${argv.query}`);
+        } else {
+          log.info('🗑️  Invalidating entire cache');
+        }
+
         await invalidate(argv.query as string | undefined);
-        log.success('Cache invalidation completed');
+
+        log.success('Cache invalidation completed! 🗑️');
       } catch (error) {
         log.error(`Invalidation failed: ${error instanceof Error ? error.message : String(error)}`);
         process.exit(1);

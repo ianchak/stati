@@ -271,19 +271,26 @@ export interface PageModel {
 }
 
 /**
- * Logger interface for build output.
- * Allows customization of build logging output.
+ * Logger interface for customizing build output.
+ * Provides different log levels and formatting options for prettier CLI output.
  *
  * @example
  * ```typescript
- * const logger: Logger = {
- *   info: (msg) => console.log(chalk.blue(msg)),
- *   success: (msg) => console.log(chalk.green(msg)),
- *   warning: (msg) => console.warn(chalk.yellow(msg)),
- *   error: (msg) => console.error(chalk.red(msg)),
- *   building: (msg) => console.log(chalk.blue('🏗️  ' + msg)),
+ * const customLogger: Logger = {
+ *   info: (msg) => console.log(chalk.blue('ℹ️  ' + msg)),
+ *   success: (msg) => console.log(chalk.green('✅ ' + msg)),
+ *   warning: (msg) => console.warn(chalk.yellow('⚠️  ' + msg)),
+ *   error: (msg) => console.error(chalk.red('❌ ' + msg)),
+ *   building: (msg) => console.log(chalk.cyan('🏗️  ' + msg)),
  *   processing: (msg) => console.log(chalk.gray('  ' + msg)),
- *   stats: (msg) => console.log(chalk.cyan('📊 ' + msg))
+ *   stats: (msg) => console.log(chalk.cyan('📊 ' + msg)),
+ *   header: (msg) => console.log(boxedMessage(msg)),
+ *   step: (step, total, msg) => console.log(`[${step}/${total}] ${msg}`),
+ *   progress: (current, total, msg) => console.log(progressBar(current, total) + ' ' + msg),
+ *   file: (op, path) => console.log(`  📄 ${op} ${path}`),
+ *   url: (label, url) => console.log(`  🔗 ${label}: ${url}`),
+ *   timing: (op, duration) => console.log(`  ⏱️  ${op} completed in ${duration}ms`),
+ *   divider: (title) => console.log('─'.repeat(50) + ' ' + title)
  * };
  * ```
  */
@@ -302,6 +309,39 @@ export interface Logger {
   processing: (message: string) => void;
   /** Log statistics and metrics */
   stats: (message: string) => void;
+  /** Display a header message in a box (optional) */
+  header?: (message: string) => void;
+  /** Display a step indicator (optional) */
+  step?: (step: number, total: number, message: string) => void;
+  /** Display progress with a bar (optional) */
+  progress?: (current: number, total: number, message: string) => void;
+  /** Log file operations (optional) */
+  file?: (operation: string, path: string) => void;
+  /** Log URLs with proper styling (optional) */
+  url?: (label: string, url: string) => void;
+  /** Log timing information (optional) */
+  timing?: (operation: string, duration: number) => void;
+  /** Display a section divider (optional) */
+  divider?: (title?: string) => void;
+  /** Start a spinner for long operations (optional) */
+  startSpinner?: (text: string, type?: 'building' | 'processing' | 'copying') => unknown;
+  /** Stop a spinner with success (optional) */
+  succeedSpinner?: (spinner: unknown, text?: string) => void;
+  /** Stop a spinner with failure (optional) */
+  failSpinner?: (spinner: unknown, text?: string) => void;
+  /** Update spinner text (optional) */
+  updateSpinner?: (spinner: unknown, text: string) => void;
+  /** Display build statistics as a table (optional) */
+  statsTable?: (stats: {
+    totalPages: number;
+    assetsCount: number;
+    buildTimeMs: number;
+    outputSizeBytes: number;
+    cacheHits?: number;
+    cacheMisses?: number;
+  }) => void;
+  /** Display navigation tree structure (optional) */
+  navigationTree?: (navigation: NavNode[]) => void;
 }
 
 /**
