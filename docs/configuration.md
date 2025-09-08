@@ -204,30 +204,22 @@ Stati uses the Eta template engine for rendering layouts and templates. The temp
 - Take precedence over `layout.eta` and `index.eta` files when specified
 - Ideal for content-type-specific templates
 
-**Default Template (`default.eta`)**
-
-- Fallback template when no layout is specified and no `layout.eta` exists
-- Should be placed at the root of `srcDir`
-- Provides the base HTML structure for all pages
-
 ### Template Resolution Order
 
 When Stati processes a markdown file, it looks for templates in this order:
 
 1. **Explicit Layout**: If `layout: 'templatename'` is specified in front matter, use `templatename.eta`
-2. **Directory Layout**: Look for `layout.eta` in the current directory, then parent directories (cascading up)
-3. **Default Layout**: Use `default.eta` from the root of `srcDir`
-4. **Built-in Fallback**: Use Stati's minimal built-in template if no templates are found
+2. **Directory Layout**: Look for `layout.eta` in the current directory, then parent directories (cascading up to root)
+3. **Built-in Fallback**: Use Stati's minimal built-in template if no templates are found
 
 ### Template Placement Examples
 
 ```
 site/
-├── default.eta              # Global fallback template
 ├── post.eta                 # Named template for blog posts
 ├── article.eta              # Named template for articles
-├── layout.eta               # Root layout for all pages
-├── index.md                 # Uses layout.eta (or default.eta if layout.eta doesn't exist)
+├── layout.eta               # Root layout for all pages (fallback)
+├── index.md                 # Uses layout.eta
 ├── blog/
 │   ├── layout.eta           # Layout for all blog pages
 │   ├── my-post.md           # Uses blog/layout.eta

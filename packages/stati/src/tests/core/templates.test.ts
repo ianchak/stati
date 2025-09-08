@@ -340,7 +340,7 @@ describe('templates.ts', () => {
         expect(result).toBe('<html>Root layout</html>');
       });
 
-      it('should fall back to default.eta when no layout.eta found', async () => {
+      it('should use fallback HTML when no layout.eta found', async () => {
         const rootPage = {
           ...mockPage,
           sourcePath: join(mockProjectRoot, 'src', 'about.md'),
@@ -349,13 +349,10 @@ describe('templates.ts', () => {
         delete rootPage.frontMatter.layout; // No explicit layout
 
         // Mock path exists calls for layout discovery
-        // Check order: layout.eta doesn't exist, default.eta exists
-        mockPathExists
-          .mockResolvedValueOnce(false) // root layout.eta doesn't exist
-          .mockResolvedValueOnce(true) // default.eta exists
-          .mockResolvedValue(false); // other checks
+        // Check order: layout.eta doesn't exist, go to fallback HTML
+        mockPathExists.mockResolvedValue(false); // no layouts found
 
-        mockEtaInstance.renderAsync.mockResolvedValue('<html>Default layout</html>');
+        const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
         const result = await renderPage(
           rootPage,
@@ -364,15 +361,12 @@ describe('templates.ts', () => {
           mockEtaInstance as Eta,
         );
 
-        expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
-          'default.eta',
-          expect.objectContaining({
-            page: expect.objectContaining({
-              title: 'Test Page',
-            }),
-          }),
-        );
-        expect(result).toBe('<html>Default layout</html>');
+        expect(consoleSpy).toHaveBeenCalledWith('No layout template found, using fallback');
+        expect(result).toContain('<!DOCTYPE html>');
+        expect(result).toContain('<title>Test Page</title>');
+        expect(result).toContain('<h1>About page</h1>');
+
+        consoleSpy.mockRestore();
       });
 
       it('should use fallback HTML when no layout templates found', async () => {

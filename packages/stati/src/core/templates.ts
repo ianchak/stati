@@ -271,12 +271,6 @@ async function discoverLayout(
     }
   }
 
-  // Fall back to default.eta at root
-  const defaultLayoutPath = join(srcDir, 'default.eta');
-  if (await pathExists(defaultLayoutPath)) {
-    return 'default.eta';
-  }
-
   return null;
 }
 
