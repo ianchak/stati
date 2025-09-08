@@ -47,7 +47,27 @@ Per-page overrides let authors configure custom `ttlSeconds`, `maxAgeCapDays`, a
 
 ---
 
-## 5. Templates for Blogs, Docs, and News
+## 5. Development Server with Live Reload
+
+Stati includes a fully-featured development server that serves your built site locally with automatic live reload functionality. The dev server watches for changes in your `site/` and `public/` directories and automatically rebuilds and refreshes the browser.
+
+**Key Features:**
+
+- **HTTP Server**: Serves the built site from the `dist/` directory
+- **File Watching**: Monitors source files for changes with intelligent debouncing
+- **Live Reload**: WebSocket-based browser refresh on file changes
+- **Auto-injection**: Live reload script automatically injected into HTML pages
+- **Incremental Rebuilds**: Fast updates using the existing build system
+- **Configurable**: Port, host, auto-open browser, and custom config file support
+
+The development server provides a smooth developer experience with instant feedback as you work on your site.
+
+> **📖 For development server configuration, see [Configuration Guide](configuration.md#development-server)**
+> **📖 For CLI usage examples, see [CLI Reference](configuration.md#cli-reference)**
+
+---
+
+## 6. Templates for Blogs, Docs, and News
 
 The generator ships with **ready-made templates** for common site types:
 
@@ -59,7 +79,7 @@ These templates make it possible to scaffold a working site in minutes, while re
 
 ---
 
-## 6. Markdown Pipeline
+## 7. Markdown Pipeline
 
 Markdown is processed with **Markdown-It** and useful default plugins like anchors, task lists, and external links. The user has the option to add other markdown plugins too.
 
@@ -69,7 +89,7 @@ This provides authors with a balance of simplicity and power. Content can stay M
 
 ---
 
-## 7. NPX Scaffolder
+## 8. NPX Scaffolder
 
 The `create-stati` command scaffolds new projects with a chosen template (`blog`, `docs`, `news`). Options include initializing Tailwind support, adding SCSS support.
 
@@ -77,7 +97,7 @@ This reduces onboarding friction. New users can bootstrap a project with sensibl
 
 ---
 
-## 8. Image Optimization Pipeline
+## 9. Image Optimization Pipeline
 
 The build pipeline processes images into multiple formats (e.g., WebP, JPEG) and sizes, emitting responsive `srcset` attributes. It also compresses files for performance.
 
@@ -85,15 +105,15 @@ This ensures high Lighthouse scores and fast loading times without requiring ext
 
 ---
 
-## 9. CSS/JS Bundling and Minification
+## 10. CSS/JS Bundling and Minification
 
-Thanks to Vite, CSS and JS files are automatically bundled and minified for production. Authors can drop raw CSS/JS in the project, and the pipeline ensures optimized delivery.
+The generator includes **CSS and JavaScript bundling**, with minification for production builds. It can optionally set up PostCSS with Tailwind if requested via the scaffolder.
 
-This avoids manual configuration and guarantees that shipped assets are small and cache-friendly.
+This removes the need for external build tools in simple cases. Developers can rely on the generator for asset compilation, while complex projects can opt out and use their own toolchain.
 
 ---
 
-## 10. Draft Mode
+## 11. Draft Mode
 
 Pages can be marked with `draft: true` in front matter. Drafts are excluded from builds by default.
 
@@ -103,7 +123,7 @@ This lets authors work on unfinished content without accidentally publishing it.
 
 ---
 
-## 11. Search Index Generator (Opt-In)
+## 12. Search Index Generator (Opt-In)
 
 The generator can optionally build a JSON search index compatible with client-side libraries like Lunr.js or MiniSearch. It includes page titles, descriptions, and tags.
 
@@ -111,7 +131,7 @@ This feature is off by default to keep the core lightweight. Developers who want
 
 ---
 
-## 12. Plugin System and Hooks
+## 13. Plugin System and Hooks
 
 A plugin API allows developers to hook into build stages. For example, custom plugins can modify Markdown output, add extra data sources, or transform final HTML.
 
@@ -119,19 +139,11 @@ This makes the STATI extensible and community-friendly. Third-party plugins can 
 
 ---
 
-## 13. Deploy Adapters
+## 14. Deploy Adapters
 
 Pre-configured adapters make it trivial to deploy to **Netlify**, **Vercel**, or **Cloudflare Pages**. These adapters configure redirects, headers, and caching automatically.
 
 This reduces trial-and-error for new users. A single command can publish the site with best-practice defaults on popular hosts.
-
----
-
-## 14. Live Reload and HMR for Content
-
-During development, content and template changes instantly update in the browser without a full rebuild. Markdown edits refresh the preview, and style changes apply live.
-
-This improves developer experience (DX), keeping iteration loops short and fluid.
 
 ---
 

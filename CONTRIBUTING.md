@@ -16,7 +16,7 @@ Thanks for your interest in contributing to **Stati** — a lightweight, TypeScr
 
 ```
 packages/
-├─ stati               → CLI: build, invalidate, dev (WIP)
+├─ stati               → CLI: build, invalidate, dev
 ├─ create-stati        → NPX scaffolder (templates, Tailwind opt-in)
 examples/
 ├─ blog
@@ -46,6 +46,20 @@ npm run typecheck   # TS check
 npm test            # Vitest (TBD)
 npm run build       # Build CLI & scaffolder
 npm run ci          # Lint + typecheck + test + build
+```
+
+**Testing the Development Server:**
+
+```bash
+# Build the packages first
+npm run build --workspaces
+
+# Test the dev server with an example
+cd examples/blog
+npx stati dev --port 3000
+
+# Or test with custom options
+npx stati dev --port 8080 --open --host 0.0.0.0
 ```
 
 Note: CI runs tests across workspaces but skips packages without a `test` script (uses `--if-present`).

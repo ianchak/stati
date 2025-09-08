@@ -87,6 +87,13 @@ const config: StatiConfig = {
     aging: [],
   },
 
+  // Development server configuration
+  dev: {
+    port: 3000,
+    host: 'localhost',
+    open: false,
+  },
+
   // Build lifecycle hooks
   hooks: {
     beforeAll: async (ctx) => {},
@@ -510,6 +517,71 @@ Array of aging rules for progressive cache extension based on content age.
 }
 ```
 
+---
+
+## Development Server
+
+The development server provides a local HTTP server with live reload functionality for a smooth development experience.
+
+### `dev.port` (number, default: 3000)
+
+Port number for the development server.
+
+```typescript
+{
+  dev: {
+    port: 8080;
+  }
+}
+```
+
+### `dev.host` (string, default: 'localhost')
+
+Host address to bind the development server to.
+
+```typescript
+{
+  dev: {
+    host: '0.0.0.0'; // Bind to all interfaces
+  }
+}
+```
+
+### `dev.open` (boolean, default: false)
+
+Whether to automatically open the site in your default browser when the dev server starts.
+
+```typescript
+{
+  dev: {
+    open: true;
+  }
+}
+```
+
+**Complete Example:**
+
+```typescript
+export default defineConfig({
+  dev: {
+    port: 3000,
+    host: 'localhost',
+    open: false,
+  },
+});
+```
+
+**Development Server Features:**
+
+- **HTTP Server**: Serves built site from `dist/` directory with proper MIME types
+- **File Watching**: Monitors `site/` and `public/` directories for changes
+- **Live Reload**: WebSocket-based browser refresh on file changes
+- **Auto-injection**: Live reload script automatically injected into HTML pages
+- **Incremental Rebuilds**: Fast updates using existing build system
+- **Error Handling**: Graceful handling of build errors during development
+
+---
+
 ## Build Lifecycle Hooks
 
 Hooks allow you to inject custom logic at various stages of the build process.
@@ -671,7 +743,7 @@ The build command displays comprehensive statistics upon completion, including:
 
 These statistics help monitor site performance and validate caching strategies.
 
-### `stati dev` _(Planned)_
+### `stati dev`
 
 Starts a development server with live reload and incremental rebuilds.
 
@@ -680,6 +752,52 @@ Starts a development server with live reload and incremental rebuilds.
 ```bash
 stati dev [options]
 ```
+
+**Options:**
+
+- `--port <number>` - Port number for the development server (default: 3000)
+- `--host <string>` - Host to bind the server to (default: 'localhost')
+- `--open` - Automatically open the site in your default browser
+- `--config <path>` - Path to custom configuration file
+
+**Examples:**
+
+```bash
+# Start dev server on default port 3000
+stati dev
+
+# Use custom port
+stati dev --port 8080
+
+# Bind to all interfaces
+stati dev --host 0.0.0.0
+
+# Open browser automatically
+stati dev --open
+
+# Use custom config file
+stati dev --config custom.config.ts
+
+# Combine options
+stati dev --port 8080 --open --host 0.0.0.0
+```
+
+**Features:**
+
+- **Live Reload**: Automatic browser refresh on file changes
+- **File Watching**: Monitors `site/` and `public/` directories
+- **Incremental Rebuilds**: Fast updates using the existing build system
+- **WebSocket Communication**: Real-time browser-server communication
+- **Error Handling**: Graceful handling of build errors during development
+- **MIME Type Detection**: Proper content type headers for all file types
+
+The development server performs an initial build and then watches for changes, rebuilding only the affected parts of your site for fast iteration.
+
+### `stati invalidate` _(Planned)_
+
+stati dev [options]
+
+````
 
 **Features:**
 
@@ -766,4 +884,4 @@ export default defineConfig({
     },
   },
 });
-```
+````

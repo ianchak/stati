@@ -112,6 +112,15 @@ export interface StatiConfig {
   };
   /** Incremental Static Generation configuration */
   isg?: ISGConfig;
+  /** Development server configuration */
+  dev?: {
+    /** Port for development server (default: 3000) */
+    port?: number;
+    /** Host for development server (default: 'localhost') */
+    host?: string;
+    /** Whether to open browser automatically (default: false) */
+    open?: boolean;
+  };
   /** Build lifecycle hooks */
   hooks?: BuildHooks;
 }

@@ -215,14 +215,17 @@ cli.parse();
 
 ### 3.3 FS routing, collections & assets (Week 2)
 
-- Route = file path without extension; `index.md` → `/`
-- **Underscore folder exclusion**: Folders starting with `_` are excluded from routing
-- **Hierarchical partials**: Auto-discover `.eta` files in `_` folders throughout directory tree
-- Collections: `site/blog/**`, `site/docs/**`, `site/news/**` with collection metadata
-- Permalinks via front‑matter or defaults; helper to compute canonical URLs
-- Static assets: copy `public/**` straight; optional hash/fingerprint **(post‑1.0)**
+- ✅ Route = file path without extension; `index.md` → `/`
+- ✅ **Underscore folder exclusion**: Folders starting with `_` are excluded from routing
+- ✅ **Hierarchical partials**: Auto-discover `.eta` files in `_` folders throughout directory tree
+- ✅ Collections: `site/blog/**`, `site/docs/**`, `site/news/**` with collection metadata
+- ✅ Permalinks via front‑matter or defaults; helper to compute canonical URLs
+- ✅ Static assets: copy `public/**` straight; optional hash/fingerprint **(post‑1.0)**
+- ✅ **Development server**: `stati dev` with live reload, file watching, and WebSocket communication
 
-**Test**: routes match expected slugs; underscore folders excluded; partials discovered; permalinks respected; static copied.
+**Test**: routes match expected slugs; underscore folders excluded; partials discovered; permalinks respected; static copied; dev server working.
+
+**Status**: ✅ **COMPLETED** - All features implemented including development server with live reload
 
 ---
 

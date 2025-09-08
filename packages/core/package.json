@@ -27,14 +27,18 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "chokidar": "^3.6.0",
     "eta": "^3.5.0",
     "fast-glob": "^3.3.3",
     "fs-extra": "^11.2.0",
     "gray-matter": "^4.0.3",
-    "markdown-it": "^14.1.0"
+    "markdown-it": "^14.1.0",
+    "open": "^10.1.0",
+    "ws": "^8.18.0"
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
-    "@types/markdown-it": "^14.1.2"
+    "@types/markdown-it": "^14.1.2",
+    "@types/ws": "^8.5.12"
   }
 }

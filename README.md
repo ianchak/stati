@@ -6,9 +6,10 @@ Stati is a **lightweight static site generator** (SSG) built in **TypeScript** u
 
 ## 🚀 Planned Features (v1.0)
 
-- Filesystem-based routing from `site/`
-- Markdown + front-matter with curated plugins
-- Layouts & partials via Eta templates
+- ✅ Filesystem-based routing from `site/`
+- ✅ Markdown + front-matter with curated plugins
+- ✅ Layouts & partials via Eta templates
+- ✅ Development server with live reload
 - Incremental Static Generation with TTL + aging + freeze
 - Blog, Docs, and News templates with scaffolding support
 - SEO tags, RSS, sitemap, and draft support
@@ -26,8 +27,11 @@ npm install
 # Build packages
 npm run build --workspaces
 
-# Run CLI
+# Build site
 npx stati build --force
+
+# Development server with live reload
+npx stati dev --port 3000 --open
 ```
 
 ---
@@ -36,7 +40,7 @@ npx stati build --force
 
 ```txt
 packages/
-├─ stati               → CLI: build, invalidate, dev (WIP)
+├─ stati               → CLI: build, invalidate, dev
 ├─ create-stati        → NPX scaffolder (templates, Tailwind opt-in)
 examples/
 ├─ blog

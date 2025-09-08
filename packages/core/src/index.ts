@@ -34,8 +34,10 @@ export type {
 } from './types.js';
 
 export type { BuildOptions } from './core/build.js';
+export type { DevServerOptions } from './core/dev.js';
 
 export { build } from './core/build.js';
+export { createDevServer } from './core/dev.js';
 export { loadConfig } from './config/loader.js';
 export { invalidate } from './core/invalidate.js';
 

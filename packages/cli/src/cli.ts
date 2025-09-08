@@ -4,8 +4,8 @@ import { hideBin } from 'yargs/helpers';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { build, invalidate } from '@stati/core';
-import type { BuildOptions } from '@stati/core';
+import { build, invalidate, createDevServer } from '@stati/core';
+import type { BuildOptions, DevServerOptions } from '@stati/core';
 import type { Ora } from 'ora';
 import { log } from './colors.js';
 
@@ -108,6 +108,96 @@ const cli = yargs(hideBin(process.argv))
         log.success('Site built successfully! 🎉');
       } catch (error) {
         log.error(`Build failed: ${error instanceof Error ? error.message : String(error)}`);
+        process.exit(1);
+      }
+    },
+  )
+  .command(
+    'dev',
+    'Start development server',
+    (y) =>
+      y
+        .option('port', {
+          type: 'number',
+          description: 'Port to run the dev server on',
+          default: 3000,
+        })
+        .option('host', {
+          type: 'string',
+          description: 'Host to bind the dev server to',
+          default: 'localhost',
+        })
+        .option('open', {
+          type: 'boolean',
+          description: 'Open browser after starting server',
+          default: false,
+        })
+        .option('config', {
+          type: 'string',
+          description: 'Path to config file',
+        }),
+    async (argv) => {
+      const devOptions: DevServerOptions = {
+        port: argv.port as number,
+        host: argv.host as string,
+        open: !!argv.open,
+        ...(argv.config && { configPath: argv.config as string }),
+      };
+
+      try {
+        // Enhanced logger with new prettier functions
+        const coloredLogger = {
+          info: log.info,
+          success: log.success,
+          warning: log.warning,
+          error: log.error,
+          building: log.building,
+          processing: log.processing,
+          stats: log.stats,
+          // Add new prettier logging methods
+          header: log.header,
+          step: log.step,
+          progress: log.progress,
+          file: log.file,
+          url: log.url,
+          timing: log.timing,
+          statsTable: log.statsTable,
+          navigationTree: log.navigationTree,
+          // Add spinner methods
+          startSpinner: (text: string, type?: 'building' | 'processing' | 'copying') =>
+            log.startSpinner(text, type),
+          succeedSpinner: (spinner: unknown, text?: string) =>
+            log.succeedSpinner(spinner as Ora, text),
+          failSpinner: (spinner: unknown, text?: string) => log.failSpinner(spinner as Ora, text),
+          updateSpinner: (spinner: unknown, text: string) =>
+            log.updateSpinner(spinner as Ora, text),
+        };
+
+        devOptions.logger = coloredLogger;
+
+        // Show a nice header
+        const versionInfo = getVersion() ? ` v${getVersion()}` : '';
+        log.header(`Stati${versionInfo} - Development Server`);
+
+        // Show dev server options
+        log.info(`🌐 Server will run at http://${argv.host}:${argv.port}`);
+        if (argv.open) log.info('🌍 Browser will open automatically');
+        if (argv.config) log.info(`⚙️  Using config: ${argv.config}`);
+
+        const devServer = await createDevServer(devOptions);
+        await devServer.start();
+
+        // Handle graceful shutdown
+        const shutdown = async () => {
+          log.info('\n🛑 Shutting down dev server...');
+          await devServer.stop();
+          process.exit(0);
+        };
+
+        process.on('SIGINT', shutdown);
+        process.on('SIGTERM', shutdown);
+      } catch (error) {
+        log.error(`Dev server failed: ${error instanceof Error ? error.message : String(error)}`);
         process.exit(1);
       }
     },
