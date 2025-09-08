@@ -297,7 +297,7 @@ export async function renderPage(
   // Discover partials for this page's directory hierarchy
   const srcDir = join(process.cwd(), config.srcDir!);
   const relativePath = relative(srcDir, page.sourcePath);
-  const partials = await discoverPartials(relativePath, config);
+  const partialPaths = await discoverPartials(relativePath, config);
 
   // Build collection data if this is an index page and all pages are provided
   let collectionData: CollectionData | undefined;
@@ -315,19 +315,37 @@ export async function renderPage(
     isIndexPage,
   );
 
-  const context = {
+  // Create base context for partial rendering
+  const baseContext = {
     site: config.site,
     page: {
       ...page.frontMatter,
       path: page.url,
+      url: page.url, // Add url property for compatibility
       content: body,
     },
     content: body,
     navigation: navigation || [],
-    partials, // Add discovered partials to template context
     collection: collectionData, // Add collection data for index pages
     // Add custom filters to context
     ...(config.eta?.filters || {}),
+  };
+
+  // Render partials and store their content
+  const renderedPartials: Record<string, string> = {};
+  for (const [partialName, partialPath] of Object.entries(partialPaths)) {
+    try {
+      const renderedContent = await eta.renderAsync(partialPath, baseContext);
+      renderedPartials[partialName] = renderedContent;
+    } catch (error) {
+      console.warn(`Warning: Failed to render partial ${partialName} at ${partialPath}:`, error);
+      renderedPartials[partialName] = `<!-- Error rendering partial: ${partialName} -->`;
+    }
+  }
+
+  const context = {
+    ...baseContext,
+    partials: renderedPartials, // Add rendered partials to template context
   };
 
   try {
