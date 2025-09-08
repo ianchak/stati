@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createTemplateEngine, renderPage } from '../../core/templates.js';
 import type { StatiConfig, PageModel } from '../../types.js';
 import type { Eta } from 'eta';
+import { join } from 'path';
 
 // Create hoisted mocks
 const { mockPathExists, mockGlob, MockEta } = vi.hoisted(() => ({
@@ -35,10 +36,13 @@ describe('templates.ts', () => {
     },
   };
 
+  const mockProjectRoot = join('test', 'project');
+  const mockPageSourcePath = join(mockProjectRoot, 'src', 'test-page.md');
+
   const mockPage: PageModel = {
     slug: '/test-page',
     url: '/test-page',
-    sourcePath: '\\test\\project\\src\\test-page.md',
+    sourcePath: mockPageSourcePath,
     frontMatter: {
       title: 'Test Page',
       description: 'A test page',
@@ -53,7 +57,7 @@ describe('templates.ts', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.spyOn(process, 'cwd').mockReturnValue('\\test\\project');
+    vi.spyOn(process, 'cwd').mockReturnValue(mockProjectRoot);
 
     mockEtaInstance = {
       renderAsync: vi.fn(),
@@ -68,8 +72,8 @@ describe('templates.ts', () => {
       const eta = createTemplateEngine(mockConfig);
 
       expect(MockEta).toHaveBeenCalledWith({
-        views: '\\test\\project\\src',
-        cache: false,
+        views: join(mockProjectRoot, 'src'),
+        cache: process.env.NODE_ENV === 'production',
       });
       expect(eta).toBe(mockEtaInstance);
     });
@@ -203,7 +207,7 @@ describe('templates.ts', () => {
       it('should use explicit layout when specified in front matter', async () => {
         const pageWithLayout = {
           ...mockPage,
-          sourcePath: '\\test\\project\\src\\blog\\post.md',
+          sourcePath: join(mockProjectRoot, 'src', 'blog', 'post.md'),
           frontMatter: { ...mockPage.frontMatter, layout: 'custom' },
         };
 
@@ -235,7 +239,7 @@ describe('templates.ts', () => {
       it('should discover layout.eta in current directory', async () => {
         const blogPage = {
           ...mockPage,
-          sourcePath: '\\test\\project\\src\\blog\\my-post.md',
+          sourcePath: join(mockProjectRoot, 'src', 'blog', 'my-post.md'),
           frontMatter: { ...mockPage.frontMatter },
         };
         delete blogPage.frontMatter.layout; // No explicit layout
@@ -269,7 +273,7 @@ describe('templates.ts', () => {
       it('should cascade up directory hierarchy for layout.eta', async () => {
         const deepPage = {
           ...mockPage,
-          sourcePath: '\\test\\project\\src\\blog\\tech\\javascript\\deep-post.md',
+          sourcePath: join(mockProjectRoot, 'src', 'blog', 'tech', 'javascript', 'deep-post.md'),
           frontMatter: { ...mockPage.frontMatter },
         };
         delete deepPage.frontMatter.layout; // No explicit layout
@@ -305,7 +309,7 @@ describe('templates.ts', () => {
       it('should fall back to root layout.eta', async () => {
         const rootPage = {
           ...mockPage,
-          sourcePath: '\\test\\project\\src\\about.md',
+          sourcePath: join(mockProjectRoot, 'src', 'about.md'),
           frontMatter: { ...mockPage.frontMatter },
         };
         delete rootPage.frontMatter.layout; // No explicit layout
@@ -339,7 +343,7 @@ describe('templates.ts', () => {
       it('should fall back to default.eta when no layout.eta found', async () => {
         const rootPage = {
           ...mockPage,
-          sourcePath: '\\test\\project\\src\\about.md',
+          sourcePath: join(mockProjectRoot, 'src', 'about.md'),
           frontMatter: { ...mockPage.frontMatter },
         };
         delete rootPage.frontMatter.layout; // No explicit layout
@@ -374,7 +378,7 @@ describe('templates.ts', () => {
       it('should use fallback HTML when no layout templates found', async () => {
         const rootPage = {
           ...mockPage,
-          sourcePath: '\\test\\project\\src\\about.md',
+          sourcePath: join(mockProjectRoot, 'src', 'about.md'),
           frontMatter: { ...mockPage.frontMatter },
         };
         delete rootPage.frontMatter.layout; // No explicit layout
@@ -402,7 +406,7 @@ describe('templates.ts', () => {
       it('should prioritize explicit layout over layout.eta', async () => {
         const blogPage = {
           ...mockPage,
-          sourcePath: '\\test\\project\\src\\blog\\my-post.md',
+          sourcePath: join(mockProjectRoot, 'src', 'blog', 'my-post.md'),
           frontMatter: { ...mockPage.frontMatter, layout: 'article' },
         };
 
