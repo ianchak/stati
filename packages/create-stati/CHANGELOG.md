@@ -1,4 +1,4 @@
-# @stati/core
+# create-stati
 
 ## 1.1.0
 
@@ -8,49 +8,9 @@
 
   Commit: 66c0c80
 
-- implement development server with live reload functionality
-
-  Commit: e361676
-
-- enhance logging and add new dependencies for better output
-
-  Commit: 78ee0dd
-
-- implement development server with live reload functionality
-
-  Commit: e361676
-
-- add version option to build process and update logging
-
-  Commit: 483aed1
-
 - implement automated changeset generation from commits
 
   Commit: 66c0c80
-
-- add version option to build process and update logging
-
-  Commit: 483aed1
-
-- add logging and color utilities for improved CLI output
-
-  Commit: 89c1bab
-
-- enhance partial rendering with error handling and context updates
-
-  Commit: 2c1fcdb
-
-- enhance partial rendering with error handling and context updates
-
-  Commit: 2c1fcdb
-
-- enhance logging and add new dependencies for better output
-
-  Commit: 78ee0dd
-
-- add logging and color utilities for improved CLI output
-
-  Commit: 89c1bab
 
 ### Patch Changes
 
@@ -62,10 +22,6 @@
 
   Commit: e5f43d5
 
-- add mock for copyFile in build and error scenarios
-
-  Commit: 995aa1d
-
 - update build:ci script to specify package for npm exec
 
   Commit: c03d034
@@ -93,10 +49,6 @@
 - update build:ci script to use npm exec for execution
 
   Commit: 8fc3625
-
-- simplify build progress log messages in tests
-
-  Commit: 4028cd0
 
 - remove gold-ants-hug changeset file
 
@@ -133,10 +85,6 @@
 - update build:ci script to install dependencies without global flag
 
   Commit: fc92a95
-
-- update mock build response keys for consistency
-
-  Commit: 9dd17bf
 
 - streamline CI workflow by consolidating test commands
 
@@ -170,10 +118,6 @@
 
   Commit: e781bbe
 
-- add mock for copyFile in build and error scenarios
-
-  Commit: 995aa1d
-
 - update build:ci script to install @stati/cli globally
 
   Commit: ea82827
@@ -190,14 +134,6 @@
 
   Commit: 764c978
 
-- simplify build progress log messages in tests
-
-  Commit: 4028cd0
-
-- update mock build response keys for consistency
-
-  Commit: 9dd17bf
-
 - fix build command in CI workflow
 
   Commit: 5bb2f90
@@ -205,17 +141,3 @@
 - remove duplicate build step in CI workflow
 
   Commit: 764c978
-
-## 1.0.0
-
-### Major Changes
-
-- ed11dc0: Initial release of @stati/core - the core engine for Stati static site generator
-
-  This is the first public release of @stati/core, featuring:
-  - **Static site generation**: Build fast, modern websites from Markdown content
-  - **Template rendering**: Powerful templating with Eta templates
-  - **TypeScript support**: Full TypeScript support throughout
-  - **Flexible content structure**: Support for various content organization patterns
-  - **Plugin system**: Extensible architecture for custom functionality
-  - **Content processing**: Markdown processing, frontmatter parsing, and navigation generation
