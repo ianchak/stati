@@ -12,7 +12,4 @@ jobs:
           node-version: 22
           cache: 'npm'
       - run: npm ci
-      - run: npm run lint
-      - run: npm run build --workspaces
-      - run: npm run typecheck
-      - run: npm test --workspaces
+      - run: npm run test:ci
