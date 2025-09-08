@@ -11,13 +11,15 @@ import type { PageModel, StatiConfig } from '../../types.js';
 vi.mock('fs-extra', () => {
   const mockPathExists = vi.fn();
   return {
-    ensureDir: vi.fn().mockResolvedValue(undefined),
-    writeFile: vi.fn().mockResolvedValue(undefined),
-    copy: vi.fn().mockResolvedValue(undefined),
-    remove: vi.fn().mockResolvedValue(undefined),
-    pathExists: mockPathExists,
-    readdir: vi.fn().mockResolvedValue([]),
-    stat: vi.fn().mockResolvedValue({ size: 1024 }),
+    default: {
+      ensureDir: vi.fn().mockResolvedValue(undefined),
+      writeFile: vi.fn().mockResolvedValue(undefined),
+      copy: vi.fn().mockResolvedValue(undefined),
+      remove: vi.fn().mockResolvedValue(undefined),
+      pathExists: mockPathExists,
+      readdir: vi.fn().mockResolvedValue([]),
+      stat: vi.fn().mockResolvedValue({ size: 1024 }),
+    },
   };
 });
 
@@ -39,17 +41,17 @@ vi.mock('../../core/templates.js', () => ({
   renderPage: vi.fn(),
 }));
 
-import { ensureDir, writeFile, copy, remove, pathExists, readdir, stat } from 'fs-extra';
+import fse from 'fs-extra';
 import { loadConfig } from '../../config/loader.js';
 import { createTemplateEngine } from '../../core/templates.js';
 
-const mockEnsureDir = vi.mocked(ensureDir);
-const mockWriteFile = vi.mocked(writeFile);
-const mockCopy = vi.mocked(copy);
-const mockRemove = vi.mocked(remove);
-const mockPathExists = vi.mocked(pathExists);
-const mockReaddir = vi.mocked(readdir);
-const mockStat = vi.mocked(stat);
+const mockEnsureDir = vi.mocked(fse.ensureDir);
+const mockWriteFile = vi.mocked(fse.writeFile);
+const mockCopy = vi.mocked(fse.copy);
+const mockRemove = vi.mocked(fse.remove);
+const mockPathExists = vi.mocked(fse.pathExists);
+const mockReaddir = vi.mocked(fse.readdir);
+const mockStat = vi.mocked(fse.stat);
 const mockLoadConfig = vi.mocked(loadConfig);
 const mockLoadContent = vi.mocked(loadContent);
 const mockRenderMarkdown = vi.mocked(renderMarkdown);

@@ -12,12 +12,13 @@ const { mockPathExists, mockGlob, MockEta } = vi.hoisted(() => ({
 
 // Mock dependencies
 vi.mock('fs-extra', () => ({
-  pathExists: mockPathExists,
+  default: {
+    pathExists: mockPathExists,
+  },
 }));
 
 vi.mock('fast-glob', () => ({
   default: mockGlob,
-  glob: mockGlob,
 }));
 
 vi.mock('eta', () => ({

@@ -11,11 +11,13 @@ const { mockReadFile, mockGlob, mockMatter } = vi.hoisted(() => ({
 
 // Mock all dependencies at the top level
 vi.mock('fs-extra', () => ({
-  readFile: mockReadFile,
+  default: {
+    readFile: mockReadFile,
+  },
 }));
 
 vi.mock('fast-glob', () => ({
-  glob: mockGlob,
+  default: mockGlob,
 }));
 
 vi.mock('gray-matter', () => ({

@@ -283,13 +283,6 @@ export function createTemplateEngine(config: StatiConfig): Eta {
     cache: process.env.NODE_ENV === 'production',
   });
 
-  // Add custom filters if provided
-  if (config.eta?.filters) {
-    Object.entries(config.eta.filters).forEach(([name, fn]) => {
-      (eta as Eta & { filters: Record<string, unknown> }).filters[name] = fn;
-    });
-  }
-
   return eta;
 }
 
@@ -333,6 +326,8 @@ export async function renderPage(
     navigation: navigation || [],
     partials, // Add discovered partials to template context
     collection: collectionData, // Add collection data for index pages
+    // Add custom filters to context
+    ...(config.eta?.filters || {}),
   };
 
   try {

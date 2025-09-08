@@ -37,13 +37,15 @@ const {
 
 // Mock dependencies
 vi.mock('fs-extra', () => ({
-  ensureDir: mockEnsureDir,
-  writeFile: mockWriteFile,
-  copy: mockCopy,
-  remove: mockRemove,
-  pathExists: mockPathExists,
-  readdir: mockReaddir,
-  stat: mockStat,
+  default: {
+    ensureDir: mockEnsureDir,
+    writeFile: mockWriteFile,
+    copy: mockCopy,
+    remove: mockRemove,
+    pathExists: mockPathExists,
+    readdir: mockReaddir,
+    stat: mockStat,
+  },
 }));
 
 vi.mock('../../config/loader.js', () => ({

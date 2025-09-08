@@ -11,9 +11,9 @@ export default defineConfig({
   },
   markdown: {
     plugins: [
-      'markdown-it-anchor',
-      'markdown-it-table-of-contents',
-      ['markdown-it-attrs', { leftDelimiter: '{:', rightDelimiter: '}' }],
+      'anchor',
+      'table-of-contents',
+      ['attrs', { leftDelimiter: '{:', rightDelimiter: '}' }],
     ],
   },
   eta: {

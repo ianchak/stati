@@ -10,11 +10,13 @@ const { mockReadFile, mockGlob } = vi.hoisted(() => ({
 
 // Mock fs-extra and fast-glob
 vi.mock('fs-extra', () => ({
-  readFile: mockReadFile,
+  default: {
+    readFile: mockReadFile,
+  },
 }));
 
 vi.mock('fast-glob', () => ({
-  glob: mockGlob,
+  default: mockGlob,
 }));
 
 describe('Flexible Structure Tests', () => {
