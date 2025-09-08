@@ -1,0 +1,34 @@
+<header class="site-header">
+    <div class="header-container">
+        <div class="site-branding">
+            <a href="/" class="site-title"><%= it.site.title %></a>
+            <p class="site-tagline">Personal thoughts and technical insights</p>
+        </div>
+
+        <nav class="main-navigation">
+            <ul class="nav-menu">
+                <li><a href="/" class="<%= it.page.url === '/' ? 'current' : '' %>">Home</a></li>
+                <li><a href="/blog" class="<%= it.page.url.startsWith('/blog') ? 'current' : '' %>">Blog</a></li>
+                <li><a href="/about" class="<%= it.page.url === '/about' ? 'current' : '' %>">About</a></li>
+                <li><a href="/contact" class="<%= it.page.url === '/contact' ? 'current' : '' %>">Contact</a></li>
+            </ul>
+
+            <!-- Mobile menu toggle -->
+            <button class="menu-toggle" aria-label="Toggle navigation">
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Mobile navigation menu -->
+    <nav class="mobile-navigation">
+        <ul class="mobile-nav-menu">
+            <li><a href="/">Home</a></li>
+            <li><a href="/blog">Blog</a></li>
+            <li><a href="/about">About</a></li>
+            <li><a href="/contact">Contact</a></li>
+        </ul>
+    </nav>
+</header>

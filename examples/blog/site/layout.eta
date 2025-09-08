@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="<%= it.site.defaultLocale || 'en' %>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= it.page.title ? `${it.page.title} | ${it.site.title}` : it.site.title %></title>
+
+    <!-- Meta Description -->
+    <% if (it.page.description) { %>
+    <meta name="description" content="<%= it.page.description %>">
+    <% } else if (it.page.excerpt) { %>
+    <meta name="description" content="<%~ it.excerpt(it.page.excerpt, 160) %>">
+    <% } %>
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="<%= it.page.title || it.site.title %>">
+    <meta property="og:type" content="<%= it.page.layout === 'post' ? 'article' : 'website' %>">
+    <meta property="og:url" content="<%= it.site.baseUrl %><%= it.page.url %>">
+    <% if (it.page.description || it.page.excerpt) { %>
+    <meta property="og:description" content="<%= it.page.description || it.excerpt(it.page.excerpt, 160) %>">
+    <% } %>
+
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="<%= it.page.title || it.site.title %>">
+    <% if (it.page.description || it.page.excerpt) { %>
+    <meta name="twitter:description" content="<%= it.page.description || it.excerpt(it.page.excerpt, 160) %>">
+    <% } %>
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="<%= it.site.baseUrl %><%= it.page.url %>">
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="/styles.css">
+
+    <!-- RSS Feed -->
+    <link rel="alternate" type="application/rss+xml" title="<%= it.site.title %>" href="/feed.xml">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+<body class="<%= it.page.layout || 'default' %>">
+    <%~ it.partials.header %>
+
+    <main class="main-content">
+        <% if (it.page.layout === 'post') { %>
+            <!-- Blog Post Layout -->
+            <article class="post">
+                <header class="post-header">
+                    <h1 class="post-title"><%= it.page.title %></h1>
+                    <div class="post-meta">
+                        <% if (it.page.publishedAt) { %>
+                        <time datetime="<%= it.page.publishedAt.toISOString() %>">
+                            <%~ it.formatDate(it.page.publishedAt) %>
+                        </time>
+                        <% } %>
+                        <% if (it.page.author) { %>
+                        <span class="post-author">by <%= it.page.author %></span>
+                        <% } %>
+                        <% if (it.page.tags && it.page.tags.length > 0) { %>
+                        <div class="post-tags">
+                            <% it.page.tags.forEach(tag => { %>
+                            <span class="tag">#<%= tag %></span>
+                            <% }) %>
+                        </div>
+                        <% } %>
+                    </div>
+                </header>
+
+                <div class="post-content">
+                    <%~ it.content %>
+                </div>
+
+                <% if (it.page.tags && it.page.tags.length > 0) { %>
+                <footer class="post-footer">
+                    <div class="post-tags-footer">
+                        <strong>Tags:</strong>
+                        <% it.page.tags.forEach((tag, index) => { %>
+                        <a href="/tags/<%= tag %>" class="tag-link"><%= tag %></a><%= index < it.page.tags.length - 1 ? ', ' : '' %>
+                        <% }) %>
+                    </div>
+                </footer>
+                <% } %>
+            </article>
+        <% } else if (it.page.layout === 'page') { %>
+            <!-- Static Page Layout -->
+            <article class="page">
+                <header class="page-header">
+                    <h1 class="page-title"><%= it.page.title %></h1>
+                </header>
+
+                <div class="page-content">
+                    <%~ it.content %>
+                </div>
+            </article>
+        <% } else { %>
+            <!-- Default/Index Layout -->
+            <div class="content">
+                <% if (it.page.title) { %>
+                <header class="content-header">
+                    <h1><%= it.page.title %></h1>
+                </header>
+                <% } %>
+
+                <div class="content-body">
+                    <%~ it.content %>
+                </div>
+
+                <!-- Collection Listing (for index pages) -->
+                <% if (it.collection && it.collection.children.length > 0) { %>
+                <section class="posts-list">
+                    <h2>Recent Posts</h2>
+                    <div class="posts-grid">
+                        <% it.collection.recentPages.slice(0, 6).forEach(post => { %>
+                        <article class="post-card">
+                            <h3><a href="<%= post.url %>"><%= post.title %></a></h3>
+                            <% if (post.publishedAt) { %>
+                            <time datetime="<%= post.publishedAt.toISOString() %>">
+                                <%~ it.formatDate(post.publishedAt) %>
+                            </time>
+                            <% } %>
+                            <% if (post.excerpt) { %>
+                            <p class="post-excerpt"><%~ it.excerpt(post.excerpt, 120) %></p>
+                            <% } %>
+                            <% if (post.tags && post.tags.length > 0) { %>
+                            <div class="post-card-tags">
+                                <% post.tags.slice(0, 3).forEach(tag => { %>
+                                <span class="tag">#<%= tag %></span>
+                                <% }) %>
+                            </div>
+                            <% } %>
+                        </article>
+                        <% }) %>
+                    </div>
+
+                    <% if (it.collection.children.length > 6) { %>
+                    <div class="more-posts">
+                        <a href="/blog" class="btn-more">View All Posts →</a>
+                    </div>
+                    <% } %>
+                </section>
+                <% } %>
+            </div>
+        <% } %>
+    </main>
+
+    <%~ it.partials.footer %>
+
+    <!-- Analytics or other scripts can go here -->
+</body>
+</html>

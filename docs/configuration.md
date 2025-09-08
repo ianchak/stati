@@ -109,8 +109,10 @@ The directory containing your content files (Markdown, etc.) and templates.
 
 - `.md` files create routes based on their path
 - `.eta` files provide layouts and templates
-- Folders starting with `_` are excluded from routing (perfect for partials)
-- Partials in `_` folders are auto-discovered and provided to templates
+- Folders starting with `_` are excluded from routing and used for partials
+- **Partials must be placed inside folders that start with `_` to be auto-discovered**
+- Partial files can be nested within underscore folders (e.g., `_partials/components/button.eta`)
+- Multiple underscore folders are supported (e.g., `_partials/`, `_components/`, `_includes/`)
 
 ```typescript
 {
@@ -236,28 +238,47 @@ site/
 
 **Underscore Folders (`_*`)**
 
+- **Requirement**: Partials must be placed inside folders that start with `_`
 - Any folder starting with `_` is excluded from routing
 - Perfect for organizing partials, components, and utilities
 - Partials are auto-discovered and available to all templates in the hierarchy
+- Multiple underscore folders are supported (e.g., `_partials/`, `_components/`, `_includes/`)
 
 **Hierarchical Partial Discovery**
 
 - Templates automatically have access to partials from all parent directories
 - Enables powerful composition where child layouts inherit global and context-specific components
+- Partials are referenced by their filename (without `.eta` extension)
+
+**Partial Naming and Access**
 
 ```
 site/
 ├── _partials/
-│   ├── navbar.eta           # Available globally
-│   └── footer.eta           # Available globally
+│   ├── navbar.eta           # Available as `it.partials.navbar`
+│   └── footer.eta           # Available as `it.partials.footer`
+├── _components/
+│   └── button.eta           # Available as `it.partials.button`
 ├── blog/
-│   ├── _components/
-│   │   └── post-card.eta    # Available to blog/ and subdirectories
-│   └── +layout.eta          # Can use navbar, footer, and post-card
+│   ├── _widgets/
+│   │   └── post-card.eta    # Available as `it.partials['post-card']`
+│   └── layout.eta           # Can use all above partials
 └── docs/
-    ├── _widgets/
-    │   └── toc.eta          # Available only to docs/
-    └── +layout.eta          # Can use navbar, footer, and toc
+    ├── _helpers/
+    │   └── toc.eta          # Available as `it.partials.toc`
+    └── layout.eta           # Can use navbar, footer, button, and toc
+```
+
+**Using Partials in Templates**
+
+```eta
+<!-- In any layout.eta file -->
+<%~ it.partials.navbar %>
+<main><%~ it.content %></main>
+<%~ it.partials.footer %>
+
+<!-- For partials with hyphens in names -->
+<%~ it.partials['post-card'] %>
 ```
 
 ### Collection Index Templates
@@ -305,6 +326,40 @@ Collection index pages automatically receive aggregated data about their child c
   </nav>
 <% } %>
 ```
+
+### Template System Troubleshooting
+
+**Partial Not Found Errors**
+
+If a partial isn't being discovered, check these common issues:
+
+1. **Underscore folder requirement**: Partials must be in folders starting with `_`
+
+   ```
+   ❌ site/header.eta          # Won't be discovered as partial
+   ✅ site/_partials/header.eta # Will be discovered
+   ```
+
+2. **File extension**: Partials must have `.eta` extension
+
+   ```
+   ❌ site/_partials/header.html # Won't be discovered
+   ✅ site/_partials/header.eta  # Will be discovered
+   ```
+
+3. **Directory structure**: Ensure the underscore folder is properly nested
+   ```
+   ❌ _partials/header.eta       # Outside srcDir
+   ✅ site/_partials/header.eta  # Inside srcDir
+   ```
+
+**Layout Not Applied**
+
+If layouts aren't being applied to your content:
+
+1. **Check file naming**: Layout files must be named `layout.eta`
+2. **Verify hierarchy**: Layouts cascade from current directory up to root
+3. **Front matter syntax**: Explicit layouts use `layout: 'templatename'` (without `.eta`)
 
 ## Template Engine Configuration
 
