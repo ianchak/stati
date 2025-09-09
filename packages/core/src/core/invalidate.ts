@@ -160,10 +160,9 @@ function matchesGlob(path: string, pattern: string): boolean {
  */
 export async function invalidate(query?: string): Promise<InvalidationResult> {
   const cacheDir = join(process.cwd(), '.stati');
-  const cacheManifestPath = join(cacheDir, 'cache-manifest.json');
 
   // Load existing cache manifest
-  let cacheManifest = await loadCacheManifest(cacheManifestPath);
+  let cacheManifest = await loadCacheManifest(cacheDir);
 
   if (!cacheManifest) {
     // No cache to invalidate
@@ -181,7 +180,7 @@ export async function invalidate(query?: string): Promise<InvalidationResult> {
     invalidatedPaths.push(...Object.keys(cacheManifest.entries));
     cacheManifest.entries = {};
 
-    await saveCacheManifest(cacheManifestPath, cacheManifest);
+    await saveCacheManifest(cacheDir, cacheManifest);
 
     return {
       invalidatedCount: invalidatedPaths.length,
@@ -204,7 +203,7 @@ export async function invalidate(query?: string): Promise<InvalidationResult> {
   }
 
   // Save updated cache manifest
-  await saveCacheManifest(cacheManifestPath, cacheManifest);
+  await saveCacheManifest(cacheDir, cacheManifest);
 
   return {
     invalidatedCount: invalidatedPaths.length,
