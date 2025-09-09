@@ -201,8 +201,7 @@ export async function build(options: BuildOptions = {}): Promise<BuildStats> {
   await ensureDir(cacheDir);
 
   // Load cache manifest for ISG
-  const cacheManifestPath = join(cacheDir, 'cache-manifest.json');
-  let cacheManifest = await loadCacheManifest(cacheManifestPath);
+  let cacheManifest = await loadCacheManifest(cacheDir);
 
   // If no cache manifest exists, create an empty one
   if (!cacheManifest) {
@@ -338,7 +337,7 @@ export async function build(options: BuildOptions = {}): Promise<BuildStats> {
   }
 
   // Save updated cache manifest
-  await saveCacheManifest(cacheManifestPath, manifest);
+  await saveCacheManifest(cacheDir, manifest);
 
   // Copy static assets and count them
   let assetsCount = 0;

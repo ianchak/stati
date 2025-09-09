@@ -410,7 +410,7 @@ describe('build.ts', () => {
       expect(mockWriteFile).toHaveBeenCalledTimes(1);
       // Verify it's the cache manifest being written
       expect(mockWriteFile).toHaveBeenCalledWith(
-        expect.stringContaining('cache-manifest.json'),
+        expect.stringContaining('manifest.json'),
         expect.stringContaining('"entries": {}'),
         'utf-8',
       );
