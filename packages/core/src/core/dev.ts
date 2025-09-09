@@ -144,11 +144,10 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
    */
   async function handleTemplateChange(templatePath: string): Promise<void> {
     const cacheDir = join(process.cwd(), '.stati');
-    const cacheManifestPath = join(cacheDir, 'cache-manifest.json');
 
     try {
       // Load existing cache manifest
-      let cacheManifest = await loadCacheManifest(cacheManifestPath);
+      let cacheManifest = await loadCacheManifest(cacheDir);
 
       if (!cacheManifest) {
         // No cache exists, perform full rebuild
@@ -178,7 +177,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
         affectedPages.forEach((page) => logger.info?.(`   📄 ${page}`));
 
         // Save updated cache manifest
-        await saveCacheManifest(cacheManifestPath, cacheManifest);
+        await saveCacheManifest(cacheDir, cacheManifest);
 
         // Perform incremental rebuild (only affected pages will be rebuilt)
         await build({
