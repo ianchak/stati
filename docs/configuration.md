@@ -82,7 +82,7 @@ const config: StatiConfig = {
   // Incremental Static Generation
   isg: {
     enabled: true,
-    ttlSeconds: 3600,
+    ttlSeconds: 21600, // 6 hours
     maxAgeCapDays: 365,
     aging: [],
   },
@@ -477,9 +477,9 @@ Whether to enable ISG caching features.
 }
 ```
 
-### `isg.ttlSeconds` (number, default: 3600)
+### `isg.ttlSeconds` (number, default: 21600)
 
-Default cache time-to-live in seconds (1 hour by default).
+Default cache time-to-live in seconds (6 hours by default).
 
 ```typescript
 {
@@ -658,15 +658,23 @@ Individual pages can override global ISG settings using front matter:
 ---
 title: 'My Post'
 description: 'A great post'
-tags: ['blog', 'tutorial']
+tags: ['blog', 'tutorial'] # Tags for content organization and ISG invalidation
 layout: 'post'
 order: 1
 publishedAt: '2024-01-01'
-ttlSeconds: 7200 # Override global TTL
-maxAgeCapDays: 60 # Override global max age cap
+ttlSeconds: 7200 # Override global TTL (in seconds)
+maxAgeCapDays: 60 # Override global max age cap (in days)
 draft: false # Exclude from build if true
 ---
 ```
+
+**ISG-specific front matter fields:**
+
+- **`tags`** (array): Tags for content organization and cache invalidation. Use `stati invalidate tag=<tagname>` to invalidate all pages with a specific tag.
+- **`ttlSeconds`** (number): Override the global ISG TTL for this page
+- **`maxAgeCapDays`** (number): Override the global max age cap for this page
+- **`publishedAt`** (string): ISO date used for aging calculations and content freshness
+- **`draft`** (boolean): When true, excludes the page from builds (unless `--include-drafts` is used)
 
 ## Environment-Specific Configuration
 
@@ -709,8 +717,6 @@ stati build [options]
 - `--force` - Forces a full rebuild, ignoring existing cache
 - `--clean` - Wipes the cache directory before building
 - `--include-drafts` - Includes pages marked with `draft: true` in the build
-- `--invalidateTag <tag>` - Invalidates all pages with the specified tag
-- `--invalidatePath <path>` - Invalidates the page at the specified path
 
 **Examples:**
 
@@ -726,10 +732,6 @@ stati build --clean
 
 # Include draft pages
 stati build --include-drafts
-
-# Invalidate specific content
-stati build --invalidateTag "blog"
-stati build --invalidatePath "/posts/my-post"
 ```
 
 **Output:**
@@ -793,18 +795,44 @@ stati dev --port 8080 --open --host 0.0.0.0
 
 The development server performs an initial build and then watches for changes, rebuilding only the affected parts of your site for fast iteration.
 
-### `stati invalidate` _(Planned)_
+### `stati invalidate`
 
-stati dev [options]
+Invalidates cached pages by tag or path, forcing them to rebuild on the next build.
 
-````
+**Usage:**
+
+```bash
+stati invalidate <query>
+```
+
+**Query Formats:**
+
+- `tag=<tagname>` - Invalidates all pages with the specified tag
+- `path=<pagepath>` - Invalidates the page at the specified path
+
+**Examples:**
+
+```bash
+# Invalidate all pages tagged with "blog"
+stati invalidate tag=blog
+
+# Invalidate all pages tagged with "news"
+stati invalidate tag=news
+
+# Invalidate a specific page
+stati invalidate path=/blog/2024/hello
+
+# Invalidate a specific post
+stati invalidate path=/posts/my-post
+```
 
 **Features:**
 
-- Serves the built site locally
-- Watches source files for changes
-- Performs incremental rebuilds using ISG
-- Triggers full-page reload on changes
+- **Tag-based invalidation**: Clear cache for all pages with specific tags
+- **Path-based invalidation**: Clear cache for individual pages
+- **Cache manifest updates**: Automatically updates the ISG cache manifest
+- **Detailed output**: Shows which pages were invalidated
+- **Error handling**: Graceful handling when cache doesn't exist or query is invalid
 
 ---
 
@@ -856,7 +884,7 @@ export default defineConfig({
 
   isg: {
     enabled: true,
-    ttlSeconds: 1800, // 30 minutes
+    ttlSeconds: 21600, // 6 hours (updated default)
     maxAgeCapDays: 90,
     aging: [
       { untilDays: 1, ttlSeconds: 300 }, // 5 minutes for fresh content
@@ -884,4 +912,4 @@ export default defineConfig({
     },
   },
 });
-````
+```

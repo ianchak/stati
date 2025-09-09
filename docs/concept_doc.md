@@ -132,12 +132,12 @@ const config: StatiConfig = {
   },
   isg: {
     enabled: true,
-    ttlSeconds: 3600,
+    ttlSeconds: 21600, // 6 hours default
     maxAgeCapDays: 365,
     aging: [
-      { untilDays: 7, ttlSeconds: 3600 },
-      { untilDays: 90, ttlSeconds: 86400 },
-      { untilDays: 365, ttlSeconds: 604800 },
+      { untilDays: 7, ttlSeconds: 21600 }, // 6 hours for week-old content
+      { untilDays: 90, ttlSeconds: 86400 }, // 24 hours for older content
+      { untilDays: 365, ttlSeconds: 604800 }, // 7 days for very old content
     ],
   },
 };
