@@ -6,6 +6,8 @@ import { loadContent } from './content.js';
 import { createMarkdownProcessor, renderMarkdown } from './markdown.js';
 import { createTemplateEngine, renderPage } from './templates.js';
 import { buildNavigation } from './navigation.js';
+import { loadCacheManifest, saveCacheManifest } from './isg/manifest.js';
+import { shouldRebuildPage, createCacheEntry, updateCacheEntry } from './isg/builder.js';
 import type { BuildContext, BuildStats, Logger } from '../types.js';
 
 /**
@@ -198,6 +200,24 @@ export async function build(options: BuildOptions = {}): Promise<BuildStats> {
   const cacheDir = join(process.cwd(), '.stati');
   await ensureDir(cacheDir);
 
+  // Load cache manifest for ISG
+  const cacheManifestPath = join(cacheDir, 'cache-manifest.json');
+  let cacheManifest = await loadCacheManifest(cacheManifestPath);
+
+  // If no cache manifest exists, create an empty one
+  if (!cacheManifest) {
+    cacheManifest = {
+      entries: {},
+    };
+  }
+
+  // At this point cacheManifest is guaranteed to be non-null
+  const manifest = cacheManifest;
+
+  // Initialize cache stats
+  let cacheHits = 0;
+  let cacheMisses = 0;
+
   // Clean output directory if requested
   if (options.clean) {
     logger.info('🧹 Cleaning output directory...');
@@ -233,10 +253,12 @@ export async function build(options: BuildOptions = {}): Promise<BuildStats> {
     await config.hooks.beforeAll(buildContext);
   }
 
-  // Render each page with progress tracking
+  // Render each page with progress tracking and ISG
   if (logger.step) {
     logger.step(2, 3, 'Rendering pages');
   }
+
+  const buildTime = new Date();
 
   for (let i = 0; i < pages.length; i++) {
     const page = pages[i];
@@ -244,9 +266,47 @@ export async function build(options: BuildOptions = {}): Promise<BuildStats> {
 
     // Show progress for page rendering
     if (logger.progress) {
+      logger.progress(i + 1, pages.length, `Checking ${page.url}`);
+    } else {
+      logger.processing(`Checking ${page.url}`);
+    }
+
+    // Determine output path
+    let outputPath: string;
+    if (page.url === '/') {
+      outputPath = join(outDir, 'index.html');
+    } else if (page.url.endsWith('/')) {
+      outputPath = join(outDir, page.url, 'index.html');
+    } else {
+      outputPath = join(outDir, `${page.url}.html`);
+    }
+
+    // Get cache key (use output path relative to outDir)
+    const relativePath = outputPath.replace(outDir, '').replace(/\\/g, '/');
+    const cacheKey = relativePath.startsWith('/') ? relativePath : `/${relativePath}`;
+    const existingEntry = manifest.entries[cacheKey];
+
+    // Check if we should rebuild this page (considering ISG logic)
+    const shouldRebuild =
+      options.force || (await shouldRebuildPage(page, existingEntry, config, buildTime));
+
+    if (!shouldRebuild) {
+      // Cache hit - skip rendering
+      cacheHits++;
+      if (logger.progress) {
+        logger.progress(i + 1, pages.length, `Cached ${page.url}`);
+      } else {
+        logger.processing(`📋 Cached ${page.url}`);
+      }
+      continue;
+    }
+
+    // Cache miss - need to rebuild
+    cacheMisses++;
+    if (logger.progress) {
       logger.progress(i + 1, pages.length, `Rendering ${page.url}`);
     } else {
-      logger.processing(`Building ${page.url}`);
+      logger.processing(`🔄 Building ${page.url}`);
     }
 
     // Run beforeRender hook
@@ -260,25 +320,25 @@ export async function build(options: BuildOptions = {}): Promise<BuildStats> {
     // Render with template
     const finalHtml = await renderPage(page, htmlContent, config, eta, navigation, pages);
 
-    // Determine output path - fix the logic here
-    let outputPath: string;
-    if (page.url === '/') {
-      outputPath = join(outDir, 'index.html');
-    } else if (page.url.endsWith('/')) {
-      outputPath = join(outDir, page.url, 'index.html');
-    } else {
-      outputPath = join(outDir, `${page.url}.html`);
-    }
-
     // Ensure directory exists and write file
     await ensureDir(dirname(outputPath));
     await writeFile(outputPath, finalHtml, 'utf-8');
+
+    // Update cache manifest
+    if (existingEntry) {
+      manifest.entries[cacheKey] = await updateCacheEntry(existingEntry, page, config, buildTime);
+    } else {
+      manifest.entries[cacheKey] = await createCacheEntry(page, config, buildTime);
+    }
 
     // Run afterRender hook
     if (config.hooks?.afterRender) {
       await config.hooks.afterRender({ page, config });
     }
   }
+
+  // Save updated cache manifest
+  await saveCacheManifest(cacheManifestPath, manifest);
 
   // Copy static assets and count them
   let assetsCount = 0;
@@ -305,9 +365,9 @@ export async function build(options: BuildOptions = {}): Promise<BuildStats> {
     assetsCount,
     buildTimeMs: buildEndTime - buildStartTime,
     outputSizeBytes: await getDirectorySize(outDir),
-    // Cache stats would be populated here when caching is implemented
-    cacheHits: 0,
-    cacheMisses: 0,
+    // Include ISG cache statistics
+    cacheHits,
+    cacheMisses,
   };
 
   console.log(); // Add spacing before statistics

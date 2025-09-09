@@ -20,6 +20,12 @@ const {
   mockRenderMarkdown,
   mockCreateTemplateEngine,
   mockRenderPage,
+  // ISG mocks
+  mockLoadCacheManifest,
+  mockSaveCacheManifest,
+  mockShouldRebuildPage,
+  mockCreateCacheEntry,
+  mockUpdateCacheEntry,
 } = vi.hoisted(() => ({
   mockEnsureDir: vi.fn(),
   mockWriteFile: vi.fn(),
@@ -35,6 +41,12 @@ const {
   mockRenderMarkdown: vi.fn(),
   mockCreateTemplateEngine: vi.fn(),
   mockRenderPage: vi.fn(),
+  // ISG mocks
+  mockLoadCacheManifest: vi.fn(),
+  mockSaveCacheManifest: vi.fn(),
+  mockShouldRebuildPage: vi.fn(),
+  mockCreateCacheEntry: vi.fn(),
+  mockUpdateCacheEntry: vi.fn(),
 }));
 
 // Mock dependencies
@@ -67,6 +79,18 @@ vi.mock('../../core/markdown.js', () => ({
 vi.mock('../../core/templates.js', () => ({
   createTemplateEngine: mockCreateTemplateEngine,
   renderPage: mockRenderPage,
+}));
+
+// Mock ISG modules
+vi.mock('../../core/isg/manifest.js', () => ({
+  loadCacheManifest: mockLoadCacheManifest,
+  saveCacheManifest: mockSaveCacheManifest,
+}));
+
+vi.mock('../../core/isg/builder.js', () => ({
+  shouldRebuildPage: mockShouldRebuildPage,
+  createCacheEntry: mockCreateCacheEntry,
+  updateCacheEntry: mockUpdateCacheEntry,
 }));
 
 describe('Error Scenario Tests', () => {
@@ -113,6 +137,30 @@ describe('Error Scenario Tests', () => {
     mockLoadContent.mockResolvedValue([validPage]);
     mockRenderMarkdown.mockReturnValue('<h1>Test Content</h1>');
     mockRenderPage.mockResolvedValue('<html><body><h1>Test Content</h1></body></html>');
+
+    // ISG mocks - setup default behaviors
+    mockLoadCacheManifest.mockResolvedValue(null); // No existing cache by default
+    mockSaveCacheManifest.mockImplementation(async (path, manifest) => {
+      // Simulate the actual save by calling writeFile like the real implementation does
+      await mockWriteFile(path, JSON.stringify(manifest, null, 2), 'utf-8');
+    });
+    mockShouldRebuildPage.mockResolvedValue(true); // Always rebuild by default in tests
+    mockCreateCacheEntry.mockResolvedValue({
+      path: '/test.html',
+      inputsHash: 'test-hash',
+      deps: [],
+      tags: [],
+      renderedAt: new Date().toISOString(),
+      ttlSeconds: 3600,
+    });
+    mockUpdateCacheEntry.mockResolvedValue({
+      path: '/test.html',
+      inputsHash: 'test-hash-updated',
+      deps: [],
+      tags: [],
+      renderedAt: new Date().toISOString(),
+      ttlSeconds: 3600,
+    });
   });
 
   afterEach(() => {
@@ -431,7 +479,8 @@ describe('Error Scenario Tests', () => {
 
       // Should process all pages
       expect(mockRenderMarkdown).toHaveBeenCalledTimes(1000);
-      expect(mockWriteFile).toHaveBeenCalledTimes(1000);
+      // ISG adds one additional write for the cache manifest
+      expect(mockWriteFile).toHaveBeenCalledTimes(1001);
     });
   });
 

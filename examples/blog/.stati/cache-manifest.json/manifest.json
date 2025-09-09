@@ -1,0 +1,110 @@
+{
+  "entries": {
+    "/about.html": {
+      "path": "/about.html",
+      "inputsHash": "sha256-232b67a6c65859e13bc7b6fa07ab00953af127f833fa3a2acca7d2f5c01091e4",
+      "deps": [
+        "c:\\Users\\ianchak\\Projects\\stati\\examples\\blog\\site\\layout.eta",
+        "c:/Users/ianchak/Projects/stati/examples/blog/site/_partials/footer.eta",
+        "c:/Users/ianchak/Projects/stati/examples/blog/site/_partials/header.eta"
+      ],
+      "tags": [],
+      "renderedAt": "2025-09-09T17:55:48.125Z",
+      "ttlSeconds": 3600,
+      "maxAgeCapDays": 365
+    },
+    "/contact.html": {
+      "path": "/contact.html",
+      "inputsHash": "sha256-265ef09ff3253d0d6b544802387dac005e044b712c12767edc04491cec769b0d",
+      "deps": [
+        "c:\\Users\\ianchak\\Projects\\stati\\examples\\blog\\site\\layout.eta",
+        "c:/Users/ianchak/Projects/stati/examples/blog/site/_partials/footer.eta",
+        "c:/Users/ianchak/Projects/stati/examples/blog/site/_partials/header.eta"
+      ],
+      "tags": [],
+      "renderedAt": "2025-09-09T17:55:48.125Z",
+      "ttlSeconds": 3600,
+      "maxAgeCapDays": 365
+    },
+    "/index.html": {
+      "path": "/index.html",
+      "inputsHash": "sha256-808e65436eb8d9481b7fb568861a003f4a3f6c463b9089e02ac773e14b09a386",
+      "deps": [
+        "c:\\Users\\ianchak\\Projects\\stati\\examples\\blog\\site\\layout.eta",
+        "c:/Users/ianchak/Projects/stati/examples/blog/site/_partials/footer.eta",
+        "c:/Users/ianchak/Projects/stati/examples/blog/site/_partials/header.eta"
+      ],
+      "tags": [],
+      "renderedAt": "2025-09-09T17:55:48.125Z",
+      "ttlSeconds": 3600,
+      "maxAgeCapDays": 365
+    },
+    "/blog/10-tips-for-better-web-development.html": {
+      "path": "/blog/10-tips-for-better-web-development.html",
+      "inputsHash": "sha256-d9683649bdcd0ad2af15fb7c24105c4405be27a4fc2672d7a5120db5a130d8a9",
+      "deps": [
+        "c:\\Users\\ianchak\\Projects\\stati\\examples\\blog\\site\\layout.eta",
+        "c:/Users/ianchak/Projects/stati/examples/blog/site/_partials/footer.eta",
+        "c:/Users/ianchak/Projects/stati/examples/blog/site/_partials/header.eta"
+      ],
+      "tags": [
+        "web-development",
+        "tips",
+        "best-practices"
+      ],
+      "renderedAt": "2025-09-09T17:55:48.125Z",
+      "ttlSeconds": 3600,
+      "publishedAt": "2024-03-25T00:00:00.000Z",
+      "maxAgeCapDays": 365
+    },
+    "/blog.html": {
+      "path": "/blog.html",
+      "inputsHash": "sha256-d37e6ac41c0ee3a662fa41a51980d2dbbd3bf0bba2bdae477c62980e4845826c",
+      "deps": [
+        "c:\\Users\\ianchak\\Projects\\stati\\examples\\blog\\site\\layout.eta",
+        "c:/Users/ianchak/Projects/stati/examples/blog/site/_partials/footer.eta",
+        "c:/Users/ianchak/Projects/stati/examples/blog/site/_partials/header.eta"
+      ],
+      "tags": [],
+      "renderedAt": "2025-09-09T17:55:48.125Z",
+      "ttlSeconds": 3600,
+      "maxAgeCapDays": 365
+    },
+    "/blog/why-i-choose-static-sites.html": {
+      "path": "/blog/why-i-choose-static-sites.html",
+      "inputsHash": "sha256-07acabfbb59f27594c58f8d2b3ba1720d0cdd5c8917f388f91c6ed17506ce0f3",
+      "deps": [
+        "c:\\Users\\ianchak\\Projects\\stati\\examples\\blog\\site\\layout.eta",
+        "c:/Users/ianchak/Projects/stati/examples/blog/site/_partials/footer.eta",
+        "c:/Users/ianchak/Projects/stati/examples/blog/site/_partials/header.eta"
+      ],
+      "tags": [
+        "static-sites",
+        "jamstack",
+        "performance"
+      ],
+      "renderedAt": "2025-09-09T17:55:48.125Z",
+      "ttlSeconds": 3600,
+      "publishedAt": "2024-03-30T00:00:00.000Z",
+      "maxAgeCapDays": 365
+    },
+    "/blog/welcome-to-the-blog.html": {
+      "path": "/blog/welcome-to-the-blog.html",
+      "inputsHash": "sha256-4f4d015a3a2f4f572b3e7b364947d3d207972c48fc7f5f0796481fbe8e30d46d",
+      "deps": [
+        "c:\\Users\\ianchak\\Projects\\stati\\examples\\blog\\site\\layout.eta",
+        "c:/Users/ianchak/Projects/stati/examples/blog/site/_partials/footer.eta",
+        "c:/Users/ianchak/Projects/stati/examples/blog/site/_partials/header.eta"
+      ],
+      "tags": [
+        "welcome",
+        "intro",
+        "blog"
+      ],
+      "renderedAt": "2025-09-09T17:56:36.050Z",
+      "ttlSeconds": 3600,
+      "publishedAt": "2024-03-20T00:00:00.000Z",
+      "maxAgeCapDays": 365
+    }
+  }
+}

@@ -375,9 +375,13 @@ describe('build.ts', () => {
       expect(consoleSpy).toHaveBeenCalledWith('Building your site...');
       expect(consoleSpy).toHaveBeenCalledWith('📄 Found 3 pages');
       expect(consoleSpy).toHaveBeenCalledWith('🧭 Built navigation with 3 top-level items');
-      expect(consoleSpy).toHaveBeenCalledWith('Building /');
-      expect(consoleSpy).toHaveBeenCalledWith('Building /about');
-      expect(consoleSpy).toHaveBeenCalledWith('Building /blog/post');
+      // ISG shows "Checking" then "🔄 Building" for pages that need rebuilding
+      expect(consoleSpy).toHaveBeenCalledWith('Checking /');
+      expect(consoleSpy).toHaveBeenCalledWith('🔄 Building /');
+      expect(consoleSpy).toHaveBeenCalledWith('Checking /about');
+      expect(consoleSpy).toHaveBeenCalledWith('🔄 Building /about');
+      expect(consoleSpy).toHaveBeenCalledWith('Checking /blog/post');
+      expect(consoleSpy).toHaveBeenCalledWith('🔄 Building /blog/post');
       expect(consoleSpy).toHaveBeenCalledWith('📦 Copying static assets from static');
       expect(consoleSpy).toHaveBeenCalledWith('📦 Copied 0 static assets');
     });
@@ -402,7 +406,14 @@ describe('build.ts', () => {
       expect(consoleSpy).toHaveBeenCalledWith('📄 Found 0 pages');
       expect(mockRenderMarkdown).not.toHaveBeenCalled();
       expect(mockRenderPage).not.toHaveBeenCalled();
-      expect(mockWriteFile).not.toHaveBeenCalled();
+      // ISG still writes cache manifest even with no pages, so we expect one write call
+      expect(mockWriteFile).toHaveBeenCalledTimes(1);
+      // Verify it's the cache manifest being written
+      expect(mockWriteFile).toHaveBeenCalledWith(
+        expect.stringContaining('cache-manifest.json'),
+        expect.stringContaining('"entries": {}'),
+        'utf-8',
+      );
     });
 
     it('should handle build with force option', async () => {
