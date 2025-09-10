@@ -396,4 +396,156 @@ describe('ISG Cache Invalidation', () => {
       });
     });
   });
+
+  describe('age-based and time-based invalidation', () => {
+    const createMockEntryWithAge = (daysAgo: number): CacheEntry => {
+      const renderedAt = new Date();
+      renderedAt.setDate(renderedAt.getDate() - daysAgo);
+
+      return {
+        path: `/page-${daysAgo}`,
+        inputsHash: 'hash123',
+        deps: ['layout.eta'],
+        tags: ['test'],
+        renderedAt: renderedAt.toISOString(),
+        ttlSeconds: 3600,
+      };
+    };
+
+    describe('age: invalidation', () => {
+      beforeEach(() => {
+        // Create test entries with different ages
+        const mockManifest: CacheManifest = {
+          entries: {
+            '/recent': createMockEntryWithAge(1), // 1 day ago
+            '/week-old': createMockEntryWithAge(7), // 1 week ago
+            '/month-old': createMockEntryWithAge(30), // 1 month ago
+            '/quarter-old': createMockEntryWithAge(90), // 3 months ago
+            '/year-old': createMockEntryWithAge(365), // 1 year ago
+          },
+        };
+        mockLoadCacheManifest.mockResolvedValue(mockManifest);
+      });
+      it('should invalidate content younger than specified days', async () => {
+        const result = await invalidate('age:8days');
+
+        // Should invalidate everything younger than 8 days (recent, week-old)
+        // month-old, quarter-old, year-old should NOT be invalidated
+        expect(result.invalidatedCount).toBe(2);
+        expect(result.invalidatedPaths).toEqual(['/recent', '/week-old']);
+      });
+
+      it('should invalidate content younger than specified weeks', async () => {
+        const result = await invalidate('age:2weeks');
+
+        // Should invalidate everything younger than 2 weeks (recent, week-old)
+        expect(result.invalidatedCount).toBe(2);
+        expect(result.invalidatedPaths).toEqual(['/recent', '/week-old']);
+      });
+
+      it('should invalidate content younger than specified months', async () => {
+        const result = await invalidate('age:2months');
+
+        // Should invalidate everything younger than 2 months (recent, week-old, month-old)
+        expect(result.invalidatedCount).toBe(3);
+        expect(result.invalidatedPaths).toEqual(['/recent', '/week-old', '/month-old']);
+      });
+
+      it('should invalidate content younger than specified years', async () => {
+        const result = await invalidate('age:6months');
+
+        // Should invalidate content younger than 6 months (recent, week-old, month-old, quarter-old)
+        // year-old (365 days = 12 months) should NOT be invalidated
+        expect(result.invalidatedCount).toBe(4);
+        expect(result.invalidatedPaths).toEqual([
+          '/recent',
+          '/week-old',
+          '/month-old',
+          '/quarter-old',
+        ]);
+      });
+
+      it('should handle invalid age formats gracefully', async () => {
+        const result = await invalidate('age:invalid');
+
+        expect(result.invalidatedCount).toBe(0);
+        expect(result.invalidatedPaths).toEqual([]);
+      });
+
+      it('should handle zero and negative ages', async () => {
+        const result = await invalidate('age:0days');
+
+        expect(result.invalidatedCount).toBe(0);
+        expect(result.invalidatedPaths).toEqual([]);
+      });
+
+      it('should handle singular and plural time units', async () => {
+        // Create a fresh mock manifest for each call to avoid state pollution
+        const createFreshManifest = () => ({
+          entries: {
+            '/recent': createMockEntryWithAge(1), // 1 day ago
+            '/week-old': createMockEntryWithAge(7), // 1 week ago
+            '/month-old': createMockEntryWithAge(30), // 1 month ago
+            '/quarter-old': createMockEntryWithAge(90), // 3 months ago
+            '/year-old': createMockEntryWithAge(365), // 1 year ago
+          },
+        });
+
+        // Mock fresh manifest for first call
+        mockLoadCacheManifest.mockResolvedValueOnce(createFreshManifest());
+        const resultSingular = await invalidate('age:1month');
+
+        // Mock fresh manifest for second call
+        mockLoadCacheManifest.mockResolvedValueOnce(createFreshManifest());
+        const resultPlural = await invalidate('age:1months');
+
+        // Both should produce the same result (recent, week-old, month-old)
+        expect(resultSingular.invalidatedCount).toBe(3);
+        expect(resultPlural.invalidatedCount).toBe(3);
+        expect(resultSingular.invalidatedCount).toBe(resultPlural.invalidatedCount);
+      });
+    });
+
+    describe('combined age and other criteria', () => {
+      beforeEach(() => {
+        // Add some entries with tags for testing combinations
+        const mockManifest: CacheManifest = {
+          entries: {
+            '/recent-blog': {
+              ...createMockEntryWithAge(1),
+              tags: ['blog'],
+            },
+            '/old-blog': {
+              ...createMockEntryWithAge(90),
+              tags: ['blog'],
+            },
+            '/old-news': {
+              ...createMockEntryWithAge(90),
+              tags: ['news'],
+            },
+          },
+        };
+        mockLoadCacheManifest.mockResolvedValue(mockManifest);
+      });
+
+      it('should combine age with tag criteria using OR logic', async () => {
+        const result = await invalidate('age:2months tag:blog');
+
+        // Should invalidate:
+        // - recent-blog (matches both age:2months and tag:blog - 1 day < 2 months)
+        // - old-blog (matches tag:blog, but NOT age:2months since 90 days > 2 months)
+        expect(result.invalidatedCount).toBe(2);
+        expect(result.invalidatedPaths).toEqual(['/recent-blog', '/old-blog']);
+      });
+
+      it('should work with single age criterion', async () => {
+        const result = await invalidate('age:2months');
+
+        // Should invalidate recent-blog (1 day < 2 months)
+        // Should NOT invalidate old-blog and old-news (90 days > 2 months)
+        expect(result.invalidatedCount).toBe(1);
+        expect(result.invalidatedPaths).toEqual(['/recent-blog']);
+      });
+    });
+  });
 });

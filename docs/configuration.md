@@ -670,7 +670,7 @@ draft: false # Exclude from build if true
 
 **ISG-specific front matter fields:**
 
-- **`tags`** (array): Tags for content organization and cache invalidation. Use `stati invalidate tag=<tagname>` to invalidate all pages with a specific tag.
+- **`tags`** (array): Tags for content organization and cache invalidation. Use `stati invalidate "tag:<tagname>"` to invalidate all pages with a specific tag.
 - **`ttlSeconds`** (number): Override the global ISG TTL for this page
 - **`maxAgeCapDays`** (number): Override the global max age cap for this page
 - **`publishedAt`** (string): ISO date used for aging calculations and content freshness
@@ -797,7 +797,7 @@ The development server performs an initial build and then watches for changes, r
 
 ### `stati invalidate`
 
-Invalidates cached pages by tag or path, forcing them to rebuild on the next build.
+Invalidates cached pages by tag, path, pattern, or age, forcing them to rebuild on the next build.
 
 **Usage:**
 
@@ -807,29 +807,76 @@ stati invalidate <query>
 
 **Query Formats:**
 
-- `tag=<tagname>` - Invalidates all pages with the specified tag
-- `path=<pagepath>` - Invalidates the page at the specified path
+- `tag:value` - Invalidates all pages with the specified tag
+- `path:value` - Invalidates pages at the specified path (supports prefixes)
+- `glob:pattern` - Invalidates pages matching the glob pattern
+- `age:duration` - Invalidates content younger than the specified age
 
 **Examples:**
 
 ```bash
 # Invalidate all pages tagged with "blog"
-stati invalidate tag=blog
+stati invalidate "tag:blog"
 
-# Invalidate all pages tagged with "news"
-stati invalidate tag=news
+# Invalidate all pages under /posts
+stati invalidate "path:/posts"
 
-# Invalidate a specific page
-stati invalidate path=/blog/2024/hello
+# Invalidate using glob patterns
+stati invalidate "glob:/blog/**"
 
-# Invalidate a specific post
-stati invalidate path=/posts/my-post
+# Invalidate content younger than 3 months
+stati invalidate "age:3months"
+
+# Invalidate content younger than 1 week
+stati invalidate "age:1week"
+
+# Multiple criteria (OR logic)
+stati invalidate "tag:blog age:1month"
+
+# Clear entire cache
+stati invalidate
+```
+
+**Age-based Invalidation:**
+
+Age-based invalidation removes content that was rendered within a specified time period. This is useful for refreshing recent content while keeping older, more stable content cached.
+
+**Age Formats:**
+
+- `age:30days` or `age:30day` - Content younger than 30 days
+- `age:2weeks` or `age:2week` - Content younger than 2 weeks
+- `age:6months` or `age:6month` - Content younger than 6 months
+- `age:1year` or `age:1years` - Content younger than 1 year
+
+**Query Syntax:**
+
+- **Multiple criteria**: Use spaces to separate multiple criteria, which are combined with OR logic
+- **Quoted strings**: Use quotes when values contain spaces (e.g., `"tag:my tag"`)
+- **Case sensitivity**: Tag matching is case-sensitive, path matching follows filesystem conventions
+- **Glob patterns**: Support `*` (single level) and `**` (recursive) wildcards
+
+**Advanced Examples:**
+
+```bash
+# Multiple tags
+stati invalidate "tag:blog tag:featured"
+
+# Path with glob pattern
+stati invalidate "glob:/posts/**/*.html"
+
+# Combined criteria (matches any)
+stati invalidate "tag:news path:/urgent age:1day"
+
+# Quoted strings with spaces
+stati invalidate '"tag:my category" "path:/my posts"'
 ```
 
 **Features:**
 
 - **Tag-based invalidation**: Clear cache for all pages with specific tags
-- **Path-based invalidation**: Clear cache for individual pages
+- **Path-based invalidation**: Clear cache for individual pages or path prefixes
+- **Pattern-based invalidation**: Use glob patterns for flexible path matching
+- **Age-based invalidation**: Clear cache for content younger than specified age
 - **Cache manifest updates**: Automatically updates the ISG cache manifest
 - **Detailed output**: Shows which pages were invalidated
 - **Error handling**: Graceful handling when cache doesn't exist or query is invalid

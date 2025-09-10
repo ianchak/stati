@@ -21,7 +21,7 @@ Stati is a **lightweight static site generator** (SSG) built in **TypeScript** u
 ### 🚧 Planned Features (v1.0+)
 
 - **Incremental Static Generation** with TTL + aging + freeze
-- **Content invalidation** by tags or paths (`stati invalidate`)
+- **Content invalidation** by tags, paths, patterns, or age (`stati invalidate`)
 - **Blog, Docs, and News templates** via scaffolder
 - **SEO enhancements** (meta tags, RSS, sitemap)
 - **Optional Tailwind CSS** setup via scaffolder
@@ -56,7 +56,7 @@ npx stati build --force --clean --include-drafts
 
 - **`stati build`** - Build your site with options for force rebuild, cleaning cache, and including drafts
 - **`stati dev`** - Start development server with configurable port, host, and auto-open browser
-- **`stati invalidate`** - Cache invalidation (coming in future release)
+- **`stati invalidate`** - Cache invalidation by tags, paths, patterns, or age
 
 ---
 

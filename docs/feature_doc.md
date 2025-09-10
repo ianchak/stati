@@ -40,7 +40,7 @@ Stati's template system is co-located with content in the `site/` directory with
 
 ISG minimizes unnecessary rebuilds. By default, if a cache exists, only changed or invalidated pages rebuild. Pages can also be set to expire via TTL (time-to-live), with a maximum age cap preventing old content from endless revalidation.
 
-Per-page overrides let authors configure custom `ttlSeconds`, `maxAgeCapDays`, and tags. The `stati invalidate` command allows targeted invalidation by tag or path, and build flags allow forcing full rebuilds. This makes large sites efficient to maintain.
+Per-page overrides let authors configure custom `ttlSeconds`, `maxAgeCapDays`, and tags. The `stati invalidate` command allows targeted invalidation by tag, path, pattern, or age, and build flags allow forcing full rebuilds. This makes large sites efficient to maintain.
 
 > **📖 For ISG configuration options, see [Configuration Guide](configuration.md#incremental-static-generation-isg)**
 > **📖 For CLI commands, see [CLI Reference](configuration.md#cli-reference)**

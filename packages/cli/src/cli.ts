@@ -204,12 +204,12 @@ const cli = yargs(hideBin(process.argv))
   )
   .command(
     'invalidate [query]',
-    'Invalidate cache entries by tag, path, or pattern',
+    'Invalidate cache entries by tag, path, pattern, or age',
     (y) =>
       y.positional('query', {
         type: 'string',
         description:
-          'Invalidation query (tag:value, path:value, glob:pattern) or empty to clear all',
+          'Invalidation query: tag:value, path:value, glob:pattern, age:3months, or empty to clear all',
       }),
     async (argv) => {
       try {

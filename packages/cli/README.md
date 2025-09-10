@@ -74,21 +74,54 @@ npx @stati/cli build [options]
 
 ### Cache Management
 
-Invalidate cache by tags or paths:
+Invalidate cache by tags, paths, patterns, or age:
 
 ```bash
 # If installed locally
-npx stati invalidate [options]
+npx stati invalidate [query]
 
 # If using npx directly
-npx @stati/cli invalidate [options]
+npx @stati/cli invalidate [query]
 ```
 
-**Options:**
+**Query Formats:**
 
-- `--tags <tags>` - Comma-separated list of tags to invalidate
-- `--paths <paths>` - Comma-separated list of paths to invalidate
-- `--config <path>` - Path to config file
+- `tag:value` - Invalidate by tag
+- `path:value` - Invalidate by path (supports prefixes)
+- `glob:pattern` - Invalidate by glob pattern
+- `age:duration` - Invalidate content younger than specified age
+
+**Examples:**
+
+```bash
+# Invalidate by tag
+npx stati invalidate "tag:blog"
+
+# Invalidate by path prefix
+npx stati invalidate "path:/posts"
+
+# Invalidate by glob pattern
+npx stati invalidate "glob:/blog/**"
+
+# Invalidate content younger than 3 months
+npx stati invalidate "age:3months"
+
+# Invalidate content younger than 1 week
+npx stati invalidate "age:1week"
+
+# Multiple criteria (OR logic)
+npx stati invalidate "tag:blog age:1month"
+
+# Clear entire cache
+npx stati invalidate
+```
+
+**Age Formats:**
+
+- `age:30days` or `age:30day` - Content younger than 30 days
+- `age:2weeks` or `age:2week` - Content younger than 2 weeks
+- `age:6months` or `age:6month` - Content younger than 6 months
+- `age:1year` or `age:1years` - Content younger than 1 year
 
 ## Getting Started
 

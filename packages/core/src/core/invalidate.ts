@@ -99,6 +99,10 @@ export function matchesInvalidationTerm(entry: CacheEntry, path: string, term: s
         // Simple glob pattern matching for paths
         return matchesGlob(path, value);
 
+      case 'age':
+        // Time-based invalidation: age:3months, age:1week, age:30days
+        return matchesAge(entry, value);
+
       default:
         console.warn(`Unknown invalidation term type: ${type}`);
         return false;
@@ -137,8 +141,71 @@ function matchesGlob(path: string, pattern: string): boolean {
 }
 
 /**
+ * Checks if a cache entry matches an age-based invalidation term.
+ * Supports various time units: days, weeks, months, years.
+ *
+ * @param entry - Cache entry to check
+ * @param ageValue - Age specification (e.g., "3months", "1week", "30days")
+ * @returns True if the entry is younger than the specified age
+ *
+ * @example
+ * ```typescript
+ * matchesAge(entry, "3months") // true if rendered within the last 3 months
+ * matchesAge(entry, "1week")   // true if rendered within the last 1 week
+ * ```
+ */
+function matchesAge(entry: CacheEntry, ageValue: string): boolean {
+  const now = new Date();
+  const renderedAt = new Date(entry.renderedAt);
+
+  // Parse age value (e.g., "3months", "1week", "30days")
+  const match = ageValue.match(/^(\d+)(days?|weeks?|months?|years?)$/i);
+  if (!match || !match[1] || !match[2]) {
+    console.warn(`Invalid age format: ${ageValue}. Use format like "3months", "1week", "30days"`);
+    return false;
+  }
+
+  const numStr = match[1];
+  const unit = match[2];
+  const num = parseInt(numStr, 10);
+
+  if (isNaN(num) || num <= 0) {
+    console.warn(`Invalid age number: ${numStr}`);
+    return false;
+  }
+
+  // Calculate cutoff date
+  const cutoffDate = new Date(now);
+
+  switch (unit.toLowerCase()) {
+    case 'day':
+    case 'days':
+      cutoffDate.setDate(cutoffDate.getDate() - num);
+      break;
+    case 'week':
+    case 'weeks':
+      cutoffDate.setDate(cutoffDate.getDate() - num * 7);
+      break;
+    case 'month':
+    case 'months':
+      cutoffDate.setMonth(cutoffDate.getMonth() - num);
+      break;
+    case 'year':
+    case 'years':
+      cutoffDate.setFullYear(cutoffDate.getFullYear() - num);
+      break;
+    default:
+      console.warn(`Unknown time unit: ${unit}`);
+      return false;
+  }
+
+  // Entry matches if it was rendered after the cutoff date (i.e., younger than specified age)
+  return renderedAt > cutoffDate;
+}
+
+/**
  * Invalidates cache entries based on a query string.
- * Supports tag-based, path-based, and pattern-based invalidation.
+ * Supports tag-based, path-based, pattern-based, and time-based invalidation.
  *
  * @param query - Invalidation query string, or undefined to clear all cache
  * @returns Promise resolving to invalidation result
@@ -151,8 +218,11 @@ function matchesGlob(path: string, pattern: string): boolean {
  * // Invalidate specific path
  * await invalidate('path:/about');
  *
+ * // Invalidate content younger than 3 months
+ * await invalidate('age:3months');
+ *
  * // Invalidate multiple criteria
- * await invalidate('tag:blog tag:news path:/posts');
+ * await invalidate('tag:blog age:1week');
  *
  * // Clear entire cache
  * await invalidate();

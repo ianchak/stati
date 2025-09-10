@@ -107,18 +107,30 @@ const server = await createDevServer(config, {
 });
 ```
 
-#### `invalidate(options: InvalidateOptions): Promise<void>`
+#### `invalidate(query?: string): Promise<InvalidationResult>`
 
-Invalidate cache by tags or paths.
+Invalidate cache by tags, paths, patterns, or age.
 
 ```typescript
 import { invalidate } from '@stati/core';
 
-await invalidate({
-  tags: ['blog', 'posts'],
-  paths: ['/blog', '/about'],
-  config: './stati.config.js',
-});
+// Invalidate by tag
+await invalidate('tag:blog');
+
+// Invalidate by path prefix
+await invalidate('path:/posts');
+
+// Invalidate by glob pattern
+await invalidate('glob:/blog/**');
+
+// Invalidate content younger than 3 months
+await invalidate('age:3months');
+
+// Multiple criteria (OR logic)
+await invalidate('tag:blog age:1month');
+
+// Clear entire cache
+await invalidate();
 ```
 
 ### Configuration
