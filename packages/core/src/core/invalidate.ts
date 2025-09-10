@@ -122,22 +122,107 @@ export function matchesInvalidationTerm(entry: CacheEntry, path: string, term: s
  * @returns True if path matches pattern
  */
 function matchesGlob(path: string, pattern: string): boolean {
-  // Convert glob pattern to regex
-  let regexPattern = pattern
-    .replace(/\./g, '\\.')
-    .replace(/\*\*/g, '§DOUBLESTAR§')
-    .replace(/\*/g, '[^/]*')
-    .replace(/§DOUBLESTAR§/g, '.*');
-
-  regexPattern = `^${regexPattern}$`;
-
   try {
-    const regex = new RegExp(regexPattern);
+    // Convert glob pattern to regex by processing character by character
+    // This avoids the magic string replacement issue
+    const regex = globToRegex(pattern);
     return regex.test(path);
   } catch {
     console.warn(`Invalid glob pattern: ${pattern}`);
     return false;
   }
+}
+
+/**
+ * Converts a glob pattern to a regular expression.
+ * Processes the pattern character by character to avoid placeholder conflicts.
+ *
+ * @param pattern - Glob pattern to convert
+ * @returns Regular expression that matches the glob pattern
+ */
+function globToRegex(pattern: string): RegExp {
+  let regexStr = '^';
+  let i = 0;
+
+  while (i < pattern.length) {
+    const char = pattern[i];
+
+    switch (char) {
+      case '*':
+        if (i + 1 < pattern.length && pattern[i + 1] === '*') {
+          // Handle ** (matches any path including subdirectories)
+          if (i + 2 < pattern.length && pattern[i + 2] === '/') {
+            // **/ pattern - matches zero or more directories
+            regexStr += '(?:.*/)?';
+            i += 3;
+          } else if (i + 2 === pattern.length) {
+            // ** at end - matches everything
+            regexStr += '.*';
+            i += 2;
+          } else {
+            // ** not followed by / or end - treat as single *
+            regexStr += '[^/]*';
+            i += 1;
+          }
+        } else {
+          // Single * matches any characters except path separator
+          regexStr += '[^/]*';
+          i += 1;
+        }
+        break;
+
+      case '?':
+        // ? matches any single character except path separator
+        regexStr += '[^/]';
+        i += 1;
+        break;
+
+      case '[': {
+        // Handle character classes - find the closing bracket
+        let closeIndex = i + 1;
+        while (closeIndex < pattern.length && pattern[closeIndex] !== ']') {
+          closeIndex++;
+        }
+
+        if (closeIndex >= pattern.length) {
+          // No closing bracket found - this creates an invalid regex
+          // Just add the character and let the regex constructor throw an error
+          regexStr += char;
+          i += 1;
+        } else {
+          // Valid character class - copy it as-is
+          regexStr += pattern.slice(i, closeIndex + 1);
+          i = closeIndex + 1;
+        }
+        break;
+      }
+
+      case '.':
+      case '+':
+      case '^':
+      case '$':
+      case '(':
+      case ')':
+      case ']':
+      case '{':
+      case '}':
+      case '|':
+      case '\\':
+        // Escape regex special characters
+        regexStr += '\\' + char;
+        i += 1;
+        break;
+
+      default:
+        // Regular character
+        regexStr += char;
+        i += 1;
+        break;
+    }
+  }
+
+  regexStr += '$';
+  return new RegExp(regexStr);
 }
 
 /**
