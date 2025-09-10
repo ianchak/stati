@@ -1,5 +1,6 @@
 import { createServer } from 'http';
 import { join, extname } from 'path';
+import { posix } from 'path';
 import { readFile, stat } from 'fs/promises';
 import { WebSocketServer } from 'ws';
 import chokidar from 'chokidar';
@@ -165,7 +166,9 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
       const affectedPages: string[] = [];
 
       for (const [pagePath, entry] of Object.entries(cacheManifest.entries)) {
-        if (entry.deps.some((dep) => dep.includes(templatePath.replace(/\\/g, '/')))) {
+        if (
+          entry.deps.some((dep) => dep.includes(posix.normalize(templatePath.replace(/\\/g, '/'))))
+        ) {
           affectedPages.push(pagePath);
           // Remove from cache to force rebuild
           delete cacheManifest.entries[pagePath];

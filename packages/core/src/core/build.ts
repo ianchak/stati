@@ -1,6 +1,7 @@
 import fse from 'fs-extra';
 const { ensureDir, writeFile, remove, pathExists, stat, readdir, copyFile } = fse;
 import { join, dirname } from 'path';
+import { posix } from 'path';
 import { loadConfig } from '../config/loader.js';
 import { loadContent } from './content.js';
 import { createMarkdownProcessor, renderMarkdown } from './markdown.js';
@@ -95,7 +96,7 @@ async function copyStaticAssetsWithLogging(
   for (const item of items) {
     const sourcePath = join(sourceDir, item.name);
     const destPath = join(destDir, basePath, item.name);
-    const relativePath = join(basePath, item.name).replace(/\\/g, '/');
+    const relativePath = posix.normalize(posix.join(basePath, item.name));
 
     if (item.isDirectory()) {
       // Recursively copy directories
@@ -298,7 +299,7 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
     }
 
     // Get cache key (use output path relative to outDir)
-    const relativePath = outputPath.replace(outDir, '').replace(/\\/g, '/');
+    const relativePath = posix.normalize(outputPath.replace(outDir, '').replace(/\\/g, '/'));
     const cacheKey = relativePath.startsWith('/') ? relativePath : `/${relativePath}`;
     const existingEntry = manifest.entries[cacheKey];
 

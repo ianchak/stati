@@ -1,4 +1,4 @@
-import { join, dirname, relative } from 'path';
+import { join, dirname, relative, posix } from 'path';
 import fse from 'fs-extra';
 const { pathExists, readFile } = fse;
 import glob from 'fast-glob';
@@ -132,7 +132,9 @@ export async function findPartialDependencies(
 
     try {
       // Find all .eta files in _* subdirectories
-      const pattern = join(searchDir, '_*/**/*.eta').replace(/\\/g, '/');
+      // Use posix.join to ensure forward slashes for glob patterns
+      const normalizedSearchDir = searchDir.replace(/\\/g, '/');
+      const pattern = posix.join(normalizedSearchDir, '_*/**/*.eta');
       const partialFiles = await glob(pattern, { absolute: true });
 
       deps.push(...partialFiles);
@@ -234,7 +236,7 @@ async function discoverLayout(
       const indexLayoutPath = dir ? join(srcDir, dir, 'index.eta') : join(srcDir, 'index.eta');
       if (await pathExists(indexLayoutPath)) {
         const relativePath = dir ? `${dir}/index.eta` : 'index.eta';
-        return relativePath.replace(/\\/g, '/');
+        return posix.normalize(relativePath);
       }
     }
 
@@ -242,7 +244,7 @@ async function discoverLayout(
     const layoutPath = dir ? join(srcDir, dir, 'layout.eta') : join(srcDir, 'layout.eta');
     if (await pathExists(layoutPath)) {
       const relativePath = dir ? `${dir}/layout.eta` : 'layout.eta';
-      return relativePath.replace(/\\/g, '/');
+      return posix.normalize(relativePath);
     }
   }
 
