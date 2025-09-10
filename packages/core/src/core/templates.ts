@@ -1,5 +1,6 @@
 import { Eta } from 'eta';
 import { join, dirname, relative, basename } from 'path';
+import { posix } from 'path';
 import fse from 'fs-extra';
 const { pathExists } = fse;
 import glob from 'fast-glob';
@@ -259,7 +260,7 @@ async function discoverLayout(
       if (await pathExists(indexLayoutPath)) {
         // Return relative path with forward slashes for Eta
         const relativePath = dir ? `${dir}/index.eta` : 'index.eta';
-        return relativePath.replace(/\\/g, '/'); // Normalize to forward slashes
+        return posix.normalize(relativePath);
       }
     }
 
@@ -268,7 +269,7 @@ async function discoverLayout(
     if (await pathExists(layoutPath)) {
       // Return relative path with forward slashes for Eta
       const relativePath = dir ? `${dir}/layout.eta` : 'layout.eta';
-      return relativePath.replace(/\\/g, '/'); // Normalize to forward slashes
+      return posix.normalize(relativePath);
     }
   }
 

@@ -2,6 +2,7 @@ import { existsSync } from 'fs';
 import { join, resolve } from 'path';
 import { pathToFileURL } from 'url';
 import type { StatiConfig } from '../types.js';
+import { validateISGConfig, ISGConfigurationError } from '../core/isg/validation.js';
 
 /**
  * Default configuration values for Stati.
@@ -66,14 +67,39 @@ export async function loadConfig(cwd: string = process.cwd()): Promise<StatiConf
     const module = await import(configUrl);
     const userConfig = module.default || module;
 
-    return {
+    const mergedConfig: StatiConfig = {
       ...DEFAULT_CONFIG,
       ...userConfig,
       site: { ...DEFAULT_CONFIG.site, ...userConfig.site },
       isg: { ...DEFAULT_CONFIG.isg, ...userConfig.isg },
     };
+
+    // Validate ISG configuration
+    try {
+      if (mergedConfig.isg) {
+        validateISGConfig(mergedConfig.isg);
+      }
+    } catch (error) {
+      if (error instanceof ISGConfigurationError) {
+        throw new Error(
+          `Invalid ISG configuration in ${configPath}:\n` +
+            `${error.code}: ${error.message}\n` +
+            `Field: ${error.field}, Value: ${JSON.stringify(error.value)}\n\n` +
+            `Please check your stati.config.ts file and correct the ISG configuration.`,
+        );
+      }
+      throw error; // Re-throw non-ISG errors
+    }
+
+    return mergedConfig;
   } catch (error) {
-    console.error('Error loading config:', error);
+    if (error instanceof Error && error.message.includes('Invalid ISG configuration')) {
+      // ISG validation errors should bubble up with context
+      throw error;
+    }
+
+    console.error(`Error loading config from ${configPath}:`, error);
+    console.error('Falling back to default configuration.');
     return DEFAULT_CONFIG;
   }
 }

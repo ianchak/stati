@@ -1,5 +1,6 @@
 import { createServer } from 'http';
 import { join, extname } from 'path';
+import { posix } from 'path';
 import { readFile, stat } from 'fs/promises';
 import { WebSocketServer } from 'ws';
 import chokidar from 'chokidar';
@@ -7,6 +8,7 @@ import type { StatiConfig, Logger } from '../types.js';
 import type { FSWatcher } from 'chokidar';
 import { build } from './build.js';
 import { loadConfig } from '../config/loader.js';
+import { loadCacheManifest, saveCacheManifest } from './isg/manifest.js';
 
 export interface DevServerOptions {
   port?: number;
@@ -93,7 +95,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
   }
 
   /**
-   * Performs incremental rebuild when files change
+   * Performs incremental rebuild when files change, using ISG logic for smart rebuilds
    */
   async function incrementalRebuild(changedPath: string): Promise<void> {
     if (isBuilding) {
@@ -102,15 +104,22 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
     }
 
     isBuilding = true;
-    logger.info?.(`🔄 Rebuilding due to change: ${changedPath}`);
 
     try {
-      await build({
-        logger,
-        force: false,
-        clean: false,
-        ...(configPath && { configPath }),
-      });
+      // Check if the changed file is a template/partial
+      if (changedPath.endsWith('.eta') || changedPath.includes('_partials')) {
+        logger.info?.(`🎨 Template changed: ${changedPath}`);
+        await handleTemplateChange(changedPath);
+      } else {
+        // Content or static file changed - use normal rebuild
+        logger.info?.(`📄 Content changed: ${changedPath}`);
+        await build({
+          logger,
+          force: false,
+          clean: false,
+          ...(configPath && { configPath }),
+        });
+      }
 
       // Notify all connected clients to reload
       if (wsServer) {
@@ -128,6 +137,73 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
       logger.error?.(`Rebuild failed: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       isBuilding = false;
+    }
+  }
+
+  /**
+   * Handles template/partial file changes by invalidating affected pages
+   */
+  async function handleTemplateChange(templatePath: string): Promise<void> {
+    const cacheDir = join(process.cwd(), '.stati');
+
+    try {
+      // Load existing cache manifest
+      let cacheManifest = await loadCacheManifest(cacheDir);
+
+      if (!cacheManifest) {
+        // No cache exists, perform full rebuild
+        logger.info?.('📦 No cache found, performing full rebuild...');
+        await build({
+          logger,
+          force: false,
+          clean: false,
+          ...(configPath && { configPath }),
+        });
+        return;
+      }
+
+      // Find pages that depend on this template
+      const affectedPages: string[] = [];
+
+      for (const [pagePath, entry] of Object.entries(cacheManifest.entries)) {
+        if (
+          entry.deps.some((dep) => dep.includes(posix.normalize(templatePath.replace(/\\/g, '/'))))
+        ) {
+          affectedPages.push(pagePath);
+          // Remove from cache to force rebuild
+          delete cacheManifest.entries[pagePath];
+        }
+      }
+
+      if (affectedPages.length > 0) {
+        logger.info?.(`🎯 Invalidating ${affectedPages.length} affected pages:`);
+        affectedPages.forEach((page) => logger.info?.(`   📄 ${page}`));
+
+        // Save updated cache manifest
+        await saveCacheManifest(cacheDir, cacheManifest);
+
+        // Perform incremental rebuild (only affected pages will be rebuilt)
+        await build({
+          logger,
+          force: false,
+          clean: false,
+          ...(configPath && { configPath }),
+        });
+      } else {
+        logger.info?.('ℹ️  No pages affected by template change');
+      }
+    } catch (error) {
+      logger.warning?.(
+        `Template dependency analysis failed, performing full rebuild: ${error instanceof Error ? error.message : String(error)}`,
+      );
+
+      // Fallback to full rebuild
+      await build({
+        logger,
+        force: false,
+        clean: false,
+        ...(configPath && { configPath }),
+      });
     }
   }
 

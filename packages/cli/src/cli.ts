@@ -204,8 +204,13 @@ const cli = yargs(hideBin(process.argv))
   )
   .command(
     'invalidate [query]',
-    'Invalidate by tag= or path=',
-    (y) => y.positional('query', { type: 'string' }),
+    'Invalidate cache entries by tag, path, pattern, or age',
+    (y) =>
+      y.positional('query', {
+        type: 'string',
+        description:
+          'Invalidation query: tag:value, path:value, glob:pattern, age:3months, or empty to clear all',
+      }),
     async (argv) => {
       try {
         log.header('Stati Cache Invalidation');
@@ -213,12 +218,25 @@ const cli = yargs(hideBin(process.argv))
         if (argv.query) {
           log.info(`🎯 Invalidating cache for: ${argv.query}`);
         } else {
-          log.info('🗑️  Invalidating entire cache');
+          log.info('🗑️  Clearing entire cache');
         }
 
-        await invalidate(argv.query as string | undefined);
+        const result: {
+          invalidatedCount: number;
+          invalidatedPaths: string[];
+          clearedAll: boolean;
+        } = await invalidate(argv.query as string | undefined);
 
-        log.success('Cache invalidation completed! 🗑️');
+        if (result.clearedAll) {
+          log.success(`✅ Cleared entire cache (${result.invalidatedCount} entries)`);
+        } else if (result.invalidatedCount > 0) {
+          log.success(`✅ Invalidated ${result.invalidatedCount} cache entries:`);
+          result.invalidatedPaths.forEach((path) => {
+            log.info(`   📄 ${path}`);
+          });
+        } else {
+          log.info('ℹ️  No cache entries matched the query');
+        }
       } catch (error) {
         log.error(`Invalidation failed: ${error instanceof Error ? error.message : String(error)}`);
         process.exit(1);

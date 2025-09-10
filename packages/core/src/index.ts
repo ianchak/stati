@@ -35,6 +35,7 @@ export type {
 
 export type { BuildOptions } from './core/build.js';
 export type { DevServerOptions } from './core/dev.js';
+export type { InvalidationResult } from './core/invalidate.js';
 
 export { build } from './core/build.js';
 export { createDevServer } from './core/dev.js';

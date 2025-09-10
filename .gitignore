@@ -46,6 +46,8 @@ temp/
 .stylelintcache
 .vite/
 node_modules/.vite/
+.stati/
+**/.stati/
 
 ### TypeScript
 *.tsbuildinfo
@@ -60,7 +62,6 @@ tsconfig.tsbuildinfo
 ### Local development files
 *checklist*.md
 *prompt*.md
-
 
 ### Package manager artifacts
 *.tgz

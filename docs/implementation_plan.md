@@ -193,7 +193,7 @@ const cli = yargs(hideBin(process.argv))
     .option('force', { type: 'boolean' })
     .option('clean', { type: 'boolean' })
   , async (argv)=>{ await build({ force: !!argv.force, clean: !!argv.clean }); })
-  .command('invalidate [query]', 'Invalidate by tag= or path=', (y)=>y
+  .command('invalidate [query]', 'Invalidate by tag:, path:, glob:, or age:', (y)=>y
     .positional('query', { type: 'string' })
   , async (argv)=>{ await invalidate(argv.query as string|undefined); })
   .demandCommand(1)
@@ -261,7 +261,7 @@ export interface CacheManifest {
 
 **Invalidation**
 
-- CLI `stati invalidate tag=news` or `stati invalidate path=/blog/2024/hello`.
+- CLI `stati invalidate "tag:news"` or `stati invalidate "path:/blog/2024/hello"` or `stati invalidate "age:3months"`.
 
 **Tests (Vitest)**
 
@@ -358,7 +358,7 @@ it('freezes after cap', () => {
 ```
 stati build [--force] [--clean]
 stati dev                        # serves site locally
-stati invalidate [tag=foo|path=/x]
+stati invalidate [tag:foo|path:/x|age:3months]
 ```
 
 Dev server behavior (v1.0):

@@ -48,6 +48,62 @@ export interface ISGConfig {
 }
 
 /**
+ * Cache entry for a single page in the ISG cache manifest.
+ * Contains all information needed to determine if a page needs rebuilding.
+ *
+ * @example
+ * ```typescript
+ * const entry: CacheEntry = {
+ *   path: '/blog/my-post/index.html',
+ *   inputsHash: 'sha256-abc123...',
+ *   deps: ['/site/_layouts/post.eta', '/site/_partials/header.eta'],
+ *   tags: ['blog', 'tutorial'],
+ *   publishedAt: '2024-01-01T00:00:00.000Z',
+ *   renderedAt: '2024-01-15T10:30:00.000Z',
+ *   ttlSeconds: 21600,
+ *   maxAgeCapDays: 365
+ * };
+ * ```
+ */
+export interface CacheEntry {
+  /** Output path of the rendered page */
+  path: string;
+  /** Hash of page content and all dependencies */
+  inputsHash: string;
+  /** Array of file paths this page depends on (templates, partials) */
+  deps: string[];
+  /** Tags for invalidation and organization */
+  tags: string[];
+  /** ISO date when content was originally published */
+  publishedAt?: string;
+  /** ISO date when page was last rendered */
+  renderedAt: string;
+  /** Effective TTL for this page in seconds */
+  ttlSeconds: number;
+  /** Maximum age cap for this page in days */
+  maxAgeCapDays?: number;
+}
+
+/**
+ * ISG cache manifest containing all cached page entries.
+ * Persisted as JSON in .stati/cache/manifest.json
+ *
+ * @example
+ * ```typescript
+ * const manifest: CacheManifest = {
+ *   entries: {
+ *     '/blog/post-1': { ... },
+ *     '/about': { ... }
+ *   }
+ * };
+ * ```
+ */
+export interface CacheManifest {
+  /** Map of page URLs to their cache entries */
+  entries: Record<string, CacheEntry>;
+}
+
+/**
  * Site-wide configuration settings.
  * Contains global metadata and URL configuration for the static site.
  *

@@ -20,6 +20,14 @@ const {
   mockRenderMarkdown,
   mockCreateTemplateEngine,
   mockRenderPage,
+  // ISG mocks
+  mockLoadCacheManifest,
+  mockSaveCacheManifest,
+  mockShouldRebuildPage,
+  mockCreateCacheEntry,
+  mockUpdateCacheEntry,
+  mockWithBuildLock,
+  mockBuildNavigation,
 } = vi.hoisted(() => ({
   mockEnsureDir: vi.fn(),
   mockWriteFile: vi.fn(),
@@ -35,6 +43,14 @@ const {
   mockRenderMarkdown: vi.fn(),
   mockCreateTemplateEngine: vi.fn(),
   mockRenderPage: vi.fn(),
+  // ISG mocks
+  mockLoadCacheManifest: vi.fn(),
+  mockSaveCacheManifest: vi.fn(),
+  mockShouldRebuildPage: vi.fn(),
+  mockCreateCacheEntry: vi.fn(),
+  mockUpdateCacheEntry: vi.fn(),
+  mockWithBuildLock: vi.fn(),
+  mockBuildNavigation: vi.fn(),
 }));
 
 // Mock dependencies
@@ -67,6 +83,26 @@ vi.mock('../../core/markdown.js', () => ({
 vi.mock('../../core/templates.js', () => ({
   createTemplateEngine: mockCreateTemplateEngine,
   renderPage: mockRenderPage,
+}));
+
+// Mock ISG modules
+vi.mock('../../core/isg/manifest.js', () => ({
+  loadCacheManifest: mockLoadCacheManifest,
+  saveCacheManifest: mockSaveCacheManifest,
+}));
+
+vi.mock('../../core/isg/builder.js', () => ({
+  shouldRebuildPage: mockShouldRebuildPage,
+  createCacheEntry: mockCreateCacheEntry,
+  updateCacheEntry: mockUpdateCacheEntry,
+}));
+
+vi.mock('../../core/isg/build-lock.js', () => ({
+  withBuildLock: mockWithBuildLock,
+}));
+
+vi.mock('../../core/navigation.js', () => ({
+  buildNavigation: mockBuildNavigation,
 }));
 
 describe('Error Scenario Tests', () => {
@@ -113,6 +149,29 @@ describe('Error Scenario Tests', () => {
     mockLoadContent.mockResolvedValue([validPage]);
     mockRenderMarkdown.mockReturnValue('<h1>Test Content</h1>');
     mockRenderPage.mockResolvedValue('<html><body><h1>Test Content</h1></body></html>');
+
+    // ISG mocks - setup default behaviors
+    mockLoadCacheManifest.mockResolvedValue(null); // No existing cache by default
+    mockSaveCacheManifest.mockResolvedValue(undefined); // Don't call writeFile directly
+    mockShouldRebuildPage.mockResolvedValue(true); // Always rebuild by default in tests
+    mockCreateCacheEntry.mockResolvedValue({
+      path: '/test.html',
+      inputsHash: 'test-hash',
+      deps: [],
+      tags: [],
+      renderedAt: new Date().toISOString(),
+      ttlSeconds: 3600,
+    });
+    mockUpdateCacheEntry.mockResolvedValue({
+      path: '/test.html',
+      inputsHash: 'test-hash-updated',
+      deps: [],
+      tags: [],
+      renderedAt: new Date().toISOString(),
+      ttlSeconds: 3600,
+    });
+    mockWithBuildLock.mockImplementation(async (cacheDir, buildFn) => buildFn());
+    mockBuildNavigation.mockReturnValue([]);
   });
 
   afterEach(() => {
@@ -431,7 +490,10 @@ describe('Error Scenario Tests', () => {
 
       // Should process all pages
       expect(mockRenderMarkdown).toHaveBeenCalledTimes(1000);
+      // Write one file per page (cache manifest is mocked and doesn't call writeFile)
       expect(mockWriteFile).toHaveBeenCalledTimes(1000);
+      // ISG cache manifest should still be saved
+      expect(mockSaveCacheManifest).toHaveBeenCalledTimes(1);
     });
   });
 
