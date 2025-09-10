@@ -79,13 +79,17 @@ npx stati dev --port 8080 --open --host 0.0.0.0
 
 # Test building
 npx stati build --force --clean
+
+# Warm cache and test invalidation
+npx stati build
+npx stati invalidate "tag:news"
 ```
 
 **CLI Commands Available:**
 
 - `stati build [--force] [--clean] [--include-drafts] [--config path]`
 - `stati dev [--port 3000] [--host localhost] [--open] [--config path]`
-- `stati invalidate [query]` (placeholder for future ISG features)
+- `stati invalidate [tag:foo|path:/x|age:3months]` — cache invalidation
 
 ---
 

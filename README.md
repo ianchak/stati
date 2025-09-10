@@ -17,14 +17,30 @@ Stati is a **lightweight static site generator** (SSG) built in **TypeScript** u
 - **TypeScript-first** configuration with full type safety
 - **Comprehensive testing** with Vitest and 154+ tests
 - **Draft page support** with `--include-drafts` flag
+- **Incremental Static Generation (ISG)** with TTL, aging, and freeze (per-page overrides)
+- **Cache manifest** with input hashing and dependency tracking
+- **Invalidation CLI**: invalidate by tag, path, or age (`stati invalidate`)
+- **Build modes**: incremental by default; `--force` and `--clean` supported
 
 ### 🚧 Planned Features (v1.0+)
 
-- **Incremental Static Generation** with TTL + aging + freeze
-- **Content invalidation** by tags, paths, patterns, or age (`stati invalidate`)
 - **Blog, Docs, and News templates** via scaffolder
 - **SEO enhancements** (meta tags, RSS, sitemap)
 - **Optional Tailwind CSS** setup via scaffolder
+
+---
+
+## ⚡ ISG at a glance
+
+- Default builds are incremental when a cache exists; full rebuild on first run.
+- Pages rebuild when inputs change, TTL expires (unless frozen), or when explicitly invalidated.
+- Per-page overrides via front‑matter: `ttlSeconds`, `maxAgeCapDays`, `tags`, `publishedAt`.
+- Invalidate examples:
+  - `stati invalidate "tag:news"`
+  - `stati invalidate "path:/blog/2024/hello"`
+  - `stati invalidate "age:3months"`
+
+See the ISG concept guide in [docs/concept_doc.md](./docs/concept_doc.md) and configuration details in [docs/configuration.md](./docs/configuration.md).
 
 ---
 
