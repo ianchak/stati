@@ -1,11 +1,70 @@
 import type { PageModel, ISGConfig, AgingRule, CacheEntry } from '../../types.js';
 
 /**
+ * Clock drift tolerance in milliseconds.
+ * Accounts for small differences between system clocks.
+ */
+const CLOCK_DRIFT_TOLERANCE_MS = 30000; // 30 seconds
+
+/**
+ * Safely gets the current UTC time with drift protection.
+ * Ensures all ISG operations use consistent UTC time.
+ *
+ * @param providedDate - Optional date to use instead of system time (for testing)
+ * @returns UTC Date object
+ */
+export function getSafeCurrentTime(providedDate?: Date): Date {
+  const now = providedDate || new Date();
+
+  // Ensure we're working with valid dates
+  if (isNaN(now.getTime())) {
+    console.warn('Invalid system date detected, using fallback date');
+    return new Date('2025-01-01T00:00:00.000Z'); // Fallback to known good date
+  }
+
+  // Normalize to UTC to avoid timezone issues
+  return new Date(now.toISOString());
+}
+
+/**
+ * Safely parses and normalizes a date string to UTC.
+ * Handles various date formats and timezone issues.
+ *
+ * @param dateStr - Date string to parse
+ * @param context - Context for error messages
+ * @returns Parsed UTC date or null if invalid
+ */
+export function parseSafeDate(dateStr: string, context?: string): Date | null {
+  try {
+    const parsed = new Date(dateStr);
+
+    if (isNaN(parsed.getTime())) {
+      if (context) {
+        console.warn(`Invalid date "${dateStr}" in ${context}, ignoring`);
+      }
+      return null;
+    }
+
+    // Normalize to UTC
+    return new Date(parsed.toISOString());
+  } catch (error) {
+    if (context) {
+      console.warn(
+        `Failed to parse date "${dateStr}" in ${context}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+    return null;
+  }
+}
+
+/**
  * Computes the effective TTL for a page based on configuration and page-specific overrides.
  * Takes into account aging rules and front-matter overrides.
+ * Uses safe time handling to avoid timezone issues.
  *
  * @param page - The page model
  * @param isgConfig - ISG configuration
+ * @param currentTime - Optional current time (for testing)
  * @returns Effective TTL in seconds
  *
  * @example
@@ -14,7 +73,11 @@ import type { PageModel, ISGConfig, AgingRule, CacheEntry } from '../../types.js
  * console.log(`Page will be cached for ${ttl} seconds`);
  * ```
  */
-export function computeEffectiveTTL(page: PageModel, isgConfig: ISGConfig): number {
+export function computeEffectiveTTL(
+  page: PageModel,
+  isgConfig: ISGConfig,
+  currentTime?: Date,
+): number {
   // Check for page-specific TTL override in front matter
   if (typeof page.frontMatter.ttlSeconds === 'number' && page.frontMatter.ttlSeconds > 0) {
     return page.frontMatter.ttlSeconds;
@@ -22,7 +85,7 @@ export function computeEffectiveTTL(page: PageModel, isgConfig: ISGConfig): numb
 
   // Get publishedAt date for aging calculations
   const publishedAt = getPublishedDate(page);
-  const now = new Date();
+  const now = getSafeCurrentTime(currentTime);
 
   // Apply aging rules if we have a published date and aging rules configured
   if (publishedAt && isgConfig.aging && isgConfig.aging.length > 0) {
@@ -37,6 +100,7 @@ export function computeEffectiveTTL(page: PageModel, isgConfig: ISGConfig): numb
 /**
  * Computes the next rebuild date for a page based on TTL and aging rules.
  * Returns null if the page is frozen (beyond max age cap).
+ * Uses safe time handling with clock drift protection.
  *
  * @param options - Configuration options
  * @param options.now - Current date/time
@@ -61,30 +125,32 @@ export function computeNextRebuildAt(options: {
   ttlSeconds: number;
   maxAgeCapDays?: number;
 }): Date | null {
-  const { now, publishedAt, ttlSeconds, maxAgeCapDays } = options;
+  const { publishedAt, ttlSeconds, maxAgeCapDays } = options;
 
-  // If no published date, use TTL from now
-  if (!publishedAt) {
-    return new Date(now.getTime() + ttlSeconds * 1000);
-  }
+  // Normalize the provided time to UTC
+  const now = getSafeCurrentTime(options.now);
 
-  // Check if page is frozen due to max age cap
-  if (maxAgeCapDays) {
+  // If there's a max age cap and published date, check if content is frozen
+  if (maxAgeCapDays && publishedAt) {
+    const normalizedPublishedAt = getSafeCurrentTime(publishedAt);
     const maxAgeMs = maxAgeCapDays * 24 * 60 * 60 * 1000;
-    const ageMs = now.getTime() - publishedAt.getTime();
+    const ageMs = now.getTime() - normalizedPublishedAt.getTime();
 
     if (ageMs > maxAgeMs) {
-      return null; // Page is frozen
+      // Content is frozen, no rebuild needed
+      return null;
     }
   }
 
-  // Page is not frozen, apply TTL
-  return new Date(now.getTime() + ttlSeconds * 1000);
+  // Add clock drift tolerance to prevent rebuild loops
+  const nextRebuildTime = now.getTime() + ttlSeconds * 1000 + CLOCK_DRIFT_TOLERANCE_MS;
+  return new Date(nextRebuildTime);
 }
 
 /**
  * Determines if a page is frozen (beyond its max age cap).
  * Frozen pages are not rebuilt unless their content changes.
+ * Uses safe time handling to avoid timezone issues.
  *
  * @param entry - Cache entry for the page
  * @param now - Current date/time
@@ -102,9 +168,16 @@ export function isPageFrozen(entry: CacheEntry, now: Date): boolean {
     return false;
   }
 
-  const publishedAt = new Date(entry.publishedAt);
+  const safeNow = getSafeCurrentTime(now);
+  const publishedAt = parseSafeDate(entry.publishedAt, `cache entry for ${entry.path}`);
+
+  if (!publishedAt) {
+    // If we can't parse the published date, don't freeze
+    return false;
+  }
+
   const maxAgeMs = entry.maxAgeCapDays * 24 * 60 * 60 * 1000;
-  const ageMs = now.getTime() - publishedAt.getTime();
+  const ageMs = safeNow.getTime() - publishedAt.getTime();
 
   return ageMs > maxAgeMs;
 }
@@ -163,6 +236,7 @@ export function applyAgingRules(
 /**
  * Helper function to extract published date from page front matter.
  * Supports various date formats and field names.
+ * Uses safe date parsing to handle timezone issues.
  */
 function getPublishedDate(page: PageModel): Date | null {
   const frontMatter = page.frontMatter;
@@ -175,14 +249,20 @@ function getPublishedDate(page: PageModel): Date | null {
     if (value) {
       // Handle string dates
       if (typeof value === 'string') {
-        const date = new Date(value);
-        if (!isNaN(date.getTime())) {
-          return date;
+        const safeDate = parseSafeDate(
+          value,
+          `front-matter field "${field}" in ${page.sourcePath}`,
+        );
+        if (safeDate) {
+          return safeDate;
         }
       }
       // Handle Date objects
-      if (value instanceof Date && !isNaN(value.getTime())) {
-        return value;
+      if (value instanceof Date) {
+        const safeDate = getSafeCurrentTime(value);
+        if (safeDate && !isNaN(safeDate.getTime())) {
+          return safeDate;
+        }
       }
     }
   }

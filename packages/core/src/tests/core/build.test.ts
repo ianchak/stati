@@ -19,6 +19,13 @@ const {
   mockRenderMarkdown,
   mockCreateTemplateEngine,
   mockRenderPage,
+  mockLoadCacheManifest,
+  mockSaveCacheManifest,
+  mockShouldRebuildPage,
+  mockCreateCacheEntry,
+  mockUpdateCacheEntry,
+  mockWithBuildLock,
+  mockBuildNavigation,
 } = vi.hoisted(() => ({
   mockEnsureDir: vi.fn(),
   mockWriteFile: vi.fn(),
@@ -34,6 +41,13 @@ const {
   mockRenderMarkdown: vi.fn(),
   mockCreateTemplateEngine: vi.fn(),
   mockRenderPage: vi.fn(),
+  mockLoadCacheManifest: vi.fn(),
+  mockSaveCacheManifest: vi.fn(),
+  mockShouldRebuildPage: vi.fn(),
+  mockCreateCacheEntry: vi.fn(),
+  mockUpdateCacheEntry: vi.fn(),
+  mockWithBuildLock: vi.fn(),
+  mockBuildNavigation: vi.fn(),
 }));
 
 // Mock modules with implementation
@@ -66,6 +80,25 @@ vi.mock('../../core/markdown.js', () => ({
 vi.mock('../../core/templates.js', () => ({
   createTemplateEngine: mockCreateTemplateEngine,
   renderPage: mockRenderPage,
+}));
+
+vi.mock('../../core/navigation.js', () => ({
+  buildNavigation: mockBuildNavigation,
+}));
+
+vi.mock('../../core/isg/manifest.js', () => ({
+  loadCacheManifest: mockLoadCacheManifest,
+  saveCacheManifest: mockSaveCacheManifest,
+}));
+
+vi.mock('../../core/isg/builder.js', () => ({
+  shouldRebuildPage: mockShouldRebuildPage,
+  createCacheEntry: mockCreateCacheEntry,
+  updateCacheEntry: mockUpdateCacheEntry,
+}));
+
+vi.mock('../../core/isg/build-lock.js', () => ({
+  withBuildLock: mockWithBuildLock,
 }));
 
 describe('build.ts', () => {
@@ -134,6 +167,33 @@ describe('build.ts', () => {
     mockRemove.mockResolvedValue(undefined);
     mockReaddir.mockResolvedValue([]);
     mockStat.mockResolvedValue({ size: 1024 });
+
+    // Setup ISG mocks
+    mockLoadCacheManifest.mockResolvedValue(null);
+    mockSaveCacheManifest.mockResolvedValue(undefined);
+    mockShouldRebuildPage.mockResolvedValue(true);
+    mockCreateCacheEntry.mockResolvedValue({
+      path: '/test.html',
+      inputsHash: 'hash123',
+      deps: [],
+      tags: ['page'],
+      renderedAt: new Date().toISOString(),
+      ttlSeconds: 3600,
+    });
+    mockUpdateCacheEntry.mockResolvedValue({
+      path: '/test.html',
+      inputsHash: 'hash123',
+      deps: [],
+      tags: ['page'],
+      renderedAt: new Date().toISOString(),
+      ttlSeconds: 3600,
+    });
+    mockWithBuildLock.mockImplementation(async (cacheDir, buildFn) => buildFn());
+    mockBuildNavigation.mockReturnValue([
+      { title: 'Home', url: '/' },
+      { title: 'About', url: '/about' },
+      { title: 'Blog', url: '/blog' },
+    ]);
   });
 
   afterEach(() => {
@@ -406,13 +466,11 @@ describe('build.ts', () => {
       expect(consoleSpy).toHaveBeenCalledWith('📄 Found 0 pages');
       expect(mockRenderMarkdown).not.toHaveBeenCalled();
       expect(mockRenderPage).not.toHaveBeenCalled();
-      // ISG still writes cache manifest even with no pages, so we expect one write call
-      expect(mockWriteFile).toHaveBeenCalledTimes(1);
-      // Verify it's the cache manifest being written
-      expect(mockWriteFile).toHaveBeenCalledWith(
-        expect.stringContaining('manifest.json'),
-        expect.stringContaining('"entries": {}'),
-        'utf-8',
+      // ISG cache manifest should still be saved even with no pages
+      expect(mockSaveCacheManifest).toHaveBeenCalledTimes(1);
+      expect(mockSaveCacheManifest).toHaveBeenCalledWith(
+        expect.stringContaining('.stati'),
+        expect.objectContaining({ entries: {} }),
       );
     });
 

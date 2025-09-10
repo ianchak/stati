@@ -113,7 +113,8 @@ describe('ISG TTL and Aging Functions', () => {
         ttlSeconds: 3600, // 1 hour
       });
 
-      const expected = new Date(mockDate.getTime() + 3600 * 1000);
+      // Should include clock drift tolerance (30 seconds)
+      const expected = new Date(mockDate.getTime() + 3600 * 1000 + 30000);
       expect(result).toEqual(expected);
     });
 
@@ -126,7 +127,8 @@ describe('ISG TTL and Aging Functions', () => {
         ttlSeconds: 3600, // 1 hour
       });
 
-      const expected = new Date(mockDate.getTime() + 3600 * 1000);
+      // Should include clock drift tolerance (30 seconds)
+      const expected = new Date(mockDate.getTime() + 3600 * 1000 + 30000);
       expect(result).toEqual(expected);
     });
 
@@ -153,7 +155,8 @@ describe('ISG TTL and Aging Functions', () => {
         maxAgeCapDays: 365, // 1 year cap
       });
 
-      const expected = new Date(mockDate.getTime() + 3600 * 1000);
+      // Should include clock drift tolerance (30 seconds)
+      const expected = new Date(mockDate.getTime() + 3600 * 1000 + 30000);
       expect(result).toEqual(expected);
     });
 
@@ -165,7 +168,8 @@ describe('ISG TTL and Aging Functions', () => {
         maxAgeCapDays: 30,
       });
 
-      const expected = new Date(mockDate.getTime() + 3600 * 1000);
+      // Should include clock drift tolerance (30 seconds)
+      const expected = new Date(mockDate.getTime() + 3600 * 1000 + 30000);
       expect(result).toEqual(expected);
     });
   });

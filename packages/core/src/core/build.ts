@@ -8,6 +8,7 @@ import { createTemplateEngine, renderPage } from './templates.js';
 import { buildNavigation } from './navigation.js';
 import { loadCacheManifest, saveCacheManifest } from './isg/manifest.js';
 import { shouldRebuildPage, createCacheEntry, updateCacheEntry } from './isg/builder.js';
+import { withBuildLock } from './isg/build-lock.js';
 import type { BuildContext, BuildStats, Logger } from '../types.js';
 
 /**
@@ -163,6 +164,7 @@ function formatBuildStats(stats: BuildStats): string {
 /**
  * Builds the static site by processing content files and generating HTML pages.
  * This is the main entry point for Stati's build process.
+ * Uses build locking to prevent concurrent builds from corrupting cache.
  *
  * @param options - Build configuration options
  *
@@ -184,8 +186,23 @@ function formatBuildStats(stats: BuildStats): string {
  * @throws {Error} When configuration loading fails
  * @throws {Error} When content processing fails
  * @throws {Error} When template rendering fails
+ * @throws {Error} When build lock cannot be acquired
  */
 export async function build(options: BuildOptions = {}): Promise<BuildStats> {
+  const cacheDir = join(process.cwd(), '.stati');
+
+  // Use build lock to prevent concurrent builds, with force option to override
+  return await withBuildLock(cacheDir, () => buildInternal(options), {
+    force: Boolean(options.force || options.clean), // Allow force if user explicitly requests it
+    timeout: 60000, // 1 minute timeout
+  });
+}
+
+/**
+ * Internal build implementation without locking.
+ * Separated for cleaner error handling and testing.
+ */
+async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
   const buildStartTime = Date.now();
   const logger = options.logger || defaultLogger;
 

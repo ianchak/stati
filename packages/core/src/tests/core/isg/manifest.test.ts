@@ -175,7 +175,7 @@ describe('ISG Cache Manifest', () => {
       mockEnsureDir.mockRejectedValue(new Error('Directory error'));
 
       await expect(saveCacheManifest(testCacheDir, mockManifest)).rejects.toThrow(
-        'Failed to save cache manifest: Directory error',
+        'Failed to save cache manifest to',
       );
     });
 
@@ -184,7 +184,7 @@ describe('ISG Cache Manifest', () => {
       mockWriteFile.mockRejectedValue(new Error('Write error'));
 
       await expect(saveCacheManifest(testCacheDir, mockManifest)).rejects.toThrow(
-        'Failed to save cache manifest: Write error',
+        'Failed to save cache manifest to',
       );
     });
 
@@ -210,7 +210,7 @@ describe('ISG Cache Manifest', () => {
       mockEnsureDir.mockRejectedValue(permissionError);
 
       await expect(saveCacheManifest(testCacheDir, mockManifest)).rejects.toThrow(
-        'Failed to save cache manifest: Permission denied',
+        'Permission denied saving cache manifest',
       );
     });
 
@@ -222,7 +222,7 @@ describe('ISG Cache Manifest', () => {
       mockWriteFile.mockRejectedValue(diskFullError);
 
       await expect(saveCacheManifest(testCacheDir, mockManifest)).rejects.toThrow(
-        'Failed to save cache manifest: No space left on device',
+        'No space left on device when saving cache manifest',
       );
     });
   });

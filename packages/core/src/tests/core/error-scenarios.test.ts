@@ -26,6 +26,8 @@ const {
   mockShouldRebuildPage,
   mockCreateCacheEntry,
   mockUpdateCacheEntry,
+  mockWithBuildLock,
+  mockBuildNavigation,
 } = vi.hoisted(() => ({
   mockEnsureDir: vi.fn(),
   mockWriteFile: vi.fn(),
@@ -47,6 +49,8 @@ const {
   mockShouldRebuildPage: vi.fn(),
   mockCreateCacheEntry: vi.fn(),
   mockUpdateCacheEntry: vi.fn(),
+  mockWithBuildLock: vi.fn(),
+  mockBuildNavigation: vi.fn(),
 }));
 
 // Mock dependencies
@@ -91,6 +95,14 @@ vi.mock('../../core/isg/builder.js', () => ({
   shouldRebuildPage: mockShouldRebuildPage,
   createCacheEntry: mockCreateCacheEntry,
   updateCacheEntry: mockUpdateCacheEntry,
+}));
+
+vi.mock('../../core/isg/build-lock.js', () => ({
+  withBuildLock: mockWithBuildLock,
+}));
+
+vi.mock('../../core/navigation.js', () => ({
+  buildNavigation: mockBuildNavigation,
 }));
 
 describe('Error Scenario Tests', () => {
@@ -140,10 +152,7 @@ describe('Error Scenario Tests', () => {
 
     // ISG mocks - setup default behaviors
     mockLoadCacheManifest.mockResolvedValue(null); // No existing cache by default
-    mockSaveCacheManifest.mockImplementation(async (path, manifest) => {
-      // Simulate the actual save by calling writeFile like the real implementation does
-      await mockWriteFile(path, JSON.stringify(manifest, null, 2), 'utf-8');
-    });
+    mockSaveCacheManifest.mockResolvedValue(undefined); // Don't call writeFile directly
     mockShouldRebuildPage.mockResolvedValue(true); // Always rebuild by default in tests
     mockCreateCacheEntry.mockResolvedValue({
       path: '/test.html',
@@ -161,6 +170,8 @@ describe('Error Scenario Tests', () => {
       renderedAt: new Date().toISOString(),
       ttlSeconds: 3600,
     });
+    mockWithBuildLock.mockImplementation(async (cacheDir, buildFn) => buildFn());
+    mockBuildNavigation.mockReturnValue([]);
   });
 
   afterEach(() => {
@@ -479,8 +490,10 @@ describe('Error Scenario Tests', () => {
 
       // Should process all pages
       expect(mockRenderMarkdown).toHaveBeenCalledTimes(1000);
-      // ISG adds one additional write for the cache manifest
-      expect(mockWriteFile).toHaveBeenCalledTimes(1001);
+      // Write one file per page (cache manifest is mocked and doesn't call writeFile)
+      expect(mockWriteFile).toHaveBeenCalledTimes(1000);
+      // ISG cache manifest should still be saved
+      expect(mockSaveCacheManifest).toHaveBeenCalledTimes(1);
     });
   });
 
