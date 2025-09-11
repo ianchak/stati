@@ -5,9 +5,9 @@ import { SingleBar, Presets } from 'cli-progress';
 import { createSite } from './create.js';
 import type { CreateOptions } from './create.js';
 
-async function parseArgs(): Promise<Partial<CreateOptions> | null> {
-  const args = process.argv.slice(2);
-
+export async function parseArgs(
+  args: string[] = process.argv.slice(2),
+): Promise<Partial<CreateOptions> | null> {
   // Check for help flag
   if (args.includes('--help') || args.includes('-h')) {
     console.log(`${pc.bold('create-stati')} - Create a new Stati static site
@@ -75,12 +75,12 @@ Examples:
   return options;
 }
 
-async function run() {
-  const cliOptions = await parseArgs();
-
+export async function runCLI(cliOptions?: Partial<CreateOptions> | null): Promise<void> {
   if (cliOptions === null) {
     return; // Help was shown
   }
+
+  const options = cliOptions || {};
 
   console.log(pc.bold(pc.blue('🚀 Welcome to Stati')));
   console.log(pc.dim('Create a new static site with Stati\n'));
@@ -88,7 +88,7 @@ async function run() {
   // Determine what prompts we need based on CLI args
   const prompts = [];
 
-  if (!cliOptions.projectName) {
+  if (!options.projectName) {
     prompts.push({
       name: 'name',
       message: 'Project name:',
@@ -106,7 +106,7 @@ async function run() {
     });
   }
 
-  if (!cliOptions.template) {
+  if (!options.template) {
     prompts.push({
       name: 'template',
       type: 'list',
@@ -122,7 +122,7 @@ async function run() {
     });
   }
 
-  if (!cliOptions.styling) {
+  if (!options.styling) {
     prompts.push({
       name: 'styling',
       type: 'list',
@@ -136,7 +136,7 @@ async function run() {
     });
   }
 
-  if (cliOptions.gitInit === undefined) {
+  if (options.gitInit === undefined) {
     prompts.push({
       name: 'gitInit',
       type: 'confirm',
@@ -145,7 +145,7 @@ async function run() {
     });
   }
 
-  if (cliOptions.installDependencies === undefined) {
+  if (options.installDependencies === undefined) {
     prompts.push({
       name: 'install',
       type: 'confirm',
@@ -157,18 +157,18 @@ async function run() {
   const answers = prompts.length > 0 ? await inquirer.prompt(prompts) : {};
 
   const createOptions: CreateOptions = {
-    projectName: cliOptions.projectName || answers.name?.trim() || 'my-stati-site',
-    template: cliOptions.template || answers.template || 'blank',
-    styling: cliOptions.styling || answers.styling || 'css',
+    projectName: options.projectName || answers.name?.trim() || 'my-stati-site',
+    template: options.template || answers.template || 'blank',
+    styling: options.styling || answers.styling || 'css',
     gitInit:
-      cliOptions.gitInit !== undefined
-        ? cliOptions.gitInit
+      options.gitInit !== undefined
+        ? options.gitInit
         : answers.gitInit !== undefined
           ? answers.gitInit
           : true,
     installDependencies:
-      cliOptions.installDependencies !== undefined
-        ? cliOptions.installDependencies
+      options.installDependencies !== undefined
+        ? options.installDependencies
         : answers.install !== undefined
           ? answers.install
           : true,
@@ -220,7 +220,16 @@ async function run() {
   }
 }
 
-run().catch((err) => {
-  console.error(pc.red('An error occurred:'), err);
-  process.exit(1);
-});
+// Main execution when run directly
+async function main(): Promise<void> {
+  const cliOptions = await parseArgs();
+  await runCLI(cliOptions);
+}
+
+// Only run when executed directly (not when imported)
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch((err: unknown) => {
+    console.error(pc.red('An error occurred:'), err);
+    process.exit(1);
+  });
+}
