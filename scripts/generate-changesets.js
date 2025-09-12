@@ -117,30 +117,30 @@ Commit: ${commit.hash}
 }
 
 function main() {
-  console.log('🔍 Analyzing commits for changeset generation...');
+  console.log('Analyzing commits for changeset generation...');
 
   // Check if we're in a git repository
   try {
     execSync('git rev-parse --git-dir', { stdio: 'ignore' });
   } catch {
-    console.error('❌ Not in a git repository');
+    console.error('Not in a git repository');
     process.exit(1);
   }
 
   // Ensure .changeset directory exists
   if (!fs.existsSync(CHANGESET_DIR)) {
-    console.error('❌ .changeset directory not found. Make sure changesets is initialized.');
+    console.error('.changeset directory not found. Make sure changesets is initialized.');
     process.exit(1);
   }
 
   const commits = getCommitsSinceLastTag();
 
   if (commits.length === 0) {
-    console.log('✅ No new commits found');
+    console.log('No new commits found');
     return;
   }
 
-  console.log(`📝 Found ${commits.length} commits to analyze`);
+  console.log(`Found ${commits.length} commits to analyze`);
 
   let generatedChangesets = 0;
 
@@ -156,17 +156,17 @@ function main() {
     const affectedPackages = determineAffectedPackages(commit);
 
     console.log(
-      `📦 ${commit.type}(${commit.scope || 'general'}): ${commit.subject} -> ${changesetType}`,
+      `${commit.type}(${commit.scope || 'general'}): ${commit.subject} -> ${changesetType}`,
     );
 
     createChangeset(commit, changesetType, affectedPackages);
     generatedChangesets++;
   }
 
-  console.log(`✅ Generated ${generatedChangesets} changesets`);
+  console.log(`Generated ${generatedChangesets} changesets`);
 
   if (generatedChangesets > 0) {
-    console.log('\n💡 Next steps:');
+    console.log('\nNext steps:');
     console.log('1. Review the generated changesets in .changeset/');
     console.log('2. Edit them if needed');
     console.log('3. Run "npm run changeset:status" to see pending changes');

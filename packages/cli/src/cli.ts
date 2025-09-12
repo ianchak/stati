@@ -93,9 +93,9 @@ const cli = yargs(hideBin(process.argv))
 
         // Show build options summary
         if (buildOptions.force) log.info('⚡ Force rebuild enabled');
-        if (buildOptions.clean) log.info('🧹 Clean build enabled');
+        if (buildOptions.clean) log.info('Clean build enabled');
         if (buildOptions.includeDrafts) log.info('📝 Including draft pages');
-        if (buildOptions.configPath) log.info(`⚙️  Using config: ${buildOptions.configPath}`);
+        if (buildOptions.configPath) log.info(`Using config: ${buildOptions.configPath}`);
 
         buildOptions.logger = coloredLogger;
         const startTime = Date.now();
@@ -180,9 +180,9 @@ const cli = yargs(hideBin(process.argv))
         log.header(`Stati${versionInfo} - Development Server`);
 
         // Show dev server options
-        log.info(`🌐 Server will run at http://${argv.host}:${argv.port}`);
-        if (argv.open) log.info('🌍 Browser will open automatically');
-        if (argv.config) log.info(`⚙️  Using config: ${argv.config}`);
+        log.info(`Server will run at http://${argv.host}:${argv.port}`);
+        if (argv.open) log.info('Browser will open automatically');
+        if (argv.config) log.info(`Using config: ${argv.config}`);
 
         const devServer = await createDevServer(devOptions);
         await devServer.start();
@@ -228,9 +228,9 @@ const cli = yargs(hideBin(process.argv))
         } = await invalidate(argv.query as string | undefined);
 
         if (result.clearedAll) {
-          log.success(`✅ Cleared entire cache (${result.invalidatedCount} entries)`);
+          log.success(`Cleared entire cache (${result.invalidatedCount} entries)`);
         } else if (result.invalidatedCount > 0) {
-          log.success(`✅ Invalidated ${result.invalidatedCount} cache entries:`);
+          log.success(`Invalidated ${result.invalidatedCount} cache entries:`);
           result.invalidatedPaths.forEach((path) => {
             log.info(`   📄 ${path}`);
           });

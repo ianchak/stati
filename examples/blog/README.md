@@ -30,7 +30,7 @@ npm run build
 
 The built site will be in the `dist/` directory, ready for deployment.
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 ├── stati.config.js          # Stati configuration
@@ -53,7 +53,7 @@ The built site will be in the `dist/` directory, ready for deployment.
 └── dist/                    # Generated site (after build)
 ```
 
-## ✨ Features Demonstrated
+## Features Demonstrated
 
 ### Content Management
 
@@ -87,7 +87,7 @@ The built site will be in the `dist/` directory, ready for deployment.
 - **Clean URLs** and proper navigation
 - **RSS feed** support (configurable)
 
-## 🎨 Customization
+## Customization
 
 ### Styling
 
@@ -113,7 +113,7 @@ Edit `stati.config.js` to customize:
 - Template filters and functions
 - Build hooks and plugins
 
-## 📝 Writing Content
+## Writing Content
 
 ### Blog Posts
 
@@ -147,7 +147,7 @@ description: 'Page description for SEO'
 Your content here...
 ```
 
-## 🚀 Deployment
+## Deployment
 
 This static site can be deployed to any hosting platform:
 
@@ -173,28 +173,28 @@ This static site can be deployed to any hosting platform:
 1. Build the site: `npm run build`
 2. Upload the `dist` folder contents to your web server
 
-## 🛠 Available Scripts
+## Available Scripts
 
 - `npm run dev` - Start development server with hot reload
 - `npm run build` - Build for production
 - `npm run preview` - Preview the built site locally
 - `npm run clean` - Clean build artifacts and cache
 
-## 📚 Learn More
+## Learn More
 
 - [Stati Documentation](https://github.com/ianchak/stati)
 - [Eta Template Engine](https://eta.js.org/)
 - [Markdown Guide](https://www.markdownguide.org/)
 - [Modern CSS](https://moderncss.dev/)
 
-## 🤝 Contributing
+## Contributing
 
 Found a bug or have a suggestion? Please open an issue in the [Stati repository](https://github.com/ianchak/stati/issues).
 
-## 📄 License
+## License
 
 This example is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-**Happy blogging with Stati!** 🎉"
+**Happy blogging with Stati!**"

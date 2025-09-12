@@ -4,7 +4,7 @@ Stati is a **lightweight static site generator** (SSG) built in **TypeScript** u
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Create a New Project
 
@@ -23,9 +23,9 @@ The scaffolder will guide you through setting up a new project with your choice 
 
 ---
 
-## ✨ Features
+## Features
 
-### ✅ Core Features (Ready)
+### Core Features (Ready)
 
 - **Project Scaffolding** — `npx create-stati` with interactive setup and styling options
 - **Filesystem-based routing** from `site/` directory
@@ -50,7 +50,7 @@ The scaffolder will guide you through setting up a new project with your choice 
 
 ---
 
-## ⚡ ISG at a glance
+## ISG at a glance
 
 - Default builds are incremental when a cache exists; full rebuild on first run.
 - Pages rebuild when inputs change, TTL expires (unless frozen), or when explicitly invalidated.
@@ -64,7 +64,7 @@ See the ISG concept guide in [docs/concept_doc.md](./docs/concept_doc.md) and co
 
 ---
 
-## 🛠️ CLI Usage
+## CLI Usage
 
 ### Project Creation
 
@@ -122,7 +122,7 @@ examples/
 
 ---
 
-## 🏗️ Development Setup
+## Development Setup
 
 For contributors working on Stati itself:
 
@@ -167,7 +167,7 @@ npm run release          # Version + publish + push tags
 
 ---
 
-## 📚 Documentation
+## Documentation
 
 - [Getting Started Guide](./docs/README.md) — Quick start and project setup
 - [Configuration Guide](./docs/configuration.md) — Complete configuration reference
@@ -178,13 +178,13 @@ npm run release          # Version + publish + push tags
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for setup, coding style, and PR instructions.
 
 ---
 
-## 🧠 Philosophy
+## Philosophy
 
 - **Minimal dependencies**: Only essential packages (markdown-it, eta, yargs, fast-glob, etc.)
 - **TypeScript-first**: Full type safety with comprehensive interfaces and strict configuration
@@ -195,6 +195,6 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for setup, coding style, and PR instruc
 
 ---
 
-## 📄 License
+## License
 
 MIT © [Imre Csige](https://github.com/ianchak)

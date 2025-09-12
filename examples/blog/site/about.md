@@ -30,11 +30,11 @@ I believe in the power of technology to solve real-world problems and improve pe
 
 When I'm not coding, you'll find me:
 
-- 📚 Reading about new technologies and industry trends
-- 🎮 Playing strategy games and solving puzzles
-- 🌱 Tending to my small garden
-- ☕ Experimenting with different coffee brewing methods
-- 🎵 Listening to podcasts about technology and entrepreneurship
+- Reading about new technologies and industry trends
+- Playing strategy games and solving puzzles
+- Tending to my small garden
+- Experimenting with different coffee brewing methods
+- Listening to podcasts about technology and entrepreneurship
 
 ## Let's Connect
 

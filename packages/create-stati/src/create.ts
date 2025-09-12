@@ -146,8 +146,8 @@ coverage/
   }
 
   private displaySuccessMessage(targetDir: string): void {
-    console.log(`✨ Successfully created Stati project at ${targetDir}`);
-    console.log('\n📝 Next steps:');
+    console.log(`Successfully created Stati project at ${targetDir}`);
+    console.log('\nNext steps:');
     console.log(`  cd ${this.options.projectName}`);
 
     if (!this.options.installDependencies) {

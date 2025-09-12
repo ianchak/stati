@@ -81,7 +81,7 @@ export async function runCLI(cliOptions?: Partial<CreateOptions> | null): Promis
 
   const options = cliOptions || {};
 
-  console.log(pc.bold(pc.blue('🚀 Welcome to Stati')));
+  console.log(pc.bold(pc.blue('Welcome to Stati')));
   console.log(pc.dim('Create a new static site with Stati\n'));
 
   // Determine what prompts we need based on CLI args
@@ -173,15 +173,15 @@ export async function runCLI(cliOptions?: Partial<CreateOptions> | null): Promis
           : true,
   };
 
-  console.log(pc.cyan('🚀 Creating Stati project...'));
+  console.log(pc.cyan('Creating Stati project...'));
 
   try {
     const result = await createSite(createOptions);
 
-    console.log(pc.green(`✨ Successfully created Stati project '${result.projectName}'`));
+    console.log(pc.green(`Successfully created Stati project '${result.projectName}'`));
 
     // Display next steps
-    console.log(pc.yellow('\n📝 Next steps:'));
+    console.log(pc.yellow('\nNext steps:'));
     console.log(`  cd ${result.projectName}`);
     if (!createOptions.installDependencies) {
       console.log('  npm install');
