@@ -31,24 +31,6 @@ vi.mock('picocolors', () => ({
   default: mockPicocolors,
 }));
 
-// Mock progress bar with proper hoisting
-const mockProgressBar = vi.hoisted(() => ({
-  start: vi.fn(),
-  increment: vi.fn(),
-  stop: vi.fn(),
-}));
-
-const mockSingleBarConstructor = vi.hoisted(() =>
-  vi.fn().mockImplementation(() => mockProgressBar),
-);
-
-vi.mock('cli-progress', () => ({
-  SingleBar: mockSingleBarConstructor,
-  Presets: {
-    shades_classic: {},
-  },
-}));
-
 // Mock console methods
 const mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
 const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -58,11 +40,6 @@ describe('create-stati CLI', () => {
     vi.clearAllMocks();
     mockConsoleLog.mockClear();
     mockConsoleError.mockClear();
-    mockSingleBarConstructor.mockClear();
-    // Clear progress bar mocks
-    mockProgressBar.start.mockClear();
-    mockProgressBar.increment.mockClear();
-    mockProgressBar.stop.mockClear();
   });
 
   describe('parseArgs', () => {
@@ -302,9 +279,7 @@ describe('create-stati CLI', () => {
         installDependencies: true,
       });
 
-      expect(mockProgressBar.start).toHaveBeenCalledWith(4, 0);
-      expect(mockProgressBar.increment).toHaveBeenCalledTimes(4);
-      expect(mockProgressBar.stop).toHaveBeenCalled();
+      // Progress bar expectations removed as cli-progress dependency was removed
     });
 
     it.skip('should show success message with project name', async () => {

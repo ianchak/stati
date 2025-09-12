@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import inquirer from 'inquirer';
 import pc from 'picocolors';
-import { SingleBar, Presets } from 'cli-progress';
 import { createSite } from './create.js';
 import type { CreateOptions } from './create.js';
 
@@ -174,33 +173,10 @@ export async function runCLI(cliOptions?: Partial<CreateOptions> | null): Promis
           : true,
   };
 
-  const bar = new SingleBar(
-    {
-      format: `${pc.cyan('Scaffolding')} |{bar}| {percentage}% | {value}/{total}`,
-      hideCursor: true,
-      clearOnComplete: true,
-    },
-    Presets.shades_classic,
-  );
-
-  // Start progress bar with estimated steps
-  bar.start(4, 0);
+  console.log(pc.cyan('🚀 Creating Stati project...'));
 
   try {
-    // Step 1: Create project structure
-    bar.increment();
     const result = await createSite(createOptions);
-
-    // Step 2: Process styling
-    bar.increment();
-
-    // Step 3: Initialize git (if requested)
-    bar.increment();
-
-    // Step 4: Complete
-    bar.increment();
-
-    bar.stop();
 
     console.log(pc.green(`✨ Successfully created Stati project '${result.projectName}'`));
 
@@ -213,7 +189,6 @@ export async function runCLI(cliOptions?: Partial<CreateOptions> | null): Promis
     console.log('  npm run dev');
     console.log('\n🌟 Happy building with Stati!');
   } catch (error) {
-    bar.stop();
     console.error(pc.red('❌ Failed to create Stati site'));
     console.error(pc.red(error instanceof Error ? error.message : 'Unknown error'));
     process.exit(1);
@@ -226,10 +201,8 @@ async function main(): Promise<void> {
   await runCLI(cliOptions);
 }
 
-// Only run when executed directly (not when imported)
-if (import.meta.url === `file://${process.argv[1]}`) {
-  main().catch((err: unknown) => {
-    console.error(pc.red('An error occurred:'), err);
-    process.exit(1);
-  });
-}
+// Always run when this file is executed (not imported)
+main().catch((err: unknown) => {
+  console.error(pc.red('An error occurred:'), err);
+  process.exit(1);
+});

@@ -25,7 +25,7 @@
       </nav>
     </header>
 
-    <main id="main" role="main"><%~ it.body %></main>
+    <main id="main" role="main"><%~ it.content %></main>
 
     <footer role="contentinfo">
       <p>&copy; <%= new Date().getFullYear() %> <%= it.site.title %>. Built with <a href="https://github.com/ianchak/stati">Stati</a>.</p>
