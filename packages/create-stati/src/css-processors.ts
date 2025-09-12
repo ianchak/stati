@@ -1,0 +1,158 @@
+import { readFile, writeFile, mkdir, unlink } from 'fs/promises';
+import { join } from 'path';
+
+export type StylingOption = 'css' | 'sass' | 'tailwind';
+
+export class CSSProcessor {
+  async processStyling(projectDir: string, styling: StylingOption): Promise<void> {
+    switch (styling) {
+      case 'sass':
+        await this.setupSass(projectDir);
+        break;
+      case 'tailwind':
+        await this.setupTailwind(projectDir);
+        break;
+      case 'css':
+        // Default CSS, no processing needed
+        break;
+      default:
+        throw new Error(`Unsupported styling option: ${styling}`);
+    }
+  }
+
+  private async setupSass(projectDir: string): Promise<void> {
+    try {
+      // 1. Move CSS to SCSS with basic enhancements
+      const cssPath = join(projectDir, 'public', 'styles.css');
+      const scssPath = join(projectDir, 'styles', 'main.scss');
+
+      await mkdir(join(projectDir, 'styles'), { recursive: true });
+
+      // 2. Read existing CSS and enhance with Sass features
+      const existingCSS = await readFile(cssPath, 'utf-8');
+
+      const scssContent = `// Variables
+$primary-color: #007bff;
+$secondary-color: #6c757d;
+$font-stack: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+$breakpoint-tablet: 768px;
+
+// Mixins
+@mixin responsive($breakpoint) {
+  @if $breakpoint == tablet {
+    @media (min-width: $breakpoint-tablet) { @content; }
+  }
+}
+
+// Enhanced styles with Sass variables
+${existingCSS
+  .replace(/#007bff/g, '$primary-color')
+  .replace(/#6c757d/g, '$secondary-color')
+  .replace(/768px/g, '$breakpoint-tablet')
+  .replace(/-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif/g, '$font-stack')}
+`;
+
+      await writeFile(scssPath, scssContent);
+      await unlink(cssPath);
+
+      // 3. Update package.json
+      await this.updatePackageForSass(projectDir);
+    } catch (error) {
+      throw new Error(
+        `Failed to setup Sass: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+    }
+  }
+
+  private async setupTailwind(projectDir: string): Promise<void> {
+    try {
+      // 1. Replace CSS with Tailwind directives
+      const tailwindCSS = `@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .logo {
+    @apply text-xl font-bold text-blue-600 no-underline;
+  }
+
+  .skip-link {
+    @apply absolute -top-10 left-1 bg-black text-white p-2 no-underline z-50;
+  }
+
+  .skip-link:focus {
+    @apply top-1;
+  }
+}
+`;
+
+      await writeFile(join(projectDir, 'public', 'styles.css'), tailwindCSS);
+
+      // 2. Create configs
+      await this.createTailwindConfig(projectDir);
+      await this.updatePackageForTailwind(projectDir);
+    } catch (error) {
+      throw new Error(
+        `Failed to setup Tailwind: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+    }
+  }
+
+  private async updatePackageForSass(projectDir: string): Promise<void> {
+    const packageJsonPath = join(projectDir, 'package.json');
+    const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf-8'));
+
+    packageJson.devDependencies = {
+      ...packageJson.devDependencies,
+      sass: '^1.77.0',
+      concurrently: '^8.2.0',
+    };
+
+    packageJson.scripts = {
+      ...packageJson.scripts,
+      'build:css': 'sass styles/main.scss public/styles.css --style=compressed',
+      'watch:css': 'sass styles/main.scss public/styles.css --watch',
+      build: 'npm run build:css && stati build',
+      dev: 'concurrently "npm run watch:css" "stati dev"',
+    };
+
+    await writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n');
+  }
+
+  private async updatePackageForTailwind(projectDir: string): Promise<void> {
+    const packageJsonPath = join(projectDir, 'package.json');
+    const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf-8'));
+
+    packageJson.devDependencies = {
+      ...packageJson.devDependencies,
+      tailwindcss: '^3.4.0',
+      autoprefixer: '^10.4.0',
+      postcss: '^8.4.0',
+      concurrently: '^8.2.0',
+    };
+
+    packageJson.scripts = {
+      ...packageJson.scripts,
+      'build:css': 'tailwindcss -i public/styles.css -o public/styles.css --minify',
+      'watch:css': 'tailwindcss -i public/styles.css -o public/styles.css --watch',
+      build: 'npm run build:css && stati build',
+      dev: 'concurrently "npm run watch:css" "stati dev"',
+    };
+
+    await writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n');
+  }
+
+  private async createTailwindConfig(projectDir: string): Promise<void> {
+    const config = `/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: ['./site/**/*.{md,eta,html}'],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+};
+`;
+
+    await writeFile(join(projectDir, 'tailwind.config.js'), config);
+  }
+}

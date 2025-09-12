@@ -142,19 +142,19 @@ function formatBuildStats(stats: BuildStats): string {
   const timeSeconds = (stats.buildTimeMs / 1000).toFixed(2);
 
   let output =
-    `📊 Build Statistics:
+    `Build Statistics:
 ┌─────────────────────────────────────────┐
-│  ⏱️  Build time: ${timeSeconds}s`.padEnd(41) + '│';
+│  Build time: ${timeSeconds}s`.padEnd(41) + '│';
   output += `\n│  📄 Pages built: ${stats.totalPages}`.padEnd(42) + '│';
   output += `\n│  📦 Assets copied: ${stats.assetsCount}`.padEnd(42) + '│';
-  output += `\n│  💾 Output size: ${sizeKB} KB`.padEnd(42) + '│';
+  output += `\n│  Output size: ${sizeKB} KB`.padEnd(42) + '│';
 
   if (stats.cacheHits !== undefined && stats.cacheMisses !== undefined) {
     const totalCacheRequests = stats.cacheHits + stats.cacheMisses;
     const hitRate =
       totalCacheRequests > 0 ? ((stats.cacheHits / totalCacheRequests) * 100).toFixed(1) : '0';
     output +=
-      `\n│  🎯 Cache hits: ${stats.cacheHits}/${totalCacheRequests} (${hitRate}%)`.padEnd(42) + '│';
+      `\n│  Cache hits: ${stats.cacheHits}/${totalCacheRequests} (${hitRate}%)`.padEnd(42) + '│';
   }
 
   output += '\n└─────────────────────────────────────────┘';
@@ -237,7 +237,7 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
 
   // Clean output directory if requested
   if (options.clean) {
-    logger.info('🧹 Cleaning output directory...');
+    logger.info('Cleaning output directory...');
     await remove(outDir);
   }
 
@@ -253,7 +253,7 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
     logger.step(1, 3, 'Building navigation');
   }
   const navigation = buildNavigation(pages);
-  logger.info(`🧭 Built navigation with ${navigation.length} top-level items`);
+  logger.info(`Built navigation with ${navigation.length} top-level items`);
 
   // Display navigation tree if the logger supports it
   if (logger.navigationTree) {
@@ -365,9 +365,9 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
     if (logger.step) {
       logger.step(3, 3, 'Copying static assets');
     }
-    logger.info(`📦 Copying static assets from ${config.staticDir}`);
+    logger.info(`Copying static assets from ${config.staticDir}`);
     assetsCount = await copyStaticAssetsWithLogging(staticDir, outDir, logger);
-    logger.info(`📦 Copied ${assetsCount} static assets`);
+    logger.info(`Copied ${assetsCount} static assets`);
   }
 
   // Run afterAll hook

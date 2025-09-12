@@ -175,13 +175,13 @@ my-site/
 
 ## Features
 
-- 🚀 Lightning-fast development server with live reload
-- 📝 Markdown with front-matter support
-- 🎨 Eta template engine with layouts and partials
-- 🧭 Automatic navigation system
-- 📁 Filesystem-based routing
-- 💾 Smart caching and invalidation
-- 🛠️ TypeScript-first configuration
+- Lightning-fast development server with live reload
+- Markdown with front-matter support
+- Eta template engine with layouts and partials
+- Automatic navigation system
+- Filesystem-based routing
+- Smart caching and invalidation
+- TypeScript-first configuration
 
 ## License
 

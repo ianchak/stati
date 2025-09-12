@@ -27,7 +27,7 @@ examples/
 
 ---
 
-## 📦 Setup
+## Setup
 
 ```bash
 # Install dependencies
@@ -127,7 +127,7 @@ PRs should be:
 
 ---
 
-## 🧹 Coding Style
+## Coding Style
 
 - TypeScript strict mode
 - Small, composable functions

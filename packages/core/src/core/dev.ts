@@ -85,7 +85,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
         clean: false,
         ...(configPath && { configPath }),
       });
-      logger.success?.('✅ Initial build complete');
+      logger.success?.('Initial build complete');
     } catch (error) {
       logger.error?.(
         `Initial build failed: ${error instanceof Error ? error.message : String(error)}`,
@@ -132,7 +132,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
         });
       }
 
-      logger.success?.('✅ Rebuild complete');
+      logger.success?.('Rebuild complete');
     } catch (error) {
       logger.error?.(`Rebuild failed: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
@@ -152,7 +152,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
 
       if (!cacheManifest) {
         // No cache exists, perform full rebuild
-        logger.info?.('📦 No cache found, performing full rebuild...');
+        logger.info?.('No cache found, performing full rebuild...');
         await build({
           logger,
           force: false,
@@ -243,15 +243,15 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
   ws.onmessage = function(event) {
     const data = JSON.parse(event.data);
     if (data.type === 'reload') {
-      console.log('🔄 Reloading page due to file changes...');
+      console.log('Reloading page due to file changes...');
       window.location.reload();
     }
   };
   ws.onopen = function() {
-    console.log('🔗 Connected to Stati dev server');
+    console.log('Connected to Stati dev server');
   };
   ws.onclose = function() {
-    console.log('❌ Lost connection to Stati dev server');
+    console.log('Lost connection to Stati dev server');
     // Try to reconnect after a delay
     setTimeout(() => window.location.reload(), 1000);
   };
@@ -367,7 +367,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
 
         const websocket = ws as { on: (event: string, handler: () => void) => void };
         websocket.on('close', () => {
-          logger.info?.('❌ Browser disconnected from live reload');
+          logger.info?.('Browser disconnected from live reload');
         });
       });
 
@@ -402,9 +402,9 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
         void incrementalRebuild(path);
       });
 
-      logger.success?.(`🚀 Dev server running at ${url}`);
-      logger.info?.(`📁 Serving from: ${outDir}`);
-      logger.info?.(`👀 Watching: ${watchPaths.join(', ')}`);
+      logger.success?.(`Dev server running at ${url}`);
+      logger.info?.(`Serving from: ${outDir}`);
+      logger.info?.(`Watching: ${watchPaths.join(', ')}`);
 
       // Open browser if requested
       if (open) {

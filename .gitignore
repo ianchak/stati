@@ -62,6 +62,7 @@ tsconfig.tsbuildinfo
 ### Local development files
 *checklist*.md
 *prompt*.md
+*milestone*.md
 
 ### Package manager artifacts
 *.tgz

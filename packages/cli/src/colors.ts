@@ -126,7 +126,7 @@ function createStatsTable(stats: {
   });
 
   // Add the header as a spanning row
-  table.push([{ content: colors.brand('📊 Build Statistics'), colSpan: 2 }] as [
+  table.push([{ content: colors.brand('Build Statistics'), colSpan: 2 }] as [
     { content: string; colSpan: number },
   ]);
 
@@ -311,7 +311,7 @@ export const log = {
    * URL with proper styling
    */
   url: (label: string, url: string) => {
-    console.log(`  ${colors.info('🔗')} ${label}: ${colors.url(url)}`);
+    console.log(`  ${label}: ${colors.url(url)}`);
   },
 
   /**
@@ -319,7 +319,7 @@ export const log = {
    */
   timing: (operation: string, duration: number) => {
     const time = duration < 1000 ? `${duration}ms` : `${(duration / 1000).toFixed(2)}s`;
-    console.log(colors.timing(`⏱️  ${operation} completed in ${colors.number(time)}`));
+    console.log(colors.timing(`${operation} completed in ${colors.number(time)}`));
   },
 
   /**

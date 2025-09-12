@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="<%= it.site.defaultLocale || 'en' %>">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= it.page.title ? `${it.page.title} | ${it.site.title}` : it.site.title %></title>
+
+    <!-- Essential meta tags -->
+    <% if (it.page.description) { %>
+    <meta name="description" content="<%= it.page.description %>" />
+    <% } %>
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="<%= it.site.baseUrl %><%= it.page.url %>" />
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header role="banner">
+      <nav role="navigation">
+        <a href="/" class="logo"><%= it.site.title %></a>
+      </nav>
+    </header>
+
+    <main id="main" role="main"><%~ it.content %></main>
+
+    <footer role="contentinfo">
+      <p>&copy; <%= new Date().getFullYear() %> <%= it.site.title %>. Built with <a href="https://github.com/ianchak/stati">Stati</a>.</p>
+    </footer>
+  </body>
+</html>
