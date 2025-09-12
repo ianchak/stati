@@ -201,8 +201,14 @@ async function main(): Promise<void> {
   await runCLI(cliOptions);
 }
 
-// Always run when this file is executed (not imported)
-main().catch((err: unknown) => {
-  console.error(pc.red('An error occurred:'), err);
-  process.exit(1);
-});
+// Only run when this file is executed directly (not imported)
+if (
+  process.argv[1] &&
+  (import.meta.url === `file://${process.argv[1]}` ||
+    import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/')))
+) {
+  main().catch((err: unknown) => {
+    console.error(pc.red('An error occurred:'), err);
+    process.exit(1);
+  });
+}

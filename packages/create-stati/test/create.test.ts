@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { mkdtemp, rm, access, readFile } from 'fs/promises';
-import { createSite } from './create.js';
-import type { CreateOptions } from './create.js';
+import { createSite } from '../src/create.js';
+import type { CreateOptions } from '../src/create.js';
 
 describe('create-stati scaffolding', () => {
   let tempDir: string;

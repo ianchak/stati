@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { mkdtemp, rm, writeFile, mkdir, access, readFile } from 'fs/promises';
-import { ExampleManager } from './examples.js';
+import { ExampleManager } from '../src/examples.js';
 
 describe('ExampleManager', () => {
   let tempDir: string;

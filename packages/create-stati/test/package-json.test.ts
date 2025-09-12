@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { mkdtemp, rm, writeFile, readFile } from 'fs/promises';
-import { PackageJsonModifier } from './package-json.js';
+import { PackageJsonModifier } from '../src/package-json.js';
 
 describe('PackageJsonModifier', () => {
   let tempDir: string;

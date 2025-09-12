@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { mkdtemp, rm, writeFile, readFile, mkdir, access } from 'fs/promises';
-import { CSSProcessor } from './css-processors.js';
+import { CSSProcessor } from '../src/css-processors.js';
 
 describe('CSSProcessor', () => {
   let tempDir: string;

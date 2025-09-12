@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { parseArgs, runCLI } from './index.js';
+import { parseArgs, runCLI } from '../src/index.js';
 
 // Mock external dependencies
 const mockInquirer = vi.hoisted(() => ({
@@ -23,7 +23,7 @@ vi.mock('inquirer', () => ({
   default: mockInquirer,
 }));
 
-vi.mock('./create.js', () => ({
+vi.mock('../src/create.js', () => ({
   createSite: mockCreateSite,
 }));
 
