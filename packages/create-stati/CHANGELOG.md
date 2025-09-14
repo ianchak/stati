@@ -1,5 +1,13 @@
 # create-stati
 
+## 1.2.4
+
+### Patch Changes
+
+- update Tailwind setup to use src directory
+
+  Commit: 00a3bd3
+
 ## 1.2.3
 
 ### Patch Changes
