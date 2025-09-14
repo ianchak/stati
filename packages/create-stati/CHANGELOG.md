@@ -1,5 +1,13 @@
 # create-stati
 
+## 1.2.1
+
+### Patch Changes
+
+- update dependencies and improve build scripts
+
+  Commit: 2f21a6a
+
 ## 1.2.0
 
 ### Minor Changes
