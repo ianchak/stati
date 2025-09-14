@@ -4,6 +4,7 @@ const { pathExists, readFile } = fse;
 import glob from 'fast-glob';
 import type { PageModel, StatiConfig } from '../../types.js';
 import { isCollectionIndexPage, discoverLayout } from '../utils/template-discovery.js';
+import { resolveSrcDir } from '../utils/paths.js';
 
 /**
  * Error thrown when a circular dependency is detected in templates.
@@ -51,7 +52,7 @@ export async function trackTemplateDependencies(
   }
 
   const deps: string[] = [];
-  const srcDir = join(process.cwd(), config.srcDir);
+  const srcDir = resolveSrcDir(config);
   const relativePath = relative(srcDir, page.sourcePath);
 
   // Track dependencies with circular detection
@@ -105,7 +106,7 @@ export async function findPartialDependencies(
   }
 
   const deps: string[] = [];
-  const srcDir = join(process.cwd(), config.srcDir);
+  const srcDir = resolveSrcDir(config);
 
   // Get the directory of the current page
   const pageDir = dirname(pagePath);
@@ -168,7 +169,7 @@ export async function resolveTemplatePath(
   layout: string,
   config: StatiConfig,
 ): Promise<string | null> {
-  const srcDir = join(process.cwd(), config.srcDir!);
+  const srcDir = resolveSrcDir(config);
   const layoutPath = join(srcDir, `${layout}.eta`);
 
   if (await pathExists(layoutPath)) {
