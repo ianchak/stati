@@ -73,14 +73,14 @@ See the ISG concept guide in [docs/concept_doc.md](./docs/concept_doc.md) and co
 npx create-stati my-site
 
 # Non-interactive with flags
-npx create-stati my-site --template=blank --styling=tailwind --git-init --install
+npx create-stati my-site --template=blank --styling=tailwind --git
 ```
 
 **Scaffolding Options:**
 
 - **Templates**: `blank` (minimal starter)
 - **Styling**: `css`, `sass`, `tailwind`
-- **Features**: Git initialization, dependency installation, CSS preprocessing
+- **Features**: Git initialization, CSS preprocessing
 
 ### Available Commands
 

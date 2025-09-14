@@ -23,17 +23,34 @@ pnpm create stati my-site
 bun create stati my-site
 ```
 
+## CLI Options
+
+You can also create a site non-interactively using command-line flags:
+
+```bash
+# Create with specific options
+npx create-stati my-site --template=blank --styling=tailwind --git
+
+# Available options:
+#   --template <name>     Template to use (currently: blank)
+#   --styling <type>      CSS solution (css|sass|tailwind)
+#   --git                 Initialize git repository
+#   --no-git              Skip git initialization
+#   --help, -h            Show help message
+```
+
 ## Interactive Setup
 
 The tool will prompt you to configure your new site:
 
 ```
 ? Project name: my-site
-? Template: (Use arrow keys)
-❯ blog
-  docs
-  news
-? Add Tailwind CSS? (y/N)
+? Choose a template: Blank
+? Which CSS solution would you like? (Use arrow keys)
+❯ Plain CSS (recommended for beginners)
+  Sass/SCSS
+  Tailwind CSS
+? Initialize a git repository? (Y/n)
 ```
 
 ## Templates
@@ -132,7 +149,7 @@ my-news/
 
 When you choose to include Tailwind CSS, the scaffolder will:
 
-- Install Tailwind CSS and its dependencies
+- Add Tailwind CSS and its dependencies to package.json
 - Create a `tailwind.config.js` file
 - Set up PostCSS configuration
 - Include Tailwind directives in your CSS

@@ -21,7 +21,6 @@ export interface CreateOptions {
   template: 'blank';
   styling: StylingOption;
   gitInit?: boolean;
-  installDependencies?: boolean;
   dir?: string;
 }
 

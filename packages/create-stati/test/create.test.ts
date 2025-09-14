@@ -26,7 +26,6 @@ describe('create-stati scaffolding', () => {
         template: 'blank',
         styling: 'css',
         gitInit: false,
-        installDependencies: false,
         dir: projectDir,
       };
 
@@ -60,7 +59,6 @@ describe('create-stati scaffolding', () => {
         template: 'blank',
         styling: 'sass',
         gitInit: false,
-        installDependencies: false,
         dir: projectDir,
       };
 
@@ -93,7 +91,6 @@ describe('create-stati scaffolding', () => {
         template: 'blank',
         styling: 'tailwind',
         gitInit: false,
-        installDependencies: false,
         dir: projectDir,
       };
 
@@ -131,7 +128,6 @@ describe('create-stati scaffolding', () => {
         template: 'blank',
         styling: 'css',
         gitInit: true,
-        installDependencies: false,
         dir: projectDir,
       };
 
@@ -158,7 +154,6 @@ describe('create-stati scaffolding', () => {
         template: 'blank',
         styling: 'css',
         gitInit: false,
-        installDependencies: false,
         dir: customDir,
       };
 
@@ -181,7 +176,6 @@ describe('create-stati scaffolding', () => {
         template: 'blank',
         styling: 'css',
         gitInit: false,
-        installDependencies: false,
         dir: projectDir,
       };
 
@@ -201,7 +195,6 @@ describe('create-stati scaffolding', () => {
         template: 'blank',
         styling: 'css',
         gitInit: false,
-        installDependencies: false,
         dir: projectDir,
       };
 

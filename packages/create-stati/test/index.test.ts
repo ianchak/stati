@@ -89,29 +89,11 @@ describe('create-stati CLI', () => {
       );
     });
 
-    it('should parse dependency installation flags', async () => {
-      const result1 = await parseArgs(['test-project', '--install']);
-      const result2 = await parseArgs(['test-project', '--no-install']);
-
-      expect(result1).toEqual(
-        expect.objectContaining({
-          installDependencies: true,
-        }),
-      );
-
-      expect(result2).toEqual(
-        expect.objectContaining({
-          installDependencies: false,
-        }),
-      );
-    });
-
     it('should parse multiple arguments correctly', async () => {
       const result = await parseArgs([
         'my-awesome-site',
         '--styling=sass',
         '--no-git',
-        '--install',
         '--template=blank',
       ]);
 
@@ -119,7 +101,6 @@ describe('create-stati CLI', () => {
         projectName: 'my-awesome-site',
         styling: 'sass',
         gitInit: false,
-        installDependencies: true,
         template: 'blank',
       });
     });

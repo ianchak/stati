@@ -32,14 +32,12 @@ Options:
   --styling <type>         CSS solution (css|sass|tailwind)
   --git                    Initialize git repository
   --no-git                 Skip git initialization
-  --install                Install dependencies
-  --no-install             Skip dependency installation
   --help, -h               Show this help message
 
 Examples:
   create-stati my-site
   create-stati my-blog --styling=sass --git
-  create-stati my-app --template=blank --styling=tailwind --no-install
+  create-stati my-app --template=blank --styling=tailwind
 `);
     return null;
   }
@@ -67,12 +65,6 @@ Examples:
           break;
         case 'no-git':
           options.gitInit = false;
-          break;
-        case 'install':
-          options.installDependencies = true;
-          break;
-        case 'no-install':
-          options.installDependencies = false;
           break;
       }
     } else if (!projectName && arg) {
@@ -157,15 +149,6 @@ export async function runCLI(cliOptions?: Partial<CreateOptions> | null): Promis
     });
   }
 
-  if (options.installDependencies === undefined) {
-    prompts.push({
-      name: 'install',
-      type: 'confirm',
-      message: 'Install dependencies now?',
-      default: true,
-    });
-  }
-
   const answers = prompts.length > 0 ? await inquirer.prompt(prompts) : {};
 
   const createOptions: CreateOptions = {
@@ -177,12 +160,6 @@ export async function runCLI(cliOptions?: Partial<CreateOptions> | null): Promis
         ? options.gitInit
         : answers.gitInit !== undefined
           ? answers.gitInit
-          : true,
-    installDependencies:
-      options.installDependencies !== undefined
-        ? options.installDependencies
-        : answers.install !== undefined
-          ? answers.install
           : true,
   };
 
@@ -196,9 +173,7 @@ export async function runCLI(cliOptions?: Partial<CreateOptions> | null): Promis
     // Display next steps
     console.log(colors.warning('\nNext steps:'));
     console.log(`  cd ${result.projectName}`);
-    if (!createOptions.installDependencies) {
-      console.log('  npm install');
-    }
+    console.log('  npm install');
     console.log('  npm run dev');
     console.log('\n🌟 Happy building with Stati!');
   } catch (error) {
