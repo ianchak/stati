@@ -87,18 +87,154 @@ function createBox(message: string, color: (text: string) => string): string {
 }
 
 /**
- * Creates a progress bar representation
+ * Rendering tree node for visualizing build steps
  */
-function createProgressBar(current: number, total: number, width: number = 20): string {
-  const percentage = Math.min(current / total, 1);
-  const filled = Math.floor(percentage * width);
-  const empty = width - filled;
-
-  const bar = '█'.repeat(filled) + '░'.repeat(empty);
-  const percent = Math.floor(percentage * 100);
-
-  return `${colors.progress('[')}${colors.accent(bar)}${colors.progress(']')} ${colors.number(percent + '%')}`;
+interface RenderingTreeNode {
+  id: string;
+  label: string;
+  status: 'pending' | 'running' | 'cached' | 'completed' | 'error';
+  children?: RenderingTreeNode[];
+  metadata?: {
+    timing?: number;
+    cacheHit?: boolean;
+    url?: string;
+    operation?: string;
+  };
 }
+
+/**
+ * Global rendering tree state for tracking build progress
+ */
+class RenderingTreeManager {
+  private root: RenderingTreeNode | null = null;
+  private nodeMap: Map<string, RenderingTreeNode> = new Map();
+
+  createTree(label: string): string {
+    this.root = {
+      id: 'root',
+      label,
+      status: 'running',
+      children: [],
+    };
+    this.nodeMap.set('root', this.root);
+    return 'root';
+  }
+
+  addNode(
+    parentId: string,
+    id: string,
+    label: string,
+    status: RenderingTreeNode['status'] = 'pending',
+    metadata?: RenderingTreeNode['metadata'],
+  ): void {
+    const parent = this.nodeMap.get(parentId);
+    if (!parent) return;
+
+    const node: RenderingTreeNode = {
+      id,
+      label,
+      status,
+      children: [],
+      ...(metadata && { metadata }),
+    };
+
+    if (!parent.children) parent.children = [];
+    parent.children.push(node);
+    this.nodeMap.set(id, node);
+  }
+
+  updateNode(
+    id: string,
+    status: RenderingTreeNode['status'],
+    metadata?: RenderingTreeNode['metadata'],
+  ): void {
+    const node = this.nodeMap.get(id);
+    if (node) {
+      node.status = status;
+      if (metadata) {
+        node.metadata = { ...node.metadata, ...metadata };
+      }
+    }
+  }
+
+  renderTree(): string {
+    if (!this.root) return '';
+
+    const lines: string[] = [];
+
+    function renderNode(node: RenderingTreeNode, prefix = '', isLast = true, depth = 0): void {
+      const connector = depth === 0 ? '' : isLast ? '└── ' : '├── ';
+      const statusIcon = getStatusIcon();
+      const statusColor = getStatusColor(node.status);
+
+      let line = `${prefix}${connector}${statusIcon}${statusColor(node.label)}`;
+
+      // Add metadata if available
+      if (node.metadata) {
+        const metaParts: string[] = [];
+        if (node.metadata.timing) {
+          const time =
+            node.metadata.timing < 1000
+              ? `${node.metadata.timing}ms`
+              : `${(node.metadata.timing / 1000).toFixed(2)}s`;
+          metaParts.push(colors.timing(time));
+        }
+        if (node.metadata.cacheHit) {
+          metaParts.push(colors.muted('(cached)'));
+        }
+        if (node.metadata.url) {
+          metaParts.push(colors.muted(node.metadata.url));
+        }
+        if (metaParts.length > 0) {
+          line += ` ${metaParts.join(' ')}`;
+        }
+      }
+
+      lines.push(line);
+
+      if (node.children && node.children.length > 0) {
+        const newPrefix = prefix + (depth === 0 ? '' : isLast ? '    ' : '│   ');
+        node.children.forEach((child, index) => {
+          const childIsLast = index === (node.children?.length ?? 0) - 1;
+          renderNode(child, newPrefix, childIsLast, depth + 1);
+        });
+      }
+    }
+
+    function getStatusIcon(): string {
+      // No icons needed - return empty string
+      return '';
+    }
+
+    function getStatusColor(status: RenderingTreeNode['status']) {
+      switch (status) {
+        case 'pending':
+          return colors.muted;
+        case 'running':
+          return colors.info;
+        case 'cached':
+          return colors.warning;
+        case 'completed':
+          return colors.success;
+        case 'error':
+          return colors.error;
+        default:
+          return colors.muted;
+      }
+    }
+
+    renderNode(this.root);
+    return lines.join('\n');
+  }
+
+  clear(): void {
+    this.root = null;
+    this.nodeMap.clear();
+  }
+}
+
+// Global instance for managing the rendering tree
+const renderingTree = new RenderingTreeManager();
 
 /**
  * Creates a formatted table for build statistics
@@ -223,6 +359,54 @@ export const log = {
   },
 
   /**
+   * Initialize a rendering tree for build process visualization
+   */
+  startRenderingTree: (label: string) => {
+    renderingTree.createTree(label);
+  },
+
+  /**
+   * Add a step to the rendering tree
+   */
+  addTreeNode: (
+    parentId: string,
+    id: string,
+    label: string,
+    status: 'pending' | 'running' | 'cached' | 'completed' | 'error' = 'pending',
+    metadata?: { timing?: number; cacheHit?: boolean; url?: string; operation?: string },
+  ) => {
+    renderingTree.addNode(parentId, id, label, status, metadata);
+  },
+
+  /**
+   * Update a node in the rendering tree
+   */
+  updateTreeNode: (
+    id: string,
+    status: 'pending' | 'running' | 'cached' | 'completed' | 'error',
+    metadata?: { timing?: number; cacheHit?: boolean; url?: string; operation?: string },
+  ) => {
+    renderingTree.updateNode(id, status, metadata);
+  },
+
+  /**
+   * Render and display the current tree
+   */
+  showRenderingTree: () => {
+    const tree = renderingTree.renderTree();
+    if (tree) {
+      console.log(tree);
+    }
+  },
+
+  /**
+   * Clear the rendering tree
+   */
+  clearRenderingTree: () => {
+    renderingTree.clear();
+  },
+
+  /**
    * Step message with arrow
    */
   step: (step: number, total: number, message: string) => {
@@ -231,11 +415,13 @@ export const log = {
   },
 
   /**
-   * Progress with bar
+   * Progress with rendering tree instead of bar
    */
   progress: (current: number, total: number, message: string) => {
-    const bar = createProgressBar(current, total);
-    console.log(`  ${bar} ${colors.muted(message)}`);
+    // For backwards compatibility, we'll show progress as tree updates
+    // This will be replaced by specific tree node updates in the build process
+    const percentage = Math.floor((current / total) * 100);
+    console.log(colors.muted(`  [${current}/${total}] ${percentage}% ${message}`));
   },
 
   /**

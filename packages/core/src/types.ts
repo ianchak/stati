@@ -399,6 +399,26 @@ export interface Logger {
   }) => void;
   /** Display navigation tree structure (optional) */
   navigationTree?: (navigation: NavNode[]) => void;
+  /** Initialize a rendering tree for build process visualization (optional) */
+  startRenderingTree?: (label: string) => void;
+  /** Add a step to the rendering tree (optional) */
+  addTreeNode?: (
+    parentId: string,
+    id: string,
+    label: string,
+    status?: 'pending' | 'running' | 'cached' | 'completed' | 'error',
+    metadata?: { timing?: number; cacheHit?: boolean; url?: string; operation?: string },
+  ) => void;
+  /** Update a node in the rendering tree (optional) */
+  updateTreeNode?: (
+    id: string,
+    status: 'pending' | 'running' | 'cached' | 'completed' | 'error',
+    metadata?: { timing?: number; cacheHit?: boolean; url?: string; operation?: string },
+  ) => void;
+  /** Render and display the current tree (optional) */
+  showRenderingTree?: () => void;
+  /** Clear the rendering tree (optional) */
+  clearRenderingTree?: () => void;
 }
 
 /**

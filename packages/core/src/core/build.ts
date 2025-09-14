@@ -270,9 +270,14 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
     await config.hooks.beforeAll(buildContext);
   }
 
-  // Render each page with progress tracking and ISG
+  // Render each page with tree-based progress tracking and ISG
   if (logger.step) {
     logger.step(2, 3, 'Rendering pages');
+  }
+
+  // Initialize rendering tree
+  if (logger.startRenderingTree) {
+    logger.startRenderingTree('Page Rendering Process');
   }
 
   const buildTime = new Date();
@@ -281,9 +286,11 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
     const page = pages[i];
     if (!page) continue; // Safety check
 
-    // Show progress for page rendering
-    if (logger.progress) {
-      logger.progress(i + 1, pages.length, `Checking ${page.url}`);
+    const pageId = `page-${i}`;
+
+    // Add page to rendering tree
+    if (logger.addTreeNode) {
+      logger.addTreeNode('root', pageId, page.url, 'running', { url: page.url });
     } else {
       logger.processing(`Checking ${page.url}`);
     }
@@ -310,8 +317,8 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
     if (!shouldRebuild) {
       // Cache hit - skip rendering
       cacheHits++;
-      if (logger.progress) {
-        logger.progress(i + 1, pages.length, `Cached ${page.url}`);
+      if (logger.updateTreeNode) {
+        logger.updateTreeNode(pageId, 'cached', { cacheHit: true, url: page.url });
       } else {
         logger.processing(`📋 Cached ${page.url}`);
       }
@@ -320,10 +327,15 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
 
     // Cache miss - need to rebuild
     cacheMisses++;
-    if (logger.progress) {
-      logger.progress(i + 1, pages.length, `Rendering ${page.url}`);
-    } else {
-      logger.processing(`🔄 Building ${page.url}`);
+    const startTime = Date.now();
+
+    // Add rendering substeps to tree
+    const markdownId = `${pageId}-markdown`;
+    const templateId = `${pageId}-template`;
+
+    if (logger.addTreeNode) {
+      logger.addTreeNode(pageId, markdownId, 'Processing Markdown', 'running');
+      logger.addTreeNode(pageId, templateId, 'Applying Template', 'pending');
     }
 
     // Run beforeRender hook
@@ -334,8 +346,23 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
     // Render markdown to HTML
     const htmlContent = renderMarkdown(page.content, md);
 
+    if (logger.updateTreeNode) {
+      logger.updateTreeNode(markdownId, 'completed');
+      logger.updateTreeNode(templateId, 'running');
+    }
+
     // Render with template
     const finalHtml = await renderPage(page, htmlContent, config, eta, navigation, pages);
+
+    const renderTime = Date.now() - startTime;
+
+    if (logger.updateTreeNode) {
+      logger.updateTreeNode(templateId, 'completed');
+      logger.updateTreeNode(pageId, 'completed', {
+        timing: renderTime,
+        url: page.url,
+      });
+    }
 
     // Ensure directory exists and write file
     await ensureDir(dirname(outputPath));
@@ -351,6 +378,15 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
     // Run afterRender hook
     if (config.hooks?.afterRender) {
       await config.hooks.afterRender({ page, config });
+    }
+  }
+
+  // Display final rendering tree and clear it
+  if (logger.showRenderingTree) {
+    console.log(); // Add spacing
+    logger.showRenderingTree();
+    if (logger.clearRenderingTree) {
+      logger.clearRenderingTree();
     }
   }
 

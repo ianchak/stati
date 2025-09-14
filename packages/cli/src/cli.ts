@@ -76,6 +76,12 @@ const cli = yargs(hideBin(process.argv))
           timing: log.timing,
           statsTable: log.statsTable,
           navigationTree: log.navigationTree,
+          // Add rendering tree methods
+          startRenderingTree: log.startRenderingTree,
+          addTreeNode: log.addTreeNode,
+          updateTreeNode: log.updateTreeNode,
+          showRenderingTree: log.showRenderingTree,
+          clearRenderingTree: log.clearRenderingTree,
         };
 
         // Show a nice header
@@ -154,6 +160,12 @@ const cli = yargs(hideBin(process.argv))
           timing: log.timing,
           statsTable: log.statsTable,
           navigationTree: log.navigationTree,
+          // Add rendering tree methods
+          startRenderingTree: log.startRenderingTree,
+          addTreeNode: log.addTreeNode,
+          updateTreeNode: log.updateTreeNode,
+          showRenderingTree: log.showRenderingTree,
+          clearRenderingTree: log.clearRenderingTree,
         };
 
         devOptions.logger = coloredLogger;
