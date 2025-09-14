@@ -1,5 +1,17 @@
 # create-stati
 
+## 1.2.2
+
+### Patch Changes
+
+- remove installDependencies option and update CLI
+
+  Commit: 69b5fe5
+
+- update Bun command in README for accuracy
+
+  Commit: e052646
+
 ## 1.2.1
 
 ### Patch Changes
