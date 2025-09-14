@@ -105,7 +105,7 @@ ${existingCSS
     packageJson.devDependencies = {
       ...packageJson.devDependencies,
       sass: '^1.77.0',
-      concurrently: '^8.2.0',
+      concurrently: '^9.0.0',
     };
 
     packageJson.scripts = {
@@ -113,7 +113,7 @@ ${existingCSS
       'build:css': 'sass styles/main.scss public/styles.css --style=compressed',
       'watch:css': 'sass styles/main.scss public/styles.css --watch',
       build: 'npm run build:css && stati build',
-      dev: 'concurrently "npm run watch:css" "stati dev"',
+      dev: 'concurrently --prefix none "npm run watch:css" "stati dev"',
     };
 
     await writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n');
@@ -128,7 +128,7 @@ ${existingCSS
       tailwindcss: '^3.4.0',
       autoprefixer: '^10.4.0',
       postcss: '^8.4.0',
-      concurrently: '^8.2.0',
+      concurrently: '^9.0.0',
     };
 
     packageJson.scripts = {
@@ -136,7 +136,7 @@ ${existingCSS
       'build:css': 'tailwindcss -i public/styles.css -o public/styles.css --minify',
       'watch:css': 'tailwindcss -i public/styles.css -o public/styles.css --watch',
       build: 'npm run build:css && stati build',
-      dev: 'concurrently "npm run watch:css" "stati dev"',
+      dev: 'concurrently --prefix none "npm run watch:css" "stati dev"',
     };
 
     await writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n');
