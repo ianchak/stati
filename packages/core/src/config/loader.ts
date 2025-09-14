@@ -18,7 +18,7 @@ const DEFAULT_CONFIG: StatiConfig = {
   },
   isg: {
     enabled: true,
-    ttlSeconds: 3600,
+    ttlSeconds: 21600, // 6 hours
     maxAgeCapDays: 365,
   },
 };

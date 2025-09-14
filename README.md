@@ -34,7 +34,7 @@ The scaffolder will guide you through setting up a new project with your choice 
 - **Development server** with live reload and hot rebuilding
 - **Static asset copying** from `public/` directory
 - **TypeScript-first** configuration with full type safety
-- **Comprehensive testing** with Vitest and 170+ tests
+- **Comprehensive testing** with Vitest and 358+ tests
 - **Draft page support** with `--include-drafts` flag
 - **Incremental Static Generation (ISG)** with TTL, aging, and freeze
 - **Cache manifest** with input hashing and dependency tracking
@@ -153,7 +153,7 @@ npm run lint           # ESLint across packages
 npm run typecheck      # TypeScript compilation check
 
 # Testing
-npm run test           # Run all tests with Vitest (170+ tests)
+npm run test           # Run all tests with Vitest (358+ tests)
 
 # Building
 npm run build          # Build core, cli, and create-stati packages
