@@ -1,5 +1,10 @@
 import type { PageModel, ISGConfig, AgingRule, CacheEntry } from '../../types.js';
-import { CLOCK_DRIFT_TOLERANCE_MS } from '../../constants.js';
+import {
+  CLOCK_DRIFT_TOLERANCE_MS,
+  DEFAULT_TTL_SECONDS,
+  MILLISECONDS_PER_DAY,
+} from '../../constants.js';
+// dedup: time constants centralized in constants.ts
 
 /**
  * Safely gets the current UTC time with drift protection.
@@ -84,12 +89,12 @@ export function computeEffectiveTTL(
 
   // Apply aging rules if we have a published date and aging rules configured
   if (publishedAt && isgConfig.aging && isgConfig.aging.length > 0) {
-    const defaultTTL = isgConfig.ttlSeconds ?? 21600; // 6 hours default
+    const defaultTTL = isgConfig.ttlSeconds ?? DEFAULT_TTL_SECONDS;
     return applyAgingRules(publishedAt, isgConfig.aging, defaultTTL, now);
   }
 
   // Fall back to default TTL
-  return isgConfig.ttlSeconds ?? 21600; // 6 hours default
+  return isgConfig.ttlSeconds ?? DEFAULT_TTL_SECONDS;
 }
 
 /**
@@ -128,7 +133,7 @@ export function computeNextRebuildAt(options: {
   // If there's a max age cap and published date, check if content is frozen
   if (maxAgeCapDays && publishedAt) {
     const normalizedPublishedAt = getSafeCurrentTime(publishedAt);
-    const maxAgeMs = maxAgeCapDays * 24 * 60 * 60 * 1000;
+    const maxAgeMs = maxAgeCapDays * MILLISECONDS_PER_DAY;
     const ageMs = now.getTime() - normalizedPublishedAt.getTime();
 
     if (ageMs > maxAgeMs) {
@@ -171,7 +176,7 @@ export function isPageFrozen(entry: CacheEntry, now: Date): boolean {
     return false;
   }
 
-  const maxAgeMs = entry.maxAgeCapDays * 24 * 60 * 60 * 1000;
+  const maxAgeMs = entry.maxAgeCapDays * MILLISECONDS_PER_DAY;
   const ageMs = safeNow.getTime() - publishedAt.getTime();
 
   return ageMs > maxAgeMs;
