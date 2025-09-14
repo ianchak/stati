@@ -1,5 +1,4 @@
-import fse from 'fs-extra';
-const { writeFile, readFile, pathExists, remove, ensureDir } = fse;
+import { writeFile, readFile, pathExists, remove, ensureDir } from '../utils/fs.js';
 import { join, dirname } from 'path';
 import { hostname } from 'os';
 
@@ -213,6 +212,9 @@ export class BuildLockManager {
   private async readLockFile(): Promise<BuildLock | null> {
     try {
       const content = await readFile(this.lockPath, 'utf-8');
+      if (!content) {
+        return null;
+      }
       return JSON.parse(content) as BuildLock;
     } catch {
       return null;

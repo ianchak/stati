@@ -1,6 +1,5 @@
 import { createHash } from 'crypto';
-import fse from 'fs-extra';
-const { readFile, pathExists } = fse;
+import { readFile, pathExists } from '../utils/fs.js';
 
 /**
  * Creates a SHA-256 hash instance, updates it with data, and returns the hex digest.
@@ -66,6 +65,9 @@ export async function computeFileHash(filePath: string): Promise<string | null> 
     }
 
     const content = await readFile(filePath, 'utf-8');
+    if (!content) {
+      return null;
+    }
     return createSha256Hash(content);
   } catch (error) {
     console.warn(

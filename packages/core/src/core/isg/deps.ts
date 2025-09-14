@@ -1,6 +1,5 @@
 import { join, dirname, relative, posix } from 'path';
-import fse from 'fs-extra';
-const { pathExists, readFile } = fse;
+import { pathExists, readFile } from '../utils/fs.js';
 import glob from 'fast-glob';
 import type { PageModel, StatiConfig } from '../../types.js';
 import { isCollectionIndexPage, discoverLayout } from '../utils/template-discovery.js';
@@ -224,6 +223,9 @@ async function detectCircularDependencies(
   try {
     // Read template content to find includes/extends
     const content = await readFile(templatePath, 'utf-8');
+    if (!content) {
+      return; // Skip if file doesn't exist
+    }
     const dependencies = await parseTemplateDependencies(content, templatePath, srcDir);
 
     // Recursively check dependencies

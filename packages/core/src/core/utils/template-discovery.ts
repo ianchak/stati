@@ -1,7 +1,6 @@
 import { join, dirname } from 'path';
 import { posix } from 'path';
-import fse from 'fs-extra';
-const { pathExists } = fse;
+import { pathExists } from './fs.js';
 import type { StatiConfig, PageModel } from '../../types.js';
 import { resolveSrcDir } from './paths.js';
 

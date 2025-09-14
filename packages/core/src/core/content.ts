@@ -1,6 +1,5 @@
 import glob from 'fast-glob';
-import fse from 'fs-extra';
-const { readFile } = fse;
+import { readFile } from './utils/fs.js';
 import matter from 'gray-matter';
 import { relative, dirname, basename } from 'path';
 import type { PageModel, StatiConfig } from '../types.js';
@@ -39,6 +38,10 @@ export async function loadContent(
 
   for (const file of files) {
     const content = await readFile(file, 'utf-8');
+    if (!content) {
+      console.warn(`Skipping file ${file}: could not read content`);
+      continue;
+    }
     const { data: frontMatter, content: markdown } = matter(content);
 
     // Skip drafts unless explicitly included
