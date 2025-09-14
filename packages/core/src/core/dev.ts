@@ -403,8 +403,10 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
       });
 
       logger.success?.(`Dev server running at ${url}`);
-      logger.info?.(`Serving from: ${outDir}`);
-      logger.info?.(`Watching: ${watchPaths.join(', ')}`);
+      logger.info?.(`\nServing from:`);
+      logger.info?.(`  📁 ${outDir}`);
+      logger.info?.('Watching:');
+      watchPaths.forEach((path) => logger.info?.(`  📁 ${path}`));
 
       // Open browser if requested
       if (open) {

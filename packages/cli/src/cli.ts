@@ -105,7 +105,7 @@ const cli = yargs(hideBin(process.argv))
 
         console.log(); // Add spacing before final messages
         log.timing('Total build', buildTime);
-        log.success('Site built successfully! 🎉');
+        log.success('Site built successfully!');
       } catch (error) {
         log.error(`Build failed: ${error instanceof Error ? error.message : String(error)}`);
         process.exit(1);
