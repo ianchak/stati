@@ -42,7 +42,6 @@ describe('ExampleManager', () => {
       const mockExampleDir = join(tempDir, 'mock-examples', 'blank');
       await mkdir(mockExampleDir, { recursive: true });
 
-      // Create test files
       await writeFile(
         join(mockExampleDir, 'package.json'),
         JSON.stringify(
@@ -58,21 +57,19 @@ describe('ExampleManager', () => {
       await writeFile(join(mockExampleDir, 'stati.config.js'), 'export default {}');
       await writeFile(join(mockExampleDir, 'README.md'), '# Blank Template');
 
-      // Create subdirectories
+      // Test directory structure with subdirectories and binary files
       await mkdir(join(mockExampleDir, 'site'), { recursive: true });
       await writeFile(join(mockExampleDir, 'site', 'index.md'), '# Welcome');
       await writeFile(join(mockExampleDir, 'site', 'layout.eta'), '<html><%= it.content %></html>');
 
       await mkdir(join(mockExampleDir, 'public'), { recursive: true });
       await writeFile(join(mockExampleDir, 'public', 'styles.css'), 'body { margin: 0; }');
-
-      // Create a binary file (simulated)
       await writeFile(
         join(mockExampleDir, 'public', 'favicon.ico'),
         Buffer.from([0x00, 0x01, 0x02]),
       );
 
-      // Create files that should be excluded
+      // Files that should be excluded during copy
       await mkdir(join(mockExampleDir, 'node_modules', 'test'), { recursive: true });
       await writeFile(
         join(mockExampleDir, 'node_modules', 'test', 'index.js'),
@@ -106,7 +103,6 @@ describe('ExampleManager', () => {
       await expect(access(join(targetDir, 'public', 'styles.css'))).resolves.not.toThrow();
       await expect(access(join(targetDir, 'public', 'favicon.ico'))).resolves.not.toThrow();
 
-      // Verify content is correct
       const packageJson = JSON.parse(await readFile(join(targetDir, 'package.json'), 'utf-8'));
       expect(packageJson.name).toBe('blank-template');
       expect(packageJson.scripts.dev).toBe('stati dev');

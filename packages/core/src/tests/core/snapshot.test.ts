@@ -167,14 +167,12 @@ describe('HTML Output Snapshots', () => {
 
     await build();
 
-    // Verify the generated HTML matches our snapshot
     expect(mockWriteFile).toHaveBeenCalledWith(
       expect.stringMatching(/[/\\]test[/\\]project[/\\]dist[/\\]blog[/\\]getting-started\.html$/),
       renderedHtml,
       'utf-8',
     );
 
-    // Snapshot test for the complete HTML structure
     expect(renderedHtml).toMatchSnapshot('blog-post-complete.html');
   });
 
@@ -250,7 +248,6 @@ describe('HTML Output Snapshots', () => {
       'utf-8',
     );
 
-    // Snapshot test for the homepage structure
     expect(renderedHtml).toMatchSnapshot('homepage-complete.html');
   });
 
