@@ -1,4 +1,5 @@
 import { readdir, stat, copyFile, mkdir } from 'fs/promises';
+import { existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -18,10 +19,17 @@ export class ExampleManager {
   private examplesDir: string;
 
   constructor() {
-    // Look for examples directory relative to this package
-    // In development: ../../examples
-    // In published package: ./examples (bundled)
-    this.examplesDir = join(__dirname, '..', '..', '..', 'examples');
+    // In published package: templates are copied to dist/templates during build
+    // In development: fall back to ../../examples for local testing
+    const publishedTemplatesDir = join(__dirname, 'templates');
+    const devTemplatesDir = join(__dirname, '..', '..', '..', 'examples');
+
+    // Check if we're in a published package (templates directory exists)
+    if (existsSync(publishedTemplatesDir)) {
+      this.examplesDir = publishedTemplatesDir;
+    } else {
+      this.examplesDir = devTemplatesDir;
+    }
   }
 
   async getAvailableExamples(): Promise<ExampleMetadata[]> {
