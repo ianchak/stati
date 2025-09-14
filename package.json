@@ -20,7 +20,7 @@
     "test:blank:preview": "npm run build && cd examples/blank && npm run preview",
     "test:blank:clean": "cd examples/blank && npm run clean",
     "test:blank:full": "npm run test:blank:clean && npm run test:blank:build && echo Build completed successfully!",
-    "test:ci": "npm run lint:ci && npm run typecheck:ci && npm run test --workspaces --if-present",
+    "test:ci": "npm run build && npm run lint:ci && npm run typecheck:ci && npm run test --workspaces --if-present",
     "changeset": "changeset",
     "changeset:status": "changeset status",
     "changeset:generate": "node scripts/generate-changesets.mjs",
