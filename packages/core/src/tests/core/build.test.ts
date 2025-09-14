@@ -434,16 +434,13 @@ describe('build.ts', () => {
 
       expect(consoleSpy).toHaveBeenCalledWith('Building your site...');
       expect(consoleSpy).toHaveBeenCalledWith('📄 Found 3 pages');
-      expect(consoleSpy).toHaveBeenCalledWith('🧭 Built navigation with 3 top-level items');
-      // ISG shows "Checking" then "🔄 Building" for pages that need rebuilding
+      expect(consoleSpy).toHaveBeenCalledWith('Built navigation with 3 top-level items');
+      // ISG shows "Checking" for each page
       expect(consoleSpy).toHaveBeenCalledWith('Checking /');
-      expect(consoleSpy).toHaveBeenCalledWith('🔄 Building /');
       expect(consoleSpy).toHaveBeenCalledWith('Checking /about');
-      expect(consoleSpy).toHaveBeenCalledWith('🔄 Building /about');
       expect(consoleSpy).toHaveBeenCalledWith('Checking /blog/post');
-      expect(consoleSpy).toHaveBeenCalledWith('🔄 Building /blog/post');
-      expect(consoleSpy).toHaveBeenCalledWith('📦 Copying static assets from static');
-      expect(consoleSpy).toHaveBeenCalledWith('📦 Copied 0 static assets');
+      expect(consoleSpy).toHaveBeenCalledWith('Copying static assets from static');
+      expect(consoleSpy).toHaveBeenCalledWith('Copied 0 static assets');
     });
 
     it('should include version in build message when provided', async () => {
@@ -455,7 +452,7 @@ describe('build.ts', () => {
     it('should log clean message when cleaning', async () => {
       await build({ clean: true });
 
-      expect(consoleSpy).toHaveBeenCalledWith('🧹 Cleaning output directory...');
+      expect(consoleSpy).toHaveBeenCalledWith('Cleaning output directory...');
     });
 
     it('should handle build with no pages', async () => {

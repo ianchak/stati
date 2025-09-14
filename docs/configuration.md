@@ -943,7 +943,7 @@ export default defineConfig({
 
   hooks: {
     beforeAll: async (ctx) => {
-      console.log(`🚀 Building ${ctx.pages.length} pages...`);
+      console.log(`Building ${ctx.pages.length} pages...`);
     },
 
     beforeRender: async (ctx) => {

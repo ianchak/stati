@@ -142,19 +142,19 @@ function formatBuildStats(stats: BuildStats): string {
   const timeSeconds = (stats.buildTimeMs / 1000).toFixed(2);
 
   let output =
-    `📊 Build Statistics:
+    `Build Statistics:
 ┌─────────────────────────────────────────┐
-│  ⏱️  Build time: ${timeSeconds}s`.padEnd(41) + '│';
+│  Build time: ${timeSeconds}s`.padEnd(41) + '│';
   output += `\n│  📄 Pages built: ${stats.totalPages}`.padEnd(42) + '│';
   output += `\n│  📦 Assets copied: ${stats.assetsCount}`.padEnd(42) + '│';
-  output += `\n│  💾 Output size: ${sizeKB} KB`.padEnd(42) + '│';
+  output += `\n│  Output size: ${sizeKB} KB`.padEnd(42) + '│';
 
   if (stats.cacheHits !== undefined && stats.cacheMisses !== undefined) {
     const totalCacheRequests = stats.cacheHits + stats.cacheMisses;
     const hitRate =
       totalCacheRequests > 0 ? ((stats.cacheHits / totalCacheRequests) * 100).toFixed(1) : '0';
     output +=
-      `\n│  🎯 Cache hits: ${stats.cacheHits}/${totalCacheRequests} (${hitRate}%)`.padEnd(42) + '│';
+      `\n│  Cache hits: ${stats.cacheHits}/${totalCacheRequests} (${hitRate}%)`.padEnd(42) + '│';
   }
 
   output += '\n└─────────────────────────────────────────┘';
@@ -237,7 +237,7 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
 
   // Clean output directory if requested
   if (options.clean) {
-    logger.info('🧹 Cleaning output directory...');
+    logger.info('Cleaning output directory...');
     await remove(outDir);
   }
 
@@ -253,7 +253,7 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
     logger.step(1, 3, 'Building navigation');
   }
   const navigation = buildNavigation(pages);
-  logger.info(`🧭 Built navigation with ${navigation.length} top-level items`);
+  logger.info(`Built navigation with ${navigation.length} top-level items`);
 
   // Display navigation tree if the logger supports it
   if (logger.navigationTree) {
@@ -270,9 +270,14 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
     await config.hooks.beforeAll(buildContext);
   }
 
-  // Render each page with progress tracking and ISG
+  // Render each page with tree-based progress tracking and ISG
   if (logger.step) {
     logger.step(2, 3, 'Rendering pages');
+  }
+
+  // Initialize rendering tree
+  if (logger.startRenderingTree) {
+    logger.startRenderingTree('Page Rendering Process');
   }
 
   const buildTime = new Date();
@@ -281,9 +286,11 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
     const page = pages[i];
     if (!page) continue; // Safety check
 
-    // Show progress for page rendering
-    if (logger.progress) {
-      logger.progress(i + 1, pages.length, `Checking ${page.url}`);
+    const pageId = `page-${i}`;
+
+    // Add page to rendering tree
+    if (logger.addTreeNode) {
+      logger.addTreeNode('root', pageId, page.url, 'running', { url: page.url });
     } else {
       logger.processing(`Checking ${page.url}`);
     }
@@ -310,8 +317,8 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
     if (!shouldRebuild) {
       // Cache hit - skip rendering
       cacheHits++;
-      if (logger.progress) {
-        logger.progress(i + 1, pages.length, `Cached ${page.url}`);
+      if (logger.updateTreeNode) {
+        logger.updateTreeNode(pageId, 'cached', { cacheHit: true, url: page.url });
       } else {
         logger.processing(`📋 Cached ${page.url}`);
       }
@@ -320,10 +327,15 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
 
     // Cache miss - need to rebuild
     cacheMisses++;
-    if (logger.progress) {
-      logger.progress(i + 1, pages.length, `Rendering ${page.url}`);
-    } else {
-      logger.processing(`🔄 Building ${page.url}`);
+    const startTime = Date.now();
+
+    // Add rendering substeps to tree
+    const markdownId = `${pageId}-markdown`;
+    const templateId = `${pageId}-template`;
+
+    if (logger.addTreeNode) {
+      logger.addTreeNode(pageId, markdownId, 'Processing Markdown', 'running');
+      logger.addTreeNode(pageId, templateId, 'Applying Template', 'pending');
     }
 
     // Run beforeRender hook
@@ -334,8 +346,23 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
     // Render markdown to HTML
     const htmlContent = renderMarkdown(page.content, md);
 
+    if (logger.updateTreeNode) {
+      logger.updateTreeNode(markdownId, 'completed');
+      logger.updateTreeNode(templateId, 'running');
+    }
+
     // Render with template
     const finalHtml = await renderPage(page, htmlContent, config, eta, navigation, pages);
+
+    const renderTime = Date.now() - startTime;
+
+    if (logger.updateTreeNode) {
+      logger.updateTreeNode(templateId, 'completed');
+      logger.updateTreeNode(pageId, 'completed', {
+        timing: renderTime,
+        url: page.url,
+      });
+    }
 
     // Ensure directory exists and write file
     await ensureDir(dirname(outputPath));
@@ -354,6 +381,15 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
     }
   }
 
+  // Display final rendering tree and clear it
+  if (logger.showRenderingTree) {
+    console.log(); // Add spacing
+    logger.showRenderingTree();
+    if (logger.clearRenderingTree) {
+      logger.clearRenderingTree();
+    }
+  }
+
   // Save updated cache manifest
   await saveCacheManifest(cacheDir, manifest);
 
@@ -365,9 +401,9 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
     if (logger.step) {
       logger.step(3, 3, 'Copying static assets');
     }
-    logger.info(`📦 Copying static assets from ${config.staticDir}`);
+    logger.info(`Copying static assets from ${config.staticDir}`);
     assetsCount = await copyStaticAssetsWithLogging(staticDir, outDir, logger);
-    logger.info(`📦 Copied ${assetsCount} static assets`);
+    logger.info(`Copied ${assetsCount} static assets`);
   }
 
   // Run afterAll hook

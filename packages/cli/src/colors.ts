@@ -1,70 +1,67 @@
-import chalk from 'chalk';
-import ora, { type Ora } from 'ora';
-import Table from 'cli-table3';
-
 /**
- * Color utilities for CLI output
+ * Professional color utilities for CLI output
+ * Uses custom ANSI escape codes for consistent cross-platform colors
  */
 export const colors = {
   /**
-   * Success messages - green
+   * Success messages - muted forest green
    */
-  success: (text: string) => chalk.green(text),
+  success: (text: string) => `\x1b[38;2;22;163;74m${text}\x1b[0m`, // #16a34a
 
   /**
-   * Error messages - red
+   * Error messages - muted red
    */
-  error: (text: string) => chalk.red(text),
+  error: (text: string) => `\x1b[38;2;220;38;38m${text}\x1b[0m`, // #dc2626
 
   /**
-   * Warning messages - yellow
+   * Warning messages - muted amber
    */
-  warning: (text: string) => chalk.yellow(text),
+  warning: (text: string) => `\x1b[38;2;217;119;6m${text}\x1b[0m`, // #d97706
 
   /**
-   * Info messages - blue
+   * Info messages - muted steel blue
    */
-  info: (text: string) => chalk.blue(text),
+  info: (text: string) => `\x1b[38;2;37;99;235m${text}\x1b[0m`, // #2563eb
 
   /**
-   * Highlight text - cyan
+   * Highlight text - muted teal
    */
-  highlight: (text: string) => chalk.cyan(text),
+  highlight: (text: string) => `\x1b[38;2;8;145;178m${text}\x1b[0m`, // #0891b2
 
   /**
-   * Muted text - gray
+   * Muted text - warm gray
    */
-  muted: (text: string) => chalk.gray(text),
+  muted: (text: string) => `\x1b[38;2;107;114;128m${text}\x1b[0m`, // #6b7280
 
   /**
    * Bold text
    */
-  bold: (text: string) => chalk.bold(text),
+  bold: (text: string) => `\x1b[1m${text}\x1b[0m`,
 
   /**
-   * Numbers and statistics - magenta
+   * Numbers and statistics - muted purple
    */
-  number: (text: string | number) => chalk.magenta(String(text)),
+  number: (text: string | number) => `\x1b[38;2;124;58;237m${String(text)}\x1b[0m`, // #7c3aed
 
   /**
-   * Brand colors
+   * Brand colors - sophisticated palette
    */
-  brand: (text: string) => chalk.hex('#6366f1')(text), // Indigo
-  secondary: (text: string) => chalk.hex('#8b5cf6')(text), // Purple
-  accent: (text: string) => chalk.hex('#06b6d4')(text), // Cyan
+  brand: (text: string) => `\x1b[38;2;79;70;229m${text}\x1b[0m`, // #4f46e5 - Professional indigo
+  secondary: (text: string) => `\x1b[38;2;124;58;237m${text}\x1b[0m`, // #7c3aed - Muted purple
+  accent: (text: string) => `\x1b[38;2;8;145;178m${text}\x1b[0m`, // #0891b2 - Muted teal
 
   /**
-   * File types
+   * File types - professional slate colors
    */
-  file: (text: string) => chalk.cyan(text),
-  folder: (text: string) => chalk.blue(text),
-  url: (text: string) => chalk.underline.cyan(text),
+  file: (text: string) => `\x1b[38;2;100;116;139m${text}\x1b[0m`, // #64748b
+  folder: (text: string) => `\x1b[38;2;71;85;105m${text}\x1b[0m`, // #475569
+  url: (text: string) => `\x1b[4m\x1b[38;2;8;145;178m${text}\x1b[0m`, // #0891b2 underlined
 
   /**
-   * Status indicators
+   * Status indicators - muted colors
    */
-  progress: (text: string) => chalk.yellow(text),
-  timing: (text: string) => chalk.gray(text),
+  progress: (text: string) => `\x1b[38;2;217;119;6m${text}\x1b[0m`, // #d97706
+  timing: (text: string) => `\x1b[38;2;156;163;175m${text}\x1b[0m`, // #9ca3af
 };
 
 /**
@@ -88,21 +85,157 @@ function createBox(message: string, color: (text: string) => string): string {
 }
 
 /**
- * Creates a progress bar representation
+ * Rendering tree node for visualizing build steps
  */
-function createProgressBar(current: number, total: number, width: number = 20): string {
-  const percentage = Math.min(current / total, 1);
-  const filled = Math.floor(percentage * width);
-  const empty = width - filled;
-
-  const bar = '█'.repeat(filled) + '░'.repeat(empty);
-  const percent = Math.floor(percentage * 100);
-
-  return `${colors.progress('[')}${colors.accent(bar)}${colors.progress(']')} ${colors.number(percent + '%')}`;
+interface RenderingTreeNode {
+  id: string;
+  label: string;
+  status: 'pending' | 'running' | 'cached' | 'completed' | 'error';
+  children?: RenderingTreeNode[];
+  metadata?: {
+    timing?: number;
+    cacheHit?: boolean;
+    url?: string;
+    operation?: string;
+  };
 }
 
 /**
- * Creates a formatted table for build statistics
+ * Global rendering tree state for tracking build progress
+ */
+class RenderingTreeManager {
+  private root: RenderingTreeNode | null = null;
+  private nodeMap: Map<string, RenderingTreeNode> = new Map();
+
+  createTree(label: string): string {
+    this.root = {
+      id: 'root',
+      label,
+      status: 'running',
+      children: [],
+    };
+    this.nodeMap.set('root', this.root);
+    return 'root';
+  }
+
+  addNode(
+    parentId: string,
+    id: string,
+    label: string,
+    status: RenderingTreeNode['status'] = 'pending',
+    metadata?: RenderingTreeNode['metadata'],
+  ): void {
+    const parent = this.nodeMap.get(parentId);
+    if (!parent) return;
+
+    const node: RenderingTreeNode = {
+      id,
+      label,
+      status,
+      children: [],
+      ...(metadata && { metadata }),
+    };
+
+    if (!parent.children) parent.children = [];
+    parent.children.push(node);
+    this.nodeMap.set(id, node);
+  }
+
+  updateNode(
+    id: string,
+    status: RenderingTreeNode['status'],
+    metadata?: RenderingTreeNode['metadata'],
+  ): void {
+    const node = this.nodeMap.get(id);
+    if (node) {
+      node.status = status;
+      if (metadata) {
+        node.metadata = { ...node.metadata, ...metadata };
+      }
+    }
+  }
+
+  renderTree(): string {
+    if (!this.root) return '';
+
+    const lines: string[] = [];
+
+    function renderNode(node: RenderingTreeNode, prefix = '', isLast = true, depth = 0): void {
+      const connector = depth === 0 ? '' : isLast ? '└── ' : '├── ';
+      const statusIcon = getStatusIcon();
+      const statusColor = getStatusColor(node.status);
+
+      let line = `${prefix}${connector}${statusIcon}${statusColor(node.label)}`;
+
+      // Add metadata if available
+      if (node.metadata) {
+        const metaParts: string[] = [];
+        if (node.metadata.timing) {
+          const time =
+            node.metadata.timing < 1000
+              ? `${node.metadata.timing}ms`
+              : `${(node.metadata.timing / 1000).toFixed(2)}s`;
+          metaParts.push(colors.timing(time));
+        }
+        if (node.metadata.cacheHit) {
+          metaParts.push(colors.muted('(cached)'));
+        }
+        if (node.metadata.url) {
+          metaParts.push(colors.muted(node.metadata.url));
+        }
+        if (metaParts.length > 0) {
+          line += ` ${metaParts.join(' ')}`;
+        }
+      }
+
+      lines.push(line);
+
+      if (node.children && node.children.length > 0) {
+        const newPrefix = prefix + (depth === 0 ? '' : isLast ? '    ' : '│   ');
+        node.children.forEach((child, index) => {
+          const childIsLast = index === (node.children?.length ?? 0) - 1;
+          renderNode(child, newPrefix, childIsLast, depth + 1);
+        });
+      }
+    }
+
+    function getStatusIcon(): string {
+      // No icons needed - return empty string
+      return '';
+    }
+
+    function getStatusColor(status: RenderingTreeNode['status']) {
+      switch (status) {
+        case 'pending':
+          return colors.muted;
+        case 'running':
+          return colors.info;
+        case 'cached':
+          return colors.warning;
+        case 'completed':
+          return colors.success;
+        case 'error':
+          return colors.error;
+        default:
+          return colors.muted;
+      }
+    }
+
+    renderNode(this.root);
+    return lines.join('\n');
+  }
+
+  clear(): void {
+    this.root = null;
+    this.nodeMap.clear();
+  }
+}
+
+// Global instance for managing the rendering tree
+const renderingTree = new RenderingTreeManager();
+
+/**
+ * Creates formatted build statistics without using a table
  */
 function createStatsTable(stats: {
   totalPages: number;
@@ -115,99 +248,30 @@ function createStatsTable(stats: {
   const sizeKB = (stats.outputSizeBytes / 1024).toFixed(1);
   const timeSeconds = (stats.buildTimeMs / 1000).toFixed(2);
 
-  const table = new Table({
-    colWidths: [20, 12],
-    style: {
-      head: [],
-      border: ['cyan'],
-      'padding-left': 1,
-      'padding-right': 1,
-    },
-  });
+  // Create formatted lines for statistics
+  const lines: string[] = [];
 
-  // Add the header as a spanning row
-  table.push([{ content: colors.brand('📊 Build Statistics'), colSpan: 2 }] as [
-    { content: string; colSpan: number },
-  ]);
+  // Header
+  lines.push(colors.brand('Build Statistics'));
 
-  // Add rows to the table (without colors first)
-  table.push(
-    ['Build time', `${timeSeconds}s`],
-    ['Pages built', stats.totalPages.toString()],
-    ['Assets copied', stats.assetsCount.toString()],
-    ['Output size', `${sizeKB} KB`],
-  );
+  // Build statistics
+  lines.push(`${colors.muted('  Build time:')} ${colors.number(timeSeconds)}s`);
+  lines.push(`${colors.muted('  Pages built:')} ${colors.number(stats.totalPages)}`);
+  lines.push(`${colors.muted('  Assets copied:')} ${colors.number(stats.assetsCount)}`);
+  lines.push(`${colors.muted('  Output size:')} ${colors.number(sizeKB)} KB`);
 
   // Add cache statistics if available
   if (stats.cacheHits !== undefined && stats.cacheMisses !== undefined) {
     const totalCacheRequests = stats.cacheHits + stats.cacheMisses;
     const hitRate =
       totalCacheRequests > 0 ? ((stats.cacheHits / totalCacheRequests) * 100).toFixed(1) : '0';
-    table.push(['Cache hits', `${stats.cacheHits}/${totalCacheRequests} (${hitRate}%)`]);
+    lines.push(
+      `${colors.muted('  Cache hits:')} ${colors.number(stats.cacheHits)}/${colors.number(totalCacheRequests)} (${colors.highlight(hitRate + '%')})`,
+    );
   }
 
-  return table.toString();
+  return lines.join('\n');
 }
-
-/**
- * Spinner utilities for long-running operations
- */
-export const spinner = {
-  /**
-   * Create a spinner for building operations
-   */
-  building: (text: string): Ora => {
-    return ora({
-      text: colors.brand(text),
-      spinner: 'dots',
-      color: 'cyan',
-    });
-  },
-
-  /**
-   * Create a spinner for processing operations
-   */
-  processing: (text: string): Ora => {
-    return ora({
-      text: colors.info(text),
-      spinner: 'line',
-      color: 'blue',
-    });
-  },
-
-  /**
-   * Create a spinner for copying files
-   */
-  copying: (text: string): Ora => {
-    return ora({
-      text: colors.muted(text),
-      spinner: 'simpleDotsScrolling',
-      color: 'gray',
-    });
-  },
-
-  /**
-   * Create a generic success spinner
-   */
-  success: (text: string): Ora => {
-    return ora({
-      text: colors.success(text),
-      spinner: 'star',
-      color: 'green',
-    });
-  },
-
-  /**
-   * Create a generic error spinner
-   */
-  error: (text: string): Ora => {
-    return ora({
-      text: colors.error(text),
-      spinner: 'dots',
-      color: 'red',
-    });
-  },
-};
 
 /**
  * Formatted log functions for common CLI output patterns
@@ -245,7 +309,7 @@ export const log = {
    * Building progress message
    */
   building: (message: string) => {
-    console.log(colors.brand('🏗️  ' + message));
+    console.log(colors.brand(message));
   },
 
   /**
@@ -256,14 +320,14 @@ export const log = {
   },
 
   /**
-   * Statistics or numbers - can display as table or text
+   * Statistics or numbers
    */
   stats: (message: string) => {
     console.log(colors.highlight(message));
   },
 
   /**
-   * Build statistics as a formatted table
+   * Build statistics as formatted text
    */
   statsTable: (stats: {
     totalPages: number;
@@ -284,6 +348,54 @@ export const log = {
   },
 
   /**
+   * Initialize a rendering tree for build process visualization
+   */
+  startRenderingTree: (label: string) => {
+    renderingTree.createTree(label);
+  },
+
+  /**
+   * Add a step to the rendering tree
+   */
+  addTreeNode: (
+    parentId: string,
+    id: string,
+    label: string,
+    status: 'pending' | 'running' | 'cached' | 'completed' | 'error' = 'pending',
+    metadata?: { timing?: number; cacheHit?: boolean; url?: string; operation?: string },
+  ) => {
+    renderingTree.addNode(parentId, id, label, status, metadata);
+  },
+
+  /**
+   * Update a node in the rendering tree
+   */
+  updateTreeNode: (
+    id: string,
+    status: 'pending' | 'running' | 'cached' | 'completed' | 'error',
+    metadata?: { timing?: number; cacheHit?: boolean; url?: string; operation?: string },
+  ) => {
+    renderingTree.updateNode(id, status, metadata);
+  },
+
+  /**
+   * Render and display the current tree
+   */
+  showRenderingTree: () => {
+    const tree = renderingTree.renderTree();
+    if (tree) {
+      console.log(tree);
+    }
+  },
+
+  /**
+   * Clear the rendering tree
+   */
+  clearRenderingTree: () => {
+    renderingTree.clear();
+  },
+
+  /**
    * Step message with arrow
    */
   step: (step: number, total: number, message: string) => {
@@ -292,11 +404,13 @@ export const log = {
   },
 
   /**
-   * Progress with bar
+   * Progress with rendering tree instead of bar
    */
   progress: (current: number, total: number, message: string) => {
-    const bar = createProgressBar(current, total);
-    console.log(`  ${bar} ${colors.muted(message)}`);
+    // For backwards compatibility, we'll show progress as tree updates
+    // This will be replaced by specific tree node updates in the build process
+    const percentage = Math.floor((current / total) * 100);
+    console.log(colors.muted(`  [${current}/${total}] ${percentage}% ${message}`));
   },
 
   /**
@@ -311,7 +425,7 @@ export const log = {
    * URL with proper styling
    */
   url: (label: string, url: string) => {
-    console.log(`  ${colors.info('🔗')} ${label}: ${colors.url(url)}`);
+    console.log(`  ${label}: ${colors.url(url)}`);
   },
 
   /**
@@ -319,35 +433,7 @@ export const log = {
    */
   timing: (operation: string, duration: number) => {
     const time = duration < 1000 ? `${duration}ms` : `${(duration / 1000).toFixed(2)}s`;
-    console.log(colors.timing(`⏱️  ${operation} completed in ${colors.number(time)}`));
-  },
-
-  /**
-   * Start a spinner for a long-running operation
-   */
-  startSpinner: (text: string, type: 'building' | 'processing' | 'copying' = 'processing'): Ora => {
-    return spinner[type](text).start();
-  },
-
-  /**
-   * Stop a spinner with success
-   */
-  succeedSpinner: (spinner: Ora, text?: string) => {
-    spinner.succeed(text ? colors.success('✅ ' + text) : undefined);
-  },
-
-  /**
-   * Stop a spinner with failure
-   */
-  failSpinner: (spinner: Ora, text?: string) => {
-    spinner.fail(text ? colors.error('❌ ' + text) : undefined);
-  },
-
-  /**
-   * Update spinner text
-   */
-  updateSpinner: (spinner: Ora, text: string) => {
-    spinner.text = colors.info(text);
+    console.log(colors.timing(`${operation} completed in ${colors.number(time)}`));
   },
 
   /**

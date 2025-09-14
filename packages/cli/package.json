@@ -15,9 +15,6 @@
   },
   "dependencies": {
     "@stati/core": "^1.1.0",
-    "chalk": "^5.3.0",
-    "cli-table3": "^0.6.5",
-    "ora": "^8.2.0",
     "yargs": "^17.7.2"
   },
   "devDependencies": {
