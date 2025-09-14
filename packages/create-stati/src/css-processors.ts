@@ -66,7 +66,10 @@ ${existingCSS
 
   private async setupTailwind(projectDir: string): Promise<void> {
     try {
-      // 1. Replace CSS with Tailwind directives
+      // 1. Create src directory for CSS input files
+      await mkdir(join(projectDir, 'src'), { recursive: true });
+
+      // 2. Create Tailwind CSS source file (input)
       const tailwindCSS = `@tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -86,7 +89,7 @@ ${existingCSS
 }
 `;
 
-      await writeFile(join(projectDir, 'public', 'styles.css'), tailwindCSS);
+      await writeFile(join(projectDir, 'src', 'styles.css'), tailwindCSS);
 
       // 2. Create configs
       await this.createTailwindConfig(projectDir);
@@ -133,8 +136,8 @@ ${existingCSS
 
     packageJson.scripts = {
       ...packageJson.scripts,
-      'build:css': 'tailwindcss -i public/styles.css -o public/styles.css --minify',
-      'watch:css': 'tailwindcss -i public/styles.css -o public/styles.css --watch',
+      'build:css': 'tailwindcss -i src/styles.css -o public/styles.css --minify',
+      'watch:css': 'tailwindcss -i src/styles.css -o public/styles.css --watch',
       build: 'npm run build:css && stati build',
       dev: 'concurrently --prefix none "npm run watch:css" "stati dev"',
     };

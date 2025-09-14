@@ -112,7 +112,9 @@ describe('CSSProcessor', () => {
       );
 
       // Scripts should be modified to integrate CSS processing
-      expect(packageJson.scripts.dev).toBe('concurrently "npm run watch:css" "stati dev"');
+      expect(packageJson.scripts.dev).toBe(
+        'concurrently --prefix none "npm run watch:css" "stati dev"',
+      );
       expect(packageJson.scripts.build).toBe('npm run build:css && stati build');
     });
 
@@ -147,7 +149,7 @@ describe('CSSProcessor', () => {
     it('should create Tailwind CSS file with directives', async () => {
       await cssProcessor.processStyling(tempDir, 'tailwind');
 
-      const cssContent = await readFile(join(tempDir, 'public', 'styles.css'), 'utf-8');
+      const cssContent = await readFile(join(tempDir, 'src', 'styles.css'), 'utf-8');
 
       expect(cssContent).toContain('@tailwind base;');
       expect(cssContent).toContain('@tailwind components;');
@@ -192,8 +194,14 @@ describe('CSSProcessor', () => {
       expect(packageJson.scripts['watch:css']).toContain('tailwindcss');
       expect(packageJson.scripts['watch:css']).toContain('--watch');
 
+      // Verify input/output paths
+      expect(packageJson.scripts['build:css']).toContain('-i src/styles.css -o public/styles.css');
+      expect(packageJson.scripts['watch:css']).toContain('-i src/styles.css -o public/styles.css');
+
       // Scripts should be modified to integrate CSS processing
-      expect(packageJson.scripts.dev).toBe('concurrently "npm run watch:css" "stati dev"');
+      expect(packageJson.scripts.dev).toBe(
+        'concurrently --prefix none "npm run watch:css" "stati dev"',
+      );
       expect(packageJson.scripts.build).toBe('npm run build:css && stati build');
     });
   });
@@ -210,14 +218,6 @@ describe('CSSProcessor', () => {
 
       // No public/styles.css file created
       await expect(cssProcessor.processStyling(tempDir, 'sass')).rejects.toThrow();
-    });
-
-    it('should handle missing public directory for Tailwind setup', async () => {
-      const packageJson = { name: 'test', scripts: {} };
-      await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson, null, 2));
-
-      // No public directory created
-      await expect(cssProcessor.processStyling(tempDir, 'tailwind')).rejects.toThrow();
     });
   });
 });

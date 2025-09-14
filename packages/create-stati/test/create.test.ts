@@ -110,7 +110,7 @@ describe('create-stati scaffolding', () => {
       expect(packageJson.devDependencies).toHaveProperty('concurrently');
 
       // Verify Tailwind CSS content
-      const cssContent = await readFile(join(result.targetDir, 'public', 'styles.css'), 'utf-8');
+      const cssContent = await readFile(join(result.targetDir, 'src', 'styles.css'), 'utf-8');
       expect(cssContent).toContain('@tailwind base');
       expect(cssContent).toContain('@tailwind components');
       expect(cssContent).toContain('@tailwind utilities');
