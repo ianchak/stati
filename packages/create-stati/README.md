@@ -20,7 +20,7 @@ yarn create stati my-site
 pnpm create stati my-site
 
 # Using Bun
-bun create stati my-site
+bunx create-stati my-site
 ```
 
 ## CLI Options
