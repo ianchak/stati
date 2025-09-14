@@ -1,5 +1,13 @@
 # @stati/core
 
+## 1.3.0
+
+### Minor Changes
+
+- enhance build process with ISG support and caching improvements
+
+  Commit: 6403c1e
+
 ## 1.2.0
 
 ### Minor Changes
