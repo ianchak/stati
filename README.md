@@ -88,20 +88,23 @@ npx create-stati my-site --template=blank --styling=tailwind --git
 - **`stati dev`** — Start development server with configurable port, host, and auto-open browser
 - **`stati invalidate`** — Cache invalidation by tags, paths, patterns, or age
 
+_Commands available when `@stati/cli` is installed in your project._
+
 ### Development Workflow
 
 ```bash
-# Using the CLI (Development)
-cd examples/blog
+# Navigate to your Stati project
+cd my-stati-site
 
 # Development server with live reload
-npx stati dev --port 3000 --open
+npm run dev
 
 # Build the site
-npx stati build
+npm run build
 
-# Build with options
-npx stati build --force --clean --include-drafts
+# Or use CLI commands directly
+stati dev --port 3000 --open
+stati build --force --clean --include-drafts
 ```
 
 ---
