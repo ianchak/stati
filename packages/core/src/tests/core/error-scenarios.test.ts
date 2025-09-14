@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type MarkdownIt from 'markdown-it';
 import type { Eta } from 'eta';
 import { build } from '../../core/build.js';
-import type { PageModel, StatiConfig } from '../../types.js';
+import type { PageModel, StatiConfig } from '../../types/index.js';
 
 // Create hoisted mocks using the standardized pattern from test-mocks.ts
 const {

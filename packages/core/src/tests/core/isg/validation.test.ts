@@ -4,7 +4,7 @@ import {
   ISGConfigurationError,
   ISGValidationError,
 } from '../../../core/isg/validation.js';
-import type { ISGConfig } from '../../../types.js';
+import type { ISGConfig } from '../../../types/index.js';
 
 describe('ISG Error Handling and Validation', () => {
   beforeEach(() => {

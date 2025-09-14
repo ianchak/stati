@@ -4,7 +4,7 @@ import { posix } from 'path';
 import { readFile, stat } from 'fs/promises';
 import { WebSocketServer } from 'ws';
 import chokidar from 'chokidar';
-import type { StatiConfig, Logger } from '../types.js';
+import type { StatiConfig, Logger } from '../types/index.js';
 import type { FSWatcher } from 'chokidar';
 import { build } from './build.js';
 import { loadConfig } from '../config/loader.js';

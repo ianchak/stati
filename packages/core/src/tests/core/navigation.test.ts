@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildNavigation } from '../../core/navigation.js';
-import type { PageModel } from '../../types.js';
+import type { PageModel } from '../../types/index.js';
 
 describe('Navigation', () => {
   const mockPages: PageModel[] = [

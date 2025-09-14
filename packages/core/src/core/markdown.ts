@@ -1,5 +1,5 @@
 import MarkdownIt from 'markdown-it';
-import type { StatiConfig } from '../types.js';
+import type { StatiConfig } from '../types/index.js';
 
 /**
  * Creates and configures a MarkdownIt processor based on the provided configuration.

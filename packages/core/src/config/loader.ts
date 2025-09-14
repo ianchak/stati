@@ -1,7 +1,7 @@
 import { existsSync } from 'fs';
 import { join, resolve } from 'path';
 import { pathToFileURL } from 'url';
-import type { StatiConfig } from '../types.js';
+import type { StatiConfig } from '../types/index.js';
 import { validateISGConfig, ISGConfigurationError } from '../core/isg/validation.js';
 import {
   DEFAULT_SRC_DIR,

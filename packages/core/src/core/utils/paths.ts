@@ -1,6 +1,6 @@
 import { join } from 'path';
 import { posix } from 'path';
-import type { StatiConfig } from '../../types.js';
+import type { StatiConfig } from '../../types/index.js';
 import {
   DEFAULT_SRC_DIR,
   DEFAULT_OUT_DIR,

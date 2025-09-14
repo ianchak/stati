@@ -2,7 +2,7 @@ import glob from 'fast-glob';
 import { readFile } from './utils/fs.js';
 import matter from 'gray-matter';
 import { relative, dirname, basename } from 'path';
-import type { PageModel, StatiConfig } from '../types.js';
+import type { PageModel, StatiConfig } from '../types/index.js';
 import { resolveSrcDir } from './utils/paths.js';
 
 /**

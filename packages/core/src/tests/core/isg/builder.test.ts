@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { join } from 'path';
-import type { PageModel, CacheEntry, StatiConfig } from '../../../types.js';
+import type { PageModel, CacheEntry, StatiConfig } from '../../../types/index.js';
 
 // Mock all ISG modules that the builder depends on - use factory functions
 vi.mock('../../../core/isg/hash.js', () => ({

@@ -1,4 +1,4 @@
-import type { PageModel, ISGConfig, AgingRule, CacheEntry } from '../../types.js';
+import type { PageModel, ISGConfig, AgingRule, CacheEntry } from '../../types/index.js';
 import {
   CLOCK_DRIFT_TOLERANCE_MS,
   DEFAULT_TTL_SECONDS,

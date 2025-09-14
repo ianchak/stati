@@ -5,7 +5,7 @@ import {
   invalidate,
 } from '../../../core/invalidate.js';
 import { loadCacheManifest, saveCacheManifest } from '../../../core/isg/manifest.js';
-import type { CacheEntry, CacheManifest } from '../../../types.js';
+import type { CacheEntry, CacheManifest } from '../../../types/index.js';
 
 // Mock the manifest functions
 vi.mock('../../../core/isg/manifest.js', () => ({

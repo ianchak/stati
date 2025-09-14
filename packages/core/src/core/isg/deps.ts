@@ -1,7 +1,7 @@
 import { join, dirname, relative, posix } from 'path';
 import { pathExists, readFile } from '../utils/fs.js';
 import glob from 'fast-glob';
-import type { PageModel, StatiConfig } from '../../types.js';
+import type { PageModel, StatiConfig } from '../../types/index.js';
 import { isCollectionIndexPage, discoverLayout } from '../utils/template-discovery.js';
 import { resolveSrcDir } from '../utils/paths.js';
 

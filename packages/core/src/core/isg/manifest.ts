@@ -1,6 +1,6 @@
 import { readFile, writeFile, pathExists, ensureDir } from '../utils/fs.js';
 import { join } from 'path';
-import type { CacheManifest, CacheEntry } from '../../types.js';
+import type { CacheManifest, CacheEntry } from '../../types/index.js';
 import { MANIFEST_FILENAME } from '../../constants.js';
 
 /**

@@ -5,7 +5,7 @@ import { build } from '../../core/build.js';
 import { loadContent } from '../../core/content.js';
 import { renderMarkdown, createMarkdownProcessor } from '../../core/markdown.js';
 import { renderPage } from '../../core/templates.js';
-import type { PageModel, StatiConfig } from '../../types.js';
+import type { PageModel, StatiConfig } from '../../types/index.js';
 
 // Mock dependencies
 vi.mock('fs-extra', () => {

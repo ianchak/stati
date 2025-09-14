@@ -9,7 +9,7 @@ import { buildNavigation } from './navigation.js';
 import { loadCacheManifest, saveCacheManifest } from './isg/manifest.js';
 import { shouldRebuildPage, createCacheEntry, updateCacheEntry } from './isg/builder.js';
 import { withBuildLock } from './isg/build-lock.js';
-import type { BuildContext, BuildStats, Logger } from '../types.js';
+import type { BuildContext, BuildStats, Logger } from '../types/index.js';
 import { resolveOutDir, resolveStaticDir, resolveCacheDir } from './utils/paths.js';
 
 /**

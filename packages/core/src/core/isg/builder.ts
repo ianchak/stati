@@ -1,4 +1,4 @@
-import type { PageModel, CacheEntry, StatiConfig } from '../../types.js';
+import type { PageModel, CacheEntry, StatiConfig } from '../../types/index.js';
 import { computeContentHash, computeFileHash, computeInputsHash } from './hash.js';
 import { trackTemplateDependencies } from './deps.js';
 import { computeEffectiveTTL, computeNextRebuildAt, isPageFrozen } from './ttl.js';

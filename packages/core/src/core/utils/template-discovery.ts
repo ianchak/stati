@@ -1,7 +1,7 @@
 import { join, dirname } from 'path';
 import { posix } from 'path';
 import { pathExists } from './fs.js';
-import type { StatiConfig, PageModel } from '../../types.js';
+import type { StatiConfig, PageModel } from '../../types/index.js';
 import { resolveSrcDir } from './paths.js';
 
 /**

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { join } from 'path';
-import type { PageModel, StatiConfig } from '../../../types.js';
+import type { PageModel, StatiConfig } from '../../../types/index.js';
 
 // Mock fs-extra and fast-glob - use factory functions to avoid hoisting issues
 vi.mock('fs-extra', () => ({

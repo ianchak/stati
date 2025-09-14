@@ -1,7 +1,7 @@
 import { Eta } from 'eta';
 import { join, dirname, relative, basename } from 'path';
 import glob from 'fast-glob';
-import type { StatiConfig, PageModel, NavNode, CollectionData } from '../types.js';
+import type { StatiConfig, PageModel, NavNode, CollectionData } from '../types/index.js';
 import {
   isCollectionIndexPage,
   discoverLayout,

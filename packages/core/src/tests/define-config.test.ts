@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { defineConfig } from '../index.js';
-import type { StatiConfig } from '../types.js';
+import type { StatiConfig } from '../types/index.js';
 
 describe('defineConfig', () => {
   it('should return the same config object passed to it', () => {

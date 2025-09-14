@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { build } from '../../core/build.js';
 import type { BuildOptions } from '../../core/build.js';
-import type { StatiConfig } from '../../types.js';
+import type { StatiConfig } from '../../types/index.js';
 
 // Create hoisted mocks that are available during module hoisting
 const {

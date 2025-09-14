@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { join } from 'path';
-import type { CacheManifest } from '../../../types.js';
+import type { CacheManifest } from '../../../types/index.js';
 
 // Mock fs-extra completely inside the factory to avoid hoisting issues
 vi.mock('fs-extra', () => {

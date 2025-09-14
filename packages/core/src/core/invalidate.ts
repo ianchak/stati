@@ -1,5 +1,5 @@
 import { loadCacheManifest, saveCacheManifest } from './isg/manifest.js';
-import type { CacheEntry } from '../types.js';
+import type { CacheEntry } from '../types/index.js';
 import { resolveCacheDir } from './utils/paths.js';
 
 /**

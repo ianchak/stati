@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createMarkdownProcessor, renderMarkdown } from '../../core/markdown.js';
-import type { StatiConfig } from '../../types.js';
+import type { StatiConfig } from '../../types/index.js';
 
 describe('markdown.ts', () => {
   const baseConfig: StatiConfig = {

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createTemplateEngine, renderPage } from '../../core/templates.js';
-import type { StatiConfig, PageModel } from '../../types.js';
+import type { StatiConfig, PageModel } from '../../types/index.js';
 import type { Eta } from 'eta';
 import { join } from 'path';
 
