@@ -2,8 +2,9 @@ import glob from 'fast-glob';
 import fse from 'fs-extra';
 const { readFile } = fse;
 import matter from 'gray-matter';
-import { join, relative, dirname, basename } from 'path';
+import { relative, dirname, basename } from 'path';
 import type { PageModel, StatiConfig } from '../types.js';
+import { resolveSrcDir } from './utils/paths.js';
 
 /**
  * Loads and parses all content files from the configured source directory.
@@ -25,7 +26,7 @@ export async function loadContent(
   config: StatiConfig,
   includeDrafts?: boolean,
 ): Promise<PageModel[]> {
-  const contentDir = join(process.cwd(), config.srcDir!);
+  const contentDir = resolveSrcDir(config);
 
   // Exclude folders starting with underscore from content discovery
   const files = await glob('**/*.md', {

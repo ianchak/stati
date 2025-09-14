@@ -11,6 +11,7 @@ import { loadCacheManifest, saveCacheManifest } from './isg/manifest.js';
 import { shouldRebuildPage, createCacheEntry, updateCacheEntry } from './isg/builder.js';
 import { withBuildLock } from './isg/build-lock.js';
 import type { BuildContext, BuildStats, Logger } from '../types.js';
+import { resolveOutDir, resolveStaticDir, resolveCacheDir } from './utils/paths.js';
 
 /**
  * Options for customizing the build process.
@@ -194,7 +195,7 @@ function formatBuildStats(stats: BuildStats): string {
  * ```
  */
 export async function build(options: BuildOptions = {}): Promise<BuildStats> {
-  const cacheDir = join(process.cwd(), '.stati');
+  const cacheDir = resolveCacheDir();
 
   // Ensure cache directory exists before acquiring build lock
   await ensureDir(cacheDir);
@@ -219,10 +220,10 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
 
   // Load configuration
   const config = await loadConfig(options.configPath ? dirname(options.configPath) : process.cwd());
-  const outDir = join(process.cwd(), config.outDir!);
+  const outDir = resolveOutDir(config);
 
   // Create .stati cache directory
-  const cacheDir = join(process.cwd(), '.stati');
+  const cacheDir = resolveCacheDir();
   await ensureDir(cacheDir);
 
   // Load cache manifest for ISG
@@ -402,7 +403,7 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
 
   // Copy static assets and count them
   let assetsCount = 0;
-  const staticDir = join(process.cwd(), config.staticDir!);
+  const staticDir = resolveStaticDir(config);
   if (await pathExists(staticDir)) {
     console.log(); // Add spacing before asset copying
     if (logger.step) {

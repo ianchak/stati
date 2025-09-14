@@ -7,6 +7,7 @@ import {
   discoverLayout,
   getCollectionPathForPage,
 } from './utils/template-discovery.js';
+import { resolveSrcDir } from './utils/paths.js';
 
 /**
  * Groups pages by their tags for aggregation purposes.
@@ -124,7 +125,7 @@ async function discoverPartials(
   pagePath: string,
   config: StatiConfig,
 ): Promise<Record<string, string>> {
-  const srcDir = join(process.cwd(), config.srcDir!);
+  const srcDir = resolveSrcDir(config);
   const partials: Record<string, string> = {};
 
   // Get the directory of the current page
@@ -169,7 +170,7 @@ async function discoverPartials(
 }
 
 export function createTemplateEngine(config: StatiConfig): Eta {
-  const templateDir = join(process.cwd(), config.srcDir!);
+  const templateDir = resolveSrcDir(config);
 
   const eta = new Eta({
     views: templateDir,
@@ -188,7 +189,7 @@ export async function renderPage(
   allPages?: PageModel[],
 ): Promise<string> {
   // Discover partials for this page's directory hierarchy
-  const srcDir = join(process.cwd(), config.srcDir!);
+  const srcDir = resolveSrcDir(config);
   const relativePath = relative(srcDir, page.sourcePath);
   const partialPaths = await discoverPartials(relativePath, config);
 

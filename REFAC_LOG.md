@@ -23,11 +23,22 @@ This file tracks refactoring operations applied to the Stati codebase for mainta
 
 ## REFAC-20250914-02: Consolidate Duplicate Template Discovery Logic  
 **Date:** 2025-09-14  
-**Status:** Planned  
+**Status:** ✅ Completed  
 **Scope:** `packages/core/src/core/isg/deps.ts` and `packages/core/src/core/templates.ts`  
 **Rationale:** Remove duplicated business logic for template discovery  
-**Files Touched:** TBD  
-**Commits:** TBD  
+**Files Touched:** 
+- `packages/core/src/core/utils/template-discovery.ts` (new)
+- `packages/core/src/core/templates.ts` (refactored)
+- `packages/core/src/core/isg/deps.ts` (refactored)
+**Commits:** 93c4626 - refactor(core): consolidate duplicate template discovery logic
+
+**Validation Checklist:**
+- [x] Types ok
+- [x] Lint ok  
+- [x] Tests ok (364 tests pass)
+- [x] Build ok
+
+**Impact:** ~80 lines of duplicated business logic removed, centralized template discovery utilities  
 
 ## REFAC-20250914-03: Extract File System Path Resolution Utilities  
 **Date:** 2025-09-14  

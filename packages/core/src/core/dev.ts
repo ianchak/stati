@@ -9,6 +9,7 @@ import type { FSWatcher } from 'chokidar';
 import { build } from './build.js';
 import { loadConfig } from '../config/loader.js';
 import { loadCacheManifest, saveCacheManifest } from './isg/manifest.js';
+import { resolveDevPaths, resolveCacheDir } from './utils/paths.js';
 
 export interface DevServerOptions {
   port?: number;
@@ -69,9 +70,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
     throw error;
   }
 
-  const outDir = join(process.cwd(), config.outDir || 'dist');
-  const srcDir = join(process.cwd(), config.srcDir || 'site');
-  const staticDir = join(process.cwd(), config.staticDir || 'public');
+  const { outDir, srcDir, staticDir } = resolveDevPaths(config);
 
   /**
    * Performs an initial build to ensure dist/ exists
@@ -161,7 +160,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
    * Handles template/partial file changes by invalidating affected pages
    */
   async function handleTemplateChange(templatePath: string, buildLogger?: Logger): Promise<void> {
-    const cacheDir = join(process.cwd(), '.stati');
+    const cacheDir = resolveCacheDir();
     const effectiveLogger = buildLogger || logger;
 
     try {

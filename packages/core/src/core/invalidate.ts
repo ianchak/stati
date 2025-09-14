@@ -1,6 +1,6 @@
-import { join } from 'path';
 import { loadCacheManifest, saveCacheManifest } from './isg/manifest.js';
 import type { CacheEntry } from '../types.js';
+import { resolveCacheDir } from './utils/paths.js';
 
 /**
  * Invalidation result containing affected cache entries.
@@ -314,7 +314,7 @@ function matchesAge(entry: CacheEntry, ageValue: string): boolean {
  * ```
  */
 export async function invalidate(query?: string): Promise<InvalidationResult> {
-  const cacheDir = join(process.cwd(), '.stati');
+  const cacheDir = resolveCacheDir();
 
   // Load existing cache manifest
   const cacheManifest = await loadCacheManifest(cacheDir);

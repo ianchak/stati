@@ -3,6 +3,7 @@ import { posix } from 'path';
 import fse from 'fs-extra';
 const { pathExists } = fse;
 import type { StatiConfig, PageModel } from '../../types.js';
+import { resolveSrcDir } from './paths.js';
 
 /**
  * Shared template discovery utilities.
@@ -58,7 +59,7 @@ export async function discoverLayout(
     return null;
   }
 
-  const srcDir = join(process.cwd(), config.srcDir);
+  const srcDir = resolveSrcDir(config);
 
   // If explicit layout is specified, use it
   if (explicitLayout) {
