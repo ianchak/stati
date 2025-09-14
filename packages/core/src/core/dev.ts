@@ -10,6 +10,7 @@ import { build } from './build.js';
 import { loadConfig } from '../config/loader.js';
 import { loadCacheManifest, saveCacheManifest } from './isg/manifest.js';
 import { resolveDevPaths, resolveCacheDir } from './utils/paths.js';
+import { DEFAULT_DEV_PORT, DEFAULT_DEV_HOST } from '../constants.js';
 
 export interface DevServerOptions {
   port?: number;
@@ -33,8 +34,8 @@ export interface DevServer {
  */
 export async function createDevServer(options: DevServerOptions = {}): Promise<DevServer> {
   const {
-    port = 3000,
-    host = 'localhost',
+    port = DEFAULT_DEV_PORT,
+    host = DEFAULT_DEV_HOST,
     open = false,
     configPath,
     logger = {

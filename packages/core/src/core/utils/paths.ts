@@ -1,6 +1,12 @@
 import { join } from 'path';
 import { posix } from 'path';
 import type { StatiConfig } from '../../types.js';
+import {
+  DEFAULT_SRC_DIR,
+  DEFAULT_OUT_DIR,
+  DEFAULT_STATIC_DIR,
+  CACHE_DIR_NAME,
+} from '../../constants.js';
 
 /**
  * File system path resolution utilities for Stati core.
@@ -39,7 +45,7 @@ export function resolveStaticDir(config: StatiConfig): string {
  * @returns Absolute path to the .stati cache directory
  */
 export function resolveCacheDir(): string {
-  return join(process.cwd(), '.stati');
+  return join(process.cwd(), CACHE_DIR_NAME);
 }
 
 /**
@@ -49,9 +55,9 @@ export function resolveCacheDir(): string {
  */
 export function resolveDevPaths(config: StatiConfig) {
   return {
-    srcDir: join(process.cwd(), config.srcDir || 'site'),
-    outDir: join(process.cwd(), config.outDir || 'dist'),
-    staticDir: join(process.cwd(), config.staticDir || 'public'),
+    srcDir: join(process.cwd(), config.srcDir || DEFAULT_SRC_DIR),
+    outDir: join(process.cwd(), config.outDir || DEFAULT_OUT_DIR),
+    staticDir: join(process.cwd(), config.staticDir || DEFAULT_STATIC_DIR),
   };
 }
 

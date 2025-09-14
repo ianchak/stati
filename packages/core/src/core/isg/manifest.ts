@@ -2,6 +2,7 @@ import fse from 'fs-extra';
 const { readFile, writeFile, pathExists, ensureDir } = fse;
 import { join } from 'path';
 import type { CacheManifest, CacheEntry } from '../../types.js';
+import { MANIFEST_FILENAME } from '../../constants.js';
 
 /**
  * Type for Node.js errno exceptions
@@ -9,11 +10,6 @@ import type { CacheManifest, CacheEntry } from '../../types.js';
 interface NodeError extends Error {
   code?: string;
 }
-
-/**
- * Path to the cache manifest file within the cache directory
- */
-const MANIFEST_FILENAME = 'manifest.json';
 
 /**
  * Loads the ISG cache manifest from the cache directory.

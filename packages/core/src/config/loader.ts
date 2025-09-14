@@ -3,23 +3,33 @@ import { join, resolve } from 'path';
 import { pathToFileURL } from 'url';
 import type { StatiConfig } from '../types.js';
 import { validateISGConfig, ISGConfigurationError } from '../core/isg/validation.js';
+import {
+  DEFAULT_SRC_DIR,
+  DEFAULT_OUT_DIR,
+  DEFAULT_STATIC_DIR,
+  DEFAULT_SITE_TITLE,
+  DEFAULT_DEV_BASE_URL,
+  DEFAULT_TTL_SECONDS,
+  DEFAULT_MAX_AGE_CAP_DAYS,
+  CONFIG_FILE_PATTERNS,
+} from '../constants.js';
 
 /**
  * Default configuration values for Stati.
  * Used as fallback when no configuration file is found.
  */
 const DEFAULT_CONFIG: StatiConfig = {
-  srcDir: 'site',
-  outDir: 'dist',
-  staticDir: 'public',
+  srcDir: DEFAULT_SRC_DIR,
+  outDir: DEFAULT_OUT_DIR,
+  staticDir: DEFAULT_STATIC_DIR,
   site: {
-    title: 'My Site',
-    baseUrl: 'http://localhost:3000',
+    title: DEFAULT_SITE_TITLE,
+    baseUrl: DEFAULT_DEV_BASE_URL,
   },
   isg: {
     enabled: true,
-    ttlSeconds: 21600, // 6 hours
-    maxAgeCapDays: 365,
+    ttlSeconds: DEFAULT_TTL_SECONDS,
+    maxAgeCapDays: DEFAULT_MAX_AGE_CAP_DAYS,
   },
 };
 
@@ -44,11 +54,7 @@ const DEFAULT_CONFIG: StatiConfig = {
  * @throws {Error} When configuration file exists but contains invalid JavaScript/TypeScript
  */
 export async function loadConfig(cwd: string = process.cwd()): Promise<StatiConfig> {
-  const configPaths = [
-    join(cwd, 'stati.config.ts'),
-    join(cwd, 'stati.config.js'),
-    join(cwd, 'stati.config.mjs'),
-  ];
+  const configPaths = CONFIG_FILE_PATTERNS.map((pattern) => join(cwd, pattern));
 
   let configPath: string | null = null;
   for (const path of configPaths) {

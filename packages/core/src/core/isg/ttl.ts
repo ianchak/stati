@@ -1,10 +1,5 @@
 import type { PageModel, ISGConfig, AgingRule, CacheEntry } from '../../types.js';
-
-/**
- * Clock drift tolerance in milliseconds.
- * Accounts for small differences between system clocks.
- */
-const CLOCK_DRIFT_TOLERANCE_MS = 30000; // 30 seconds
+import { CLOCK_DRIFT_TOLERANCE_MS } from '../../constants.js';
 
 /**
  * Safely gets the current UTC time with drift protection.
