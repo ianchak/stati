@@ -10,6 +10,7 @@ import type { PageModel, StatiConfig } from '../../types.js';
 // Mock dependencies
 vi.mock('fs-extra', () => {
   const mockPathExists = vi.fn();
+  const mockReadFile = vi.fn().mockResolvedValue('template content');
   return {
     default: {
       ensureDir: vi.fn().mockResolvedValue(undefined),
@@ -17,6 +18,7 @@ vi.mock('fs-extra', () => {
       copy: vi.fn().mockResolvedValue(undefined),
       remove: vi.fn().mockResolvedValue(undefined),
       pathExists: mockPathExists,
+      readFile: mockReadFile,
       readdir: vi.fn().mockResolvedValue([]),
       stat: vi.fn().mockResolvedValue({ size: 1024 }),
     },

@@ -6,6 +6,7 @@ import type { PageModel, StatiConfig } from '../../../types.js';
 vi.mock('fs-extra', () => ({
   default: {
     pathExists: vi.fn(),
+    readFile: vi.fn(),
   },
 }));
 
@@ -30,6 +31,7 @@ describe('ISG Dependency Tracking', () => {
 
   // Get references to the mocked functions
   let mockPathExists: ReturnType<typeof vi.fn>;
+  let mockReadFile: ReturnType<typeof vi.fn>;
   let mockGlob: ReturnType<typeof vi.fn>;
 
   const mockConfig: StatiConfig = {
@@ -61,7 +63,11 @@ describe('ISG Dependency Tracking', () => {
     const glob = await import('fast-glob');
 
     mockPathExists = vi.mocked(fsExtra.default.pathExists);
+    mockReadFile = vi.mocked(fsExtra.default.readFile);
     mockGlob = vi.mocked(glob.default);
+
+    // Set up default mocks for readFile to prevent warnings
+    mockReadFile.mockResolvedValue('template content');
   });
 
   describe('trackTemplateDependencies', () => {
