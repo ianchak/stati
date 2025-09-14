@@ -163,34 +163,41 @@ function formatBuildStats(stats: BuildStats): string {
 }
 
 /**
- * Builds the static site by processing content files and generating HTML pages.
- * This is the main entry point for Stati's build process.
+ * Builds the Stati site with ISG support.
+ * Processes all pages and assets, with smart caching for incremental builds.
+ *
  * Uses build locking to prevent concurrent builds from corrupting cache.
+ * The manifest tracks build dependencies and cache entries for efficient rebuilds.
+ * Pages are only rebuilt if their content, templates, or dependencies have changed.
+ *
+ * Build process:
+ * 1. Load configuration and content
+ * 2. Check cache manifest for existing entries
+ * 3. Process each page (rebuild only if needed)
+ * 4. Copy static assets
+ * 5. Update cache manifest
  *
  * @param options - Build configuration options
+ * @returns Promise resolving to build statistics
+ * @throws {Error} When configuration is invalid
+ * @throws {Error} When template rendering fails
+ * @throws {Error} When build lock cannot be acquired
  *
  * @example
  * ```typescript
- * import { build } from 'stati';
- *
- * // Basic build
- * await build();
- *
- * // Build with options
- * await build({
- *   clean: true,
+ * const stats = await build({
  *   force: true,
- *   configPath: './custom.config.js'
+ *   clean: true,
+ *   includeDrafts: false
  * });
+ * console.log(`Built ${stats.pageCount} pages in ${stats.buildTime}ms`);
  * ```
- *
- * @throws {Error} When configuration loading fails
- * @throws {Error} When content processing fails
- * @throws {Error} When template rendering fails
- * @throws {Error} When build lock cannot be acquired
  */
 export async function build(options: BuildOptions = {}): Promise<BuildStats> {
   const cacheDir = join(process.cwd(), '.stati');
+
+  // Ensure cache directory exists before acquiring build lock
+  await ensureDir(cacheDir);
 
   // Use build lock to prevent concurrent builds, with force option to override
   return await withBuildLock(cacheDir, () => buildInternal(options), {

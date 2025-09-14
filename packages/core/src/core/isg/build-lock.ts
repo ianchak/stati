@@ -1,6 +1,6 @@
 import fse from 'fs-extra';
-const { writeFile, readFile, pathExists, remove } = fse;
-import { join } from 'path';
+const { writeFile, readFile, pathExists, remove, ensureDir } = fse;
+import { join, dirname } from 'path';
 import { hostname } from 'os';
 
 /**
@@ -199,6 +199,9 @@ export class BuildLockManager {
       timestamp: new Date().toISOString(),
       hostname: this.getHostname(),
     };
+
+    // Ensure the cache directory exists before creating the lock file
+    await ensureDir(dirname(this.lockPath));
 
     // Use 'wx' flag to create file exclusively (fails if exists)
     await writeFile(this.lockPath, JSON.stringify(lockInfo, null, 2), { flag: 'wx' });
