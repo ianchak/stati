@@ -1,5 +1,13 @@
 # @stati/core
 
+## 1.3.1
+
+### Patch Changes
+
+- enhance logging and rebuild process for templates
+
+  Commit: 840473d
+
 ## 1.3.0
 
 ### Minor Changes
