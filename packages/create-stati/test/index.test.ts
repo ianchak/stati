@@ -8,27 +8,12 @@ const mockInquirer = vi.hoisted(() => ({
 
 const mockCreateSite = vi.hoisted(() => vi.fn());
 
-// Mock picocolors
-const mockPicocolors = vi.hoisted(() => ({
-  bold: vi.fn((text) => text),
-  blue: vi.fn((text) => text),
-  cyan: vi.fn((text) => text),
-  dim: vi.fn((text) => text),
-  green: vi.fn((text) => text),
-  yellow: vi.fn((text) => text),
-  red: vi.fn((text) => text),
-}));
-
 vi.mock('inquirer', () => ({
   default: mockInquirer,
 }));
 
 vi.mock('../src/create.js', () => ({
   createSite: mockCreateSite,
-}));
-
-vi.mock('picocolors', () => ({
-  default: mockPicocolors,
 }));
 
 // Mock console methods

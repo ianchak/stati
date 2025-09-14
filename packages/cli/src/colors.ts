@@ -1,68 +1,67 @@
-import chalk from 'chalk';
-
 /**
- * Color utilities for CLI output
+ * Professional color utilities for CLI output
+ * Uses custom ANSI escape codes for consistent cross-platform colors
  */
 export const colors = {
   /**
-   * Success messages - green
+   * Success messages - muted forest green
    */
-  success: (text: string) => chalk.green(text),
+  success: (text: string) => `\x1b[38;2;22;163;74m${text}\x1b[0m`, // #16a34a
 
   /**
-   * Error messages - red
+   * Error messages - muted red
    */
-  error: (text: string) => chalk.red(text),
+  error: (text: string) => `\x1b[38;2;220;38;38m${text}\x1b[0m`, // #dc2626
 
   /**
-   * Warning messages - yellow
+   * Warning messages - muted amber
    */
-  warning: (text: string) => chalk.yellow(text),
+  warning: (text: string) => `\x1b[38;2;217;119;6m${text}\x1b[0m`, // #d97706
 
   /**
-   * Info messages - blue
+   * Info messages - muted steel blue
    */
-  info: (text: string) => chalk.blue(text),
+  info: (text: string) => `\x1b[38;2;37;99;235m${text}\x1b[0m`, // #2563eb
 
   /**
-   * Highlight text - cyan
+   * Highlight text - muted teal
    */
-  highlight: (text: string) => chalk.cyan(text),
+  highlight: (text: string) => `\x1b[38;2;8;145;178m${text}\x1b[0m`, // #0891b2
 
   /**
-   * Muted text - gray
+   * Muted text - warm gray
    */
-  muted: (text: string) => chalk.gray(text),
+  muted: (text: string) => `\x1b[38;2;107;114;128m${text}\x1b[0m`, // #6b7280
 
   /**
    * Bold text
    */
-  bold: (text: string) => chalk.bold(text),
+  bold: (text: string) => `\x1b[1m${text}\x1b[0m`,
 
   /**
-   * Numbers and statistics - magenta
+   * Numbers and statistics - muted purple
    */
-  number: (text: string | number) => chalk.magenta(String(text)),
+  number: (text: string | number) => `\x1b[38;2;124;58;237m${String(text)}\x1b[0m`, // #7c3aed
 
   /**
-   * Brand colors
+   * Brand colors - sophisticated palette
    */
-  brand: (text: string) => chalk.hex('#6366f1')(text), // Indigo
-  secondary: (text: string) => chalk.hex('#8b5cf6')(text), // Purple
-  accent: (text: string) => chalk.hex('#06b6d4')(text), // Cyan
+  brand: (text: string) => `\x1b[38;2;79;70;229m${text}\x1b[0m`, // #4f46e5 - Professional indigo
+  secondary: (text: string) => `\x1b[38;2;124;58;237m${text}\x1b[0m`, // #7c3aed - Muted purple
+  accent: (text: string) => `\x1b[38;2;8;145;178m${text}\x1b[0m`, // #0891b2 - Muted teal
 
   /**
-   * File types
+   * File types - professional slate colors
    */
-  file: (text: string) => chalk.cyan(text),
-  folder: (text: string) => chalk.blue(text),
-  url: (text: string) => chalk.underline.cyan(text),
+  file: (text: string) => `\x1b[38;2;100;116;139m${text}\x1b[0m`, // #64748b
+  folder: (text: string) => `\x1b[38;2;71;85;105m${text}\x1b[0m`, // #475569
+  url: (text: string) => `\x1b[4m\x1b[38;2;8;145;178m${text}\x1b[0m`, // #0891b2 underlined
 
   /**
-   * Status indicators
+   * Status indicators - muted colors
    */
-  progress: (text: string) => chalk.yellow(text),
-  timing: (text: string) => chalk.gray(text),
+  progress: (text: string) => `\x1b[38;2;217;119;6m${text}\x1b[0m`, // #d97706
+  timing: (text: string) => `\x1b[38;2;156;163;175m${text}\x1b[0m`, // #9ca3af
 };
 
 /**

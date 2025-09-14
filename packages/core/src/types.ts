@@ -353,13 +353,13 @@ export interface PageModel {
  * @example Basic Logger Implementation
  * ```typescript
  * const basicLogger: Logger = {
- *   info: (msg) => console.log(chalk.blue('ℹ️  ' + msg)),
- *   success: (msg) => console.log(chalk.green('✅ ' + msg)),
- *   warning: (msg) => console.warn(chalk.yellow('⚠️  ' + msg)),
- *   error: (msg) => console.error(chalk.red('❌ ' + msg)),
- *   building: (msg) => console.log(chalk.cyan(msg)),
- *   processing: (msg) => console.log(chalk.gray('  ' + msg)),
- *   stats: (msg) => console.log(chalk.cyan('📊 ' + msg))
+ *   info: (msg) => console.log('\x1b[38;2;37;99;235mℹ️  ' + msg + '\x1b[0m'),
+ *   success: (msg) => console.log('\x1b[38;2;22;163;74m✅ ' + msg + '\x1b[0m'),
+ *   warning: (msg) => console.warn('\x1b[38;2;217;119;6m⚠️  ' + msg + '\x1b[0m'),
+ *   error: (msg) => console.error('\x1b[38;2;220;38;38m❌ ' + msg + '\x1b[0m'),
+ *   building: (msg) => console.log('\x1b[38;2;79;70;229m' + msg + '\x1b[0m'),
+ *   processing: (msg) => console.log('\x1b[38;2;107;114;128m  ' + msg + '\x1b[0m'),
+ *   stats: (msg) => console.log('\x1b[38;2;8;145;178m📊 ' + msg + '\x1b[0m')
  * };
  * ```
  *
