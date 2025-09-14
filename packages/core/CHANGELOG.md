@@ -1,5 +1,117 @@
 # @stati/core
 
+## 1.2.0
+
+### Minor Changes
+
+- add additional test scripts for blank example project
+
+  Commit: 5e938fc
+
+- implement automated changeset generation script
+
+  Commit: ed82f65
+
+- implement Incremental Static Generation (ISG) caching mechanism
+
+  Commit: d412ce2
+
+- Implement build locking mechanism and validation for ISG configuration
+
+  Commit: 5f2c0ba
+
+- implement rendering tree for build process visualization
+
+  Commit: 0366479
+
+- integrate ISG logic for incremental rebuilds and caching
+
+  Commit: 3f65a6c
+
+- ce73559: Implemented milestone 5 with other improvements
+
+### Patch Changes
+
+- remove unused changeset generation script
+
+  Commit: 12c8c8b
+
+- remove blog template example as there are other plans in the future
+
+  Commit: 56c0749
+
+- update quick start guide and enhance project creation section
+
+  Commit: 26c4364
+
+- replace chalk with custom ANSI colors for CLI output
+
+  Commit: dae7d28
+
+- remove spinner utilities and update dependencies
+
+  Commit: daaa85d
+
+- update README and CONTRIBUTING for consistency and clarity
+
+  Commit: 7e11b82
+
+- format log messages for better readability
+
+  Commit: 3130f88
+
+- add comprehensive tests for ISG cache invalidation, manifest handling, and TTL management
+
+  Commit: a641d13
+
+- add .stati to ignore list and remove cache manifest
+
+  Commit: d8aa7bf
+
+- normalize paths to use posix format across modules
+
+  Commit: 4a1c10c
+
+- update cache manifest handling in build and test files
+
+  Commit: a410981
+
+- update console output expectations for ISG rebuilding
+
+  Commit: 43378cb
+
+- update cache manifest path handling in template change
+
+  Commit: 896778a
+
+- Implemented milestone 5 with other improvements
+
+  Commit: ce73559
+
+- update cache key calculation to use relative path
+
+  Commit: b5c46f9
+
+- improve glob pattern matching and conversion to regex
+
+  Commit: 646a056
+
+- update CLI commands and ISG features
+
+  Commit: c82964b
+
+- update ISG ttlSeconds to 6 hours for better caching
+
+  Commit: b591c81
+
+- remove cli-table3 dependency and update logging format
+
+  Commit: d32c709
+
+- update cache invalidation documentation to include patterns and age
+
+  Commit: e27f6a2
+
 ## 1.1.0
 
 ### Minor Changes

@@ -1,5 +1,85 @@
 # create-stati
 
+## 1.2.0
+
+### Minor Changes
+
+- add additional test scripts for blank example project
+
+  Commit: 5e938fc
+
+- implement automated changeset generation script
+
+  Commit: ed82f65
+
+- enhance create-stati CLI with improved argument parsing and options
+
+  Commit: cd5455c
+
+- add comprehensive tests for CSSProcessor and ExampleManager
+
+  Commit: 44d08d3
+
+- ce73559: Implemented milestone 5 with other improvements
+
+### Patch Changes
+
+- remove unused changeset generation script
+
+  Commit: 12c8c8b
+
+- remove blog template example as there are other plans in the future
+
+  Commit: 56c0749
+
+- remove cli-progress dependency and related code
+
+  Commit: ad474a3
+
+- improve error handling for missing directories
+
+  Commit: ea9b405
+
+- update quick start guide and enhance project creation section
+
+  Commit: 26c4364
+
+- remove skipped tests for project creation prompts
+
+  Commit: f1c4e78
+
+- replace chalk with custom ANSI colors for CLI output
+
+  Commit: dae7d28
+
+- update README and CONTRIBUTING for consistency and clarity
+
+  Commit: 7e11b82
+
+- add comprehensive tests for create-stati package
+
+  Commit: 1202811
+
+- add .stati to ignore list and remove cache manifest
+
+  Commit: d8aa7bf
+
+- Implemented milestone 5 with other improvements
+
+  Commit: ce73559
+
+- remove success message display method
+
+  Commit: 680255a
+
+- update CLI commands and ISG features
+
+  Commit: c82964b
+
+- update ISG ttlSeconds to 6 hours for better caching
+
+  Commit: b591c81
+
 ## 1.1.0
 
 ### Minor Changes
