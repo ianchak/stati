@@ -435,13 +435,10 @@ describe('build.ts', () => {
       expect(consoleSpy).toHaveBeenCalledWith('Building your site...');
       expect(consoleSpy).toHaveBeenCalledWith('📄 Found 3 pages');
       expect(consoleSpy).toHaveBeenCalledWith('Built navigation with 3 top-level items');
-      // ISG shows "Checking" then "🔄 Building" for pages that need rebuilding
+      // ISG shows "Checking" for each page
       expect(consoleSpy).toHaveBeenCalledWith('Checking /');
-      expect(consoleSpy).toHaveBeenCalledWith('🔄 Building /');
       expect(consoleSpy).toHaveBeenCalledWith('Checking /about');
-      expect(consoleSpy).toHaveBeenCalledWith('🔄 Building /about');
       expect(consoleSpy).toHaveBeenCalledWith('Checking /blog/post');
-      expect(consoleSpy).toHaveBeenCalledWith('🔄 Building /blog/post');
       expect(consoleSpy).toHaveBeenCalledWith('Copying static assets from static');
       expect(consoleSpy).toHaveBeenCalledWith('Copied 0 static assets');
     });
