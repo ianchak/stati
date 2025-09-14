@@ -3,6 +3,7 @@ import fse from 'fs-extra';
 const { pathExists, readFile } = fse;
 import glob from 'fast-glob';
 import type { PageModel, StatiConfig } from '../../types.js';
+import { isCollectionIndexPage, discoverLayout } from '../utils/template-discovery.js';
 
 /**
  * Error thrown when a circular dependency is detected in templates.
@@ -172,80 +173,6 @@ export async function resolveTemplatePath(
 
   if (await pathExists(layoutPath)) {
     return layoutPath;
-  }
-
-  return null;
-}
-
-/**
- * Helper function to determine if a page is a collection index page.
- * Duplicated from templates.ts to avoid circular dependencies.
- */
-function isCollectionIndexPage(page: PageModel): boolean {
-  // This is a simplified version - in a real implementation,
-  // we'd need access to all pages to determine this properly.
-  // For now, we'll assume any page ending in /index or at root is a collection page.
-  return page.url === '/' || page.url.endsWith('/index') || page.slug === 'index';
-}
-
-/**
- * Helper function to discover layout files.
- * Duplicated from templates.ts to avoid circular dependencies.
- */
-async function discoverLayout(
-  pagePath: string,
-  config: StatiConfig,
-  explicitLayout?: string,
-  isIndexPage?: boolean,
-): Promise<string | null> {
-  // Early return if required config values are missing
-  if (!config.srcDir) {
-    return null;
-  }
-
-  const srcDir = join(process.cwd(), config.srcDir);
-
-  // If explicit layout is specified, use it
-  if (explicitLayout) {
-    const layoutPath = join(srcDir, `${explicitLayout}.eta`);
-    if (await pathExists(layoutPath)) {
-      return `${explicitLayout}.eta`;
-    }
-  }
-
-  // Get the directory of the current page
-  const pageDir = dirname(pagePath);
-  const pathSegments = pageDir === '.' ? [] : pageDir.split(/[/\\]/);
-
-  // Search for layout.eta from current directory up to root
-  const dirsToSearch = [];
-
-  // Add current directory if not root
-  if (pathSegments.length > 0) {
-    for (let i = pathSegments.length; i > 0; i--) {
-      dirsToSearch.push(pathSegments.slice(0, i).join('/'));
-    }
-  }
-
-  // Add root directory
-  dirsToSearch.push('');
-
-  for (const dir of dirsToSearch) {
-    // For index pages, first check for index.eta in each directory
-    if (isIndexPage) {
-      const indexLayoutPath = dir ? join(srcDir, dir, 'index.eta') : join(srcDir, 'index.eta');
-      if (await pathExists(indexLayoutPath)) {
-        const relativePath = dir ? `${dir}/index.eta` : 'index.eta';
-        return posix.normalize(relativePath);
-      }
-    }
-
-    // Then check for layout.eta as fallback
-    const layoutPath = dir ? join(srcDir, dir, 'layout.eta') : join(srcDir, 'layout.eta');
-    if (await pathExists(layoutPath)) {
-      const relativePath = dir ? `${dir}/layout.eta` : 'layout.eta';
-      return posix.normalize(relativePath);
-    }
   }
 
   return null;
