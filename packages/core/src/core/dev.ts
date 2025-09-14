@@ -102,17 +102,32 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
     }
 
     isBuilding = true;
+    const startTime = Date.now();
+
+    // Create a quiet logger for dev builds that suppresses verbose output
+    const devLogger: Logger = {
+      info: () => {}, // Suppress info messages
+      success: () => {}, // Suppress success messages
+      error: logger.error || (() => {}),
+      warning: logger.warning || (() => {}),
+      building: () => {}, // Suppress building messages
+      processing: () => {}, // Suppress processing messages
+      stats: () => {}, // Suppress stats messages
+    };
 
     try {
+      const relativePath = changedPath
+        .replace(process.cwd(), '')
+        .replace(/\\/g, '/')
+        .replace(/^\//, '');
+
       // Check if the changed file is a template/partial
       if (changedPath.endsWith('.eta') || changedPath.includes('_partials')) {
-        logger.info?.(`🎨 Template changed: ${changedPath}`);
-        await handleTemplateChange(changedPath);
+        await handleTemplateChange(changedPath, devLogger);
       } else {
         // Content or static file changed - use normal rebuild
-        logger.info?.(`📄 Content changed: ${changedPath}`);
         await build({
-          logger,
+          logger: devLogger,
           force: false,
           clean: false,
           ...(configPath && { configPath }),
@@ -130,9 +145,13 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
         });
       }
 
-      logger.success?.('Rebuild complete');
+      const duration = Date.now() - startTime;
+      logger.info?.(`⚡ ${relativePath} rebuilt in ${duration}ms`);
     } catch (error) {
-      logger.error?.(`Rebuild failed: ${error instanceof Error ? error.message : String(error)}`);
+      const duration = Date.now() - startTime;
+      logger.error?.(
+        `❌ Rebuild failed after ${duration}ms: ${error instanceof Error ? error.message : String(error)}`,
+      );
     } finally {
       isBuilding = false;
     }
@@ -141,8 +160,9 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
   /**
    * Handles template/partial file changes by invalidating affected pages
    */
-  async function handleTemplateChange(templatePath: string): Promise<void> {
+  async function handleTemplateChange(templatePath: string, buildLogger?: Logger): Promise<void> {
     const cacheDir = join(process.cwd(), '.stati');
+    const effectiveLogger = buildLogger || logger;
 
     try {
       // Load existing cache manifest
@@ -150,9 +170,8 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
 
       if (!cacheManifest) {
         // No cache exists, perform full rebuild
-        logger.info?.('No cache found, performing full rebuild...');
         await build({
-          logger,
+          logger: effectiveLogger,
           force: false,
           clean: false,
           ...(configPath && { configPath }),
@@ -174,30 +193,21 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
       }
 
       if (affectedPages.length > 0) {
-        logger.info?.(`🎯 Invalidating ${affectedPages.length} affected pages:`);
-        affectedPages.forEach((page) => logger.info?.(`   📄 ${page}`));
-
         // Save updated cache manifest
         await saveCacheManifest(cacheDir, cacheManifest);
 
         // Perform incremental rebuild (only affected pages will be rebuilt)
         await build({
-          logger,
+          logger: effectiveLogger,
           force: false,
           clean: false,
           ...(configPath && { configPath }),
         });
-      } else {
-        logger.info?.('ℹ️  No pages affected by template change');
       }
-    } catch (error) {
-      logger.warning?.(
-        `Template dependency analysis failed, performing full rebuild: ${error instanceof Error ? error.message : String(error)}`,
-      );
-
+    } catch {
       // Fallback to full rebuild
       await build({
-        logger,
+        logger: effectiveLogger,
         force: false,
         clean: false,
         ...(configPath && { configPath }),
