@@ -89,9 +89,9 @@ const cli = yargs(hideBin(process.argv))
         log.header(`Stati${versionInfo} - Static Site Generator`);
 
         // Show build options summary
-        if (buildOptions.force) log.info('⚡ Force rebuild enabled');
+        if (buildOptions.force) log.info('Force rebuild enabled');
         if (buildOptions.clean) log.info('Clean build enabled');
-        if (buildOptions.includeDrafts) log.info('📝 Including draft pages');
+        if (buildOptions.includeDrafts) log.info('Including draft pages');
         if (buildOptions.configPath) log.info(`Using config: ${buildOptions.configPath}`);
 
         buildOptions.logger = coloredLogger;

@@ -1,5 +1,4 @@
 import chalk from 'chalk';
-import Table from 'cli-table3';
 
 /**
  * Color utilities for CLI output
@@ -237,7 +236,7 @@ class RenderingTreeManager {
 const renderingTree = new RenderingTreeManager();
 
 /**
- * Creates a formatted table for build statistics
+ * Creates formatted build statistics without using a table
  */
 function createStatsTable(stats: {
   totalPages: number;
@@ -250,38 +249,29 @@ function createStatsTable(stats: {
   const sizeKB = (stats.outputSizeBytes / 1024).toFixed(1);
   const timeSeconds = (stats.buildTimeMs / 1000).toFixed(2);
 
-  const table = new Table({
-    colWidths: [20, 12],
-    style: {
-      head: [],
-      border: ['cyan'],
-      'padding-left': 1,
-      'padding-right': 1,
-    },
-  });
+  // Create formatted lines for statistics
+  const lines: string[] = [];
 
-  // Add the header as a spanning row
-  table.push([{ content: colors.brand('Build Statistics'), colSpan: 2 }] as [
-    { content: string; colSpan: number },
-  ]);
+  // Header
+  lines.push(colors.brand('Build Statistics'));
 
-  // Add rows to the table (without colors first)
-  table.push(
-    ['Build time', `${timeSeconds}s`],
-    ['Pages built', stats.totalPages.toString()],
-    ['Assets copied', stats.assetsCount.toString()],
-    ['Output size', `${sizeKB} KB`],
-  );
+  // Build statistics
+  lines.push(`${colors.muted('  Build time:')} ${colors.number(timeSeconds)}s`);
+  lines.push(`${colors.muted('  Pages built:')} ${colors.number(stats.totalPages)}`);
+  lines.push(`${colors.muted('  Assets copied:')} ${colors.number(stats.assetsCount)}`);
+  lines.push(`${colors.muted('  Output size:')} ${colors.number(sizeKB)} KB`);
 
   // Add cache statistics if available
   if (stats.cacheHits !== undefined && stats.cacheMisses !== undefined) {
     const totalCacheRequests = stats.cacheHits + stats.cacheMisses;
     const hitRate =
       totalCacheRequests > 0 ? ((stats.cacheHits / totalCacheRequests) * 100).toFixed(1) : '0';
-    table.push(['Cache hits', `${stats.cacheHits}/${totalCacheRequests} (${hitRate}%)`]);
+    lines.push(
+      `${colors.muted('  Cache hits:')} ${colors.number(stats.cacheHits)}/${colors.number(totalCacheRequests)} (${colors.highlight(hitRate + '%')})`,
+    );
   }
 
-  return table.toString();
+  return lines.join('\n');
 }
 
 /**
@@ -320,7 +310,7 @@ export const log = {
    * Building progress message
    */
   building: (message: string) => {
-    console.log(colors.brand('🏗️  ' + message));
+    console.log(colors.brand(message));
   },
 
   /**
@@ -331,14 +321,14 @@ export const log = {
   },
 
   /**
-   * Statistics or numbers - can display as table or text
+   * Statistics or numbers
    */
   stats: (message: string) => {
     console.log(colors.highlight(message));
   },
 
   /**
-   * Build statistics as a formatted table
+   * Build statistics as formatted text
    */
   statsTable: (stats: {
     totalPages: number;

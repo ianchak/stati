@@ -336,26 +336,50 @@ export interface PageModel {
 }
 
 /**
- * Logger interface for customizing build output.
- * Provides different log levels and formatting options for prettier CLI output.
+ * Logger interface for customizing build output and visualization.
+ * Provides comprehensive logging capabilities including basic log levels, build progress tracking,
+ * file operations, statistics display, and advanced tree-based rendering visualization.
  *
- * @example
+ * Core Methods (Required):
+ * - Basic logging: info, success, warning, error
+ * - Build progress: building, processing, stats
+ *
+ * Enhanced Methods (Optional):
+ * - Visual formatting: header, step, progress, divider
+ * - File operations: file, url, timing
+ * - Statistics: statsTable, navigationTree
+ * - Tree visualization: startRenderingTree, addTreeNode, updateTreeNode, showRenderingTree, clearRenderingTree
+ *
+ * @example Basic Logger Implementation
  * ```typescript
- * const customLogger: Logger = {
+ * const basicLogger: Logger = {
  *   info: (msg) => console.log(chalk.blue('ℹ️  ' + msg)),
  *   success: (msg) => console.log(chalk.green('✅ ' + msg)),
  *   warning: (msg) => console.warn(chalk.yellow('⚠️  ' + msg)),
  *   error: (msg) => console.error(chalk.red('❌ ' + msg)),
- *   building: (msg) => console.log(chalk.cyan('🏗️  ' + msg)),
+ *   building: (msg) => console.log(chalk.cyan(msg)),
  *   processing: (msg) => console.log(chalk.gray('  ' + msg)),
- *   stats: (msg) => console.log(chalk.cyan('📊 ' + msg)),
+ *   stats: (msg) => console.log(chalk.cyan('📊 ' + msg))
+ * };
+ * ```
+ *
+ * @example Enhanced Logger with Tree Visualization
+ * ```typescript
+ * const enhancedLogger: Logger = {
+ *   // ... basic methods ...
  *   header: (msg) => console.log(boxedMessage(msg)),
  *   step: (step, total, msg) => console.log(`[${step}/${total}] ${msg}`),
  *   progress: (current, total, msg) => console.log(progressBar(current, total) + ' ' + msg),
  *   file: (op, path) => console.log(`  📄 ${op} ${path}`),
  *   url: (label, url) => console.log(`  🔗 ${label}: ${url}`),
  *   timing: (op, duration) => console.log(`  ⏱️  ${op} completed in ${duration}ms`),
- *   divider: (title) => console.log('─'.repeat(50) + ' ' + title)
+ *   divider: (title) => console.log('─'.repeat(50) + ' ' + title),
+ *   statsTable: (stats) => displayStatsTable(stats),
+ *   startRenderingTree: (label) => initTree(label),
+ *   addTreeNode: (parentId, id, label, status, metadata) => addNode(parentId, id, label, status, metadata),
+ *   updateTreeNode: (id, status, metadata) => updateNode(id, status, metadata),
+ *   showRenderingTree: () => renderTree(),
+ *   clearRenderingTree: () => clearTree()
  * };
  * ```
  */
