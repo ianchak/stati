@@ -1,5 +1,13 @@
 # create-stati
 
+## 1.2.3
+
+### Patch Changes
+
+- update concurrently version and script prefix
+
+  Commit: 0c22501
+
 ## 1.2.2
 
 ### Patch Changes
