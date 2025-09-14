@@ -4,6 +4,18 @@ import { ExampleManager } from './examples.js';
 import { PackageJsonModifier } from './package-json.js';
 import { CSSProcessor, type StylingOption } from './css-processors.js';
 
+/**
+ * Type guard to check if an error has a code property
+ */
+function isErrorWithCode(error: unknown): error is { code: string } {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    typeof (error as Record<string, unknown>).code === 'string'
+  );
+}
+
 export interface CreateOptions {
   projectName: string;
   template: 'blank';
@@ -70,7 +82,7 @@ export class ProjectScaffolder {
         );
       }
     } catch (error) {
-      if ((error as { code?: string })?.code === 'ENOENT') {
+      if (isErrorWithCode(error) && error.code === 'ENOENT') {
         // Directory doesn't exist, which is what we want
         await mkdir(resolvedDir, { recursive: true });
       } else {
