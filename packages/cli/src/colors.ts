@@ -1,5 +1,4 @@
 import chalk from 'chalk';
-import ora, { type Ora } from 'ora';
 import Table from 'cli-table3';
 
 /**
@@ -150,66 +149,6 @@ function createStatsTable(stats: {
 }
 
 /**
- * Spinner utilities for long-running operations
- */
-export const spinner = {
-  /**
-   * Create a spinner for building operations
-   */
-  building: (text: string): Ora => {
-    return ora({
-      text: colors.brand(text),
-      spinner: 'dots',
-      color: 'cyan',
-    });
-  },
-
-  /**
-   * Create a spinner for processing operations
-   */
-  processing: (text: string): Ora => {
-    return ora({
-      text: colors.info(text),
-      spinner: 'line',
-      color: 'blue',
-    });
-  },
-
-  /**
-   * Create a spinner for copying files
-   */
-  copying: (text: string): Ora => {
-    return ora({
-      text: colors.muted(text),
-      spinner: 'simpleDotsScrolling',
-      color: 'gray',
-    });
-  },
-
-  /**
-   * Create a generic success spinner
-   */
-  success: (text: string): Ora => {
-    return ora({
-      text: colors.success(text),
-      spinner: 'star',
-      color: 'green',
-    });
-  },
-
-  /**
-   * Create a generic error spinner
-   */
-  error: (text: string): Ora => {
-    return ora({
-      text: colors.error(text),
-      spinner: 'dots',
-      color: 'red',
-    });
-  },
-};
-
-/**
  * Formatted log functions for common CLI output patterns
  */
 export const log = {
@@ -320,34 +259,6 @@ export const log = {
   timing: (operation: string, duration: number) => {
     const time = duration < 1000 ? `${duration}ms` : `${(duration / 1000).toFixed(2)}s`;
     console.log(colors.timing(`${operation} completed in ${colors.number(time)}`));
-  },
-
-  /**
-   * Start a spinner for a long-running operation
-   */
-  startSpinner: (text: string, type: 'building' | 'processing' | 'copying' = 'processing'): Ora => {
-    return spinner[type](text).start();
-  },
-
-  /**
-   * Stop a spinner with success
-   */
-  succeedSpinner: (spinner: Ora, text?: string) => {
-    spinner.succeed(text ? colors.success('✅ ' + text) : undefined);
-  },
-
-  /**
-   * Stop a spinner with failure
-   */
-  failSpinner: (spinner: Ora, text?: string) => {
-    spinner.fail(text ? colors.error('❌ ' + text) : undefined);
-  },
-
-  /**
-   * Update spinner text
-   */
-  updateSpinner: (spinner: Ora, text: string) => {
-    spinner.text = colors.info(text);
   },
 
   /**

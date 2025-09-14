@@ -6,7 +6,6 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { build, invalidate, createDevServer } from '@stati/core';
 import type { BuildOptions, DevServerOptions } from '@stati/core';
-import type { Ora } from 'ora';
 import { log } from './colors.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -77,14 +76,6 @@ const cli = yargs(hideBin(process.argv))
           timing: log.timing,
           statsTable: log.statsTable,
           navigationTree: log.navigationTree,
-          // Add spinner methods with type compatibility
-          startSpinner: (text: string, type?: 'building' | 'processing' | 'copying') =>
-            log.startSpinner(text, type),
-          succeedSpinner: (spinner: unknown, text?: string) =>
-            log.succeedSpinner(spinner as Ora, text),
-          failSpinner: (spinner: unknown, text?: string) => log.failSpinner(spinner as Ora, text),
-          updateSpinner: (spinner: unknown, text: string) =>
-            log.updateSpinner(spinner as Ora, text),
         };
 
         // Show a nice header
@@ -163,14 +154,6 @@ const cli = yargs(hideBin(process.argv))
           timing: log.timing,
           statsTable: log.statsTable,
           navigationTree: log.navigationTree,
-          // Add spinner methods
-          startSpinner: (text: string, type?: 'building' | 'processing' | 'copying') =>
-            log.startSpinner(text, type),
-          succeedSpinner: (spinner: unknown, text?: string) =>
-            log.succeedSpinner(spinner as Ora, text),
-          failSpinner: (spinner: unknown, text?: string) => log.failSpinner(spinner as Ora, text),
-          updateSpinner: (spinner: unknown, text: string) =>
-            log.updateSpinner(spinner as Ora, text),
         };
 
         devOptions.logger = coloredLogger;

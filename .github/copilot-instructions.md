@@ -117,7 +117,7 @@ npm run test:create-stati:cleanup
 ### Dependency Management
 
 - **Core dependencies**: markdown-it, eta, fast-glob, gray-matter, vite
-- **CLI dependencies**: yargs, ora for progress indicators
+- **CLI dependencies**: yargs, chalk, cli-table3 for colored output and formatting
 - **Scaffolder dependencies**: inquirer for interactive prompts
 - **Dev dependencies**: vitest, typescript, eslint shared across packages
 

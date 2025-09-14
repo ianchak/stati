@@ -77,7 +77,6 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
    * Performs an initial build to ensure dist/ exists
    */
   async function initialBuild(): Promise<void> {
-    logger.info?.('🏗️  Performing initial build...');
     try {
       await build({
         logger,
@@ -85,7 +84,6 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
         clean: false,
         ...(configPath && { configPath }),
       });
-      logger.success?.('Initial build complete');
     } catch (error) {
       logger.error?.(
         `Initial build failed: ${error instanceof Error ? error.message : String(error)}`,

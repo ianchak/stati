@@ -388,14 +388,6 @@ export interface Logger {
   timing?: (operation: string, duration: number) => void;
   /** Display a section divider (optional) */
   divider?: (title?: string) => void;
-  /** Start a spinner for long operations (optional) */
-  startSpinner?: (text: string, type?: 'building' | 'processing' | 'copying') => unknown;
-  /** Stop a spinner with success (optional) */
-  succeedSpinner?: (spinner: unknown, text?: string) => void;
-  /** Stop a spinner with failure (optional) */
-  failSpinner?: (spinner: unknown, text?: string) => void;
-  /** Update spinner text (optional) */
-  updateSpinner?: (spinner: unknown, text: string) => void;
   /** Display build statistics as a table (optional) */
   statsTable?: (stats: {
     totalPages: number;
