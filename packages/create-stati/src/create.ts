@@ -144,19 +144,6 @@ coverage/
       console.warn(`Failed to cleanup directory ${targetDir}:`, cleanupError);
     }
   }
-
-  private displaySuccessMessage(targetDir: string): void {
-    console.log(`Successfully created Stati project at ${targetDir}`);
-    console.log('\nNext steps:');
-    console.log(`  cd ${this.options.projectName}`);
-
-    if (!this.options.installDependencies) {
-      console.log('  npm install');
-    }
-
-    console.log('  npm run dev');
-    console.log('\n🌟 Happy building with Stati!');
-  }
 }
 
 export async function createSite(
