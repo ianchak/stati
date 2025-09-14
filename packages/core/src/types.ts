@@ -67,19 +67,19 @@ export interface ISGConfig {
  */
 export interface CacheEntry {
   /** Output path of the rendered page */
-  path: string;
+  readonly path: string;
   /** Hash of page content and all dependencies */
-  inputsHash: string;
+  readonly inputsHash: string;
   /** Array of file paths this page depends on (templates, partials) */
-  deps: string[];
+  readonly deps: readonly string[];
   /** Tags for invalidation and organization */
-  tags: string[];
+  readonly tags: readonly string[];
   /** ISO date when content was originally published */
   publishedAt?: string;
   /** ISO date when page was last rendered */
-  renderedAt: string;
+  readonly renderedAt: string;
   /** Effective TTL for this page in seconds */
-  ttlSeconds: number;
+  readonly ttlSeconds: number;
   /** Maximum age cap for this page in days */
   maxAgeCapDays?: number;
 }
@@ -118,11 +118,11 @@ export interface CacheManifest {
  */
 export interface SiteConfig {
   /** The site's title, used in templates and metadata */
-  title: string;
+  readonly title: string;
   /** Base URL for the site, used for absolute URL generation */
-  baseUrl: string;
+  readonly baseUrl: string;
   /** Default locale for internationalization (optional) */
-  defaultLocale?: string;
+  readonly defaultLocale?: string;
 }
 
 /**
@@ -540,7 +540,7 @@ export interface FrontMatter {
   /** Page description for SEO and meta tags */
   description?: string;
   /** Array of tags for categorization */
-  tags?: string[];
+  tags?: readonly string[];
   /** Template layout to use for rendering */
   layout?: string;
   /** Numeric order for sorting (useful for navigation) */
