@@ -4,7 +4,7 @@ import type { Eta } from 'eta';
 import { build } from '../../core/build.js';
 import type { PageModel, StatiConfig } from '../../types.js';
 
-// Create hoisted mocks
+// Create hoisted mocks using the standardized pattern from test-mocks.ts
 const {
   mockEnsureDir,
   mockWriteFile,
@@ -29,6 +29,7 @@ const {
   mockWithBuildLock,
   mockBuildNavigation,
 } = vi.hoisted(() => ({
+  // fs-extra mocks (from createBuildTestMocksObject pattern)
   mockEnsureDir: vi.fn(),
   mockWriteFile: vi.fn(),
   mockCopy: vi.fn(),
@@ -37,12 +38,15 @@ const {
   mockPathExists: vi.fn(),
   mockReaddir: vi.fn(),
   mockStat: vi.fn(),
+  mockReadFile: vi.fn(),
+  // core module mocks
   mockLoadConfig: vi.fn(),
   mockLoadContent: vi.fn(),
   mockCreateMarkdownProcessor: vi.fn(),
   mockRenderMarkdown: vi.fn(),
   mockCreateTemplateEngine: vi.fn(),
   mockRenderPage: vi.fn(),
+  mockBuildNavigation: vi.fn(),
   // ISG mocks
   mockLoadCacheManifest: vi.fn(),
   mockSaveCacheManifest: vi.fn(),
@@ -50,7 +54,6 @@ const {
   mockCreateCacheEntry: vi.fn(),
   mockUpdateCacheEntry: vi.fn(),
   mockWithBuildLock: vi.fn(),
-  mockBuildNavigation: vi.fn(),
 }));
 
 // Mock dependencies
