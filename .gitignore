@@ -63,6 +63,7 @@ tsconfig.tsbuildinfo
 *checklist*.md
 *prompt*.md
 *milestone*.md
+*quality_pass*.md
 
 ### Package manager artifacts
 *.tgz

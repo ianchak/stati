@@ -66,7 +66,6 @@ describe('ISG Dependency Tracking', () => {
 
   describe('trackTemplateDependencies', () => {
     it('should return empty array when srcDir is missing', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { srcDir: _, ...configBase } = mockConfig;
       const configWithoutSrcDir: StatiConfig = configBase;
 
@@ -175,7 +174,6 @@ describe('ISG Dependency Tracking', () => {
 
   describe('findPartialDependencies', () => {
     it('should return empty array when srcDir is missing', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { srcDir: _, ...configBase } = mockConfig;
       const configWithoutSrcDir: StatiConfig = configBase;
 

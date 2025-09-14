@@ -317,7 +317,7 @@ export async function invalidate(query?: string): Promise<InvalidationResult> {
   const cacheDir = join(process.cwd(), '.stati');
 
   // Load existing cache manifest
-  let cacheManifest = await loadCacheManifest(cacheDir);
+  const cacheManifest = await loadCacheManifest(cacheDir);
 
   if (!cacheManifest) {
     // No cache to invalidate

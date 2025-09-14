@@ -166,7 +166,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
 
     try {
       // Load existing cache manifest
-      let cacheManifest = await loadCacheManifest(cacheDir);
+      const cacheManifest = await loadCacheManifest(cacheDir);
 
       if (!cacheManifest) {
         // No cache exists, perform full rebuild

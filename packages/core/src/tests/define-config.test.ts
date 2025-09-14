@@ -53,9 +53,11 @@ describe('defineConfig', () => {
       },
       hooks: {
         beforeAll: async (ctx) => {
+          // eslint-disable-next-line no-console
           console.log(`Building ${ctx.pages.length} pages`);
         },
         afterAll: async (ctx) => {
+          // eslint-disable-next-line no-console
           console.log(`Build complete for ${ctx.pages.length} pages`);
         },
       },
