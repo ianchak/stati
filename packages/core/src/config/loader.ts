@@ -34,6 +34,15 @@ const DEFAULT_CONFIG: StatiConfig = {
 };
 
 /**
+ * Builds config file paths for a given directory.
+ * @param cwd - Directory to search for config files
+ * @returns Array of absolute paths to potential config files
+ */
+export function getConfigFilePaths(cwd: string): string[] {
+  return CONFIG_FILE_PATTERNS.map((pattern) => join(cwd, pattern));
+}
+
+/**
  * Loads and validates Stati configuration from the project directory.
  * Searches for configuration files in order: stati.config.ts, stati.config.js, stati.config.mjs
  *
@@ -54,7 +63,7 @@ const DEFAULT_CONFIG: StatiConfig = {
  * @throws {Error} When configuration file exists but contains invalid JavaScript/TypeScript
  */
 export async function loadConfig(cwd: string = process.cwd()): Promise<StatiConfig> {
-  const configPaths = CONFIG_FILE_PATTERNS.map((pattern) => join(cwd, pattern));
+  const configPaths = getConfigFilePaths(cwd);
 
   let configPath: string | null = null;
   for (const path of configPaths) {
