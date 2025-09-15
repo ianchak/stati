@@ -5,11 +5,12 @@ import { build } from '../../core/build.js';
 import { loadContent } from '../../core/content.js';
 import { renderMarkdown, createMarkdownProcessor } from '../../core/markdown.js';
 import { renderPage } from '../../core/templates.js';
-import type { PageModel, StatiConfig } from '../../types.js';
+import type { PageModel, StatiConfig } from '../../types/index.js';
 
 // Mock dependencies
 vi.mock('fs-extra', () => {
   const mockPathExists = vi.fn();
+  const mockReadFile = vi.fn();
   return {
     default: {
       ensureDir: vi.fn().mockResolvedValue(undefined),
@@ -17,6 +18,7 @@ vi.mock('fs-extra', () => {
       copy: vi.fn().mockResolvedValue(undefined),
       remove: vi.fn().mockResolvedValue(undefined),
       pathExists: mockPathExists,
+      readFile: mockReadFile,
       readdir: vi.fn().mockResolvedValue([]),
       stat: vi.fn().mockResolvedValue({ size: 1024 }),
     },
@@ -50,6 +52,7 @@ const mockWriteFile = vi.mocked(fse.writeFile);
 const mockCopy = vi.mocked(fse.copy);
 const mockRemove = vi.mocked(fse.remove);
 const mockPathExists = vi.mocked(fse.pathExists);
+const mockReadFile = vi.mocked(fse.readFile);
 const mockReaddir = vi.mocked(fse.readdir);
 const mockStat = vi.mocked(fse.stat);
 const mockLoadConfig = vi.mocked(loadConfig);
@@ -93,6 +96,26 @@ describe('HTML Output Snapshots', () => {
     mockPathExists.mockResolvedValue(true);
     mockCreateTemplateEngine.mockReturnValue(mockEta as unknown as Eta);
     mockCreateMarkdownProcessor.mockResolvedValue({} as MarkdownIt);
+
+    // Mock readFile for template and cache files
+    mockReadFile.mockImplementation((filePath: Parameters<typeof fse.readFile>[0]) => {
+      const pathStr = typeof filePath === 'string' ? filePath : String(filePath);
+      // Normalize path separators for cross-platform compatibility
+      const normalizedPath = pathStr.replace(/\\/g, '/');
+
+      if (
+        normalizedPath.includes('.stati/manifest.json') ||
+        normalizedPath.includes('manifest.json')
+      ) {
+        // Return empty cache manifest
+        return Promise.resolve(JSON.stringify({ entries: {} }));
+      }
+      if (normalizedPath.endsWith('.eta')) {
+        // Return basic template content
+        return Promise.resolve('<%= content %>');
+      }
+      return Promise.resolve('mock file content');
+    });
   });
 
   afterEach(() => {
@@ -167,14 +190,12 @@ describe('HTML Output Snapshots', () => {
 
     await build();
 
-    // Verify the generated HTML matches our snapshot
     expect(mockWriteFile).toHaveBeenCalledWith(
       expect.stringMatching(/[/\\]test[/\\]project[/\\]dist[/\\]blog[/\\]getting-started\.html$/),
       renderedHtml,
       'utf-8',
     );
 
-    // Snapshot test for the complete HTML structure
     expect(renderedHtml).toMatchSnapshot('blog-post-complete.html');
   });
 
@@ -250,7 +271,6 @@ describe('HTML Output Snapshots', () => {
       'utf-8',
     );
 
-    // Snapshot test for the homepage structure
     expect(renderedHtml).toMatchSnapshot('homepage-complete.html');
   });
 

@@ -1,9 +1,10 @@
 import glob from 'fast-glob';
-import fse from 'fs-extra';
-const { readFile } = fse;
+import { readFile } from './utils/fs.js';
 import matter from 'gray-matter';
-import { join, relative, dirname, basename } from 'path';
-import type { PageModel, StatiConfig } from '../types.js';
+import { relative, dirname, basename } from 'path';
+import type { PageModel, StatiConfig } from '../types/index.js';
+import { MARKDOWN_EXTENSION } from '../constants.js';
+import { resolveSrcDir } from './utils/paths.js';
 
 /**
  * Loads and parses all content files from the configured source directory.
@@ -25,7 +26,7 @@ export async function loadContent(
   config: StatiConfig,
   includeDrafts?: boolean,
 ): Promise<PageModel[]> {
-  const contentDir = join(process.cwd(), config.srcDir!);
+  const contentDir = resolveSrcDir(config);
 
   // Exclude folders starting with underscore from content discovery
   const files = await glob('**/*.md', {
@@ -38,6 +39,10 @@ export async function loadContent(
 
   for (const file of files) {
     const content = await readFile(file, 'utf-8');
+    if (!content) {
+      console.warn(`Skipping file ${file}: could not read content`);
+      continue;
+    }
     const { data: frontMatter, content: markdown } = matter(content);
 
     // Skip drafts unless explicitly included
@@ -69,7 +74,7 @@ export async function loadContent(
 
 function computeSlug(relativePath: string): string {
   const dir = dirname(relativePath);
-  const name = basename(relativePath, '.md');
+  const name = basename(relativePath, MARKDOWN_EXTENSION);
 
   if (name === 'index') {
     return dir === '.' ? '/' : `/${dir}`;

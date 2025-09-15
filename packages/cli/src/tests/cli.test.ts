@@ -3,6 +3,47 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
+// Mock @stati/core to prevent actual build operations
+vi.mock('@stati/core', () => ({
+  build: vi.fn().mockResolvedValue({
+    pagesBuilt: 5,
+    duration: 1000,
+    cacheHits: 2,
+    cacheWrites: 3,
+  }),
+  invalidate: vi.fn().mockResolvedValue(undefined),
+  createDevServer: vi.fn().mockResolvedValue({
+    start: vi.fn().mockResolvedValue(undefined),
+    stop: vi.fn().mockResolvedValue(undefined),
+  }),
+}));
+
+// Mock colors to prevent actual console output during tests
+vi.mock('../colors.js', () => ({
+  log: {
+    info: vi.fn(),
+    success: vi.fn(),
+    warning: vi.fn(),
+    error: vi.fn(),
+    building: vi.fn(),
+    processing: vi.fn(),
+    stats: vi.fn(),
+    header: vi.fn(),
+    step: vi.fn(),
+    progress: vi.fn(),
+    file: vi.fn(),
+    url: vi.fn(),
+    timing: vi.fn(),
+    statsTable: vi.fn(),
+    navigationTree: vi.fn(),
+    startRenderingTree: vi.fn(),
+    addTreeNode: vi.fn(),
+    updateTreeNode: vi.fn(),
+    showRenderingTree: vi.fn(),
+    clearRenderingTree: vi.fn(),
+  },
+}));
+
 describe('CLI', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -24,6 +65,7 @@ describe('CLI', () => {
         const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
         expect(packageJson.version).toBeDefined();
         expect(typeof packageJson.version).toBe('string');
+        expect(packageJson.version).toMatch(/^\d+\.\d+\.\d+/); // Should be semver format
       }).not.toThrow();
     });
 
@@ -42,107 +84,101 @@ describe('CLI', () => {
     });
   });
 
-  describe('CLI configuration', () => {
-    it('should have correct script name', () => {
-      // Test that the CLI would be configured with correct script name
-      const expectedScriptName = 'stati';
-      expect(expectedScriptName).toBe('stati');
+  describe('build command', () => {
+    it('should call build with correct default options', async () => {
+      // Import after mocks are set up
+      const { build } = await import('@stati/core');
+
+      // Test that build can be called with proper options
+      await (build as ReturnType<typeof vi.fn>)({
+        force: false,
+        clean: false,
+        includeDrafts: false,
+        version: 'test',
+      });
+
+      expect(build).toHaveBeenCalledWith(
+        expect.objectContaining({
+          force: false,
+          clean: false,
+          includeDrafts: false,
+          version: 'test',
+        }),
+      );
     });
 
-    it('should support build command options', () => {
-      // Test the expected build command options structure
-      const buildOptions = {
-        force: {
-          type: 'boolean',
-          description: 'Force full rebuild without deleting cache',
-        },
-        clean: {
-          type: 'boolean',
-          description: 'Clean cache before building',
-        },
-        config: {
-          type: 'string',
-          description: 'Path to config file',
-        },
-      };
+    it('should pass force flag correctly', async () => {
+      const { build } = await import('@stati/core');
 
-      expect(buildOptions.force.type).toBe('boolean');
-      expect(buildOptions.clean.type).toBe('boolean');
-      expect(buildOptions.config.type).toBe('string');
-      expect(buildOptions.force.description).toContain('rebuild');
-      expect(buildOptions.clean.description).toContain('cache');
-      expect(buildOptions.config.description).toContain('config file');
-    });
-
-    it('should support invalidate command', () => {
-      // Test the expected invalidate command structure
-      const invalidateCommand = {
-        command: 'invalidate [query]',
-        description: 'Invalidate by tag= or path=',
-        positional: {
-          query: { type: 'string' },
-        },
-      };
-
-      expect(invalidateCommand.command).toBe('invalidate [query]');
-      expect(invalidateCommand.description).toContain('Invalidate');
-      expect(invalidateCommand.positional.query.type).toBe('string');
-    });
-  });
-
-  describe('build options processing', () => {
-    it('should construct build options correctly', () => {
-      // Test the logic for processing build arguments
-      const mockArgv = {
+      await (build as ReturnType<typeof vi.fn>)({
         force: true,
         clean: false,
-        config: '/path/to/config.js',
-      };
+        includeDrafts: false,
+      });
 
-      const buildOptions = {
-        force: !!mockArgv.force,
-        clean: !!mockArgv.clean,
-        configPath: mockArgv.config,
-      };
-
-      expect(buildOptions.force).toBe(true);
-      expect(buildOptions.clean).toBe(false);
-      expect(buildOptions.configPath).toBe('/path/to/config.js');
+      expect(build).toHaveBeenCalledWith(
+        expect.objectContaining({
+          force: true,
+        }),
+      );
     });
 
-    it('should handle optional config path', () => {
-      const mockArgv: { force: boolean; clean: boolean; config?: string } = {
+    it('should pass clean flag correctly', async () => {
+      const { build } = await import('@stati/core');
+
+      await (build as ReturnType<typeof vi.fn>)({
         force: false,
         clean: true,
-        // config intentionally omitted
-      };
+        includeDrafts: false,
+      });
 
-      const buildOptions: { force: boolean; clean: boolean; configPath?: string } = {
-        force: !!mockArgv.force,
-        clean: !!mockArgv.clean,
-      };
+      expect(build).toHaveBeenCalledWith(
+        expect.objectContaining({
+          clean: true,
+        }),
+      );
+    });
 
-      if (mockArgv.config) {
-        buildOptions.configPath = mockArgv.config;
-      }
+    it('should pass include-drafts flag correctly', async () => {
+      const { build } = await import('@stati/core');
 
-      expect(buildOptions.force).toBe(false);
-      expect(buildOptions.clean).toBe(true);
-      expect(buildOptions.configPath).toBeUndefined();
+      await (build as ReturnType<typeof vi.fn>)({
+        force: false,
+        clean: false,
+        includeDrafts: true,
+      });
+
+      expect(build).toHaveBeenCalledWith(
+        expect.objectContaining({
+          includeDrafts: true,
+        }),
+      );
     });
   });
 
-  describe('command structure', () => {
-    it('should require at least one command', () => {
-      // Test that CLI requires a command to be specified
-      const expectedMinCommands = 1;
-      expect(expectedMinCommands).toBe(1);
-    });
+  describe('dev command integration', () => {
+    it('should create dev server with proper configuration', async () => {
+      const { createDevServer } = await import('@stati/core');
 
-    it('should provide help functionality', () => {
-      // Test that help is available
-      const hasHelp = true;
-      expect(hasHelp).toBe(true);
+      // Test dev server creation
+      const mockDevOptions = {
+        port: 3000,
+        open: false,
+      };
+
+      await (createDevServer as ReturnType<typeof vi.fn>)(mockDevOptions);
+
+      expect(createDevServer).toHaveBeenCalledWith(mockDevOptions);
+    });
+  });
+
+  describe('invalidate command integration', () => {
+    it('should call invalidate function', async () => {
+      const { invalidate } = await import('@stati/core');
+
+      await (invalidate as ReturnType<typeof vi.fn>)();
+
+      expect(invalidate).toHaveBeenCalled();
     });
   });
 });

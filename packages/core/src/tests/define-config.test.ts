@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { defineConfig } from '../index.js';
-import type { StatiConfig } from '../types.js';
+import type { StatiConfig } from '../types/index.js';
 
 describe('defineConfig', () => {
   it('should return the same config object passed to it', () => {
@@ -53,9 +53,11 @@ describe('defineConfig', () => {
       },
       hooks: {
         beforeAll: async (ctx) => {
+          // eslint-disable-next-line no-console
           console.log(`Building ${ctx.pages.length} pages`);
         },
         afterAll: async (ctx) => {
+          // eslint-disable-next-line no-console
           console.log(`Build complete for ${ctx.pages.length} pages`);
         },
       },

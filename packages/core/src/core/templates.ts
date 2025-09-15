@@ -1,53 +1,14 @@
 import { Eta } from 'eta';
 import { join, dirname, relative, basename } from 'path';
-import { posix } from 'path';
-import fse from 'fs-extra';
-const { pathExists } = fse;
 import glob from 'fast-glob';
-import type { StatiConfig, PageModel, NavNode, CollectionData } from '../types.js';
-
-/**
- * Determines if the given page is an index page for a collection.
- * An index page is one whose URL matches a directory path that contains other pages.
- *
- * @param page - The page to check
- * @param allPages - All pages in the site
- * @returns True if the page is a collection index page
- */
-function isCollectionIndexPage(page: PageModel, allPages: PageModel[]): boolean {
-  // Root index page is always a collection index
-  if (page.url === '/') {
-    return true;
-  }
-
-  // Check if this page's URL is a directory path that contains other pages
-  const pageUrlAsDir = page.url.endsWith('/') ? page.url : page.url + '/';
-
-  return allPages.some(
-    (otherPage) => otherPage.url !== page.url && otherPage.url.startsWith(pageUrlAsDir),
-  );
-}
-
-/**
- * Gets the collection path for a given page URL.
- * For index pages, returns the page's URL. For child pages, returns the parent directory.
- *
- * @param pageUrl - The page URL
- * @returns The collection path
- */
-function getCollectionPathForPage(pageUrl: string): string {
-  if (pageUrl === '/') {
-    return '/';
-  }
-
-  const pathParts = pageUrl.split('/').filter(Boolean);
-
-  if (pathParts.length <= 1) {
-    return '/';
-  }
-
-  return '/' + pathParts.slice(0, -1).join('/');
-}
+import type { StatiConfig, PageModel, NavNode, CollectionData } from '../types/index.js';
+import { TEMPLATE_EXTENSION } from '../constants.js';
+import {
+  isCollectionIndexPage,
+  discoverLayout,
+  getCollectionPathForPage,
+} from './utils/template-discovery.js';
+import { resolveSrcDir } from './utils/paths.js';
 
 /**
  * Groups pages by their tags for aggregation purposes.
@@ -165,42 +126,50 @@ async function discoverPartials(
   pagePath: string,
   config: StatiConfig,
 ): Promise<Record<string, string>> {
-  const srcDir = join(process.cwd(), config.srcDir!);
+  const srcDir = resolveSrcDir(config);
   const partials: Record<string, string> = {};
 
   // Get the directory of the current page
   const pageDir = dirname(pagePath);
   const pathSegments = pageDir === '.' ? [] : pageDir.split('/');
 
-  // Scan from root to current directory
-  const dirsToScan = [''];
-  for (let i = 0; i < pathSegments.length; i++) {
-    dirsToScan.push(pathSegments.slice(0, i + 1).join('/'));
+  // Scan from root to current directory (least specific first)
+  // This allows more specific partials to override less specific ones
+  const dirsToScan = [];
+  if (pathSegments.length > 0) {
+    // Add root directory first, then parent directories, then current
+    dirsToScan.push(''); // Root directory first
+    // Add directories from root to current
+    for (let i = 1; i <= pathSegments.length; i++) {
+      dirsToScan.push(pathSegments.slice(0, i).join('/'));
+    }
+  } else {
+    dirsToScan.push(''); // Root directory only
   }
 
   for (const dir of dirsToScan) {
     const searchDir = dir ? join(srcDir, dir) : srcDir;
 
     // Find all underscore folders in this directory level
-    const underscoreFolders = await glob('_*/', {
-      cwd: searchDir,
+    const globPattern = join(searchDir, '_*/').replace(/\\/g, '/');
+    const underscoreFolders = await glob(globPattern, {
+      absolute: true,
       onlyDirectories: true,
     });
 
     // Scan each underscore folder for .eta files
-    for (const folder of underscoreFolders) {
-      const folderPath = join(searchDir, folder);
+    for (const folderPath of underscoreFolders) {
       const etaFiles = await glob('**/*.eta', {
         cwd: folderPath,
         absolute: false,
       });
 
       for (const etaFile of etaFiles) {
-        const partialName = basename(etaFile, '.eta');
+        const partialName = basename(etaFile, TEMPLATE_EXTENSION);
         const fullPath = join(folderPath, etaFile);
-        const relativePath = relative(srcDir, fullPath);
 
-        // Store the relative path from srcDir for Eta to find it
+        // Get relative path from srcDir to the partial file
+        const relativePath = relative(srcDir, fullPath);
         partials[partialName] = relativePath;
       }
     }
@@ -209,75 +178,8 @@ async function discoverPartials(
   return partials;
 }
 
-/**
- * Discovers the appropriate layout file for a given page path.
- * Implements the hierarchical layout.eta convention by searching
- * from the page's directory up to the root.
- *
- * @param pagePath - The path to the page (relative to srcDir)
- * @param config - Stati configuration
- * @param explicitLayout - Layout specified in front matter (takes precedence)
- * @param isIndexPage - Whether this is an aggregation/index page (enables index.eta lookup)
- * @returns The layout file path or null if none found
- */
-async function discoverLayout(
-  pagePath: string,
-  config: StatiConfig,
-  explicitLayout?: string,
-  isIndexPage?: boolean,
-): Promise<string | null> {
-  const srcDir = join(process.cwd(), config.srcDir!);
-
-  // If explicit layout is specified, use it
-  if (explicitLayout) {
-    const layoutPath = join(srcDir, `${explicitLayout}.eta`);
-    if (await pathExists(layoutPath)) {
-      return `${explicitLayout}.eta`;
-    }
-  }
-
-  // Get the directory of the current page
-  const pageDir = dirname(pagePath);
-  const pathSegments = pageDir === '.' ? [] : pageDir.split(/[/\\]/); // Handle both separators
-
-  // Search for layout.eta from current directory up to root
-  const dirsToSearch = [];
-
-  // Add current directory if not root
-  if (pathSegments.length > 0) {
-    for (let i = pathSegments.length; i > 0; i--) {
-      dirsToSearch.push(pathSegments.slice(0, i).join('/'));
-    }
-  }
-
-  // Add root directory
-  dirsToSearch.push('');
-
-  for (const dir of dirsToSearch) {
-    // For index pages, first check for index.eta in each directory
-    if (isIndexPage) {
-      const indexLayoutPath = dir ? join(srcDir, dir, 'index.eta') : join(srcDir, 'index.eta');
-      if (await pathExists(indexLayoutPath)) {
-        // Return relative path with forward slashes for Eta
-        const relativePath = dir ? `${dir}/index.eta` : 'index.eta';
-        return posix.normalize(relativePath);
-      }
-    }
-
-    // Then check for layout.eta as fallback
-    const layoutPath = dir ? join(srcDir, dir, 'layout.eta') : join(srcDir, 'layout.eta');
-    if (await pathExists(layoutPath)) {
-      // Return relative path with forward slashes for Eta
-      const relativePath = dir ? `${dir}/layout.eta` : 'layout.eta';
-      return posix.normalize(relativePath);
-    }
-  }
-
-  return null;
-}
-
 export function createTemplateEngine(config: StatiConfig): Eta {
-  const templateDir = join(process.cwd(), config.srcDir!);
+  const templateDir = resolveSrcDir(config);
 
   const eta = new Eta({
     views: templateDir,
@@ -296,7 +198,7 @@ export async function renderPage(
   allPages?: PageModel[],
 ): Promise<string> {
   // Discover partials for this page's directory hierarchy
-  const srcDir = join(process.cwd(), config.srcDir!);
+  const srcDir = resolveSrcDir(config);
   const relativePath = relative(srcDir, page.sourcePath);
   const partialPaths = await discoverPartials(relativePath, config);
 

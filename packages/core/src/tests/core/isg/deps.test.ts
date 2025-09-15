@@ -1,11 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { join } from 'path';
-import type { PageModel, StatiConfig } from '../../../types.js';
+import type { PageModel, StatiConfig } from '../../../types/index.js';
 
 // Mock fs-extra and fast-glob - use factory functions to avoid hoisting issues
 vi.mock('fs-extra', () => ({
   default: {
     pathExists: vi.fn(),
+    readFile: vi.fn(),
   },
 }));
 
@@ -30,6 +31,7 @@ describe('ISG Dependency Tracking', () => {
 
   // Get references to the mocked functions
   let mockPathExists: ReturnType<typeof vi.fn>;
+  let mockReadFile: ReturnType<typeof vi.fn>;
   let mockGlob: ReturnType<typeof vi.fn>;
 
   const mockConfig: StatiConfig = {
@@ -61,12 +63,15 @@ describe('ISG Dependency Tracking', () => {
     const glob = await import('fast-glob');
 
     mockPathExists = vi.mocked(fsExtra.default.pathExists);
+    mockReadFile = vi.mocked(fsExtra.default.readFile);
     mockGlob = vi.mocked(glob.default);
+
+    // Set up default mocks for readFile to prevent warnings
+    mockReadFile.mockResolvedValue('template content');
   });
 
   describe('trackTemplateDependencies', () => {
     it('should return empty array when srcDir is missing', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { srcDir: _, ...configBase } = mockConfig;
       const configWithoutSrcDir: StatiConfig = configBase;
 
@@ -175,7 +180,6 @@ describe('ISG Dependency Tracking', () => {
 
   describe('findPartialDependencies', () => {
     it('should return empty array when srcDir is missing', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { srcDir: _, ...configBase } = mockConfig;
       const configWithoutSrcDir: StatiConfig = configBase;
 

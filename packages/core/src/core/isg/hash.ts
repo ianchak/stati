@@ -1,6 +1,26 @@
 import { createHash } from 'crypto';
-import fse from 'fs-extra';
-const { readFile, pathExists } = fse;
+import { readFile, pathExists } from '../utils/fs.js';
+
+/**
+ * Creates a SHA-256 hash instance, updates it with data, and returns the hex digest.
+ * Internal utility to eliminate duplicate hash creation patterns.
+ *
+ * @param data - Data to hash
+ * @returns SHA-256 hash as a hex string with 'sha256-' prefix
+ */
+function createSha256Hash(data: string | string[]): string {
+  const hash = createHash('sha256');
+
+  if (Array.isArray(data)) {
+    for (const item of data) {
+      hash.update(item, 'utf-8');
+    }
+  } else {
+    hash.update(data, 'utf-8');
+  }
+
+  return `sha256-${hash.digest('hex')}`;
+}
 
 /**
  * Computes a SHA-256 hash of page content and front matter.
@@ -17,16 +37,10 @@ const { readFile, pathExists } = fse;
  * ```
  */
 export function computeContentHash(content: string, frontMatter: Record<string, unknown>): string {
-  const hash = createHash('sha256');
-
-  // Hash the content
-  hash.update(content, 'utf-8');
-
   // Hash the front matter (sorted for consistency)
   const sortedFrontMatter = JSON.stringify(frontMatter, Object.keys(frontMatter).sort());
-  hash.update(sortedFrontMatter, 'utf-8');
 
-  return `sha256-${hash.digest('hex')}`;
+  return createSha256Hash([content, sortedFrontMatter]);
 }
 
 /**
@@ -51,10 +65,10 @@ export async function computeFileHash(filePath: string): Promise<string | null> 
     }
 
     const content = await readFile(filePath, 'utf-8');
-    const hash = createHash('sha256');
-    hash.update(content, 'utf-8');
-
-    return `sha256-${hash.digest('hex')}`;
+    if (!content) {
+      return null;
+    }
+    return createSha256Hash(content);
   } catch (error) {
     console.warn(
       `Failed to compute hash for ${filePath}: ${error instanceof Error ? error.message : String(error)}`,
@@ -79,16 +93,8 @@ export async function computeFileHash(filePath: string): Promise<string | null> 
  * ```
  */
 export function computeInputsHash(contentHash: string, depsHashes: string[]): string {
-  const hash = createHash('sha256');
-
-  // Hash the content hash
-  hash.update(contentHash, 'utf-8');
-
   // Hash each dependency hash in sorted order for consistency
   const sortedDepsHashes = [...depsHashes].sort();
-  for (const depHash of sortedDepsHashes) {
-    hash.update(depHash, 'utf-8');
-  }
 
-  return `sha256-${hash.digest('hex')}`;
+  return createSha256Hash([contentHash, ...sortedDepsHashes]);
 }

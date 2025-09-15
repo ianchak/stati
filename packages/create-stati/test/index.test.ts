@@ -31,13 +31,11 @@ describe('create-stati CLI', () => {
     it('should return null when --help flag is provided', async () => {
       const result = await parseArgs(['--help']);
       expect(result).toBeNull();
-      // Help message is displayed to console but we're mainly testing the return value
     });
 
     it('should return null when -h flag is provided', async () => {
       const result = await parseArgs(['-h']);
       expect(result).toBeNull();
-      // Help message is displayed to console but we're mainly testing the return value
     });
 
     it('should parse project name from arguments', async () => {

@@ -2,7 +2,8 @@ import { mkdir, rm, access, stat } from 'fs/promises';
 import { join, resolve } from 'path';
 import { ExampleManager } from './examples.js';
 import { PackageJsonModifier } from './package-json.js';
-import { CSSProcessor, type StylingOption } from './css-processors.js';
+import { CSSProcessor } from './css-processors.js';
+import type { StylingOption } from './css-processors.js';
 
 /**
  * Type guard to check if an error has a code property

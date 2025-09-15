@@ -478,6 +478,5 @@ export const log = {
       const isLast = index === navigation.length - 1;
       drawNode(node, 0, isLast);
     });
-    console.log(); // Add spacing after
   },
 };

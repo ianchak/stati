@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { join } from 'path';
-import type { PageModel, CacheEntry, StatiConfig } from '../../../types.js';
+import type { PageModel, CacheEntry, StatiConfig } from '../../../types/index.js';
 
 // Mock all ISG modules that the builder depends on - use factory functions
 vi.mock('../../../core/isg/hash.js', () => ({
@@ -255,9 +255,7 @@ describe('ISG Build Integration', () => {
     });
 
     it('should handle pages without publishedAt', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { publishedAt: _, ...pageBase } = mockPage;
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { publishedAt: _frontMatterPublishedAt, ...frontMatterBase } = mockPage.frontMatter;
       const pageWithoutDate: PageModel = {
         ...pageBase,
@@ -335,7 +333,6 @@ describe('ISG Build Integration', () => {
     });
 
     it('should preserve existing publishedAt when page has no date', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { publishedAt: _, ...pageWithoutDateBase } = mockPage;
       const pageWithoutDate: PageModel = pageWithoutDateBase;
 

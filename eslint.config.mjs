@@ -29,6 +29,48 @@ export default [
     },
     rules: {
       ...tseslint.configs.recommended.rules,
+      // Prefer const for immutability
+      'prefer-const': 'error',
+      // Stricter unused variables detection
+      'no-unused-vars': 'off', // Turn off base rule
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
+      // Additional quality rules
+      eqeqeq: ['error', 'always'],
+      'no-var': 'error',
+    },
+  },
+  // Stricter console rules for core library - no console statements allowed
+  {
+    files: ['packages/core/**/*.{ts,tsx}'],
+    rules: {
+      'no-console': ['error', { allow: ['error', 'warn'] }],
+    },
+  },
+  // Allow console statements in logger implementations and user-facing output
+  {
+    files: [
+      'packages/cli/**/*.{ts,tsx}',
+      'packages/create-stati/**/*.{ts,tsx}',
+      'packages/core/src/core/dev.ts', // Default logger implementations
+      'packages/core/src/core/build.ts', // Default logger implementations
+      'scripts/**/*.{js,mjs,cjs}',
+    ],
+    rules: {
+      'no-console': 'off',
+    },
+  },
+  // More restrictive for tests - only error/warn allowed
+  {
+    files: ['**/*.test.{ts,tsx,js}', '**/__tests__/**/*.{ts,tsx,js}'],
+    rules: {
+      'no-console': ['error', { allow: ['error', 'warn'] }],
     },
   },
   {

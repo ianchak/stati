@@ -4,11 +4,13 @@ import { posix } from 'path';
 import { readFile, stat } from 'fs/promises';
 import { WebSocketServer } from 'ws';
 import chokidar from 'chokidar';
-import type { StatiConfig, Logger } from '../types.js';
+import type { StatiConfig, Logger } from '../types/index.js';
 import type { FSWatcher } from 'chokidar';
 import { build } from './build.js';
 import { loadConfig } from '../config/loader.js';
 import { loadCacheManifest, saveCacheManifest } from './isg/manifest.js';
+import { resolveDevPaths, resolveCacheDir } from './utils/paths.js';
+import { DEFAULT_DEV_PORT, DEFAULT_DEV_HOST, TEMPLATE_EXTENSION } from '../constants.js';
 
 export interface DevServerOptions {
   port?: number;
@@ -25,15 +27,186 @@ export interface DevServer {
 }
 
 /**
- * Creates and configures a development server with live reload functionality.
- *
- * @param options - Development server configuration options
- * @returns Promise resolving to a DevServer instance
+ * Loads and validates configuration for the dev server.
  */
+async function loadDevConfig(
+  configPath: string | undefined,
+  logger: Logger,
+): Promise<{ config: StatiConfig; outDir: string; srcDir: string; staticDir: string }> {
+  // Load configuration
+  try {
+    if (configPath) {
+      // For custom config path, we need to change to that directory temporarily
+      // This is a limitation of the current loadConfig implementation
+      logger.info?.(`Loading config from: ${configPath}`);
+    }
+    const config = await loadConfig(process.cwd());
+    const { outDir, srcDir, staticDir } = resolveDevPaths(config);
+
+    return { config, outDir, srcDir, staticDir };
+  } catch (error) {
+    logger.error?.(
+      `Failed to load config: ${error instanceof Error ? error.message : String(error)}`,
+    );
+    throw error;
+  }
+}
+
+/**
+ * Performs an initial build to ensure dist/ exists
+ */
+async function performInitialBuild(configPath: string | undefined, logger: Logger): Promise<void> {
+  try {
+    await build({
+      logger,
+      force: false,
+      clean: false,
+      ...(configPath && { configPath }),
+    });
+  } catch (error) {
+    logger.error?.(
+      `Initial build failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
+    throw error;
+  }
+}
+
+/**
+ * Performs incremental rebuild when files change, using ISG logic for smart rebuilds
+ */
+async function performIncrementalRebuild(
+  changedPath: string,
+  configPath: string | undefined,
+  logger: Logger,
+  wsServer: WebSocketServer | null,
+  isBuildingRef: { value: boolean },
+): Promise<void> {
+  if (isBuildingRef.value) {
+    logger.info?.('Build in progress, skipping...');
+    return;
+  }
+
+  isBuildingRef.value = true;
+  const startTime = Date.now();
+
+  // Create a quiet logger for dev builds that suppresses verbose output
+  const devLogger: Logger = {
+    info: () => {}, // Suppress info messages
+    success: () => {}, // Suppress success messages
+    error: logger.error || (() => {}),
+    warning: logger.warning || (() => {}),
+    building: () => {}, // Suppress building messages
+    processing: () => {}, // Suppress processing messages
+    stats: () => {}, // Suppress stats messages
+  };
+
+  try {
+    const relativePath = changedPath
+      .replace(process.cwd(), '')
+      .replace(/\\/g, '/')
+      .replace(/^\//, '');
+
+    // Check if the changed file is a template/partial
+    if (changedPath.endsWith(TEMPLATE_EXTENSION) || changedPath.includes('_partials')) {
+      await handleTemplateChange(changedPath, configPath, devLogger);
+    } else {
+      // Content or static file changed - use normal rebuild
+      await build({
+        logger: devLogger,
+        force: false,
+        clean: false,
+        ...(configPath && { configPath }),
+      });
+    }
+
+    // Notify all connected clients to reload
+    if (wsServer) {
+      wsServer.clients.forEach((client: unknown) => {
+        const ws = client as { readyState: number; send: (data: string) => void };
+        if (ws.readyState === 1) {
+          // WebSocket.OPEN
+          ws.send(JSON.stringify({ type: 'reload' }));
+        }
+      });
+    }
+
+    const duration = Date.now() - startTime;
+    logger.info?.(`⚡ ${relativePath} rebuilt in ${duration}ms`);
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    logger.error?.(
+      `❌ Rebuild failed after ${duration}ms: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  } finally {
+    isBuildingRef.value = false;
+  }
+}
+
+/**
+ * Handles template/partial file changes by invalidating affected pages
+ */
+async function handleTemplateChange(
+  templatePath: string,
+  configPath: string | undefined,
+  logger: Logger,
+): Promise<void> {
+  const cacheDir = resolveCacheDir();
+
+  try {
+    // Load existing cache manifest
+    const cacheManifest = await loadCacheManifest(cacheDir);
+
+    if (!cacheManifest) {
+      // No cache exists, perform full rebuild
+      await build({
+        logger,
+        force: false,
+        clean: false,
+        ...(configPath && { configPath }),
+      });
+      return;
+    }
+
+    // Find pages that depend on this template
+    const affectedPages: string[] = [];
+
+    for (const [pagePath, entry] of Object.entries(cacheManifest.entries)) {
+      if (
+        entry.deps.some((dep) => dep.includes(posix.normalize(templatePath.replace(/\\/g, '/'))))
+      ) {
+        affectedPages.push(pagePath);
+        // Remove from cache to force rebuild
+        delete cacheManifest.entries[pagePath];
+      }
+    }
+
+    if (affectedPages.length > 0) {
+      // Save updated cache manifest
+      await saveCacheManifest(cacheDir, cacheManifest);
+
+      // Perform incremental rebuild (only affected pages will be rebuilt)
+      await build({
+        logger,
+        force: false,
+        clean: false,
+        ...(configPath && { configPath }),
+      });
+    }
+  } catch {
+    // Fallback to full rebuild
+    await build({
+      logger,
+      force: false,
+      clean: false,
+      ...(configPath && { configPath }),
+    });
+  }
+}
+
 export async function createDevServer(options: DevServerOptions = {}): Promise<DevServer> {
   const {
-    port = 3000,
-    host = 'localhost',
+    port = DEFAULT_DEV_PORT,
+    host = DEFAULT_DEV_HOST,
     open = false,
     configPath,
     logger = {
@@ -51,169 +224,10 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
   let httpServer: ReturnType<typeof createServer> | null = null;
   let wsServer: WebSocketServer | null = null;
   let watcher: FSWatcher | null = null;
-  let config: StatiConfig;
-  let isBuilding = false;
+  const isBuildingRef = { value: false };
 
   // Load configuration
-  try {
-    if (configPath) {
-      // For custom config path, we need to change to that directory temporarily
-      // This is a limitation of the current loadConfig implementation
-      logger.info?.(`Loading config from: ${configPath}`);
-    }
-    config = await loadConfig(process.cwd());
-  } catch (error) {
-    logger.error?.(
-      `Failed to load config: ${error instanceof Error ? error.message : String(error)}`,
-    );
-    throw error;
-  }
-
-  const outDir = join(process.cwd(), config.outDir || 'dist');
-  const srcDir = join(process.cwd(), config.srcDir || 'site');
-  const staticDir = join(process.cwd(), config.staticDir || 'public');
-
-  /**
-   * Performs an initial build to ensure dist/ exists
-   */
-  async function initialBuild(): Promise<void> {
-    try {
-      await build({
-        logger,
-        force: false,
-        clean: false,
-        ...(configPath && { configPath }),
-      });
-    } catch (error) {
-      logger.error?.(
-        `Initial build failed: ${error instanceof Error ? error.message : String(error)}`,
-      );
-      throw error;
-    }
-  }
-
-  /**
-   * Performs incremental rebuild when files change, using ISG logic for smart rebuilds
-   */
-  async function incrementalRebuild(changedPath: string): Promise<void> {
-    if (isBuilding) {
-      logger.info?.('⏳ Build in progress, skipping...');
-      return;
-    }
-
-    isBuilding = true;
-    const startTime = Date.now();
-
-    // Create a quiet logger for dev builds that suppresses verbose output
-    const devLogger: Logger = {
-      info: () => {}, // Suppress info messages
-      success: () => {}, // Suppress success messages
-      error: logger.error || (() => {}),
-      warning: logger.warning || (() => {}),
-      building: () => {}, // Suppress building messages
-      processing: () => {}, // Suppress processing messages
-      stats: () => {}, // Suppress stats messages
-    };
-
-    try {
-      const relativePath = changedPath
-        .replace(process.cwd(), '')
-        .replace(/\\/g, '/')
-        .replace(/^\//, '');
-
-      // Check if the changed file is a template/partial
-      if (changedPath.endsWith('.eta') || changedPath.includes('_partials')) {
-        await handleTemplateChange(changedPath, devLogger);
-      } else {
-        // Content or static file changed - use normal rebuild
-        await build({
-          logger: devLogger,
-          force: false,
-          clean: false,
-          ...(configPath && { configPath }),
-        });
-      }
-
-      // Notify all connected clients to reload
-      if (wsServer) {
-        wsServer.clients.forEach((client: unknown) => {
-          const ws = client as { readyState: number; send: (data: string) => void };
-          if (ws.readyState === 1) {
-            // WebSocket.OPEN
-            ws.send(JSON.stringify({ type: 'reload' }));
-          }
-        });
-      }
-
-      const duration = Date.now() - startTime;
-      logger.info?.(`⚡ ${relativePath} rebuilt in ${duration}ms`);
-    } catch (error) {
-      const duration = Date.now() - startTime;
-      logger.error?.(
-        `❌ Rebuild failed after ${duration}ms: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    } finally {
-      isBuilding = false;
-    }
-  }
-
-  /**
-   * Handles template/partial file changes by invalidating affected pages
-   */
-  async function handleTemplateChange(templatePath: string, buildLogger?: Logger): Promise<void> {
-    const cacheDir = join(process.cwd(), '.stati');
-    const effectiveLogger = buildLogger || logger;
-
-    try {
-      // Load existing cache manifest
-      let cacheManifest = await loadCacheManifest(cacheDir);
-
-      if (!cacheManifest) {
-        // No cache exists, perform full rebuild
-        await build({
-          logger: effectiveLogger,
-          force: false,
-          clean: false,
-          ...(configPath && { configPath }),
-        });
-        return;
-      }
-
-      // Find pages that depend on this template
-      const affectedPages: string[] = [];
-
-      for (const [pagePath, entry] of Object.entries(cacheManifest.entries)) {
-        if (
-          entry.deps.some((dep) => dep.includes(posix.normalize(templatePath.replace(/\\/g, '/'))))
-        ) {
-          affectedPages.push(pagePath);
-          // Remove from cache to force rebuild
-          delete cacheManifest.entries[pagePath];
-        }
-      }
-
-      if (affectedPages.length > 0) {
-        // Save updated cache manifest
-        await saveCacheManifest(cacheDir, cacheManifest);
-
-        // Perform incremental rebuild (only affected pages will be rebuilt)
-        await build({
-          logger: effectiveLogger,
-          force: false,
-          clean: false,
-          ...(configPath && { configPath }),
-        });
-      }
-    } catch {
-      // Fallback to full rebuild
-      await build({
-        logger: effectiveLogger,
-        force: false,
-        clean: false,
-        ...(configPath && { configPath }),
-      });
-    }
-  }
+  const { config: _config, outDir, srcDir, staticDir } = await loadDevConfig(configPath, logger);
 
   /**
    * Gets MIME type for a file based on its extension
@@ -334,7 +348,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
 
     async start(): Promise<void> {
       // Perform initial build
-      await initialBuild();
+      await performInitialBuild(configPath, logger);
 
       // Create HTTP server
       httpServer = createServer(async (req, res) => {
@@ -371,7 +385,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
       });
 
       wsServer.on('connection', (ws: unknown) => {
-        logger.info?.('🔗 Browser connected for live reload');
+        logger.info?.('Browser connected for live reload');
 
         const websocket = ws as { on: (event: string, handler: () => void) => void };
         websocket.on('close', () => {
@@ -385,7 +399,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
           resolve();
         });
 
-        httpServer!.on('error', (error) => {
+        httpServer!.on('error', (error: unknown) => {
           reject(error);
         });
       });
@@ -399,15 +413,15 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
       });
 
       watcher.on('change', (path: string) => {
-        void incrementalRebuild(path);
+        void performIncrementalRebuild(path, configPath, logger, wsServer, isBuildingRef);
       });
 
       watcher.on('add', (path: string) => {
-        void incrementalRebuild(path);
+        void performIncrementalRebuild(path, configPath, logger, wsServer, isBuildingRef);
       });
 
       watcher.on('unlink', (path: string) => {
-        void incrementalRebuild(path);
+        void performIncrementalRebuild(path, configPath, logger, wsServer, isBuildingRef);
       });
 
       logger.success?.(`Dev server running at ${url}`);

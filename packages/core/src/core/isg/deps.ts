@@ -1,8 +1,10 @@
 import { join, dirname, relative, posix } from 'path';
-import fse from 'fs-extra';
-const { pathExists, readFile } = fse;
+import { pathExists, readFile } from '../utils/fs.js';
 import glob from 'fast-glob';
-import type { PageModel, StatiConfig } from '../../types.js';
+import type { PageModel, StatiConfig } from '../../types/index.js';
+import { TEMPLATE_EXTENSION } from '../../constants.js';
+import { isCollectionIndexPage, discoverLayout } from '../utils/template-discovery.js';
+import { resolveSrcDir } from '../utils/paths.js';
 
 /**
  * Error thrown when a circular dependency is detected in templates.
@@ -50,7 +52,7 @@ export async function trackTemplateDependencies(
   }
 
   const deps: string[] = [];
-  const srcDir = join(process.cwd(), config.srcDir);
+  const srcDir = resolveSrcDir(config);
   const relativePath = relative(srcDir, page.sourcePath);
 
   // Track dependencies with circular detection
@@ -104,7 +106,7 @@ export async function findPartialDependencies(
   }
 
   const deps: string[] = [];
-  const srcDir = join(process.cwd(), config.srcDir);
+  const srcDir = resolveSrcDir(config);
 
   // Get the directory of the current page
   const pageDir = dirname(pagePath);
@@ -167,85 +169,11 @@ export async function resolveTemplatePath(
   layout: string,
   config: StatiConfig,
 ): Promise<string | null> {
-  const srcDir = join(process.cwd(), config.srcDir!);
+  const srcDir = resolveSrcDir(config);
   const layoutPath = join(srcDir, `${layout}.eta`);
 
   if (await pathExists(layoutPath)) {
     return layoutPath;
-  }
-
-  return null;
-}
-
-/**
- * Helper function to determine if a page is a collection index page.
- * Duplicated from templates.ts to avoid circular dependencies.
- */
-function isCollectionIndexPage(page: PageModel): boolean {
-  // This is a simplified version - in a real implementation,
-  // we'd need access to all pages to determine this properly.
-  // For now, we'll assume any page ending in /index or at root is a collection page.
-  return page.url === '/' || page.url.endsWith('/index') || page.slug === 'index';
-}
-
-/**
- * Helper function to discover layout files.
- * Duplicated from templates.ts to avoid circular dependencies.
- */
-async function discoverLayout(
-  pagePath: string,
-  config: StatiConfig,
-  explicitLayout?: string,
-  isIndexPage?: boolean,
-): Promise<string | null> {
-  // Early return if required config values are missing
-  if (!config.srcDir) {
-    return null;
-  }
-
-  const srcDir = join(process.cwd(), config.srcDir);
-
-  // If explicit layout is specified, use it
-  if (explicitLayout) {
-    const layoutPath = join(srcDir, `${explicitLayout}.eta`);
-    if (await pathExists(layoutPath)) {
-      return `${explicitLayout}.eta`;
-    }
-  }
-
-  // Get the directory of the current page
-  const pageDir = dirname(pagePath);
-  const pathSegments = pageDir === '.' ? [] : pageDir.split(/[/\\]/);
-
-  // Search for layout.eta from current directory up to root
-  const dirsToSearch = [];
-
-  // Add current directory if not root
-  if (pathSegments.length > 0) {
-    for (let i = pathSegments.length; i > 0; i--) {
-      dirsToSearch.push(pathSegments.slice(0, i).join('/'));
-    }
-  }
-
-  // Add root directory
-  dirsToSearch.push('');
-
-  for (const dir of dirsToSearch) {
-    // For index pages, first check for index.eta in each directory
-    if (isIndexPage) {
-      const indexLayoutPath = dir ? join(srcDir, dir, 'index.eta') : join(srcDir, 'index.eta');
-      if (await pathExists(indexLayoutPath)) {
-        const relativePath = dir ? `${dir}/index.eta` : 'index.eta';
-        return posix.normalize(relativePath);
-      }
-    }
-
-    // Then check for layout.eta as fallback
-    const layoutPath = dir ? join(srcDir, dir, 'layout.eta') : join(srcDir, 'layout.eta');
-    if (await pathExists(layoutPath)) {
-      const relativePath = dir ? `${dir}/layout.eta` : 'layout.eta';
-      return posix.normalize(relativePath);
-    }
   }
 
   return null;
@@ -296,6 +224,9 @@ async function detectCircularDependencies(
   try {
     // Read template content to find includes/extends
     const content = await readFile(templatePath, 'utf-8');
+    if (!content) {
+      return; // Skip if file doesn't exist
+    }
     const dependencies = await parseTemplateDependencies(content, templatePath, srcDir);
 
     // Recursively check dependencies
@@ -330,6 +261,7 @@ async function parseTemplateDependencies(
   srcDir: string,
 ): Promise<string[]> {
   const dependencies: string[] = [];
+  const templateDir = dirname(templatePath);
 
   // Look for Eta include patterns: <%~ include('template') %>
   const includePatterns = [
@@ -342,7 +274,7 @@ async function parseTemplateDependencies(
     while ((match = pattern.exec(content)) !== null) {
       const includePath = match[1];
       if (includePath) {
-        const resolvedPath = await resolveTemplatePathInternal(includePath, srcDir);
+        const resolvedPath = await resolveTemplatePathInternal(includePath, srcDir, templateDir);
         if (resolvedPath) {
           dependencies.push(resolvedPath);
         }
@@ -361,7 +293,7 @@ async function parseTemplateDependencies(
     while ((match = pattern.exec(content)) !== null) {
       const layoutPath = match[1];
       if (layoutPath) {
-        const resolvedPath = await resolveTemplatePathInternal(layoutPath, srcDir);
+        const resolvedPath = await resolveTemplatePathInternal(layoutPath, srcDir, templateDir);
         if (resolvedPath) {
           dependencies.push(resolvedPath);
         }
@@ -378,14 +310,17 @@ async function parseTemplateDependencies(
  *
  * @param templateRef - Template reference from include/layout statement
  * @param srcDir - Source directory for resolving paths
+ * @param currentDir - Current directory for hierarchical search (optional)
  * @returns Absolute path to template file, or null if not found
  */
 async function resolveTemplatePathInternal(
   templateRef: string,
   srcDir: string,
+  currentDir?: string,
 ): Promise<string | null> {
-  // Add .eta extension if not present
-  const templateName = templateRef.endsWith('.eta') ? templateRef : `${templateRef}.eta`;
+  const templateName = templateRef.endsWith(TEMPLATE_EXTENSION)
+    ? templateRef
+    : `${templateRef}${TEMPLATE_EXTENSION}`;
 
   // Try absolute path from srcDir
   const absolutePath = join(srcDir, templateName);
@@ -393,17 +328,48 @@ async function resolveTemplatePathInternal(
     return absolutePath;
   }
 
-  // Try resolving relative to template directories
-  // This is a simplified version - real implementation might need more sophisticated resolution
-  const possiblePaths = [
-    join(srcDir, '_templates', templateName),
-    join(srcDir, '_partials', templateName),
-    join(srcDir, '_layouts', templateName),
-  ];
+  // Determine the starting directory for hierarchical search (relative to srcDir)
+  const startDir = currentDir ? relative(srcDir, currentDir) : '';
 
-  for (const path of possiblePaths) {
-    if (await pathExists(path)) {
-      return path;
+  // Build list of directories to search (current dir up to srcDir root only)
+  // This ensures we never search outside the source directory boundary
+  const dirsToSearch: string[] = [];
+
+  // Safety check: ensure currentDir is within srcDir (relative path shouldn't start with '..')
+  if (startDir.startsWith('..')) {
+    // If currentDir is outside srcDir, only search at srcDir root
+    dirsToSearch.push('');
+  } else {
+    const pathSegments = startDir === '' ? [] : startDir.split(/[/\\]/);
+
+    // Add directories from current up to srcDir root (don't go beyond srcDir)
+    if (pathSegments.length > 0) {
+      for (let i = pathSegments.length; i >= 0; i--) {
+        if (i === 0) {
+          dirsToSearch.push(''); // srcDir root directory
+        } else {
+          dirsToSearch.push(pathSegments.slice(0, i).join('/'));
+        }
+      }
+    } else {
+      dirsToSearch.push(''); // srcDir root directory only
+    }
+  }
+
+  // Search each directory level for the template in underscore directories
+  for (const dir of dirsToSearch) {
+    const searchDir = dir ? join(srcDir, dir) : srcDir;
+
+    try {
+      // Search for template in underscore directories at this level only
+      const pattern = posix.join(searchDir.replace(/\\/g, '/'), '_*', templateName);
+      const matches = await glob(pattern, { absolute: true });
+      if (matches.length > 0) {
+        return matches[0]!; // Return first match
+      }
+    } catch {
+      // Continue if directory doesn't exist or can't be read
+      continue;
     }
   }
 

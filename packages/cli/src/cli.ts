@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import { build, invalidate, createDevServer } from '@stati/core';
 import type { BuildOptions, DevServerOptions } from '@stati/core';
 import { log } from './colors.js';
+import { createLogger } from './logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -58,31 +59,8 @@ const cli = yargs(hideBin(process.argv))
       }
 
       try {
-        // Enhanced logger with new prettier functions
-        const coloredLogger = {
-          info: log.info,
-          success: log.success,
-          warning: log.warning,
-          error: log.error,
-          building: log.building,
-          processing: log.processing,
-          stats: log.stats,
-          // Add new prettier logging methods
-          header: log.header,
-          step: log.step,
-          progress: log.progress,
-          file: log.file,
-          url: log.url,
-          timing: log.timing,
-          statsTable: log.statsTable,
-          navigationTree: log.navigationTree,
-          // Add rendering tree methods
-          startRenderingTree: log.startRenderingTree,
-          addTreeNode: log.addTreeNode,
-          updateTreeNode: log.updateTreeNode,
-          showRenderingTree: log.showRenderingTree,
-          clearRenderingTree: log.clearRenderingTree,
-        };
+        // Enhanced logger via factory (centralized)
+        const coloredLogger = createLogger();
 
         // Show a nice header
         const versionInfo = buildOptions.version ? ` v${buildOptions.version}` : '';
@@ -100,7 +78,6 @@ const cli = yargs(hideBin(process.argv))
         await build(buildOptions);
         const buildTime = Date.now() - startTime;
 
-        console.log(); // Add spacing before final messages
         log.timing('Total build', buildTime);
         log.success('Site built successfully!');
       } catch (error) {
@@ -142,31 +119,8 @@ const cli = yargs(hideBin(process.argv))
       };
 
       try {
-        // Enhanced logger with new prettier functions
-        const coloredLogger = {
-          info: log.info,
-          success: log.success,
-          warning: log.warning,
-          error: log.error,
-          building: log.building,
-          processing: log.processing,
-          stats: log.stats,
-          // Add new prettier logging methods
-          header: log.header,
-          step: log.step,
-          progress: log.progress,
-          file: log.file,
-          url: log.url,
-          timing: log.timing,
-          statsTable: log.statsTable,
-          navigationTree: log.navigationTree,
-          // Add rendering tree methods
-          startRenderingTree: log.startRenderingTree,
-          addTreeNode: log.addTreeNode,
-          updateTreeNode: log.updateTreeNode,
-          showRenderingTree: log.showRenderingTree,
-          clearRenderingTree: log.clearRenderingTree,
-        };
+        // Enhanced logger via factory (centralized)
+        const coloredLogger = createLogger();
 
         devOptions.logger = coloredLogger;
 

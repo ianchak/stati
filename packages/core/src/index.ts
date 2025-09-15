@@ -31,7 +31,7 @@ export type {
   ISGConfig,
   AgingRule,
   BuildStats,
-} from './types.js';
+} from './types/index.js';
 
 export type { BuildOptions } from './core/build.js';
 export type { DevServerOptions } from './core/dev.js';
@@ -43,7 +43,7 @@ export { loadConfig } from './config/loader.js';
 export { invalidate } from './core/invalidate.js';
 
 // Import for implementation use
-import type { StatiConfig } from './types.js';
+import type { StatiConfig } from './types/index.js';
 
 /**
  * Helper function for defining Stati configuration with TypeScript IntelliSense.

@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createDevServer } from '../../core/dev.js';
-import type { Logger, StatiConfig, CacheManifest, CacheEntry, BuildStats } from '../../types.js';
+import type {
+  Logger,
+  StatiConfig,
+  CacheManifest,
+  CacheEntry,
+  BuildStats,
+} from '../../types/index.js';
 
 // Mock dependencies
 vi.mock('../../core/build.js');

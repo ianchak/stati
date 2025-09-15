@@ -1,5 +1,5 @@
 import { basename } from 'path';
-import type { PageModel, NavNode } from '../types.js';
+import type { PageModel, NavNode } from '../types/index.js';
 
 /**
  * Builds a hierarchical navigation structure from pages.

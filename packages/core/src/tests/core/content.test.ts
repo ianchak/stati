@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { loadContent } from '../../core/content.js';
-import type { StatiConfig } from '../../types.js';
+import type { StatiConfig } from '../../types/index.js';
 
 // Create hoisted mocks
 const { mockReadFile, mockGlob, mockMatter } = vi.hoisted(() => ({

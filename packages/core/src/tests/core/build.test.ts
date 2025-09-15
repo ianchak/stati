@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { build } from '../../core/build.js';
 import type { BuildOptions } from '../../core/build.js';
-import type { StatiConfig } from '../../types.js';
+import type { StatiConfig } from '../../types/index.js';
 
 // Create hoisted mocks that are available during module hoisting
 const {
@@ -27,6 +27,7 @@ const {
   mockWithBuildLock,
   mockBuildNavigation,
 } = vi.hoisted(() => ({
+  // fs-extra mocks
   mockEnsureDir: vi.fn(),
   mockWriteFile: vi.fn(),
   mockCopy: vi.fn(),
@@ -35,19 +36,21 @@ const {
   mockPathExists: vi.fn(),
   mockReaddir: vi.fn(),
   mockStat: vi.fn(),
+  // core module mocks
   mockLoadConfig: vi.fn(),
   mockLoadContent: vi.fn(),
   mockCreateMarkdownProcessor: vi.fn(),
   mockRenderMarkdown: vi.fn(),
   mockCreateTemplateEngine: vi.fn(),
   mockRenderPage: vi.fn(),
+  mockBuildNavigation: vi.fn(),
+  // ISG mocks
   mockLoadCacheManifest: vi.fn(),
   mockSaveCacheManifest: vi.fn(),
   mockShouldRebuildPage: vi.fn(),
   mockCreateCacheEntry: vi.fn(),
   mockUpdateCacheEntry: vi.fn(),
   mockWithBuildLock: vi.fn(),
-  mockBuildNavigation: vi.fn(),
 }));
 
 // Mock modules with implementation

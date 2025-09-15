@@ -1,7 +1,7 @@
-import fse from 'fs-extra';
-const { readFile, writeFile, pathExists, ensureDir } = fse;
+import { readFile, writeFile, pathExists, ensureDir } from '../utils/fs.js';
 import { join } from 'path';
-import type { CacheManifest, CacheEntry } from '../../types.js';
+import type { CacheManifest, CacheEntry } from '../../types/index.js';
+import { MANIFEST_FILENAME } from '../../constants.js';
 
 /**
  * Type for Node.js errno exceptions
@@ -9,11 +9,6 @@ import type { CacheManifest, CacheEntry } from '../../types.js';
 interface NodeError extends Error {
   code?: string;
 }
-
-/**
- * Path to the cache manifest file within the cache directory
- */
-const MANIFEST_FILENAME = 'manifest.json';
 
 /**
  * Loads the ISG cache manifest from the cache directory.
@@ -40,6 +35,11 @@ export async function loadCacheManifest(cacheDir: string): Promise<CacheManifest
     }
 
     const manifestContent = await readFile(manifestPath, 'utf-8');
+
+    if (!manifestContent) {
+      console.warn('Cache manifest not found or empty, creating new cache');
+      return null;
+    }
 
     // Handle empty files
     if (!manifestContent.trim()) {
@@ -150,14 +150,21 @@ export async function saveCacheManifest(cacheDir: string, manifest: CacheManifes
   } catch (error) {
     const nodeError = error as NodeError;
 
-    if (nodeError.code === 'EACCES') {
+    // Handle specific error codes with custom messages
+    if (
+      nodeError.code === 'EACCES' ||
+      (nodeError.message && nodeError.message.includes('Permission denied'))
+    ) {
       throw new Error(
         `Permission denied saving cache manifest to ${manifestPath}. ` +
           `Please check directory permissions or run with appropriate privileges.`,
       );
     }
 
-    if (nodeError.code === 'ENOSPC') {
+    if (
+      nodeError.code === 'ENOSPC' ||
+      (nodeError.message && nodeError.message.includes('No space left on device'))
+    ) {
       throw new Error(
         `No space left on device when saving cache manifest to ${manifestPath}. ` +
           `Please free up disk space and try again.`,
@@ -176,6 +183,21 @@ export async function saveCacheManifest(cacheDir: string, manifest: CacheManifes
         `Cache directory path ${cacheDir} is not a directory. ` +
           `Please remove the conflicting file and try again.`,
       );
+    }
+
+    // Re-throw the original error if it's already properly formatted
+    if (error instanceof Error) {
+      if (
+        error.message.includes('Failed to create directory') ||
+        error.message.includes('Failed to write file')
+      ) {
+        throw new Error(
+          `Failed to save cache manifest to ${manifestPath}: ${error.message.split(': ').slice(-1)[0]}`,
+        );
+      }
+      if (error.message.includes('Failed to')) {
+        throw error;
+      }
     }
 
     throw new Error(

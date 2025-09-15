@@ -1,5 +1,4 @@
-import fse from 'fs-extra';
-const { ensureDir, writeFile, remove, pathExists, stat, readdir, copyFile } = fse;
+import { ensureDir, writeFile, remove, pathExists, stat, readdir, copyFile } from './utils/fs.js';
 import { join, dirname, relative } from 'path';
 import { posix } from 'path';
 import { loadConfig } from '../config/loader.js';
@@ -10,7 +9,16 @@ import { buildNavigation } from './navigation.js';
 import { loadCacheManifest, saveCacheManifest } from './isg/manifest.js';
 import { shouldRebuildPage, createCacheEntry, updateCacheEntry } from './isg/builder.js';
 import { withBuildLock } from './isg/build-lock.js';
-import type { BuildContext, BuildStats, Logger } from '../types.js';
+import type {
+  BuildContext,
+  BuildStats,
+  Logger,
+  StatiConfig,
+  CacheManifest,
+  PageModel,
+  NavNode,
+} from '../types/index.js';
+import { resolveOutDir, resolveStaticDir, resolveCacheDir } from './utils/paths.js';
 
 /**
  * Options for customizing the build process.
@@ -132,37 +140,6 @@ const defaultLogger: Logger = {
 };
 
 /**
- * Formats build statistics for display with prettier output.
- *
- * @param stats - Build statistics to format
- * @returns Formatted statistics string
- */
-function formatBuildStats(stats: BuildStats): string {
-  const sizeKB = (stats.outputSizeBytes / 1024).toFixed(1);
-  const timeSeconds = (stats.buildTimeMs / 1000).toFixed(2);
-
-  let output =
-    `Build Statistics:
-┌─────────────────────────────────────────┐
-│  Build time: ${timeSeconds}s`.padEnd(41) + '│';
-  output += `\n│  📄 Pages built: ${stats.totalPages}`.padEnd(42) + '│';
-  output += `\n│  📦 Assets copied: ${stats.assetsCount}`.padEnd(42) + '│';
-  output += `\n│  Output size: ${sizeKB} KB`.padEnd(42) + '│';
-
-  if (stats.cacheHits !== undefined && stats.cacheMisses !== undefined) {
-    const totalCacheRequests = stats.cacheHits + stats.cacheMisses;
-    const hitRate =
-      totalCacheRequests > 0 ? ((stats.cacheHits / totalCacheRequests) * 100).toFixed(1) : '0';
-    output +=
-      `\n│  Cache hits: ${stats.cacheHits}/${totalCacheRequests} (${hitRate}%)`.padEnd(42) + '│';
-  }
-
-  output += '\n└─────────────────────────────────────────┘';
-
-  return output;
-}
-
-/**
  * Builds the Stati site with ISG support.
  * Processes all pages and assets, with smart caching for incremental builds.
  *
@@ -194,7 +171,7 @@ function formatBuildStats(stats: BuildStats): string {
  * ```
  */
 export async function build(options: BuildOptions = {}): Promise<BuildStats> {
-  const cacheDir = join(process.cwd(), '.stati');
+  const cacheDir = resolveCacheDir();
 
   // Ensure cache directory exists before acquiring build lock
   await ensureDir(cacheDir);
@@ -207,24 +184,30 @@ export async function build(options: BuildOptions = {}): Promise<BuildStats> {
 }
 
 /**
- * Internal build implementation without locking.
- * Separated for cleaner error handling and testing.
+ * Loads and validates configuration, returning config and output directory.
  */
-async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
-  const buildStartTime = Date.now();
-  const logger = options.logger || defaultLogger;
-
-  logger.building('Building your site...');
-  console.log(); // Add spacing after build start
-
+async function loadAndValidateConfig(options: BuildOptions): Promise<{
+  config: StatiConfig;
+  outDir: string;
+  cacheDir: string;
+}> {
   // Load configuration
   const config = await loadConfig(options.configPath ? dirname(options.configPath) : process.cwd());
-  const outDir = join(process.cwd(), config.outDir!);
+  const outDir = resolveOutDir(config);
+  const cacheDir = resolveCacheDir();
 
   // Create .stati cache directory
-  const cacheDir = join(process.cwd(), '.stati');
   await ensureDir(cacheDir);
 
+  return { config, outDir, cacheDir };
+}
+
+/**
+ * Sets up cache manifest and initializes cache statistics.
+ */
+async function setupCacheAndManifest(cacheDir: string): Promise<{
+  manifest: CacheManifest;
+}> {
   // Load cache manifest for ISG
   let cacheManifest = await loadCacheManifest(cacheDir);
 
@@ -238,18 +221,22 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
   // At this point cacheManifest is guaranteed to be non-null
   const manifest = cacheManifest;
 
-  // Initialize cache stats
-  let cacheHits = 0;
-  let cacheMisses = 0;
+  return { manifest };
+}
 
-  // Clean output directory if requested
-  if (options.clean) {
-    logger.info('Cleaning output directory...');
-    await remove(outDir);
-  }
-
-  await ensureDir(outDir);
-
+/**
+ * Loads content and builds navigation.
+ */
+async function loadContentAndBuildNavigation(
+  config: StatiConfig,
+  options: BuildOptions,
+  logger: Logger,
+): Promise<{
+  pages: PageModel[];
+  navigation: NavNode[];
+  md: import('markdown-it').default;
+  eta: ReturnType<typeof createTemplateEngine>;
+}> {
   // Load all content
   const pages = await loadContent(config, options.includeDrafts);
   logger.info(`📄 Found ${pages.length} pages`);
@@ -265,9 +252,32 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
   // Display navigation tree if the logger supports it
   if (logger.navigationTree) {
     logger.navigationTree(navigation);
-  } // Create processors
+  }
+
+  // Create processors
   const md = await createMarkdownProcessor(config);
   const eta = createTemplateEngine(config);
+
+  return { pages, navigation, md, eta };
+}
+
+/**
+ * Processes pages with ISG caching logic.
+ */
+async function processPagesWithCache(
+  pages: PageModel[],
+  manifest: CacheManifest,
+  config: StatiConfig,
+  outDir: string,
+  md: import('markdown-it').default,
+  eta: ReturnType<typeof createTemplateEngine>,
+  navigation: NavNode[],
+  buildTime: Date,
+  options: BuildOptions,
+  logger: Logger,
+): Promise<{ cacheHits: number; cacheMisses: number }> {
+  let cacheHits = 0;
+  let cacheMisses = 0;
 
   // Build context
   const buildContext: BuildContext = { config, pages };
@@ -286,8 +296,6 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
   if (logger.startRenderingTree) {
     logger.startRenderingTree('Page Rendering Process');
   }
-
-  const buildTime = new Date();
 
   for (let i = 0; i < pages.length; i++) {
     const page = pages[i];
@@ -390,35 +398,51 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
 
   // Display final rendering tree and clear it
   if (logger.showRenderingTree) {
-    console.log(); // Add spacing
     logger.showRenderingTree();
     if (logger.clearRenderingTree) {
       logger.clearRenderingTree();
     }
   }
 
-  // Save updated cache manifest
-  await saveCacheManifest(cacheDir, manifest);
+  return { cacheHits, cacheMisses };
+}
 
-  // Copy static assets and count them
-  let assetsCount = 0;
-  const staticDir = join(process.cwd(), config.staticDir!);
-  if (await pathExists(staticDir)) {
-    console.log(); // Add spacing before asset copying
-    if (logger.step) {
-      logger.step(3, 3, 'Copying static assets');
-    }
-    logger.info(`Copying static assets from ${config.staticDir}`);
-    assetsCount = await copyStaticAssetsWithLogging(staticDir, outDir, logger);
-    logger.info(`Copied ${assetsCount} static assets`);
+/**
+ * Copies static assets and returns the count.
+ */
+async function copyStaticAssets(
+  config: StatiConfig,
+  outDir: string,
+  logger: Logger,
+): Promise<number> {
+  const staticDir = resolveStaticDir(config);
+  if (!(await pathExists(staticDir))) {
+    return 0;
   }
 
-  // Run afterAll hook
-  if (config.hooks?.afterAll) {
-    await config.hooks.afterAll(buildContext);
+  console.log(); // Add spacing before asset copying
+  if (logger.step) {
+    logger.step(3, 3, 'Copying static assets');
   }
+  logger.info(`Copying static assets from ${config.staticDir}`);
+  const assetsCount = await copyStaticAssetsWithLogging(staticDir, outDir, logger);
+  logger.info(`Copied ${assetsCount} static assets`);
 
-  // Calculate build statistics
+  return assetsCount;
+}
+
+/**
+ * Generates build statistics.
+ */
+async function generateBuildStats(
+  pages: PageModel[],
+  assetsCount: number,
+  buildStartTime: number,
+  outDir: string,
+  cacheHits: number,
+  cacheMisses: number,
+  logger: Logger,
+): Promise<BuildStats> {
   const buildEndTime = Date.now();
   const buildStats: BuildStats = {
     totalPages: pages.length,
@@ -430,13 +454,91 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
     cacheMisses,
   };
 
-  console.log(); // Add spacing before statistics
-  // Use table format if available, otherwise fall back to formatted string
   if (logger.statsTable) {
+    console.log(); // Add spacing before statistics
     logger.statsTable(buildStats);
-  } else {
-    logger.stats(formatBuildStats(buildStats));
+    console.log(); // Add spacing after statistics
   }
+
+  return buildStats;
+}
+
+/**
+ * Internal build implementation without locking.
+ * Separated for cleaner error handling and testing.
+ */
+async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
+  const buildStartTime = Date.now();
+  const logger = options.logger || defaultLogger;
+
+  logger.building('Building your site...');
+
+  // Load configuration
+  const { config, outDir, cacheDir } = await loadAndValidateConfig(options);
+
+  // Load cache manifest for ISG
+  const { manifest } = await setupCacheAndManifest(cacheDir);
+
+  // Initialize cache stats
+  let cacheHits = 0;
+  let cacheMisses = 0;
+
+  // Clean output directory if requested
+  if (options.clean) {
+    logger.info('Cleaning output directory...');
+    await remove(outDir);
+  }
+
+  await ensureDir(outDir);
+
+  // Load content and build navigation
+  console.log(); // Add spacing before content loading
+  const { pages, navigation, md, eta } = await loadContentAndBuildNavigation(
+    config,
+    options,
+    logger,
+  );
+
+  // Process pages with ISG caching logic
+  console.log(); // Add spacing before page processing
+  const buildTime = new Date();
+  const pageProcessingResult = await processPagesWithCache(
+    pages,
+    manifest,
+    config,
+    outDir,
+    md,
+    eta,
+    navigation,
+    buildTime,
+    options,
+    logger,
+  );
+  cacheHits = pageProcessingResult.cacheHits;
+  cacheMisses = pageProcessingResult.cacheMisses;
+
+  // Save updated cache manifest
+  await saveCacheManifest(cacheDir, manifest);
+
+  // Copy static assets and count them
+  let assetsCount = 0;
+  assetsCount = await copyStaticAssets(config, outDir, logger);
+
+  // Run afterAll hook
+  if (config.hooks?.afterAll) {
+    await config.hooks.afterAll({ config, pages });
+  }
+
+  // Calculate build statistics
+  const buildStats = await generateBuildStats(
+    pages,
+    assetsCount,
+    buildStartTime,
+    outDir,
+    cacheHits,
+    cacheMisses,
+    logger,
+  );
 
   return buildStats;
 }

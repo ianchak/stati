@@ -2,24 +2,29 @@ import { describe, it, expect } from 'vitest';
 
 describe('stati package index', () => {
   it('should export all public types', async () => {
-    // Arrange & Act
     const statiModule = await import('../index.js');
 
-    // Assert - verify core exports are available
     expect(statiModule.build).toBeDefined();
     expect(statiModule.loadConfig).toBeDefined();
     expect(typeof statiModule.build).toBe('function');
     expect(typeof statiModule.loadConfig).toBe('function');
   });
 
-  it('should have proper module structure', () => {
-    // Test that the module exports what we expect
-    const expectedExports = ['build', 'loadConfig'];
+  it('should provide functional API surface for build operations', async () => {
+    const statiModule = await import('../index.js');
 
-    // This validates the public API surface
-    for (const exportName of expectedExports) {
-      expect(exportName).toBeDefined();
-      expect(typeof exportName).toBe('string');
-    }
+    // Verify the essential build function is properly exported and callable
+    expect(() => {
+      const buildFn = statiModule.build;
+      // Function should not throw when accessed
+      expect(buildFn).toBeInstanceOf(Function);
+      expect(buildFn.length).toBe(0); // Build function has one optional parameter (defaults to {}), so length is 0
+    }).not.toThrow();
+
+    // Verify config loader is functional
+    expect(() => {
+      const loadConfigFn = statiModule.loadConfig;
+      expect(loadConfigFn).toBeInstanceOf(Function);
+    }).not.toThrow();
   });
 });

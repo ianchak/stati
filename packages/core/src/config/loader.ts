@@ -1,27 +1,46 @@
 import { existsSync } from 'fs';
 import { join, resolve } from 'path';
 import { pathToFileURL } from 'url';
-import type { StatiConfig } from '../types.js';
+import type { StatiConfig } from '../types/index.js';
 import { validateISGConfig, ISGConfigurationError } from '../core/isg/validation.js';
+import {
+  DEFAULT_SRC_DIR,
+  DEFAULT_OUT_DIR,
+  DEFAULT_STATIC_DIR,
+  DEFAULT_SITE_TITLE,
+  DEFAULT_DEV_BASE_URL,
+  DEFAULT_TTL_SECONDS,
+  DEFAULT_MAX_AGE_CAP_DAYS,
+  CONFIG_FILE_PATTERNS,
+} from '../constants.js';
 
 /**
  * Default configuration values for Stati.
  * Used as fallback when no configuration file is found.
  */
 const DEFAULT_CONFIG: StatiConfig = {
-  srcDir: 'site',
-  outDir: 'dist',
-  staticDir: 'public',
+  srcDir: DEFAULT_SRC_DIR,
+  outDir: DEFAULT_OUT_DIR,
+  staticDir: DEFAULT_STATIC_DIR,
   site: {
-    title: 'My Site',
-    baseUrl: 'http://localhost:3000',
+    title: DEFAULT_SITE_TITLE,
+    baseUrl: DEFAULT_DEV_BASE_URL,
   },
   isg: {
     enabled: true,
-    ttlSeconds: 3600,
-    maxAgeCapDays: 365,
+    ttlSeconds: DEFAULT_TTL_SECONDS,
+    maxAgeCapDays: DEFAULT_MAX_AGE_CAP_DAYS,
   },
 };
+
+/**
+ * Builds config file paths for a given directory.
+ * @param cwd - Directory to search for config files
+ * @returns Array of absolute paths to potential config files
+ */
+export function getConfigFilePaths(cwd: string): string[] {
+  return CONFIG_FILE_PATTERNS.map((pattern) => join(cwd, pattern));
+}
 
 /**
  * Loads and validates Stati configuration from the project directory.
@@ -44,11 +63,7 @@ const DEFAULT_CONFIG: StatiConfig = {
  * @throws {Error} When configuration file exists but contains invalid JavaScript/TypeScript
  */
 export async function loadConfig(cwd: string = process.cwd()): Promise<StatiConfig> {
-  const configPaths = [
-    join(cwd, 'stati.config.ts'),
-    join(cwd, 'stati.config.js'),
-    join(cwd, 'stati.config.mjs'),
-  ];
+  const configPaths = getConfigFilePaths(cwd);
 
   let configPath: string | null = null;
   for (const path of configPaths) {

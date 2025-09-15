@@ -5,7 +5,7 @@ import {
   isPageFrozen,
   applyAgingRules,
 } from '../../../core/isg/ttl.js';
-import type { PageModel, ISGConfig, AgingRule, CacheEntry } from '../../../types.js';
+import type { PageModel, ISGConfig, AgingRule, CacheEntry } from '../../../types/index.js';
 
 describe('ISG TTL and Aging Functions', () => {
   let mockDate: Date;

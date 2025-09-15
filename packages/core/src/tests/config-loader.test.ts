@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { join } from 'path';
+import { getConfigFilePaths } from '../config/loader.js';
 
 // Test the actual loader functionality by creating a simpler approach
 // Focus on testing the logic rather than mocking complex dynamic imports
@@ -19,16 +20,16 @@ describe('config loader', () => {
       const testDir = '/test/project';
 
       // Act
-      const expectedPaths = [
-        join(testDir, 'stati.config.ts'),
-        join(testDir, 'stati.config.js'),
-        join(testDir, 'stati.config.mjs'),
-      ];
+      const configPaths = getConfigFilePaths(testDir);
 
       // Assert - verify path construction logic
-      expect(expectedPaths[0]).toContain('stati.config.ts');
-      expect(expectedPaths[1]).toContain('stati.config.js');
-      expect(expectedPaths[2]).toContain('stati.config.mjs');
+      expect(configPaths).toHaveLength(3);
+      expect(configPaths[0]).toContain('stati.config.ts');
+      expect(configPaths[1]).toContain('stati.config.js');
+      expect(configPaths[2]).toContain('stati.config.mjs');
+      expect(configPaths[0]).toBe(join(testDir, 'stati.config.ts'));
+      expect(configPaths[1]).toBe(join(testDir, 'stati.config.js'));
+      expect(configPaths[2]).toBe(join(testDir, 'stati.config.mjs'));
     });
   });
 

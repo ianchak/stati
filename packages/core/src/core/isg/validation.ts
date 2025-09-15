@@ -1,4 +1,4 @@
-import type { ISGConfig, AgingRule } from '../../types.js';
+import type { ISGConfig, AgingRule } from '../../types/index.js';
 
 /**
  * Error codes for ISG validation failures.
