@@ -45,7 +45,10 @@ function getCommitsSinceLastTag() {
 }
 
 function parseCommit(commitLine) {
-  const [hash, subject, body] = commitLine.split('|');
+  const parts = commitLine.split('|');
+  const hash = parts[0];
+  const subject = parts[1] || '';
+  const body = parts[2] || '';
 
   // Simple regex-based parsing for conventional commits
   // Pattern: type(scope): description or type: description
@@ -170,7 +173,9 @@ function main() {
 
   console.log(`Found ${commits.length} commits to analyze:`);
   commits.forEach((commit, i) => {
-    const [hash, subject] = commit.split('|');
+    const parts = commit.split('|');
+    const hash = parts[0] || '';
+    const subject = parts[1] || '';
     console.log(`  ${i + 1}. ${hash.substring(0, 7)} - ${subject}`);
   });
   let generatedChangesets = 0;
