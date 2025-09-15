@@ -261,6 +261,7 @@ async function parseTemplateDependencies(
   srcDir: string,
 ): Promise<string[]> {
   const dependencies: string[] = [];
+  const templateDir = dirname(templatePath);
 
   // Look for Eta include patterns: <%~ include('template') %>
   const includePatterns = [
@@ -273,7 +274,7 @@ async function parseTemplateDependencies(
     while ((match = pattern.exec(content)) !== null) {
       const includePath = match[1];
       if (includePath) {
-        const resolvedPath = await resolveTemplatePathInternal(includePath, srcDir);
+        const resolvedPath = await resolveTemplatePathInternal(includePath, srcDir, templateDir);
         if (resolvedPath) {
           dependencies.push(resolvedPath);
         }
@@ -292,7 +293,7 @@ async function parseTemplateDependencies(
     while ((match = pattern.exec(content)) !== null) {
       const layoutPath = match[1];
       if (layoutPath) {
-        const resolvedPath = await resolveTemplatePathInternal(layoutPath, srcDir);
+        const resolvedPath = await resolveTemplatePathInternal(layoutPath, srcDir, templateDir);
         if (resolvedPath) {
           dependencies.push(resolvedPath);
         }
@@ -309,13 +310,14 @@ async function parseTemplateDependencies(
  *
  * @param templateRef - Template reference from include/layout statement
  * @param srcDir - Source directory for resolving paths
+ * @param currentDir - Current directory for hierarchical search (optional)
  * @returns Absolute path to template file, or null if not found
  */
 async function resolveTemplatePathInternal(
   templateRef: string,
   srcDir: string,
+  currentDir?: string,
 ): Promise<string | null> {
-  // Add .eta extension if not present
   const templateName = templateRef.endsWith(TEMPLATE_EXTENSION)
     ? templateRef
     : `${templateRef}${TEMPLATE_EXTENSION}`;
@@ -326,17 +328,48 @@ async function resolveTemplatePathInternal(
     return absolutePath;
   }
 
-  // Try resolving relative to template directories
-  // This is a simplified version - real implementation might need more sophisticated resolution
-  const possiblePaths = [
-    join(srcDir, '_templates', templateName),
-    join(srcDir, '_partials', templateName),
-    join(srcDir, '_layouts', templateName),
-  ];
+  // Determine the starting directory for hierarchical search (relative to srcDir)
+  const startDir = currentDir ? relative(srcDir, currentDir) : '';
 
-  for (const path of possiblePaths) {
-    if (await pathExists(path)) {
-      return path;
+  // Build list of directories to search (current dir up to srcDir root only)
+  // This ensures we never search outside the source directory boundary
+  const dirsToSearch: string[] = [];
+
+  // Safety check: ensure currentDir is within srcDir (relative path shouldn't start with '..')
+  if (startDir.startsWith('..')) {
+    // If currentDir is outside srcDir, only search at srcDir root
+    dirsToSearch.push('');
+  } else {
+    const pathSegments = startDir === '' ? [] : startDir.split(/[/\\]/);
+
+    // Add directories from current up to srcDir root (don't go beyond srcDir)
+    if (pathSegments.length > 0) {
+      for (let i = pathSegments.length; i >= 0; i--) {
+        if (i === 0) {
+          dirsToSearch.push(''); // srcDir root directory
+        } else {
+          dirsToSearch.push(pathSegments.slice(0, i).join('/'));
+        }
+      }
+    } else {
+      dirsToSearch.push(''); // srcDir root directory only
+    }
+  }
+
+  // Search each directory level for the template in underscore directories
+  for (const dir of dirsToSearch) {
+    const searchDir = dir ? join(srcDir, dir) : srcDir;
+
+    try {
+      // Search for template in underscore directories at this level only
+      const pattern = posix.join(searchDir.replace(/\\/g, '/'), '_*', templateName);
+      const matches = await glob(pattern, { absolute: true });
+      if (matches.length > 0) {
+        return matches[0]!; // Return first match
+      }
+    } catch {
+      // Continue if directory doesn't exist or can't be read
+      continue;
     }
   }
 
