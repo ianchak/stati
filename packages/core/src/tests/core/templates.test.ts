@@ -433,11 +433,8 @@ describe('templates.ts', () => {
       it('should discover and render partials', async () => {
         // Mock partial discovery - find header and footer partials
         mockGlob
-          .mockResolvedValueOnce(['c:\\test\\src\\_partials\\']) // First call: find underscore folders
-          .mockResolvedValueOnce([
-            'c:\\test\\src\\_partials\\header.eta',
-            'c:\\test\\src\\_partials\\footer.eta',
-          ]) // Second call: find eta files in _partials
+          .mockResolvedValueOnce([join(mockProjectRoot, 'src', '_partials')]) // First call: find underscore folders
+          .mockResolvedValueOnce(['header.eta', 'footer.eta']) // Second call: find eta files in _partials (relative paths)
           .mockResolvedValue([]); // Subsequent calls: no more partials
 
         // Mock path exists for layout discovery
@@ -515,8 +512,8 @@ describe('templates.ts', () => {
       it('should handle partial rendering errors gracefully', async () => {
         // Mock partial discovery - find one partial that will fail
         mockGlob
-          .mockResolvedValueOnce(['c:\\test\\src\\_partials\\']) // Find underscore folders
-          .mockResolvedValueOnce(['c:\\test\\src\\_partials\\broken.eta']) // Find eta files in _partials
+          .mockResolvedValueOnce([join(mockProjectRoot, 'src', '_partials')]) // Find underscore folders
+          .mockResolvedValueOnce(['broken.eta']) // Find eta files in _partials (relative path)
           .mockResolvedValue([]);
 
         // Mock path exists for layout discovery
@@ -583,8 +580,8 @@ describe('templates.ts', () => {
       it('should handle cross-platform path separators correctly', async () => {
         // This test verifies that our path handling works on both Windows (\) and Unix (/)
         mockGlob
-          .mockResolvedValueOnce(['c:\\test\\src\\_partials\\'])
-          .mockResolvedValueOnce(['c:\\test\\src\\_partials\\test.eta'])
+          .mockResolvedValueOnce([join(mockProjectRoot, 'src', '_partials')])
+          .mockResolvedValueOnce(['test.eta']) // Relative path as it should be
           .mockResolvedValue([]);
 
         mockPathExists.mockResolvedValueOnce(true).mockResolvedValue(false);
