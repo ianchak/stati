@@ -19,21 +19,44 @@ interface NodeError extends Error {
 }
 
 /**
+ * Wraps fs-extra operations with consistent error handling.
+ */
+async function wrapFsOperation<T>(operation: string, fsCall: Promise<T>, path: string): Promise<T> {
+  try {
+    return await fsCall;
+  } catch (error) {
+    const nodeError = error as NodeError;
+    throw new Error(`Failed to ${operation} ${path}: ${nodeError.message}`);
+  }
+}
+
+/**
+ * Wraps fs-extra operations that should return null on ENOENT.
+ */
+async function wrapFsOperationNullable<T>(
+  operation: string,
+  fsCall: Promise<T>,
+  path: string,
+): Promise<T | null> {
+  try {
+    return await fsCall;
+  } catch (error) {
+    const nodeError = error as NodeError;
+    if (nodeError.code === 'ENOENT') {
+      return null; // File doesn't exist
+    }
+    throw new Error(`Failed to ${operation} ${path}: ${nodeError.message}`);
+  }
+}
+
+/**
  * Safely reads a file with consistent error handling.
  */
 export async function readFile(
   filePath: string,
   encoding: 'utf-8' | 'utf8' = 'utf-8',
 ): Promise<string | null> {
-  try {
-    return await fseReadFile(filePath, encoding);
-  } catch (error) {
-    const nodeError = error as NodeError;
-    if (nodeError.code === 'ENOENT') {
-      return null; // File doesn't exist
-    }
-    throw new Error(`Failed to read file ${filePath}: ${nodeError.message}`);
-  }
+  return wrapFsOperationNullable('read file', fseReadFile(filePath, encoding), filePath);
 }
 
 /**
@@ -44,60 +67,35 @@ export async function writeFile(
   content: string,
   options?: WriteFileOptions,
 ): Promise<void> {
-  try {
-    await fseWriteFile(filePath, content, options);
-  } catch (error) {
-    const nodeError = error as NodeError;
-    throw new Error(`Failed to write file ${filePath}: ${nodeError.message}`);
-  }
+  return wrapFsOperation('write file', fseWriteFile(filePath, content, options), filePath);
 }
 
 /**
  * Checks if a path exists with consistent error handling.
  */
 export async function pathExists(filePath: string): Promise<boolean> {
-  try {
-    return await fsePathExists(filePath);
-  } catch (error) {
-    const nodeError = error as NodeError;
-    throw new Error(`Failed to check path ${filePath}: ${nodeError.message}`);
-  }
+  return wrapFsOperation('check path', fsePathExists(filePath), filePath);
 }
 
 /**
  * Ensures a directory exists with consistent error handling.
  */
 export async function ensureDir(dirPath: string): Promise<void> {
-  try {
-    await fseEnsureDir(dirPath);
-  } catch (error) {
-    const nodeError = error as NodeError;
-    throw new Error(`Failed to create directory ${dirPath}: ${nodeError.message}`);
-  }
+  return wrapFsOperation('create directory', fseEnsureDir(dirPath), dirPath);
 }
 
 /**
  * Removes a file or directory with consistent error handling.
  */
 export async function remove(path: string): Promise<void> {
-  try {
-    await fseRemove(path);
-  } catch (error) {
-    const nodeError = error as NodeError;
-    throw new Error(`Failed to remove ${path}: ${nodeError.message}`);
-  }
+  return wrapFsOperation('remove', fseRemove(path), path);
 }
 
 /**
  * Gets file stats with consistent error handling.
  */
 export async function stat(filePath: string): Promise<fse.Stats> {
-  try {
-    return await fseStat(filePath);
-  } catch (error) {
-    const nodeError = error as NodeError;
-    throw new Error(`Failed to get stats for ${filePath}: ${nodeError.message}`);
-  }
+  return wrapFsOperation('get stats for', fseStat(filePath), filePath);
 }
 
 /**
@@ -124,10 +122,5 @@ export async function readdir<T extends boolean = false>(
  * Copies a file with consistent error handling.
  */
 export async function copyFile(src: string, dest: string): Promise<void> {
-  try {
-    await fseCopyFile(src, dest);
-  } catch (error) {
-    const nodeError = error as NodeError;
-    throw new Error(`Failed to copy ${src} to ${dest}: ${nodeError.message}`);
-  }
+  return wrapFsOperation('copy', fseCopyFile(src, dest), `${src} to ${dest}`);
 }
