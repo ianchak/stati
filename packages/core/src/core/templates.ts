@@ -1,5 +1,5 @@
 import { Eta } from 'eta';
-import { join, dirname, relative, basename } from 'path';
+import { join, dirname, relative, basename, posix } from 'path';
 import glob from 'fast-glob';
 import type { StatiConfig, PageModel, NavNode, CollectionData } from '../types/index.js';
 import { TEMPLATE_EXTENSION } from '../constants.js';
@@ -167,9 +167,9 @@ async function discoverPartials(
       for (const etaFile of etaFiles) {
         const partialName = basename(etaFile, TEMPLATE_EXTENSION);
         const fullPath = join(folderPath, etaFile);
-        const relativePath = relative(srcDir, fullPath);
 
-        // Store the relative path from srcDir for Eta to find it
+        // Use posix.relative for consistent forward slash paths across platforms
+        const relativePath = posix.relative(posix.normalize(srcDir), posix.normalize(fullPath));
         partials[partialName] = relativePath;
       }
     }
