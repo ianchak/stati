@@ -169,7 +169,9 @@ async function discoverPartials(
         const fullPath = join(folderPath, etaFile);
 
         // Use posix.relative for consistent forward slash paths across platforms
-        const relativePath = posix.relative(posix.normalize(srcDir), posix.normalize(fullPath));
+        const normalizedSrcDir = posix.normalize(srcDir.replace(/\\/g, '/'));
+        const normalizedFullPath = posix.normalize(fullPath.replace(/\\/g, '/'));
+        const relativePath = posix.relative(normalizedSrcDir, normalizedFullPath);
         partials[partialName] = relativePath;
       }
     }
