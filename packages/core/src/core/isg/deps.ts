@@ -2,6 +2,7 @@ import { join, dirname, relative, posix } from 'path';
 import { pathExists, readFile } from '../utils/fs.js';
 import glob from 'fast-glob';
 import type { PageModel, StatiConfig } from '../../types/index.js';
+import { TEMPLATE_EXTENSION } from '../../constants.js';
 import { isCollectionIndexPage, discoverLayout } from '../utils/template-discovery.js';
 import { resolveSrcDir } from '../utils/paths.js';
 
@@ -315,7 +316,9 @@ async function resolveTemplatePathInternal(
   srcDir: string,
 ): Promise<string | null> {
   // Add .eta extension if not present
-  const templateName = templateRef.endsWith('.eta') ? templateRef : `${templateRef}.eta`;
+  const templateName = templateRef.endsWith(TEMPLATE_EXTENSION)
+    ? templateRef
+    : `${templateRef}${TEMPLATE_EXTENSION}`;
 
   // Try absolute path from srcDir
   const absolutePath = join(srcDir, templateName);

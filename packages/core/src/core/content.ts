@@ -3,6 +3,7 @@ import { readFile } from './utils/fs.js';
 import matter from 'gray-matter';
 import { relative, dirname, basename } from 'path';
 import type { PageModel, StatiConfig } from '../types/index.js';
+import { MARKDOWN_EXTENSION } from '../constants.js';
 import { resolveSrcDir } from './utils/paths.js';
 
 /**
@@ -73,7 +74,7 @@ export async function loadContent(
 
 function computeSlug(relativePath: string): string {
   const dir = dirname(relativePath);
-  const name = basename(relativePath, '.md');
+  const name = basename(relativePath, MARKDOWN_EXTENSION);
 
   if (name === 'index') {
     return dir === '.' ? '/' : `/${dir}`;

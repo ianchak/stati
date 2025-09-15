@@ -2,6 +2,7 @@ import { Eta } from 'eta';
 import { join, dirname, relative, basename } from 'path';
 import glob from 'fast-glob';
 import type { StatiConfig, PageModel, NavNode, CollectionData } from '../types/index.js';
+import { TEMPLATE_EXTENSION } from '../constants.js';
 import {
   isCollectionIndexPage,
   discoverLayout,
@@ -156,7 +157,7 @@ async function discoverPartials(
       });
 
       for (const etaFile of etaFiles) {
-        const partialName = basename(etaFile, '.eta');
+        const partialName = basename(etaFile, TEMPLATE_EXTENSION);
         const fullPath = join(folderPath, etaFile);
         const relativePath = relative(srcDir, fullPath);
 

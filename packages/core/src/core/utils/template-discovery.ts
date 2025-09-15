@@ -2,6 +2,7 @@ import { join, dirname } from 'path';
 import { posix } from 'path';
 import { pathExists } from './fs.js';
 import type { StatiConfig, PageModel } from '../../types/index.js';
+import { LAYOUT_TEMPLATE } from '../../constants.js';
 import { resolveSrcDir } from './paths.js';
 
 /**
@@ -97,10 +98,10 @@ export async function discoverLayout(
     }
 
     // Then check for layout.eta as fallback
-    const layoutPath = dir ? join(srcDir, dir, 'layout.eta') : join(srcDir, 'layout.eta');
+    const layoutPath = dir ? join(srcDir, dir, LAYOUT_TEMPLATE) : join(srcDir, LAYOUT_TEMPLATE);
     if (await pathExists(layoutPath)) {
       // Return relative path with forward slashes for Eta
-      const relativePath = dir ? `${dir}/layout.eta` : 'layout.eta';
+      const relativePath = dir ? `${dir}/${LAYOUT_TEMPLATE}` : LAYOUT_TEMPLATE;
       return posix.normalize(relativePath);
     }
   }

@@ -10,7 +10,7 @@ import { build } from './build.js';
 import { loadConfig } from '../config/loader.js';
 import { loadCacheManifest, saveCacheManifest } from './isg/manifest.js';
 import { resolveDevPaths, resolveCacheDir } from './utils/paths.js';
-import { DEFAULT_DEV_PORT, DEFAULT_DEV_HOST } from '../constants.js';
+import { DEFAULT_DEV_PORT, DEFAULT_DEV_HOST, TEMPLATE_EXTENSION } from '../constants.js';
 
 export interface DevServerOptions {
   port?: number;
@@ -107,7 +107,7 @@ async function performIncrementalRebuild(
       .replace(/^\//, '');
 
     // Check if the changed file is a template/partial
-    if (changedPath.endsWith('.eta') || changedPath.includes('_partials')) {
+    if (changedPath.endsWith(TEMPLATE_EXTENSION) || changedPath.includes('_partials')) {
       await handleTemplateChange(changedPath, configPath, devLogger);
     } else {
       // Content or static file changed - use normal rebuild
