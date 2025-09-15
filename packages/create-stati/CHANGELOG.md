@@ -1,5 +1,42 @@
 # create-stati
 
+## 1.2.5
+
+### Patch Changes
+
+- add newline at end of LICENSE file for consistency
+
+  Commit: 73685cf
+
+- update development commands for clarity and consistency
+
+  Commit: 2f922c0
+
+- improve commit parsing for clarity
+
+  Commit: bba9ed6
+
+- separate type imports for clarity and consistency
+
+  Commit: d949272
+
+- clean up redundant test comments
+  - Remove obvious comments that don't add value ('Create test files', 'Verify content')
+
+  Commit: 245b02e
+
+- remove outdated refactoring log file
+
+  Commit: 16dabf9
+
+- update license from ISC to MIT and add LICENSE file
+
+  Commit: ddbbed5
+
+- update test:ci script to include build step
+
+  Commit: 2c33fda
+
 ## 1.2.4
 
 ### Patch Changes

@@ -1,5 +1,85 @@
 # @stati/cli
 
+## 1.2.1
+
+### Patch Changes
+
+- add newline at end of LICENSE file for consistency
+
+  Commit: 73685cf
+
+- update development commands for clarity and consistency
+
+  Commit: 2f922c0
+
+- enhance CLI tests with additional mocks and assertions
+
+  Commit: 9cd85eb
+
+- remove unnecessary console spacing in build logs
+
+  Commit: 918e9e6
+
+- improve commit parsing for clarity
+
+  Commit: bba9ed6
+
+- improve console logging consistency
+  - Replace direct console.log() with structured logger in CLI
+
+  Commit: f89d759
+
+- centralize logger creation and enhance logging methods
+
+  Commit: b1f19cc
+
+- remove outdated refactoring log file
+
+  Commit: 16dabf9
+
+- update license from ISC to MIT and add LICENSE file
+
+  Commit: ddbbed5
+
+- update test:ci script to include build step
+
+  Commit: 2c33fda
+
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+  - @stati/core@1.3.2
+
 ## 1.2.0
 
 ### Minor Changes

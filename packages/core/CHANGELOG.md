@@ -1,5 +1,152 @@
 # @stati/core
 
+## 1.3.2
+
+### Patch Changes
+
+- extract test mock utilities and standardize patterns
+  - Create packages/core/src/tests/utils/test-mocks.ts with reusable mock factory functions
+
+  Commit: 27e8c0e
+
+- add newline at end of LICENSE file for consistency
+
+  Commit: 73685cf
+
+- modularize build process for improved clarity and testing
+
+  Commit: 26a7e01
+
+- update development commands for clarity and consistency
+
+  Commit: 2f922c0
+
+- extract SHA-256 hash creation pattern
+  - Add createSha256Hash() helper to eliminate duplicate patterns
+
+  Commit: 5b77924
+
+- enhance CLI tests with additional mocks and assertions
+
+  Commit: 9cd85eb
+
+- consolidate duplicate template discovery logic
+  - Create packages/core/src/core/utils/template-discovery.ts with shared utilities
+
+  Commit: 93c4626
+
+- strengthen type safety with readonly modifiers
+  - Add readonly to immutable cache entry properties (path, inputsHash, deps, tags, etc.)
+
+  Commit: c28f83c
+
+- remove unnecessary console spacing in build logs
+
+  Commit: 918e9e6
+
+- improve commit parsing for clarity
+
+  Commit: bba9ed6
+
+- improve directory scanning for partials discovery
+
+  Commit: 5c66645
+
+- harden ESLint rules for code quality
+  - Add stricter ESLint rules: prefer-const, stricter no-unused-vars, eqeqeq, no-var
+
+  Commit: 1a2a0b7
+
+- enhance partials discovery and rendering tests
+
+  Commit: a041dc8
+
+- enhance template path resolution for hierarchical search
+
+  Commit: 6dab506
+
+- use posix.relative for consistent path handling
+
+  Commit: 85f42e4
+
+- extract file system path resolution utilities (REFAC-20250914-03)
+
+  Extract common path resolution patterns into centralized utilities:
+
+  Commit: 5790134
+
+- extract fs error handling wrapper
+
+  Commit: c79b3b4
+
+- extract config file patterns into reusable utilities
+  - Add getConfigFilePaths() helper function in config/loader.ts
+
+  Commit: a181557
+
+- restructure dev server functions for improved clarity
+
+  Commit: 703ba81
+
+- clean up redundant test comments
+  - Remove obvious comments that don't add value ('Create test files', 'Verify content')
+
+  Commit: 245b02e
+
+- centralize logger creation and enhance logging methods
+
+  Commit: b1f19cc
+
+- add comprehensive tests for file system utilities
+
+  Commit: 1547b23
+
+- update default TTL for incremental static generation
+
+  Commit: c4ec644
+
+- deduplicate path resolution logic
+  - Import and use resolveSrcDir() from utils/paths.ts
+
+  Commit: 6c3d01a
+
+- remove outdated refactoring log file
+
+  Commit: 16dabf9
+
+- simplify path handling in partial discovery
+
+  Commit: 5f68c3c
+
+- update license from ISC to MIT and add LICENSE file
+
+  Commit: ddbbed5
+
+- extract magic constants into centralized constants module
+  - Create packages/core/src/constants.ts with organized constant groups
+
+  Commit: 30f6cbe
+
+- replace hardcoded extensions with constants for clarity
+
+  Commit: 251d2c7
+
+- enhance mock implementation for readFile in snapshots
+
+  Commit: 8c211da
+
+- update test:ci script to include build step
+
+  Commit: 2c33fda
+
+- centralize file system operations in utils module
+
+  Commit: 3ef399a
+
+- normalize paths for consistent partials discovery
+
+  Commit: 64cc5a6
+
 ## 1.3.1
 
 ### Patch Changes
