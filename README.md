@@ -31,6 +31,7 @@ The scaffolder will guide you through setting up a new project with your choice 
 - **Filesystem-based routing** from `site/` directory
 - **Markdown + front-matter** with customizable plugins
 - **Eta template engine** with layouts & partials support
+- **Hierarchical partial overriding** — customize templates per directory with inheritance
 - **Development server** with live reload and hot rebuilding
 - **Static asset copying** from `public/` directory
 - **TypeScript-first** configuration with full type safety

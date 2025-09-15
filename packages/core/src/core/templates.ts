@@ -133,24 +133,32 @@ async function discoverPartials(
   const pageDir = dirname(pagePath);
   const pathSegments = pageDir === '.' ? [] : pageDir.split('/');
 
-  // Scan from root to current directory
-  const dirsToScan = [''];
-  for (let i = 0; i < pathSegments.length; i++) {
-    dirsToScan.push(pathSegments.slice(0, i + 1).join('/'));
+  // Scan from root to current directory (least specific first)
+  // This allows more specific partials to override less specific ones
+  const dirsToScan = [];
+  if (pathSegments.length > 0) {
+    // Add root directory first, then parent directories, then current
+    dirsToScan.push(''); // Root directory first
+    // Add directories from root to current
+    for (let i = 1; i <= pathSegments.length; i++) {
+      dirsToScan.push(pathSegments.slice(0, i).join('/'));
+    }
+  } else {
+    dirsToScan.push(''); // Root directory only
   }
 
   for (const dir of dirsToScan) {
     const searchDir = dir ? join(srcDir, dir) : srcDir;
 
     // Find all underscore folders in this directory level
-    const underscoreFolders = await glob('_*/', {
-      cwd: searchDir,
+    const globPattern = join(searchDir, '_*/').replace(/\\/g, '/');
+    const underscoreFolders = await glob(globPattern, {
+      absolute: true,
       onlyDirectories: true,
     });
 
     // Scan each underscore folder for .eta files
-    for (const folder of underscoreFolders) {
-      const folderPath = join(searchDir, folder);
+    for (const folderPath of underscoreFolders) {
       const etaFiles = await glob('**/*.eta', {
         cwd: folderPath,
         absolute: false,

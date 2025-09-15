@@ -78,6 +78,7 @@ Key features:
 - **Nested layouts**: `layout.eta` files cascade through directory hierarchy
 - **Named templates**: Content-specific templates (e.g., `post.eta`, `article.eta`)
 - **Hierarchical partials**: Auto-discovered components and utilities in `_` folders
+- **Partial overriding**: More specific partials override less specific ones for section customization
 - **Flexible placement**: Templates can be placed anywhere in the structure
 
 ---

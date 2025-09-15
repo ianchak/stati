@@ -255,7 +255,22 @@ site/
 
 - Templates automatically have access to partials from all parent directories
 - Enables powerful composition where child layouts inherit global and context-specific components
+- **Hierarchical overriding**: More specific partials override less specific ones, allowing directory-specific customization
 - Partials are referenced by their filename (without `.eta` extension)
+
+**Partial Override Resolution**
+
+When multiple partials with the same name exist in the hierarchy, Stati follows this resolution order:
+
+1. **Current directory partials** (most specific) - e.g., `/site/personal/blog/_partials/body.eta`
+2. **Parent directory partials** - e.g., `site/personal/_partials/body.eta`
+3. **Root directory partials** (least specific) - e.g., `site/_partials/body.eta`
+
+This allows you to:
+
+- Define global partials in the root `_partials/` folder
+- Override specific partials in subdirectories for section-specific styling
+- Maintain consistent structure while customizing behavior per section
 
 **Partial Naming and Access**
 
