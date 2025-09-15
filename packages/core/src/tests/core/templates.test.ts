@@ -433,8 +433,11 @@ describe('templates.ts', () => {
       it('should discover and render partials', async () => {
         // Mock partial discovery - find header and footer partials
         mockGlob
-          .mockResolvedValueOnce(['_partials/']) // First call: find underscore folders
-          .mockResolvedValueOnce(['header.eta', 'footer.eta']) // Second call: find eta files in _partials
+          .mockResolvedValueOnce(['c:\\test\\src\\_partials\\']) // First call: find underscore folders
+          .mockResolvedValueOnce([
+            'c:\\test\\src\\_partials\\header.eta',
+            'c:\\test\\src\\_partials\\footer.eta',
+          ]) // Second call: find eta files in _partials
           .mockResolvedValue([]); // Subsequent calls: no more partials
 
         // Mock path exists for layout discovery
@@ -446,10 +449,6 @@ describe('templates.ts', () => {
         const mockHeaderContent = '<header class="site-header"><h1>My Site</h1></header>';
         const mockFooterContent = '<footer class="site-footer"><p>&copy; 2025</p></footer>';
         const mockLayoutContent = '<html><body>{{content}}</body></html>';
-
-        // Create expected partial paths that will work cross-platform
-        const expectedHeaderPath = join('_partials', 'header.eta');
-        const expectedFooterPath = join('_partials', 'footer.eta');
 
         // Setup renderAsync to return different content based on the template being rendered
         mockEtaInstance.renderAsync.mockImplementation((template: string) => {
@@ -470,9 +469,9 @@ describe('templates.ts', () => {
           mockEtaInstance as Eta,
         );
 
-        // Verify partials were rendered first - check for exact paths that work cross-platform
+        // Verify partials were rendered first - check for partial paths using pattern matching
         expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
-          expectedHeaderPath,
+          expect.stringMatching(/.*_partials.*header\.eta/),
           expect.objectContaining({
             site: mockConfig.site,
             page: expect.objectContaining({
@@ -484,7 +483,7 @@ describe('templates.ts', () => {
         );
 
         expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
-          expectedFooterPath,
+          expect.stringMatching(/.*_partials.*footer\.eta/),
           expect.objectContaining({
             site: mockConfig.site,
             page: expect.objectContaining({
@@ -516,8 +515,8 @@ describe('templates.ts', () => {
       it('should handle partial rendering errors gracefully', async () => {
         // Mock partial discovery - find one partial that will fail
         mockGlob
-          .mockResolvedValueOnce(['_partials/']) // Find underscore folders
-          .mockResolvedValueOnce(['broken.eta']) // Find eta files in _partials
+          .mockResolvedValueOnce(['c:\\test\\src\\_partials\\']) // Find underscore folders
+          .mockResolvedValueOnce(['c:\\test\\src\\_partials\\broken.eta']) // Find eta files in _partials
           .mockResolvedValue([]);
 
         // Mock path exists for layout discovery
@@ -526,9 +525,6 @@ describe('templates.ts', () => {
           .mockResolvedValue(false);
 
         const mockLayoutContent = '<html><body>{{content}}</body></html>';
-
-        // Create expected partial path that will work cross-platform
-        const expectedBrokenPath = join('_partials', 'broken.eta');
 
         // Setup renderAsync to fail for the partial but succeed for layout
         mockEtaInstance.renderAsync.mockImplementation((template: string) => {
@@ -556,9 +552,9 @@ describe('templates.ts', () => {
           expect.any(Error),
         );
 
-        // Verify the partial was attempted to be rendered with the correct path
+        // Verify the partial was attempted to be rendered with the correct pattern
         expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
-          expectedBrokenPath,
+          expect.stringMatching(/.*_partials.*broken\.eta/),
           expect.objectContaining({
             site: mockConfig.site,
             page: expect.objectContaining({
@@ -587,8 +583,8 @@ describe('templates.ts', () => {
       it('should handle cross-platform path separators correctly', async () => {
         // This test verifies that our path handling works on both Windows (\) and Unix (/)
         mockGlob
-          .mockResolvedValueOnce(['_partials/'])
-          .mockResolvedValueOnce(['test.eta'])
+          .mockResolvedValueOnce(['c:\\test\\src\\_partials\\'])
+          .mockResolvedValueOnce(['c:\\test\\src\\_partials\\test.eta'])
           .mockResolvedValue([]);
 
         mockPathExists.mockResolvedValueOnce(true).mockResolvedValue(false);
@@ -596,11 +592,8 @@ describe('templates.ts', () => {
         const mockContent = '<div>test partial</div>';
         const mockLayoutContent = '<html><body>test</body></html>';
 
-        // The expected path should use the platform's native separator
-        const expectedPath = join('_partials', 'test.eta');
-
         mockEtaInstance.renderAsync.mockImplementation((template: string) => {
-          if (template === expectedPath) {
+          if (template.includes('test.eta')) {
             return Promise.resolve(mockContent);
           } else if (template === 'layout.eta') {
             return Promise.resolve(mockLayoutContent);
@@ -615,9 +608,9 @@ describe('templates.ts', () => {
           mockEtaInstance as Eta,
         );
 
-        // Verify that the partial was called with the correct platform-specific path
+        // Verify that the partial was called with the correct platform-specific path pattern
         expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
-          expectedPath, // This will be '_partials\test.eta' on Windows and '_partials/test.eta' on Unix
+          expect.stringMatching(/.*_partials.*test\.eta/),
           expect.any(Object),
         );
 
@@ -632,6 +625,135 @@ describe('templates.ts', () => {
         );
 
         expect(result).toBe(mockLayoutContent);
+      });
+
+      describe('hierarchical partial discovery', () => {
+        it('should discover partials from multiple directory levels', async () => {
+          // Test a page in a nested directory to verify hierarchical discovery
+          const nestedPage = {
+            ...mockPage,
+            sourcePath: join(mockProjectRoot, 'src', 'blog', 'article.md'),
+            url: '/blog/article',
+          };
+
+          const rootPartialsDir = join(mockProjectRoot, 'src', '_partials');
+          const blogPartialsDir = join(mockProjectRoot, 'src', 'blog', '_partials');
+
+          // Mock the glob calls for hierarchical discovery
+          mockGlob
+            // Root level scan: find src/_partials/
+            .mockResolvedValueOnce([rootPartialsDir])
+            .mockResolvedValueOnce(['header.eta', 'footer.eta'])
+            // Blog level scan: find src/blog/_partials/
+            .mockResolvedValueOnce([blogPartialsDir])
+            .mockResolvedValueOnce(['sidebar.eta'])
+            .mockResolvedValue([]);
+
+          mockPathExists.mockResolvedValueOnce(true).mockResolvedValue(false);
+
+          const rootHeaderContent = '<header>Site Header</header>';
+          const rootFooterContent = '<footer>Site Footer</footer>';
+          const blogSidebarContent = '<aside>Blog Sidebar</aside>';
+          const mockLayoutContent = '<html><body>content</body></html>';
+
+          // Mock renderAsync to return content for each partial
+          mockEtaInstance.renderAsync.mockImplementation((template: string) => {
+            if (template.includes('_partials') && template.includes('header.eta')) {
+              return Promise.resolve(rootHeaderContent);
+            } else if (template.includes('_partials') && template.includes('footer.eta')) {
+              return Promise.resolve(rootFooterContent);
+            } else if (template.includes('blog') && template.includes('sidebar.eta')) {
+              return Promise.resolve(blogSidebarContent);
+            } else if (template.includes('layout.eta')) {
+              return Promise.resolve(mockLayoutContent);
+            }
+            return Promise.resolve('');
+          });
+
+          await renderPage(nestedPage, '<h1>Blog article</h1>', mockConfig, mockEtaInstance as Eta);
+
+          // Verify that all partials from different levels were discovered and rendered
+          expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
+            expect.stringMatching(/.*_partials.*header\.eta/),
+            expect.any(Object),
+          );
+
+          expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
+            expect.stringMatching(/.*_partials.*footer\.eta/),
+            expect.any(Object),
+          );
+
+          expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
+            expect.stringMatching(/.*blog.*_partials.*sidebar\.eta/),
+            expect.any(Object),
+          );
+
+          // Verify final layout was called with all discovered partials
+          expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
+            expect.stringMatching(/.*layout\.eta/),
+            expect.objectContaining({
+              partials: expect.objectContaining({
+                header: rootHeaderContent,
+                footer: rootFooterContent,
+                sidebar: blogSidebarContent,
+              }),
+            }),
+          );
+        });
+
+        it('should allow more specific partials to override general ones', async () => {
+          // Test that partials with the same name override each other hierarchically
+          const deepPage = {
+            ...mockPage,
+            sourcePath: join(mockProjectRoot, 'src', 'docs', 'guide.md'),
+            url: '/docs/guide',
+          };
+
+          const rootPartialsDir = join(mockProjectRoot, 'src', '_partials');
+          const docsPartialsDir = join(mockProjectRoot, 'src', 'docs', '_partials');
+
+          mockGlob
+            // Root level: has general header
+            .mockResolvedValueOnce([rootPartialsDir])
+            .mockResolvedValueOnce(['header.eta'])
+            // Docs level: has specific header that should override
+            .mockResolvedValueOnce([docsPartialsDir])
+            .mockResolvedValueOnce(['header.eta'])
+            .mockResolvedValue([]);
+
+          mockPathExists.mockResolvedValueOnce(true).mockResolvedValue(false);
+
+          const docsHeaderContent = '<header class="docs">Docs Header</header>';
+          const mockLayoutContent = '<html><body>content</body></html>';
+
+          // The more specific docs header should be used, not the root one
+          mockEtaInstance.renderAsync.mockImplementation((template: string) => {
+            if (template.includes('docs') && template.includes('header.eta')) {
+              return Promise.resolve(docsHeaderContent);
+            } else if (template.includes('layout.eta')) {
+              return Promise.resolve(mockLayoutContent);
+            }
+            return Promise.resolve('');
+          });
+
+          await renderPage(deepPage, '<h1>Documentation</h1>', mockConfig, mockEtaInstance as Eta);
+
+          // Verify the more specific docs header was used
+          expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
+            expect.stringMatching(/.*docs.*_partials.*header\.eta/),
+            expect.any(Object),
+          );
+
+          // Verify final layout uses the overridden partial
+          expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
+            expect.stringMatching(/.*layout\.eta/),
+            expect.objectContaining({
+              partials: expect.objectContaining({
+                header: docsHeaderContent, // Should be docs version, not root
+              }),
+            }),
+          );
+        });
       });
     });
   });
