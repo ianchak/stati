@@ -78,8 +78,6 @@ const cli = yargs(hideBin(process.argv))
         await build(buildOptions);
         const buildTime = Date.now() - startTime;
 
-        // Add spacing before final messages
-        log.info('');
         log.timing('Total build', buildTime);
         log.success('Site built successfully!');
       } catch (error) {

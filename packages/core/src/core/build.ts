@@ -140,37 +140,6 @@ const defaultLogger: Logger = {
 };
 
 /**
- * Formats build statistics for display with prettier output.
- *
- * @param stats - Build statistics to format
- * @returns Formatted statistics string
- */
-function formatBuildStats(stats: BuildStats): string {
-  const sizeKB = (stats.outputSizeBytes / 1024).toFixed(1);
-  const timeSeconds = (stats.buildTimeMs / 1000).toFixed(2);
-
-  let output =
-    `Build Statistics:
-┌─────────────────────────────────────────┐
-│  Build time: ${timeSeconds}s`.padEnd(41) + '│';
-  output += `\n│  📄 Pages built: ${stats.totalPages}`.padEnd(42) + '│';
-  output += `\n│  📦 Assets copied: ${stats.assetsCount}`.padEnd(42) + '│';
-  output += `\n│  Output size: ${sizeKB} KB`.padEnd(42) + '│';
-
-  if (stats.cacheHits !== undefined && stats.cacheMisses !== undefined) {
-    const totalCacheRequests = stats.cacheHits + stats.cacheMisses;
-    const hitRate =
-      totalCacheRequests > 0 ? ((stats.cacheHits / totalCacheRequests) * 100).toFixed(1) : '0';
-    output +=
-      `\n│  Cache hits: ${stats.cacheHits}/${totalCacheRequests} (${hitRate}%)`.padEnd(42) + '│';
-  }
-
-  output += '\n└─────────────────────────────────────────┘';
-
-  return output;
-}
-
-/**
  * Builds the Stati site with ISG support.
  * Processes all pages and assets, with smart caching for incremental builds.
  *
@@ -429,7 +398,6 @@ async function processPagesWithCache(
 
   // Display final rendering tree and clear it
   if (logger.showRenderingTree) {
-    console.log(); // Add spacing
     logger.showRenderingTree();
     if (logger.clearRenderingTree) {
       logger.clearRenderingTree();
@@ -486,12 +454,10 @@ async function generateBuildStats(
     cacheMisses,
   };
 
-  console.log(); // Add spacing before statistics
-  // Use table format if available, otherwise fall back to formatted string
   if (logger.statsTable) {
+    console.log(); // Add spacing before statistics
     logger.statsTable(buildStats);
-  } else {
-    logger.stats(formatBuildStats(buildStats));
+    console.log(); // Add spacing after statistics
   }
 
   return buildStats;
@@ -506,7 +472,6 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
   const logger = options.logger || defaultLogger;
 
   logger.building('Building your site...');
-  console.log(); // Add spacing after build start
 
   // Load configuration
   const { config, outDir, cacheDir } = await loadAndValidateConfig(options);
