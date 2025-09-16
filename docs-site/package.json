@@ -1,0 +1,39 @@
+{
+  "name": "stati-docs-site",
+  "version": "1.0.0",
+  "description": "Official Stati documentation site",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently --prefix none \"npm run watch:css\" \"stati dev\"",
+    "build": "npm run build:css && stati build",
+    "preview": "stati preview",
+    "clean": "rimraf dist .stati",
+    "build:css": "tailwindcss -i src/styles.css -o public/styles.css --minify",
+    "watch:css": "tailwindcss -i src/styles.css -o public/styles.css --watch"
+  },
+  "keywords": [
+    "static-site",
+    "stati",
+    "minimal"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@stati/cli": "^1.0.0",
+    "@stati/core": "^1.0.0",
+    "autoprefixer": "^10.4.0",
+    "concurrently": "^9.0.0",
+    "markdown-it-anchor": "^9.2.0",
+    "markdown-it-external-links": "^0.0.6",
+    "markdown-it-prism": "^3.0.0",
+    "markdown-it-toc-done-right": "^4.2.0",
+    "postcss": "^8.4.0",
+    "prismjs": "^1.30.0",
+    "rimraf": "^5.0.0",
+    "tailwindcss": "^3.4.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

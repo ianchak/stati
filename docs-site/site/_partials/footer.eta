@@ -1,0 +1,65 @@
+<footer class="bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-16">
+    <div class="max-w-7xl mx-auto px-6 py-12">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <!-- Brand -->
+            <div class="col-span-1">
+                <div class="flex items-center space-x-2 mb-4">
+                    <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2L2 7v10c0 5.55 3.84 9.95 9 11 5.16-1.05 9-5.45 9-11V7l-10-5z"/>
+                    </svg>
+                    <span class="text-lg font-bold">Stati</span>
+                </div>
+                <p class="text-gray-600 dark:text-gray-400 text-sm">
+                    TypeScript-first static site generator built with Vite.
+                </p>
+            </div>
+
+            <!-- Documentation -->
+            <div>
+                <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-4">
+                    Documentation
+                </h3>
+                <ul class="space-y-2 text-sm">
+                    <li><a href="/getting-started/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Getting Started</a></li>
+                    <li><a href="/core-concepts/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Core Concepts</a></li>
+                    <li><a href="/api/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">API Reference</a></li>
+                    <li><a href="/examples/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Examples</a></li>
+                </ul>
+            </div>
+
+            <!-- Community -->
+            <div>
+                <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-4">
+                    Community
+                </h3>
+                <ul class="space-y-2 text-sm">
+                    <li><a href="/contributing/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Contributing</a></li>
+                    <li><a href="https://github.com/ianchak/stati" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">GitHub</a></li>
+                    <li><a href="https://github.com/ianchak/stati/issues" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Issues</a></li>
+                </ul>
+            </div>
+
+            <!-- Legal -->
+            <div>
+                <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-4">
+                    Legal
+                </h3>
+                <ul class="space-y-2 text-sm">
+                    <li><a href="/changelog/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Changelog</a></li>
+                    <li><a href="https://github.com/ianchak/stati/blob/main/LICENSE" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">License</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="border-t border-gray-200 dark:border-gray-700 mt-8 pt-8">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                    © <%= new Date().getFullYear() %> Stati. Built with ❤️ and TypeScript.
+                </p>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mt-2 md:mt-0">
+                    Generated with Stati v<%= process.env.npm_package_version || '1.0.0' %>
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>

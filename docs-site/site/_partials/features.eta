@@ -1,0 +1,29 @@
+<!-- Features Section -->
+<section class="py-16 bg-white dark:bg-gray-900">
+    <div class="max-w-7xl mx-auto px-6">
+        <div class="text-center mb-16">
+            <h2 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                <%= it.page.features?.title || 'Features' %>
+            </h2>
+            <p class="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+                <%= it.page.features?.subtitle %>
+            </p>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-8">
+            <% for (let feature of (it.page.features?.items || [])) { %>
+            <div class="text-center p-6">
+                <div class="w-16 h-16 <%= 'bg-' + feature.color + '-100 dark:bg-' + feature.color + '-900' %> rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 <%= 'text-' + feature.color + '-600 dark:text-' + feature.color + '-400' %>" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="<%= feature.icon %>"/>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2"><%= feature.title %></h3>
+                <p class="text-gray-600 dark:text-gray-300">
+                    <%= feature.description %>
+                </p>
+            </div>
+            <% } %>
+        </div>
+    </div>
+</section>

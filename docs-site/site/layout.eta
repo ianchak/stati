@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="<%= it.site.defaultLocale || 'en-US' %>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= it.title ? `${it.title} | ${it.site.title}` : it.site.title %></title>
+    <meta name="description" content="<%= it.description || 'Stati - TypeScript-first static site generator' %>">
+
+    <!-- Favicon -->
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/styles.css">
+
+    <!-- Prism.js syntax highlighting -->
+    <link rel="stylesheet" href="/prism-nord.css">
+
+    <!-- Scripts -->
+    <script src="/toc.js" defer></script>
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="<%= it.title || it.site.title %>">
+    <meta property="og:description" content="<%= it.description || 'Stati - TypeScript-first static site generator' %>">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="<%= it.site.baseUrl + it.url %>">
+</head>
+<body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <%~ it.partials.header %>
+
+    <div class="flex min-h-screen">
+        <%~ it.partials.sidebar %>
+
+        <main class="flex-1 ml-64">
+            <div class="relative max-w-7xl mx-auto">
+                <div class="flex">
+                    <!-- Main content area -->
+                    <div class="flex-1 min-w-0 px-6 py-8">
+                        <% if (it.title) { %>
+                        <header class="mb-8">
+                            <%~ it.partials.breadcrumbs %>
+                            <h1 class="text-4xl font-bold mb-4"><%= it.title %></h1>
+                            <% if (it.description) { %>
+                            <p class="text-xl text-gray-600 dark:text-gray-400"><%= it.description %></p>
+                            <% } %>
+                        </header>
+                        <% } %>
+
+                        <div class="prose dark:prose-invert max-w-none">
+                            <%~ it.content %>
+                        </div>
+                    </div>
+
+                    <!-- Table of Contents area -->
+                    <div class="hidden xl:block w-80 flex-shrink-0">
+                        <%~ it.partials.toc %>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <%~ it.partials.footer %>
+</body>
+</html>

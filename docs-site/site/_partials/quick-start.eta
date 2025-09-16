@@ -1,0 +1,42 @@
+<!-- Quick Start Section -->
+<section class="py-16 bg-gray-50 dark:bg-gray-800">
+    <div class="max-w-4xl mx-auto px-6">
+        <div class="text-center mb-12">
+            <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+                <%= it.page.quickStart?.title || 'Get Started' %>
+            </h2>
+            <p class="text-lg text-gray-600 dark:text-gray-300">
+                <%= it.page.quickStart?.subtitle %>
+            </p>
+        </div>
+
+        <div class="bg-gray-900 dark:bg-gray-900 rounded-lg p-6 text-green-400 font-mono">
+            <% for (let command of (it.page.quickStart?.commands || [])) { %>
+            <% if (command.comment) { %>
+            <div class="flex items-center mb-2">
+                <span class="text-gray-500"># <%= command.comment %></span>
+            </div>
+            <% } %>
+            <div class="text-white<% if (command.comment) { %> mb-4<% } %>">
+                <% if (command.parts) { %>
+                <% for (let i = 0; i < command.parts.length; i++) { %>
+                <% let part = command.parts[i]; %>
+                <span class="<%= 'text-' + part.color + '-400' %>"><%= part.text %></span><% if (i < command.parts.length - 1) { %> <% } %>
+                <% } %>
+                <% } else { %>
+                <%= command.text %>
+                <% } %>
+            </div>
+            <% } %>
+        </div>
+
+        <% if (it.page.quickStart?.link) { %>
+        <div class="text-center mt-8">
+            <a href="<%= it.page.quickStart.link.url %>"
+               class="text-blue-600 dark:text-blue-400 hover:underline font-semibold">
+                <%= it.page.quickStart.link.text %>
+            </a>
+        </div>
+        <% } %>
+    </div>
+</section>

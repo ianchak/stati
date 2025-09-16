@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="<%= it.site.defaultLocale || 'en-US' %>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= it.title || it.site.title %></title>
+    <meta name="description" content="<%= it.description || 'Stati - TypeScript-first static site generator built with Vite' %>">
+
+    <!-- Favicon -->
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/styles.css">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="<%= it.title || it.site.title %>">
+    <meta property="og:description" content="<%= it.description || 'Stati - TypeScript-first static site generator built with Vite' %>">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="<%= it.site.baseUrl + it.url %>">
+</head>
+<body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <%~ it.partials.header %>
+
+    <main>
+        <%~ it.partials.hero %>
+        <%~ it.partials.features %>
+        <%~ it.partials['quick-start'] %>
+    </main>
+
+    <%~ it.partials.footer %>
+</body>
+</html>

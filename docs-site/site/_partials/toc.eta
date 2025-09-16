@@ -1,0 +1,8 @@
+<!-- Table of Contents with Tailwind utility classes -->
+<aside id="toc" class="sticky top-24 h-fit max-h-[calc(100vh-8rem)] overflow-y-auto">
+    <div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700 ml-4">
+        <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3 pb-2 border-b border-gray-200 dark:border-gray-600">On This Page</h4>
+        <nav class="space-y-1" id="toc-nav">
+        </nav>
+    </div>
+</aside>

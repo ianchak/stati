@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .logo {
+    @apply text-xl font-bold text-blue-600 no-underline;
+  }
+
+  .skip-link {
+    @apply absolute -top-10 left-1 bg-black text-white p-2 no-underline z-50;
+  }
+
+  .skip-link:focus {
+    @apply top-1;
+  }
+
+  /* Documentation-specific styles */
+  .prose {
+    @apply text-gray-900 dark:text-gray-100;
+  }
+
+  .prose h1 {
+    @apply text-3xl font-bold mb-6 text-gray-900 dark:text-white;
+  }
+
+  .prose h2 {
+    @apply text-2xl font-semibold mb-4 mt-8 text-gray-900 dark:text-white;
+  }
+
+  .prose h3 {
+    @apply text-xl font-semibold mb-3 mt-6 text-gray-900 dark:text-white;
+  }
+
+  .prose h4 {
+    @apply text-lg font-semibold mb-2 mt-4 text-gray-900 dark:text-white;
+  }
+
+  .prose p {
+    @apply mb-4 leading-relaxed;
+  }
+
+  .prose ul,
+  .prose ol {
+    @apply mb-4 pl-6;
+  }
+
+  .prose li {
+    @apply mb-2;
+  }
+
+  .prose code {
+    @apply bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-sm font-mono;
+  }
+
+  .prose pre {
+    @apply bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto mb-4;
+  }
+
+  .prose pre code {
+    @apply bg-transparent p-0 text-inherit;
+  }
+
+  .prose blockquote {
+    @apply border-l-4 border-blue-500 pl-4 italic text-gray-600 dark:text-gray-400 mb-4;
+  }
+
+  .prose table {
+    @apply w-full border-collapse mb-4;
+  }
+
+  .prose th,
+  .prose td {
+    @apply border border-gray-300 dark:border-gray-600 px-4 py-2 text-left;
+  }
+
+  .prose th {
+    @apply bg-gray-50 dark:bg-gray-800 font-semibold;
+  }
+
+  .prose a {
+    @apply text-blue-600 dark:text-blue-400 hover:underline;
+  }
+
+  /* Sidebar active link styles */
+  .sidebar-link.active {
+    @apply text-blue-600 dark:text-blue-400 font-semibold;
+  }
+
+  /* Smooth scroll behavior */
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 6rem;
+  }
+}
