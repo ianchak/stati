@@ -7,6 +7,7 @@ import chokidar from 'chokidar';
 import type { StatiConfig, Logger } from '../types/index.js';
 import type { FSWatcher } from 'chokidar';
 import { build } from './build.js';
+import { invalidate } from './invalidate.js';
 import { loadConfig } from '../config/loader.js';
 import { loadCacheManifest, saveCacheManifest } from './isg/manifest.js';
 import { resolveDevPaths, resolveCacheDir } from './utils/paths.js';
@@ -57,6 +58,10 @@ async function loadDevConfig(
  */
 async function performInitialBuild(configPath: string | undefined, logger: Logger): Promise<void> {
   try {
+    // Clear cache to ensure fresh build on dev server start
+    logger.info?.('Clearing cache for fresh development build...');
+    await invalidate();
+
     await build({
       logger,
       force: false,

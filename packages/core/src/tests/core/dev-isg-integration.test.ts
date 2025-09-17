@@ -13,6 +13,7 @@ vi.mock('../../core/build.js');
 vi.mock('../../config/loader.js');
 vi.mock('../../core/isg/manifest.js');
 vi.mock('../../core/isg/deps.js');
+vi.mock('../../core/invalidate.js');
 vi.mock('chokidar');
 vi.mock('ws');
 vi.mock('http', () => ({
@@ -74,6 +75,7 @@ const mockSaveCacheManifest = vi.mocked(
 const mockTrackTemplateDependencies = vi.mocked(
   await import('../../core/isg/deps.js'),
 ).trackTemplateDependencies;
+const mockInvalidate = vi.mocked(await import('../../core/invalidate.js')).invalidate;
 
 describe('ISG-Enhanced Dev Server Integration', () => {
   const mockLogger: Logger = {
@@ -107,6 +109,11 @@ describe('ISG-Enhanced Dev Server Integration', () => {
     mockLoadCacheManifest.mockResolvedValue(null);
     mockSaveCacheManifest.mockResolvedValue(undefined);
     mockTrackTemplateDependencies.mockResolvedValue([]);
+    mockInvalidate.mockResolvedValue({
+      invalidatedCount: 0,
+      invalidatedPaths: [],
+      clearedAll: false,
+    });
   });
 
   afterEach(() => {
@@ -200,6 +207,12 @@ describe('ISG-Enhanced Dev Server Integration', () => {
   });
 
   it('should handle cache loading errors gracefully', async () => {
+    // Mock invalidate to handle cache loading errors gracefully
+    mockInvalidate.mockResolvedValue({
+      invalidatedCount: 0,
+      invalidatedPaths: [],
+      clearedAll: false,
+    });
     mockLoadCacheManifest.mockRejectedValue(new Error('Cache file corrupted'));
 
     const server = await createDevServer({
@@ -209,6 +222,7 @@ describe('ISG-Enhanced Dev Server Integration', () => {
 
     await server.start();
 
+    expect(mockInvalidate).toHaveBeenCalled();
     expect(mockBuild).toHaveBeenCalled();
 
     await server.stop();
