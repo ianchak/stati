@@ -75,6 +75,7 @@ describe('templates.ts', () => {
       expect(MockEta).toHaveBeenCalledWith({
         views: join(mockProjectRoot, 'src'),
         cache: process.env.NODE_ENV === 'production',
+        cacheFilepaths: process.env.NODE_ENV === 'production',
       });
       expect(eta).toBe(mockEtaInstance);
     });
