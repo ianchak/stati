@@ -183,7 +183,7 @@ async function handleTemplateChange(
           // Use endsWith for more precise matching to avoid false positives
           return (
             normalizedDep === normalizedTemplatePath ||
-            normalizedDep.endsWith(normalizedTemplatePath)
+            normalizedDep.endsWith('/' + normalizedTemplatePath)
           );
         })
       ) {
