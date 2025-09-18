@@ -1,5 +1,23 @@
 # @stati/core
 
+## 1.4.0
+
+### Minor Changes
+
+- Add comprehensive documentation for Stati static site generator
+
+  Commit: d2fed3d
+
+### Patch Changes
+
+- clear cache for fresh build on dev server start
+
+  Commit: c4351e8
+
+- enhance cache invalidation handling in dev server tests
+
+  Commit: 610b539
+
 ## 1.3.2
 
 ### Patch Changes
