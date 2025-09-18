@@ -115,11 +115,21 @@ export async function createPreviewServer(
           await stat(indexPath);
           filePath = indexPath;
         } catch {
-          return {
-            content: '404 - Directory listing not available',
-            mimeType: 'text/plain',
-            statusCode: 404,
-          };
+          // If no index.html in directory, try to serve corresponding .html file
+          // For example: /examples/ -> examples.html
+          const directoryName = requestPath.replace(/\/$/, ''); // Remove trailing slash
+          const fallbackPath = join(outDir, `${directoryName}.html`);
+
+          try {
+            await stat(fallbackPath);
+            filePath = fallbackPath;
+          } catch {
+            return {
+              content: '404 - Directory listing not available',
+              mimeType: 'text/plain',
+              statusCode: 404,
+            };
+          }
         }
       }
 
@@ -133,6 +143,29 @@ export async function createPreviewServer(
         statusCode: 200,
       };
     } catch {
+      // File not found, try some fallback strategies for pretty URLs
+      if (requestPath.endsWith('/')) {
+        // For requests ending with /, try the corresponding .html file
+        const pathWithoutSlash = requestPath.slice(0, -1);
+        const htmlPath = join(outDir, `${pathWithoutSlash}.html`);
+
+        try {
+          const stats = await stat(htmlPath);
+          if (stats.isFile()) {
+            const mimeType = getMimeType(htmlPath);
+            const content = await readFile(htmlPath);
+
+            return {
+              content,
+              mimeType,
+              statusCode: 200,
+            };
+          }
+        } catch {
+          // Continue to 404
+        }
+      }
+
       // File not found
       return {
         content: '404 - File not found',
