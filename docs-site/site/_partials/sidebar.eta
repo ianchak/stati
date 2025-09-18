@@ -1,92 +1,92 @@
-<aside class="fixed top-16 left-0 w-64 h-full bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-y-auto">
-    <nav class="p-6">
-        <div class="space-y-8">
+<aside class="fixed top-18 left-0 w-88 h-[calc(100vh-4.5rem)] bg-white/60 dark:bg-dark-900/60 backdrop-blur-xl border-r border-gray-200/50 dark:border-dark-700/50 overflow-y-auto transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out z-40">
+    <nav class="p-8">
+        <div class="space-y-10">
             <!-- Getting Started -->
-            <div>
-                <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-3">
+            <div class="nav-section">
+                <h3 class="text-2xs font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4 px-3 py-2 bg-gray-100/60 dark:bg-dark-800/60 rounded-lg">
                     Getting Started
                 </h3>
-                <ul class="space-y-2">
-                    <li><a href="/getting-started/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Introduction</a></li>
-                    <li><a href="/getting-started/installation/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Installation</a></li>
-                    <li><a href="/getting-started/project-structure/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Project Structure</a></li>
-                    <li><a href="/getting-started/quick-start/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Quick Start</a></li>
+                <ul class="space-y-1">
+                    <li><a href="/getting-started/" class="sidebar-link block px-3 py-2.5 text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-primary-50/60 dark:hover:bg-primary-900/20 rounded-lg transition-all duration-200 font-medium">Introduction</a></li>
+                    <li><a href="/getting-started/installation/" class="sidebar-link block px-3 py-2.5 text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-primary-50/60 dark:hover:bg-primary-900/20 rounded-lg transition-all duration-200 font-medium">Installation</a></li>
+                    <li><a href="/getting-started/project-structure/" class="sidebar-link block px-3 py-2.5 text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-primary-50/60 dark:hover:bg-primary-900/20 rounded-lg transition-all duration-200 font-medium">Project Structure</a></li>
+                    <li><a href="/getting-started/quick-start/" class="sidebar-link block px-3 py-2.5 text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-primary-50/60 dark:hover:bg-primary-900/20 rounded-lg transition-all duration-200 font-medium">Quick Start</a></li>
                 </ul>
             </div>
 
             <!-- Core Concepts -->
-            <div>
-                <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-3">
+            <div class="nav-section">
+                <h3 class="text-2xs font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4 px-3 py-2 bg-gray-100/60 dark:bg-dark-800/60 rounded-lg">
                     Core Concepts
                 </h3>
-                <ul class="space-y-2">
-                    <li><a href="/core-concepts/routing/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Filesystem Routing</a></li>
-                    <li><a href="/core-concepts/templates/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Templates & Layouts</a></li>
-                    <li><a href="/core-concepts/markdown/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Markdown Pipeline</a></li>
-                    <li><a href="/core-concepts/isg/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">ISG</a></li>
-                    <li><a href="/core-concepts/static-assets/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Static Assets</a></li>
+                <ul class="space-y-1">
+                    <li><a href="/core-concepts/routing/" class="sidebar-link block px-3 py-2.5 text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-primary-50/60 dark:hover:bg-primary-900/20 rounded-lg transition-all duration-200 font-medium">Filesystem Routing</a></li>
+                    <li><a href="/core-concepts/templates/" class="sidebar-link block px-3 py-2.5 text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-primary-50/60 dark:hover:bg-primary-900/20 rounded-lg transition-all duration-200 font-medium">Templates & Layouts</a></li>
+                    <li><a href="/core-concepts/markdown/" class="sidebar-link block px-3 py-2.5 text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-primary-50/60 dark:hover:bg-primary-900/20 rounded-lg transition-all duration-200 font-medium">Markdown Pipeline</a></li>
+                    <li><a href="/core-concepts/isg/" class="sidebar-link block px-3 py-2.5 text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-primary-50/60 dark:hover:bg-primary-900/20 rounded-lg transition-all duration-200 font-medium">ISG</a></li>
+                    <li><a href="/core-concepts/static-assets/" class="sidebar-link block px-3 py-2.5 text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-primary-50/60 dark:hover:bg-primary-900/20 rounded-lg transition-all duration-200 font-medium">Static Assets</a></li>
                 </ul>
             </div>
 
             <!-- Configuration -->
-            <div>
-                <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-3">
+            <div class="nav-section">
+                <h3 class="text-2xs font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4 px-3 py-2 bg-gray-100/60 dark:bg-dark-800/60 rounded-lg">
                     Configuration
                 </h3>
-                <ul class="space-y-2">
-                    <li><a href="/configuration/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Configuration File</a></li>
-                    <li><a href="/configuration/site-metadata/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Site Metadata</a></li>
-                    <li><a href="/configuration/templates/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Template Settings</a></li>
-                    <li><a href="/configuration/markdown/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Markdown Config</a></li>
-                    <li><a href="/configuration/isg/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">ISG Options</a></li>
+                <ul class="space-y-1">
+                    <li><a href="/configuration/" class="sidebar-link block px-3 py-2.5 text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-primary-50/60 dark:hover:bg-primary-900/20 rounded-lg transition-all duration-200 font-medium">Configuration File</a></li>
+                    <li><a href="/configuration/site-metadata/" class="sidebar-link block px-3 py-2.5 text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-primary-50/60 dark:hover:bg-primary-900/20 rounded-lg transition-all duration-200 font-medium">Site Metadata</a></li>
+                    <li><a href="/configuration/templates/" class="sidebar-link block px-3 py-2.5 text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-primary-50/60 dark:hover:bg-primary-900/20 rounded-lg transition-all duration-200 font-medium">Template Settings</a></li>
+                    <li><a href="/configuration/markdown/" class="sidebar-link block px-3 py-2.5 text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-primary-50/60 dark:hover:bg-primary-900/20 rounded-lg transition-all duration-200 font-medium">Markdown Config</a></li>
+                    <li><a href="/configuration/isg/" class="sidebar-link block px-3 py-2.5 text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-primary-50/60 dark:hover:bg-primary-900/20 rounded-lg transition-all duration-200 font-medium">ISG Options</a></li>
                 </ul>
             </div>
 
             <!-- CLI & Tooling -->
-            <div>
-                <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-3">
+            <div class="nav-section">
+                <h3 class="text-2xs font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4 px-3 py-2 bg-gray-100/60 dark:bg-dark-800/60 rounded-lg">
                     CLI & Tooling
                 </h3>
-                <ul class="space-y-2">
-                    <li><a href="/cli/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Commands</a></li>
-                    <li><a href="/cli/scaffolder/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Scaffolder</a></li>
-                    <li><a href="/cli/development/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Development</a></li>
+                <ul class="space-y-1">
+                    <li><a href="/cli/" class="sidebar-link block px-3 py-2.5 text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-primary-50/60 dark:hover:bg-primary-900/20 rounded-lg transition-all duration-200 font-medium">Commands</a></li>
+                    <li><a href="/cli/scaffolder/" class="sidebar-link block px-3 py-2.5 text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-primary-50/60 dark:hover:bg-primary-900/20 rounded-lg transition-all duration-200 font-medium">Scaffolder</a></li>
+                    <li><a href="/cli/development/" class="sidebar-link block px-3 py-2.5 text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-primary-50/60 dark:hover:bg-primary-900/20 rounded-lg transition-all duration-200 font-medium">Development</a></li>
                 </ul>
             </div>
 
             <!-- API Reference -->
-            <div>
-                <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-3">
+            <div class="nav-section">
+                <h3 class="text-2xs font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4 px-3 py-2 bg-gray-100/60 dark:bg-dark-800/60 rounded-lg">
                     API Reference
                 </h3>
-                <ul class="space-y-2">
-                    <li><a href="/api/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Template API</a></li>
-                    <li><a href="/api/plugins/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Plugin API</a></li>
-                    <li><a href="/api/types/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">TypeScript Types</a></li>
+                <ul class="space-y-1">
+                    <li><a href="/api/" class="sidebar-link block px-3 py-2.5 text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-primary-50/60 dark:hover:bg-primary-900/20 rounded-lg transition-all duration-200 font-medium">Template API</a></li>
+                    <li><a href="/api/plugins/" class="sidebar-link block px-3 py-2.5 text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-primary-50/60 dark:hover:bg-primary-900/20 rounded-lg transition-all duration-200 font-medium">Plugin API</a></li>
+                    <li><a href="/api/types/" class="sidebar-link block px-3 py-2.5 text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-primary-50/60 dark:hover:bg-primary-900/20 rounded-lg transition-all duration-200 font-medium">TypeScript Types</a></li>
                 </ul>
             </div>
 
             <!-- Examples -->
-            <div>
-                <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-3">
+            <div class="nav-section">
+                <h3 class="text-2xs font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4 px-3 py-2 bg-gray-100/60 dark:bg-dark-800/60 rounded-lg">
                     Examples
                 </h3>
-                <ul class="space-y-2">
-                    <li><a href="/examples/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Overview</a></li>
-                    <li><a href="/examples/blog/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Blog</a></li>
-                    <li><a href="/examples/docs/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Documentation</a></li>
-                    <li><a href="/examples/recipes/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Recipes</a></li>
+                <ul class="space-y-1">
+                    <li><a href="/examples/" class="sidebar-link block px-3 py-2.5 text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-primary-50/60 dark:hover:bg-primary-900/20 rounded-lg transition-all duration-200 font-medium">Overview</a></li>
+                    <li><a href="/examples/blog/" class="sidebar-link block px-3 py-2.5 text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-primary-50/60 dark:hover:bg-primary-900/20 rounded-lg transition-all duration-200 font-medium">Blog</a></li>
+                    <li><a href="/examples/docs/" class="sidebar-link block px-3 py-2.5 text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-primary-50/60 dark:hover:bg-primary-900/20 rounded-lg transition-all duration-200 font-medium">Documentation</a></li>
+                    <li><a href="/examples/recipes/" class="sidebar-link block px-3 py-2.5 text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-primary-50/60 dark:hover:bg-primary-900/20 rounded-lg transition-all duration-200 font-medium">Recipes</a></li>
                 </ul>
             </div>
 
             <!-- Advanced & Contributing -->
-            <div>
-                <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-3">
+            <div class="nav-section">
+                <h3 class="text-2xs font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4 px-3 py-2 bg-gray-100/60 dark:bg-dark-800/60 rounded-lg">
                     Advanced
                 </h3>
-                <ul class="space-y-2">
-                    <li><a href="/advanced/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Performance</a></li>
-                    <li><a href="/contributing/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Contributing</a></li>
+                <ul class="space-y-1">
+                    <li><a href="/advanced/" class="sidebar-link block px-3 py-2.5 text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-primary-50/60 dark:hover:bg-primary-900/20 rounded-lg transition-all duration-200 font-medium">Performance</a></li>
+                    <li><a href="/contributing/" class="sidebar-link block px-3 py-2.5 text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-primary-50/60 dark:hover:bg-primary-900/20 rounded-lg transition-all duration-200 font-medium">Contributing</a></li>
                 </ul>
             </div>
         </div>
