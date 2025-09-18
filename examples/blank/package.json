@@ -18,8 +18,8 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@stati/cli": "^1.0.0",
-    "@stati/core": "^1.0.0",
+    "@stati/cli": "^1.2.1",
+    "@stati/core": "^1.4.0",
     "rimraf": "^5.0.0"
   },
   "engines": {
