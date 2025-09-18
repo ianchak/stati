@@ -1,5 +1,5 @@
 import { Eta } from 'eta';
-import { join, dirname, relative, basename } from 'path';
+import { join, dirname, relative, basename, posix } from 'path';
 import glob from 'fast-glob';
 import type { StatiConfig, PageModel, NavNode, CollectionData } from '../types/index.js';
 import { TEMPLATE_EXTENSION } from '../constants.js';
@@ -170,7 +170,7 @@ async function discoverPartials(
 
         // Get relative path from srcDir to the partial file
         const relativePath = relative(srcDir, fullPath);
-        partials[partialName] = relativePath;
+        partials[partialName] = posix.normalize(relativePath);
       }
     }
   }

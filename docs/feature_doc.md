@@ -6,7 +6,7 @@ This document provides an overview of all features included in the **v1.0 releas
 
 ## 1. Lightweight Build
 
-The STATI is built with **TypeScript** and **Vite**, ensuring fast development and production builds. By relying on Eta for templating and Markdown-It for content parsing, the system avoids heavy React/JSX runtime dependencies.
+The STATI is built with **TypeScript**, ensuring fast development and production builds. By relying on Eta for templating and Markdown-It for content parsing, the system avoids heavy React/JSX runtime dependencies.
 
 This lightweight approach translates into shorter build times, reduced bundle sizes, and easier maintainability. Developers can rely on modern tooling while keeping the dependency graph lean.
 

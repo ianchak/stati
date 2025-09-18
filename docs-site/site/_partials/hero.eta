@@ -1,0 +1,22 @@
+<!-- Hero Section -->
+<section class="relative bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 py-20">
+    <div class="max-w-7xl mx-auto px-6">
+        <div class="text-center">
+            <h1 class="text-5xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6">
+                <%= it.page.hero?.title || it.site.title %>
+            </h1>
+            <p class="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto">
+                <%~ it.page.hero?.subtitle || it.page.description %>
+            </p>
+
+            <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                <% for (let button of (it.page.hero?.buttons || [])) { %>
+                <a href="<%= button.url %>"
+                   class="<%= button.primary ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'border border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 text-gray-700 dark:text-gray-300' %> px-8 py-3 rounded-lg font-semibold transition-colors">
+                    <%= button.text %>
+                </a>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</section>

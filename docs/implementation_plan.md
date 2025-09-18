@@ -10,7 +10,7 @@
 
 - Clear vision: filesystem‑driven authoring, Markdown‑It + Eta templates.
 - Strong ISG plan: TTL + aging + freeze, dirty detection, per‑page overrides.
-- Lightweight mindset: TS strict, minimal deps, Vite, curated plugins.
+- Lightweight mindset: TS strict, minimal deps, curated plugins.
 
 **Risks**
 
