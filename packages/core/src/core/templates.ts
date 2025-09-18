@@ -184,6 +184,7 @@ export function createTemplateEngine(config: StatiConfig): Eta {
   const eta = new Eta({
     views: templateDir,
     cache: process.env.NODE_ENV === 'production',
+    cacheFilepaths: process.env.NODE_ENV === 'production',
   });
 
   return eta;
