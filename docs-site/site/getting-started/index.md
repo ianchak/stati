@@ -5,12 +5,12 @@ description: 'Learn how to get started with Stati, the TypeScript-first static s
 
 # Getting Started with Stati
 
-Stati is a modern static site generator built with TypeScript and powered by Vite. It's designed to be fast, minimal, and developer-friendly while providing powerful features like Incremental Static Generation (ISG).
+Stati is a modern static site generator built with TypeScript. It's designed to be fast, minimal, and developer-friendly while providing powerful features like Incremental Static Generation (ISG).
 
 ## What makes Stati different?
 
 - **TypeScript-first**: Full type safety for configuration and templates
-- **Vite-powered**: Lightning-fast development and optimized builds
+- **Fast builds**: Lightning-fast development and optimized builds
 - **ISG support**: Incremental Static Generation with intelligent caching
 - **Minimal dependencies**: Focused and lightweight
 - **Developer experience**: Hot reload, fast builds, and great tooling

@@ -1,10 +1,10 @@
 ---
 title: 'Stati Documentation'
-description: 'TypeScript-first static site generator built with Vite. Fast, minimal, and developer-friendly.'
+description: 'TypeScript-first static site generator. Fast, minimal, and developer-friendly.'
 layout: home
 hero:
   title: 'Stati'
-  subtitle: 'TypeScript-first static site generator built with <strong>Vite</strong>. Fast, minimal, and developer-friendly.'
+  subtitle: 'TypeScript-first static site generator. Fast, minimal, and developer-friendly.'
   buttons:
     - text: 'Get Started'
       url: '/getting-started/'
@@ -14,14 +14,14 @@ hero:
       primary: false
 features:
   title: 'Why Choose Stati?'
-  subtitle: 'Built for modern web development with TypeScript and Vite at its core.'
+  subtitle: 'Built for modern web development with TypeScript at its core.'
   items:
     - title: 'TypeScript First'
       description: 'Built with TypeScript from the ground up. Get full type safety and IntelliSense for your configuration and templates.'
       color: 'blue'
       icon: 'M12 2L2 7v10c0 5.55 3.84 9.95 9 11 5.16-1.05 9-5.45 9-11V7l-10-5z'
-    - title: 'Vite Powered'
-      description: 'Lightning-fast development server and optimized builds powered by Vite. Hot module replacement out of the box.'
+    - title: 'Fast Builds'
+      description: 'Lightning-fast development server and optimized builds. Hot module replacement out of the box.'
       color: 'purple'
       icon: 'M12 2L2 7v10c0 5.55 3.84 9.95 9 11 5.16-1.05 9-5.45 9-11V7l-10-5z'
     - title: 'ISG Support'

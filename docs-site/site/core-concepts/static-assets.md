@@ -1,11 +1,11 @@
 ---
 title: 'Static Assets & Bundling'
-description: 'Learn how Stati handles CSS, JavaScript, images, and other static assets with Vite.'
+description: 'Learn how Stati handles CSS, JavaScript, images, and other static assets.'
 ---
 
 # Static Assets & Bundling
 
-Stati leverages Vite's powerful asset processing capabilities to handle CSS, JavaScript, images, and other static files. This provides modern development features like hot module replacement, optimized builds, and support for the latest web technologies.
+Stati provides powerful asset processing capabilities to handle CSS, JavaScript, images, and other static files. This provides modern development features like hot module replacement, optimized builds, and support for the latest web technologies.
 
 ## Asset Types
 
@@ -33,7 +33,7 @@ Use these for:
 
 ### Processed Assets (`src/`)
 
-Files in `src/` are processed by Vite's build pipeline:
+Files in `src/` are processed by Stati's build pipeline:
 
 ```
 src/
@@ -396,7 +396,7 @@ new ThemeManager(siteConfig.theme);
 
 ### Module Bundling
 
-Vite automatically handles module bundling:
+Stati automatically handles module bundling:
 
 ```javascript
 // src/utils/date.js
@@ -469,25 +469,17 @@ export function initPostMeta() {
 
 ### Image Processing
 
-Use Vite plugins for image optimization:
+Stati supports image optimization through build configuration:
 
 ```javascript
 // stati.config.js
-import { defineConfig } from '@stati/core';
-import { imageOptimize } from 'vite-plugin-imagemin';
-
 export default defineConfig({
-  vite: {
-    plugins: [
-      imageOptimize({
-        gifsicle: { optimizationLevel: 7 },
-        mozjpeg: { quality: 80 },
-        pngquant: { quality: [0.65, 0.8] },
-        svgo: {
-          plugins: [{ name: 'removeViewBox', active: false }],
-        },
-      }),
-    ],
+  build: {
+    imageOptimization: {
+      gifsicle: { optimizationLevel: 7 },
+      mozjpeg: { quality: 80 },
+      pngquant: { quality: [0.65, 0.8] },
+    },
   },
 });
 ```
@@ -547,198 +539,5 @@ export default defineConfig({
 
     // Rollup options
     rollupOptions: {
-      output: {
-        // Asset naming
-        assetFileNames: 'assets/[name]-[hash][extname]',
-        chunkFileNames: 'assets/[name]-[hash].js',
-        entryFileNames: 'assets/[name]-[hash].js',
-
-        // Manual chunk splitting
-        manualChunks: {
-          vendor: ['lodash', 'date-fns'],
-          utils: ['./src/utils/index.js'],
-        },
-      },
-    },
-  },
-
-  // CSS optimization
-  css: {
-    // CSS code splitting
-    extract: true,
-
-    // PostCSS optimization
-    postcss: {
-      plugins: [
-        require('autoprefixer'),
-        require('cssnano')({
-          preset: [
-            'default',
-            {
-              discardComments: { removeAll: true },
-              normalizeWhitespace: false,
-            },
-          ],
-        }),
-      ],
-    },
-  },
-});
+      output:
 ```
-
-### Asset Preloading
-
-```eta
-<head>
-  <!-- Preload critical assets -->
-  <link rel="preload" href="/src/styles.css" as="style">
-  <link rel="preload" href="/src/main.js" as="script">
-
-  <!-- Preload critical images -->
-  <link rel="preload" href="/images/hero.jpg" as="image">
-
-  <!-- Prefetch non-critical assets -->
-  <link rel="prefetch" href="/images/gallery-1.jpg">
-  <link rel="prefetch" href="/src/components/gallery.js">
-</head>
-```
-
-### Code Splitting
-
-```javascript
-// Dynamic imports for code splitting
-async function loadGallery() {
-  const { Gallery } = await import('./components/gallery.js');
-  return new Gallery();
-}
-
-// Lazy load components
-document.addEventListener('DOMContentLoaded', () => {
-  const galleryContainer = document.querySelector('[data-gallery]');
-
-  if (galleryContainer) {
-    // Use Intersection Observer for lazy loading
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(async (entry) => {
-        if (entry.isIntersecting) {
-          const gallery = await loadGallery();
-          gallery.init(entry.target);
-          observer.unobserve(entry.target);
-        }
-      });
-    });
-
-    observer.observe(galleryContainer);
-  }
-});
-```
-
-## Development Features
-
-### Hot Module Replacement
-
-HMR works automatically during development:
-
-```javascript
-// src/main.js
-if (import.meta.hot) {
-  // HMR-specific code
-  import.meta.hot.accept((newModule) => {
-    console.log('Module updated:', newModule);
-  });
-
-  // Preserve state during HMR
-  if (import.meta.hot.data.count) {
-    console.log('Preserved count:', import.meta.hot.data.count);
-  }
-
-  import.meta.hot.dispose((data) => {
-    data.count = window.myAppState?.count || 0;
-  });
-}
-```
-
-### Environment Variables
-
-```javascript
-// Access environment variables
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-const isDev = import.meta.env.DEV;
-const isProd = import.meta.env.PROD;
-
-console.log('Environment:', {
-  apiUrl,
-  isDev,
-  isProd,
-});
-```
-
-### Development Tools
-
-```javascript
-// stati.config.js
-export default defineConfig({
-  dev: {
-    // Development server options
-    port: 3000,
-    open: true,
-    host: 'localhost',
-
-    // HTTPS in development
-    https: false,
-
-    // Proxy API requests
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3001',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
-      },
-    },
-  },
-});
-```
-
-## Asset Loading in Templates
-
-### CSS Integration
-
-```eta
-<!-- Load processed CSS -->
-<link rel="stylesheet" href="/src/styles.css">
-
-<!-- Component-specific CSS -->
-<% if (it.layout === 'blog') { %>
-  <link rel="stylesheet" href="/src/components/blog.css">
-<% } %>
-
-<!-- Conditional loading -->
-<% if (it.frontmatter.hasGallery) { %>
-  <link rel="stylesheet" href="/src/components/gallery.css">
-<% } %>
-```
-
-### JavaScript Integration
-
-```eta
-<!-- Load main JavaScript -->
-<script type="module" src="/src/main.js"></script>
-
-<!-- Page-specific scripts -->
-<% if (it.frontmatter.interactive) { %>
-  <script type="module" src="/src/components/interactive.js"></script>
-<% } %>
-
-<!-- Inline configuration -->
-<script>
-  window.siteConfig = {
-    baseUrl: '<%= it.site.baseUrl %>',
-    currentPath: '<%= it.url %>',
-    theme: '<%= it.site.theme || "light" %>'
-  };
-</script>
-```
-
-Stati's asset handling system gives you the power of modern build tools while maintaining the simplicity of static site generation. The integration with Vite ensures you get excellent performance and developer experience out of the box.
-
-You now understand all the core concepts of Stati! Next, explore the [Configuration](/configuration/) section to learn how to customize Stati for your specific needs.

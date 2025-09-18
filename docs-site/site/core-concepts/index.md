@@ -15,7 +15,7 @@ Stati combines modern web development tools with proven static site generation p
 - **[Templates & Layouts](/core-concepts/templates/)** - Flexible templating with Eta and layout inheritance
 - **[Markdown Pipeline](/core-concepts/markdown/)** - Enhanced Markdown processing with extensible plugins
 - **[Incremental Static Generation (ISG)](/core-concepts/isg/)** - Smart caching and rebuilding for optimal performance
-- **[Static Assets & Bundling](/core-concepts/static-assets/)** - Modern asset processing powered by Vite
+- **[Static Assets & Bundling](/core-concepts/static-assets/)** - Modern asset processing
 
 ## The Stati Philosophy
 
@@ -41,7 +41,7 @@ Every feature in Stati is designed with performance in mind:
 
 Stati keeps its dependency footprint small by:
 
-- Using Vite for development and bundling (you probably already use it)
+- Using modern build tools for development and bundling
 - Leveraging proven libraries like Markdown-It and Eta
 - Avoiding heavy frameworks and unnecessary abstractions
 - Focusing on core functionality that most sites need
@@ -75,7 +75,7 @@ Stati uses Eta templates to render your content, with support for:
 
 ### 3. Asset Processing
 
-Vite handles all your CSS, JavaScript, and static assets with:
+Stati handles all your CSS, JavaScript, and static assets with:
 
 - Modern ES modules
 - Hot module replacement

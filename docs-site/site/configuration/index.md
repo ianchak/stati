@@ -82,7 +82,7 @@ export default defineConfig({
 
     // Custom metadata
     meta: {
-      keywords: ['static site generator', 'typescript', 'vite'],
+      keywords: ['static site generator', 'typescript', 'ssg'],
       themeColor: '#0066cc',
       msapplicationTileColor: '#0066cc',
     },
@@ -332,26 +332,13 @@ export default defineConfig({
 });
 ```
 
-### Vite Integration
+### Build Configuration
 
-Customize the underlying Vite configuration:
+Customize the build process:
 
 ```javascript
 export default defineConfig({
-  vite: {
-    // Vite plugins
-    plugins: [
-      // Add custom Vite plugins
-      customVitePlugin(),
-
-      // Image optimization
-      require('vite-plugin-imagemin')({
-        gifsicle: { optimizationLevel: 7 },
-        mozjpeg: { quality: 80 },
-        pngquant: { quality: [0.65, 0.8] },
-      }),
-    ],
-
+  build: {
     // Build configuration
     build: {
       // Output directory (relative to dist/)

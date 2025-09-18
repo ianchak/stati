@@ -6,7 +6,7 @@ This document describes the proposed structure for the Stati documentation site.
 
 ## 1. Home
 
-- **Overview** — Introduction to Stati: lightweight static site generator built with TypeScript and Vite.
+- **Overview** — Introduction to Stati: lightweight static site generator built with TypeScript.
 - **Key Features** — Highlight of major features with links to deeper sections.
 - **Philosophy** — Design principles: lightweight, minimal dependencies, developer experience first.
 
@@ -112,4 +112,3 @@ This structure ensures:
 - **Depth for power users** with Core Concepts, API Reference, and Advanced Topics.
 - **Practical guidance** via Examples & Recipes.
 - **Sustainability for contributors** with Contributing and Governance sections.
-

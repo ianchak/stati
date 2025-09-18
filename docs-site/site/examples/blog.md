@@ -358,7 +358,7 @@ Over the years, I've worked with:
 - **Frontend**: React, Vue.js, TypeScript, Next.js, Svelte
 - **Backend**: Node.js, Express, GraphQL, PostgreSQL, MongoDB
 - **DevOps**: Docker, AWS, CI/CD, Kubernetes
-- **Tools**: Git, webpack, Vite, Jest, Cypress
+- **Tools**: Git, webpack, Jest, Cypress
 
 ## Current Focus
 

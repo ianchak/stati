@@ -44,8 +44,6 @@ temp/
 .turbo/
 .eslintcache
 .stylelintcache
-.vite/
-node_modules/.vite/
 .stati/
 **/.stati/
 

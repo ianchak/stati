@@ -4,7 +4,7 @@
 
 Stati is a **TypeScript-first static site generator** built as a monorepo with three core packages:
 
-- `@stati/core` - Core SSG engine (Vite + Markdown-It + Eta templates)
+- `@stati/core` - Core SSG engine (Markdown-It + Eta templates)
 - `@stati/cli` - Command-line interface (`stati build`, `dev`, `invalidate`)
 - `create-stati` - Project scaffolder with interactive setup
 
@@ -29,7 +29,7 @@ Stati is a **TypeScript-first static site generator** built as a monorepo with t
 1. **Content loading** (`core/content.ts`): Markdown files → `PageModel[]` with front-matter
 2. **Template engine** (`core/templates.ts`): Eta rendering with hierarchical layouts
 3. **Build process** (`core/build.ts`): Dependency tracking, cache validation, static asset copying
-4. **Dev server** (`core/dev.ts`): Vite-based with live reload and incremental rebuilding
+4. **Dev server** (`core/dev.ts`): with live reload and incremental rebuilding
 
 ## Development Workflows
 
@@ -116,7 +116,7 @@ npm run test:create-stati:cleanup
 
 ### Dependency Management
 
-- **Core dependencies**: markdown-it, eta, fast-glob, gray-matter, vite
+- **Core dependencies**: markdown-it, eta, fast-glob, gray-matter
 - **CLI dependencies**: yargs, chalk, cli-table3 for colored output and formatting
 - **Scaffolder dependencies**: inquirer for interactive prompts
 - **Dev dependencies**: vitest, typescript, eslint shared across packages

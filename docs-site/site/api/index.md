@@ -186,7 +186,6 @@ interface StatiConfig {
   build?: BuildConfig;
   hooks?: HooksConfig;
   plugins?: Plugin[];
-  vite?: ViteConfig;
 }
 ```
 

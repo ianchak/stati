@@ -32,31 +32,29 @@ export default defineConfig({
 
 ```javascript
 export default defineConfig({
-  vite: {
-    build: {
-      // Tree shaking and dead code elimination
-      minify: 'terser',
-      terserOptions: {
-        compress: {
-          drop_console: true,
-          drop_debugger: true,
-          pure_funcs: ['console.log'],
-        },
+  build: {
+    // Tree shaking and dead code elimination
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+        pure_funcs: ['console.log'],
       },
+    },
 
-      // Code splitting strategy
-      rollupOptions: {
-        output: {
-          manualChunks: {
-            // Vendor libraries
-            vendor: ['lodash', 'date-fns'],
+    // Code splitting strategy
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor libraries
+          vendor: ['lodash', 'date-fns'],
 
-            // UI components
-            ui: ['./src/components/index.js'],
+          // UI components
+          ui: ['./src/components/index.js'],
 
-            // Utilities
-            utils: ['./src/utils/index.js'],
-          },
+          // Utilities
+          utils: ['./src/utils/index.js'],
         },
       },
     },

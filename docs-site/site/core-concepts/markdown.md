@@ -103,7 +103,7 @@ Create tables using standard markdown table syntax:
 | ----------- | -------------- | ----------- |
 | TypeScript  | ✅ First-class | ⚠️ Add-on   |
 | ISG         | ✅ Built-in    | ❌ Manual   |
-| Vite        | ✅ Integrated  | ⚠️ Optional |
+| Fast Builds | ✅ Integrated  | ⚠️ Optional |
 | Performance | ⚡ Fast        | 🐌 Varies   |
 ```
 
@@ -113,7 +113,7 @@ Renders as:
 | ----------- | -------------- | ----------- |
 | TypeScript  | ✅ First-class | ⚠️ Add-on   |
 | ISG         | ✅ Built-in    | ❌ Manual   |
-| Vite        | ✅ Integrated  | ⚠️ Optional |
+| Fast Builds | ✅ Integrated  | ⚠️ Optional |
 | Performance | ⚡ Fast        | 🐌 Varies   |
 
 ### Task Lists

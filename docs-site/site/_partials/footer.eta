@@ -10,7 +10,7 @@
                     <span class="text-lg font-bold">Stati</span>
                 </div>
                 <p class="text-gray-600 dark:text-gray-400 text-sm">
-                    TypeScript-first static site generator built with Vite.
+                    TypeScript-first static site generator.
                 </p>
             </div>
 

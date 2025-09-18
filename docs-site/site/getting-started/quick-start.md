@@ -85,7 +85,7 @@ This is my first page built with Stati, a TypeScript-first static site generator
 
 ## Features I Love
 
-- ⚡️ Lightning-fast development with Vite
+- ⚡️ Lightning-fast development
 - 🔧 TypeScript-first configuration
 - 📝 Markdown-based content
 - 🎨 Flexible templating with Eta
@@ -115,7 +115,7 @@ Welcome to my personal website! I'm excited to be using Stati for this project.
 I chose Stati because:
 
 1. **TypeScript Support** - Full type safety out of the box
-2. **Modern Tooling** - Built on Vite for excellent DX
+2. **Modern Tooling** - Excellent developer experience
 3. **Flexible** - Powerful but not overwhelming
 4. **Fast** - Incremental builds and smart caching
 

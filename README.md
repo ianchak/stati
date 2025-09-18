@@ -1,6 +1,6 @@
 # Stati — Lightweight TypeScript Static Site Generator
 
-Stati is a **lightweight static site generator** (SSG) built in **TypeScript** using **Vite**, **Markdown-It**, and **Eta templates**. It prioritizes speed, simplicity, and developer experience with features like live reload development server, incremental static generation, and project scaffolding.
+Stati is a **lightweight static site generator** (SSG) built in **TypeScript** using **Markdown-It**, and **Eta templates**. It prioritizes speed, simplicity, and developer experience with features like live reload development server, incremental static generation, and project scaffolding.
 
 ---
 
