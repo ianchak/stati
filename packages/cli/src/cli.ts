@@ -4,8 +4,8 @@ import { hideBin } from 'yargs/helpers';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { build, invalidate, createDevServer } from '@stati/core';
-import type { BuildOptions, DevServerOptions } from '@stati/core';
+import { build, invalidate, createDevServer, createPreviewServer } from '@stati/core';
+import type { BuildOptions, DevServerOptions, PreviewServerOptions } from '@stati/core';
 import { log } from './colors.js';
 import { createLogger } from './logger.js';
 
@@ -147,6 +147,73 @@ const cli = yargs(hideBin(process.argv))
         process.on('SIGTERM', shutdown);
       } catch (error) {
         log.error(`Dev server failed: ${error instanceof Error ? error.message : String(error)}`);
+        process.exit(1);
+      }
+    },
+  )
+  .command(
+    'preview',
+    'Start preview server for built site',
+    (y) =>
+      y
+        .option('port', {
+          type: 'number',
+          description: 'Port to run the preview server on',
+          default: 4000,
+        })
+        .option('host', {
+          type: 'string',
+          description: 'Host to bind the preview server to',
+          default: 'localhost',
+        })
+        .option('open', {
+          type: 'boolean',
+          description: 'Open browser after starting server',
+          default: false,
+        })
+        .option('config', {
+          type: 'string',
+          description: 'Path to config file',
+        }),
+    async (argv) => {
+      const previewOptions: PreviewServerOptions = {
+        port: argv.port as number,
+        host: argv.host as string,
+        open: !!argv.open,
+        ...(argv.config && { configPath: argv.config as string }),
+      };
+
+      try {
+        // Enhanced logger via factory (centralized)
+        const coloredLogger = createLogger();
+
+        previewOptions.logger = coloredLogger;
+
+        // Show a nice header
+        const versionInfo = getVersion() ? ` v${getVersion()}` : '';
+        log.header(`Stati${versionInfo} - Preview Server`);
+
+        // Show preview server options
+        log.info(`Server will run at http://${argv.host}:${argv.port}`);
+        if (argv.open) log.info('Browser will open automatically');
+        if (argv.config) log.info(`Using config: ${argv.config}`);
+
+        const previewServer = await createPreviewServer(previewOptions);
+        await previewServer.start();
+
+        // Handle graceful shutdown
+        const shutdown = async () => {
+          log.info('\n🛑 Shutting down preview server...');
+          await previewServer.stop();
+          process.exit(0);
+        };
+
+        process.on('SIGINT', shutdown);
+        process.on('SIGTERM', shutdown);
+      } catch (error) {
+        log.error(
+          `Preview server failed: ${error instanceof Error ? error.message : String(error)}`,
+        );
         process.exit(1);
       }
     },

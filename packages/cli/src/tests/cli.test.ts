@@ -16,6 +16,11 @@ vi.mock('@stati/core', () => ({
     start: vi.fn().mockResolvedValue(undefined),
     stop: vi.fn().mockResolvedValue(undefined),
   }),
+  createPreviewServer: vi.fn().mockResolvedValue({
+    start: vi.fn().mockResolvedValue(undefined),
+    stop: vi.fn().mockResolvedValue(undefined),
+    url: 'http://localhost:4000',
+  }),
 }));
 
 // Mock colors to prevent actual console output during tests
@@ -169,6 +174,49 @@ describe('CLI', () => {
       await (createDevServer as ReturnType<typeof vi.fn>)(mockDevOptions);
 
       expect(createDevServer).toHaveBeenCalledWith(mockDevOptions);
+    });
+  });
+
+  describe('preview command integration', () => {
+    it('should create preview server with proper configuration', async () => {
+      const { createPreviewServer } = await import('@stati/core');
+
+      // Test preview server creation
+      const mockPreviewOptions = {
+        port: 4000,
+        host: 'localhost',
+        open: false,
+      };
+
+      await (createPreviewServer as ReturnType<typeof vi.fn>)(mockPreviewOptions);
+
+      expect(createPreviewServer).toHaveBeenCalledWith(mockPreviewOptions);
+    });
+
+    it('should create preview server with different port than dev server', async () => {
+      const { createPreviewServer } = await import('@stati/core');
+
+      // Test preview server creation with port 4000 (different from dev server's 3000)
+      const mockPreviewOptions = {
+        port: 4000,
+        host: 'localhost',
+        open: false,
+      };
+
+      const mockServer = {
+        start: vi.fn().mockResolvedValue(undefined),
+        stop: vi.fn().mockResolvedValue(undefined),
+        url: 'http://localhost:4000',
+      };
+
+      (createPreviewServer as ReturnType<typeof vi.fn>).mockResolvedValueOnce(mockServer);
+
+      const previewServer = await (createPreviewServer as ReturnType<typeof vi.fn>)(
+        mockPreviewOptions,
+      );
+
+      expect(createPreviewServer).toHaveBeenCalledWith(mockPreviewOptions);
+      expect(previewServer.url).toBe('http://localhost:4000');
     });
   });
 

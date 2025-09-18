@@ -174,10 +174,18 @@ async function handleTemplateChange(
 
     // Find pages that depend on this template
     const affectedPages: string[] = [];
+    const normalizedTemplatePath = posix.normalize(templatePath.replace(/\\/g, '/'));
 
     for (const [pagePath, entry] of Object.entries(cacheManifest.entries)) {
       if (
-        entry.deps.some((dep) => dep.includes(posix.normalize(templatePath.replace(/\\/g, '/'))))
+        entry.deps.some((dep) => {
+          const normalizedDep = posix.normalize(dep.replace(/\\/g, '/'));
+          // Use endsWith for more precise matching to avoid false positives
+          return (
+            normalizedDep === normalizedTemplatePath ||
+            normalizedDep.endsWith('/' + normalizedTemplatePath)
+          );
+        })
       ) {
         affectedPages.push(pagePath);
         // Remove from cache to force rebuild
@@ -193,6 +201,16 @@ async function handleTemplateChange(
       await build({
         logger,
         force: false,
+        clean: false,
+        ...(configPath && { configPath }),
+      });
+    } else {
+      // If no affected pages were found but a template changed,
+      // force a full rebuild to ensure changes are reflected
+      // This can happen if dependency tracking missed something
+      await build({
+        logger,
+        force: true,
         clean: false,
         ...(configPath && { configPath }),
       });
