@@ -253,6 +253,7 @@ export async function renderPage(
     } else {
       // Subsequent passes: re-render partials that might need updated dependencies
       // For simplicity, re-render all partials to ensure they have access to all previously rendered ones
+      // TODO: Optimize by tracking which partials changed or have dependencies
       partialsToRender = { ...partialPaths };
     }
 
@@ -287,6 +288,10 @@ export async function renderPage(
         // Otherwise, use existing content if available, or skip for retry
         else if (renderedPartials[partialName]) {
           passRenderedPartials[partialName] = renderedPartials[partialName];
+        }
+        // For failed partials on non-last pass, still count as progress to allow retries
+        else {
+          progressMade = true;
         }
       }
     }
