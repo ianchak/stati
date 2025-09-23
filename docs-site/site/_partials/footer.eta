@@ -4,13 +4,11 @@
             <!-- Brand -->
             <div class="col-span-1">
                 <div class="flex items-center space-x-2 mb-4">
-                    <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 2L2 7v10c0 5.55 3.84 9.95 9 11 5.16-1.05 9-5.45 9-11V7l-10-5z"/>
-                    </svg>
+                    <img src="/logo.png" alt="Stati Logo" class="w-10 h-10 rounded-full border-2 border-gray-300 dark:border-gray-600 shadow-sm">
                     <span class="text-lg font-bold">Stati</span>
                 </div>
                 <p class="text-gray-600 dark:text-gray-400 text-sm">
-                    TypeScript-first static site generator.
+                    Fast, minimal, and developer-friendly static site generator.
                 </p>
             </div>
 
@@ -57,7 +55,7 @@
                     © <%= new Date().getFullYear() %> Stati. Built with ❤️ and TypeScript.
                 </p>
                 <p class="text-sm text-gray-600 dark:text-gray-400 mt-2 md:mt-0">
-                    Generated with Stati v<%= process.env.npm_package_version || '1.0.0' %>
+                    Generated with Stati v<%= it.stati.version %>
                 </p>
             </div>
         </div>

@@ -3,6 +3,7 @@ import { join, dirname, relative, basename, posix } from 'path';
 import glob from 'fast-glob';
 import type { StatiConfig, PageModel, NavNode, CollectionData } from '../types/index.js';
 import { TEMPLATE_EXTENSION } from '../constants.js';
+import { getStatiVersion } from './utils/version.js';
 import {
   isCollectionIndexPage,
   discoverLayout,
@@ -233,6 +234,9 @@ export async function renderPage(
     collection: collectionData, // Add collection data for index pages
     // Add custom filters to context
     ...(config.eta?.filters || {}),
+    stati: {
+      version: getStatiVersion(),
+    },
   };
 
   // Render partials and store their content
