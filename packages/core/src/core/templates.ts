@@ -236,14 +236,73 @@ export async function renderPage(
   };
 
   // Render partials and store their content
+  // Use multiple passes to allow partials to reference other partials
   const renderedPartials: Record<string, string> = {};
-  for (const [partialName, partialPath] of Object.entries(partialPaths)) {
-    try {
-      const renderedContent = await eta.renderAsync(partialPath, baseContext);
-      renderedPartials[partialName] = renderedContent;
-    } catch (error) {
-      console.warn(`Warning: Failed to render partial ${partialName} at ${partialPath}:`, error);
-      renderedPartials[partialName] = `<!-- Error rendering partial: ${partialName} -->`;
+  const maxPasses = 3; // Prevent infinite loops
+
+  for (let pass = 0; pass < maxPasses; pass++) {
+    let partialsToRender: Record<string, string>;
+
+    if (pass === 0) {
+      // First pass: render all partials
+      partialsToRender = { ...partialPaths };
+    } else {
+      // Subsequent passes: re-render partials that might need updated dependencies
+      // For simplicity, re-render all partials to ensure they have access to all previously rendered ones
+      partialsToRender = { ...partialPaths };
+    }
+
+    if (Object.keys(partialsToRender).length === 0) {
+      break;
+    }
+
+    let progressMade = false;
+    const passRenderedPartials: Record<string, string> = {};
+
+    for (const [partialName, partialPath] of Object.entries(partialsToRender)) {
+      try {
+        // Create context with all previously rendered partials available
+        const partialContext = {
+          ...baseContext,
+          partials: { ...renderedPartials, ...passRenderedPartials }, // Include both previous and current pass partials
+        };
+
+        const renderedContent = await eta.renderAsync(partialPath, partialContext);
+        passRenderedPartials[partialName] = renderedContent;
+        progressMade = true;
+      } catch (error) {
+        // If this is the last pass, log the error and create placeholder
+        if (pass === maxPasses - 1) {
+          console.warn(
+            `Warning: Failed to render partial ${partialName} at ${partialPath}:`,
+            error,
+          );
+          passRenderedPartials[partialName] = `<!-- Error rendering partial: ${partialName} -->`;
+          progressMade = true;
+        }
+        // Otherwise, use existing content if available, or skip for retry
+        else if (renderedPartials[partialName]) {
+          passRenderedPartials[partialName] = renderedPartials[partialName];
+        }
+      }
+    }
+
+    // Update the rendered partials with this pass's results
+    Object.assign(renderedPartials, passRenderedPartials);
+
+    // If no progress was made, break to avoid infinite loop
+    if (!progressMade) {
+      break;
+    }
+
+    // If this is pass 0, always do at least one more pass to allow interdependencies
+    if (pass === 0) {
+      continue;
+    }
+
+    // For subsequent passes, only continue if we're not at max passes yet
+    if (pass >= maxPasses - 1) {
+      break;
     }
   }
 
