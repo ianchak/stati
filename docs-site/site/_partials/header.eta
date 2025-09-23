@@ -5,9 +5,7 @@
             <div class="flex items-center space-x-4">
                 <a href="/" class="flex items-center space-x-3 group">
                     <div class="relative">
-                        <svg class="w-10 h-10 text-primary-600 dark:text-primary-400 transition-all duration-300 group-hover:scale-110 group-hover:rotate-12" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 2L2 7v10c0 5.55 3.84 9.95 9 11 5.16-1.05 9-5.45 9-11V7l-10-5z"/>
-                        </svg>
+                        <img src="/logo.png" alt="Stati Logo" class="w-10 h-10 rounded-full border-2 border-gray-300 dark:border-gray-600 shadow-sm transition-transform duration-200 group-hover:scale-105">
                         <div class="absolute inset-0 bg-primary-600/20 dark:bg-primary-400/20 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     </div>
                     <div>
