@@ -20,6 +20,10 @@
     "stati",
     "minimal"
   ],
+  "stati": {
+    "engine": "stati",
+    "version": "^1.4.0"
+  },
   "author": "",
   "license": "MIT",
   "devDependencies": {
