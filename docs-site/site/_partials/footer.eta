@@ -4,7 +4,7 @@
             <!-- Brand -->
             <div class="col-span-1">
                 <div class="flex items-center space-x-2 mb-4">
-                    <img src="/logo.png" alt="Stati Logo" class="w-10 h-10 rounded-full border-2 border-gray-300 dark:border-gray-600 shadow-sm">
+                    <img src="/logo.png" alt="Stati Logo" class="w-10 h-10 shadow-sm">
                     <span class="text-lg font-bold">Stati</span>
                 </div>
                 <p class="text-gray-600 dark:text-gray-400 text-sm">

@@ -10,22 +10,44 @@ description: 'How to install Stati and create your first project.'
 - **Node.js** 22.0.0 or higher
 - **npm** 8.0.0 or higher (or yarn/pnpm equivalent)
 
-## Quick Start
+## Interactive Scaffolder
 
-The easiest way to get started with Stati is using the scaffolder:
+The easiest way to get started with Stati is using the `create-stati` interactive scaffolder.
 
 ```bash
-npx create-stati my-site
-cd my-site
-npm run dev
+npx create-stati
+```
+
+This command will launch an interactive setup wizard that guides you through creating a new project. You'll be prompted for:
+
+- **Project name**: The directory for your new site.
+- **Styling solution**: Choose between plain CSS, Sass, or Tailwind CSS.
+- **Git initialization**: Optionally initialize a new Git repository.
+
+### Command-Line Options
+
+You can also pass command-line arguments to pre-configure the scaffolder and skip some interactive prompts.
+
+```bash
+npx create-stati my-site --styling tailwind --git
 ```
 
 This will:
 
-1. Create a new directory called `my-site`
-2. Set up a basic Stati project structure
-3. Install dependencies
-4. Start the development server
+1. Create a new directory called `my-site`.
+2. Set up a basic Stati project with Tailwind CSS.
+3. Initialize a Git repository.
+
+Here are the available options:
+
+| Argument | Description |
+| --- | --- |
+| `[project-name]` | Sets the project directory name. |
+| `--styling` | Sets the styling solution (`css`, `sass`, or `tailwind`). |
+| `--git` | Initializes a Git repository. |
+| `--no-git` | Skips Git initialization. |
+| `--template` | Specifies a project template to use (currently only `blank` is available). |
+
 
 ## Manual Installation
 

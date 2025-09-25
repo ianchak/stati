@@ -35,18 +35,20 @@ quickStart:
           color: 'yellow'
         - text: 'create-stati my-site'
           color: 'white'
-    - comment: 'Start the development server'
+    - comment: 'Enter project directory'
       parts:
         - text: 'cd'
           color: 'blue'
         - text: 'my-site'
           color: 'white'
-    - parts:
+    - comment: 'Install dependencies'
+      parts:
         - text: 'npm'
           color: 'yellow'
         - text: 'install'
           color: 'white'
-    - parts:
+    - comment: 'Start the development server'
+      parts:
         - text: 'npm'
           color: 'yellow'
         - text: 'run dev'

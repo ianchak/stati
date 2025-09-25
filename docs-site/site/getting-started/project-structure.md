@@ -43,7 +43,9 @@ Static assets that should be copied directly to the output directory. Everything
 
 ### `_partials/`
 
-Template partials that can be included in your layouts and pages. Directories starting with `_` are excluded from routing.
+Template partials that can be included in your layouts and pages (or even other partials).
+
+Directories starting with `_` are excluded from routing. So you can organize the structure of your partials as you see fit.
 
 - **`_partials/header.eta`** - Site header
 - **`_partials/footer.eta`** - Site footer
@@ -87,6 +89,8 @@ Standard Node.js package file with your dependencies and build scripts.
 - **`layout.eta`** - Default layout template
 - **`blog/layout.eta`** - Section-specific layout (inherits from parent)
 
+You can also use page specific layouts if you want, by referring to the layouts name in the front matter of your page. For example: `layout: home`
+
 ### Content Files
 
 - **`.md` files** - Markdown content with front matter
@@ -129,9 +133,9 @@ site/
 - **Used for partials and utilities** - Can be included in templates
 - **Examples**: `_partials/`, `_components/`, `_data/`
 
-### Layout Inheritance
+### Template Inheritance
 
-Layouts cascade down the directory tree:
+Layouts and partials cascade down the directory tree:
 
 1. `site/layout.eta` (root layout)
 2. `site/blog/layout.eta` (inherits from root)
@@ -150,12 +154,10 @@ When you run `stati build`, the output structure mirrors your site structure:
 ```
 dist/
 ├── index.html
-├── about/
-│   └── index.html
+├── about.html
+├── blog.html
 ├── blog/
-│   ├── index.html
-│   └── first-post/
-│       └── index.html
+│   └── first-post.html
 ├── favicon.svg
 └── styles.css
 ```

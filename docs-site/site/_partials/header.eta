@@ -3,9 +3,9 @@
         <div class="flex items-center justify-between h-18">
             <!-- Logo and brand -->
             <div class="flex items-center space-x-4">
-                <a href="/" class="flex items-center space-x-3 group">
+                <a href="/" class="flex items-center space-x-2 group">
                     <div class="relative">
-                        <img src="/logo.png" alt="Stati Logo" class="w-10 h-10 rounded-full border-2 border-gray-300 dark:border-gray-600 shadow-sm transition-transform duration-200 group-hover:scale-105">
+                        <img src="/logo.png" alt="Stati Logo" class="w-10 h-10 shadow-sm transition-transform duration-200 group-hover:scale-105">
                         <div class="absolute inset-0 bg-primary-600/20 dark:bg-primary-400/20 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     </div>
                     <div>
