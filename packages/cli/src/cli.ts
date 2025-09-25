@@ -4,7 +4,7 @@ import { hideBin } from 'yargs/helpers';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { build, invalidate, createDevServer, createPreviewServer } from '@stati/core';
+import { build, invalidate, createDevServer, createPreviewServer, setEnv } from '@stati/core';
 import type { BuildOptions, DevServerOptions, PreviewServerOptions } from '@stati/core';
 import { log } from './colors.js';
 import { createLogger } from './logger.js';
@@ -72,6 +72,7 @@ const cli = yargs(hideBin(process.argv))
         if (buildOptions.includeDrafts) log.info('Including draft pages');
         if (buildOptions.configPath) log.info(`Using config: ${buildOptions.configPath}`);
 
+        setEnv('production');
         buildOptions.logger = coloredLogger;
         const startTime = Date.now();
 

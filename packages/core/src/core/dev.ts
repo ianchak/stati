@@ -12,6 +12,9 @@ import { loadConfig } from '../config/loader.js';
 import { loadCacheManifest, saveCacheManifest } from './isg/manifest.js';
 import { resolveDevPaths, resolveCacheDir } from './utils/paths.js';
 import { resolvePrettyUrl } from './utils/server.js';
+import { createErrorOverlay, parseErrorDetails } from './utils/error-overlay.js';
+import { TemplateError } from './utils/template-errors.js';
+import { setEnv, getEnv } from '../env.js';
 import { DEFAULT_DEV_PORT, DEFAULT_DEV_HOST, TEMPLATE_EXTENSION } from '../constants.js';
 
 export interface DevServerOptions {
@@ -57,7 +60,11 @@ async function loadDevConfig(
 /**
  * Performs an initial build to ensure dist/ exists
  */
-async function performInitialBuild(configPath: string | undefined, logger: Logger): Promise<void> {
+async function performInitialBuild(
+  configPath: string | undefined,
+  logger: Logger,
+  onError?: (error: Error) => void,
+): Promise<void> {
   try {
     // Clear cache to ensure fresh build on dev server start
     logger.info?.('Clearing cache for fresh development build...');
@@ -69,11 +76,20 @@ async function performInitialBuild(configPath: string | undefined, logger: Logge
       clean: false,
       ...(configPath && { configPath }),
     });
+
+    // Clear any previous errors on successful build
+    if (onError) {
+      onError(null!);
+    }
   } catch (error) {
-    logger.error?.(
-      `Initial build failed: ${error instanceof Error ? error.message : String(error)}`,
-    );
-    throw error;
+    const buildError = error instanceof Error ? error : new Error(String(error));
+    logger.error?.(`Initial build failed: ${buildError.message}`);
+
+    // Store the error for display in browser - DON'T clear it even if partial rebuild succeeds
+    onError?.(buildError);
+
+    // In development, don't throw - let the dev server start and show errors in browser
+    logger.warning?.('Dev server will start with build errors. Check browser for error overlay.');
   }
 }
 
@@ -86,6 +102,7 @@ async function performIncrementalRebuild(
   logger: Logger,
   wsServer: WebSocketServer | null,
   isBuildingRef: { value: boolean },
+  onError?: (error: Error | null) => void,
 ): Promise<void> {
   if (isBuildingRef.value) {
     logger.info?.('Build in progress, skipping...');
@@ -125,6 +142,11 @@ async function performIncrementalRebuild(
       });
     }
 
+    // Clear any previous errors on successful build
+    if (onError) {
+      onError(null);
+    }
+
     // Notify all connected clients to reload
     if (wsServer) {
       wsServer.clients.forEach((client: unknown) => {
@@ -139,10 +161,14 @@ async function performIncrementalRebuild(
     const duration = Date.now() - startTime;
     logger.info?.(`⚡ ${relativePath} rebuilt in ${duration}ms`);
   } catch (error) {
+    const buildError = error instanceof Error ? error : new Error(String(error));
     const duration = Date.now() - startTime;
-    logger.error?.(
-      `❌ Rebuild failed after ${duration}ms: ${error instanceof Error ? error.message : String(error)}`,
-    );
+    logger.error?.(`❌ Rebuild failed after ${duration}ms: ${buildError.message}`);
+
+    // Store the error for display in browser
+    if (onError) {
+      onError(buildError);
+    }
   } finally {
     isBuildingRef.value = false;
   }
@@ -216,14 +242,18 @@ async function handleTemplateChange(
         ...(configPath && { configPath }),
       });
     }
-  } catch {
-    // Fallback to full rebuild
-    await build({
-      logger,
-      force: false,
-      clean: false,
-      ...(configPath && { configPath }),
-    });
+  } catch (_error) {
+    try {
+      // Fallback to full rebuild
+      await build({
+        logger,
+        force: false,
+        clean: false,
+        ...(configPath && { configPath }),
+      });
+    } catch (fallbackError) {
+      throw fallbackError instanceof Error ? fallbackError : new Error(String(fallbackError));
+    }
   }
 }
 
@@ -244,9 +274,19 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
     },
   } = options;
 
+  setEnv('development');
+
   const url = `http://${host}:${port}`;
   let httpServer: ReturnType<typeof createServer> | null = null;
   let wsServer: WebSocketServer | null = null;
+
+  // Track build errors for display in browser
+  let lastBuildError: Error | null = null;
+
+  // Function to set build errors for error overlay display
+  const setLastBuildError = (error: Error | null) => {
+    lastBuildError = error;
+  };
   let watcher: FSWatcher | null = null;
   const isBuildingRef = { value: false };
 
@@ -318,12 +358,96 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
   async function serveFile(
     requestPath: string,
   ): Promise<{ content: Buffer | string; mimeType: string; statusCode: number }> {
+    // Use the global build error
+    const errorToShow = lastBuildError;
+
+    // If there's a build error, show error overlay for HTML requests
+    if (
+      errorToShow &&
+      (requestPath === '/' || requestPath.endsWith('.html') || !requestPath.includes('.'))
+    ) {
+      let errorDetails;
+
+      // Use enhanced error details for TemplateError instances
+      if (errorToShow instanceof TemplateError) {
+        errorDetails = await errorToShow.toErrorDetails();
+      } else {
+        // Determine error type based on error message
+        const message = errorToShow.message.toLowerCase();
+        const name = errorToShow.name ? errorToShow.name.toLowerCase() : '';
+        const errorType =
+          message.includes('template') ||
+          message.includes('eta') ||
+          message.includes('layout') ||
+          name.includes('template')
+            ? 'template'
+            : message.includes('front-matter') ||
+                message.includes('yaml') ||
+                name.includes('yaml') ||
+                name.includes('yamlexception')
+              ? 'markdown'
+              : message.includes('config') || name.includes('config')
+                ? 'config'
+                : 'build';
+
+        errorDetails = parseErrorDetails(errorToShow, errorType);
+      }
+
+      const errorHtml = createErrorOverlay(errorDetails, requestPath);
+      return {
+        content: errorHtml,
+        mimeType: 'text/html',
+        statusCode: 500,
+      };
+    }
+
     const originalFilePath = join(outDir, requestPath === '/' ? 'index.html' : requestPath);
 
     // Use the shared pretty URL resolver
     const { filePath, found } = await resolvePrettyUrl(outDir, requestPath, originalFilePath);
 
     if (!found || !filePath) {
+      // If we have a build error and this is an HTML request, show error overlay instead of 404
+      const errorToShow = lastBuildError;
+
+      if (
+        errorToShow &&
+        (requestPath === '/' || requestPath.endsWith('.html') || !requestPath.includes('.'))
+      ) {
+        // Use enhanced error details for TemplateError instances
+        let errorDetails;
+        if (errorToShow instanceof TemplateError) {
+          errorDetails = await errorToShow.toErrorDetails();
+        } else {
+          // Determine error type based on error message
+          const message = errorToShow.message.toLowerCase();
+          const name = errorToShow.name ? errorToShow.name.toLowerCase() : '';
+          const errorType =
+            message.includes('template') ||
+            message.includes('eta') ||
+            message.includes('layout') ||
+            name.includes('template')
+              ? 'template'
+              : message.includes('front-matter') ||
+                  message.includes('yaml') ||
+                  name.includes('yaml') ||
+                  name.includes('yamlexception')
+                ? 'markdown'
+                : message.includes('config') || name.includes('config')
+                  ? 'config'
+                  : 'build';
+
+          errorDetails = parseErrorDetails(errorToShow, errorType);
+        }
+
+        const errorHtml = createErrorOverlay(errorDetails, requestPath);
+        return {
+          content: errorHtml,
+          mimeType: 'text/html',
+          statusCode: 500,
+        };
+      }
+
       return {
         content: requestPath.endsWith('/')
           ? '404 - Directory listing not available'
@@ -368,7 +492,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
 
     async start(): Promise<void> {
       // Perform initial build
-      await performInitialBuild(configPath, logger);
+      await performInitialBuild(configPath, logger, setLastBuildError);
 
       // Create HTTP server
       httpServer = createServer(async (req, res) => {
@@ -399,19 +523,26 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
       });
 
       // Create WebSocket server for live reload
-      wsServer = new WebSocketServer({
-        server: httpServer,
-        path: '/__ws',
-      });
+      if (getEnv() !== 'test') {
+        try {
+          wsServer = new WebSocketServer({
+            server: httpServer,
+            path: '/__ws',
+          });
 
-      wsServer.on('connection', (ws: unknown) => {
-        logger.info?.('Browser connected for live reload');
+          wsServer.on('connection', (ws: unknown) => {
+            logger.info?.('Browser connected for live reload');
 
-        const websocket = ws as { on: (event: string, handler: () => void) => void };
-        websocket.on('close', () => {
-          logger.info?.('Browser disconnected from live reload');
-        });
-      });
+            const websocket = ws as { on: (event: string, handler: () => void) => void };
+            websocket.on('close', () => {
+              logger.info?.('Browser disconnected from live reload');
+            });
+          });
+        } catch (_error) {
+          logger.warning?.('WebSocket server creation failed, live reload will not be available');
+          wsServer = null;
+        }
+      }
 
       // Start HTTP server
       await new Promise<void>((resolve, reject) => {
@@ -433,15 +564,36 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
       });
 
       watcher.on('change', (path: string) => {
-        void performIncrementalRebuild(path, configPath, logger, wsServer, isBuildingRef);
+        void performIncrementalRebuild(
+          path,
+          configPath,
+          logger,
+          wsServer,
+          isBuildingRef,
+          setLastBuildError,
+        );
       });
 
       watcher.on('add', (path: string) => {
-        void performIncrementalRebuild(path, configPath, logger, wsServer, isBuildingRef);
+        void performIncrementalRebuild(
+          path,
+          configPath,
+          logger,
+          wsServer,
+          isBuildingRef,
+          setLastBuildError,
+        );
       });
 
       watcher.on('unlink', (path: string) => {
-        void performIncrementalRebuild(path, configPath, logger, wsServer, isBuildingRef);
+        void performIncrementalRebuild(
+          path,
+          configPath,
+          logger,
+          wsServer,
+          isBuildingRef,
+          setLastBuildError,
+        );
       });
 
       logger.success?.(`Dev server running at ${url}`);

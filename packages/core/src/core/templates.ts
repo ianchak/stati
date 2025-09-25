@@ -4,12 +4,15 @@ import glob from 'fast-glob';
 import type { StatiConfig, PageModel, NavNode, CollectionData } from '../types/index.js';
 import { TEMPLATE_EXTENSION } from '../constants.js';
 import { getStatiVersion } from './utils/version.js';
+import { getEnv } from '../env.js';
 import {
   isCollectionIndexPage,
   discoverLayout,
   getCollectionPathForPage,
 } from './utils/template-discovery.js';
 import { resolveSrcDir } from './utils/paths.js';
+import { createTemplateError } from './utils/template-errors.js';
+import { createValidatingPartialsProxy } from './utils/partial-validation.js';
 
 /**
  * Groups pages by their tags for aggregation purposes.
@@ -184,8 +187,8 @@ export function createTemplateEngine(config: StatiConfig): Eta {
 
   const eta = new Eta({
     views: templateDir,
-    cache: process.env.NODE_ENV === 'production',
-    cacheFilepaths: process.env.NODE_ENV === 'production',
+    cache: getEnv() === 'production',
+    cacheFilepaths: getEnv() === 'production',
   });
 
   return eta;
@@ -267,9 +270,10 @@ export async function renderPage(
     for (const [partialName, partialPath] of Object.entries(partialsToRender)) {
       try {
         // Create context with all previously rendered partials available
+        const combinedPartials = { ...renderedPartials, ...passRenderedPartials };
         const partialContext = {
           ...baseContext,
-          partials: { ...renderedPartials, ...passRenderedPartials }, // Include both previous and current pass partials
+          partials: createValidatingPartialsProxy(combinedPartials), // Include both previous and current pass partials with validation
         };
 
         const renderedContent = await eta.renderAsync(partialPath, partialContext);
@@ -282,6 +286,16 @@ export async function renderPage(
             `Warning: Failed to render partial ${partialName} at ${partialPath}:`,
             error,
           );
+
+          // In development mode, throw enhanced template error for partials too
+          if (getEnv() === 'development') {
+            const templateError = createTemplateError(
+              error instanceof Error ? error : new Error(String(error)),
+              partialPath,
+            );
+            throw templateError;
+          }
+
           passRenderedPartials[partialName] = `<!-- Error rendering partial: ${partialName} -->`;
           progressMade = true;
         }
@@ -317,7 +331,7 @@ export async function renderPage(
 
   const context = {
     ...baseContext,
-    partials: renderedPartials, // Add rendered partials to template context
+    partials: createValidatingPartialsProxy(renderedPartials), // Add rendered partials with validation
   };
 
   try {
@@ -329,6 +343,16 @@ export async function renderPage(
     return await eta.renderAsync(layoutPath, context);
   } catch (error) {
     console.error(`Error rendering layout ${layoutPath || 'unknown'}:`, error);
+
+    // In development mode, throw enhanced template error for better debugging
+    if (getEnv() === 'development') {
+      const templateError = createTemplateError(
+        error instanceof Error ? error : new Error(String(error)),
+        layoutPath || undefined,
+      );
+      throw templateError;
+    }
+
     return createFallbackHtml(page, body);
   }
 }
