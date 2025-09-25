@@ -1,9 +1,10 @@
 import { createServer } from 'http';
 import { join, extname } from 'path';
-import { readFile, stat } from 'fs/promises';
+import { readFile } from 'fs/promises';
 import type { Logger } from '../types/index.js';
 import { loadConfig } from '../config/loader.js';
 import { resolveDevPaths } from './utils/paths.js';
+import { resolvePrettyUrl } from './utils/server.js';
 import { DEFAULT_DEV_PORT, DEFAULT_DEV_HOST } from '../constants.js';
 
 export interface PreviewServerOptions {
@@ -103,36 +104,22 @@ export async function createPreviewServer(
   async function serveFile(
     requestPath: string,
   ): Promise<{ content: Buffer | string; mimeType: string; statusCode: number }> {
-    let filePath = join(outDir, requestPath === '/' ? 'index.html' : requestPath);
+    const originalFilePath = join(outDir, requestPath === '/' ? 'index.html' : requestPath);
+
+    // Use the shared pretty URL resolver
+    const { filePath, found } = await resolvePrettyUrl(outDir, requestPath, originalFilePath);
+
+    if (!found || !filePath) {
+      return {
+        content: requestPath.endsWith('/')
+          ? '404 - Directory listing not available'
+          : '404 - File not found',
+        mimeType: 'text/plain',
+        statusCode: 404,
+      };
+    }
 
     try {
-      const stats = await stat(filePath);
-
-      if (stats.isDirectory()) {
-        // Try to serve index.html from directory
-        const indexPath = join(filePath, 'index.html');
-        try {
-          await stat(indexPath);
-          filePath = indexPath;
-        } catch {
-          // If no index.html in directory, try to serve corresponding .html file
-          // For example: /examples/ -> examples.html
-          const directoryName = requestPath.replace(/\/$/, ''); // Remove trailing slash
-          const fallbackPath = join(outDir, `${directoryName}.html`);
-
-          try {
-            await stat(fallbackPath);
-            filePath = fallbackPath;
-          } catch {
-            return {
-              content: '404 - Directory listing not available',
-              mimeType: 'text/plain',
-              statusCode: 404,
-            };
-          }
-        }
-      }
-
       const mimeType = getMimeType(filePath);
       const content = await readFile(filePath);
 
@@ -143,34 +130,11 @@ export async function createPreviewServer(
         statusCode: 200,
       };
     } catch {
-      // File not found, try some fallback strategies for pretty URLs
-      if (requestPath.endsWith('/')) {
-        // For requests ending with /, try the corresponding .html file
-        const pathWithoutSlash = requestPath.slice(0, -1);
-        const htmlPath = join(outDir, `${pathWithoutSlash}.html`);
-
-        try {
-          const stats = await stat(htmlPath);
-          if (stats.isFile()) {
-            const mimeType = getMimeType(htmlPath);
-            const content = await readFile(htmlPath);
-
-            return {
-              content,
-              mimeType,
-              statusCode: 200,
-            };
-          }
-        } catch {
-          // Continue to 404
-        }
-      }
-
-      // File not found
+      // This should rarely happen since resolvePrettyUrl already checked the file exists
       return {
-        content: '404 - File not found',
+        content: '500 - Error reading file',
         mimeType: 'text/plain',
-        statusCode: 404,
+        statusCode: 500,
       };
     }
   }
