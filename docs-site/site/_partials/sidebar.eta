@@ -250,10 +250,10 @@
             </div>
         </div>
     </nav>
-
-    <!-- Mobile menu toggle overlay -->
-    <div class="fixed inset-0 bg-black/20 backdrop-blur-sm lg:hidden z-30 opacity-0 pointer-events-none transition-opacity duration-300" id="sidebar-overlay"></div>
 </aside>
+
+<!-- Mobile menu overlay -->
+<div class="fixed inset-0 bg-black/20 backdrop-blur-sm lg:hidden z-30 opacity-0 pointer-events-none transition-opacity duration-300" id="sidebar-overlay"></div>
 
 <script>
 // Sidebar functionality
@@ -355,7 +355,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Mobile sidebar toggle (if you have a mobile menu button)
+    // Mobile sidebar toggle
     const mobileMenuButton = document.querySelector('[data-mobile-menu]');
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebar-overlay');
@@ -370,6 +370,29 @@ document.addEventListener('DOMContentLoaded', function() {
         overlay.addEventListener('click', () => {
             sidebar.classList.add('-translate-x-full');
             overlay.classList.add('opacity-0', 'pointer-events-none');
+        });
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', (e) => {
+            if (window.innerWidth < 1024 &&
+                !sidebar.contains(e.target) &&
+                !mobileMenuButton.contains(e.target) &&
+                !overlay.contains(e.target) &&
+                !sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('opacity-0', 'pointer-events-none');
+            }
+        });
+
+        // Close sidebar on window resize to desktop
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 1024) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.add('opacity-0', 'pointer-events-none');
+            } else if (!sidebar.classList.contains('-translate-x-full')) {
+                // Ensure overlay is visible when sidebar is open on mobile
+                overlay.classList.remove('opacity-0', 'pointer-events-none');
+            }
         });
     }
 });
