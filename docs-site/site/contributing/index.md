@@ -20,7 +20,7 @@ Stati is an open-source project and we welcome contributions from the community!
 
 ### Prerequisites
 
-- **Node.js** 18.0.0 or higher
+- **Node.js** 22.0.0 or higher
 - **npm** 8.0.0 or higher
 - **Git** for version control
 

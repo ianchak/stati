@@ -18,6 +18,12 @@ export class PackageJsonModifier {
       // Only modify the name field
       packageJson.name = this.options.projectName;
 
+      // Add Stati SSG engine identifier
+      packageJson.stati = {
+        engine: 'stati',
+        version: packageJson.devDependencies?.['@stati/core'] || '^1.4.0',
+      };
+
       // Write back with proper formatting
       await writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n');
     } catch (error) {

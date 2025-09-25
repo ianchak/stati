@@ -7,7 +7,7 @@ description: 'How to install Stati and create your first project.'
 
 ## Prerequisites
 
-- **Node.js** 18.0.0 or higher
+- **Node.js** 22.0.0 or higher
 - **npm** 8.0.0 or higher (or yarn/pnpm equivalent)
 
 ## Quick Start

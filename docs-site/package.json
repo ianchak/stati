@@ -6,8 +6,11 @@
   "private": true,
   "scripts": {
     "dev": "concurrently --prefix none \"npm run watch:css\" \"stati dev\"",
+    "dev:local": "concurrently --prefix none \"npm run watch:css\" \"node ../packages/cli/dist/cli.js dev\"",
     "build": "npm run build:css && stati build",
+    "build:local": "npm run build:css && node ../packages/cli/dist/cli.js build",
     "preview": "stati preview",
+    "preview:local": "node ../packages/cli/dist/cli.js preview",
     "clean": "rimraf dist .stati",
     "build:css": "tailwindcss -i src/styles.css -o public/styles.css --minify",
     "watch:css": "tailwindcss -i src/styles.css -o public/styles.css --watch"
@@ -35,6 +38,6 @@
     "@tailwindcss/typography": "^0.5.16"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22.0.0"
   }
 }
