@@ -1,62 +1,195 @@
-<footer class="bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-16">
-    <div class="max-w-7xl mx-auto px-6 py-12">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+<footer class="bg-white/80 dark:bg-dark-900/80 backdrop-blur-xl border-t border-gray-200/60 dark:border-dark-700/60 mt-16 shadow-2xl shadow-gray-900/5">
+    <div class="max-w-7xl mx-auto px-6 lg:px-8 py-16">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-12">
             <!-- Brand -->
-            <div class="col-span-1">
-                <div class="flex items-center space-x-2 mb-4">
-                    <img src="/logo.png" alt="Stati Logo" class="w-10 h-10 shadow-sm">
-                    <span class="text-lg font-bold">Stati</span>
+            <div class="col-span-1 md:col-span-1">
+                <div class="flex items-center space-x-3 mb-6">
+                    <div class="relative">
+                        <img src="/logo.png" alt="Stati Logo" class="w-12 h-12 shadow-lg shadow-primary-500/20 rounded-xl">
+                        <div class="absolute inset-0 bg-primary-600/20 dark:bg-primary-400/20 rounded-xl blur-lg opacity-50"></div>
+                    </div>
+                    <div>
+                        <span class="text-xl font-bold bg-gradient-to-r from-primary-700 to-primary-500 dark:from-primary-400 dark:to-primary-300 bg-clip-text text-transparent">Stati</span>
+                        <span class="block text-xs text-gray-500 dark:text-gray-400 font-medium -mt-0.5">Static Site Generator</span>
+                    </div>
                 </div>
-                <p class="text-gray-600 dark:text-gray-400 text-sm">
-                    Fast, minimal, and developer-friendly static site generator.
+                <p class="text-gray-600 dark:text-gray-300 text-sm leading-relaxed max-w-xs">
+                    Fast, minimal, and developer-friendly TypeScript-first static site generator with modern tooling.
                 </p>
+                <div class="flex items-center space-x-3 mt-6">
+                    <a href="https://github.com/ianchak/stati"
+                       class="flex items-center justify-center w-10 h-10 bg-gray-100/80 dark:bg-dark-700/80 hover:bg-primary-100 dark:hover:bg-primary-900/30 rounded-lg transition-all duration-200 group"
+                       target="_blank" rel="noopener noreferrer" title="GitHub Repository">
+                        <svg class="w-5 h-5 text-gray-600 dark:text-gray-300 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-200" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                        </svg>
+                    </a>
+                    <a href="https://www.npmjs.com/package/@stati/cli"
+                       class="flex items-center justify-center w-10 h-10 bg-gray-100/80 dark:bg-dark-700/80 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-all duration-200 group"
+                       target="_blank" rel="noopener noreferrer" title="NPM Package">
+                        <svg class="w-5 h-5 text-gray-600 dark:text-gray-300 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors duration-200" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M1.763 0C.786 0 0 .786 0 1.763v20.474C0 23.214.786 24 1.763 24h20.474c.977 0 1.763-.786 1.763-1.763V1.763C24 .786 23.214 0 22.237 0zM5.13 5.323l13.837.019-.009 13.836h-3.464l.01-10.382h-3.456L12.04 19.17H5.113z"/>
+                        </svg>
+                    </a>
+                </div>
             </div>
 
             <!-- Documentation -->
             <div>
-                <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-4">
-                    Documentation
-                </h3>
-                <ul class="space-y-2 text-sm">
-                    <li><a href="/getting-started/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Getting Started</a></li>
-                    <li><a href="/core-concepts/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Core Concepts</a></li>
-                    <li><a href="/api/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">API Reference</a></li>
-                    <li><a href="/examples/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Examples</a></li>
+                <div class="flex items-center space-x-2 mb-6">
+                    <div class="flex items-center justify-center w-8 h-8 bg-primary-500/10 dark:bg-primary-400/20 rounded-lg">
+                        <svg class="w-4 h-4 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                    </div>
+                    <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
+                        Documentation
+                    </h3>
+                </div>
+                <ul class="space-y-3 text-sm">
+                    <li>
+                        <a href="/getting-started/" class="flex items-center text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 transition-colors duration-200 group">
+                            <span class="w-1.5 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-primary-500 transition-colors duration-200"></span>
+                            Getting Started
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/core-concepts/" class="flex items-center text-gray-600 hover:text-emerald-600 dark:text-gray-300 dark:hover:text-emerald-400 transition-colors duration-200 group">
+                            <span class="w-1.5 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-emerald-500 transition-colors duration-200"></span>
+                            Core Concepts
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/configuration/" class="flex items-center text-gray-600 hover:text-amber-600 dark:text-gray-300 dark:hover:text-amber-400 transition-colors duration-200 group">
+                            <span class="w-1.5 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-amber-500 transition-colors duration-200"></span>
+                            Configuration
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/api/" class="flex items-center text-gray-600 hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400 transition-colors duration-200 group">
+                            <span class="w-1.5 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-red-500 transition-colors duration-200"></span>
+                            API Reference
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/examples/" class="flex items-center text-gray-600 hover:text-cyan-600 dark:text-gray-300 dark:hover:text-cyan-400 transition-colors duration-200 group">
+                            <span class="w-1.5 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-cyan-500 transition-colors duration-200"></span>
+                            Examples
+                        </a>
+                    </li>
                 </ul>
             </div>
 
             <!-- Community -->
             <div>
-                <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-4">
-                    Community
-                </h3>
-                <ul class="space-y-2 text-sm">
-                    <li><a href="/contributing/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Contributing</a></li>
-                    <li><a href="https://github.com/ianchak/stati" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">GitHub</a></li>
-                    <li><a href="https://github.com/ianchak/stati/issues" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Issues</a></li>
+                <div class="flex items-center space-x-2 mb-6">
+                    <div class="flex items-center justify-center w-8 h-8 bg-emerald-500/10 dark:bg-emerald-400/20 rounded-lg">
+                        <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
+                        Community
+                    </h3>
+                </div>
+                <ul class="space-y-3 text-sm">
+                    <li>
+                        <a href="/contributing/" class="flex items-center text-gray-600 hover:text-emerald-600 dark:text-gray-300 dark:hover:text-emerald-400 transition-colors duration-200 group">
+                            <span class="w-1.5 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-emerald-500 transition-colors duration-200"></span>
+                            Contributing
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://github.com/ianchak/stati" target="_blank" rel="noopener noreferrer" class="flex items-center text-gray-600 hover:text-emerald-600 dark:text-gray-300 dark:hover:text-emerald-400 transition-colors duration-200 group">
+                            <span class="w-1.5 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-emerald-500 transition-colors duration-200"></span>
+                            GitHub Repository
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://github.com/ianchak/stati/issues" target="_blank" rel="noopener noreferrer" class="flex items-center text-gray-600 hover:text-emerald-600 dark:text-gray-300 dark:hover:text-emerald-400 transition-colors duration-200 group">
+                            <span class="w-1.5 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-emerald-500 transition-colors duration-200"></span>
+                            Report Issues
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://github.com/ianchak/stati/discussions" target="_blank" rel="noopener noreferrer" class="flex items-center text-gray-600 hover:text-emerald-600 dark:text-gray-300 dark:hover:text-emerald-400 transition-colors duration-200 group">
+                            <span class="w-1.5 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-emerald-500 transition-colors duration-200"></span>
+                            Discussions
+                        </a>
+                    </li>
                 </ul>
             </div>
 
-            <!-- Legal -->
+            <!-- Resources -->
             <div>
-                <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-4">
-                    Legal
-                </h3>
-                <ul class="space-y-2 text-sm">
-                    <li><a href="/changelog/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Changelog</a></li>
-                    <li><a href="https://github.com/ianchak/stati/blob/main/LICENSE" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">License</a></li>
+                <div class="flex items-center space-x-2 mb-6">
+                    <div class="flex items-center justify-center w-8 h-8 bg-purple-500/10 dark:bg-purple-400/20 rounded-lg">
+                        <svg class="w-4 h-4 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                    </div>
+                    <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
+                        Resources
+                    </h3>
+                </div>
+                <ul class="space-y-3 text-sm">
+                    <li>
+                        <a href="/cli/" class="flex items-center text-gray-600 hover:text-purple-600 dark:text-gray-300 dark:hover:text-purple-400 transition-colors duration-200 group">
+                            <span class="w-1.5 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-purple-500 transition-colors duration-200"></span>
+                            CLI Reference
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/advanced/" class="flex items-center text-gray-600 hover:text-purple-600 dark:text-gray-300 dark:hover:text-purple-400 transition-colors duration-200 group">
+                            <span class="w-1.5 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-purple-500 transition-colors duration-200"></span>
+                            Advanced Usage
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://github.com/ianchak/stati/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer" class="flex items-center text-gray-600 hover:text-purple-600 dark:text-gray-300 dark:hover:text-purple-400 transition-colors duration-200 group">
+                            <span class="w-1.5 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-purple-500 transition-colors duration-200"></span>
+                            Changelog
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://github.com/ianchak/stati/blob/main/LICENSE" target="_blank" rel="noopener noreferrer" class="flex items-center text-gray-600 hover:text-purple-600 dark:text-gray-300 dark:hover:text-purple-400 transition-colors duration-200 group">
+                            <span class="w-1.5 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-purple-500 transition-colors duration-200"></span>
+                            MIT License
+                        </a>
+                    </li>
                 </ul>
             </div>
         </div>
 
-        <div class="border-t border-gray-200 dark:border-gray-700 mt-8 pt-8">
-            <div class="flex flex-col md:flex-row justify-between items-center">
-                <p class="text-sm text-gray-600 dark:text-gray-400">
-                    © <%= new Date().getFullYear() %> Stati. Built with ❤️ and TypeScript.
-                </p>
-                <p class="text-sm text-gray-600 dark:text-gray-400 mt-2 md:mt-0">
-                    Generated with Stati v<%= it.stati.version %>
-                </p>
+        <div class="border-t border-gray-200/60 dark:border-dark-700/60 mt-12 pt-8">
+            <div class="flex flex-col lg:flex-row justify-between items-center space-y-4 lg:space-y-0">
+                <div class="flex items-center space-x-2">
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                        © <%= new Date().getFullYear() %> Stati. Built with
+                    </p>
+                    <span class="text-red-500 animate-pulse">❤️</span>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                        and
+                    </p>
+                    <span class="inline-flex items-center px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-medium rounded-md">
+                        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M1.125 0C.502 0 0 .502 0 1.125v21.75C0 23.498.502 24 1.125 24h21.75c.623 0 1.125-.502 1.125-1.125V1.125C24 .502 23.498 0 22.875 0zm17.363 9.75c.612 0 1.154.037 1.627.111a6.38 6.38 0 0 1 1.306.34v2.458a3.95 3.95 0 0 0-.643-.361 5.093 5.093 0 0 0-.717-.26 5.453 5.453 0 0 0-1.426-.2c-.3 0-.573.028-.819.086a2.1 2.1 0 0 0-.623.242c-.17.104-.3.229-.393.374a.888.888 0 0 0-.14.49c0 .196.053.373.156.529.104.156.252.304.443.444s.423.276.696.41c.273.135.582.274.926.416.47.197.892.407 1.266.628.374.222.695.473.963.753.268.279.472.598.614.957.142.359.214.776.214 1.253 0 .657-.125 1.21-.373 1.656a3.033 3.033 0 0 1-1.012 1.085 4.38 4.38 0 0 1-1.487.596c-.566.12-1.163.18-1.79.18a9.916 9.916 0 0 1-1.84-.164 5.544 5.544 0 0 1-1.512-.493v-2.63a5.033 5.033 0 0 0 3.237 1.2c.333 0 .624-.03.872-.09.249-.06.456-.144.623-.25.166-.108.29-.234.373-.38a1.023 1.023 0 0 0-.074-1.089 2.12 2.12 0 0 0-.537-.5 5.597 5.597 0 0 0-.807-.444 27.72 27.72 0 0 0-1.007-.436c-.918-.383-1.602-.852-2.053-1.405-.45-.553-.676-1.222-.676-2.005 0-.614.123-1.141.369-1.582.246-.441.58-.804 1.004-1.089a4.494 4.494 0 0 1 1.47-.629 7.536 7.536 0 0 1 1.77-.201zm-15.113.188h9.563v2.166H9.506v9.646H6.789v-9.646H3.375z"/>
+                        </svg>
+                        TypeScript
+                    </span>
+                </div>
+                <div class="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span>Generated with Stati v<%= it.stati?.version || '1.0.0' %></span>
+                    </div>
+                    <div class="hidden lg:flex items-center space-x-2">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        <span>Fast • Modern • TypeScript-first</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
