@@ -14,11 +14,11 @@
     "lint:ci": "eslint examples --ext .ts --ext .js",
     "typecheck": "tsc -p tsconfig.base.json --noEmit",
     "typecheck:ci": "echo 'No TypeScript files to check in examples'",
-    "build": "npm run build -w packages/core && npm run build -w packages/cli && npm run build -w packages/create-stati && npm run build -w stati-docs-site",
+    "build": "npm run build -w packages/core && npm run build -w packages/cli && npm run build -w packages/create-stati",
     "docs:dev": "cd docs-site && concurrently --prefix none \"npm run watch:css\" \"node \"../packages/cli/dist/cli.js\" dev\"",
     "docs:build": "cd docs-site && npm run build:css && node \"../packages/cli/dist/cli.js\" build",
     "docs:preview": "cd docs-site && node \"../packages/cli/dist/cli.js\" preview",
-    "docs:clean": "npm run clean --workspace=stati-docs-site",
+    "docs:clean": "cd docs-site && npm run clean",
     "test:blank:build": "npm run build && cd examples/blank && npm run build",
     "test:blank:dev": "npm run build && cd examples/blank && npm run dev",
     "test:blank:preview": "npm run build && cd examples/blank && npm run preview",
@@ -50,8 +50,7 @@
   "private": "true",
   "workspaces": [
     "packages/*",
-    "examples/*",
-    "docs-site"
+    "examples/*"
   ],
   "engines": {
     "node": ">=22"
