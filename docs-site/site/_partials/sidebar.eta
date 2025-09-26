@@ -1,4 +1,4 @@
-<aside id="sidebar" class="fixed top-0 left-0 w-80 h-screen bg-white/80 dark:bg-dark-900/80 backdrop-blur-xl border-r border-gray-200/60 dark:border-dark-700/60 overflow-y-auto transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out z-50 shadow-xl shadow-gray-900/5">
+<aside id="sidebar" class="fixed top-18 left-0 w-80 h-[calc(100vh-4.5rem)] bg-white/80 dark:bg-dark-900/80 backdrop-blur-xl border-r border-gray-200/60 dark:border-dark-700/60 overflow-y-auto transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out z-30 shadow-xl shadow-gray-900/5">
     <nav class="p-6">
         <!-- Search Bar -->
         <div class="mb-8">
