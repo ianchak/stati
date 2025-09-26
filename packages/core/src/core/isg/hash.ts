@@ -38,7 +38,19 @@ function createSha256Hash(data: string | string[]): string {
  */
 export function computeContentHash(content: string, frontMatter: Record<string, unknown>): string {
   // Hash the front matter (sorted for consistency)
-  const sortedFrontMatter = JSON.stringify(frontMatter, Object.keys(frontMatter).sort());
+  // Note: We need to sort keys at all levels, not just top level
+  const sortKeys = (obj: unknown): unknown => {
+    if (obj === null || typeof obj !== 'object') return obj;
+    if (Array.isArray(obj)) return obj.map(sortKeys);
+
+    const sorted: Record<string, unknown> = {};
+    for (const key of Object.keys(obj as Record<string, unknown>).sort()) {
+      sorted[key] = sortKeys((obj as Record<string, unknown>)[key]);
+    }
+    return sorted;
+  };
+
+  const sortedFrontMatter = JSON.stringify(sortKeys(frontMatter));
 
   return createSha256Hash([content, sortedFrontMatter]);
 }

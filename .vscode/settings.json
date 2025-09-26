@@ -26,6 +26,19 @@
   "[json]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
   "[markdown]": { "editor.wordWrap": "on" },
 
+  // CSS/Tailwind settings
+  "css.validate": false,
+  "css.lint.unknownAtRules": "ignore",
+  "scss.validate": false,
+  "scss.lint.unknownAtRules": "ignore",
+  "postcss.validate": false,
+
+  // Tailwind CSS IntelliSense
+  "tailwindCSS.includeLanguages": {
+    "eta": "html"
+  },
+  "tailwindCSS.experimental.classRegex": [["class:\\s*['\"]([^'\"]*)['\"]", "['\"]([^'\"]*)['\"]"]],
+
   // Monorepo/excludes
   "search.exclude": {
     "**/node_modules": true,

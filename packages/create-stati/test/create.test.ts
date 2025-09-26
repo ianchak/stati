@@ -143,6 +143,8 @@ describe('create-stati scaffolding', () => {
       expect(gitignoreContent).toContain('node_modules/');
       expect(gitignoreContent).toContain('dist/');
       expect(gitignoreContent).toContain('.stati/');
+      expect(gitignoreContent).toContain('public/styles.css');
+      expect(gitignoreContent).toContain('# Generated CSS files');
 
       consoleSpy.mockRestore();
     });

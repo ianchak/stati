@@ -240,10 +240,10 @@ describe('ISG-Enhanced Dev Server Integration', () => {
     expect(server).toBeDefined();
     expect(server.url).toBe('http://localhost:3004');
 
-    // Start should handle the error by throwing it after logging
-    await expect(server.start()).rejects.toThrow('Build failed');
+    // Start should handle the error gracefully and start the server
+    await expect(server.start()).resolves.toBeUndefined();
 
-    // Error should be logged before throwing
+    // Error should be logged
     expect(mockLogger.error).toHaveBeenCalled();
 
     await server.stop();

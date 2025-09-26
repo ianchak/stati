@@ -2,7 +2,7 @@
 
 ## Vision
 
-The project is a **lightweight static site generator (SSG)** built with **TypeScript** and **Vite**. Its purpose is to make building content-driven websites fast and simple.
+The project is a **lightweight static site generator (SSG)** built with **TypeScript**. Its purpose is to make building content-driven websites fast and simple.
 
 Long term, the generator should provide ready-made templates for:
 
@@ -211,6 +211,6 @@ Each template includes:
 
 ## Dev / Build / Preview
 
-- `npm run dev` → starts Vite dev server, site at `/`
+- `npm run dev` → starts development server, site at `/`
 - `npm run build` → static export with ISG support, RSS, sitemap
 - `npm run preview` → serves `dist/`

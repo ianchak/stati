@@ -43,6 +43,7 @@ export { createDevServer } from './core/dev.js';
 export { createPreviewServer } from './core/preview.js';
 export { loadConfig } from './config/loader.js';
 export { invalidate } from './core/invalidate.js';
+export { setEnv, getEnv } from './env.js';
 
 // Import for implementation use
 import type { StatiConfig } from './types/index.js';
