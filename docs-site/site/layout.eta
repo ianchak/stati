@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="/styles.css">
 
     <!-- Prism.js syntax highlighting -->
-    <link rel="stylesheet" href="/prism-nord.css">
+    <link rel="stylesheet" href="/prism-stati.css">
 
     <!-- Open Graph -->
     <meta property="og:title" content="<%= it.title || it.site.title %>">
