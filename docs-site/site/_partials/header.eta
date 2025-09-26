@@ -3,11 +3,13 @@
         <div class="flex items-center justify-between h-18">
             <!-- Left side: Logo and brand -->
             <div class="flex items-center">
-                <a href="/" class="flex items-center space-x-2 group">
-                    <div class="relative">
-                        <img src="/logo.png" alt="Stati Logo" class="w-12 h-12 shadow-lg shadow-primary-500/20 rounded-xl">
-                        <div class="absolute inset-0 bg-primary-600/20 dark:bg-primary-400/20 rounded-xl blur-lg opacity-50"></div>
-                    </div>
+                <a href="/" class="flex items-center space-x-3 group">
+                    <span class="inline-flex items-center justify-center w-12 h-12 bg-primary-500/10 dark:bg-primary-400/20 rounded-lg hover:scale-105 transition-transform duration-200">
+                        <!-- Heroicon: Lightning Bolt (outline) -->
+                        <svg class="w-8 h-8 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                    </span>
                     <div>
                         <span class="text-2xl font-bold bg-gradient-to-r from-primary-700 to-primary-500 dark:from-primary-400 dark:to-primary-300 bg-clip-text text-transparent">Stati</span>
                         <span class="block text-sm text-gray-500 dark:text-gray-400 font-medium -mt-1">Documentation</span>
