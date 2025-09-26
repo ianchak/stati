@@ -20,9 +20,6 @@
     <!-- Prism.js syntax highlighting -->
     <link rel="stylesheet" href="/prism-nord.css">
 
-    <!-- Scripts -->
-    <script src="/toc.js" defer></script>
-
     <!-- Open Graph -->
     <meta property="og:title" content="<%= it.title || it.site.title %>">
     <meta property="og:description" content="<%= it.description || 'Stati - TypeScript-first static site generator' %>">
