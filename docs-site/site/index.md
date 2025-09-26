@@ -29,31 +29,13 @@ quickStart:
   title: 'Get Started in Minutes'
   subtitle: 'Create a new Stati site with a single command.'
   commands:
-    - comment: 'Create a new Stati site'
+    - comment: 'Create a new Stati site with the interactive scaffolder'
       parts:
         - text: 'npx'
           color: 'yellow'
-        - text: 'create-stati my-site'
-          color: 'white'
-    - comment: 'Enter project directory'
-      parts:
-        - text: 'cd'
-          color: 'blue'
-        - text: 'my-site'
-          color: 'white'
-    - comment: 'Install dependencies'
-      parts:
-        - text: 'npm'
-          color: 'yellow'
-        - text: 'install'
-          color: 'white'
-    - comment: 'Start the development server'
-      parts:
-        - text: 'npm'
-          color: 'yellow'
-        - text: 'run dev'
+        - text: 'create-stati'
           color: 'white'
   link:
-    text: 'View detailed installation guide →'
+    text: 'View detailed installation guide'
     url: '/getting-started/installation/'
 ---

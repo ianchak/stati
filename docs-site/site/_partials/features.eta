@@ -1,42 +1,60 @@
 <!-- Features Section -->
-<section class="py-16 bg-white dark:bg-gray-900">
-    <div class="max-w-7xl mx-auto px-6">
-        <div class="text-center mb-16">
-            <h2 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+<section class="py-20 lg:py-24 bg-white dark:bg-dark-950 relative overflow-hidden">
+    <!-- Background decoration -->
+    <div class="absolute inset-0">
+        <div class="absolute top-1/4 left-1/4 w-64 h-64 bg-primary-100/20 dark:bg-primary-900/10 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-1/4 right-1/4 w-80 h-80 bg-blue-100/20 dark:bg-blue-900/10 rounded-full blur-3xl"></div>
+    </div>
+
+    <div class="relative max-w-7xl mx-auto px-6 lg:px-8">
+        <div class="text-center mb-20">
+            <h2 class="text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-6">
                 <%= it.page.features?.title || 'Features' %>
             </h2>
-            <p class="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            <p class="text-xl lg:text-2xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
                 <%= it.page.features?.subtitle %>
             </p>
         </div>
 
-        <div class="grid md:grid-cols-3 gap-8">
-            <% for (let feature of (it.page.features?.items || [])) { %>
-            <div class="text-center p-6">
-                <div class="w-16 h-16 flex items-center justify-center mx-auto mb-4">
+        <div class="grid lg:grid-cols-3 gap-8 lg:gap-12">
+            <% for (let i = 0; i < (it.page.features?.items || []).length; i++) { %>
+            <% let feature = (it.page.features?.items || [])[i]; %>
+            <div class="group relative bg-white/60 dark:bg-dark-800/60 backdrop-blur-sm p-8 rounded-2xl border border-gray-200/50 dark:border-dark-600/50 hover:border-primary-200 dark:hover:border-primary-700/50 hover:shadow-xl hover:shadow-primary-500/10 dark:hover:shadow-primary-500/5 transition-all duration-500 hover:-translate-y-2 animate-fade-in" style="animation-delay: <%= i * 150 %>ms">
+                <!-- Icon background with gradient -->
+                <div class="relative w-20 h-20 flex items-center justify-center mx-auto mb-6 bg-gradient-to-br from-primary-50 to-blue-50 dark:from-primary-900/30 dark:to-blue-900/30 rounded-2xl border border-primary-100 dark:border-primary-800/50 group-hover:scale-110 transition-transform duration-500">
                     <% if (feature.icon === 'code-bracket') { %>
-                        <svg class="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <svg class="w-10 h-10 text-primary-600 dark:text-primary-400 group-hover:scale-110 transition-transform duration-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5" />
                         </svg>
                     <% } else if (feature.icon === 'bolt') { %>
-                        <svg class="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <svg class="w-10 h-10 text-primary-600 dark:text-primary-400 group-hover:scale-110 transition-transform duration-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" />
                         </svg>
                     <% } else if (feature.icon === 'arrow-path') { %>
-                        <svg class="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <svg class="w-10 h-10 text-primary-600 dark:text-primary-400 group-hover:scale-110 transition-transform duration-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
                         </svg>
                     <% } else { %>
                         <!-- Fallback icon -->
-                        <svg class="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <svg class="w-10 h-10 text-primary-600 dark:text-primary-400 group-hover:scale-110 transition-transform duration-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z" />
                         </svg>
                     <% } %>
+                    <!-- Decorative ring -->
+                    <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary-200/20 to-blue-200/20 dark:from-primary-700/20 dark:to-blue-700/20 blur-sm group-hover:blur-md transition-all duration-500"></div>
                 </div>
-                <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2"><%= feature.title %></h3>
-                <p class="text-gray-600 dark:text-gray-300">
-                    <%= feature.description %>
-                </p>
+
+                <div class="text-center">
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-300">
+                        <%= feature.title %>
+                    </h3>
+                    <p class="text-gray-600 dark:text-gray-300 leading-relaxed text-lg">
+                        <%= feature.description %>
+                    </p>
+                </div>
+
+                <!-- Hover gradient overlay -->
+                <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary-500/5 to-blue-500/5 dark:from-primary-400/5 dark:to-blue-400/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
             </div>
             <% } %>
         </div>

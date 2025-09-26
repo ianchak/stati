@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="<%= it.site.defaultLocale || 'en-US' %>">
+<html lang="<%= it.site.defaultLocale || 'en-US' %>" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,8 +9,19 @@
     <!-- Favicon -->
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 
+    <!-- Preload fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@300;400;500&display=swap" rel="stylesheet">
+
     <!-- Styles -->
     <link rel="stylesheet" href="/styles.css">
+
+    <!-- Prism.js syntax highlighting -->
+    <link rel="stylesheet" href="/prism-stati.css">
+
+    <!-- Particles.js -->
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
 
     <!-- Open Graph -->
     <meta property="og:title" content="<%= it.title || it.site.title %>">
@@ -18,13 +29,27 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="<%= it.site.baseUrl + it.url %>">
 </head>
-<body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+<body class="bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-dark-950 dark:via-dark-900 dark:to-dark-900/80 text-gray-900 dark:text-gray-100 font-sans antialiased transition-colors duration-300 overflow-x-hidden">
+    <!-- Skip to content link for accessibility -->
+    <a href="#main-content" class="skip-link sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-primary-600 text-white px-4 py-2 rounded-md z-50 transition-all duration-200">
+        Skip to main content
+    </a>
+
     <%~ it.partials.header %>
 
-    <main>
-        <%~ it.partials.hero %>
-        <%~ it.partials.features %>
-        <%~ it.partials['quick-start'] %>
+    <main id="main-content" class="relative">
+        <!-- Background decoration elements -->
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute -top-40 -right-40 w-80 h-80 bg-primary-100/20 dark:bg-primary-900/10 rounded-full blur-3xl"></div>
+            <div class="absolute top-40 -left-40 w-96 h-96 bg-blue-100/20 dark:bg-blue-900/10 rounded-full blur-3xl"></div>
+            <div class="absolute bottom-40 right-1/4 w-64 h-64 bg-indigo-100/20 dark:bg-indigo-900/10 rounded-full blur-3xl"></div>
+        </div>
+
+        <div class="relative z-10">
+            <%~ it.partials.hero %>
+            <%~ it.partials.features %>
+            <%~ it.partials['quick-start'] %>
+        </div>
     </main>
 
     <%~ it.partials.footer %>
