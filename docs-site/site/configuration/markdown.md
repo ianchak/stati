@@ -306,64 +306,60 @@ export default defineConfig({
 });
 ```
 
-### Custom Extensions
+### Markdown-it Plugin Support
+
+Stati supports markdown-it plugins for extending markdown processing capabilities:
 
 ```javascript
 export default defineConfig({
   markdown: {
+    // Array of plugins to load - each can be a string or [name, options]
     plugins: [
-      // Custom callout boxes
-      {
-        name: 'callouts',
-        plugin: (md) => {
-          md.use(require('markdown-it-container'), 'warning', {
-            validate: (params) => params.trim().match(/^warning\s+(.*)$/),
-            render: (tokens, idx) => {
-              const m = tokens[idx].info.trim().match(/^warning\s+(.*)$/);
-              if (tokens[idx].nesting === 1) {
-                return `<div class="callout callout-warning">
-                         <h4>${md.utils.escapeHtml(m[1])}</h4>\n`;
-              } else {
-                return '</div>\n';
-              }
-            },
-          });
-        },
-      },
+      // Simple plugin name (will load markdown-it-{name})
+      'anchor',
+      'toc-done-right',
 
-      // Custom emoji support
-      {
-        name: 'emoji',
-        plugin: (md) => {
-          md.use(require('markdown-it-emoji'), {
-            defs: {
-              ':warning:': '⚠️',
-              ':info:': 'ℹ️',
-              ':success:': '✅',
-              ':error:': '❌',
-            },
-          });
-        },
-      },
+      // Plugin with options
+      ['container', {
+        name: 'warning',
+        render: (tokens, idx) => {
+          // Custom rendering logic
+        }
+      }],
 
-      // YouTube embed
-      {
-        name: 'youtube',
-        plugin: (md) => {
-          md.renderer.rules.youtube = (tokens, idx) => {
-            const token = tokens[idx];
-            const videoId = token.attrGet('id');
-            return `<div class="youtube-embed">
-                      <iframe src="https://www.youtube.com/embed/${videoId}"
-                              frameborder="0" allowfullscreen></iframe>
-                    </div>`;
-          };
-        },
-      },
+      'emoji',
+      'footnote'
     ],
-  },
+
+    // Alternative: configure manually with setup function
+    configure: (md) => {
+      // Import and use plugins directly
+      md.use(require('markdown-it-anchor'), {
+        permalink: true,
+        permalinkBefore: true
+      });
+
+      md.use(require('markdown-it-toc-done-right'), {
+        includeLevel: [1, 2, 3]
+      });
+    }
+  }
 });
 ```
+
+**Available Plugin Formats:**
+
+- `'plugin-name'` - Loads `markdown-it-plugin-name` with default options
+- `['plugin-name', options]` - Loads plugin with custom options
+- Use `configure` function for complex plugin setups
+
+**Popular markdown-it Plugins:**
+
+- `markdown-it-anchor` - Heading anchors
+- `markdown-it-toc-done-right` - Table of contents
+- `markdown-it-container` - Custom containers
+- `markdown-it-emoji` - Emoji support
+- `markdown-it-footnote` - Footnotes
 
 ## Content Processing
 

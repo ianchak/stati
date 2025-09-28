@@ -398,48 +398,6 @@ export default defineConfig({
 });
 ```
 
-### Search Index Generation
 
-```javascript
-let searchIndex = [];
-
-export default defineConfig({
-  hooks: {
-    beforeAll: async (ctx) => {
-      searchIndex = []; // Reset index
-    },
-
-    afterRender: async (ctx) => {
-      // Skip non-content pages
-      if (ctx.page.url.includes('404') || ctx.page.url.includes('sitemap')) {
-        return;
-      }
-
-      // Extract searchable content
-      const textContent = stripHtml(ctx.html);
-      const headings = extractHeadings(ctx.html);
-
-      searchIndex.push({
-        url: ctx.page.url,
-        title: ctx.page.frontMatter.title,
-        description: ctx.page.frontMatter.description,
-        content: textContent.substring(0, 500), // First 500 chars
-        headings: headings.map(h => h.text),
-        tags: ctx.page.frontMatter.tags || []
-      });
-    },
-
-    afterAll: async (ctx) => {
-      // Write search index
-      await writeFile(
-        path.join(ctx.config.outDir, 'search-index.json'),
-        JSON.stringify(searchIndex, null, 2)
-      );
-
-      console.log(`Generated search index with ${searchIndex.length} entries`);
-    }
-  }
-});
-```
 
 Build hooks provide powerful extensibility while maintaining Stati's performance and simplicity. Use them to integrate external services, process content dynamically, and customize the build pipeline to match your specific needs.

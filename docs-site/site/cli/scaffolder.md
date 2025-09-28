@@ -121,11 +121,6 @@ my-site/
 └── README.md            # Getting started guide
 ```
 
-> **Note:** Additional templates (blog, docs, news) are planned for future releases.
-
-
-
-
 ## Styling Solutions
 
 ### CSS (Plain CSS)

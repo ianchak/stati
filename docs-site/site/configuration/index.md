@@ -106,29 +106,7 @@ export default defineConfig({
       xhtmlOut: false, // Use XHTML-style self-closing tags
     },
 
-    // Plugin configuration
-    plugins: {
-      // Heading anchors
-      anchor: {
-        permalink: true,
-        permalinkBefore: true,
-        permalinkSymbol: '#',
-        permalinkClass: 'header-anchor',
-      },
 
-      // Table of contents
-      toc: {
-        includeLevel: [1, 2, 3, 4],
-        containerClass: 'table-of-contents',
-        markerPattern: /^\[\[toc\]\]/im,
-      },
-
-      // Footnotes
-      footnote: {
-        backrefLabel: '↩',
-        anchorTemplate: '^%d',
-      },
-    },
 
     // Custom setup function
     setup(md) {
@@ -379,43 +357,7 @@ export default defineConfig({
 });
 ```
 
-### Custom Plugins
 
-Create and use custom Stati plugins:
-
-```javascript
-// plugins/custom-plugin.js
-export function customPlugin(options = {}) {
-  return {
-    name: 'custom-plugin',
-
-    // Plugin hooks
-    setup(stati) {
-      stati.addContentTransform('*.md', async (content, page) => {
-        // Transform markdown content
-        return processCustomSyntax(content);
-      });
-
-      stati.addPageHook('beforeRender', (page) => {
-        // Modify page data
-        page.customProperty = generateCustomData(page);
-      });
-    },
-  };
-}
-
-// stati.config.js
-import { customPlugin } from './plugins/custom-plugin.js';
-
-export default defineConfig({
-  plugins: [
-    customPlugin({
-      option1: 'value1',
-      option2: 'value2',
-    }),
-  ],
-});
-```
 
 ## Environment-based Configuration
 

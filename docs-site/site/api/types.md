@@ -35,9 +35,6 @@ interface StatiConfig {
   /** ISG (Incremental Static Generation) settings */
   isg?: ISGConfig;
 
-  /** Plugin configuration */
-  plugins?: Plugin[];
-
   /** Custom configuration extensions */
   [key: string]: any;
 }
@@ -386,107 +383,7 @@ interface TemplateContext {
 }
 ```
 
-## Plugin Types
 
-### Plugin Interface
-
-```typescript
-interface Plugin {
-  /** Plugin name */
-  name: string;
-
-  /** Plugin version */
-  version?: string;
-
-  /** Plugin description */
-  description?: string;
-
-  /** Plugin author */
-  author?: string;
-
-  /** Plugin homepage */
-  homepage?: string;
-
-  /** Plugin configuration */
-  config?: Record<string, any>;
-
-  /** Plugin hooks */
-  hooks?: PluginHooks;
-
-  /** Custom processors */
-  processors?: Record<string, ContentProcessor>;
-
-  /** Template filters */
-  filters?: Record<string, TemplateFilter>;
-
-  /** CLI commands */
-  commands?: Record<string, CLICommand>;
-
-  /** Cleanup function */
-  cleanup?: () => Promise<void>;
-}
-
-interface PluginHooks {
-  /** Build lifecycle hooks */
-  'build:start'?: PluginHook<BuildContext>;
-  'build:end'?: PluginHook<BuildContext>;
-  'build:error'?: PluginHook<Error, BuildContext>;
-  'build:clean'?: PluginHook<BuildContext>;
-
-  /** Content processing hooks */
-  'content:discover'?: PluginHook<string[], BuildContext>;
-  'content:load'?: PluginHook<string, BuildContext>;
-  'content:process'?: PluginHook<Page, BuildContext>;
-  'content:transform'?: PluginHook<string, Page, BuildContext>;
-
-  /** Template processing hooks */
-  'template:load'?: PluginHook<string, BuildContext>;
-  'template:render'?: PluginHook<string, TemplateContext, BuildContext>;
-  'template:rendered'?: PluginHook<string, Page, BuildContext>;
-
-  /** Page generation hooks */
-  'page:create'?: PluginHook<Page, BuildContext>;
-  'page:process'?: PluginHook<Page, BuildContext>;
-  'page:render'?: PluginHook<Page, BuildContext>;
-  'page:write'?: PluginHook<Page, string, BuildContext>;
-}
-
-type PluginHook<T = any, U = BuildContext> = (data: T, context: U) => Promise<T | void> | T | void;
-
-interface CLICommand {
-  /** Command description */
-  description: string;
-
-  /** Command options */
-  options?: CLIOption[];
-
-  /** Command handler */
-  handler: (args: Record<string, any>, context: CLIContext) => Promise<void>;
-}
-
-interface CLIOption {
-  /** Option name */
-  name: string;
-
-  /** Option alias */
-  alias?: string;
-
-  /** Option description */
-  description?: string;
-
-  /** Option type */
-  type?: 'boolean' | 'string' | 'number' | 'array';
-
-  /** Default value */
-  default?: any;
-
-  /** Required option */
-  required?: boolean;
-
-  /** Choices for option */
-  choices?: string[];
-}
-```
 
 ## ISG Types
 

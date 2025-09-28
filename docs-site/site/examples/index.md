@@ -47,26 +47,6 @@ cd examples/blank
 npm run dev
 ```
 
-## Planned Examples
-
-The following examples are planned for future releases:
-
-### Blog Template (Coming Soon)
-
-- Article listings and pagination
-- Categories and tags
-- RSS feed generation
-- SEO optimization
-
-### Documentation Site (Coming Soon)
-
-- Hierarchical navigation
-- Search functionality
-- API documentation layouts
-- Version management
-
-### News Site (Coming Soon)
-
 ## Creating Your Own
 
 Use the scaffolder to create a new Stati project:
