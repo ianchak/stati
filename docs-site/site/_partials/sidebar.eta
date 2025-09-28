@@ -184,10 +184,6 @@
                         <span class="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-red-500 transition-colors duration-200"></span>
                         Error Handling
                     </a>
-                    <a href="/api/plugins/" class="sidebar-link flex items-center px-4 py-2.5 text-sm text-gray-600 hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400 hover:bg-red-50/60 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200 font-medium group">
-                        <span class="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-red-500 transition-colors duration-200"></span>
-                        Plugin API
-                    </a>
                     <a href="/api/types/" class="sidebar-link flex items-center px-4 py-2.5 text-sm text-gray-600 hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400 hover:bg-red-50/60 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200 font-medium group">
                         <span class="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-red-500 transition-colors duration-200"></span>
                         TypeScript Types

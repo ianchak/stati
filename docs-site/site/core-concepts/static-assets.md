@@ -437,7 +437,7 @@ export function initPostMeta() {
 }
 ```
 
-## Image Optimization
+## Images and Media
 
 ### Responsive Images
 
@@ -467,22 +467,7 @@ export function initPostMeta() {
 </picture>
 ```
 
-### Image Processing
-
-Stati supports image optimization through build configuration:
-
-```javascript
-// stati.config.js
-export default defineConfig({
-  build: {
-    imageOptimization: {
-      gifsicle: { optimizationLevel: 7 },
-      mozjpeg: { quality: 80 },
-      pngquant: { quality: [0.65, 0.8] },
-    },
-  },
-});
-```
+**Note**: Stati copies images from your `public/` directory as-is. For image optimization, you'll need to optimize images before placing them in your project or use external tools in your build process.
 
 ## Web Fonts
 
@@ -525,19 +510,4 @@ body {
 }
 ```
 
-## Build Optimization
-
-### Production Configuration
-
-```javascript
-// stati.config.js
-export default defineConfig({
-  build: {
-    // Asset optimization
-    minify: true,
-    sourcemap: false,
-
-    // Rollup options
-    rollupOptions: {
-      output:
-```
+Static assets are automatically copied to your output directory during builds. Use appropriate file organization and web standards for optimal performance.

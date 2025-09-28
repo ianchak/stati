@@ -378,17 +378,6 @@ export default defineConfig({
         maxWorkers: require('os').cpus().length,
       },
 
-      // Cache warming
-      warming: {
-        enabled: true,
-
-        // Pre-warm cache for common pages
-        targets: ['/', '/blog/', '/docs/', '/about'],
-
-        // Warming strategy
-        strategy: 'priority', // 'priority' | 'breadth-first' | 'depth-first'
-      },
-
       // Memory optimization
       memory: {
         // Stream large files instead of loading into memory
@@ -641,20 +630,11 @@ stati build --force
 # Clean cache
 stati build --clean
 
-# Show cache statistics
-stati cache stats
-
-# Invalidate specific paths
-stati cache invalidate /blog/**
-
-# Invalidate by tags
-stati cache invalidate --tag blog
-
-# Warm cache
-stati cache warm
-
-# Export cache for inspection
-stati cache export cache-dump.json
+# Invalidate cache entries
+stati invalidate                    # Clear all cache
+stati invalidate "tag:blog"         # Invalidate by tag
+stati invalidate "path:/blog/**"    # Invalidate by path pattern
+stati invalidate "age:3months"      # Invalidate entries older than 3 months
 ```
 
 ## Best Practices
@@ -670,8 +650,7 @@ stati cache export cache-dump.json
 
 1. **Parallel Processing**: Enable parallel cache operations
 2. **Memory Management**: Use streaming for large files
-3. **Cache Warming**: Pre-warm cache for important pages
-4. **Monitoring**: Track cache performance metrics
+3. **Monitoring**: Track cache performance metrics
 
 ### Development
 

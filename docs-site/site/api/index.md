@@ -275,121 +275,69 @@ interface TemplateConfig {
 }
 ```
 
-## Build Hooks API
 
-### Hook Types
+
+## Environment & Utilities
+
+### Environment Management
 
 ```typescript
-interface HooksConfig {
-  beforeBuild?: (context: BuildContext) => Promise<void> | void;
-  afterBuild?: (stats: BuildStats) => Promise<void> | void;
-  beforeRender?: (page: PageData) => Promise<void> | void;
-  afterRender?: (page: PageData, html: string) => Promise<void> | void;
-}
+import { setEnv, getEnv } from '@stati/core';
 
-interface BuildContext {
-  pages: PageData[];
-  config: StatiConfig;
-  outputDir: string;
-}
+// Set environment for builds
+setEnv('production'); // 'development' | 'production' | 'test'
 
-interface BuildStats {
-  buildTime: number;
-  pageCount: number;
-  cacheHitRate: number;
-  assetCount: number;
-  totalSize: number;
-}
-
-interface PageData {
-  title?: string;
-  description?: string;
-  date?: string;
-  url: string;
-  path: string;
-  content: string;
-  frontmatter: Record<string, any>;
-}
+// Get current environment
+const env = getEnv(); // Returns current environment string
 ```
 
-### Hook Examples
+### Build Hooks
+
+Stati provides lifecycle hooks for custom build logic:
 
 ```typescript
+import { defineConfig } from '@stati/core';
+
 export default defineConfig({
   hooks: {
-    async beforeBuild(context) {
-      // Generate dynamic content
-      const posts = context.pages.filter((p) => p.url.startsWith('/blog/'));
-      await generateRSSFeed(posts);
-      await generateSitemap(context.pages);
+    // Called before starting the build process
+    beforeAll: async (ctx) => {
+      console.log(`Building ${ctx.pages.length} pages`);
+      // Setup logic, external data fetching, etc.
     },
 
-    beforeRender(page) {
-      // Add computed properties
-      page.readingTime = calculateReadingTime(page.content);
-      page.wordCount = countWords(page.content);
+    // Called after completing the build process
+    afterAll: async (ctx) => {
+      console.log(`Built ${ctx.pages.length} pages successfully`);
+      // Post-build tasks, deployment preparation, etc.
     },
 
-    async afterBuild(stats) {
-      console.log(`Built ${stats.pageCount} pages in ${stats.buildTime}ms`);
+    // Called before rendering each individual page
+    beforeRender: async (ctx) => {
+      // Modify page data or context before rendering
+      ctx.page.buildTime = new Date().toISOString();
+    },
 
-      // Post-build optimizations
-      await optimizeImages();
-      await generateSearchIndex();
+    // Called after rendering each individual page
+    afterRender: async (ctx) => {
+      // Post-process rendered HTML, analytics, etc.
+      console.log(`Rendered: ${ctx.page.url}`);
     },
   },
 });
 ```
 
-## Plugin API
-
-### Plugin Interface
+**Available Hook Contexts:**
 
 ```typescript
-interface Plugin {
-  name: string;
-  setup: (stati: StatiAPI) => Promise<void> | void;
+interface BuildContext {
+  config: StatiConfig;
+  pages: PageModel[];
 }
 
-interface StatiAPI {
-  addContentTransform: (pattern: string, transform: ContentTransform) => void;
-  addPageHook: (hook: PageHook, handler: PageHookHandler) => void;
-  addBuildHook: (hook: BuildHook, handler: BuildHookHandler) => void;
-  addTemplateHelper: (name: string, helper: Function) => void;
-}
-
-type ContentTransform = (content: string, page: PageData) => Promise<string> | string;
-type PageHookHandler = (page: PageData) => Promise<void> | void;
-type BuildHookHandler = (context: BuildContext) => Promise<void> | void;
-```
-
-### Creating Plugins
-
-```typescript
-// Custom plugin example
-export function customPlugin(options: CustomPluginOptions = {}): Plugin {
-  return {
-    name: 'custom-plugin',
-
-    setup(stati) {
-      // Add content transformation
-      stati.addContentTransform('*.md', async (content, page) => {
-        // Transform markdown content
-        return processCustomSyntax(content, options);
-      });
-
-      // Add page hook
-      stati.addPageHook('beforeRender', (page) => {
-        // Modify page data
-        page.customProperty = generateCustomData(page, options);
-      });
-
-      // Add template helpers
-      stati.addTemplateHelper('customHelper', (input) => {
-        return processInput(input, options);
-      });
-    },
-  };
+interface PageContext {
+  page: PageModel;
+  config: StatiConfig;
 }
 ```
 
@@ -398,44 +346,75 @@ export function customPlugin(options: CustomPluginOptions = {}): Plugin {
 ### Programmatic Usage
 
 ```typescript
-import { build, dev, invalidate } from '@stati/core';
-import type { StatiConfig } from '@stati/core/types';
+import { build, createDevServer, createPreviewServer, invalidate } from '@stati/core';
+import type { BuildOptions, DevServerOptions, PreviewServerOptions } from '@stati/core';
 
 // Programmatic build
-const config: StatiConfig = {
-  site: {
-    title: 'My Site',
-    baseUrl: 'https://example.com',
-  },
+const buildOptions: BuildOptions = {
+  force: false,
+  clean: true,
+  includeDrafts: false,
+  configPath: './stati.config.js',
 };
 
-const result = await build(config, {
-  outputDir: 'dist',
-  clean: true,
-  verbose: true,
+await build(buildOptions);
+```
+
+### Development Server
+
+```typescript
+import { createDevServer } from '@stati/core';
+
+const devServer = await createDevServer({
+  port: 3000,
+  host: 'localhost',
+  open: true,
+  configPath: './stati.config.js',
 });
 
-console.log(`Built ${result.pageCount} pages in ${result.buildTime}ms`);
+await devServer.start();
+console.log(`Dev server running at ${devServer.url}`);
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  await devServer.stop();
+});
+```
+
+### Preview Server
+
+```typescript
+import { createPreviewServer } from '@stati/core';
+
+const previewServer = await createPreviewServer({
+  port: 4000,
+  host: 'localhost',
+  open: false,
+  configPath: './stati.config.js',
+});
+
+await previewServer.start();
+console.log(`Preview server running at ${previewServer.url}`);
 ```
 
 ### Cache Management
 
 ```typescript
-import { CacheManager } from '@stati/core/cache';
+import { invalidate } from '@stati/core';
 
-const cache = new CacheManager({
-  cacheDir: '.stati/cache',
-  ttlSeconds: 3600,
-});
+// Clear entire cache
+const result = await invalidate();
 
-// Get cache statistics
-const stats = await cache.getStats();
-console.log(`Cache hit rate: ${stats.hitRate}%`);
+// Invalidate by tag
+const result = await invalidate('tag:blog');
 
-// Invalidate by pattern
-await cache.invalidate('path:/blog/');
-await cache.invalidate('tag:navigation');
-await cache.invalidate('age:7d');
+// Invalidate by path pattern
+const result = await invalidate('path:/blog/**');
+
+// Invalidate by age
+const result = await invalidate('age:3months');
+
+console.log(`Invalidated ${result.invalidatedCount} cache entries`);
 
 // Clean orphaned entries
 await cache.clean();

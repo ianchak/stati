@@ -229,29 +229,19 @@ All commands support these global options:
 - `--help` - Show command help
 - `--version` - Show version information
 
-## Configuration Options
+### Version Information
 
-### CLI Configuration File
+```bash
+# Show Stati CLI version
+stati --version
 
-Create `.stati/cli-config.json` for persistent CLI settings:
-
-```json
-{
-  "dev": {
-    "port": 3000,
-    "open": true,
-    "host": "localhost"
-  },
-  "build": {
-    "clean": true,
-    "verbose": false
-  },
-  "cache": {
-    "autoClean": true,
-    "maxSize": "500MB"
-  }
-}
+# Show help for any command
+stati --help
+stati build --help
+stati dev --help
 ```
+
+## Configuration Options
 
 ### Configuration Files
 
@@ -419,9 +409,8 @@ stati build --verbose
 
 ```bash
 # Error: Cache manifest corrupted
-# Solution: Reset cache
-stati cache reset
-stati build
+# Solution: Clean cache and rebuild
+stati build --clean
 ```
 
 ### Verbose Output
