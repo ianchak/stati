@@ -14,13 +14,13 @@ hero:
       primary: false
 features:
   title: 'Why Choose Stati?'
-  subtitle: 'Built for modern web development with TypeScript at its core.'
+  subtitle: 'Built for modern web development with essential features implemented and more coming soon.'
   items:
     - title: 'TypeScript First'
-      description: 'Built with TypeScript from the ground up.'
+      description: 'Built with TypeScript from the ground up with defineConfig() helper.'
       icon: 'code-bracket'
-    - title: 'Fast Builds'
-      description: 'Lightning-fast development server and optimized builds.'
+    - title: 'Fast Development'
+      description: 'Development server with live reload and incremental rebuilding.'
       icon: 'bolt'
     - title: 'ISG Support'
       description: 'Incremental Static Generation with intelligent caching and invalidation.'

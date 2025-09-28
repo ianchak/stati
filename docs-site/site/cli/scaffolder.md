@@ -1,11 +1,11 @@
 ---
 title: 'Scaffolder (create-stati)'
-description: 'Learn how to use create-stati to scaffold new Stati projects with different templates and configurations.'
+description: 'Learn how to use create-stati to scaffold new Stati projects with the blank template and styling configurations.'
 ---
 
 # Scaffolder (create-stati)
 
-The `create-stati` package provides an interactive scaffolding tool to quickly set up new Stati projects with best practices, styling options, and project templates.
+The `create-stati` package provides an interactive scaffolding tool to quickly set up new Stati projects with best practices and styling options.
 
 ## Quick Start
 
@@ -90,7 +90,9 @@ Examples:
 
 ### Blank Template
 
-A minimal starter with essential files and configuration:
+Currently, Stati supports one template:
+
+**Blank Template** - A minimal starter with essential files and configuration:
 
 ```bash
 npm create stati my-site -- --template blank --styling css
@@ -106,7 +108,7 @@ npm create stati my-site -- --template blank --styling css
 
 **Generated Structure:**
 
-```
+```text
 my-site/
 ├── site/
 │   ├── index.md          # Homepage
@@ -118,6 +120,8 @@ my-site/
 ├── package.json          # Dependencies and scripts
 └── README.md            # Getting started guide
 ```
+
+> **Note:** Additional templates (blog, docs, news) are planned for future releases.
 
 
 
