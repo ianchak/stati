@@ -19,10 +19,9 @@ stati dev [options]
 
 **Options:**
 
-- `--port, -p <port>` - Port to run the server on (default: 3000)
+- `--port <port>` - Port to run the server on (default: 3000)
 - `--host <host>` - Host to bind to (default: localhost)
 - `--open` - Open browser automatically
-- `--https` - Use HTTPS in development
 - `--config <file>` - Custom config file path
 
 **Examples:**
@@ -31,11 +30,11 @@ stati dev [options]
 # Basic development server
 stati dev
 
-# Custom port
-stati dev --port 8080
+# Custom port and host
+stati dev --port 8080 --host 0.0.0.0
 
-# Open browser and use HTTPS
-stati dev --open --https
+# Open browser automatically
+stati dev --open
 
 # Custom config file
 stati dev --config stati.staging.js
@@ -51,13 +50,10 @@ stati build [options]
 
 **Options:**
 
-- `--output, -o <dir>` - Output directory (default: dist)
 - `--clean` - Clean output directory before build
 - `--force` - Force rebuild (ignore cache)
 - `--include-drafts` - Include pages marked with `draft: true` in the build
 - `--config <file>` - Custom config file path
-- `--verbose` - Detailed build output
-- `--analyze` - Generate bundle analysis
 
 **Examples:**
 
@@ -65,14 +61,14 @@ stati build [options]
 # Basic build
 stati build
 
-# Clean build with verbose output
-stati build --clean --verbose
+# Clean build
+stati build --clean
 
 # Force rebuild ignoring cache
 stati build --force
 
-# Build to custom directory
-stati build --output public
+# Include draft pages
+stati build --include-drafts
 ```
 
 ### `stati invalidate`
@@ -80,21 +76,16 @@ stati build --output public
 Invalidate ISG cache entries.
 
 ```bash
-stati invalidate <target> [options]
+stati invalidate [query]
 ```
 
-**Targets:**
+**Query Types:**
 
 - `path:<path>` - Invalidate specific path
 - `tag:<tag>` - Invalidate by tag
-- `age:<duration>` - Invalidate by age
-- `all` - Invalidate everything
-
-**Options:**
-
-- `--dry-run` - Show what would be invalidated
-- `--verbose` - Detailed output
-- `--config <file>` - Custom config file path
+- `age:<duration>` - Invalidate by age (e.g., `7days`, `3months`)
+- Multiple targets - Use quotes for space-separated queries
+- Empty - Invalidate everything
 
 **Examples:**
 
@@ -106,44 +97,56 @@ stati invalidate path:/blog/post-1/
 stati invalidate tag:blog
 
 # Invalidate old content
-stati invalidate age:30d
+stati invalidate age:30days
 
-# Dry run to see what would be invalidated
-stati invalidate tag:blog --dry-run
+# Invalidate multiple targets (use quotes)
+stati invalidate "path:/blog/ tag:navigation age:30days"
 
-# Invalidate multiple targets
-stati invalidate path:/blog/ tag:navigation
+# Clear all cache
+stati invalidate
+```
+
+### `stati preview`
+
+Preview your production build locally.
+
+```bash
+stati preview [options]
+```
+
+**Options:**
+
+- `--port <port>` - Port to run the server on (default: 4000)
+- `--host <host>` - Host to bind to (default: localhost)
+- `--open` - Open browser automatically
+- `--config <file>` - Custom config file path
+
+**Examples:**
+
+```bash
+# Preview built site
+stati preview
+
+# Preview on custom port
+stati preview --port 8080
+
+# Open browser automatically
+stati preview --open
 ```
 
 ## Advanced Usage
 
 ### Build Statistics
 
-Get detailed build information:
+Stati automatically shows build statistics after each build:
 
 ```bash
-# Show build stats
-stati build --analyze
+stati build
 
 # Output:
 # ✅ Build completed in 2.34s
-#
-# Pages:
-# ├── Total: 127 pages
-# ├── Generated: 45 pages
-# ├── Cached: 82 pages
-# └── Cache hit rate: 64.6%
-#
-# Assets:
-# ├── CSS: 3 files (45.2 KB)
-# ├── JS: 7 files (128.7 KB)
-# ├── Images: 23 files (2.1 MB)
-# └── Other: 8 files (156.3 KB)
-#
-# Bundle Analysis:
-# ├── main.js: 45.2 KB
-# ├── vendor.js: 83.5 KB
-# └── styles.css: 45.2 KB
+# 📄 Pages: 45 generated, 82 cached (64.6% hit rate)
+# 💾 Cache: 156 MB, 127 entries
 ```
 
 ### Environment Configuration
@@ -218,60 +221,13 @@ jobs:
 }
 ```
 
-## Cache Management
+## Global Options
 
-### Cache Commands
+All commands support these global options:
 
-Stati provides built-in cache management:
-
-```bash
-# View cache statistics
-stati cache stats
-
-# Output:
-# Cache Statistics:
-# ├── Total entries: 127
-# ├── Total size: 45.2 MB
-# ├── Hit rate: 85.3%
-# ├── Oldest entry: 7 days ago
-# └── Newest entry: 2 minutes ago
-
-# Show cache dependencies
-stati cache deps [path]
-
-# Clean orphaned cache entries
-stati cache clean
-
-# Reset all cache
-stati cache reset
-```
-
-### Advanced Cache Operations
-
-```bash
-# Show detailed cache analysis
-stati cache analyze
-
-# Output:
-# Cache Analysis:
-#
-# Age Distribution:
-# ├── < 1 hour: 23 entries (18.1%)
-# ├── 1-24 hours: 45 entries (35.4%)
-# ├── 1-7 days: 38 entries (29.9%)
-# └── > 7 days: 21 entries (16.5%)
-#
-# Size Distribution:
-# ├── < 1KB: 67 entries (52.8%)
-# ├── 1-10KB: 42 entries (33.1%)
-# ├── 10-100KB: 16 entries (12.6%)
-# └── > 100KB: 2 entries (1.6%)
-#
-# Dependencies:
-# ├── Most dependencies: /blog/ (34 deps)
-# ├── Most referenced: layout.eta (89 refs)
-# └── Orphaned entries: 3
-```
+- `--config <path>` - Path to configuration file
+- `--help` - Show command help
+- `--version` - Show version information
 
 ## Configuration Options
 
@@ -297,20 +253,18 @@ Create `.stati/cli-config.json` for persistent CLI settings:
 }
 ```
 
-### Global Configuration
+### Configuration Files
 
-Install Stati globally for system-wide defaults:
+Stati uses project-specific configuration files:
 
 ```bash
-# Install globally
-npm install -g @stati/cli
+# Use custom config file
+stati dev --config stati.dev.js
+stati build --config stati.prod.js
 
-# Set global defaults
-stati config set dev.port 8080
-stati config set build.clean true
-
-# View global config
-stati config list
+# Default config file locations
+stati.config.js  # Primary config
+stati.config.ts  # TypeScript config
 ```
 
 ## Development Workflows

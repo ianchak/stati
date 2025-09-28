@@ -27,31 +27,23 @@ pnpm create stati my-site
 The scaffolder provides an interactive setup process:
 
 ```bash
-$ npm create stati my-blog
+$ npm create stati my-site
 
-✨ Creating new Stati site: my-blog
+✨ Creating new Stati site: my-site
 
-? What type of site would you like to create? (Use arrow keys)
-❯ Blog - A personal or company blog
-  Documentation - Technical documentation site
-  Portfolio - Personal portfolio website
-  Landing Page - Marketing landing page
-  Custom - Start with a blank template
-
-? Choose a styling solution: (Use arrow keys)
-❯ CSS - Plain CSS files
-  Sass - SCSS/Sass preprocessing
-  Tailwind CSS - Utility-first CSS framework
-  Styled Components - CSS-in-JS solution
-
-? Would you like to initialize a git repository? (Y/n) Y
-
-? Install dependencies? (Y/n) Y
+? Project name: my-site
+? Choose a template: blank (more templates coming soon)
+? Select styling approach:
+  ❯ CSS (Basic stylesheets)
+    Sass (Enhanced CSS with variables)
+    Tailwind CSS (Utility-first framework)
+? Initialize git repository? Yes
 
 🎉 Project created successfully!
 
 Next steps:
-  cd my-blog
+  cd my-site
+  npm install
   npm run dev
 ```
 
@@ -60,14 +52,11 @@ Next steps:
 Skip the interactive prompts with command line options:
 
 ```bash
-# Create with specific template
-npm create stati my-site -- --template blog
+# Create with specific options
+npm create stati my-site -- --template blank --styling tailwind --git
 
-# Skip interactive prompts
-npm create stati my-site -- --template blog --styling tailwind --git --install
-
-# Use a specific directory
-npm create stati . -- --template docs --styling css
+# Use all defaults
+npm create stati my-site -- --yes
 
 # Show help
 npm create stati -- --help
@@ -77,29 +66,55 @@ npm create stati -- --help
 
 ```bash
 Options:
-  -t, --template <type>    Project template (blog, docs, portfolio, landing, blank)
-  -s, --styling <type>     Styling solution (css, sass, tailwind, styled-components)
-  -g, --git               Initialize git repository
-  -i, --install           Install dependencies automatically
-  -y, --yes               Skip all prompts and use defaults
-  -v, --verbose           Show verbose output
-  -h, --help              Display help information
+  --template <name>     Template to use (currently: blank)
+  --styling <type>      Styling approach (css, sass, tailwind)
+  --git                 Initialize git repository
+  --no-git             Skip git initialization
+  --yes                 Use all defaults (--template blank --styling css --git)
+  --help                Display help information
 ```
 
 ## Project Templates
 
-### Blog Template
+### Blank Template
 
-Perfect for personal or company blogs:
+A minimal starter with essential files and configuration:
 
 ```bash
-npm create stati my-blog -- --template blog --styling tailwind
+npm create stati my-site -- --template blank --styling css
 ```
 
 **Features:**
 
-- Post listing with pagination
-- Individual post pages
+- Minimal setup
+- Basic layout structure
+- Essential configuration
+- Sample content
+- Development scripts
+
+**Generated Structure:**
+
+```
+my-site/
+├── site/
+│   ├── index.md          # Homepage
+│   └── layout.eta        # Main layout
+├── public/
+│   ├── styles.css        # Stylesheet
+│   └── favicon.svg       # Site icon
+├── stati.config.js       # Configuration
+├── package.json          # Dependencies and scripts
+└── README.md            # Getting started guide
+```
+
+### Future Templates
+
+Additional templates are planned for future releases:
+
+- **Blog** - Blog template with posts, categories, RSS feed
+- **Docs** - Documentation template with navigation, search
+- **Portfolio** - Portfolio template with project showcases
+- **Landing** - Marketing landing page template
 - Tag and category support
 - RSS feed generation
 - SEO optimization
@@ -182,41 +197,7 @@ npm create stati my-portfolio -- --template portfolio --styling sass
 - About page
 - Resume/CV page
 - Image galleries
-- Smooth animations
 
-### Landing Page Template
-
-Marketing-focused landing pages:
-
-```bash
-npm create stati landing -- --template landing --styling tailwind
-```
-
-**Features:**
-
-- Hero section
-- Feature highlights
-- Testimonials
-- Pricing tables
-- Call-to-action sections
-- Newsletter signup
-- Contact forms
-
-### Blank Template
-
-Start from scratch:
-
-```bash
-npm create stati my-site -- --template blank --styling css
-```
-
-**Features:**
-
-- Minimal setup
-- Basic layout structure
-- Essential configuration
-- Sample content
-- Development scripts
 
 ## Styling Solutions
 
@@ -331,98 +312,75 @@ module.exports = {
 </article>
 ```
 
-### Styled Components
+## Post-Creation Setup
 
-CSS-in-JS solution:
+After creating your project:
 
-```javascript
-// components/Layout.js
-import styled from 'styled-components';
+1. **Install dependencies:**
+   ```bash
+   cd my-site
+   npm install
+   ```
 
-const Container = styled.div`
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 1rem;
+2. **Start development:**
+   ```bash
+   npm run dev
+   ```
 
-  @media (min-width: 768px) {
-    padding: 0 2rem;
-  }
-`;
+3. **Build for production:**
+   ```bash
+   npm run build
+   ```
 
-const Header = styled.header`
-  background: ${(props) => props.theme.colors.primary};
-  color: white;
-  padding: 1rem 0;
-`;
+4. **Preview built site:**
+   ```bash
+   npm run preview
+   ```
 
-export { Container, Header };
-```
+## Package Scripts
 
-## Customization
-
-### Custom Templates
-
-Create your own project templates:
-
-```bash
-# Template structure
-templates/
-├── my-template/
-│   ├── template.json         # Template configuration
-│   ├── site/                 # Site files
-│   ├── public/              # Static assets
-│   ├── package.json.ejs     # Dynamic package.json
-│   └── README.md.ejs        # Dynamic README
-```
-
-**Template Configuration:**
+The scaffolder generates these npm scripts:
 
 ```json
 {
-  "name": "my-template",
-  "description": "My custom Stati template",
-  "version": "1.0.0",
-  "author": "Your Name",
-  "homepage": "https://github.com/username/my-template",
-  "features": ["Custom design", "Unique functionality", "Optimized performance"],
-  "styling": ["css", "sass", "tailwind"],
-  "dependencies": {
-    "lodash": "^4.17.21"
-  },
-  "devDependencies": {
-    "custom-plugin": "^1.0.0"
+  "scripts": {
+    "dev": "stati dev",
+    "build": "stati build",
+    "preview": "stati preview",
+    "clean": "stati build --clean"
   }
 }
 ```
 
-### Using Custom Templates
+**Additional scripts for styling:**
 
-```bash
-# From local directory
-npm create stati my-site -- --template ./my-template
-
-# From Git repository
-npm create stati my-site -- --template github:username/my-template
-
-# From npm package
-npm create stati my-site -- --template @company/stati-template
+**Sass:**
+```json
+{
+  "scripts": {
+    "dev": "concurrently \"sass --watch\" \"stati dev\"",
+    "build": "sass src/styles.scss public/styles.css && stati build"
+  }
+}
 ```
 
-## Advanced Configuration
+**Tailwind:**
+```json
+{
+  "scripts": {
+    "dev": "concurrently \"tailwindcss --watch\" \"stati dev\"",
+    "build": "tailwindcss --minify && stati build"
+  }
+}
 
-### Environment Variables
+```
 
-Configure scaffolding behavior:
+## Next Steps
 
-```bash
-# Skip interactive prompts
-STATI_SKIP_PROMPTS=true npm create stati my-site
-
-# Default template
-STATI_DEFAULT_TEMPLATE=blog npm create stati my-site
-
-# Custom registry
-STATI_TEMPLATE_REGISTRY=https://templates.example.com npm create stati my-site
+- [Learn about project structure](/getting-started/project-structure/)
+- [Configure your site](/configuration/)
+- [Add content](/core-concepts/content/)
+- [Deploy your site](/deployment/)
 ```
 
 ### Configuration File

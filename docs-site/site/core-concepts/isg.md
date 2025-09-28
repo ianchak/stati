@@ -79,6 +79,9 @@ import { defineConfig } from '@stati/core';
 
 export default defineConfig({
   isg: {
+    // Enable ISG (default: true)
+    enabled: true,
+
     // Cache TTL in seconds (default: 1 hour)
     ttlSeconds: 3600,
 
@@ -92,10 +95,6 @@ export default defineConfig({
       { untilDays: 90, ttlSeconds: 259200 }, // 3 days for 3-month-old content
       { untilDays: 365, ttlSeconds: 604800 } // 7 days for year-old content
     ],
-
-    // Content older than 1 year never rebuilds (optional)
-    freezeAfterDays: 365,
-
   },
 });
 ```
@@ -119,51 +118,51 @@ stati invalidate age:7days
 # Force rebuild everything
 stati invalidate all
 
-# Invalidate multiple targets
-stati invalidate path:/blog/ tag:navigation age:30days
+# Invalidate multiple targets (space-separated)
+stati invalidate "path:/blog/ tag:navigation age:30days"
 ```
 
 ### Programmatic Invalidation
 
-
-
-### Cache Strategies
-
-#### Time-based Caching
+Use the invalidate function programmatically in your build scripts or applications:
 
 ```javascript
-export default defineConfig({
-  isg: {
-    // Different TTL for different content types
-    strategies: {
-      blog: { ttlSeconds: 1800 }, // 30 minutes
-      docs: { ttlSeconds: 3600 }, // 1 hour
-      pages: { ttlSeconds: 7200 }, // 2 hours
-      assets: { ttlSeconds: 86400 }, // 24 hours
-    },
-  },
-});
+import { invalidate } from '@stati/core';
+
+// Invalidate specific paths
+await invalidate('path:/blog/');
+
+// Invalidate by tag
+await invalidate('tag:navigation');
+
+// Invalidate by age
+await invalidate('age:30days');
+
+// Invalidate multiple targets
+await invalidate('path:/blog/ tag:navigation age:30days');
+
+// Clear all cache
+await invalidate();
 ```
 
-#### Content-based Caching
+### Cache Configuration
+
+#### Basic Time-based Caching
+
+ISG uses a single global configuration approach. All content shares the same TTL and aging settings:
 
 ```javascript
 export default defineConfig({
   isg: {
-    // Dynamic TTL based on content
-    dynamicTtl(page) {
-      // Frequently updated content gets shorter cache
-      if (page.path.startsWith('blog/')) {
-        return page.frontmatter.draft ? 60 : 1800; // 1 min for drafts, 30 min for published
-      }
+    // Global TTL for all content
+    ttlSeconds: 3600, // 1 hour
 
-      // Static pages get longer cache
-      if (page.path.includes('about') || page.path.includes('contact')) {
-        return 86400; // 24 hours
-      }
-
-      return 3600; // Default 1 hour
-    },
+    // Age-based TTL adjustments apply to all content
+    aging: [
+      { untilDays: 7, ttlSeconds: 1800 },   // 30 minutes for fresh content
+      { untilDays: 30, ttlSeconds: 3600 },  // 1 hour for week-old content
+      { untilDays: 90, ttlSeconds: 86400 }, // 24 hours for month-old content
+    ],
   },
 });
 ```
@@ -237,16 +236,7 @@ $ stati dev
 ```
 .stati/
 └── cache/
-    ├── manifest.json       # Cache metadata
-    ├── content/           # Processed content cache
-    │   ├── blog-index.html
-    │   └── about.html
-    ├── assets/            # Asset build cache
-    │   ├── styles.css
-    │   └── bundle.js
-    └── meta/              # Dependency metadata
-        ├── deps.json
-        └── hashes.json
+    └── manifest.json       # Cache metadata and entries
 ```
 
 ### Cache Persistence

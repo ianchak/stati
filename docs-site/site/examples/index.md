@@ -134,13 +134,13 @@ Each example comes with a complete starter template:
 
 ```bash
 # Create from blog template
-npx create-stati my-blog --template blog
+npx create-stati my-blog --template blank
 
 # Create from docs template
-npx create-stati my-docs --template docs
+npx create-stati my-docs --template blank
 
 # Create from landing page template
-npx create-stati my-site --template landing
+npx create-stati my-site --template blank
 ```
 
 ## Implementation Patterns

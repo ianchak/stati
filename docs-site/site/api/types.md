@@ -289,26 +289,23 @@ interface BuildContext {
 }
 
 interface BuildStats {
-  /** Build start time */
-  startTime: number;
+  /** Total number of pages processed */
+  totalPages: number;
 
-  /** Build end time */
-  endTime?: number;
+  /** Number of static assets copied */
+  assetsCount: number;
 
-  /** Total build time */
-  buildTime?: number;
+  /** Total build time in milliseconds */
+  buildTimeMs: number;
 
-  /** Number of pages processed */
-  pageCount: number;
+  /** Total size of output directory in bytes */
+  outputSizeBytes: number;
 
-  /** Number of assets processed */
-  assetCount: number;
+  /** Number of cache hits (if caching enabled) */
+  cacheHits?: number;
 
-  /** Cache hit rate */
-  cacheHitRate?: number;
-
-  /** Memory usage */
-  memoryUsage?: NodeJS.MemoryUsage;
+  /** Number of cache misses (if caching enabled) */
+  cacheMisses?: number;
 }
 ```
 
@@ -497,57 +494,51 @@ interface CLIOption {
 
 ```typescript
 interface ISGConfig {
-  /** Enable ISG */
+  /** Whether ISG caching is enabled */
   enabled?: boolean;
 
-  /** Cache directory */
-  cacheDir?: string;
+  /** Default cache time-to-live in seconds */
+  ttlSeconds?: number;
 
-  /** Default TTL */
-  defaultTtl?: string | number;
+  /** Maximum age in days for applying aging rules */
+  maxAgeCapDays?: number;
 
-  /** Aging configuration */
-  aging?: ISGAging;
-
-  /** Invalidation configuration */
-  invalidation?: ISGInvalidation;
-
-  /** Cache configuration */
-  cache?: ISGCache;
-
-  /** Performance configuration */
-  performance?: ISGPerformance;
+  /** Array of aging rules for progressive cache extension */
+  aging?: AgingRule[];
 }
 
-interface ISGAging {
-  /** Enable aging */
-  enabled: boolean;
+interface AgingRule {
+  /** Number of days after which this aging rule applies */
+  untilDays: number;
 
-  /** Aging strategy */
-  strategy: 'linear' | 'exponential' | 'custom';
-
-  /** Maximum age */
-  maxAge: string | number;
-
-  /** Custom aging algorithm */
-  algorithm?: (baseAge: number, contentAge: number) => number;
-
-  /** TTL bounds */
-  bounds?: {
-    min: string | number;
-    max: string | number;
-  };
+  /** Cache time-to-live in seconds for content matching this age */
+  ttlSeconds: number;
 }
 
-interface ISGInvalidation {
-  /** Tag-based invalidation */
-  tags?: ISGTagInvalidation;
+interface CacheEntry {
+  /** Output path of the rendered page */
+  readonly path: string;
 
-  /** Path-based invalidation */
-  paths?: ISGPathInvalidation;
+  /** Hash of page content and all dependencies */
+  readonly inputsHash: string;
 
-  /** Dependency-based invalidation */
-  dependencies?: ISGDependencyInvalidation;
+  /** Array of file paths this page depends on */
+  readonly deps: readonly string[];
+
+  /** Tags for invalidation and organization */
+  readonly tags: readonly string[];
+
+  /** ISO date when content was originally published */
+  publishedAt?: string;
+
+  /** ISO date when page was last rendered */
+  readonly renderedAt: string;
+
+  /** Effective TTL for this page in seconds */
+  readonly ttlSeconds: number;
+
+  /** Maximum age cap for this page in days */
+  maxAgeCapDays?: number;
 }
 
 interface ISGCache {
@@ -653,8 +644,15 @@ declare module '@stati/cli' {
 }
 
 declare module 'create-stati' {
-  export { scaffold } from './scaffold';
-  export type { ScaffoldOptions } from './types';
+  export interface ScaffoldOptions {
+    projectName: string;
+    template: 'blank';
+    styling: 'css' | 'sass' | 'tailwind';
+    git: boolean;
+    directory?: string;
+  }
+
+  export function scaffold(options: ScaffoldOptions): Promise<void>;
 }
 ```
 
