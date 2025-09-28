@@ -84,7 +84,6 @@ stati invalidate [query]
 - `path:<path>` - Invalidate specific path
 - `tag:<tag>` - Invalidate by tag
 - `age:<duration>` - Invalidate by age (e.g., `7days`, `3months`)
-- Multiple targets - Use quotes for space-separated queries
 - Empty - Invalidate everything
 
 **Examples:**
@@ -98,9 +97,6 @@ stati invalidate tag:blog
 
 # Invalidate old content
 stati invalidate age:30days
-
-# Invalidate multiple targets (use quotes)
-stati invalidate "path:/blog/ tag:navigation age:30days"
 
 # Clear all cache
 stati invalidate

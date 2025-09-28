@@ -55,11 +55,21 @@ Use the scaffolder to create a new Stati project:
 # Interactive setup
 npm create stati my-site
 
-# Choose from available options:
-# - Template: blank (more coming soon)
+# Available options:
+# - Template: blank (only option currently)
 # - Styling: CSS, Sass, or Tailwind CSS
 # - Git initialization
 ```
+
+### Additional Examples (Coming Soon)
+
+The Stati repository includes placeholder directories for future examples:
+
+- `examples/blog/` - Blog template (planned)
+- `examples/docs/` - Documentation site template (planned)
+- `examples/news/` - News site template (planned)
+
+These directories currently contain only README files and are not yet implemented. Check back for updates!
 
 ## Learning Resources
 

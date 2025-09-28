@@ -94,22 +94,22 @@ export default defineConfig({
 
 Customize markdown processing:
 
+### Markdown Configuration
+
+Configure markdown processing:
+
 ```javascript
 export default defineConfig({
   markdown: {
-    // Markdown-It options
-    options: {
-      html: true, // Enable HTML tags
-      linkify: true, // Auto-convert URLs to links
-      typographer: true, // Smart quotes and typography
-      breaks: false, // Convert line breaks to <br>
-      xhtmlOut: false, // Use XHTML-style self-closing tags
-    },
+    // Plugin configuration - array of plugin names or [name, options] tuples
+    plugins: [
+      'anchor',                    // Add anchors to headings
+      'toc-done-right',           // Table of contents
+      ['footnote', { /* options */ }],  // Footnotes with options
+    ],
 
-
-
-    // Custom setup function
-    setup(md) {
+    // Custom markdown-it configuration function
+    configure: (md) => {
       // Add custom plugins or modify renderer
       md.use(customPlugin, options);
 
@@ -129,49 +129,29 @@ Configure the Eta template engine:
 
 ```javascript
 export default defineConfig({
-  templates: {
-    // Eta configuration
-    eta: {
-      // Template caching
-      cache: true,
-
-      // Custom filters
-      filters: {
-        // Date formatting
-        date: (date, format = 'long') => {
-          return new Intl.DateTimeFormat('en-US', {
-            dateStyle: format,
-          }).format(new Date(date));
-        },
-
-        // Slugify text
-        slug: (text) => {
-          return text
-            .toLowerCase()
-            .replace(/[^\w\s-]/g, '')
-            .replace(/[\s_-]+/g, '-')
-            .replace(/^-+|-+$/g, '');
-        },
-
-        // Truncate text
-        truncate: (text, length = 150) => {
-          if (text.length <= length) return text;
-          return text.slice(0, length) + '...';
-        },
+  eta: {
+    // Custom filters for Eta templates
+    filters: {
+      // Date formatting
+      date: (date, format = 'long') => {
+        return new Intl.DateTimeFormat('en-US', {
+          dateStyle: format,
+        }).format(new Date(date));
       },
 
-      // Global helpers
-      helpers: {
-        // Check if URL is active
-        isActive: (linkUrl, currentUrl) => {
-          if (linkUrl === '/') return currentUrl === '/';
-          return currentUrl.startsWith(linkUrl);
-        },
+      // Slugify text
+      slug: (text) => {
+        return text
+          .toLowerCase()
+          .replace(/[^\w\s-]/g, '')
+          .replace(/[\s_-]+/g, '-')
+          .replace(/^-+|-+$/g, '');
+      },
 
-        // Generate absolute URL
-        absoluteUrl: (path, baseUrl) => {
-          return baseUrl + path;
-        },
+      // Truncate text
+      truncate: (text, length = 150) => {
+        if (text.length <= length) return text;
+        return text.slice(0, length) + '...';
       },
     },
   },
@@ -185,19 +165,19 @@ Configure Incremental Static Generation:
 ```javascript
 export default defineConfig({
   isg: {
-    // Cache TTL in seconds
+    // Enable ISG caching
+    enabled: true,
+
+    // Default cache TTL in seconds
     ttlSeconds: 3600, // 1 hour
 
-    // Maximum age cap
+    // Maximum age cap in days
     maxAgeCapDays: 30,
 
-    // Aging configuration
-    aging: {
-      enabled: true,
-      schedule: [
-        { age: '1d', ttl: '1h' },
-        { age: '7d', ttl: '6h' },
-        { age: '30d', ttl: '24h' },
+    // Aging rules for progressive cache extension
+    aging: [
+      { untilDays: 7, ttlSeconds: 86400 },    // 1 day for week-old content
+      { untilDays: 30, ttlSeconds: 604800 },  // 1 week for month-old content
         { age: '90d', ttl: '7d' },
       ],
     },
@@ -224,42 +204,15 @@ export default defineConfig({
 
 ### Development Server
 
-Configure the development experience:
+Configure the development server:
 
 ```javascript
 export default defineConfig({
   dev: {
     // Server configuration
-    port: 3000,
-    host: 'localhost',
-    open: true,
-
-    // HTTPS in development
-    https: {
-      key: './certs/localhost-key.pem',
-      cert: './certs/localhost.pem',
-    },
-
-    // Proxy configuration
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3001',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
-      },
-    },
-
-    // Watch options
-    watch: {
-      // Watch additional files
-      include: ['data/**/*.json', 'config/**/*.yaml'],
-
-      // Ignore patterns
-      exclude: ['node_modules/**', '.git/**'],
-
-      // Debounce delay
-      delay: 100,
-    },
+    port: 3000,        // Port for development server
+    host: 'localhost', // Host to bind to
+    open: false,       // Whether to open browser automatically
   },
 });
 ```
@@ -310,52 +263,7 @@ export default defineConfig({
 });
 ```
 
-### Build Configuration
 
-Customize the build process:
-
-```javascript
-export default defineConfig({
-  build: {
-    // Build configuration
-    build: {
-      // Output directory (relative to dist/)
-      outDir: 'build',
-
-      // Asset naming
-      rollupOptions: {
-        output: {
-          assetFileNames: 'assets/[name]-[hash][extname]',
-          chunkFileNames: 'assets/[name]-[hash].js',
-          entryFileNames: 'assets/[name]-[hash].js',
-        },
-      },
-
-      // Minification
-      minify: 'terser',
-      terserOptions: {
-        compress: {
-          drop_console: true,
-          drop_debugger: true,
-        },
-      },
-    },
-
-    // CSS configuration
-    css: {
-      postcss: {
-        plugins: [require('autoprefixer'), require('cssnano')],
-      },
-    },
-
-    // Define global constants
-    define: {
-      __VERSION__: JSON.stringify(process.env.npm_package_version),
-      __BUILD_DATE__: JSON.stringify(new Date().toISOString()),
-    },
-  },
-});
-```
 
 
 
