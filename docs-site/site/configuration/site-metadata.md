@@ -241,63 +241,16 @@ export default defineConfig({
 });
 ```
 
-### RSS and Feeds
+## Advanced Site Configuration
 
-Configure RSS feed generation:
-
-```javascript
-export default defineConfig({
-  site: {
-    feeds: {
-      rss: {
-        enabled: true,
-        path: '/rss.xml',
-        title: 'My Blog RSS Feed',
-        description: 'Latest posts from my blog',
-        language: 'en',
-        copyright: '© 2024 My Company',
-      },
-
-      json: {
-        enabled: true,
-        path: '/feed.json',
-        title: 'My Blog JSON Feed',
-      },
-
-      atom: {
-        enabled: true,
-        path: '/atom.xml',
-      },
-    },
-  },
-});
-```
-
-## Internationalization
-
-Configure multiple languages and locales:
+Stati supports custom metadata configuration for enhanced SEO and functionality:
 
 ```javascript
 export default defineConfig({
   site: {
-    i18n: {
-      // Default language
-      defaultLanguage: 'en',
-
-      // Available languages
-      languages: {
-        en: {
-          label: 'English',
-          locale: 'en_US',
-          direction: 'ltr',
-        },
-        es: {
-          label: 'Español',
-          locale: 'es_ES',
-          direction: 'ltr',
-        },
-        ar: {
-          label: 'العربية',
+    title: 'My Site',
+    baseUrl: 'https://example.com',
+    defaultLocale: 'en-US', // Optional locale setting
           locale: 'ar_SA',
           direction: 'rtl',
         },
@@ -400,15 +353,7 @@ This page has custom metadata that overrides the site defaults.
 
 ### Metadata Validation
 
-Stati provides built-in validation for common metadata issues:
-
-```bash
-# Check for missing required metadata
-stati build --validate-metadata
-
-# Test social media cards
-stati build --test-social-cards
-```
+Test your metadata manually using external tools and validation services.
 
 ### Testing Tools
 

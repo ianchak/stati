@@ -389,54 +389,6 @@ export default defineConfig({
       },
     },
   },
-
-  plugins: [
-    // Generate sitemap
-    {
-      name: 'sitemap',
-      generateFiles: async (pages, config) => {
-        const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${pages
-  .filter((page) => !page.data.noindex)
-  .map(
-    (page) => `  <url>
-    <loc>${config.site.url}${page.url}</loc>
-    <lastmod>${page.data.updated || page.data.date || new Date().toISOString()}</lastmod>
-    <changefreq>${page.data.changefreq || 'monthly'}</changefreq>
-    <priority>${page.data.priority || '0.5'}</priority>
-  </url>`,
-  )
-  .join('\n')}
-</urlset>`;
-
-        return [
-          {
-            path: '/sitemap.xml',
-            content: sitemap,
-          },
-        ];
-      },
-    },
-
-    // Generate robots.txt
-    {
-      name: 'robots',
-      generateFiles: async (pages, config) => {
-        const robots = `User-agent: *
-Allow: /
-
-Sitemap: ${config.site.url}/sitemap.xml`;
-
-        return [
-          {
-            path: '/robots.txt',
-            content: robots,
-          },
-        ];
-      },
-    },
-  ],
 });
 ```
 
@@ -482,9 +434,9 @@ Sitemap: ${config.site.url}/sitemap.xml`;
 
 ## Development Workflow
 
-### Hot Module Replacement
+### Development Server Configuration
 
-Enhanced development experience:
+Basic development server setup:
 
 ```javascript
 // stati.config.js
@@ -493,57 +445,8 @@ export default defineConfig({
     port: 3000,
     host: 'localhost',
     open: true,
-
-    // Custom middleware
-    middleware: [
-      // API mock middleware
-      (req, res, next) => {
-        if (req.url.startsWith('/api/')) {
-          // Mock API responses for development
-          const mockData = getMockData(req.url);
-          res.setHeader('Content-Type', 'application/json');
-          res.end(JSON.stringify(mockData));
-          return;
-        }
-        next();
-      },
-
-      // Development tools middleware
-      (req, res, next) => {
-        if (req.url === '/__dev/reload') {
-          // Custom reload endpoint
-          res.setHeader('Content-Type', 'text/event-stream');
-          res.setHeader('Cache-Control', 'no-cache');
-          res.setHeader('Connection', 'keep-alive');
-
-          // Send reload events
-          const interval = setInterval(() => {
-            res.write('data: ping\n\n');
-          }, 30000);
-
-          req.on('close', () => {
-            clearInterval(interval);
-          });
-
-          return;
-        }
-        next();
-      },
-    ],
   },
 });
-
-function getMockData(url) {
-  const mocks = {
-    '/api/posts': [
-      { id: 1, title: 'Sample Post', content: 'Lorem ipsum...' },
-      { id: 2, title: 'Another Post', content: 'Dolor sit amet...' },
-    ],
-    '/api/users': [{ id: 1, name: 'John Doe', email: 'john@example.com' }],
-  };
-
-  return mocks[url] || { error: 'Not found' };
-}
 ```
 
 ### Build Scripts
