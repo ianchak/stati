@@ -79,26 +79,26 @@ Invalidate ISG cache entries.
 stati invalidate [query]
 ```
 
-**Query Types:**
+**Query Patterns:**
 
-- `path:<path>` - Invalidate specific path
-- `tag:<tag>` - Invalidate by tag
-- `age:<duration>` - Invalidate by age (e.g., `7days`, `3months`)
-- Empty - Invalidate everything
+- `tag:name` - Invalidate by tag
+- `path:/route` - Invalidate specific path
+- `age:duration` - Invalidate by age (e.g., `3months`, `1week`)
+- Empty query - Clear all cache
 
 **Examples:**
 
 ```bash
-# Invalidate specific page
-stati invalidate path:/blog/post-1/
-
-# Invalidate by tag
+# Invalidate all content with 'blog' tag
 stati invalidate tag:blog
 
-# Invalidate old content
-stati invalidate age:30days
+# Invalidate specific path
+stati invalidate path:/about
 
-# Clear all cache
+# Invalidate content older than 1 week
+stati invalidate age:1week
+
+# Clear all cache (no query)
 stati invalidate
 ```
 
@@ -131,19 +131,6 @@ stati preview --open
 ```
 
 ## Advanced Usage
-
-### Build Statistics
-
-Stati automatically shows build statistics after each build:
-
-```bash
-stati build
-
-# Output:
-# ✅ Build completed in 2.34s
-# 📄 Pages: 45 generated, 82 cached (64.6% hit rate)
-# 💾 Cache: 156 MB, 127 entries
-```
 
 ### Environment Configuration
 
@@ -186,7 +173,7 @@ jobs:
         run: npm ci
 
       - name: Build site
-        run: stati build --verbose
+        run: stati build
         env:
           SITE_URL: ${{ secrets.SITE_URL }}
           API_TOKEN: ${{ secrets.API_TOKEN }}

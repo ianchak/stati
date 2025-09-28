@@ -151,51 +151,35 @@ En-dash (--) and em-dash (---)
 Ellipsis (...)
 ```
 
-## Plugin System
+## Markdown Configuration
 
-### Built-in Plugins
+### Base Configuration
 
-Stati includes several Markdown-It plugins by default:
+Stati uses Markdown-It with the following default configuration:
 
-- **markdown-it-anchor** - Auto-generated heading anchors
-- **markdown-it-table-of-contents** - TOC generation
-- **markdown-it-deflist** - Definition lists
-- **markdown-it-footnote** - Footnote support
-- **markdown-it-mark** - ==Highlighted text==
-- **markdown-it-sub** - H~2~O subscript
-- **markdown-it-sup** - X^2^ superscript
+- **HTML tags** - Enabled for raw HTML in markdown
+- **Linkify** - Auto-convert URLs to clickable links
+- **Typographer** - Smart quotes and other typography enhancements
 
-### Definition Lists
+```javascript
+// stati.config.js
+import { defineConfig } from '@stati/core';
 
-```markdown
-Term 1
-: Definition for term 1
-
-Term 2
-: Definition for term 2
-: Another definition for term 2
+export default defineConfig({
+  markdown: {
+    plugins: [
+      'anchor',           // markdown-it-anchor
+      'footnote',        // markdown-it-footnote
+      ['mark', { /* options */ }], // markdown-it-mark with options
+    ]
+  },
+});
 ```
 
-### Footnotes
+**Note:** You need to install the plugins separately via npm:
 
-```markdown
-Here's a sentence with a footnote[^1].
-
-[^1]: This is the footnote content.
-```
-
-### Table of Contents
-
-Automatically generate a TOC:
-
-```markdown
-[[toc]]
-
-# Heading 1
-
-## Heading 2
-
-### Heading 3
+```bash
+npm install markdown-it-anchor markdown-it-footnote markdown-it-mark
 ```
 
 ## Configuration

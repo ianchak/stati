@@ -269,11 +269,10 @@ Now that you have a working Stati site, explore these topics:
 - [Template Settings](/configuration/templates/)
 - [Markdown Configuration](/configuration/markdown/)
 
-### Examples and Recipes
+### Examples and Learning Resources
 
-- [Blog Example](/examples/blog/)
-- [Documentation Site](/examples/docs/)
-- [Recipe Collection](/examples/recipes/)
+- [Available Examples](/examples/) - Explore currently implemented templates
+- [Configuration Reference](/configuration/) - Detailed configuration options
 
 ## Need Help?
 

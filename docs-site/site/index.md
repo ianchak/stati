@@ -14,7 +14,7 @@ hero:
       primary: false
 features:
   title: 'Why Choose Stati?'
-  subtitle: 'Built for modern web development with essential features implemented and more coming soon.'
+  subtitle: 'Built for modern web development with essential features implemented.'
   items:
     - title: 'TypeScript First'
       description: 'Built with TypeScript from the ground up with defineConfig() helper.'
@@ -23,8 +23,17 @@ features:
       description: 'Development server with live reload and incremental rebuilding.'
       icon: 'bolt'
     - title: 'ISG Support'
-      description: 'Incremental Static Generation with intelligent caching and invalidation.'
+      description: 'Incremental Static Generation with intelligent caching and flexible invalidation.'
       icon: 'arrow-path'
+    - title: 'Markdown & Templates'
+      description: 'Powerful Markdown processing with Eta templating and hierarchical layouts.'
+      icon: 'document-text'
+    - title: 'Simple Configuration'
+      description: 'Minimal configuration with sensible defaults and TypeScript IntelliSense.'
+      icon: 'cog-6-tooth'
+    - title: 'Modern Tooling'
+      description: 'CLI tools, project scaffolding, and development workflows built for efficiency.'
+      icon: 'wrench-screwdriver'
 quickStart:
   title: 'Get Started in Minutes'
   subtitle: 'Create a new Stati site with a single command.'

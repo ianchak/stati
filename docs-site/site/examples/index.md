@@ -61,15 +61,32 @@ npm create stati my-site
 # - Git initialization
 ```
 
-### Additional Examples (Coming Soon)
+### Manual Setup
 
-The Stati repository includes placeholder directories for future examples:
+Create a minimal Stati site manually:
 
-- `examples/blog/` - Blog template (planned)
-- `examples/docs/` - Documentation site template (planned)
-- `examples/news/` - News site template (planned)
+```bash
+mkdir my-site && cd my-site
+npm init -y
+npm install --save-dev @stati/cli @stati/core
 
-These directories currently contain only README files and are not yet implemented. Check back for updates!
+# Create basic structure
+mkdir site public
+echo '# Hello Stati' > site/index.md
+```
+
+Create `stati.config.js`:
+
+```javascript
+import { defineConfig } from '@stati/core';
+
+export default defineConfig({
+  site: {
+    title: 'My Stati Site',
+    baseUrl: 'https://example.com',
+  },
+});
+```
 
 ## Learning Resources
 
@@ -178,18 +195,9 @@ my-stati-site/
 
 ## Need Help?
 
-- Check the [Configuration Guide](/configuration/) for setup options
-- Visit [Core Concepts](/core-concepts/) for Stati fundamentals
-- Explore the [CLI Commands](/cli/) for build and development tools
-- Join our [GitHub Discussions](https://github.com/ianchak/stati/discussions) for community support
+- **Documentation** - Check the [Getting Started](/getting-started/) guide
+- **Configuration** - See the [Configuration Reference](/configuration/)
+- **GitHub Issues** - Report bugs or request features
+- **Discussions** - Ask questions and share ideas
 
-More examples and templates are coming soon. Stay tuned for blog, documentation, and news site templates!
-
-## Need Help?
-
-- Check the [Configuration Guide](/configuration/) for setup options
-- Visit [Core Concepts](/core-concepts/) for Stati fundamentals
-- Explore the [CLI Commands](/cli/) for build and development tools
-- Join our [GitHub Discussions](https://github.com/ianchak/stati/discussions) for community support
-
-More examples and templates are coming soon. Stay tuned for blog, documentation, and news site templates!
+The Stati community is growing, and we welcome contributions of examples, templates, and improvements to existing resources.

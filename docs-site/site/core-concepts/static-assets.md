@@ -294,37 +294,22 @@ function initTheme() {
   }
 }
 
-// Search functionality
-function initSearch() {
-  const searchInput = document.querySelector('[data-search]');
-  if (!searchInput) return;
+// Navigation functionality
+function initNavigation() {
+  const menuToggle = document.querySelector('[data-menu-toggle]');
+  const mobileMenu = document.querySelector('[data-mobile-menu]');
 
-  let searchIndex = null;
-
-  // Load search index
-  fetch('/search-index.json')
-    .then((response) => response.json())
-    .then((index) => {
-      searchIndex = index;
+  if (menuToggle && mobileMenu) {
+    menuToggle.addEventListener('click', () => {
+      mobileMenu.classList.toggle('hidden');
     });
-
-  searchInput.addEventListener('input', (e) => {
-    const query = e.target.value.toLowerCase();
-    if (query.length < 2) return;
-
-    const results = searchIndex.filter(
-      (item) =>
-        item.title.toLowerCase().includes(query) || item.content.toLowerCase().includes(query),
-    );
-
-    displaySearchResults(results);
-  });
+  }
 }
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
-  initSearch();
+  initNavigation();
 });
 ```
 
@@ -334,11 +319,10 @@ Use TypeScript for better type safety:
 
 ```typescript
 // src/main.ts
-interface SearchItem {
+interface NavigationItem {
   title: string;
   url: string;
-  content: string;
-  tags?: string[];
+  active?: boolean;
 }
 
 interface SiteConfig {

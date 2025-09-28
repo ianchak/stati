@@ -240,9 +240,7 @@ export default defineConfig({
       console.log(`Build completed in ${stats.buildTime}ms`);
       console.log(`Generated ${stats.pageCount} pages`);
 
-      // Post-build tasks
-      await optimizeImages();
-      await generateSearchIndex();
+      // Post-build tasks can be added here
     },
 
     // Before each page renders
