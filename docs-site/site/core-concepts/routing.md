@@ -105,23 +105,89 @@ site/
 
 ## Special Files and Directories
 
-### Files Starting with `_`
+### Files and Directories Excluded from Routing
 
-Files and directories that start with an underscore are **excluded from routing**:
+Stati excludes certain files and directories from URL generation to allow for better project organization:
 
-```
+#### **Files and Folders Starting with `_` (Underscore)**
+
+**Critical Rule**: Any file or directory starting with `_` is excluded from routing and used for organization:
+
+```text
 site/
-├── _partials/           # Not routed - used for templates
+├── _partials/           ❌ Not routed - Partial templates
 │   ├── header.eta
-│   └── footer.eta
-├── _data/              # Not routed - used for data files
+│   ├── footer.eta
+│   └── components/
+│       └── button.eta
+├── _components/         ❌ Not routed - Reusable components
+│   └── card.eta
+├── _includes/           ❌ Not routed - Include files
+│   └── analytics.eta
+├── _data/               ❌ Not routed - Data files
 │   └── config.json
-├── _drafts/            # Not routed - draft content
+├── _drafts/             ❌ Not routed - Draft content
 │   └── upcoming-post.md
-└── published.md        → /published/ (normal routing)
+├── _utils/              ❌ Not routed - Utility files
+│   └── helpers.js
+├── partials/            ✅ Routed - Creates /partials/ page
+│   └── content.md       ✅ Routed - Creates /partials/content/ page
+└── published.md         ✅ Routed - Creates /published/ page
 ```
 
-This allows you to organize templates, data files, and other assets without them becoming pages.
+#### **Special Files Excluded from Routing**
+
+```text
+site/
+├── layout.eta           ❌ Not routed - Layout template
+├── .DS_Store           ❌ Not routed - System files
+├── .gitkeep            ❌ Not routed - Git placeholder
+├── Thumbs.db           ❌ Not routed - Windows thumbnail cache
+├── desktop.ini         ❌ Not routed - Windows system file
+├── README.md           ✅ Routed - Creates /readme/ page
+└── index.md            ✅ Routed - Creates / homepage
+```
+
+#### **Use Cases for Underscore Exclusion**
+
+**Partial Templates:**
+```text
+_partials/
+├── header.eta          # Site header
+├── navigation.eta      # Main navigation
+├── sidebar.eta         # Blog sidebar
+└── footer.eta          # Site footer
+```
+
+**Component Library:**
+```text
+_components/
+├── button.eta          # Reusable button
+├── card.eta            # Content cards
+├── modal.eta           # Modal dialogs
+└── forms/
+    ├── input.eta       # Form inputs
+    └── validation.eta  # Form validation
+```
+
+**Data and Configuration:**
+```text
+_data/
+├── site-config.json    # Site-wide settings
+├── navigation.json     # Menu structure
+├── authors.json        # Author information
+└── categories.json     # Content categories
+```
+
+**Development Files:**
+```text
+_drafts/                # Work-in-progress content
+_temp/                  # Temporary build files
+_backup/                # Content backups
+_assets/                # Source assets (pre-processing)
+```
+
+This convention allows you to organize helper files, templates, and components without creating unwanted routes, keeping your URL structure clean and intentional.
 
 ### Layout Files
 

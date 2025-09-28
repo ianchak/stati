@@ -54,6 +54,7 @@ stati build [options]
 - `--output, -o <dir>` - Output directory (default: dist)
 - `--clean` - Clean output directory before build
 - `--force` - Force rebuild (ignore cache)
+- `--include-drafts` - Include pages marked with `draft: true` in the build
 - `--config <file>` - Custom config file path
 - `--verbose` - Detailed build output
 - `--analyze` - Generate bundle analysis

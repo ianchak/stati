@@ -67,18 +67,41 @@ In your templates, you have access to:
 
 Stati supports hierarchical layouts that inherit from parent directories:
 
-```
+```text
 site/
 ├── layout.eta           # Root layout (all pages)
-├── index.md
-├── about.md
 └── blog/
     ├── layout.eta       # Blog layout (inherits from root)
     ├── index.md
     └── posts/
         ├── layout.eta   # Post layout (inherits from blog)
-        └── first-post.md
+        └── my-post.md
 ```
+
+### Template Resolution Order
+
+Stati looks for templates in this order:
+
+1. **Named template** specified in front matter (e.g., `layout: 'article'`)
+2. **Directory-specific** `layout.eta` (cascades from current to root)
+3. **Root** `layout.eta` as final fallback
+
+**Example:** For `/blog/tech/post.md`, Stati checks:
+
+1. Front matter `layout` field first
+2. `/blog/tech/layout.eta`
+3. `/blog/layout.eta`
+4. `/layout.eta` (root fallback)
+
+```yaml
+---
+# This overrides automatic template discovery
+layout: 'article'
+title: 'My Post'
+---
+```
+
+The first match wins, providing maximum flexibility while maintaining sensible defaults.
 
 ### Root Layout Example
 
@@ -157,6 +180,30 @@ site/
 ## Partial Templates
 
 Partials are reusable template components stored in `_partials/` directories.
+
+### Partial Discovery Rules
+
+Stati uses a strict convention for partial auto-discovery:
+
+- **Partials MUST be placed in folders starting with `_` (underscore)**
+- Multiple underscore folders are supported: `_partials/`, `_components/`, `_includes/`
+- Partials can be nested within underscore folders: `_partials/components/button.eta`
+- Folders without underscore prefix are NOT scanned for partials
+- Files within underscore folders are automatically available as partials
+
+```text
+site/
+├── _partials/           ✅ Auto-discovered
+│   ├── header.eta
+│   └── components/      ✅ Nested partials supported
+│       └── button.eta
+├── _components/         ✅ Multiple underscore folders
+│   └── card.eta
+├── _includes/           ✅ Any underscore folder name
+│   └── analytics.eta
+└── partials/            ❌ NOT discovered (no underscore)
+    └── ignored.eta
+```
 
 ### Creating Partials
 

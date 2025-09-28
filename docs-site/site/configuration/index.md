@@ -496,17 +496,57 @@ export default defineConfig({
 Stati validates your configuration and provides helpful error messages:
 
 ```javascript
-// Invalid configuration will show clear errors
+// Invalid configuration examples with error messages
 export default defineConfig({
+  // Directory validation
+  srcDir: 123, // ❌ Error: srcDir must be a string
+  outDir: null, // ❌ Error: outDir must be a string
+  staticDir: [], // ❌ Error: staticDir must be a string
+
+  // Site metadata validation
   site: {
     title: 123, // ❌ Error: title must be a string
     baseUrl: 'invalid-url', // ❌ Error: baseUrl must be a valid URL
+    description: false, // ❌ Error: description must be a string
   },
 
+  // ISG validation
   isg: {
+    enabled: 'yes', // ❌ Error: enabled must be a boolean
     ttlSeconds: 'invalid', // ❌ Error: ttlSeconds must be a number
+    maxAgeCapDays: -1, // ❌ Error: maxAgeCapDays must be positive
+    aging: 'not-array', // ❌ Error: aging must be an array
+    freezeAfterDays: 'never', // ❌ Error: freezeAfterDays must be a number
+  },
+
+  // Template validation
+  eta: {
+    filters: 'not-object', // ❌ Error: filters must be an object
+    autoEscape: 'yes', // ❌ Error: autoEscape must be a boolean
+  },
+
+  // Hook validation
+  hooks: {
+    beforeAll: 'not-function', // ❌ Error: hooks must be functions
+    afterRender: () => {}, // ✅ Valid function
   },
 });
+```
+
+### Validation Error Output
+
+When validation fails, Stati provides detailed error messages:
+
+```text
+Configuration validation failed:
+
+❌ site.title: Expected string but received number
+❌ site.baseUrl: "invalid-url" is not a valid URL
+❌ isg.ttlSeconds: Expected number but received string
+❌ isg.aging[0].untilDays: Missing required property
+❌ hooks.beforeAll: Expected function but received string
+
+Build aborted. Please fix configuration errors and try again.
 ```
 
 ### Configuration Testing
@@ -591,6 +631,139 @@ console.log('Configuration is valid!');
      markdown: markdownConfig,
    });
    ```
+
+## Environment-Specific Configuration
+
+Configure different settings for development, staging, and production:
+
+### Basic Environment Detection
+
+```javascript
+export default defineConfig({
+  site: {
+    title: 'My Site',
+    baseUrl: process.env.NODE_ENV === 'production'
+      ? 'https://mysite.com'
+      : 'http://localhost:3000',
+
+    // Enable analytics only in production
+    analytics: process.env.NODE_ENV === 'production' ? {
+      googleId: 'GA-XXXXXXXXX',
+      plausible: 'mysite.com'
+    } : undefined,
+  },
+
+  // ISG only in production
+  isg: {
+    enabled: process.env.NODE_ENV === 'production',
+    ttlSeconds: process.env.NODE_ENV === 'production' ? 3600 : 0,
+  },
+
+  // Different markdown options per environment
+  markdown: {
+    options: {
+      html: true,
+      // Stricter validation in development
+      linkify: process.env.NODE_ENV !== 'production',
+    },
+  },
+});
+```
+
+### Multi-Environment Setup
+
+```javascript
+// config/environments.js
+const environments = {
+  development: {
+    site: {
+      baseUrl: 'http://localhost:3000',
+    },
+    isg: { enabled: false },
+    dev: { port: 3000, open: true },
+  },
+
+  staging: {
+    site: {
+      baseUrl: 'https://staging.mysite.com',
+    },
+    isg: { enabled: true, ttlSeconds: 300 }, // 5 minutes
+  },
+
+  production: {
+    site: {
+      baseUrl: 'https://mysite.com',
+    },
+    isg: {
+      enabled: true,
+      ttlSeconds: 3600,
+      aging: [
+        { untilDays: 7, ttlSeconds: 21600 },
+        { untilDays: 30, ttlSeconds: 86400 },
+        { untilDays: 365, ttlSeconds: 604800 }
+      ]
+    },
+  },
+};
+
+export default environments;
+```
+
+```javascript
+// stati.config.js
+import { defineConfig } from '@stati/core';
+import environments from './config/environments.js';
+
+const env = process.env.NODE_ENV || 'development';
+const envConfig = environments[env] || environments.development;
+
+export default defineConfig({
+  // Base configuration
+  srcDir: 'site',
+  outDir: 'dist',
+
+  // Merge environment-specific config
+  ...envConfig,
+
+  // Override with environment variables
+  site: {
+    ...envConfig.site,
+    title: process.env.SITE_TITLE || envConfig.site.title,
+    baseUrl: process.env.SITE_URL || envConfig.site.baseUrl,
+  },
+});
+```
+
+### Configuration with Secrets
+
+```javascript
+export default defineConfig({
+  site: {
+    title: 'My Site',
+    baseUrl: process.env.SITE_URL || 'http://localhost:3000',
+  },
+
+  // External service configuration
+  external: {
+    cms: {
+      endpoint: process.env.CMS_ENDPOINT,
+      apiKey: process.env.CMS_API_KEY,
+    },
+
+    analytics: process.env.ANALYTICS_ID ? {
+      id: process.env.ANALYTICS_ID,
+      domain: process.env.ANALYTICS_DOMAIN,
+    } : undefined,
+  },
+
+  // Build-time feature flags
+  features: {
+    comments: process.env.ENABLE_COMMENTS === 'true',
+    search: process.env.ENABLE_SEARCH === 'true',
+    newsletter: !!process.env.NEWSLETTER_API_KEY,
+  },
+});
+```
 
 ### Performance Configuration
 

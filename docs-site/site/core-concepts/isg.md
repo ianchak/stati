@@ -85,59 +85,17 @@ export default defineConfig({
     // Maximum age cap in days (default: 30 days)
     maxAgeCapDays: 30,
 
-    // Enable aging algorithm
-    aging: {
-      enabled: true,
-      schedule: [
-        { age: '1d', ttl: '1h' }, // Fresh content: 1 hour cache
-        { age: '7d', ttl: '6h' }, // Week-old content: 6 hour cache
-        { age: '30d', ttl: '24h' }, // Month-old content: 24 hour cache
-        { age: '90d', ttl: '7d' }, // Old content: 7 day cache
-      ],
-    },
+    // Progressive TTL increases based on content age
+    aging: [
+      { untilDays: 7, ttlSeconds: 21600 },   // 6 hours for week-old content
+      { untilDays: 30, ttlSeconds: 86400 },  // 24 hours for month-old content
+      { untilDays: 90, ttlSeconds: 259200 }, // 3 days for 3-month-old content
+      { untilDays: 365, ttlSeconds: 604800 } // 7 days for year-old content
+    ],
 
-    // Force rebuilds for specific patterns
-    alwaysRebuild: ['index.md', 'sitemap.xml'],
-  },
-});
-```
+    // Content older than 1 year never rebuilds (optional)
+    freezeAfterDays: 365,
 
-### Advanced Configuration
-
-```javascript
-export default defineConfig({
-  isg: {
-    // Custom dependency tracking
-    dependencies: {
-      // Blog index depends on all blog posts
-      'blog/index.md': ['blog/**/*.md'],
-
-      // RSS feed depends on recent posts
-      'rss.xml': ['blog/**/*.md'],
-
-      // Sitemap depends on all pages
-      'sitemap.xml': ['**/*.md'],
-    },
-
-    // Tag-based invalidation
-    tags: {
-      // Group related content
-      blog: ['blog/**/*.md'],
-      docs: ['docs/**/*.md'],
-      navigation: ['**/layout.eta', '_partials/nav.eta'],
-    },
-
-    // External dependencies
-    external: {
-      // API data dependencies
-      api: {
-        url: 'https://api.example.com/data',
-        ttl: 300, // 5 minutes
-        headers: {
-          Authorization: 'Bearer ${process.env.API_TOKEN}',
-        },
-      },
-    },
   },
 });
 ```
@@ -156,38 +114,18 @@ stati invalidate path:/blog/post-1/
 stati invalidate tag:blog
 
 # Invalidate by age
-stati invalidate age:7d
+stati invalidate age:7days
 
 # Force rebuild everything
 stati invalidate all
 
 # Invalidate multiple targets
-stati invalidate path:/blog/ tag:navigation age:30d
+stati invalidate path:/blog/ tag:navigation age:30days
 ```
 
 ### Programmatic Invalidation
 
-Invalidate cache from within your build process:
 
-```javascript
-import { invalidateCache } from '@stati/core';
-
-// In a build hook
-export default defineConfig({
-  hooks: {
-    async beforeBuild() {
-      // Check external API for updates
-      const apiData = await fetch('https://api.example.com/posts');
-      const lastModified = apiData.headers.get('last-modified');
-
-      // Invalidate if API data is newer
-      if (isNewerThan(lastModified, cache.getLastUpdate('api'))) {
-        await invalidateCache('tag:blog');
-      }
-    },
-  },
-});
-```
 
 ### Cache Strategies
 
@@ -230,68 +168,32 @@ export default defineConfig({
 });
 ```
 
-## Aging Algorithm
+## Aging Configuration
 
-The aging algorithm automatically adjusts cache TTL based on content age:
-
-### How Aging Works
-
-```javascript
-// Content published 1 day ago
-publishedAt: "2024-01-14T10:00:00Z"
-currentTime: "2024-01-15T10:00:00Z"
-age: 1 day
-
-// Apply aging schedule
-schedule: [
-  { age: '1d', ttl: '1h' },   // ✅ Matches: cache for 1 hour
-  { age: '7d', ttl: '6h' },   // Not reached yet
-  { age: '30d', ttl: '24h' }  // Not reached yet
-]
-
-result: TTL = 1 hour
-```
-
-### Aging Configuration
+The aging configuration uses a simple array format:
 
 ```javascript
 export default defineConfig({
   isg: {
-    aging: {
-      enabled: true,
-
-      // Custom aging schedule
-      schedule: [
-        { age: '6h', ttl: '5m' }, // Very fresh: 5 minutes
-        { age: '1d', ttl: '30m' }, // Fresh: 30 minutes
-        { age: '3d', ttl: '2h' }, // Recent: 2 hours
-        { age: '1w', ttl: '6h' }, // Week old: 6 hours
-        { age: '1m', ttl: '1d' }, // Month old: 1 day
-        { age: '3m', ttl: '1w' }, // Old: 1 week
-      ],
-
-      // Maximum cache time regardless of age
-      maxTtl: '7d',
-
-      // Minimum cache time regardless of age
-      minTtl: '1m',
-    },
+    aging: [
+      { untilDays: 7, ttlSeconds: 21600 },   // 6 hours for week-old content
+      { untilDays: 30, ttlSeconds: 86400 },  // 24 hours for month-old content
+      { untilDays: 90, ttlSeconds: 259200 }, // 3 days for 3-month-old content
+      { untilDays: 365, ttlSeconds: 604800 } // 7 days for year-old content
+    ],
   },
 });
 ```
 
-### Age Format
+### Age Format for Invalidation
 
-Ages can be specified in various formats:
+When invalidating by age, use these formats:
 
-```javascript
-'30s'; // 30 seconds
-'5m'; // 5 minutes
-'2h'; // 2 hours
-'1d'; // 1 day
-'1w'; // 1 week
-'1M'; // 1 month (30 days)
-'1y'; // 1 year (365 days)
+```bash
+stati invalidate age:30days
+stati invalidate age:2weeks
+stati invalidate age:6months
+stati invalidate age:1year
 ```
 
 ## Performance Benefits
@@ -349,87 +251,37 @@ $ stati dev
 
 ### Cache Persistence
 
-The cache persists between builds and deployments:
+The cache persists between builds in the `.stati/cache/` directory:
 
-```javascript
-export default defineConfig({
-  isg: {
-    // Cache storage options
-    storage: {
-      // Local filesystem (default)
-      type: 'fs',
-      path: '.stati/cache',
-
-      // Or remote storage (for CI/CD)
-      // type: 'redis',
-      // url: process.env.REDIS_URL
-    },
-
-    // Cache cleanup
-    cleanup: {
-      // Remove unused cache entries
-      removeOrphaned: true,
-
-      // Maximum cache size (in MB)
-      maxSize: 1000,
-
-      // Cleanup frequency
-      frequency: 'daily',
-    },
-  },
-});
-```
+- `manifest.json` - Tracks all cached pages and their metadata
+- Generated HTML files are cached until their dependencies change
+- Cache automatically clears when Stati version changes
 
 ## Monitoring and Debugging
 
-### Cache Statistics
+### Build Output
 
-View cache performance:
+Stati shows cache performance during builds:
 
 ```bash
-# Show cache statistics
-stati cache stats
+$ stati build
 
-Output:
-Cache Statistics:
-├── Total entries: 1,247
-├── Hit rate: 94.3%
-├── Cache size: 156 MB
-├── Avg build time: 0.8s
-└── Oldest entry: 7 days ago
+✅ Build completed in 1.2s
+📄 Pages: 247 generated, 1,000 cached (95.2% hit rate)
+💾 Cache: 156 MB, 1,247 entries
 ```
 
 ### Debug Mode
 
-Enable detailed logging:
-
-```javascript
-export default defineConfig({
-  isg: {
-    debug: process.env.NODE_ENV === 'development',
-
-    // Detailed logging
-    logging: {
-      level: 'debug',
-      cacheHits: true,
-      dependencies: true,
-      invalidations: true,
-    },
-  },
-});
-```
-
-### Cache Analysis
+View detailed dependency tracking in development:
 
 ```bash
-# Analyze cache dependencies
-stati cache analyze
+$ stati dev --verbose
 
-# Show dependency tree
-stati cache deps /blog/
-
-# Show cache age distribution
-stati cache age-report
+✅ Checking dependencies for blog/post-1.md...
+📂 Dependencies: layout.eta, _partials/header.eta
+♻️  Cache miss: content changed
+✅ Rebuilt blog/post-1/ in 0.1s
 ```
 
 ## Best Practices
@@ -485,31 +337,37 @@ stati cache age-report
 
 ### Production Optimization
 
-1. **Preload critical content**
+1. **Use appropriate TTL values**
 
    ```javascript
-   hooks: {
-     beforeBuild() {
-       // Warm cache for critical pages
-       return warmCache([
-         '/',
-         '/about/',
-         '/blog/'
-       ]);
-     }
-   }
+   export default defineConfig({
+     isg: {
+       // Shorter TTL for frequently updated content
+       ttlSeconds: 1800, // 30 minutes
+
+       // Longer cache for older content
+       aging: [
+         { untilDays: 7, ttlSeconds: 3600 },   // 1 hour for week-old
+         { untilDays: 30, ttlSeconds: 86400 }, // 24 hours for month-old
+       ],
+     },
+   });
    ```
 
-2. **Monitor cache health**
+2. **Monitor build performance**
+
    ```javascript
-   hooks: {
-     afterBuild(stats) {
-       // Alert on low hit rates
-       if (stats.cacheHitRate < 0.8) {
-         console.warn('Low cache hit rate:', stats.cacheHitRate);
+   export default defineConfig({
+     hooks: {
+       afterBuild(stats) {
+         console.log(`Built ${stats.totalPages} pages in ${stats.buildTimeMs}ms`);
+         if (stats.cacheHits && stats.cacheMisses) {
+           const hitRate = stats.cacheHits / (stats.cacheHits + stats.cacheMisses);
+           console.log(`Cache hit rate: ${(hitRate * 100).toFixed(1)}%`);
+         }
        }
      }
-   }
+   });
    ```
 
 ISG is what makes Stati uniquely fast and efficient. Understanding how to configure and optimize it will dramatically improve your development experience and build times. Next, learn about [Static Assets & Bundling](/core-concepts/static-assets/) to understand how Stati handles CSS, JavaScript, and other assets.
