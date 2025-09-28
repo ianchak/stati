@@ -20,6 +20,9 @@ yarn create stati my-site
 
 # Using pnpm
 pnpm create stati my-site
+
+# Using bun
+bun create stati my-site
 ```
 
 ## Interactive Setup
@@ -29,22 +32,27 @@ The scaffolder provides an interactive setup process:
 ```bash
 $ npm create stati my-site
 
-✨ Creating new Stati site: my-site
+Welcome to Stati
+Create a new static site with Stati
 
 ? Project name: my-site
-? Choose a template: blank (more templates coming soon)
-? Select styling approach:
-  ❯ CSS (Basic stylesheets)
-    Sass (Enhanced CSS with variables)
-    Tailwind CSS (Utility-first framework)
-? Initialize git repository? Yes
+? Choose a template:
+  ❯ Blank - Minimal starter template
+? Which CSS solution would you like?
+  ❯ Plain CSS (recommended for beginners)
+    Sass/SCSS
+    Tailwind CSS
+? Initialize a git repository? Yes
 
-🎉 Project created successfully!
+Creating Stati project...
+✅ Successfully created Stati project 'my-site'
 
 Next steps:
   cd my-site
   npm install
   npm run dev
+
+🌟 Happy building with Stati!
 ```
 
 ## Command Line Options
@@ -53,10 +61,10 @@ Skip the interactive prompts with command line options:
 
 ```bash
 # Create with specific options
-npm create stati my-site -- --template blank --styling tailwind --git
+npm create stati my-site -- --styling tailwind --git
 
-# Use all defaults
-npm create stati my-site -- --yes
+# Skip git initialization
+npm create stati my-site -- --no-git
 
 # Show help
 npm create stati -- --help
@@ -66,12 +74,16 @@ npm create stati -- --help
 
 ```bash
 Options:
-  --template <name>     Template to use (currently: blank)
-  --styling <type>      Styling approach (css, sass, tailwind)
-  --git                 Initialize git repository
-  --no-git             Skip git initialization
-  --yes                 Use all defaults (--template blank --styling css --git)
-  --help                Display help information
+  --template <name>        Template to use (blank)
+  --styling <type>         CSS solution (css|sass|tailwind)
+  --git                    Initialize git repository
+  --no-git                 Skip git initialization
+  --help, -h               Show this help message
+
+Examples:
+  create-stati my-site
+  create-stati my-blog --styling=sass --git
+  create-stati my-app --template=blank --styling=tailwind
 ```
 
 ## Project Templates
@@ -107,96 +119,7 @@ my-site/
 └── README.md            # Getting started guide
 ```
 
-### Future Templates
 
-Additional templates are planned for future releases:
-
-- **Blog** - Blog template with posts, categories, RSS feed
-- **Docs** - Documentation template with navigation, search
-- **Portfolio** - Portfolio template with project showcases
-- **Landing** - Marketing landing page template
-- Tag and category support
-- RSS feed generation
-- SEO optimization
-- Dark mode support
-- Responsive design
-
-**Structure:**
-
-```
-my-blog/
-├── site/
-│   ├── index.md              # Homepage
-│   ├── about.md              # About page
-│   ├── layout.eta            # Main layout
-│   ├── _partials/
-│   │   ├── header.eta
-│   │   ├── footer.eta
-│   │   └── post-card.eta
-│   └── blog/
-│       ├── index.md          # Blog listing
-│       ├── hello-world.md    # Sample post
-│       └── second-post.md
-├── public/
-│   └── styles.css
-└── stati.config.js
-```
-
-### Documentation Template
-
-Ideal for technical documentation:
-
-```bash
-npm create stati my-docs -- --template docs --styling css
-```
-
-**Features:**
-
-- Multi-level navigation
-- Search functionality
-- Code syntax highlighting
-- Table of contents
-- Edit on GitHub links
-- Mobile-responsive sidebar
-- Print styles
-
-**Structure:**
-
-```
-my-docs/
-├── site/
-│   ├── index.md
-│   ├── layout.eta
-│   ├── _partials/
-│   │   ├── sidebar.eta
-│   │   ├── breadcrumbs.eta
-│   │   └── toc.eta
-│   ├── getting-started/
-│   │   ├── index.md
-│   │   └── installation.md
-│   ├── guides/
-│   │   └── index.md
-│   └── api/
-│       └── index.md
-└── stati.config.js
-```
-
-### Portfolio Template
-
-Showcase your work and skills:
-
-```bash
-npm create stati my-portfolio -- --template portfolio --styling sass
-```
-
-**Features:**
-
-- Project showcase
-- Skills section
-- Contact form
-- About page
-- Resume/CV page
-- Image galleries
 
 
 ## Styling Solutions
@@ -229,49 +152,36 @@ body {
 
 ### Sass/SCSS
 
-Advanced CSS preprocessing:
+Enhanced CSS preprocessing with variables, mixins, and nesting:
 
-```scss
-// src/styles.scss
-$primary-color: #3b82f6;
-$text-color: #1f2937;
-$breakpoints: (
-  sm: 640px,
-  md: 768px,
-  lg: 1024px,
-  xl: 1280px,
-);
+**Generated Files:**
 
-@mixin respond-to($breakpoint) {
-  @media (min-width: map-get($breakpoints, $breakpoint)) {
-    @content;
-  }
-}
+- `styles/main.scss` - Main Sass source file with variables and mixins
+- `public/styles.css` - Compiled output (auto-generated)
 
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 1rem;
+**Generated Package Scripts:**
 
-  @include respond-to(md) {
-    padding: 0 2rem;
-  }
-}
-```
-
-**Build Configuration:**
-
-```javascript
-// package.json scripts
+```json
 {
   "scripts": {
-    "dev": "npm run build:css && stati dev",
+    "dev": "concurrently --prefix none \"npm run watch:css\" \"stati dev\"",
     "build": "npm run build:css && stati build",
-    "build:css": "sass src/styles.scss public/styles.css"
+    "build:css": "sass styles/main.scss public/styles.css --style=compressed",
+    "watch:css": "sass styles/main.scss public/styles.css --watch"
   }
 }
 ```
 
+**Dependencies Added:**
+
+- `sass: ^1.77.0` - Sass compiler
+- `concurrently: ^9.0.0` - Run multiple commands simultaneously
+
+### Tailwind CSS
+
+Utility-first CSS framework:
+
+```javascript
 ### Tailwind CSS
 
 Utility-first CSS framework:
@@ -310,6 +220,17 @@ module.exports = {
 
   <div class="prose prose-lg max-w-none"><%~ content %></div>
 </article>
+**Usage in Templates:**
+
+```html
+<article class="max-w-4xl mx-auto px-4 py-8">
+  <header class="mb-8">
+    <h1 class="text-4xl font-bold text-gray-900 mb-4"><%= page.title %></h1>
+    <p class="text-lg text-gray-600"><%= page.description %></p>
+  </header>
+
+  <div class="prose prose-lg max-w-none"><%~ content %></div>
+</article>
 ```
 
 ## Post-Creation Setup
@@ -317,22 +238,26 @@ module.exports = {
 After creating your project:
 
 1. **Install dependencies:**
+
    ```bash
    cd my-site
    npm install
    ```
 
 2. **Start development:**
+
    ```bash
    npm run dev
    ```
 
 3. **Build for production:**
+
    ```bash
    npm run build
    ```
 
 4. **Preview built site:**
+
    ```bash
    npm run preview
    ```
@@ -347,7 +272,7 @@ The scaffolder generates these npm scripts:
     "dev": "stati dev",
     "build": "stati build",
     "preview": "stati preview",
-    "clean": "stati build --clean"
+    "clean": "rimraf dist .stati"
   }
 }
 ```
@@ -355,25 +280,31 @@ The scaffolder generates these npm scripts:
 **Additional scripts for styling:**
 
 **Sass:**
+
 ```json
 {
   "scripts": {
-    "dev": "concurrently \"sass --watch\" \"stati dev\"",
-    "build": "sass src/styles.scss public/styles.css && stati build"
+    "dev": "concurrently --prefix none \"npm run watch:css\" \"stati dev\"",
+    "build": "npm run build:css && stati build",
+    "build:css": "sass styles/main.scss public/styles.css --style=compressed",
+    "watch:css": "sass styles/main.scss public/styles.css --watch"
   }
 }
 ```
 
 **Tailwind:**
+
 ```json
 {
   "scripts": {
-    "dev": "concurrently \"tailwindcss --watch\" \"stati dev\"",
-    "build": "tailwindcss --minify && stati build"
+    "dev": "concurrently --prefix none \"npm run watch:css\" \"stati dev\"",
+    "build": "npm run build:css && stati build",
+    "build:css": "tailwindcss -i src/styles.css -o public/styles.css --minify",
+    "watch:css": "tailwindcss -i src/styles.css -o public/styles.css --watch"
   }
 }
-
 ```
+
 
 ## Next Steps
 
@@ -381,144 +312,3 @@ The scaffolder generates these npm scripts:
 - [Configure your site](/configuration/)
 - [Add content](/core-concepts/content/)
 - [Deploy your site](/deployment/)
-```
-
-### Configuration File
-
-Create `.stati-scaffold.json` for defaults:
-
-```json
-{
-  "defaultTemplate": "blog",
-  "defaultStyling": "tailwind",
-  "autoGit": true,
-  "autoInstall": true,
-  "skipPrompts": false,
-  "customTemplates": [
-    {
-      "name": "company-blog",
-      "source": "github:company/stati-blog-template"
-    }
-  ]
-}
-```
-
-### Programmatic Usage
-
-Use the scaffolder programmatically:
-
-```javascript
-import { scaffold } from 'create-stati';
-
-async function createProject() {
-  await scaffold({
-    projectName: 'my-site',
-    template: 'blog',
-    styling: 'tailwind',
-    git: true,
-    install: true,
-    directory: './projects/my-site',
-  });
-}
-
-createProject();
-```
-
-## Template Development
-
-### Creating Templates
-
-```bash
-# Template development structure
-my-template/
-├── template.json            # Template metadata
-├── template/                # Template files
-│   ├── site/
-│   ├── public/
-│   ├── package.json.ejs    # Dynamic files
-│   └── stati.config.js.ejs
-├── prompts.js              # Custom prompts
-└── hooks.js                # Post-generation hooks
-```
-
-**Custom Prompts:**
-
-```javascript
-// prompts.js
-export default [
-  {
-    type: 'input',
-    name: 'siteName',
-    message: 'What is your site name?',
-    default: 'My Stati Site',
-  },
-  {
-    type: 'list',
-    name: 'theme',
-    message: 'Choose a color theme:',
-    choices: ['blue', 'green', 'purple', 'red'],
-  },
-];
-```
-
-**Post-Generation Hooks:**
-
-```javascript
-// hooks.js
-export default {
-  async postGenerate(context) {
-    const { projectPath, answers } = context;
-
-    // Custom logic after generation
-    if (answers.theme === 'blue') {
-      // Modify theme files
-    }
-
-    // Install additional dependencies
-    await installDependencies(projectPath, ['custom-package']);
-  },
-};
-```
-
-### Template Variables
-
-Use EJS templating in files:
-
-```json
-// package.json.ejs
-{
-  "name": "<%= projectName %>",
-  "version": "1.0.0",
-  "description": "<%= description %>",
-  "scripts": {
-    "dev": "stati dev",
-    "build": "stati build"<% if (styling === 'sass') { %>,
-    "build:css": "sass src/styles.scss public/styles.css"<% } %>
-  }
-}
-```
-
-## Best Practices
-
-### Template Design
-
-1. **Sensible Defaults**: Provide good defaults for common use cases
-2. **Flexible Structure**: Allow customization without breaking functionality
-3. **Documentation**: Include comprehensive README and examples
-4. **Performance**: Optimize for fast generation and good runtime performance
-
-### User Experience
-
-1. **Clear Prompts**: Ask clear, specific questions
-2. **Helpful Descriptions**: Provide context for choices
-3. **Error Handling**: Handle edge cases gracefully
-4. **Progress Feedback**: Show progress during generation
-
-### Maintenance
-
-1. **Version Updates**: Keep templates updated with latest Stati features
-2. **Testing**: Test templates with different configurations
-3. **Community**: Accept feedback and contributions
-4. **Documentation**: Maintain up-to-date documentation
-
-The Stati scaffolder makes it easy to start new projects with best practices and modern tooling. Choose the template that fits your needs or create your own for specific use cases.
