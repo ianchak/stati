@@ -17,6 +17,16 @@ npm create stati my-site
 npm create stati my-site --template=blank --styling=tailwind --git
 ```
 
+Running the scaffolder will:
+
+- Create a new project directory (or reuse the provided `--dir` target)
+- Copy the blank starter template files into that directory
+- Update `package.json` with your project name and Stati metadata
+- Set up optional styling scripts based on the chosen styling option
+- Initialize a Git repository when `--git` is supplied (defaults to prompt)
+
+> **Note:** Dependencies are not installed automatically. Follow the post-creation steps below to install packages.
+
 ## Interactive Setup
 
 The scaffolder will prompt you for:
@@ -69,9 +79,9 @@ Choose your preferred styling approach:
 
 ### Tailwind CSS
 
-- Full Tailwind CSS setup with configuration
-- Includes typography plugin
-- Optimized build pipeline
+- Generates a `tailwind.config.js` tailored to the Stati content directory
+- Adds a source stylesheet at `src/styles.css` compiled to `public/styles.css`
+- Configures `build:css` and `watch:css` scripts that run the Tailwind CLI alongside Stati
 
 ## Post-Creation Setup
 

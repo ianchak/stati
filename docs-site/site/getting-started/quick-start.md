@@ -26,9 +26,9 @@ npx create-stati my-first-site
 This will:
 
 - Create a new directory called `my-first-site`
-- Set up the basic project structure
-- Install all necessary dependencies
-- Initialize git repository (optional)
+- Copy the blank starter template into that directory
+- Prepare `package.json` with Stati scripts and metadata
+- Offer to initialize a git repository if you enable it during the prompt
 
 Navigate to your new project:
 
@@ -36,11 +36,13 @@ Navigate to your new project:
 cd my-first-site
 ```
 
+> **Next step:** Run `npm install` once you're inside the project—dependencies aren't installed automatically by the scaffolder.
+
 ## Step 2: Explore the Project Structure
 
 Your new project will have this structure:
 
-```
+```text
 my-first-site/
 ├── package.json          # Project dependencies and scripts
 ├── stati.config.js       # Stati configuration
@@ -61,13 +63,11 @@ Start the development server to see your site:
 npm run dev
 ```
 
-This will:
-
-- Start the development server (usually on http://localhost:3000)
+- Start the development server (usually on [http://localhost:3000](http://localhost:3000))
 - Watch for file changes
 - Automatically reload the browser when you make changes
 
-Open your browser and navigate to the URL shown in the terminal (typically http://localhost:3000).
+Open your browser and navigate to the URL shown in the terminal (typically [http://localhost:3000](http://localhost:3000)).
 
 ## Step 4: Edit Your First Page
 
@@ -124,7 +124,7 @@ I chose Stati because:
 Feel free to reach out if you have any questions!
 ```
 
-Your new page will be available at http://localhost:3000/about/
+Your new page will be available at [http://localhost:3000/about/](http://localhost:3000/about/)
 
 ## Step 6: Customize the Layout
 

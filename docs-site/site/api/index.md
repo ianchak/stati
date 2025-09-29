@@ -9,115 +9,78 @@ Stati provides a comprehensive API for templates, configuration, and programmati
 
 ## Template API
 
-### Page Context (`it`)
+### Template Context (`it`)
 
-Every template receives a context object with page and site data:
+Every Eta template receives a `TemplateContext` object with site metadata, front matter, and rendered content:
 
 ```typescript
-interface PageContext {
-  // Page metadata
-  title?: string;
-  description?: string;
-  date?: string;
-  lastModified?: string;
-  tags?: string[];
-  author?: string;
-  draft?: boolean;
-
-  // Page content
+interface TemplateContext {
+  site: SiteConfig;
+  page: {
+    path: string;
+    url: string;
+    content: string;
+    title?: string;
+    description?: string;
+    [key: string]: unknown; // Front matter fields
+  };
   content: string; // Rendered HTML content
-  excerpt?: string; // Auto-generated or manual excerpt
-  rawContent: string; // Original markdown content
-
-  // Page info
-  url: string; // Page URL path
-  path: string; // File system path
-  layout?: string; // Layout name
-
-  // Site context
-  site: SiteConfig; // Site configuration
-
-  // Template helpers
-  partials: PartialMap; // Available partials
-  renderMarkdown: (md: string) => string;
+  navigation: NavNode[];
+  collection?: CollectionData; // Only for index pages
+  partials: Record<string, string>; // Rendered partial markup
 }
-```
 
-### Site Configuration Context
-
-```typescript
 interface SiteConfig {
   title: string;
-  description?: string;
   baseUrl: string;
   defaultLocale?: string;
-
-  // Custom metadata
-  author?: string;
-  social?: Record<string, string>;
-  navigation?: NavigationItem[];
-
-  // Any custom properties from config
-  [key: string]: any;
 }
 ```
 
-### Template Helpers
+Front matter values are exposed through `it.page`. Additional properties you place on `site` in `stati.config.ts` are available at runtime, but the public type includes the three fields above by default.
 
-#### Date Formatting
+### Stati Configuration Structure
 
-```eta
-<!-- Basic date formatting -->
-<time><%= new Date(it.date).toLocaleDateString() %></time>
+```typescript
+import type MarkdownIt from 'markdown-it';
 
-<!-- Custom date formatting -->
-<time datetime="<%= it.date %>">
-  <%= new Date(it.date).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  }) %>
-</time>
+interface StatiConfig {
+  srcDir?: string;
+  outDir?: string;
+  staticDir?: string;
+  site: SiteConfig;
+  markdown?: {
+    plugins?: (string | [string, unknown])[];
+    configure?: (md: MarkdownIt) => void;
+  };
+  eta?: {
+    filters?: Record<string, (value: unknown) => unknown>;
+  };
+  isg?: ISGConfig;
+  dev?: {
+    port?: number;
+    host?: string;
+    open?: boolean;
+  };
+  hooks?: BuildHooks;
+}
 
-<!-- Relative time -->
-<%
-const now = new Date();
-const postDate = new Date(it.date);
-const diffTime = Math.abs(now - postDate);
-const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-%>
-<span class="relative-time">
-  <% if (diffDays === 0) { %>Today<% }
-     else if (diffDays === 1) { %>Yesterday<% }
-     else if (diffDays < 7) { %><%= diffDays %> days ago<% }
-     else { %><%= new Date(it.date).toLocaleDateString() %><% } %>
-</span>
+interface SiteConfig {
+  title: string;
+  baseUrl: string;
+  defaultLocale?: string;
+}
 ```
 
-#### URL Helpers
+At runtime Stati preserves any additional keys you place under `site`, so you can augment the type locally if you need editor support for custom metadata.
 
-```eta
-<!-- Absolute URL generation -->
-<link rel="canonical" href="<%= it.site.baseUrl + it.url %>">
+### Markdown Options
 
-<!-- Active navigation links -->
-<%
-function isActive(linkUrl, currentUrl) {
-  if (linkUrl === '/') return currentUrl === '/';
-  return currentUrl.startsWith(linkUrl);
+```typescript
+interface MarkdownConfig {
+  plugins?: (string | [string, unknown])[];
+  configure?: (md: MarkdownIt) => void;
 }
-%>
-<a href="/blog/" class="<%= isActive('/blog/', it.url) ? 'active' : '' %>">
-  Blog
-</a>
-
-<!-- Safe URL joining -->
-<%
-function joinUrl(base, path) {
-  return base.replace(/\/$/, '') + '/' + path.replace(/^\//, '');
-}
-%>
-<a href="<%= joinUrl(it.site.baseUrl, it.url) %>">Permalink</a>
 ```
 
 #### Text Processing
@@ -130,7 +93,7 @@ function truncate(text, length = 150) {
   return text.slice(0, length).replace(/\s+\S*$/, '') + '...';
 }
 %>
-<p class="excerpt"><%= truncate(it.description) %></p>
+<p class="excerpt"><%= truncate(it.page.description as string) %></p>
 
 <!-- Slugify text -->
 <%
@@ -243,35 +206,23 @@ interface AnchorPluginOptions {
 
 ```typescript
 interface ISGConfig {
+  enabled?: boolean;
   ttlSeconds?: number;
   maxAgeCapDays?: number;
-  aging?: {
-    enabled: boolean;
-    schedule: AgingRule[];
-    maxTtl?: string;
-    minTtl?: string;
-  };
-  dependencies?: Record<string, string[]>;
-  tags?: Record<string, string[]>;
-  alwaysRebuild?: string[];
-  storage?: StorageConfig;
+  aging?: AgingRule[];
 }
 
 interface AgingRule {
-  age: string;
-  ttl: string;
+  untilDays: number;
+  ttlSeconds: number;
 }
 ```
 
-### Template Configuration
+### Eta Configuration
 
 ```typescript
-interface TemplateConfig {
-  eta?: {
-    cache?: boolean;
-    filters?: Record<string, Function>;
-    helpers?: Record<string, Function>;
-  };
+interface EtaConfig {
+  filters?: Record<string, (value: unknown) => unknown>;
 }
 ```
 
@@ -297,6 +248,7 @@ Stati provides lifecycle hooks for custom build logic:
 
 ```typescript
 import { defineConfig } from '@stati/core';
+import type { BuildHooks } from '@stati/core';
 
 export default defineConfig({
   hooks: {
@@ -314,8 +266,8 @@ export default defineConfig({
 
     // Called before rendering each individual page
     beforeRender: async (ctx) => {
-      // Modify page data or context before rendering
-      ctx.page.buildTime = new Date().toISOString();
+      // Modify page front matter before rendering
+      ctx.page.frontMatter.buildTime = new Date().toISOString();
     },
 
     // Called after rendering each individual page
@@ -350,7 +302,7 @@ import { build, createDevServer, createPreviewServer, invalidate, loadConfig } f
 import type { BuildOptions, DevServerOptions, PreviewServerOptions } from '@stati/core';
 
 // Configuration Loading
-const config = await loadConfig('./stati.config.js');
+const config = await loadConfig();
 ```
 
 ### Build Process
@@ -410,63 +362,42 @@ console.log(`Preview server running at ${previewServer.url}`);
 import { invalidate } from '@stati/core';
 
 // Clear entire cache
-const result = await invalidate();
+const cleared = await invalidate();
 
 // Invalidate by tag
-const result = await invalidate('tag:blog');
+const tagResult = await invalidate('tag:blog');
 
-// Invalidate by path pattern
-const result = await invalidate('path:/blog/**');
+// Invalidate by path prefix
+const pathResult = await invalidate('path:/blog/');
 
-// Invalidate by age
-const result = await invalidate('age:3months');
+// Invalidate entries rendered within the last 3 months
+const recentResult = await invalidate('age:3months');
 
-console.log(`Invalidated ${result.invalidatedCount} cache entries`);
+// Invalidate using a glob pattern
+const globResult = await invalidate('glob:blog/**');
 
-// Clean orphaned entries
-await cache.clean();
+console.log(`Invalidated ${tagResult.invalidatedCount} cache entries`);
+console.log(tagResult.invalidatedPaths);
 
-// Reset all cache
-await cache.reset();
+// Result objects share the shape: { invalidatedCount, invalidatedPaths, clearedAll }
 ```
 
 ## Error Handling
 
-### Error Types
+Stati throws regular `Error` instances with descriptive messages. Wrap build steps in `try/catch` blocks to surface problems in your own tooling, and rely on the CLI for formatted logs and, during development, the in-browser overlay.
 
 ```typescript
-class StatiError extends Error {
-  constructor(
-    message: string,
-    public code: string,
-    public category: 'config' | 'template' | 'markdown' | 'build' | 'cache',
-  ) {
-    super(message);
-    this.name = 'StatiError';
+try {
+  await build();
+} catch (error) {
+  if (error instanceof Error) {
+    console.error('Build failed:', error.message);
   }
-}
-
-// Specific error types
-class ConfigError extends StatiError {
-  constructor(
-    message: string,
-    public path?: string,
-  ) {
-    super(message, 'CONFIG_ERROR', 'config');
-  }
-}
-
-class TemplateError extends StatiError {
-  constructor(
-    message: string,
-    public templatePath?: string,
-  ) {
-    super(message, 'TEMPLATE_ERROR', 'template');
-  }
+  throw error;
 }
 ```
 
-### Error Handling in Hooks
+### Handling Errors in Hooks
 
 ```typescript
 export default defineConfig({
@@ -493,48 +424,40 @@ export default defineConfig({
 
 ## TypeScript Support
 
-### Type Definitions
+### Typed Hooks and Context
 
 ```typescript
-// Import types for development
-import type { StatiConfig, PageContext, BuildContext, Plugin } from '@stati/core/types';
+import type { BuildContext, BuildHooks, PageContext } from '@stati/core';
 
-// Extend base types
-interface CustomPageContext extends PageContext {
-  customProperty: string;
-  computedValue: number;
-}
-
-// Custom plugin with types
-export function typedPlugin(): Plugin {
-  return {
-    name: 'typed-plugin',
-    setup(stati) {
-      stati.addPageHook('beforeRender', (page: PageData) => {
-        (page as CustomPageContext).customProperty = 'value';
-      });
-    },
-  };
-}
+const hooks: BuildHooks = {
+  beforeAll: (ctx: BuildContext) => {
+    console.log(`Building ${ctx.pages.length} pages`);
+  },
+  beforeRender: ({ page }: PageContext) => {
+    page.frontMatter.generatedAt = new Date().toISOString();
+  },
+};
 ```
 
-### Template Type Safety
+### Template Helpers with `defineConfig`
 
 ```typescript
-// stati.config.ts with full type safety
 import { defineConfig } from '@stati/core';
 
+const hooks: BuildHooks = {
+  beforeAll: (ctx) => {
+    console.log(`Building ${ctx.pages.length} pages`);
+  },
+};
+
 export default defineConfig({
-  templates: {
-    eta: {
-      helpers: {
-        // Type-safe helper
-        formatDate: (date: string | Date, locale = 'en-US'): string => {
-          return new Intl.DateTimeFormat(locale).format(new Date(date));
-        },
-      },
+  eta: {
+    filters: {
+      formatDate: (value: string | Date, locale = 'en-US') =>
+        new Intl.DateTimeFormat(locale).format(new Date(value)),
     },
   },
+  hooks,
 });
 ```
 

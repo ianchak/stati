@@ -34,17 +34,18 @@ cd stati
 # Install dependencies
 npm install
 
-# Run the development build
-npm run dev
+# Build all packages (core → cli → create-stati)
+npm run build
 
-# Run tests
+# Run the test suite
 npm test
 
-# Run tests in watch mode
-npm run test:watch
+# Lint and type-check
+npm run lint
+npm run typecheck
 
-# Build all packages
-npm run build
+# Optional: watch core package TypeScript
+npm run dev --workspace=@stati/core
 ```
 
 ### Project Structure
@@ -111,14 +112,8 @@ Stati uses strict TypeScript and follows these conventions:
 # Run linting
 npm run lint
 
-# Fix linting issues
-npm run lint:fix
-
-# Format code
-npm run format
-
 # Type checking
-npm run type-check
+npm run typecheck
 ```
 
 ### Testing
@@ -130,13 +125,13 @@ We maintain comprehensive test coverage:
 npm test
 
 # Run tests with coverage
-npm run test:coverage
+npm test -- --coverage
 
 # Run specific test file
-npm test src/core/build.test.ts
+npm test -- packages/core/src/__tests__/build.test.ts
 
 # Run tests in watch mode
-npm run test:watch
+npm test -- --watch
 ```
 
 ### Test Categories
@@ -149,30 +144,16 @@ npm run test:watch
 Example test structure:
 
 ```typescript
-// src/core/build.test.ts
-import { describe, it, expect, beforeEach } from 'vitest';
-import { build } from './build.js';
-import { createTestConfig } from '../tests/helpers.js';
+// packages/core/src/__tests__/build.test.ts
+import { describe, it, expect } from 'vitest';
+import { build } from '../../core/build.js';
 
 describe('build', () => {
-  let config: StatiConfig;
+  it('returns build statistics', async () => {
+    const stats = await build({ force: true });
 
-  beforeEach(() => {
-    config = createTestConfig();
-  });
-
-  it('should build a basic site', async () => {
-    const result = await build(config);
-
-    expect(result.pageCount).toBeGreaterThan(0);
-    expect(result.buildTime).toBeGreaterThan(0);
-  });
-
-  it('should handle empty sites', async () => {
-    config.contentDir = 'empty';
-    const result = await build(config);
-
-    expect(result.pageCount).toBe(0);
+    expect(stats.totalPages).toBeGreaterThanOrEqual(0);
+    expect(stats.assetsCount).toBeGreaterThanOrEqual(0);
   });
 });
 ```

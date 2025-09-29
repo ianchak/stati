@@ -115,7 +115,7 @@ stati invalidate [query]
 - `tag:name` - Invalidate by tag
 - `path:/route` - Invalidate a specific path or any nested routes
 - `glob:pattern` - Invalidate paths matching glob expressions (e.g., `glob:blog/**`)
-- `age:duration` - Invalidate by age (e.g., `3months`, `1week`)
+- `age:duration` - Invalidate entries rendered within the specified time window (e.g., `3months`, `1week`)
 - Empty query - Clear all cache
 
 **Examples:**
@@ -127,7 +127,7 @@ stati invalidate tag:blog
 # Invalidate specific path
 stati invalidate path:/about
 
-# Invalidate content older than 1 week
+# Invalidate entries rendered in the last week
 stati invalidate age:1week
 
 # Clear all cache (no query)

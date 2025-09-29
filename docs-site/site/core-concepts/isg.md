@@ -15,7 +15,6 @@ ISG is a build optimization strategy that:
 - **Caches build outputs** with intelligent invalidation
 - **Ages content** to optimize cache retention
 - **Enables partial rebuilds** for faster development
-- **Supports on-demand regeneration** for dynamic content
 
 Unlike traditional static site generators that rebuild everything, Stati only rebuilds what needs to be updated.
 
@@ -25,7 +24,7 @@ Unlike traditional static site generators that rebuild everything, Stati only re
 
 Stati automatically tracks relationships between files:
 
-```
+```text
 blog/index.md depends on:
 ├── blog/post-1.md
 ├── blog/post-2.md
@@ -38,7 +37,7 @@ When post-1.md changes:
 ✅ Rebuild blog/ (depends on post-1.md)
 ❌ Skip blog/post-2/ (no changes)
 ❌ Skip about/ (unrelated)
-```
+```text
 
 ### Cache Manifest
 
@@ -46,7 +45,6 @@ Stati maintains a cache manifest at `.stati/cache/manifest.json`:
 
 ```json
 {
-  "version": "1.0.0",
   "entries": {
     "/blog/": {
       "inputsHash": "abc123",
@@ -112,11 +110,11 @@ stati invalidate path:/blog/post-1/
 # Invalidate by tag
 stati invalidate tag:blog
 
-# Invalidate by age
+# Invalidate entries rendered in the last 7 days
 stati invalidate age:7days
 
 # Force rebuild everything
-stati invalidate all
+stati invalidate
 
 # Invalidate multiple targets (space-separated)
 stati invalidate "path:/blog/ tag:navigation age:30days"
@@ -135,7 +133,7 @@ await invalidate('path:/blog/');
 // Invalidate by tag
 await invalidate('tag:navigation');
 
-// Invalidate by age
+// Invalidate entries rendered within the last 30 days
 await invalidate('age:30days');
 
 // Invalidate multiple targets
@@ -199,7 +197,7 @@ stati invalidate age:1year
 
 ### Build Time Comparison
 
-```
+```text
 Traditional SSG (full rebuild):
 ├── 1000 pages: ~60 seconds
 ├── 5000 pages: ~300 seconds
@@ -218,7 +216,7 @@ Stati with ISG (incremental):
 # Initial dev server start
 $ stati dev
 ✅ Build completed in 2.3s (1,247 pages)
-🚀 Dev server running at http://localhost:3000
+🚀 Dev server running at [http://localhost:3000](http://localhost:3000)
 
 # Make a change to blog/post-1.md
 ✅ Rebuilt in 0.1s (1 page updated)
@@ -233,7 +231,7 @@ $ stati dev
 
 ### Cache Directory Structure
 
-```
+```text
 .stati/
 └── cache/
     └── manifest.json       # Cache metadata and entries
@@ -245,7 +243,6 @@ The cache persists between builds in the `.stati/cache/` directory:
 
 - `manifest.json` - Tracks all cached pages and their metadata
 - Generated HTML files are cached until their dependencies change
-- Cache automatically clears when Stati version changes
 
 ## Monitoring and Debugging
 
@@ -260,104 +257,5 @@ $ stati build
 📄 Pages: 247 generated, 1,000 cached (95.2% hit rate)
 💾 Cache: 156 MB, 1,247 entries
 ```
-
-### Debug Mode
-
-View detailed dependency tracking in development:
-
-```bash
-$ stati dev --verbose
-
-✅ Checking dependencies for blog/post-1.md...
-📂 Dependencies: layout.eta, _partials/header.eta
-♻️  Cache miss: content changed
-✅ Rebuilt blog/post-1/ in 0.1s
-```
-
-## Best Practices
-
-### Dependency Design
-
-1. **Minimize cross-dependencies**
-
-   ```javascript
-   // Good: isolated sections
-   'blog/': ['blog/**/*.md']
-   'docs/': ['docs/**/*.md']
-
-   // Avoid: everything depends on everything
-   '**/*.md': ['**/*.md', '**/*.eta']
-   ```
-
-2. **Use specific patterns**
-
-   ```javascript
-   // Good: specific dependencies
-   'blog/index.md': ['blog/posts/**/*.md']
-
-   // Avoid: overly broad patterns
-   'blog/index.md': ['**/*.md']
-   ```
-
-### Cache Tuning
-
-1. **Match TTL to update frequency**
-
-   ```javascript
-   // News content (updates frequently)
-   news: {
-     ttlSeconds: 300;
-   }
-
-   // Documentation (updates rarely)
-   docs: {
-     ttlSeconds: 86400;
-   }
-   ```
-
-2. **Use aging for blogs**
-   ```javascript
-   aging: {
-     schedule: [
-       { age: '1d', ttl: '1h' }, // Recent posts change more
-       { age: '30d', ttl: '24h' }, // Old posts rarely change
-     ];
-   }
-   ```
-
-### Production Optimization
-
-1. **Use appropriate TTL values**
-
-   ```javascript
-   export default defineConfig({
-     isg: {
-       // Shorter TTL for frequently updated content
-       ttlSeconds: 1800, // 30 minutes
-
-       // Longer cache for older content
-       aging: [
-         { untilDays: 7, ttlSeconds: 3600 },   // 1 hour for week-old
-         { untilDays: 30, ttlSeconds: 86400 }, // 24 hours for month-old
-       ],
-     },
-   });
-   ```
-
-2. **Monitor build performance**
-
-   ```javascript
-   export default defineConfig({
-     hooks: {
-       afterBuild(stats) {
-         console.log(`Built ${stats.totalPages} pages in ${stats.buildTimeMs}ms`);
-         if (stats.cacheHits && stats.cacheMisses) {
-           const hitRate = stats.cacheHits / (stats.cacheHits + stats.cacheMisses);
-           console.log(`Cache hit rate: ${(hitRate * 100).toFixed(1)}%`);
-         }
-       }
-     }
-   });
-   ```
 
 ISG is what makes Stati uniquely fast and efficient. Understanding how to configure and optimize it will dramatically improve your development experience and build times. Next, learn about [Static Assets & Bundling](/core-concepts/static-assets/) to understand how Stati handles CSS, JavaScript, and other assets.
