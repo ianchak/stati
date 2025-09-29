@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="<%= stati.site.defaultLocale || 'en-US' %>" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= stati.title ? `${stati.title} | ${stati.site.title}` : stati.site.title %></title>
+    <meta name="description" content="<%= stati.description || 'Stati - TypeScript-first static site generator' %>">
+
+    <!-- Favicon -->
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+
+    <!-- Preload fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@300;400;500&display=swap" rel="stylesheet">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/styles.css">
+
+    <!-- Prism.js syntax highlighting -->
+    <link rel="stylesheet" href="/prism-stati.css">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="<%= stati.title || stati.site.title %>">
+    <meta property="og:description" content="<%= stati.description || 'Stati - TypeScript-first static site generator' %>">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="<%= stati.site.baseUrl + stati.url %>">
+</head>
+<body class="bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-dark-950 dark:via-dark-900 dark:to-dark-900/80 text-gray-900 dark:text-gray-100 font-sans antialiased transition-colors duration-300">
+    <!-- Skip to content link for accessibility -->
+    <a href="#main-content" class="skip-link sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-primary-600 text-white px-4 py-2 rounded-md z-50 transition-all duration-200">
+        Skip to main content
+    </a>
+
+    <%~ stati.partials.header %>
+
+    <div class="flex min-h-screen">
+        <%~ stati.partials.sidebar %>
+
+        <main id="main-content" class="flex-1 ml-0 lg:ml-80 transition-all duration-300 ease-in-out">
+            <div class="relative max-w-7xl mx-auto">
+                <div class="flex">
+                    <!-- Main content area -->
+                    <div class="flex-1 min-w-0 px-6 lg:px-12 py-12 lg:py-16">
+                        <% if (stati.title) { %>
+                        <header class="mb-12 animate-fade-in">
+                            <%~ stati.partials.breadcrumbs %>
+                            <div class="mt-6">
+                                <h1 class="text-4xl lg:text-5xl xl:text-6xl font-bold mb-6 text-gray-900 dark:text-white leading-tight">
+                                    <%= stati.title %>
+                                </h1>
+                                <% if (stati.description) { %>
+                                <p class="text-xl lg:text-2xl text-gray-600 dark:text-gray-300 leading-relaxed max-w-3xl">
+                                    <%= stati.description %>
+                                </p>
+                                <% } %>
+                            </div>
+                        </header>
+                        <% } %>
+
+                        <div class="prose prose-lg dark:prose-invert max-w-none prose-headings:scroll-mt-24 prose-pre:bg-dark-800 prose-pre:shadow-soft-lg prose-code:bg-gray-100 dark:prose-code:bg-dark-700 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:font-medium animate-slide-up">
+                            <%~ stati.content %>
+                        </div>
+                    </div>
+
+                    <!-- Table of Contents area -->
+                    <div class="hidden xl:block w-80 flex-shrink-0 py-12">
+                        <div class="sticky top-24">
+                            <%~ stati.partials.toc %>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <%~ stati.partials.footer %>
+
+    <!-- Scroll to top button -->
+    <button id="scroll-to-top" class="fixed bottom-8 right-8 bg-primary-600 hover:bg-primary-700 text-white p-3 rounded-full shadow-lg hover:shadow-glow opacity-0 pointer-events-none transition-all duration-300 z-40">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
+        </svg>
+    </button>
+
+    <script>
+        // Scroll to top functionality
+        const scrollToTopBtn = document.getElementById('scroll-to-top');
+        window.addEventListener('scroll', () => {
+            if (window.pageYOffset > 300) {
+                scrollToTopBtn.classList.remove('opacity-0', 'pointer-events-none');
+                scrollToTopBtn.classList.add('opacity-100');
+            } else {
+                scrollToTopBtn.classList.add('opacity-0', 'pointer-events-none');
+                scrollToTopBtn.classList.remove('opacity-100');
+            }
+        });
+
+        scrollToTopBtn.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    </script>
+</body>
+</html>

@@ -1,5 +1,25 @@
 import MarkdownIt from 'markdown-it';
+import { createRequire } from 'module';
+import { pathToFileURL } from 'url';
+import path from 'path';
 import type { StatiConfig } from '../types/index.js';
+
+/**
+ * Load a markdown plugin, trying different resolution strategies
+ */
+async function loadMarkdownPlugin(pluginName: string) {
+  const fullPluginName = `markdown-it-${pluginName}`;
+
+  // Try importing from current working directory first (for projects using Stati)
+  try {
+    const require = createRequire(pathToFileURL(path.resolve(process.cwd(), 'package.json')));
+    const pluginPath = require.resolve(fullPluginName);
+    return await import(pathToFileURL(pluginPath).href);
+  } catch {
+    // Fallback to standard resolution (for core package dependencies)
+    return await import(fullPluginName);
+  }
+}
 
 /**
  * Creates and configures a MarkdownIt processor based on the provided configuration.
@@ -18,7 +38,7 @@ export async function createMarkdownProcessor(config: StatiConfig): Promise<Mark
       if (typeof plugin === 'string') {
         // Plugin name only
         try {
-          const pluginModule = await import(`markdown-it-${plugin}`);
+          const pluginModule = await loadMarkdownPlugin(plugin);
           const pluginFunction = pluginModule.default || pluginModule;
           md.use(pluginFunction);
         } catch (error) {
@@ -28,7 +48,7 @@ export async function createMarkdownProcessor(config: StatiConfig): Promise<Mark
         // Plugin name with options [name, options]
         const [pluginName, options] = plugin;
         try {
-          const pluginModule = await import(`markdown-it-${pluginName}`);
+          const pluginModule = await loadMarkdownPlugin(pluginName);
           const pluginFunction = pluginModule.default || pluginModule;
           md.use(pluginFunction, options);
         } catch (error) {

@@ -1,6 +1,6 @@
 # @stati/core
 
-The core engine for Stati, a lightweight TypeScript static site generator built with Vite-inspired architecture.
+The core engine for Stati, a lightweight TypeScript static site generator built with modern architecture.
 
 ## Installation
 

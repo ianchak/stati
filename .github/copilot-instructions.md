@@ -1,150 +1,51 @@
-# Stati Codebase Instructions for AI Coding Agents
+# Stati AI Guide for Coding Agents
 
-## Project Overview
+## Repo map
 
-Stati is a **TypeScript-first static site generator** built as a monorepo with three core packages:
+- Monorepo root uses npm workspaces; build flow is always `core` → `cli` → `create-stati`.
+- `packages/core/src/core/*` runs the pipeline (content → markdown → templates → ISG cache). `packages/core/src/config/loader.ts` dynamically imports `stati.config.ts`.
+- `packages/cli/src/cli.ts` wires yargs commands to core while `packages/cli/src/logger.ts` creates the colored logger contract used across builds.
+- `packages/create-stati/src/create.ts` scaffolds from `examples/`; its build step copies templates into `dist/templates`.
+- `examples/*` double as integration fixtures and `docs-site/` hosts the real documentation built with Stati.
 
-- `@stati/core` - Core SSG engine (Vite + Markdown-It + Eta templates)
-- `@stati/cli` - Command-line interface (`stati build`, `dev`, `invalidate`)
-- `create-stati` - Project scaffolder with interactive setup
+## Build + test workflow
 
-## Architecture Patterns
+- Node 22+ required. Run `npm install`, then `npm run build` (workspaces chain the packages in dependency order).
+- `npm run test` executes Vitest across workspaces; `npm run test:blank:full` cleans, rebuilds, and verifies the blank starter end-to-end.
+- CLI and scaffolder checks assume fresh dist artifacts—run `npm run build` before touching example scripts or `test:create-stati`.
 
-### Monorepo Structure
+## Core engine hotspots
 
-- **Workspaces**: `packages/*` for core functionality, `examples/*` for templates
-- **Build order**: Always build `core` → `cli` → `create-stati` (dependencies flow)
-- **Testing**: Run `npm run test` from root, individual tests via workspace flags
-- **Examples as integration tests**: `test:blank:*` scripts validate the full workflow
+- `core/build.ts` streams Markdown through `renderMarkdown` into Eta `renderPage`, writing HTML under `dist/` and recording cache metadata in `.stati/cache/manifest.json`.
+- Rebuild decisions come from `shouldRebuildPage` plus config hooks (`beforeAll`, `beforeRender`, `afterRender`) defined via `defineConfig()`.
+- Static assets move through `copyStaticAssetsWithLogging`; preserve `logger.*` calls to keep CLI output structured.
 
-### Core Engine Design
+## Dev + preview servers
 
-- **Configuration**: TypeScript-first with `defineConfig()` helper for IntelliSense
-- **File discovery**: Fast-glob patterns, excludes `_*` folders from content processing
-- **Template hierarchy**: Cascading `layout.eta` files, auto-discovered `_partials/`
-- **ISG (Incremental Static Generation)**: Cache manifest tracks dependencies, TTL aging, tag-based invalidation
+- `createDevServer` (in `core/dev.ts`) clears cache, triggers an initial build, then watches `site/` and `public/`. Template edits flow through `handleTemplateChange` to evict affected manifest entries.
+- Build failures feed the in-browser overlay produced by `utils/error-overlay.ts`; prefer surfacing errors via the logger instead of throwing inside incremental rebuilds.
+- `createPreviewServer` serves the built `dist/` with the same logger expectations as dev.
 
-### Content Processing Pipeline
+## CLI surface
 
-1. **Content loading** (`core/content.ts`): Markdown files → `PageModel[]` with front-matter
-2. **Template engine** (`core/templates.ts`): Eta rendering with hierarchical layouts
-3. **Build process** (`core/build.ts`): Dependency tracking, cache validation, static asset copying
-4. **Dev server** (`core/dev.ts`): Vite-based with live reload and incremental rebuilding
+- yargs commands live in `packages/cli/src/cli.ts`; each command calls `setEnv` before delegating to core and reuses the shared logger factory.
+- Options surfaced to users (`--force`, `--clean`, `--include-drafts`, invalidate queries like `tag:news` or `age:3months`) must line up with `BuildOptions`/`InvalidateOptions` in core.
+- Version banners rely on reading the package JSON; keep `getVersion()` in sync when moving files.
 
-## Development Workflows
+## Scaffolder specifics
 
-### Essential Commands
+- `src/index.ts` parses flags, prompts for missing values, and hands control to `createSite` in `create.ts`.
+- Styling choices map to installers in `css-processors.ts`; updating templates requires touching both `examples/` sources and the copy routine in the package build script.
+- Generated projects expect `site/layout.eta`, `site/index.md`, and `public/styles.css`; maintain these when extending templates.
 
-```bash
-# Full build (always run from root)
-npm run build
+## Conventions
 
-# Test suite (170+ tests)
-npm run test
+- Packages ship as ESM (`"type": "module"`); import locals with explicit `.js` extensions and use helpers from `core/utils/fs.ts` instead of `fs` directly.
+- Strict TypeScript everywhere; export runtime symbols and types from separate barrels (`types/` for declarations). Avoid default exports except in configs.
+- Tests live beside features (`packages/*/src/tests`), use Vitest in `node` mode with `mockReset`/`restoreMocks`, and prefer temporary directories for file-system assertions.
 
-# Example validation
-npm run test:blank:full
+## Troubleshooting
 
-# Scaffolder testing
-npm run test:create-stati
-npm run test:create-stati:cleanup
-```
-
-### File Modification Patterns
-
-- **Core changes**: Always rebuild before testing examples
-- **CLI changes**: Test with `examples/` directories using local builds
-- **Create-stati changes**: Run scaffolder tests to validate templates
-- **Breaking changes**: Update all three packages and examples simultaneously
-
-### Configuration Validation
-
-- Use `defineConfig()` wrapper for TypeScript IntelliSense
-- Test config changes against `examples/blog/stati.config.js`
-- ISG cache configuration lives in `.stati/cache/manifest.json`
-
-## Project-Specific Conventions
-
-### TypeScript Patterns
-
-- **Strict mode**: All packages use strict TypeScript configuration
-- **Import/export**: ES modules with `.js` extensions in import paths
-- **Type exports**: Separate type-only exports from implementation exports
-- **Interface design**: Prefer interfaces over types, extensive JSDoc comments
-
-### Error Handling
-
-- **Build errors**: Graceful failures with detailed error messages via custom logger
-- **Cache corruption**: Automatic cache invalidation on renderer version bumps
-- **File system operations**: Always use `fs-extra` wrapper functions
-
-### Testing Conventions
-
-- **Vitest**: Primary test runner with `node` environment
-- **Mock patterns**: Use built-in mocking, avoid globals
-- **Integration tests**: Examples serve as full-pipeline validation
-- **File system tests**: Use temporary directories, clean up after tests
-
-### Template System Specifics
-
-- **Eta templates**: `.eta` files with hierarchical layout discovery
-- **Partials**: Place in `_partials/` folders, auto-discovered by engine
-- **Custom filters**: Define in config `eta.filters` object
-- **Layout cascading**: Each directory can override parent layouts
-
-## Critical Integration Points
-
-### ISG Cache Management
-
-- **Manifest location**: `.stati/cache/manifest.json`
-- **Cache entries**: Track `inputsHash`, `deps`, `tags`, `publishedAt`, `renderedAt`
-- **Invalidation strategies**: By tag (`tag:news`), path (`path:/blog/post`), age (`age:3months`)
-- **TTL aging**: Progressive cache extension based on content age
-
-### CLI-Core Interaction
-
-- **Command delegation**: CLI imports core functions, no direct file manipulation
-- **Option passing**: Structured interfaces (`BuildOptions`, `DevServerOptions`)
-- **Logging**: Custom logger instances for consistent output formatting
-
-### Scaffolder-Template Flow
-
-- **Template selection**: Currently only `blank`, expandable system
-- **Styling integration**: CSS/Sass/Tailwind setup during scaffolding
-- **Package.json generation**: Dynamic scripts based on styling choice
-- **Git initialization**: Optional with `--git` flag
-
-### Dependency Management
-
-- **Core dependencies**: markdown-it, eta, fast-glob, gray-matter, vite
-- **CLI dependencies**: yargs, chalk, cli-table3 for colored output and formatting
-- **Scaffolder dependencies**: inquirer for interactive prompts
-- **Dev dependencies**: vitest, typescript, eslint shared across packages
-
-## Common Debugging Approaches
-
-### Build Issues
-
-- Check `.stati/cache/` directory for cache corruption
-- Verify template hierarchy in source directories
-- Validate front-matter YAML syntax in markdown files
-- Test with `--clean` and `--force` flags for cache bypass
-
-### Development Server Issues
-
-- Ensure Vite port availability (default 3000)
-- Check for infinite rebuild loops in file watching
-- Validate template dependency chains
-
-### Scaffolder Problems
-
-- Test template generation in `examples/` directory
-- Verify package.json script generation for different styling options
-- Check file copying and directory creation permissions
-
-## Performance Considerations
-
-- **Incremental builds**: Default mode, use `--force` sparingly
-- **File watching**: Debounced rebuilds in development mode
-- **Asset copying**: Only copy changed files in static directory
-- **Cache efficiency**: TTL aging reduces rebuild frequency for older content
+- Cache hiccups: clear `.stati/` or run `stati build --clean`; the invalidate logic lives under `core/invalidate.ts`.
+- If templates stop refreshing, inspect dependency tracking in `core/isg/manifest.ts`; `handleTemplateChange` expects POSIX-normalized paths.
+- For docs regressions, run `npm run build` followed by entering the directory `docs-site` and running one of the local scripts. In the `docs-site` dir `npm run build:local` to confirm build is running with local CLI. In the `docs-site` dir `npm run dev:local` to start a dev server with local CLI. In the `docs-site` dir `npm run preview:local` to preview the static build with local CLI.

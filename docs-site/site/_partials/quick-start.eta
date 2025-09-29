@@ -1,0 +1,76 @@
+<!-- Quick Start Section -->
+<section class="py-20 lg:py-24 bg-gray-50 dark:bg-dark-900 relative overflow-hidden">
+    <!-- Minimal background decoration -->
+    <div class="absolute inset-0">
+        <div class="absolute top-1/4 left-1/4 w-56 h-56 bg-emerald-50 dark:bg-emerald-950/40 rounded-full blur-3xl opacity-70"></div>
+        <div class="absolute bottom-1/4 right-1/4 w-48 h-48 bg-gray-100 dark:bg-gray-800/60 rounded-full blur-3xl opacity-60"></div>
+    </div>
+
+    <div class="relative max-w-6xl mx-auto px-6 lg:px-8">
+        <div class="text-center mb-16">
+            <h2 class="text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-6">
+                <%= stati.page.quickStart?.title || 'Get Started' %>
+            </h2>
+            <p class="text-xl lg:text-2xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
+                <%= stati.page.quickStart?.subtitle %>
+            </p>
+        </div>
+
+        <!-- Terminal Window -->
+        <div class="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 dark:from-dark-950 dark:via-dark-900 dark:to-dark-950 rounded-2xl shadow-2xl shadow-gray-900/25 dark:shadow-black/50 border border-gray-700/50 dark:border-dark-600/50 overflow-hidden backdrop-blur-sm animate-fade-in">
+            <!-- Terminal Header -->
+            <div class="flex items-center justify-between px-6 py-4 bg-gray-800/50 dark:bg-dark-800/50 border-b border-gray-700/50 dark:border-dark-600/50">
+                <div class="flex items-center space-x-2">
+                    <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                    <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                    <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                </div>
+                <div class="text-gray-400 dark:text-gray-500 text-sm font-mono">terminal</div>
+                <div class="w-16"></div>
+            </div>
+
+            <!-- Terminal Content -->
+            <div class="p-6 lg:p-8 font-mono text-sm lg:text-base leading-relaxed">
+                <% for (let command of (stati.page.quickStart?.commands || [])) { %>
+                <% if (command.comment) { %>
+                <div class="flex items-center mb-3">
+                    <span class="text-gray-500 dark:text-gray-400"># <%= command.comment %></span>
+                </div>
+                <% } %>
+                <div class="flex items-start mb-6">
+                    <span class="text-emerald-400 mr-3 select-none">$</span>
+                    <div class="flex-1 text-gray-100 dark:text-gray-200">
+                        <% if (command.parts) { %>
+                        <% for (let i = 0; i < command.parts.length; i++) { %>
+                        <% let part = command.parts[i]; %>
+                        <span class="<%= 'text-' + part.color + '-400' %>"><%= part.text %></span><% if (i < command.parts.length - 1) { %> <% } %>
+                        <% } %>
+                        <% } else { %>
+                        <%= command.text %>
+                        <% } %>
+                    </div>
+                </div>
+                <% } %>
+
+                <!-- Terminal cursor -->
+                <div class="flex items-center">
+                    <span class="text-emerald-400 mr-3">$</span>
+                    <div class="w-2 h-5 bg-emerald-400 animate-pulse"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom CTA -->
+        <% if (stati.page.quickStart?.link) { %>
+        <div class="text-center mt-12">
+            <a href="<%= stati.page.quickStart.link.url %>"
+               class="group inline-flex items-center px-6 py-3 bg-white/80 dark:bg-dark-800/80 backdrop-blur-sm border border-gray-200 dark:border-dark-600 hover:border-primary-300 dark:hover:border-primary-600 text-gray-700 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-400 rounded-xl font-semibold transition-all duration-300 hover:shadow-lg hover:shadow-primary-500/10">
+                <%= stati.page.quickStart.link.text %>
+                <svg class="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+            </a>
+        </div>
+        <% } %>
+    </div>
+</section>

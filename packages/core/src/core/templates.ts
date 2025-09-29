@@ -1,14 +1,18 @@
 import { Eta } from 'eta';
-import { join, dirname, relative, basename } from 'path';
+import { join, dirname, relative, basename, posix } from 'path';
 import glob from 'fast-glob';
 import type { StatiConfig, PageModel, NavNode, CollectionData } from '../types/index.js';
 import { TEMPLATE_EXTENSION } from '../constants.js';
+import { getStatiVersion } from './utils/version.js';
+import { getEnv } from '../env.js';
 import {
   isCollectionIndexPage,
   discoverLayout,
   getCollectionPathForPage,
 } from './utils/template-discovery.js';
 import { resolveSrcDir } from './utils/paths.js';
+import { createTemplateError } from './utils/template-errors.js';
+import { createValidatingPartialsProxy } from './utils/partial-validation.js';
 
 /**
  * Groups pages by their tags for aggregation purposes.
@@ -170,7 +174,7 @@ async function discoverPartials(
 
         // Get relative path from srcDir to the partial file
         const relativePath = relative(srcDir, fullPath);
-        partials[partialName] = relativePath;
+        partials[partialName] = posix.normalize(relativePath);
       }
     }
   }
@@ -183,8 +187,9 @@ export function createTemplateEngine(config: StatiConfig): Eta {
 
   const eta = new Eta({
     views: templateDir,
-    cache: process.env.NODE_ENV === 'production',
-    cacheFilepaths: process.env.NODE_ENV === 'production',
+    cache: getEnv() === 'production',
+    cacheFilepaths: getEnv() === 'production',
+    varName: 'stati',
   });
 
   return eta;
@@ -233,23 +238,101 @@ export async function renderPage(
     collection: collectionData, // Add collection data for index pages
     // Add custom filters to context
     ...(config.eta?.filters || {}),
+    generator: {
+      version: getStatiVersion(),
+    },
   };
 
   // Render partials and store their content
+  // Use multiple passes to allow partials to reference other partials
   const renderedPartials: Record<string, string> = {};
-  for (const [partialName, partialPath] of Object.entries(partialPaths)) {
-    try {
-      const renderedContent = await eta.renderAsync(partialPath, baseContext);
-      renderedPartials[partialName] = renderedContent;
-    } catch (error) {
-      console.warn(`Warning: Failed to render partial ${partialName} at ${partialPath}:`, error);
-      renderedPartials[partialName] = `<!-- Error rendering partial: ${partialName} -->`;
+  const maxPasses = 3; // Prevent infinite loops
+
+  for (let pass = 0; pass < maxPasses; pass++) {
+    let partialsToRender: Record<string, string>;
+
+    if (pass === 0) {
+      // First pass: render all partials
+      partialsToRender = { ...partialPaths };
+    } else {
+      // Subsequent passes: re-render partials that might need updated dependencies
+      // For simplicity, re-render all partials to ensure they have access to all previously rendered ones
+      // TODO: Optimize by tracking which partials changed or have dependencies
+      partialsToRender = { ...partialPaths };
+    }
+
+    if (Object.keys(partialsToRender).length === 0) {
+      break;
+    }
+
+    let progressMade = false;
+    const passRenderedPartials: Record<string, string> = {};
+
+    for (const [partialName, partialPath] of Object.entries(partialsToRender)) {
+      try {
+        // Create context with all previously rendered partials available
+        const combinedPartials = { ...renderedPartials, ...passRenderedPartials };
+        const partialContext = {
+          ...baseContext,
+          partials: createValidatingPartialsProxy(combinedPartials), // Include both previous and current pass partials with validation
+        };
+
+        const renderedContent = await eta.renderAsync(partialPath, partialContext);
+        passRenderedPartials[partialName] = renderedContent;
+        progressMade = true;
+      } catch (error) {
+        // If this is the last pass, log the error and create placeholder
+        if (pass === maxPasses - 1) {
+          console.warn(
+            `Warning: Failed to render partial ${partialName} at ${partialPath}:`,
+            error,
+          );
+
+          // In development mode, throw enhanced template error for partials too
+          if (getEnv() === 'development') {
+            const templateError = createTemplateError(
+              error instanceof Error ? error : new Error(String(error)),
+              partialPath,
+            );
+            throw templateError;
+          }
+
+          passRenderedPartials[partialName] = `<!-- Error rendering partial: ${partialName} -->`;
+          progressMade = true;
+        }
+        // Otherwise, use existing content if available, or skip for retry
+        else if (renderedPartials[partialName]) {
+          passRenderedPartials[partialName] = renderedPartials[partialName];
+        }
+        // For failed partials on non-last pass, still count as progress to allow retries
+        else {
+          progressMade = true;
+        }
+      }
+    }
+
+    // Update the rendered partials with this pass's results
+    Object.assign(renderedPartials, passRenderedPartials);
+
+    // If no progress was made, break to avoid infinite loop
+    if (!progressMade) {
+      break;
+    }
+
+    // If this is pass 0, always do at least one more pass to allow interdependencies
+    if (pass === 0) {
+      continue;
+    }
+
+    // For subsequent passes, only continue if we're not at max passes yet
+    if (pass >= maxPasses - 1) {
+      break;
     }
   }
 
   const context = {
     ...baseContext,
-    partials: renderedPartials, // Add rendered partials to template context
+    partials: createValidatingPartialsProxy(renderedPartials), // Add rendered partials with validation
   };
 
   try {
@@ -261,6 +344,16 @@ export async function renderPage(
     return await eta.renderAsync(layoutPath, context);
   } catch (error) {
     console.error(`Error rendering layout ${layoutPath || 'unknown'}:`, error);
+
+    // In development mode, throw enhanced template error for better debugging
+    if (getEnv() === 'development') {
+      const templateError = createTemplateError(
+        error instanceof Error ? error : new Error(String(error)),
+        layoutPath || undefined,
+      );
+      throw templateError;
+    }
+
     return createFallbackHtml(page, body);
   }
 }
