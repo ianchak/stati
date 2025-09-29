@@ -346,9 +346,16 @@ interface PageContext {
 ### Programmatic Usage
 
 ```typescript
-import { build, createDevServer, createPreviewServer, invalidate } from '@stati/core';
+import { build, createDevServer, createPreviewServer, invalidate, loadConfig } from '@stati/core';
 import type { BuildOptions, DevServerOptions, PreviewServerOptions } from '@stati/core';
 
+// Configuration Loading
+const config = await loadConfig('./stati.config.js');
+```
+
+### Build Process
+
+```typescript
 // Programmatic build
 const buildOptions: BuildOptions = {
   force: false,

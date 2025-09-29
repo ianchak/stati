@@ -40,6 +40,37 @@ stati dev --open
 stati dev --config stati.staging.js
 ```
 
+### `stati preview`
+
+Serve the built site locally for preview.
+
+```bash
+stati preview [options]
+```
+
+**Options:**
+
+- `--port <port>` - Port to run the server on (default: 4000)
+- `--host <host>` - Host to bind to (default: localhost)
+- `--open` - Open browser automatically
+- `--config <file>` - Custom config file path
+
+**Examples:**
+
+```bash
+# Basic preview
+stati preview
+
+# Custom port and host
+stati preview --port 8080 --host 0.0.0.0
+
+# Open browser automatically
+stati preview --open
+
+# Custom config file
+stati preview --config stati.prod.js
+```
+
 ### `stati build`
 
 Build your site for production.
@@ -100,34 +131,6 @@ stati invalidate age:1week
 
 # Clear all cache (no query)
 stati invalidate
-```
-
-### `stati preview`
-
-Preview your production build locally.
-
-```bash
-stati preview [options]
-```
-
-**Options:**
-
-- `--port <port>` - Port to run the server on (default: 4000)
-- `--host <host>` - Host to bind to (default: localhost)
-- `--open` - Open browser automatically
-- `--config <file>` - Custom config file path
-
-**Examples:**
-
-```bash
-# Preview built site
-stati preview
-
-# Preview on custom port
-stati preview --port 8080
-
-# Open browser automatically
-stati preview --open
 ```
 
 ## Advanced Usage
