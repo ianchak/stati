@@ -1,5 +1,207 @@
 # @stati/core
 
+## 1.5.0
+
+### Minor Changes
+
+- update documentation scripts for improved functionality
+
+  Commit: 4fb8130
+
+- replace logo SVG with image for improved branding
+
+  Commit: 6c86005
+
+- add link to recipes in the sidebar navigation
+
+  Commit: 27d65ad
+
+- enhance scaffolder documentation and add new options
+
+  Commit: 3f4855b
+
+- replace Nord theme with custom Stati theme for syntax highlighting
+
+  Commit: 6474322
+
+- add utility to retrieve current Stati version from package.json
+
+  Commit: 9b858d9
+
+- add error overlay utility for development mode
+
+  Commit: a55f32b
+
+- add stati engine and version information
+
+  Commit: 2a73368
+
+- enhance button styles and add hover effects for better UX
+
+  Commit: 40eaa78
+
+- enhance layout and styling for better UX
+
+  Commit: 4b89abf
+
+- enhance feature icons and descriptions for clarity
+
+  Commit: 862c513
+
+- implement resolvePrettyUrl for enhanced URL handling
+
+  Commit: 0198b84
+
+- add CSS validation settings and Tailwind IntelliSense config
+
+  Commit: 382faa8
+
+- implement loadMarkdownPlugin for dynamic plugin loading
+
+  Commit: 9200cdf
+
+- enhance partial rendering with multiple passes for dependencies
+
+  Commit: e5080b6
+
+- enhance documentation site layout and styling
+
+  Commit: 524769c
+
+- implement theme management and toggle functionality
+
+  Commit: 7650528
+
+### Patch Changes
+
+- update build and clean scripts for docs-site
+
+  Commit: 34665fe
+
+- add new API documentation for Hooks and Error Handling; update sidebar links
+
+  Commit: ecd36e3
+
+- update invalidate command examples for clarity and accuracy
+
+  Commit: e6c8c5f
+
+- update scaffolder documentation for clarity and completeness
+
+  Commit: f38d807
+
+- update features subtitle for clarity and impact
+
+  Commit: 60f08e4
+
+- enhance feature item styling with dynamic colors
+
+  Commit: e5cf34c
+
+- sidebar and header components for improved usability and aesthetics
+
+  Commit: 8a02946
+
+- remove border from logo images for cleaner look
+
+  Commit: 60715b7
+
+- update generator version reference in footer and layout
+
+  Commit: 543f9b5
+
+- update template context and configuration details for clarity
+
+  Commit: b2a6267
+
+- remove toc.js and integrate TOC functionality in toc.eta
+
+  Commit: 9fec840
+
+- add detailed usage and options for stati preview command
+
+  Commit: 4306e1b
+
+- streamline API documentation and improve examples
+
+  Commit: be7c90e
+
+- enhance fallback handling for missing HTML files
+
+  Commit: df45699
+
+- untrack generated css
+
+  Commit: b97a6af
+
+- documentation and remove Plugin API section
+
+  Commit: 4fd21fd
+
+- replace logo image with SVG icon for consistency
+
+  Commit: 3209b85
+
+- improve partial rendering logic and track progress for retries
+
+  Commit: 084d931
+
+- remove dark mode toggle and theme management script
+
+  Commit: 0c50735
+
+- update documentation to remove references to Vite and clarify features
+
+  Commit: 94a79a5
+
+- update and restructure AI coding agent instructions
+
+  Commit: 1aa3be5
+
+- update background decoration comments for clarity
+
+  Commit: 013a3e9
+
+- restructure site metadata and recipes documentation for clarity
+
+  Commit: 37d8213
+
+- update sidebar and documentation for clarity and completeness
+
+  Commit: 854bd3b
+
+- remove outdated documentation files: error handling, feature documentation
+
+  Commit: f26cb4e
+
+- Remove outdated documentation example and update examples index with improved descriptions and structure
+
+  Commit: fa75826
+
+- adjust layout for improved responsiveness and clarity
+
+  Commit: d54b83b
+
+- improve sorting of front matter keys for consistency
+
+  Commit: 6bf9833
+
+- update development server instructions and CLI command details
+
+  Commit: b90bc60
+
+- replace 'it' with 'stati' for consistency in templates
+
+  Commit: 8e9c7ab
+
+- improve button class structure for better readability
+
+  Commit: dd26c4d
+
+- remove outdated plugin examples and notes from documentation
+
+  Commit: 40c177b
+
 ## 1.4.0
 
 ### Minor Changes
