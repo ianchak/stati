@@ -11,6 +11,37 @@ Stati uses Eta as its templating engine, providing a powerful yet familiar synta
 
 Eta is a fast, lightweight templating engine with a syntax similar to EJS but with better performance and TypeScript support.
 
+### Dynamic Attribute Values
+
+> Eta requires every HTML attribute value to be fully resolved by the time it is rendered. You cannot splice template expressions into the middle of a static value (for example `class="bg-<%= color %>-500"`).
+
+Use template literals (or the helper described below) to make the entire attribute value dynamic:
+
+```eta
+<!-- ❌ Invalid: partial interpolation -->
+<button class="bg-<%= color %>-500">Click me</button>
+
+<!-- ✅ Valid: full dynamic value -->
+<button class="<%= `bg-${color}-500` %>">Click me</button>
+```
+
+For more complex combinations, prefer the `stati.propValue()` helper provided by Stati. It builds attribute values by accepting strings, arrays, or objects and works best for attributes that support space-separated tokens:
+
+```eta
+<a
+  class="<%= stati.propValue('btn', `btn-${variant}`, isActive && 'is-active') %>"
+  data-analytics="<%= stati.propValue('cta', campaign, isActive && 'active') %>"
+>
+  Learn more
+</a>
+```
+
+`stati.propValue()` joins all truthy values with spaces (similar to `classnames`). For attributes that need a single concatenated string, use a template literal instead:
+
+```eta
+data-id="<%= `item-${id}` %>"
+```
+
 ### Basic Syntax
 
 ```eta
@@ -247,7 +278,7 @@ Partials are automatically available in templates:
 
 Partials inherit from parent directories:
 
-```
+```text
 site/
 ├── _partials/
 │   ├── header.eta       # Available everywhere

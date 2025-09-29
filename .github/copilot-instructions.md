@@ -20,6 +20,14 @@
 - Rebuild decisions come from `shouldRebuildPage` plus config hooks (`beforeAll`, `beforeRender`, `afterRender`) defined via `defineConfig()`.
 - Static assets move through `copyStaticAssetsWithLogging`; preserve `logger.*` calls to keep CLI output structured.
 
+## Eta Template Restrictions
+
+- **CRITICAL**: Eta templates do NOT support partial dynamic attributes like `class="static-<%= dynamic %>-morestatic"`. All dynamic content in HTML attributes must be fully dynamic.
+- **Solution**: Use template literals for fully dynamic values: `class="<%= `static-${dynamic}-morestatic` %>"`
+- **Utility Function**: Use `stati.propValue()` for building space-separated property values (similar to classnames). It accepts strings, arrays, and objects: `class="<%= stati.propValue('base-class', `dynamic-${value}`, condition && 'conditional-class') %>"` or `data-analytics="<%= stati.propValue('cta', campaign, isPrimary && 'primary') %>"`.
+- **Concatenation Note**: When you need a single concatenated value (e.g., `data-id="item-42"`), prefer a template literal: `data-id="<%= `item-${id}` %>"`.
+- **Common Pattern**: Build dynamic segments with template literals before passing them to `propValue`: `class="<%= stati.propValue('card', `hover:border-${color}-300`) %>"`.
+
 ## Dev + preview servers
 
 - `createDevServer` (in `core/dev.ts`) clears cache, triggers an initial build, then watches `site/` and `public/`. Template edits flow through `handleTemplateChange` to evict affected manifest entries.

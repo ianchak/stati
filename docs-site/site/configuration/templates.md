@@ -104,6 +104,34 @@ export default defineConfig({
 });
 ```
 
+### Dynamic Attribute Values
+
+Eta requires the entire value of an HTML attribute to be produced dynamically. Avoid mixing static strings with inline `<%=` expressions like `class="btn-<%= variant %>"`; Eta will treat that as invalid.
+
+Use template literals when the value is mostly static:
+
+```eta
+<!-- ✅ Entire attribute value is dynamic -->
+<button class="<%= `btn-${variant}` %>">Buy now</button>
+```
+
+For reusable compositions, prefer `stati.propValue()`. The helper is available in every template and works best for attributes that accept space-separated tokens—not just `class`:
+
+```eta
+<a
+  class="<%= stati.propValue('btn', `btn-${variant}`, isActive && 'is-active') %>"
+  data-analytics="<%= stati.propValue('cta', campaign, isActive && 'active') %>"
+>
+  View details
+</a>
+```
+
+`stati.propValue()` joins all truthy values with spaces. For single concatenated values, use a template literal instead:
+
+```eta
+data-id="<%= `item-${id}` %>"
+```
+
 ## Layout Configuration
 
 Configure how layouts are discovered and applied:
@@ -142,7 +170,7 @@ export default defineConfig({
 
 Stati supports cascading layout inheritance:
 
-```
+```text
 site/
 ├── layout.eta              # Root layout
 ├── blog/
@@ -518,7 +546,7 @@ export default defineConfig({
 
 ### Recommended Structure
 
-```
+```text
 site/
 ├── layout.eta                 # Root layout
 ├── _partials/                 # Shared partials
