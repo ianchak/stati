@@ -1,17 +1,17 @@
 <!DOCTYPE html>
-<html lang="<%= it.site.defaultLocale || 'en' %>">
+<html lang="<%= stati.site.defaultLocale || 'en' %>">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title><%= it.page.title ? `${it.page.title} | ${it.site.title}` : it.site.title %></title>
+    <title><%= stati.page.title ? `${stati.page.title} | ${stati.site.title}` : stati.site.title %></title>
 
     <!-- Essential meta tags -->
-    <% if (it.page.description) { %>
-    <meta name="description" content="<%= it.page.description %>" />
+    <% if (stati.page.description) { %>
+    <meta name="description" content="<%= stati.page.description %>" />
     <% } %>
 
     <!-- Canonical URL -->
-    <link rel="canonical" href="<%= it.site.baseUrl %><%= it.page.url %>" />
+    <link rel="canonical" href="<%= stati.site.baseUrl %><%= stati.page.url %>" />
 
     <!-- Styles -->
     <link rel="stylesheet" href="/styles.css" />
@@ -21,14 +21,14 @@
 
     <header role="banner">
       <nav role="navigation">
-        <a href="/" class="logo"><%= it.site.title %></a>
+        <a href="/" class="logo"><%= stati.site.title %></a>
       </nav>
     </header>
 
-    <main id="main" role="main"><%~ it.content %></main>
+    <main id="main" role="main"><%~ stati.content %></main>
 
     <footer role="contentinfo">
-      <p>&copy; <%= new Date().getFullYear() %> <%= it.site.title %>. Built with <a href="https://github.com/ianchak/stati">Stati</a>.</p>
+      <p>&copy; <%= new Date().getFullYear() %> <%= stati.site.title %>. Built with <a href="https://github.com/ianchak/stati">Stati</a>.</p>
     </footer>
   </body>
 </html>

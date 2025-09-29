@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="<%= it.site.defaultLocale || 'en-US' %>" class="scroll-smooth">
+<html lang="<%= stati.site.defaultLocale || 'en-US' %>" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= it.title ? `${it.title} | ${it.site.title}` : it.site.title %></title>
-    <meta name="description" content="<%= it.description || 'Stati - TypeScript-first static site generator' %>">
+    <title><%= stati.title ? `${stati.title} | ${stati.site.title}` : stati.site.title %></title>
+    <meta name="description" content="<%= stati.description || 'Stati - TypeScript-first static site generator' %>">
 
     <!-- Favicon -->
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -21,10 +21,10 @@
     <link rel="stylesheet" href="/prism-stati.css">
 
     <!-- Open Graph -->
-    <meta property="og:title" content="<%= it.title || it.site.title %>">
-    <meta property="og:description" content="<%= it.description || 'Stati - TypeScript-first static site generator' %>">
+    <meta property="og:title" content="<%= stati.title || stati.site.title %>">
+    <meta property="og:description" content="<%= stati.description || 'Stati - TypeScript-first static site generator' %>">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="<%= it.site.baseUrl + it.url %>">
+    <meta property="og:url" content="<%= stati.site.baseUrl + stati.url %>">
 </head>
 <body class="bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-dark-950 dark:via-dark-900 dark:to-dark-900/80 text-gray-900 dark:text-gray-100 font-sans antialiased transition-colors duration-300">
     <!-- Skip to content link for accessibility -->
@@ -32,26 +32,26 @@
         Skip to main content
     </a>
 
-    <%~ it.partials.header %>
+    <%~ stati.partials.header %>
 
     <div class="flex min-h-screen">
-        <%~ it.partials.sidebar %>
+        <%~ stati.partials.sidebar %>
 
         <main id="main-content" class="flex-1 ml-0 lg:ml-80 transition-all duration-300 ease-in-out">
             <div class="relative max-w-7xl mx-auto">
                 <div class="flex">
                     <!-- Main content area -->
                     <div class="flex-1 min-w-0 px-6 lg:px-12 py-12 lg:py-16">
-                        <% if (it.title) { %>
+                        <% if (stati.title) { %>
                         <header class="mb-12 animate-fade-in">
-                            <%~ it.partials.breadcrumbs %>
+                            <%~ stati.partials.breadcrumbs %>
                             <div class="mt-6">
                                 <h1 class="text-4xl lg:text-5xl xl:text-6xl font-bold mb-6 text-gray-900 dark:text-white leading-tight">
-                                    <%= it.title %>
+                                    <%= stati.title %>
                                 </h1>
-                                <% if (it.description) { %>
+                                <% if (stati.description) { %>
                                 <p class="text-xl lg:text-2xl text-gray-600 dark:text-gray-300 leading-relaxed max-w-3xl">
-                                    <%= it.description %>
+                                    <%= stati.description %>
                                 </p>
                                 <% } %>
                             </div>
@@ -59,14 +59,14 @@
                         <% } %>
 
                         <div class="prose prose-lg dark:prose-invert max-w-none prose-headings:scroll-mt-24 prose-pre:bg-dark-800 prose-pre:shadow-soft-lg prose-code:bg-gray-100 dark:prose-code:bg-dark-700 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:font-medium animate-slide-up">
-                            <%~ it.content %>
+                            <%~ stati.content %>
                         </div>
                     </div>
 
                     <!-- Table of Contents area -->
                     <div class="hidden xl:block w-80 flex-shrink-0 py-12">
                         <div class="sticky top-24">
-                            <%~ it.partials.toc %>
+                            <%~ stati.partials.toc %>
                         </div>
                     </div>
                 </div>
@@ -74,7 +74,7 @@
         </main>
     </div>
 
-    <%~ it.partials.footer %>
+    <%~ stati.partials.footer %>
 
     <!-- Scroll to top button -->
     <button id="scroll-to-top" class="fixed bottom-8 right-8 bg-primary-600 hover:bg-primary-700 text-white p-3 rounded-full shadow-lg hover:shadow-glow opacity-0 pointer-events-none transition-all duration-300 z-40">

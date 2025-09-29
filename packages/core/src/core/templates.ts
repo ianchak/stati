@@ -189,6 +189,7 @@ export function createTemplateEngine(config: StatiConfig): Eta {
     views: templateDir,
     cache: getEnv() === 'production',
     cacheFilepaths: getEnv() === 'production',
+    varName: 'stati',
   });
 
   return eta;

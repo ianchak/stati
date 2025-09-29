@@ -76,6 +76,7 @@ describe('templates.ts', () => {
         views: join(mockProjectRoot, 'src'),
         cache: process.env.NODE_ENV === 'production',
         cacheFilepaths: process.env.NODE_ENV === 'production',
+        varName: 'stati',
       });
       expect(eta).toBe(mockEtaInstance);
     });

@@ -9,16 +9,16 @@
     <div class="relative max-w-7xl mx-auto px-6 lg:px-8">
         <div class="text-center mb-20">
             <h2 class="text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-6">
-                <%= it.page.features?.title || 'Features' %>
+                <%= stati.page.features?.title || 'Features' %>
             </h2>
             <p class="text-xl lg:text-2xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
-                <%= it.page.features?.subtitle %>
+                <%= stati.page.features?.subtitle %>
             </p>
         </div>
 
         <div class="grid lg:grid-cols-3 gap-8 lg:gap-12">
-            <% for (let i = 0; i < (it.page.features?.items || []).length; i++) { %>
-            <% let feature = (it.page.features?.items || [])[i]; %>
+            <% for (let i = 0; i < (stati.page.features?.items || []).length; i++) { %>
+            <% let feature = (stati.page.features?.items || [])[i]; %>
             <%
             // Define color names matching sidebar sections
             const colors = ['primary', 'emerald', 'amber', 'purple', 'red', 'cyan'];

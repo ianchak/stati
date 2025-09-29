@@ -57,7 +57,7 @@ export default defineConfig({
 
 ```html
 <!-- _partials/menu.eta -->
-<% const menu = await it.generateMenu('site') %>
+<% const menu = await stati.generateMenu('site') %>
 
 <nav class="menu">
   <% function renderMenu(items, level = 0) { %>
@@ -65,7 +65,7 @@ export default defineConfig({
     <% Object.entries(items).forEach(([key, item]) => { %>
     <li class="menu-item">
       <% if (item.path) { %>
-      <a href="<%= item.path %>" class="<%= it.page.url === item.path ? 'active' : '' %>">
+      <a href="<%= item.path %>" class="<%= stati.page.url === item.path ? 'active' : '' %>">
         <%= item.title %>
       </a>
       <% } else { %>
@@ -144,17 +144,17 @@ export default defineConfig({
 
 ```html
 <!-- blog/index.eta -->
-<% const posts = await it.getPosts(it.collections.all) %> <% const tags =
-it.getAllTags(it.collections.all) %>
+<% const posts = await stati.getPosts(stati.collections.all) %> <% const tags =
+stati.getAllTags(stati.collections.all) %>
 
 <div class="blog-index">
   <!-- Tag filter -->
   <div class="tag-filter">
-    <a href="/blog/" class="tag <%= !it.params.tag ? 'active' : '' %>">All</a>
+    <a href="/blog/" class="tag <%= !stati.params.tag ? 'active' : '' %>">All</a>
     <% tags.forEach(tag => { %>
     <a
       href="/blog/tag/<%= tag.toLowerCase() %>/"
-      class="tag <%= it.params.tag === tag ? 'active' : '' %>"
+      class="tag <%= stati.params.tag === tag ? 'active' : '' %>"
     >
       <%= tag %>
     </a>
@@ -395,18 +395,18 @@ export default defineConfig({
 ```html
 <!-- layout.eta -->
 <!DOCTYPE html>
-<html lang="<%= it.site.language %>">
+<html lang="<%= stati.site.language %>">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <!-- Basic meta -->
     <title>
-      <%= it.page.data.title ? `${it.page.data.title} | ${it.site.title}` : it.site.title %>
+      <%= stati.page.data.title ? `${stati.page.data.title} | ${stati.site.title}` : stati.site.title %>
     </title>
 
     <!-- Generated meta tags -->
-    <% const metaTags = it.generateMeta(it.page, it.site) %> <% metaTags.forEach(tag => { %> <% if
+    <% const metaTags = stati.generateMeta(stati.page, stati.site) %> <% metaTags.forEach(tag => { %> <% if
     (tag.name) { %>
     <meta name="<%= tag.name %>" content="<%= tag.content %>" />
     <% } else if (tag.property) { %>
@@ -414,18 +414,18 @@ export default defineConfig({
     <% } %> <% }) %>
 
     <!-- Canonical URL -->
-    <link rel="canonical" href="<%= it.site.url %><%= it.page.url %>" />
+    <link rel="canonical" href="<%= stati.site.url %><%= stati.page.url %>" />
 
     <!-- Structured data -->
     <script type="application/ld+json">
-      <%~ JSON.stringify(it.generateStructuredData(it.page, it.site), null, 2) %>
+      <%~ JSON.stringify(stati.generateStructuredData(stati.page, stati.site), null, 2) %>
     </script>
 
     <!-- CSS -->
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <%~ it.body %>
+    <%~ stati.body %>
   </body>
 </html>
 ```

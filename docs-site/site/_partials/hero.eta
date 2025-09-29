@@ -16,16 +16,16 @@
         <div class="text-center animate-fade-in">
             <h1 class="text-6xl lg:text-7xl xl:text-8xl font-bold mb-8 text-gray-900 dark:text-white leading-none">
                 <span class="bg-gradient-to-r from-primary-600 via-blue-600 to-indigo-600 dark:from-primary-400 dark:via-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">
-                    <%= it.page.hero?.title || it.site.title %>
+                    <%= stati.page.hero?.title || stati.site.title %>
                 </span>
             </h1>
 
             <p class="text-xl lg:text-2xl text-gray-600 dark:text-gray-300 mb-12 max-w-4xl mx-auto leading-relaxed font-medium">
-                <%~ it.page.hero?.subtitle || it.page.description %>
+                <%~ stati.page.hero?.subtitle || stati.page.description %>
             </p>
 
             <div class="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16">
-                <% for (let button of (it.page.hero?.buttons || [])) { %>
+                <% for (let button of (stati.page.hero?.buttons || [])) { %>
                 <a href="<%= button.url %>"
                    class="<%= button.primary ? 'group relative bg-gradient-to-r from-primary-500 via-primary-600 to-blue-600 hover:from-primary-600 hover:via-primary-700 hover:to-blue-700 text-white shadow-glow hover:shadow-glow-lg border border-primary-400/20 hover:border-primary-300/30 hover:-translate-y-1 hover:scale-[1.02] px-8 py-4 rounded-2xl font-semibold transition-all duration-300 transform' : 'group bg-white/90 dark:bg-dark-800/90 backdrop-blur-md border border-gray-200/60 dark:border-dark-600/60 hover:border-primary-300/40 dark:hover:border-primary-600/40 text-gray-800 dark:text-gray-100 hover:bg-white dark:hover:bg-dark-700/90 shadow-soft hover:shadow-soft-lg hover:-translate-y-0.5 hover:scale-[1.02] px-8 py-4 rounded-2xl font-semibold transition-all duration-300 transform' %>">
                     <% if (button.primary) { %>

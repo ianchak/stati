@@ -15,22 +15,22 @@ Eta is a fast, lightweight templating engine with a syntax similar to EJS but wi
 
 ```eta
 <!-- Variables -->
-<h1><%= it.title %></h1>
-<p><%= it.description %></p>
+<h1><%= stati.title %></h1>
+<p><%= stati.description %></p>
 
 <!-- Raw HTML (unescaped) -->
-<div><%~ it.content %></div>
+<div><%~ stati.content %></div>
 
 <!-- Conditionals -->
-<% if (it.user) { %>
-  <p>Welcome, <%= it.user.name %>!</p>
+<% if (stati.user) { %>
+  <p>Welcome, <%= stati.user.name %>!</p>
 <% } else { %>
   <p>Please log in.</p>
 <% } %>
 
 <!-- Loops -->
 <ul>
-<% it.posts.forEach(post => { %>
+<% stati.posts.forEach(post => { %>
   <li><a href="<%= post.url %>"><%= post.title %></a></li>
 <% }); %>
 </ul>
@@ -45,20 +45,20 @@ In your templates, you have access to:
 
 ```eta
 <!-- Page data -->
-<%= it.title %>          <!-- From front matter -->
-<%= it.description %>    <!-- From front matter -->
-<%= it.content %>        <!-- Rendered markdown content -->
-<%= it.url %>            <!-- Current page URL -->
-<%= it.date %>           <!-- Page date (if specified) -->
+<%= stati.title %>          <!-- From front matter -->
+<%= stati.description %>    <!-- From front matter -->
+<%= stati.content %>        <!-- Rendered markdown content -->
+<%= stati.url %>            <!-- Current page URL -->
+<%= stati.date %>           <!-- Page date (if specified) -->
 
 <!-- Site data -->
-<%= it.site.title %>     <!-- Site title from config -->
-<%= it.site.baseUrl %>   <!-- Site base URL -->
-<%= it.site.description %> <!-- Site description -->
+<%= stati.site.title %>     <!-- Site title from config -->
+<%= stati.site.baseUrl %>   <!-- Site base URL -->
+<%= stati.site.description %> <!-- Site description -->
 
 <!-- Template data -->
-<%= it.layout %>         <!-- Current layout name -->
-<%= it.partials.header %> <!-- Partial templates -->
+<%= stati.layout %>         <!-- Current layout name -->
+<%= stati.partials.header %> <!-- Partial templates -->
 ```
 
 ## Layout System
@@ -109,12 +109,12 @@ The first match wins, providing maximum flexibility while maintaining sensible d
 
 ```eta
 <!DOCTYPE html>
-<html lang="<%= it.site.defaultLocale || 'en-US' %>">
+<html lang="<%= stati.site.defaultLocale || 'en-US' %>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= it.title ? `${it.title} | ${it.site.title}` : it.site.title %></title>
-    <meta name="description" content="<%= it.description || it.site.description %>">
+    <title><%= stati.title ? `${stati.title} | ${stati.site.title}` : stati.site.title %></title>
+    <meta name="description" content="<%= stati.description || stati.site.description %>">
 
     <!-- Favicon -->
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -123,10 +123,10 @@ The first match wins, providing maximum flexibility while maintaining sensible d
     <link rel="stylesheet" href="/styles.css">
 
     <!-- SEO Meta Tags -->
-    <meta property="og:title" content="<%= it.title || it.site.title %>">
-    <meta property="og:description" content="<%= it.description || it.site.description %>">
+    <meta property="og:title" content="<%= stati.title || stati.site.title %>">
+    <meta property="og:description" content="<%= stati.description || stati.site.description %>">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="<%= it.site.baseUrl + it.url %>">
+    <meta property="og:url" content="<%= stati.site.baseUrl + stati.url %>">
 </head>
 <body>
     <%~ it.partials.header %>

@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="<%= it.site.defaultLocale || 'en-US' %>" class="scroll-smooth">
+<html lang="<%= stati.site.defaultLocale || 'en-US' %>" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= it.title || it.site.title %></title>
-    <meta name="description" content="<%= it.description || 'Stati - TypeScript-first static site generator' %>">
+    <title><%= stati.title || stati.site.title %></title>
+    <meta name="description" content="<%= stati.description || 'Stati - TypeScript-first static site generator' %>">
 
     <!-- Favicon -->
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -24,10 +24,10 @@
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
 
     <!-- Open Graph -->
-    <meta property="og:title" content="<%= it.title || it.site.title %>">
-    <meta property="og:description" content="<%= it.description || 'Stati - TypeScript-first static site generator' %>">
+    <meta property="og:title" content="<%= stati.title || stati.site.title %>">
+    <meta property="og:description" content="<%= stati.description || 'Stati - TypeScript-first static site generator' %>">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="<%= it.site.baseUrl + it.url %>">
+    <meta property="og:url" content="<%= stati.site.baseUrl + stati.url %>">
 </head>
 <body class="bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-dark-950 dark:via-dark-900 dark:to-dark-900/80 text-gray-900 dark:text-gray-100 font-sans antialiased transition-colors duration-300 overflow-x-hidden">
     <!-- Skip to content link for accessibility -->
@@ -35,7 +35,7 @@
         Skip to main content
     </a>
 
-    <%~ it.partials.header %>
+    <%~ stati.partials.header %>
 
     <main id="main-content" class="relative">
         <!-- Background decoration elements -->
@@ -46,12 +46,14 @@
         </div>
 
         <div class="relative z-10">
-            <%~ it.partials.hero %>
-            <%~ it.partials.features %>
-            <%~ it.partials['quick-start'] %>
+            <%~ stati.partials.hero %>
+            <%~ stati.partials.features %>
+            <%~ stati.partials['quick-start'] %>
         </div>
     </main>
 
-    <%~ it.partials.footer %>
+    <%~ stati.partials.footer %>
+</body>
+</html>
 </body>
 </html>

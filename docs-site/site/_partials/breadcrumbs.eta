@@ -1,10 +1,10 @@
 <nav class="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400 mb-4">
     <a href="/" class="hover:text-gray-700 dark:hover:text-gray-200">Home</a>
-    <% if (it.url && it.url !== '/') { %>
+    <% if (stati.url && stati.url !== '/') { %>
         <span>/</span>
         <%
         // Generate breadcrumbs from URL
-        const pathSegments = it.url.split('/').filter(segment => segment !== '');
+        const pathSegments = stati.url.split('/').filter(segment => segment !== '');
         let currentPath = '';
 
         pathSegments.forEach((segment, index) => {

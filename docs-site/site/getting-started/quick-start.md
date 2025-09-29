@@ -136,8 +136,8 @@ Edit `site/layout.eta` to add navigation:
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title><%= it.title ? `${it.title} | ${it.site.title}` : it.site.title %></title>
-    <meta name="description" content="<%= it.description || it.site.description %>" />
+    <title><%= stati.title ? `${stati.title} | ${stati.site.title}` : stati.site.title %></title>
+    <meta name="description" content="<%= stati.description || stati.site.description %>" />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
@@ -147,9 +147,9 @@ Edit `site/layout.eta` to add navigation:
     </nav>
 
     <main>
-      <% if (it.title) { %>
-      <h1><%= it.title %></h1>
-      <% } %> <%~ it.content %>
+      <% if (stati.title) { %>
+      <h1><%= stati.title %></h1>
+      <% } %> <%~ stati.content %>
     </main>
 
     <footer>
