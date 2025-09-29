@@ -14,7 +14,7 @@ hero:
       primary: false
 features:
   title: 'Why Choose Stati?'
-  subtitle: 'Built for modern web development with essential features implemented.'
+  subtitle: 'Modern web development made simple with essential features that just work.'
   items:
     - title: 'TypeScript First'
       description: 'Built with TypeScript from the ground up with defineConfig() helper.'
