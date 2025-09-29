@@ -182,11 +182,11 @@ Use CSS Modules for component-scoped styles:
 Use in templates:
 
 ```eta
-<% const styles = it.cssModules['card'] %>
+<% const styles = stati.cssModules['card'] %>
 <div class="<%= styles.card %>">
-  <h3 class="<%= styles.title %>"><%= it.title %></h3>
+  <h3 class="<%= styles.title %>"><%= stati.title %></h3>
   <div class="<%= styles.content %>">
-    <%~ it.content %>
+    <%~ stati.content %>
   </div>
 </div>
 ```
@@ -233,7 +233,7 @@ export default {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= it.title %></title>
+  <title><%= stati.title %></title>
   <link rel="stylesheet" href="/src/styles.css">
 </head>
 <body class="bg-gray-50 text-gray-900">
@@ -242,7 +242,7 @@ export default {
       <nav class="flex items-center justify-between h-16">
         <div class="flex items-center space-x-4">
           <a href="/" class="text-xl font-bold text-brand-500">
-            <%= it.site.title %>
+            <%= stati.site.title %>
           </a>
         </div>
 
@@ -260,7 +260,7 @@ export default {
 
   <main class="max-w-4xl mx-auto px-4 py-8">
     <article class="prose prose-lg max-w-none">
-      <%~ it.content %>
+      <%~ stati.content %>
     </article>
   </main>
 </body>

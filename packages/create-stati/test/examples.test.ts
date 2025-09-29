@@ -60,7 +60,10 @@ describe('ExampleManager', () => {
       // Test directory structure with subdirectories and binary files
       await mkdir(join(mockExampleDir, 'site'), { recursive: true });
       await writeFile(join(mockExampleDir, 'site', 'index.md'), '# Welcome');
-      await writeFile(join(mockExampleDir, 'site', 'layout.eta'), '<html><%= it.content %></html>');
+      await writeFile(
+        join(mockExampleDir, 'site', 'layout.eta'),
+        '<html><%= stati.content %></html>',
+      );
 
       await mkdir(join(mockExampleDir, 'public'), { recursive: true });
       await writeFile(join(mockExampleDir, 'public', 'styles.css'), 'body { margin: 0; }');

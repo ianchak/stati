@@ -278,13 +278,13 @@ In templates, you can access routing information:
 
 ```eta
 <nav>
-  <% if (it.url === '/') { %>
+  <% if (stati.url === '/') { %>
     <a href="/" class="active">Home</a>
   <% } else { %>
     <a href="/">Home</a>
   <% } %>
 
-  <% if (it.url.startsWith('/blog/')) { %>
+  <% if (stati.url.startsWith('/blog/')) { %>
     <a href="/blog/" class="active">Blog</a>
   <% } else { %>
     <a href="/blog/">Blog</a>
@@ -300,7 +300,7 @@ Generate breadcrumbs from the URL structure:
 <nav class="breadcrumbs">
   <a href="/">Home</a>
   <%
-  const parts = it.url.split('/').filter(Boolean);
+  const parts = stati.url.split('/').filter(Boolean);
   let currentPath = '';
   %>
   <% parts.forEach((part, index) => { %>

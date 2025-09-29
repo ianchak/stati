@@ -160,13 +160,13 @@ The first match wins, providing maximum flexibility while maintaining sensible d
     <meta property="og:url" content="<%= stati.site.baseUrl + stati.url %>">
 </head>
 <body>
-    <%~ it.partials.header %>
+    <%~ stati.partials.header %>
 
     <main>
-        <%~ it.content %>
+        <%~ stati.content %>
     </main>
 
-    <%~ it.partials.footer %>
+    <%~ stati.partials.footer %>
 </body>
 </html>
 ```
@@ -179,21 +179,21 @@ The first match wins, providing maximum flexibility while maintaining sensible d
 <!-- This extends the root layout -->
 <div class="blog-container">
     <aside class="blog-sidebar">
-        <%~ it.partials.blogNav %>
+        <%~ stati.partials.blogNav %>
     </aside>
 
     <article class="blog-content">
-        <% if (it.title) { %>
+        <% if (stati.title) { %>
         <header class="post-header">
-            <h1><%= it.title %></h1>
-            <% if (it.date) { %>
-            <time datetime="<%= it.date %>">
-                <%= new Date(it.date).toLocaleDateString() %>
+            <h1><%= stati.title %></h1>
+            <% if (stati.date) { %>
+            <time datetime="<%= stati.date %>">
+                <%= new Date(stati.date).toLocaleDateString() %>
             </time>
             <% } %>
-            <% if (it.tags) { %>
+            <% if (stati.tags) { %>
             <div class="tags">
-                <% it.tags.forEach(tag => { %>
+                <% stati.tags.forEach(tag => { %>
                 <span class="tag"><%= tag %></span>
                 <% }); %>
             </div>
@@ -202,7 +202,7 @@ The first match wins, providing maximum flexibility while maintaining sensible d
         <% } %>
 
         <div class="prose">
-            <%~ it.content %>
+            <%~ stati.content %>
         </div>
     </article>
 </div>
@@ -245,16 +245,16 @@ site/
     <nav class="main-nav">
         <div class="nav-brand">
             <a href="/">
-                <img src="/logo.svg" alt="<%= it.site.title %>">
-                <%= it.site.title %>
+                <img src="/logo.svg" alt="<%= stati.site.title %>">
+                <%= stati.site.title %>
             </a>
         </div>
 
         <ul class="nav-links">
-            <li><a href="/" class="<%= it.url === '/' ? 'active' : '' %>">Home</a></li>
-            <li><a href="/blog/" class="<%= it.url.startsWith('/blog/') ? 'active' : '' %>">Blog</a></li>
-            <li><a href="/docs/" class="<%= it.url.startsWith('/docs/') ? 'active' : '' %>">Docs</a></li>
-            <li><a href="/about/" class="<%= it.url === '/about/' ? 'active' : '' %>">About</a></li>
+            <li><a href="/" class="<%= stati.url === '/' ? 'active' : '' %>">Home</a></li>
+            <li><a href="/blog/" class="<%= stati.url.startsWith('/blog/') ? 'active' : '' %>">Blog</a></li>
+            <li><a href="/docs/" class="<%= stati.url.startsWith('/docs/') ? 'active' : '' %>">Docs</a></li>
+            <li><a href="/about/" class="<%= stati.url === '/about/' ? 'active' : '' %>">About</a></li>
         </ul>
     </nav>
 </header>
@@ -266,12 +266,12 @@ Partials are automatically available in templates:
 
 ```eta
 <!-- Include a partial -->
-<%~ it.partials.header %>
-<%~ it.partials.footer %>
-<%~ it.partials.sidebar %>
+<%~ stati.partials.header %>
+<%~ stati.partials.footer %>
+<%~ stati.partials.sidebar %>
 
 <!-- Partials can be nested -->
-<%~ it.partials.blogSidebar %>  <!-- From blog/_partials/sidebar.eta -->
+<%~ stati.partials.blogSidebar %>  <!-- From blog/_partials/sidebar.eta -->
 ```
 
 ### Hierarchical Partials
@@ -315,25 +315,25 @@ Template usage:
 
 ```eta
 <article>
-    <h1><%= it.title %></h1>
+    <h1><%= stati.title %></h1>
 
-    <% if (it.featured) { %>
+    <% if (stati.featured) { %>
     <div class="featured-badge">Featured Post</div>
     <% } %>
 
     <div class="post-meta">
-        <span>By <%= it.author %></span>
-        <time><%= new Date(it.date).toLocaleDateString() %></time>
+        <span>By <%= stati.author %></span>
+        <time><%= new Date(stati.date).toLocaleDateString() %></time>
     </div>
 
     <div class="tags">
-        <% it.tags.forEach(tag => { %>
+        <% stati.tags.forEach(tag => { %>
         <a href="/tags/<%= tag %>/" class="tag">#<%= tag %></a>
         <% }); %>
     </div>
 
     <div class="content">
-        <%~ it.content %>
+        <%~ stati.content %>
     </div>
 </article>
 ```
@@ -344,13 +344,13 @@ Access site configuration in any template:
 
 ```eta
 <!-- Site metadata -->
-<title><%= it.site.title %></title>
-<meta name="description" content="<%= it.site.description %>">
+<title><%= stati.site.title %></title>
+<meta name="description" content="<%= stati.site.description %>">
 
 <!-- Social links -->
-<% if (it.site.social) { %>
+<% if (stati.site.social) { %>
 <div class="social-links">
-    <% Object.entries(it.site.social).forEach(([platform, url]) => { %>
+    <% Object.entries(stati.site.social).forEach(([platform, url]) => { %>
     <a href="<%= url %>" target="_blank" rel="noopener">
         <%= platform.charAt(0).toUpperCase() + platform.slice(1) %>
     </a>
@@ -359,10 +359,10 @@ Access site configuration in any template:
 <% } %>
 
 <!-- Navigation from config -->
-<% if (it.site.navigation) { %>
+<% if (stati.site.navigation) { %>
 <nav>
-    <% it.site.navigation.forEach(item => { %>
-    <a href="<%= item.url %>" class="<%= it.url === item.url ? 'active' : '' %>">
+    <% stati.site.navigation.forEach(item => { %>
+    <a href="<%= item.url %>" class="<%= stati.url === item.url ? 'active' : '' %>">
         <%= item.title %>
     </a>
     <% }); %>
@@ -376,7 +376,7 @@ Access site configuration in any template:
 
 ```eta
 <!-- Format dates -->
-<time><%= new Date(it.date).toLocaleDateString('en-US', {
+<time><%= new Date(stati.date).toLocaleDateString('en-US', {
   year: 'numeric',
   month: 'long',
   day: 'numeric'
@@ -385,7 +385,7 @@ Access site configuration in any template:
 <!-- Relative time -->
 <%
 const now = new Date();
-const postDate = new Date(it.date);
+const postDate = new Date(stati.date);
 const diffTime = Math.abs(now - postDate);
 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 %>
@@ -397,7 +397,7 @@ const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   <% } else if (diffDays < 7) { %>
     <%= diffDays %> days ago
   <% } else { %>
-    <%= new Date(it.date).toLocaleDateString() %>
+    <%= new Date(stati.date).toLocaleDateString() %>
   <% } %>
 </span>
 ```
@@ -412,7 +412,7 @@ function truncate(text, length = 150) {
   return text.slice(0, length) + '...';
 }
 %>
-<p class="excerpt"><%= truncate(it.description) %></p>
+<p class="excerpt"><%= truncate(stati.description) %></p>
 
 <!-- Slugify text -->
 <%
@@ -436,15 +436,15 @@ function isActive(linkUrl, currentUrl) {
   return currentUrl.startsWith(linkUrl);
 }
 %>
-<a href="/blog/" class="<%= isActive('/blog/', it.url) ? 'active' : '' %>">Blog</a>
+<a href="/blog/" class="<%= isActive('/blog/', stati.url) ? 'active' : '' %>">Blog</a>
 
 <!-- Absolute URL helper -->
 <%
 function absoluteUrl(path) {
-  return it.site.baseUrl + path;
+  return stati.site.baseUrl + path;
 }
 %>
-<link rel="canonical" href="<%= absoluteUrl(it.url) %>">
+<link rel="canonical" href="<%= absoluteUrl(stati.url) %>">
 ```
 
 ## Advanced Template Patterns
@@ -456,19 +456,19 @@ Break down complex layouts into smaller, reusable components:
 ```eta
 <!-- Main layout -->
 <div class="page-wrapper">
-    <%~ it.partials.pageHeader %>
+    <%~ stati.partials.pageHeader %>
 
     <div class="page-content">
-        <% if (it.sidebar !== false) { %>
-        <%~ it.partials.sidebar %>
+        <% if (stati.sidebar !== false) { %>
+        <%~ stati.partials.sidebar %>
         <% } %>
 
         <main class="main-content">
-            <%~ it.content %>
+            <%~ stati.content %>
         </main>
     </div>
 
-    <%~ it.partials.pageFooter %>
+    <%~ stati.partials.pageFooter %>
 </div>
 ```
 
@@ -478,12 +478,12 @@ Choose different layouts based on content type:
 
 ```eta
 <!-- In your layout -->
-<% if (it.layout === 'post') { %>
-    <%~ it.partials.postLayout %>
-<% } else if (it.layout === 'page') { %>
-    <%~ it.partials.pageLayout %>
+<% if (stati.layout === 'post') { %>
+    <%~ stati.partials.postLayout %>
+<% } else if (stati.layout === 'page') { %>
+    <%~ stati.partials.pageLayout %>
 <% } else { %>
-    <%~ it.partials.defaultLayout %>
+    <%~ stati.partials.defaultLayout %>
 <% } %>
 ```
 
@@ -496,7 +496,7 @@ Generate navigation from content structure:
 // Get all pages in a section
 function getSectionPages(section) {
   // This would be populated by Stati's content system
-  return it.site.pages.filter(page =>
+  return stati.site.pages.filter(page =>
     page.url.startsWith(`/${section}/`) &&
     page.url !== `/${section}/`
   );
@@ -508,7 +508,7 @@ function getSectionPages(section) {
     <ul>
         <% getSectionPages('docs').forEach(page => { %>
         <li>
-            <a href="<%= page.url %>" class="<%= it.url === page.url ? 'active' : '' %>">
+            <a href="<%= page.url %>" class="<%= stati.url === page.url ? 'active' : '' %>">
                 <%= page.title %>
             </a>
         </li>
@@ -551,12 +551,12 @@ Stati automatically caches compiled templates, but you can optimize further:
 
 ```eta
 <!-- Debug current context -->
-<% if (it.site.debug) { %>
+<% if (stati.site.debug) { %>
 <pre style="background: #f0f0f0; padding: 1rem; font-size: 12px;">
 <%= JSON.stringify({
-  title: it.title,
-  url: it.url,
-  layout: it.layout,
+  title: stati.title,
+  url: stati.url,
+  layout: stati.layout,
   keys: Object.keys(it)
 }, null, 2) %>
 </pre>
@@ -569,8 +569,8 @@ Stati automatically caches compiled templates, but you can optimize further:
 <!-- Graceful degradation -->
 <% try { %>
     <div class="author-info">
-        <img src="<%= it.author.avatar %>" alt="<%= it.author.name %>">
-        <span><%= it.author.name %></span>
+        <img src="<%= stati.author.avatar %>" alt="<%= stati.author.name %>">
+        <span><%= stati.author.name %></span>
     </div>
 <% } catch (error) { %>
     <div class="author-info">
@@ -579,8 +579,8 @@ Stati automatically caches compiled templates, but you can optimize further:
 <% } %>
 
 <!-- Safe property access -->
-<% if (it.author && it.author.name) { %>
-    <span class="author">By <%= it.author.name %></span>
+<% if (stati.author && stati.author.name) { %>
+    <span class="author">By <%= stati.author.name %></span>
 <% } %>
 ```
 

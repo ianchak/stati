@@ -174,29 +174,29 @@ self.addEventListener('fetch', (event) => {
 ```eta
 <head>
   <!-- Basic SEO -->
-  <title><%= it.title ? `${it.title} | ${it.site.title}` : it.site.title %></title>
-  <meta name="description" content="<%= it.description || it.site.description %>">
-  <link rel="canonical" href="<%= it.site.baseUrl + it.url %>">
+  <title><%= stati.title ? `${stati.title} | ${stati.site.title}` : stati.site.title %></title>
+  <meta name="description" content="<%= stati.description || stati.site.description %>">
+  <link rel="canonical" href="<%= stati.site.baseUrl + stati.url %>">
 
   <!-- Open Graph -->
-  <meta property="og:type" content="<%= it.type || 'website' %>">
-  <meta property="og:title" content="<%= it.title || it.site.title %>">
-  <meta property="og:description" content="<%= it.description || it.site.description %>">
-  <meta property="og:url" content="<%= it.site.baseUrl + it.url %>">
-  <meta property="og:site_name" content="<%= it.site.title %>">
+  <meta property="og:type" content="<%= stati.type || 'website' %>">
+  <meta property="og:title" content="<%= stati.title || stati.site.title %>">
+  <meta property="og:description" content="<%= stati.description || stati.site.description %>">
+  <meta property="og:url" content="<%= stati.site.baseUrl + stati.url %>">
+  <meta property="og:site_name" content="<%= stati.site.title %>">
 
-  <% if (it.image) { %>
-  <meta property="og:image" content="<%= it.site.baseUrl + it.image %>">
+  <% if (stati.image) { %>
+  <meta property="og:image" content="<%= stati.site.baseUrl + stati.image %>">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <% } %>
 
   <!-- Twitter Cards -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="<%= it.title || it.site.title %>">
-  <meta name="twitter:description" content="<%= it.description || it.site.description %>">
-  <% if (it.site.social && it.site.social.twitter) { %>
-  <meta name="twitter:site" content="<%= it.site.social.twitter %>">
+  <meta name="twitter:title" content="<%= stati.title || stati.site.title %>">
+  <meta name="twitter:description" content="<%= stati.description || stati.site.description %>">
+  <% if (stati.site.social && stati.site.social.twitter) { %>
+  <meta name="twitter:site" content="<%= stati.site.social.twitter %>">
   <% } %>
 
   <!-- Schema.org JSON-LD -->
@@ -204,22 +204,22 @@ self.addEventListener('fetch', (event) => {
   <%
   const schema = {
     "@context": "https://schema.org",
-    "@type": it.schemaType || "WebPage",
-    "name": it.title || it.site.title,
-    "description": it.description || it.site.description,
-    "url": it.site.baseUrl + it.url
+    "@type": stati.schemaType || "WebPage",
+    "name": stati.title || stati.site.title,
+    "description": stati.description || stati.site.description,
+    "url": stati.site.baseUrl + stati.url
   };
 
-  if (it.author) {
+  if (stati.author) {
     schema.author = {
       "@type": "Person",
-      "name": it.author
+      "name": stati.author
     };
   }
 
-  if (it.date) {
-    schema.datePublished = it.date;
-    schema.dateModified = it.lastModified || it.date;
+  if (stati.date) {
+    schema.datePublished = stati.date;
+    schema.dateModified = stati.lastModified || stati.date;
   }
   %>
   <%~ JSON.stringify(schema, null, 2) %>
@@ -524,8 +524,8 @@ fr: 'Générateur de site statique basé sur TypeScript'
 ```eta
 <!-- Template i18n helpers -->
 <%
-function t(key, locale = it.locale) {
-  const translations = it.translations[locale] || it.translations.en;
+function t(key, locale = stati.locale) {
+  const translations = stati.translations[locale] || stati.translations.en;
   return translations[key] || key;
 }
 
@@ -540,9 +540,9 @@ function localizedUrl(url, locale) {
 
 <!-- Language switcher -->
 <nav class="language-switcher">
-  <% it.site.locales.forEach(locale => { %>
-    <a href="<%= localizedUrl(it.url, locale) %>"
-       class="<%= locale === it.locale ? 'active' : '' %>">
+  <% stati.site.locales.forEach(locale => { %>
+    <a href="<%= localizedUrl(stati.url, locale) %>"
+       class="<%= locale === stati.locale ? 'active' : '' %>">
       <%= locale.toUpperCase() %>
     </a>
   <% }); %>

@@ -37,7 +37,7 @@ interface SiteConfig {
 }
 ```
 
-Front matter values are exposed through `it.page`. Additional properties you place on `site` in `stati.config.ts` are available at runtime, but the public type includes the three fields above by default.
+Front matter values are exposed through `stati.page`. Additional properties you place on `site` in `stati.config.ts` are available at runtime, but the public type includes the three fields above by default.
 
 ### Stati Configuration Structure
 
@@ -93,7 +93,7 @@ function truncate(text, length = 150) {
   return text.slice(0, length).replace(/\s+\S*$/, '') + '...';
 }
 %>
-<p class="excerpt"><%= truncate(it.page.description as string) %></p>
+<p class="excerpt"><%= truncate(stati.page.description as string) %></p>
 
 <!-- Slugify text -->
 <%
@@ -113,26 +113,26 @@ function stripHtml(html) {
   return html.replace(/<[^>]*>/g, '');
 }
 %>
-<meta name="description" content="<%= truncate(stripHtml(it.content), 160) %>">
+<meta name="description" content="<%= truncate(stripHtml(stati.content), 160) %>">
 ```
 
 ### Partial Templates
 
 ```eta
 <!-- Include partials -->
-<%~ it.partials.header %>
-<%~ it.partials.footer %>
-<%~ it.partials.navigation %>
+<%~ stati.partials.header %>
+<%~ stati.partials.footer %>
+<%~ stati.partials.navigation %>
 
 <!-- Conditional partials -->
-<% if (it.partials.sidebar) { %>
-  <%~ it.partials.sidebar %>
+<% if (stati.partials.sidebar) { %>
+  <%~ stati.partials.sidebar %>
 <% } %>
 
 <!-- Partials with data -->
-<%~ it.partials.postMeta %>
-<%~ it.partials.tagList %>
-<%~ it.partials.shareButtons %>
+<%~ stati.partials.postMeta %>
+<%~ stati.partials.tagList %>
+<%~ stati.partials.shareButtons %>
 ```
 
 ## Configuration API

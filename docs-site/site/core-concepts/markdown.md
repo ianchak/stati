@@ -319,18 +319,18 @@ estimatedTime: '30 minutes'
 Access in templates:
 
 ```eta
-<article class="difficulty-<%= it.difficulty %>">
+<article class="difficulty-<%= stati.difficulty %>">
   <header>
-    <h1><%= it.title %></h1>
+    <h1><%= stati.title %></h1>
     <div class="meta">
-      <span>Difficulty: <%= it.difficulty %></span>
-      <span>Est. time: <%= it.estimatedTime %></span>
-      <span>Last updated: <%= new Date(it.lastModified).toLocaleDateString() %></span>
+      <span>Difficulty: <%= stati.difficulty %></span>
+      <span>Est. time: <%= stati.estimatedTime %></span>
+      <span>Last updated: <%= new Date(stati.lastModified).toLocaleDateString() %></span>
     </div>
   </header>
 
   <div class="content">
-    <%~ it.content %>
+    <%~ stati.content %>
   </div>
 </article>
 ```
@@ -366,7 +366,7 @@ This content is **processed** at build time.
 %>
 
 <div class="dynamic-content">
-  <%~ it.renderMarkdown(additionalContent) %>
+  <%~ stati.renderMarkdown(additionalContent) %>
 </div>
 ```
 

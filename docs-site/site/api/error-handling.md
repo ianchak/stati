@@ -80,9 +80,9 @@ draft # ❌ Error: Missing value for draft field
 
 ```eta
 <!-- Template syntax error -->
-<% if (it.posts { %> <!-- ❌ Missing closing parenthesis -->
+<% if (stati.posts { %> <!-- ❌ Missing closing parenthesis -->
   <ul>
-    <% it.posts.forEach(post => { %>
+    <% stati.posts.forEach(post => { %>
       <li><%= post.title %></li>
     <% }); %>
   </ul>
