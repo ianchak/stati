@@ -1,5 +1,17 @@
 # create-stati
 
+## 1.3.1
+
+### Patch Changes
+
+- Implement code changes to enhance functionality and improve performance
+
+  Commit: d8e8af1
+
+- update @stati/cli and @stati/core versions
+
+  Commit: e2a9edb
+
 ## 1.3.0
 
 ### Minor Changes

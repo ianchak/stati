@@ -1,5 +1,23 @@
 # @stati/core
 
+## 1.6.0
+
+### Minor Changes
+
+- add dynamic attribute handling and utility functions for templates
+
+  Commit: e377d13
+
+### Patch Changes
+
+- Implement code changes to enhance functionality and improve performance
+
+  Commit: d8e8af1
+
+- update @stati/cli and @stati/core versions
+
+  Commit: e2a9edb
+
 ## 1.5.0
 
 ### Minor Changes
