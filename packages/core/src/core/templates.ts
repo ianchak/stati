@@ -238,7 +238,7 @@ export async function renderPage(
     collection: collectionData, // Add collection data for index pages
     // Add custom filters to context
     ...(config.eta?.filters || {}),
-    stati: {
+    generator: {
       version: getStatiVersion(),
     },
   };

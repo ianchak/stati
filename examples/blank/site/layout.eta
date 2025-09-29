@@ -28,7 +28,7 @@
     <main id="main" role="main"><%~ stati.content %></main>
 
     <footer role="contentinfo">
-      <p>&copy; <%= new Date().getFullYear() %> <%= stati.site.title %>. Built with <a href="https://github.com/ianchak/stati">Stati</a>.</p>
+      <p>&copy; <%= new Date().getFullYear() %> <%= stati.site.title %>. Built with <a href="https://github.com/ianchak/stati">Stati</a> v<%= stati.generator.version || '1.0.0' %>.</p>
     </footer>
   </body>
 </html>
