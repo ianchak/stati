@@ -61,7 +61,7 @@ The scaffolder will guide you through setting up a new project with your choice 
   - `stati invalidate "path:/blog/2024/hello"`
   - `stati invalidate "age:3months"`
 
-See the ISG concept guide in [docs/concept_doc.md](./docs/concept_doc.md) and configuration details in [docs/configuration.md](./docs/configuration.md).
+See the ISG concept guide on [stati.imrecsige.dev/core-concepts/isg/](https://stati.imrecsige.dev/core-concepts/isg/) and configuration details at [stati.imrecsige.dev/configuration/](https://stati.imrecsige.dev/configuration/).
 
 ---
 
@@ -173,12 +173,12 @@ npm run release          # Version + publish + push tags
 
 ## Documentation
 
-- [Getting Started Guide](./docs/README.md) — Quick start and project setup
-- [Configuration Guide](./docs/configuration.md) — Complete configuration reference
-- [Error Handling](./docs/error-handling.md) — Error codes, fallbacks, and debugging
-- [Feature Overview](./docs/feature_doc.md) — Detailed feature descriptions
-- [ISG Concept & TTL Model](./docs/concept_doc.md) — Incremental static generation guide
-- [Roadmap & Milestones](./docs/implementation_plan.md) — Development progress and planning
+- [Getting Started Guide](https://stati.imrecsige.dev/getting-started/) — Quick start and project setup
+- [Configuration Reference](https://stati.imrecsige.dev/configuration/) — Complete configuration reference
+- [Error Handling](https://stati.imrecsige.dev/api/error-handling/) — Error codes, fallbacks, and debugging
+- [Feature Overview](https://stati.imrecsige.dev/core-concepts/) — Detailed feature descriptions
+- [ISG Concept & TTL Model](https://stati.imrecsige.dev/core-concepts/isg/) — Incremental static generation guide
+- [Roadmap & Contributing](https://stati.imrecsige.dev/contributing/)
 
 ---
 
