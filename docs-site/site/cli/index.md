@@ -113,7 +113,8 @@ stati invalidate [query]
 **Query Patterns:**
 
 - `tag:name` - Invalidate by tag
-- `path:/route` - Invalidate specific path
+- `path:/route` - Invalidate a specific path or any nested routes
+- `glob:pattern` - Invalidate paths matching glob expressions (e.g., `glob:blog/**`)
 - `age:duration` - Invalidate by age (e.g., `3months`, `1week`)
 - Empty query - Clear all cache
 
@@ -247,23 +248,16 @@ stati.config.ts  # TypeScript config
 
 ### Hot Reload
 
-The development server provides intelligent hot reloading:
+The development server automatically rebuilds affected pages and refreshes the browser. Terminal output shows the changed path and how long the rebuild took:
 
 ```bash
-stati dev --verbose
+$ stati dev
 
-# Output shows what triggers rebuilds:
-# 🔄 Watching for changes...
-#
-# File changed: blog/post-1.md
-# ├── Rebuilding: /blog/post-1/
-# ├── Rebuilding: /blog/ (depends on post-1.md)
-# └── ✅ Rebuilt 2 pages in 0.1s
-#
-# File changed: layout.eta
-# ├── Rebuilding: affected pages (89 found)
-# └── ✅ Rebuilt 89 pages in 1.2s
+⚡ site/blog/post.md rebuilt in 120ms
+⚡ site/layout.eta rebuilt in 340ms
 ```
+
+Template or partial changes invalidate dependent pages in the cache before the rebuild so those pages always render with the latest layout.
 
 ### Preview Builds
 
@@ -282,20 +276,9 @@ stati build && python -m http.server 8080 --directory dist
 
 ### Debugging
 
-Enable debug mode for troubleshooting:
-
-```bash
-# Debug mode
-DEBUG=stati:* stati build
-
-# Specific debug categories
-DEBUG=stati:cache stati build
-DEBUG=stati:markdown stati build
-DEBUG=stati:templates stati build
-
-# Save debug output
-DEBUG=stati:* stati build 2> debug.log
-```
+- During `stati dev`, any build failure shows a browser overlay with the stack trace and file location.
+- The terminal logs which file triggered the rebuild (for example, `⚡ site/docs/api.md rebuilt in 92ms`).
+- Run `stati build --clean` to regenerate everything from scratch if cached output looks stale.
 
 ## Scripting and Automation
 
@@ -309,7 +292,7 @@ Common npm script patterns:
     "dev": "stati dev",
     "build": "stati build",
     "preview": "stati build && serve dist",
-    "clean": "rm -rf dist .stati/cache",
+    "clean": "rm -rf dist .stati",
     "fresh": "npm run clean && npm run build",
     "deploy": "npm run build && rsync -av dist/ server:/path/",
     "invalidate": "stati invalidate tag:blog"
@@ -326,7 +309,7 @@ Common npm script patterns:
 set -e
 
 echo "Building site..."
-stati build --clean --verbose
+stati build --clean
 
 echo "Optimizing images..."
 find dist -name "*.jpg" -exec jpegoptim --strip-all {} \;
@@ -351,24 +334,24 @@ echo "Deployment complete!"
 .PHONY: dev build deploy clean
 
 dev:
-	stati dev --open
+  stati dev --open
 
 build:
-	stati build --clean
+  stati build --clean
 
 deploy: build
-	rsync -av dist/ user@server:/var/www/html/
+  rsync -av dist/ user@server:/var/www/html/
 
 clean:
-	rm -rf dist .stati/cache
+  rm -rf dist .stati
 
 fresh: clean build
 
 invalidate-blog:
-	stati invalidate tag:blog
+  stati invalidate tag:blog
 
 invalidate-all:
-	stati invalidate all
+  stati invalidate
 ```
 
 ## Error Handling
@@ -387,8 +370,8 @@ stati dev --port 3001
 
 ```bash
 # Error: Build failed with template error
-# Solution: Check template syntax and run with verbose output
-stati build --verbose
+# Solution: Check template syntax and rerun a clean build
+stati build --clean
 ```
 
 **Cache corruption:**
@@ -399,41 +382,12 @@ stati build --verbose
 stati build --clean
 ```
 
-### Verbose Output
-
-Use verbose mode to diagnose issues:
-
-```bash
-stati build --verbose
-
-# Shows detailed information:
-# 📁 Scanning content files...
-# ├── Found 127 markdown files
-# ├── Found 23 template files
-# └── Found 8 asset files
-#
-# 🔍 Analyzing dependencies...
-# ├── blog/index.md depends on 34 files
-# ├── docs/index.md depends on 12 files
-# └── Generated dependency graph with 156 edges
-#
-# 🏗️ Building pages...
-# ├── Processing: / (0.1s)
-# ├── Processing: /blog/ (0.3s)
-# ├── Processing: /docs/ (0.2s)
-# └── ✅ Built 127 pages in 2.3s
-```
-
 ## Exit Codes
 
-Stati uses standard exit codes for scripting:
+Stati uses conventional exit codes:
 
-- `0` - Success
-- `1` - General error
-- `2` - Configuration error
-- `3` - Build error
-- `4` - Template error
-- `5` - Cache error
+- `0` - Command completed successfully
+- `1` - An error occurred (build failure, invalid command, etc.)
 
 ```bash
 # Use in scripts
@@ -449,4 +403,4 @@ fi
 
 The Stati CLI is designed to be both simple for basic use and powerful for advanced workflows. Whether you're developing locally, deploying to production, or integrating with CI/CD systems, the CLI provides the tools you need for efficient static site generation.
 
-Next, learn about the [Scaffolder](/cli/scaffolder/) for creating new progetti Stati projects, or explore [Development Workflows](/cli/development/) for advanced development techniques.
+Next, learn about the [Scaffolder](/cli/scaffolder/) for creating new Stati projects, or explore [Development Workflows](/cli/development/) for advanced development techniques.

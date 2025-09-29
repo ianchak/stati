@@ -129,7 +129,7 @@ site/
 ## Need Help?
 
 - **Documentation** - Browse the full [Stati documentation](/)
-- **GitHub Issues** - Report bugs or request features
-- **Discussions** - Ask questions and share ideas
+- **GitHub Issues** - [Report bugs or request features](https://github.com/ianchak/stati/issues)
+- **Discussions** - [Ask questions and share ideas](https://github.com/ianchak/stati/discussions)
 
 Happy building with Stati!

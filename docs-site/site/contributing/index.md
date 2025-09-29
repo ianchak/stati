@@ -465,7 +465,6 @@ export interface StatiConfig {
 
 - **GitHub Discussions** - Ask questions and share ideas
 - **GitHub Issues** - Report bugs and request features
-- **Discord** - Chat with the community (link in README)
 
 ### Code of Conduct
 
@@ -488,27 +487,17 @@ Contributors are recognized in:
 
 ### Current Priorities
 
-1. **Performance Optimization**
-   - Improve build speeds
-   - Optimize memory usage
-   - Better caching strategies
+1. **Performance validation**
+  - Benchmark build and cache behaviour using the bundled examples.
+  - Track Incremental Static Generation cache metrics.
 
-2. **Developer Experience**
-   - Better error messages
-   - Improved debugging tools
-   - Enhanced TypeScript support
+1. **Developer experience**
+  - Improve diagnostic output in the CLI.
+  - Expand automated test coverage for build edge cases.
 
-3. **Feature Completeness**
-   - Plugin ecosystem
-   - Theme system
-   - Advanced i18n support
-
-### Future Goals
-
-- **Visual Editor** integration
-- **Headless CMS** adapters
-- **Edge** deployment optimizations
-- **AI-powered** content assistance
+1. **Documentation coverage**
+  - Keep this docs-site in sync with shipped features.
+  - Add walkthroughs for the blank template workflow.
 
 ## Getting Started Contributing
 
