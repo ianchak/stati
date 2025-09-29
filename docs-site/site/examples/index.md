@@ -133,8 +133,3 @@ site/
 - **Discussions** - Ask questions and share ideas
 
 Happy building with Stati!
-  },
-
-  // Markdown configuration
-  markdown: {
-Happy building with Stati!
