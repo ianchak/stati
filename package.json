@@ -24,7 +24,7 @@
     "changeset": "changeset",
     "changeset:status": "changeset status",
     "changeset:generate": "node scripts/generate-changesets.mjs",
-    "release:version": "changeset version",
+    "release:version": "changeset version && echo Note: Pathspec warnings above are normal when processing changesets",
     "release:publish": "changeset publish",
     "release:dry": "changeset version --dry-run",
     "release": "npm run build && npm run changeset:generate && npm run release:version && npm run release:publish && git push --follow-tags",
