@@ -1,5 +1,25 @@
 # create-stati
 
+## 1.3.2
+
+### Patch Changes
+
+- add generator version information to templates
+
+  Commit: 27a9334
+
+- update @stati/cli and @stati/core to latest versions
+
+  Commit: 45f097c
+
+- update template variable references from 'it' to 'stati'
+
+  Commit: 0bd8e2d
+
+- remove default version fallback in footer display
+
+  Commit: 022f01d
+
 ## 1.3.1
 
 ### Patch Changes

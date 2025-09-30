@@ -1,5 +1,29 @@
 # @stati/core
 
+## 1.6.1
+
+### Patch Changes
+
+- add generator version information to templates
+
+  Commit: 27a9334
+
+- update @stati/cli and @stati/core to latest versions
+
+  Commit: 45f097c
+
+- add unit tests for getStatiVersion function
+
+  Commit: 12457a6
+
+- remove default version fallback in footer display
+
+  Commit: 022f01d
+
+- correct package.json path in getStatiVersion function
+
+  Commit: 455b74a
+
 ## 1.6.0
 
 ### Minor Changes
