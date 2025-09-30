@@ -183,7 +183,7 @@
                 <div class="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
                     <div class="flex items-center space-x-2">
                         <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                        <span>Generated with Stati v<%= stati.generator.version || '1.0.0' %></span>
+                        <span>Generated with Stati v<%= stati.generator.version %></span>
                     </div>
                     <div class="hidden lg:flex items-center space-x-2">
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
