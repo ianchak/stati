@@ -47,7 +47,7 @@ The scaffolder will guide you through setting up a new project with your choice 
 
 - **SEO enhancements** (meta tags, RSS, sitemap)
 - **Image optimization** pipeline
-- **Additional templates** (blog, docs, news)
+- **Additional template examples** (blog, documentation, news site patterns)
 
 ---
 
@@ -87,6 +87,7 @@ npx create-stati my-site --template=blank --styling=tailwind --git
 
 - **`stati build`** — Build your site with options for force rebuild, cleaning cache, and including drafts
 - **`stati dev`** — Start development server with configurable port, host, and auto-open browser
+- **`stati preview`** — Serve the built site locally for preview with configurable port and host
 - **`stati invalidate`** — Cache invalidation by tags, paths, patterns, or age
 
 _Commands available when `@stati/cli` is installed in your project._
@@ -103,9 +104,13 @@ npm run dev
 # Build the site
 npm run build
 
+# Preview the built site
+npm run preview
+
 # Or use CLI commands directly
 stati dev --port 3000 --open
 stati build --force --clean --include-drafts
+stati preview --port 4000 --open
 ```
 
 ---
@@ -115,13 +120,10 @@ stati build --force --clean --include-drafts
 ```
 packages/
 ├─ @stati/core         → Core SSG engine with build, dev server, and content processing
-├─ @stati/cli          → Command-line interface (stati build, dev, invalidate)
+├─ @stati/cli          → Command-line interface (stati build, dev, preview, invalidate)
 ├─ create-stati        → Project scaffolder (npx create-stati)
 examples/
 ├─ blank               → Minimal starter template
-├─ blog                → Complete blog example with navigation and content (WIP)
-├─ docs                → Documentation site template (WIP)
-├─ news                → News/article site template (WIP)
 ```
 
 ---
@@ -178,7 +180,6 @@ npm run release          # Version + publish + push tags
 - [Error Handling](https://stati.imrecsige.dev/api/error-handling/) — Error codes, fallbacks, and debugging
 - [Feature Overview](https://stati.imrecsige.dev/core-concepts/) — Detailed feature descriptions
 - [ISG Concept & TTL Model](https://stati.imrecsige.dev/core-concepts/isg/) — Incremental static generation guide
-- [Roadmap & Contributing](https://stati.imrecsige.dev/contributing/)
 
 ---
 
