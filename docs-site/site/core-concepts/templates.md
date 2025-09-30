@@ -87,6 +87,9 @@ In your templates, you have access to:
 <%= stati.site.baseUrl %>   <!-- Site base URL -->
 <%= stati.site.description %> <!-- Site description -->
 
+<!-- Generator data -->
+<%= stati.generator.version %> <!-- Stati core version -->
+
 <!-- Template data -->
 <%= stati.layout %>         <!-- Current layout name -->
 <%= stati.partials.header %> <!-- Partial templates -->
@@ -544,6 +547,19 @@ Stati automatically caches compiled templates, but you can optimize further:
    - Minimize nested loops
    - Use conditionals to skip unnecessary work
    - Cache computed values when possible
+
+## Generator Information
+
+### Displaying Version Information
+
+You can access Stati's version information in templates using `stati.generator.version`. This is useful for attribution, debugging, or technical information display:
+
+```eta
+<!-- Simple footer attribution -->
+<footer>
+    <p>Generated with Stati v<%= stati.generator.version %></p>
+</footer>
+```
 
 ## Testing Templates
 
