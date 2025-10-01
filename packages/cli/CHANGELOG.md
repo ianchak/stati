@@ -1,5 +1,16 @@
 # @stati/cli
 
+## 1.3.4
+
+### Patch Changes
+
+- update devDependencies for @stati/cli and @stati/core
+
+  Commit: 3e876dd
+
+- Updated dependencies
+  - @stati/core@1.6.3
+
 ## 1.3.3
 
 ### Patch Changes

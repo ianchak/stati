@@ -1,5 +1,17 @@
 # create-stati
 
+## 1.3.4
+
+### Patch Changes
+
+- update devDependencies for @stati/cli and @stati/core
+
+  Commit: 3e876dd
+
+- update @stati/cli and @stati/core versions
+
+  Commit: aa9fccf
+
 ## 1.3.3
 
 ### Patch Changes
