@@ -1,5 +1,19 @@
 # @stati/cli
 
+## 1.3.5
+
+### Patch Changes
+
+- clarify age-based invalidation logic and arithmetic
+
+  Commit: 31c83ea
+
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+  - @stati/core@1.6.4
+
 ## 1.3.4
 
 ### Patch Changes
