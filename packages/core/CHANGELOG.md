@@ -1,5 +1,25 @@
 # @stati/core
 
+## 1.6.4
+
+### Patch Changes
+
+- enhance cleaning process to include cache removal
+
+  Commit: 8a602eb
+
+- improve age calculation logic for consistency
+
+  Commit: 4384fe0
+
+- clarify age-based invalidation logic and arithmetic
+
+  Commit: 31c83ea
+
+- update log message for cleaning output and ISG cache
+
+  Commit: 2149083
+
 ## 1.6.3
 
 ### Patch Changes
