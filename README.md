@@ -10,13 +10,17 @@ Stati is a **lightweight static site generator** (SSG) built in **TypeScript** u
 
 ```bash
 # Create a new Stati site
-npx create-stati my-site
+npx create-stati
 
 # Navigate to your project
 cd my-site
 
+# Install dependencies
+npm install
+
 # Start development server
 npm run dev
+
 ```
 
 The scaffolder will guide you through setting up a new project with your choice of styling (CSS, Sass, or Tailwind CSS).
@@ -25,7 +29,7 @@ The scaffolder will guide you through setting up a new project with your choice 
 
 ## Features
 
-### Core Features (Ready)
+### Core Features
 
 - **Project Scaffolding** — `npx create-stati` with interactive setup and styling options
 - **Filesystem-based routing** from `site/` directory
@@ -35,19 +39,13 @@ The scaffolder will guide you through setting up a new project with your choice 
 - **Development server** with live reload and hot rebuilding
 - **Static asset copying** from `public/` directory
 - **TypeScript-first** configuration with full type safety
-- **Comprehensive testing** with Vitest and 358+ tests
+- **Comprehensive testing** with Vitest and 440+ tests
 - **Draft page support** with `--include-drafts` flag
 - **Incremental Static Generation (ISG)** with TTL, aging, and freeze
 - **Cache manifest** with input hashing and dependency tracking
 - **Invalidation CLI** — invalidate by tag, path, or age
 - **Build modes** — incremental by default; `--force` and `--clean` supported
 - **CSS Preprocessing** — Sass and Tailwind CSS integration via scaffolder
-
-### 🚧 Planned Features (v1.0+)
-
-- **SEO enhancements** (meta tags, RSS, sitemap)
-- **Image optimization** pipeline
-- **Additional template examples** (blog, documentation, news site patterns)
 
 ---
 
@@ -71,7 +69,7 @@ See the ISG concept guide on [stati.imrecsige.dev/core-concepts/isg/](https://st
 
 ```bash
 # Interactive setup
-npx create-stati my-site
+npx create-stati
 
 # Non-interactive with flags
 npx create-stati my-site --template=blank --styling=tailwind --git
