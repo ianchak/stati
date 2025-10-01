@@ -229,14 +229,18 @@ function globToRegex(pattern: string): RegExp {
  * Checks if a cache entry matches an age-based invalidation term.
  * Supports various time units: days, weeks, months, years.
  *
+ * Uses proper date arithmetic for months and years to handle varying month lengths
+ * and leap years accurately. Days and weeks use simple day arithmetic for consistency.
+ *
  * @param entry - Cache entry to check
  * @param ageValue - Age specification (e.g., "3months", "1week", "30days")
  * @returns True if the entry is younger than the specified age
  *
  * @example
  * ```typescript
- * matchesAge(entry, "3months") // true if rendered within the last 3 months
- * matchesAge(entry, "1week")   // true if rendered within the last 1 week
+ * matchesAge(entry, "3months") // true if rendered within the last 3 months (using exact month arithmetic)
+ * matchesAge(entry, "1week")   // true if rendered within the last 1 week (7 days)
+ * matchesAge(entry, "1year")   // true if rendered within the last 1 year (using exact year arithmetic)
  * ```
  */
 function matchesAge(entry: CacheEntry, ageValue: string): boolean {
@@ -259,34 +263,32 @@ function matchesAge(entry: CacheEntry, ageValue: string): boolean {
     return false;
   }
 
-  // Convert everything to days for consistent calculation
-  let daysBack: number;
+  // Calculate cutoff date using appropriate date arithmetic
+  const cutoffDate = new Date(now);
 
   switch (unit.toLowerCase()) {
     case 'day':
     case 'days':
-      daysBack = num;
+      cutoffDate.setDate(cutoffDate.getDate() - num);
       break;
     case 'week':
     case 'weeks':
-      daysBack = num * 7;
+      cutoffDate.setDate(cutoffDate.getDate() - num * 7);
       break;
     case 'month':
     case 'months':
-      daysBack = num * 30; // Use 30 days per month for consistency
+      // Use proper month arithmetic to handle varying month lengths
+      cutoffDate.setMonth(cutoffDate.getMonth() - num);
       break;
     case 'year':
     case 'years':
-      daysBack = num * 365; // Use 365 days per year for consistency
+      // Use proper year arithmetic to handle leap years
+      cutoffDate.setFullYear(cutoffDate.getFullYear() - num);
       break;
     default:
       console.warn(`Unknown time unit: ${unit}`);
       return false;
   }
-
-  // Calculate cutoff date by subtracting days
-  const cutoffDate = new Date(now);
-  cutoffDate.setDate(cutoffDate.getDate() - daysBack);
 
   // Entry matches if it was rendered after or on the cutoff date (i.e., younger than or equal to specified age)
   return renderedAt >= cutoffDate;

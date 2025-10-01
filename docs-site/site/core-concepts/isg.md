@@ -133,7 +133,7 @@ await invalidate('path:/blog/');
 // Invalidate by tag
 await invalidate('tag:navigation');
 
-// Invalidate entries rendered within the last 30 days
+// Invalidate entries rendered within the last 30 days (exact calendar arithmetic)
 await invalidate('age:30days');
 
 // Invalidate multiple targets
@@ -192,6 +192,14 @@ stati invalidate age:2weeks
 stati invalidate age:6months
 stati invalidate age:1year
 ```
+
+**Important**: Age calculations use exact calendar arithmetic:
+
+- **Days/Weeks**: Simple day arithmetic (1 week = 7 days)
+- **Months**: Exact month arithmetic using `setMonth()` - handles varying month lengths (28-31 days)
+- **Years**: Exact year arithmetic using `setFullYear()` - properly handles leap years
+
+This means `age:3months` goes back exactly 3 calendar months (e.g., from Oct 1st to Jul 1st), not approximately 90 days.
 
 ## Performance Benefits
 
