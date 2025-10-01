@@ -13,20 +13,28 @@ npm install @stati/core
 ### Basic Setup
 
 ```typescript
-import { build, createDevServer, defineConfig } from '@stati/core';
+import { build, createDevServer, defineConfig, loadConfig } from '@stati/core';
 
 // Define configuration
 const config = defineConfig({
-  site: './site',
-  output: './dist',
-  public: './public',
+  srcDir: './site',
+  outDir: './dist',
+  staticDir: './public',
+  site: {
+    title: 'My Site',
+    baseUrl: 'https://example.com',
+  },
 });
 
-// Build site
-await build(config);
+// Load configuration and build site
+await build({
+  clean: false,
+  force: false,
+  includeDrafts: false,
+});
 
 // Or start development server
-const server = await createDevServer(config, {
+const server = await createDevServer({
   port: 3000,
   open: true,
 });
@@ -35,41 +43,67 @@ const server = await createDevServer(config, {
 ### Configuration
 
 ```typescript
-import { defineConfig } from '@stati/core/config';
+import { defineConfig } from '@stati/core';
 
 export default defineConfig({
-  // Site source directory
-  site: './site',
+  // Source directory for content files
+  srcDir: './site',
 
   // Output directory for built site
-  output: './dist',
+  outDir: './dist',
 
   // Static assets directory
-  public: './public',
+  staticDir: './public',
 
   // Site metadata
-  meta: {
+  site: {
     title: 'My Site',
-    description: 'A great static site',
-    url: 'https://example.com',
+    baseUrl: 'https://example.com',
   },
 
   // Markdown configuration
   markdown: {
-    plugins: ['markdown-it-anchor'],
-    options: {
-      html: true,
-      linkify: true,
-      typographer: true,
+    plugins: ['anchor'],
+    configure: (md) => {
+      md.set({
+        html: true,
+        linkify: true,
+        typographer: true,
+      });
     },
   },
 
-  // Template configuration
-  templates: {
-    engine: 'eta',
-    options: {
-      views: './site',
-      cache: true,
+  // Eta template configuration
+  eta: {
+    filters: {
+      // Custom template filters
+    },
+  },
+
+  // Incremental Static Generation
+  isg: {
+    enabled: true,
+    ttlSeconds: 3600,
+    maxAgeCapDays: 30,
+  },
+
+  // Development server options
+  dev: {
+    port: 3000,
+    host: 'localhost',
+    open: false,
+  },
+
+  // Build lifecycle hooks
+  hooks: {
+    beforeAll: async (ctx) => {
+      console.log(`Building ${ctx.pages.length} pages`);
+    },
+    beforeRender: async (ctx) => {
+      // Custom pre-render logic
+    },
+    afterRender: async (ctx) => {
+      // Custom post-render logic
     },
   },
 });
@@ -79,7 +113,7 @@ export default defineConfig({
 
 ### Core Functions
 
-#### `build(options: BuildOptions): Promise<void>`
+#### `build(options: BuildOptions): Promise<BuildStats>`
 
 Build a static site.
 
@@ -87,23 +121,25 @@ Build a static site.
 import { build } from '@stati/core';
 
 await build({
-  config: './stati.config.js',
-  force: false,
-  clean: false,
-  includeDrafts: false,
+  force: false,        // Force rebuild of all pages
+  clean: false,        // Clean output directory before build
+  includeDrafts: false, // Include draft pages in build
+  configPath: './stati.config.js', // Custom config file path
 });
 ```
 
-#### `createDevServer(config: StatiConfig, options: DevServerOptions): Promise<DevServer>`
+#### `createDevServer(options: DevServerOptions): Promise<DevServer>`
 
 Create a development server with live reload.
 
 ```typescript
 import { createDevServer } from '@stati/core';
 
-const server = await createDevServer(config, {
+const server = await createDevServer({
   port: 3000,
+  host: 'localhost',
   open: true,
+  configPath: './stati.config.js',
 });
 ```
 
@@ -140,11 +176,22 @@ await invalidate();
 Define a type-safe configuration with full TypeScript support.
 
 ```typescript
-import { defineConfig } from '@stati/core/config';
+import { defineConfig } from '@stati/core';
 
 export default defineConfig({
   // Your configuration here
 });
+```
+
+#### `loadConfig(cwd?: string): Promise<StatiConfig>`
+
+Load and validate Stati configuration from the project directory.
+
+```typescript
+import { loadConfig } from '@stati/core';
+
+const config = await loadConfig(); // Load from current directory
+const config2 = await loadConfig('/path/to/project'); // Load from specific directory
 ```
 
 ## Types
@@ -156,11 +203,16 @@ import type {
   StatiConfig,
   BuildOptions,
   DevServerOptions,
-  InvalidateOptions,
-  Page,
-  Navigation,
-  MarkdownOptions,
-  TemplateOptions,
+  InvalidationResult,
+  PageModel,
+  FrontMatter,
+  BuildContext,
+  PageContext,
+  BuildHooks,
+  NavNode,
+  ISGConfig,
+  AgingRule,
+  BuildStats,
 } from '@stati/core/types';
 ```
 
