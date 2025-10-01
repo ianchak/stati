@@ -36,7 +36,7 @@
     "url": "git+https://github.com/ianchak/stati.git"
   },
   "keywords": [],
-  "author": "",
+  "author": "Imre Csige <me@imrecsige.dev> (https://imrecsige.dev)",
   "license": "MIT",
   "type": "commonjs",
   "bugs": {
