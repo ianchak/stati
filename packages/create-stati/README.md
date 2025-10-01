@@ -7,20 +7,7 @@ The official scaffolding tool for Stati, a lightweight TypeScript static site ge
 Create a new Stati site with a single command:
 
 ```bash
-npm create stati my-site
-```
-
-Or using other package managers:
-
-```bash
-# Using Yarn
-yarn create stati my-site
-
-# Using PNPM
-pnpm create stati my-site
-
-# Using Bun
-bunx create-stati my-site
+npx create-stati
 ```
 
 ## CLI Options
@@ -55,93 +42,54 @@ The tool will prompt you to configure your new site:
 
 ## Templates
 
-### Blog Template
+### Blank Template
 
-Perfect for personal blogs, company blogs, or content-focused sites.
+A minimal starting point for any type of Stati site. Perfect for custom projects where you want full control over the structure and styling.
 
 **Features:**
 
-- Article listing with pagination
-- Individual post pages
-- Categories and tags
-- RSS feed generation
-- SEO-optimized structure
+- Clean, minimal layout
+- Basic page structure with welcome content
+- Responsive design foundation
+- Extensible architecture
+- No opinionated styling - just the essentials
 
 **Structure:**
 
 ```
-my-blog/
+my-site/
 ├── site/
-│   ├── index.md          # Homepage
-│   ├── layout.eta        # Main layout
-│   ├── blog/
-│   │   ├── index.md      # Blog listing
-│   │   └── posts/        # Individual posts
-│   └── _partials/
-│       ├── header.eta
-│       └── footer.eta
+│   ├── index.md          # Homepage with welcome content
+│   └── layout.eta        # Main HTML layout template
 ├── public/
-│   └── styles.css
-└── stati.config.js
+│   ├── styles.css        # Basic CSS styles
+│   └── favicon.svg       # Default favicon
+├── stati.config.js       # Stati configuration
+└── package.json          # Project dependencies
 ```
 
-### Docs Template
+**What's included:**
 
-Ideal for documentation sites, API references, or knowledge bases.
+- **Homepage (`site/index.md`)**: Welcome page with basic content and getting started instructions
+- **Layout (`site/layout.eta`)**: HTML5 boilerplate with responsive meta tags and basic navigation structure
+- **Styles (`public/styles.css`)**: Minimal CSS with typography basics and responsive layout helpers
+- **Configuration (`stati.config.js`)**: Pre-configured with sensible defaults for title, base URL, and directory structure
+- **Favicon (`public/favicon.svg`)**: Simple SVG favicon ready to customize
 
-**Features:**
+**Perfect for:**
 
-- Sidebar navigation
-- Search functionality
-- Version management
-- Code highlighting
-- Table of contents
+- Personal websites and portfolios
+- Landing pages and marketing sites
+- Learning Stati fundamentals
+- Starting point for any type of site
 
-**Structure:**
+**Getting started with the blank template:**
 
-```
-my-docs/
-├── site/
-│   ├── index.md          # Documentation home
-│   ├── layout.eta        # Documentation layout
-│   ├── guide/            # User guides
-│   ├── reference/        # API reference
-│   └── _partials/
-│       ├── sidebar.eta
-│       └── toc.eta
-├── public/
-│   └── docs.css
-└── stati.config.js
-```
-
-### News Template
-
-Great for news sites, press releases, or announcement pages.
-
-**Features:**
-
-- Chronological listing
-- Category filtering
-- Breaking news highlights
-- Archive pages
-- Social sharing
-
-**Structure:**
-
-```
-my-news/
-├── site/
-│   ├── index.md          # Latest news
-│   ├── layout.eta        # News layout
-│   ├── articles/         # News articles
-│   ├── categories/       # Category pages
-│   └── _partials/
-│       ├── headline.eta
-│       └── sidebar.eta
-├── public/
-│   └── news.css
-└── stati.config.js
-```
+1. The homepage provides clear instructions on where to find key files
+2. Modify `site/index.md` to add your content
+3. Customize `site/layout.eta` for your HTML structure
+4. Update `public/styles.css` with your styling
+5. Configure site metadata in `stati.config.js`
 
 ## Customization Options
 
@@ -160,20 +108,17 @@ When you choose to include Tailwind CSS, the scaffolder will:
 Each template comes with a pre-configured `stati.config.js` file optimized for that template type:
 
 ```javascript
-// Example blog configuration
-export default {
-  site: './site',
-  output: './dist',
-  public: './public',
-  meta: {
-    title: 'My Blog',
-    description: 'A blog built with Stati',
-    url: 'https://my-blog.com',
+// Example blank template configuration
+export default defineConfig({
+  site: {
+    title: 'My Stati Site',
+    baseUrl: 'https://example.com',
+    defaultLocale: 'en-US',
   },
-  markdown: {
-    plugins: ['anchor', 'toc-done-right'],
-  },
-};
+  srcDir: 'site',
+  outDir: 'dist',
+  staticDir: 'public',
+});
 ```
 
 ## Getting Started
@@ -199,8 +144,15 @@ After creating your site:
    ```
 
 4. **Build for production:**
+
    ```bash
    npm run build
+   ```
+
+5. **Preview production build:**
+
+   ```bash
+   npm run preview
    ```
 
 ## Project Structure
@@ -209,27 +161,30 @@ All templates follow Stati's conventional structure:
 
 ```
 my-site/
-├── site/              # Your content and templates
+├── site/             # Your content and templates
 │   ├── *.md          # Markdown pages
 │   ├── *.eta         # Eta templates
 │   └── _partials/    # Reusable template parts
 ├── public/           # Static assets (CSS, images, etc.)
 ├── stati.config.js   # Stati configuration
 ├── package.json      # Project metadata and scripts
-└── dist/            # Built site (generated)
+└── dist/             # Built site (generated)
 ```
 
 ## Next Steps
 
-- **Learn Stati:** Check out the [Stati documentation](https://github.com/ianchak/stati)
+- **Learn Stati:** Check out the [Stati documentation](https://stati.imrecsige.dev) for comprehensive guides and tutorials
+- **Core Concepts:** Understand [templates](https://stati.imrecsige.dev/core-concepts/templates), [routing](https://stati.imrecsige.dev/core-concepts/routing), and [markdown](https://stati.imrecsige.dev/core-concepts/markdown)
+- **Configuration:** Learn about [site configuration](https://stati.imrecsige.dev/configuration), [ISG](https://stati.imrecsige.dev/configuration/isg), and [build hooks](https://stati.imrecsige.dev/api/hooks)
+- **Examples:** Explore [recipes and examples](https://stati.imrecsige.dev/examples) for common use cases
 - **Customize templates:** Modify layouts and styles to match your brand
 - **Add content:** Create new pages and posts in the `site/` directory
 - **Deploy:** Build your site and deploy to any static hosting provider
 
 ## Requirements
 
-- Node.js 18+
-- npm, yarn, pnpm, or bun
+- Node.js 22.0.0 or higher
+- npm 8.0.0 or higher (or yarn/pnpm equivalent)
 
 ## License
 
