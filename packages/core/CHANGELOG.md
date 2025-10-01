@@ -1,5 +1,37 @@
 # @stati/core
 
+## 1.6.2
+
+### Patch Changes
+
+- enhance setup instructions and configuration details
+
+  Commit: 37d2630
+
+- update commands for Stati CLI and add preview instructions
+
+  Commit: a60531a
+
+- update project creation instructions and testing details
+
+  Commit: a8459e5
+
+- update @stati/cli and @stati/core versions
+
+  Commit: 470c81d
+
+- update @stati/cli and @stati/core versions
+
+  Commit: 19103db
+
+- clarify additional template examples and update commands
+
+  Commit: 19f0118
+
+- add note for pathspec warnings during versioning
+
+  Commit: 0ce6bc1
+
 ## 1.6.1
 
 ### Patch Changes

@@ -1,5 +1,33 @@
 # create-stati
 
+## 1.3.3
+
+### Patch Changes
+
+- update project creation instructions and testing details
+
+  Commit: a8459e5
+
+- update @stati/cli and @stati/core versions
+
+  Commit: 470c81d
+
+- update @stati/cli and @stati/core versions
+
+  Commit: 19103db
+
+- update usage instructions and template details
+
+  Commit: adc6691
+
+- clarify additional template examples and update commands
+
+  Commit: 19f0118
+
+- add note for pathspec warnings during versioning
+
+  Commit: 0ce6bc1
+
 ## 1.3.2
 
 ### Patch Changes

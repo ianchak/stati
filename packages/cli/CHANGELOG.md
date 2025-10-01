@@ -1,5 +1,42 @@
 # @stati/cli
 
+## 1.3.3
+
+### Patch Changes
+
+- update commands for Stati CLI and add preview instructions
+
+  Commit: a60531a
+
+- update project creation instructions and testing details
+
+  Commit: a8459e5
+
+- update @stati/cli and @stati/core versions
+
+  Commit: 470c81d
+
+- update @stati/cli and @stati/core versions
+
+  Commit: 19103db
+
+- clarify additional template examples and update commands
+
+  Commit: 19f0118
+
+- add note for pathspec warnings during versioning
+
+  Commit: 0ce6bc1
+
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+  - @stati/core@1.6.2
+
 ## 1.3.2
 
 ### Patch Changes
