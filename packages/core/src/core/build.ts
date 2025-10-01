@@ -483,10 +483,11 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
   let cacheHits = 0;
   let cacheMisses = 0;
 
-  // Clean output directory if requested
+  // Clean output directory and cache if requested
   if (options.clean) {
-    logger.info('Cleaning output directory...');
+    logger.info('Cleaning output directory and ISG cache...');
     await remove(outDir);
+    await remove(cacheDir);
   }
 
   await ensureDir(outDir);
