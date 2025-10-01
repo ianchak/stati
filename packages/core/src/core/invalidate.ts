@@ -259,33 +259,37 @@ function matchesAge(entry: CacheEntry, ageValue: string): boolean {
     return false;
   }
 
-  // Calculate cutoff date
-  const cutoffDate = new Date(now);
+  // Convert everything to days for consistent calculation
+  let daysBack: number;
 
   switch (unit.toLowerCase()) {
     case 'day':
     case 'days':
-      cutoffDate.setDate(cutoffDate.getDate() - num);
+      daysBack = num;
       break;
     case 'week':
     case 'weeks':
-      cutoffDate.setDate(cutoffDate.getDate() - num * 7);
+      daysBack = num * 7;
       break;
     case 'month':
     case 'months':
-      cutoffDate.setMonth(cutoffDate.getMonth() - num);
+      daysBack = num * 30; // Use 30 days per month for consistency
       break;
     case 'year':
     case 'years':
-      cutoffDate.setFullYear(cutoffDate.getFullYear() - num);
+      daysBack = num * 365; // Use 365 days per year for consistency
       break;
     default:
       console.warn(`Unknown time unit: ${unit}`);
       return false;
   }
 
-  // Entry matches if it was rendered after the cutoff date (i.e., younger than specified age)
-  return renderedAt > cutoffDate;
+  // Calculate cutoff date by subtracting days
+  const cutoffDate = new Date(now);
+  cutoffDate.setDate(cutoffDate.getDate() - daysBack);
+
+  // Entry matches if it was rendered after or on the cutoff date (i.e., younger than or equal to specified age)
+  return renderedAt >= cutoffDate;
 }
 
 /**

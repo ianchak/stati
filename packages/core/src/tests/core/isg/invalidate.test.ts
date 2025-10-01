@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   parseInvalidationQuery,
   matchesInvalidationTerm,
@@ -398,6 +398,19 @@ describe('ISG Cache Invalidation', () => {
   });
 
   describe('age-based and time-based invalidation', () => {
+    let mockDate: Date;
+
+    beforeEach(() => {
+      // Set a fixed date for consistent testing
+      mockDate = new Date('2024-03-15T10:00:00.000Z');
+      vi.useFakeTimers();
+      vi.setSystemTime(mockDate);
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
     const createMockEntryWithAge = (daysAgo: number): CacheEntry => {
       const renderedAt = new Date();
       renderedAt.setDate(renderedAt.getDate() - daysAgo);
