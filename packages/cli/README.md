@@ -145,6 +145,8 @@ stati invalidate
 - `age:6months` or `age:6month` - Content younger than 6 months
 - `age:1year` or `age:1years` - Content younger than 1 year
 
+**Note**: Age calculations use exact calendar arithmetic. Months and years account for varying month lengths and leap years, not fixed approximations.
+
 ## Getting Started
 
 1. Create a new site using `create-stati`:

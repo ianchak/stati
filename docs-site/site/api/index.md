@@ -226,8 +226,6 @@ interface EtaConfig {
 }
 ```
 
-
-
 ## Environment & Utilities
 
 ### Environment Management
@@ -370,7 +368,7 @@ const tagResult = await invalidate('tag:blog');
 // Invalidate by path prefix
 const pathResult = await invalidate('path:/blog/');
 
-// Invalidate entries rendered within the last 3 months
+// Invalidate entries rendered within the last 3 months (exact calendar arithmetic)
 const recentResult = await invalidate('age:3months');
 
 // Invalidate using a glob pattern

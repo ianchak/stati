@@ -159,7 +159,7 @@ await invalidate('path:/posts');
 // Invalidate by glob pattern
 await invalidate('glob:/blog/**');
 
-// Invalidate content younger than 3 months
+// Invalidate content younger than 3 months (exact calendar arithmetic)
 await invalidate('age:3months');
 
 // Multiple criteria (OR logic)

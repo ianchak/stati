@@ -637,6 +637,8 @@ stati invalidate "path:/blog/**"    # Invalidate by path pattern
 stati invalidate "age:3months"      # Invalidate entries older than 3 months
 ```
 
+**Note**: Age-based invalidation uses exact calendar arithmetic. For example, `age:3months` goes back exactly 3 calendar months (accounting for varying month lengths and leap years), not approximately 90 days.
+
 ## Best Practices
 
 ### Cache Strategy

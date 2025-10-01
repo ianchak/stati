@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   parseInvalidationQuery,
   matchesInvalidationTerm,
@@ -398,12 +398,42 @@ describe('ISG Cache Invalidation', () => {
   });
 
   describe('age-based and time-based invalidation', () => {
-    const createMockEntryWithAge = (daysAgo: number): CacheEntry => {
+    let mockDate: Date;
+
+    beforeEach(() => {
+      // Set a fixed date for consistent testing
+      mockDate = new Date('2024-03-15T10:00:00.000Z');
+      vi.useFakeTimers();
+      vi.setSystemTime(mockDate);
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    const createMockEntryWithAge = (
+      value: number,
+      unit: 'days' | 'weeks' | 'months' | 'years',
+    ): CacheEntry => {
       const renderedAt = new Date();
-      renderedAt.setDate(renderedAt.getDate() - daysAgo);
+
+      switch (unit) {
+        case 'days':
+          renderedAt.setDate(renderedAt.getDate() - value);
+          break;
+        case 'weeks':
+          renderedAt.setDate(renderedAt.getDate() - value * 7);
+          break;
+        case 'months':
+          renderedAt.setMonth(renderedAt.getMonth() - value);
+          break;
+        case 'years':
+          renderedAt.setFullYear(renderedAt.getFullYear() - value);
+          break;
+      }
 
       return {
-        path: `/page-${daysAgo}`,
+        path: `/page-${value}-${unit}`,
         inputsHash: 'hash123',
         deps: ['layout.eta'],
         tags: ['test'],
@@ -417,11 +447,11 @@ describe('ISG Cache Invalidation', () => {
         // Create test entries with different ages
         const mockManifest: CacheManifest = {
           entries: {
-            '/recent': createMockEntryWithAge(1), // 1 day ago
-            '/week-old': createMockEntryWithAge(7), // 1 week ago
-            '/month-old': createMockEntryWithAge(30), // 1 month ago
-            '/quarter-old': createMockEntryWithAge(90), // 3 months ago
-            '/year-old': createMockEntryWithAge(365), // 1 year ago
+            '/recent': createMockEntryWithAge(1, 'days'), // 1 day ago
+            '/week-old': createMockEntryWithAge(1, 'weeks'), // 1 week ago
+            '/month-old': createMockEntryWithAge(1, 'months'), // 1 month ago
+            '/quarter-old': createMockEntryWithAge(3, 'months'), // 3 months ago
+            '/year-old': createMockEntryWithAge(1, 'years'), // 1 year ago
           },
         };
         mockLoadCacheManifest.mockResolvedValue(mockManifest);
@@ -429,7 +459,7 @@ describe('ISG Cache Invalidation', () => {
       it('should invalidate content younger than specified days', async () => {
         const result = await invalidate('age:8days');
 
-        // Should invalidate everything younger than 8 days (recent, week-old)
+        // Should invalidate everything younger than 8 days (recent=1day, week-old=7days)
         // month-old, quarter-old, year-old should NOT be invalidated
         expect(result.invalidatedCount).toBe(2);
         expect(result.invalidatedPaths).toEqual(['/recent', '/week-old']);
@@ -455,7 +485,7 @@ describe('ISG Cache Invalidation', () => {
         const result = await invalidate('age:6months');
 
         // Should invalidate content younger than 6 months (recent, week-old, month-old, quarter-old)
-        // year-old (365 days = 12 months) should NOT be invalidated
+        // year-old (1 year = 12 months) should NOT be invalidated
         expect(result.invalidatedCount).toBe(4);
         expect(result.invalidatedPaths).toEqual([
           '/recent',
@@ -483,11 +513,11 @@ describe('ISG Cache Invalidation', () => {
         // Create a fresh mock manifest for each call to avoid state pollution
         const createFreshManifest = () => ({
           entries: {
-            '/recent': createMockEntryWithAge(1), // 1 day ago
-            '/week-old': createMockEntryWithAge(7), // 1 week ago
-            '/month-old': createMockEntryWithAge(30), // 1 month ago
-            '/quarter-old': createMockEntryWithAge(90), // 3 months ago
-            '/year-old': createMockEntryWithAge(365), // 1 year ago
+            '/recent': createMockEntryWithAge(1, 'days'), // 1 day ago
+            '/week-old': createMockEntryWithAge(1, 'weeks'), // 1 week ago
+            '/month-old': createMockEntryWithAge(1, 'months'), // 1 month ago
+            '/quarter-old': createMockEntryWithAge(3, 'months'), // 3 months ago
+            '/year-old': createMockEntryWithAge(1, 'years'), // 1 year ago
           },
         });
 
@@ -512,15 +542,15 @@ describe('ISG Cache Invalidation', () => {
         const mockManifest: CacheManifest = {
           entries: {
             '/recent-blog': {
-              ...createMockEntryWithAge(1),
+              ...createMockEntryWithAge(1, 'days'),
               tags: ['blog'],
             },
             '/old-blog': {
-              ...createMockEntryWithAge(90),
+              ...createMockEntryWithAge(3, 'months'),
               tags: ['blog'],
             },
             '/old-news': {
-              ...createMockEntryWithAge(90),
+              ...createMockEntryWithAge(3, 'months'),
               tags: ['news'],
             },
           },
@@ -542,9 +572,179 @@ describe('ISG Cache Invalidation', () => {
         const result = await invalidate('age:2months');
 
         // Should invalidate recent-blog (1 day < 2 months)
-        // Should NOT invalidate old-blog and old-news (90 days > 2 months)
+        // Should NOT invalidate old-blog and old-news (3 months > 2 months)
         expect(result.invalidatedCount).toBe(1);
         expect(result.invalidatedPaths).toEqual(['/recent-blog']);
+      });
+    });
+
+    describe('edge cases for month and year arithmetic', () => {
+      beforeEach(() => {
+        vi.useFakeTimers();
+      });
+
+      afterEach(() => {
+        vi.useRealTimers();
+      });
+
+      it('should handle month boundaries correctly', async () => {
+        // Set current date to March 31st
+        const currentDate = new Date('2024-03-31T12:00:00.000Z');
+        vi.setSystemTime(currentDate);
+
+        // Create entries with specific dates that test month boundary logic
+        const mockManifest: CacheManifest = {
+          entries: {
+            '/feb29': {
+              path: '/feb29',
+              inputsHash: 'hash1',
+              deps: ['layout.eta'],
+              tags: ['test'],
+              renderedAt: new Date('2024-02-29T12:00:00.000Z').toISOString(), // 1 month and 1 day ago
+              ttlSeconds: 3600,
+            },
+            '/jan31': {
+              path: '/jan31',
+              inputsHash: 'hash2',
+              deps: ['layout.eta'],
+              tags: ['test'],
+              renderedAt: new Date('2024-01-31T12:00:00.000Z').toISOString(), // 2 months ago
+              ttlSeconds: 3600,
+            },
+            '/march30': {
+              path: '/march30',
+              inputsHash: 'hash3',
+              deps: ['layout.eta'],
+              tags: ['test'],
+              renderedAt: new Date('2024-03-30T12:00:00.000Z').toISOString(), // 1 day ago
+              ttlSeconds: 3600,
+            },
+          },
+        };
+        mockLoadCacheManifest.mockResolvedValue(mockManifest);
+
+        const result = await invalidate('age:1month');
+
+        // Should invalidate march30 (1 day < 1 month)
+        // Should NOT invalidate feb29 (1 month 1 day ago - setMonth from Mar 31 to Feb 31 becomes Mar 3, so Feb 29 is before the cutoff)
+        // Should NOT invalidate jan31 (2 months > 1 month)
+        expect(result.invalidatedCount).toBe(1);
+        expect(result.invalidatedPaths).toEqual(['/march30']);
+      });
+
+      it('should handle leap year calculations correctly', async () => {
+        // Test on leap year date
+        const currentDate = new Date('2024-03-01T12:00:00.000Z');
+        vi.setSystemTime(currentDate);
+
+        const mockManifest: CacheManifest = {
+          entries: {
+            '/leap-year-content': {
+              path: '/leap-year-content',
+              inputsHash: 'hash1',
+              deps: ['layout.eta'],
+              tags: ['test'],
+              renderedAt: new Date('2023-03-01T12:00:00.000Z').toISOString(), // Exactly 1 year ago (non-leap to leap)
+              ttlSeconds: 3600,
+            },
+            '/recent-content': {
+              path: '/recent-content',
+              inputsHash: 'hash2',
+              deps: ['layout.eta'],
+              tags: ['test'],
+              renderedAt: new Date('2024-02-28T12:00:00.000Z').toISOString(), // 2 days ago
+              ttlSeconds: 3600,
+            },
+          },
+        };
+        mockLoadCacheManifest.mockResolvedValue(mockManifest);
+
+        const result = await invalidate('age:1year');
+
+        // Should invalidate recent-content (2 days < 1 year)
+        // Should invalidate leap-year-content (exactly 1 year, but >= cutoff)
+        expect(result.invalidatedCount).toBe(2);
+        expect(result.invalidatedPaths).toEqual(['/leap-year-content', '/recent-content']);
+      });
+
+      it('should handle varying month lengths correctly', async () => {
+        // Test from a month with 31 days going back to months with different lengths
+        const currentDate = new Date('2024-05-31T12:00:00.000Z'); // May 31st
+        vi.setSystemTime(currentDate);
+
+        const mockManifest: CacheManifest = {
+          entries: {
+            '/april30': {
+              path: '/april30',
+              inputsHash: 'hash1',
+              deps: ['layout.eta'],
+              tags: ['test'],
+              renderedAt: new Date('2024-04-30T12:00:00.000Z').toISOString(), // 1 month ago (April has 30 days)
+              ttlSeconds: 3600,
+            },
+            '/march31': {
+              path: '/march31',
+              inputsHash: 'hash2',
+              deps: ['layout.eta'],
+              tags: ['test'],
+              renderedAt: new Date('2024-03-31T12:00:00.000Z').toISOString(), // 2 months ago (March has 31 days)
+              ttlSeconds: 3600,
+            },
+            '/feb29': {
+              path: '/feb29',
+              inputsHash: 'hash3',
+              deps: ['layout.eta'],
+              tags: ['test'],
+              renderedAt: new Date('2024-02-29T12:00:00.000Z').toISOString(), // 3 months ago (Feb has 29 days in 2024)
+              ttlSeconds: 3600,
+            },
+          },
+        };
+        mockLoadCacheManifest.mockResolvedValue(mockManifest);
+
+        const result = await invalidate('age:2months');
+
+        // Should invalidate april30 (1 month < 2 months)
+        // Should invalidate march31 (2 months, but >= cutoff)
+        // Should NOT invalidate feb29 (3 months > 2 months)
+        expect(result.invalidatedCount).toBe(2);
+        expect(result.invalidatedPaths).toEqual(['/april30', '/march31']);
+      });
+
+      it('should handle year boundaries correctly', async () => {
+        const currentDate = new Date('2024-02-29T12:00:00.000Z'); // Leap year date
+        vi.setSystemTime(currentDate);
+
+        const mockManifest: CacheManifest = {
+          entries: {
+            '/same-date-last-year': {
+              path: '/same-date-last-year',
+              inputsHash: 'hash1',
+              deps: ['layout.eta'],
+              tags: ['test'],
+              // Content from Feb 27, 2023 (1 year and 2 days ago) should be excluded
+              renderedAt: new Date('2023-02-27T12:00:00.000Z').toISOString(),
+              ttlSeconds: 3600,
+            },
+            '/two-years-ago': {
+              path: '/two-years-ago',
+              inputsHash: 'hash2',
+              deps: ['layout.eta'],
+              tags: ['test'],
+              renderedAt: new Date('2022-02-28T12:00:00.000Z').toISOString(), // 2 years and 1 day ago
+              ttlSeconds: 3600,
+            },
+          },
+        };
+        mockLoadCacheManifest.mockResolvedValue(mockManifest);
+
+        const result = await invalidate('age:1year');
+
+        // From Feb 29, 2024 back 1 year becomes Feb 28, 2023
+        // Should NOT invalidate same-date-last-year (rendered Feb 27, 2023 is before the cutoff)
+        // Should NOT invalidate two-years-ago (2 years > 1 year)
+        expect(result.invalidatedCount).toBe(0);
+        expect(result.invalidatedPaths).toEqual([]);
       });
     });
   });

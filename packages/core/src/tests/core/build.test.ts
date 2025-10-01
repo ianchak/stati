@@ -455,7 +455,7 @@ describe('build.ts', () => {
     it('should log clean message when cleaning', async () => {
       await build({ clean: true });
 
-      expect(consoleSpy).toHaveBeenCalledWith('Cleaning output directory...');
+      expect(consoleSpy).toHaveBeenCalledWith('Cleaning output directory and ISG cache...');
     });
 
     it('should handle build with no pages', async () => {
