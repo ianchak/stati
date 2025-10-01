@@ -9,7 +9,7 @@ The command-line interface for Stati, a lightweight TypeScript static site gener
 Use the scaffolding tool to create a new Stati site:
 
 ```bash
-npm create stati my-site
+npx create-stati
 ```
 
 ### For existing projects
@@ -39,7 +39,7 @@ Start a development server with live reload:
 # If installed locally
 npm run dev
 # or
-npx stati dev [options]
+stati dev [options]
 
 # If using npx directly
 npx @stati/cli dev [options]
@@ -59,7 +59,7 @@ Build your site for production:
 # If installed locally
 npm run build
 # or
-npx stati build [options]
+stati build [options]
 
 # If using npx directly
 npx @stati/cli build [options]
@@ -72,13 +72,35 @@ npx @stati/cli build [options]
 - `--config <path>` - Path to config file
 - `--include-drafts` - Include draft pages in the build
 
+### Preview Built Site
+
+Preview your built site locally:
+
+```bash
+# If installed locally
+npm run preview
+# or
+stati preview [options]
+
+# If using npx directly
+npx @stati/cli preview [options]
+```
+
+**Options:**
+
+- `--port <number>` - Server port (default: 4000)
+- `--open` - Open browser automatically
+- `--config <path>` - Path to config file
+
+The preview command serves the static files from your `dist/` directory, allowing you to test your production build locally before deployment.
+
 ### Cache Management
 
 Invalidate cache by tags, paths, patterns, or age:
 
 ```bash
 # If installed locally
-npx stati invalidate [query]
+stati invalidate [query]
 
 # If using npx directly
 npx @stati/cli invalidate [query]
@@ -95,25 +117,25 @@ npx @stati/cli invalidate [query]
 
 ```bash
 # Invalidate by tag
-npx stati invalidate "tag:blog"
+stati invalidate "tag:blog"
 
 # Invalidate by path prefix
-npx stati invalidate "path:/posts"
+stati invalidate "path:/posts"
 
 # Invalidate by glob pattern
-npx stati invalidate "glob:/blog/**"
+stati invalidate "glob:/blog/**"
 
 # Invalidate content younger than 3 months
-npx stati invalidate "age:3months"
+stati invalidate "age:3months"
 
 # Invalidate content younger than 1 week
-npx stati invalidate "age:1week"
+stati invalidate "age:1week"
 
 # Multiple criteria (OR logic)
-npx stati invalidate "tag:blog age:1month"
+stati invalidate "tag:blog age:1month"
 
 # Clear entire cache
-npx stati invalidate
+stati invalidate
 ```
 
 **Age Formats:**
@@ -142,7 +164,7 @@ npx stati invalidate
    ```bash
    npm run dev
    # or
-   npx stati dev
+   stati dev
    ```
 
 4. Build for production:
@@ -150,38 +172,16 @@ npx stati invalidate
    ```bash
    npm run build
    # or
-   npx stati build
+   stati build
    ```
 
-## Configuration
+5. Preview the production build:
 
-Stati looks for a configuration file in the following order:
-
-- `stati.config.ts`
-- `stati.config.js`
-- `stati.config.mjs`
-
-For more information about configuration options, see the [@stati/core](../core) documentation.
-
-## Project Structure
-
-```
-my-site/
-├── site/           # Your content and pages
-├── public/         # Static assets
-├── stati.config.js # Configuration file
-└── dist/           # Built site (generated)
-```
-
-## Features
-
-- Lightning-fast development server with live reload
-- Markdown with front-matter support
-- Eta template engine with layouts and partials
-- Automatic navigation system
-- Filesystem-based routing
-- Smart caching and invalidation
-- TypeScript-first configuration
+   ```bash
+   npm run preview
+   # or
+   stati preview
+   ```
 
 ## License
 

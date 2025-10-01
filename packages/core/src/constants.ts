@@ -41,6 +41,9 @@ export const CONFIG_FILE_PATTERNS = CONFIG_FILE_EXTENSIONS.map(
 /** Default development server port */
 export const DEFAULT_DEV_PORT = 3000;
 
+/** Default preview server port */
+export const DEFAULT_PREVIEW_PORT = 4000;
+
 /** Default development server host */
 export const DEFAULT_DEV_HOST = 'localhost';
 

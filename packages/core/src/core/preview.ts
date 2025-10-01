@@ -5,13 +5,18 @@ import type { Logger } from '../types/index.js';
 import { loadConfig } from '../config/loader.js';
 import { resolveDevPaths } from './utils/paths.js';
 import { resolvePrettyUrl } from './utils/server.js';
-import { DEFAULT_DEV_PORT, DEFAULT_DEV_HOST } from '../constants.js';
+import { DEFAULT_PREVIEW_PORT, DEFAULT_DEV_HOST } from '../constants.js';
 
 export interface PreviewServerOptions {
+  /** Port for preview server (default: 4000) */
   port?: number;
+  /** Host for preview server (default: 'localhost') */
   host?: string;
+  /** Whether to open browser automatically (default: false) */
   open?: boolean;
+  /** Path to config file */
   configPath?: string;
+  /** Logger instance */
   logger?: Logger;
 }
 
@@ -52,7 +57,7 @@ export async function createPreviewServer(
   options: PreviewServerOptions = {},
 ): Promise<PreviewServer> {
   const {
-    port = DEFAULT_DEV_PORT,
+    port = DEFAULT_PREVIEW_PORT,
     host = DEFAULT_DEV_HOST,
     open = false,
     configPath,

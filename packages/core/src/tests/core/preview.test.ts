@@ -60,7 +60,7 @@ describe('Preview Server', () => {
     const previewServer = await createPreviewServer();
 
     expect(previewServer).toBeDefined();
-    expect(previewServer.url).toBe('http://localhost:3000');
+    expect(previewServer.url).toBe('http://localhost:4000');
     expect(typeof previewServer.start).toBe('function');
     expect(typeof previewServer.stop).toBe('function');
   });
