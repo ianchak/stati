@@ -9,7 +9,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json && npm run copy-templates",
+    "build": "rimraf dist && tsc -p tsconfig.json && npm run copy-templates",
     "copy-templates": "node -e \"const fs=require('fs-extra');fs.copySync('../../examples','dist/templates',{filter:(src)=>!src.includes('node_modules')&&!src.includes('.stati')&&!src.includes('dist')});\"",
     "dev": "tsc -p tsconfig.json --watch",
     "test": "vitest run"
@@ -20,6 +20,7 @@
   "devDependencies": {
     "@types/inquirer": "^9.0.9",
     "fs-extra": "^11.2.0",
-    "@types/fs-extra": "^11.0.4"
+    "@types/fs-extra": "^11.0.4",
+    "rimraf": "^5.0.0"
   }
 }
