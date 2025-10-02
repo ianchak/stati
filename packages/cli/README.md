@@ -187,4 +187,4 @@ stati invalidate
 
 ## License
 
-MIT
+MIT © [Imre Csige](https://github.com/ianchak)

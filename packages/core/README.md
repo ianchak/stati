@@ -266,4 +266,4 @@ Stati Core is built with a modular architecture:
 
 ## License
 
-MIT
+MIT © [Imre Csige](https://github.com/ianchak)

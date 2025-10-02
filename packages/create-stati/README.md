@@ -188,4 +188,4 @@ my-site/
 
 ## License
 
-MIT
+MIT © [Imre Csige](https://github.com/ianchak)
