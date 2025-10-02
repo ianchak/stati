@@ -173,10 +173,10 @@ my-site/
 
 ## Next Steps
 
-- **Learn Stati:** Check out the [Stati documentation](https://stati.imrecsige.dev) for comprehensive guides and tutorials
-- **Core Concepts:** Understand [templates](https://stati.imrecsige.dev/core-concepts/templates), [routing](https://stati.imrecsige.dev/core-concepts/routing), and [markdown](https://stati.imrecsige.dev/core-concepts/markdown)
-- **Configuration:** Learn about [site configuration](https://stati.imrecsige.dev/configuration), [ISG](https://stati.imrecsige.dev/configuration/isg), and [build hooks](https://stati.imrecsige.dev/api/hooks)
-- **Examples:** Explore [recipes and examples](https://stati.imrecsige.dev/examples) for common use cases
+- **Learn Stati:** Check out the [Stati documentation](https://docs.stati.build) for comprehensive guides and tutorials
+- **Core Concepts:** Understand [templates](https://docs.stati.build/core-concepts/templates), [routing](https://docs.stati.build/core-concepts/routing), and [markdown](https://docs.stati.build/core-concepts/markdown)
+- **Configuration:** Learn about [site configuration](https://docs.stati.build/configuration), [ISG](https://docs.stati.build/configuration/isg), and [build hooks](https://docs.stati.build/api/hooks)
+- **Examples:** Explore [recipes and examples](https://docs.stati.build/examples) for common use cases
 - **Customize templates:** Modify layouts and styles to match your brand
 - **Add content:** Create new pages and posts in the `site/` directory
 - **Deploy:** Build your site and deploy to any static hosting provider

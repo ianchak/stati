@@ -59,7 +59,7 @@ The scaffolder will guide you through setting up a new project with your choice 
   - `stati invalidate "path:/blog/2024/hello"`
   - `stati invalidate "age:3months"`
 
-See the ISG concept guide on [stati.imrecsige.dev/core-concepts/isg/](https://stati.imrecsige.dev/core-concepts/isg/) and configuration details at [stati.imrecsige.dev/configuration/](https://stati.imrecsige.dev/configuration/).
+See the ISG concept guide on [docs.stati.build/core-concepts/isg/](https://docs.stati.build/core-concepts/isg/) and configuration details at [docs.stati.build/configuration/](https://docs.stati.build/configuration/).
 
 ---
 
@@ -119,9 +119,7 @@ stati preview --port 4000 --open
 packages/
 ├─ @stati/core         → Core SSG engine with build, dev server, and content processing
 ├─ @stati/cli          → Command-line interface (stati build, dev, preview, invalidate)
-├─ create-stati        → Project scaffolder (npx create-stati)
-examples/
-├─ blank               → Minimal starter template
+└─ create-stati        → Project scaffolder (npx create-stati)
 ```
 
 ---
@@ -148,6 +146,8 @@ npm run test:ci
 
 ## 📁 Development Scripts
 
+For contributors working on Stati itself:
+
 ```bash
 # Linting and code quality
 npm run lint           # ESLint across packages
@@ -173,11 +173,11 @@ npm run release          # Version + publish + push tags
 
 ## Documentation
 
-- [Getting Started Guide](https://stati.imrecsige.dev/getting-started/) — Quick start and project setup
-- [Configuration Reference](https://stati.imrecsige.dev/configuration/) — Complete configuration reference
-- [Error Handling](https://stati.imrecsige.dev/api/error-handling/) — Error codes, fallbacks, and debugging
-- [Feature Overview](https://stati.imrecsige.dev/core-concepts/) — Detailed feature descriptions
-- [ISG Concept & TTL Model](https://stati.imrecsige.dev/core-concepts/isg/) — Incremental static generation guide
+- [Getting Started Guide](https://docs.stati.build/getting-started/) — Quick start and project setup
+- [Configuration Reference](https://docs.stati.build/configuration/) — Complete configuration reference
+- [Error Handling](https://docs.stati.build/api/error-handling/) — Error codes, fallbacks, and debugging
+- [Feature Overview](https://docs.stati.build/core-concepts/) — Detailed feature descriptions
+- [ISG Concept & TTL Model](https://docs.stati.build/core-concepts/isg/) — Incremental static generation guide
 
 ---
 
