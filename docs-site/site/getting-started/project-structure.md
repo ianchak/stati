@@ -48,8 +48,8 @@ Template partials that can be included in your layouts and pages (or even other 
 Directories starting with `_` are excluded from routing. So you can organize the structure of your partials as you see fit.
 
 - **`_partials/header.eta`** - Site header
-- **`_partials/footer.eta`** - Site footer
-- **`_partials/sidebar.eta`** - Navigation sidebar
+- **`_components/footer.eta`** - Site footer
+- **`_navigation/sidebar.eta`** - Navigation sidebar
 
 ## Configuration Files
 
