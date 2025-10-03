@@ -13,7 +13,7 @@
     <div class="absolute inset-0 bg-grid-pattern opacity-3 dark:opacity-5 pointer-events-none"></div>
 
     <div class="relative max-w-7xl mx-auto px-6 lg:px-8">
-        <div class="text-center animate-fade-in">
+        <div class="text-center">
             <h1 class="text-6xl lg:text-7xl xl:text-8xl font-bold mb-8 text-gray-900 dark:text-white leading-none">
                 <span class="bg-gradient-to-r from-primary-600 via-blue-600 to-indigo-600 dark:from-primary-400 dark:via-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">
                     <%= stati.page.hero?.title || stati.site.title %>

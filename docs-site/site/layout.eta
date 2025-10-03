@@ -43,7 +43,7 @@
                     <!-- Main content area -->
                     <div class="flex-1 min-w-0 px-6 lg:px-12 py-12 lg:py-16">
                         <% if (stati.title) { %>
-                        <header class="mb-12 animate-fade-in">
+                        <header class="mb-12">
                             <%~ stati.partials.breadcrumbs %>
                             <div class="mt-6">
                                 <h1 class="text-4xl lg:text-5xl xl:text-6xl font-bold mb-6 text-gray-900 dark:text-white leading-tight">
@@ -58,7 +58,7 @@
                         </header>
                         <% } %>
 
-                        <div class="prose prose-lg dark:prose-invert max-w-none prose-headings:scroll-mt-24 prose-pre:bg-dark-800 prose-pre:shadow-soft-lg prose-code:bg-gray-100 dark:prose-code:bg-dark-700 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:font-medium animate-slide-up">
+                        <div class="prose prose-lg dark:prose-invert max-w-none prose-headings:scroll-mt-24 prose-pre:bg-dark-800 prose-pre:shadow-soft-lg prose-code:bg-gray-100 dark:prose-code:bg-dark-700 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:font-medium">
                             <%~ stati.content %>
                         </div>
                     </div>
