@@ -14,8 +14,9 @@
 
     <div class="relative max-w-7xl mx-auto px-6 lg:px-8">
         <div class="text-center">
-            <h1 class="text-6xl lg:text-7xl xl:text-8xl font-bold mb-8 text-gray-900 dark:text-white leading-none">
-                <span class="bg-gradient-to-r from-primary-600 via-blue-600 to-indigo-600 dark:from-primary-400 dark:via-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">
+            <h1 class="text-6xl lg:text-7xl xl:text-8xl font-extrabold mb-8 leading-tight tracking-tight">
+                <span class="bg-gradient-to-r from-primary-600 via-blue-600 to-indigo-600 dark:from-primary-400 dark:via-blue-400 dark:to-indigo-400 bg-clip-text text-transparent drop-shadow-sm"
+                      style="text-shadow: 0 0 20px rgba(59, 130, 246, 0.2); letter-spacing: -0.025em;">
                     <%= stati.page.hero?.title || stati.site.title %>
                 </span>
             </h1>
