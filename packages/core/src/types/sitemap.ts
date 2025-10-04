@@ -88,10 +88,12 @@ export interface SitemapConfig {
  * Contains the generated XML and metadata about the sitemap.
  */
 export interface SitemapGenerationResult {
-  /** Generated sitemap XML string */
+  /** Generated sitemap XML string (index XML if multiple sitemaps) */
   xml: string;
-  /** Number of entries in the sitemap */
+  /** Number of entries in the sitemap(s) */
   entryCount: number;
-  /** Size of the sitemap in bytes */
+  /** Size of the main sitemap/index in bytes */
   sizeInBytes: number;
+  /** Individual sitemap files (when split into multiple sitemaps) */
+  sitemaps?: Array<{ filename: string; xml: string }>;
 }

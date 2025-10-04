@@ -25,6 +25,7 @@ export type {
   CollectionData,
   TemplateContext,
   SEOMetadata,
+  SitemapMetadata,
   RobotsConfig,
   OpenGraphConfig,
   OpenGraphImage,

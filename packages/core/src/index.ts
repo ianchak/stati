@@ -33,6 +33,28 @@ export type {
   BuildStats,
 } from './types/index.js';
 
+// SEO and Sitemap types
+export type {
+  SEOMetadata,
+  SEOConfig,
+  SEOContext,
+  SEOValidationResult,
+  SEOTagType,
+  RobotsConfig,
+  OpenGraphConfig,
+  OpenGraphImage,
+  OpenGraphArticle,
+  TwitterCardConfig,
+  AuthorConfig,
+} from './types/index.js';
+
+export type {
+  SitemapConfig,
+  SitemapEntry,
+  SitemapGenerationResult,
+  ChangeFrequency,
+} from './types/index.js';
+
 export type { BuildOptions } from './core/build.js';
 export type { DevServerOptions } from './core/dev.js';
 export type { PreviewServerOptions } from './core/preview.js';
@@ -44,6 +66,29 @@ export { createPreviewServer } from './core/preview.js';
 export { loadConfig } from './config/loader.js';
 export { invalidate } from './core/invalidate.js';
 export { setEnv, getEnv } from './env.js';
+
+// SEO and Sitemap functions
+export {
+  generateSEOMetadata,
+  generateSEO,
+  generateOpenGraphTags,
+  generateTwitterCardTags,
+} from './seo/generator.js';
+export {
+  generateSitemap,
+  generateSitemapEntry,
+  generateSitemapXml,
+  generateSitemapIndexXml,
+} from './seo/sitemap.js';
+export { generateRobotsTxt, generateRobotsTxtFromConfig } from './seo/robots.js';
+export {
+  escapeHtml,
+  sanitizeStructuredData,
+  generateRobotsContent,
+  validateSEOMetadata,
+  detectExistingSEOTags,
+} from './seo/utils.js';
+export { autoInjectSEO, shouldAutoInject } from './seo/auto-inject.js';
 
 // Import for implementation use
 import type { StatiConfig } from './types/index.js';

@@ -33,6 +33,10 @@ export interface FrontMatter {
   order?: number;
   /** Publication date as ISO string */
   publishedAt?: string;
+  /** Publication date (alias for publishedAt) */
+  date?: string;
+  /** Last updated date as ISO string */
+  updated?: string;
   /** Custom cache TTL in seconds (overrides global ISG settings) */
   ttlSeconds?: number;
   /** Custom max age cap in days (overrides global ISG settings) */
@@ -41,6 +45,8 @@ export interface FrontMatter {
   draft?: boolean;
   /** SEO configuration for the page */
   seo?: SEOMetadata;
+  /** Sitemap configuration for the page */
+  sitemap?: SitemapMetadata;
   /** Additional custom properties */
   [key: string]: unknown;
 }
@@ -88,6 +94,21 @@ export interface SEOMetadata {
   priority?: number;
   /** Change frequency for sitemap */
   changeFreq?: 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never';
+}
+
+/**
+ * Sitemap metadata configuration for a page.
+ * Controls how the page appears in the XML sitemap.
+ */
+export interface SitemapMetadata {
+  /** Exclude this page from the sitemap */
+  exclude?: boolean;
+  /** Last modification date (ISO string or Date) */
+  lastmod?: string | Date;
+  /** Change frequency hint */
+  changefreq?: 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never';
+  /** Priority of this URL relative to others (0.0-1.0) */
+  priority?: number;
 }
 
 /**

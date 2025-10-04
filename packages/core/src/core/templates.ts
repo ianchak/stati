@@ -14,6 +14,7 @@ import { resolveSrcDir } from './utils/paths.js';
 import { createTemplateError } from './utils/template-errors.js';
 import { createValidatingPartialsProxy } from './utils/partial-validation.js';
 import { propValue } from './utils/template-utils.js';
+import { generateSEO } from '../seo/generator.js';
 
 /**
  * Groups pages by their tags for aggregation purposes.
@@ -242,7 +243,8 @@ export async function renderPage(
     generator: {
       version: getStatiVersion(),
     },
-    // Template utilities
+    // Stati utilities object with helper functions
+    generateSEO: (tags?: string[]) => generateSEO({ page, config, site: config.site }, tags),
     propValue,
   };
 
