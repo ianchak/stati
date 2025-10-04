@@ -14,10 +14,36 @@ export type {
   PageContext,
   BuildHooks,
   BuildStats,
+  SEOConfig,
+  RobotsTxtConfig,
 } from './config.js';
 
 // Content types
-export type { FrontMatter, PageModel, CollectionData, TemplateContext } from './content.js';
+export type {
+  FrontMatter,
+  PageModel,
+  CollectionData,
+  TemplateContext,
+  SEOMetadata,
+  RobotsConfig,
+  OpenGraphConfig,
+  OpenGraphImage,
+  OpenGraphArticle,
+  TwitterCardConfig,
+  AuthorConfig,
+} from './content.js';
+
+// SEO types
+export type { SEOContext, SEOValidationResult } from './seo.js';
+export { SEOTagType } from './seo.js';
+
+// Sitemap types
+export type {
+  ChangeFrequency,
+  SitemapEntry,
+  SitemapConfig,
+  SitemapGenerationResult,
+} from './sitemap.js';
 
 // Navigation types
 export type { NavNode } from './navigation.js';

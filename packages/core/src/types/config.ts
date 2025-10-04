@@ -1,4 +1,6 @@
 import type MarkdownIt from 'markdown-it';
+import type { SitemapConfig } from './sitemap.js';
+import type { AuthorConfig } from './content.js';
 
 /**
  * Configuration related type definitions
@@ -69,6 +71,12 @@ export interface StatiConfig {
   };
   /** Incremental Static Generation configuration */
   isg?: import('./isg.js').ISGConfig;
+  /** SEO configuration */
+  seo?: SEOConfig;
+  /** Sitemap generation configuration */
+  sitemap?: SitemapConfig;
+  /** Robots.txt generation configuration */
+  robots?: RobotsTxtConfig;
   /** Development server configuration */
   dev?: {
     /** Port for development server (default: 3000) */
@@ -80,6 +88,58 @@ export interface StatiConfig {
   };
   /** Build lifecycle hooks */
   hooks?: BuildHooks;
+}
+
+/**
+ * SEO configuration for the site.
+ * Controls automatic SEO metadata injection and site-wide defaults.
+ */
+export interface SEOConfig {
+  /** Default author for all pages (can be overridden per-page) */
+  defaultAuthor?: AuthorConfig;
+  /** Automatically inject SEO tags into <head> if not present (default: true) */
+  autoInject?: boolean;
+  /** Enable debug logging for SEO generation (default: false) */
+  debug?: boolean;
+}
+
+/**
+ * Robots.txt generation configuration.
+ * Controls how the robots.txt file is generated.
+ */
+export interface RobotsTxtConfig {
+  /** Enable robots.txt generation (default: false) */
+  enabled?: boolean;
+  /**
+   * User agent specific rules.
+   * Each entry defines rules for a specific user agent.
+   *
+   * @example
+   * ```typescript
+   * userAgents: [
+   *   {
+   *     userAgent: 'Googlebot',
+   *     allow: ['/public/'],
+   *     disallow: ['/admin/']
+   *   }
+   * ]
+   * ```
+   */
+  userAgents?: Array<{
+    userAgent: string;
+    allow?: string[];
+    disallow?: string[];
+  }>;
+  /** Global allow rules (applies to all user agents) */
+  allow?: string[];
+  /** Global disallow rules (applies to all user agents) */
+  disallow?: string[];
+  /** Crawl delay in seconds (time between requests) */
+  crawlDelay?: number;
+  /** Sitemap URL or boolean to auto-include sitemap.xml (default: true if sitemap enabled) */
+  sitemap?: string | boolean;
+  /** Custom lines to append to robots.txt */
+  customLines?: string[];
 }
 
 /**
