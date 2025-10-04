@@ -46,6 +46,42 @@ The scaffolder will guide you through setting up a new project with your choice 
 - **Invalidation CLI** — invalidate by tag, path, or age
 - **Build modes** — incremental by default; `--force` and `--clean` supported
 - **CSS Preprocessing** — Sass and Tailwind CSS integration via scaffolder
+- **Built-in SEO Support** — automatic meta tags, Open Graph, Twitter Cards, and structured data
+
+---
+
+## SEO at a glance
+
+Stati includes **automatic SEO generation** to optimize your site for search engines and social media sharing:
+
+- **Automatic meta tag injection** — title, description, keywords, author, robots, and canonical URLs
+- **Open Graph tags** — rich previews for Facebook, LinkedIn, and other platforms
+- **Twitter Cards** — optimized sharing cards for Twitter/X
+- **Structured Data (JSON-LD)** — Schema.org markup for rich search results
+- **XML Sitemap generation** — automatic sitemap.xml with smart splitting for large sites
+- **Robots.txt generation** — configurable crawling rules with sitemap auto-linking
+- **Per-page customization** — override SEO metadata via front-matter
+- **Smart fallbacks** — automatically uses page/site defaults when metadata is missing
+- **Manual control** — choose which tags to auto-generate or write them yourself
+
+Configure SEO globally in `stati.config.ts` or per-page in front-matter:
+
+```markdown
+---
+title: My Page
+seo:
+  description: Custom description for search engines
+  openGraph:
+    image: /images/og-image.jpg
+  twitter:
+    card: summary_large_image
+  structuredData:
+    '@context': https://schema.org
+    '@type': Article
+---
+```
+
+See the [SEO Configuration Guide](https://docs.stati.build/configuration/seo/) for complete details.
 
 ---
 
@@ -175,6 +211,7 @@ npm run release          # Version + publish + push tags
 
 - [Getting Started Guide](https://docs.stati.build/getting-started/) — Quick start and project setup
 - [Configuration Reference](https://docs.stati.build/configuration/) — Complete configuration reference
+- [SEO Configuration](https://docs.stati.build/configuration/seo/) — SEO metadata, Open Graph, and structured data
 - [Error Handling](https://docs.stati.build/api/error-handling/) — Error codes, fallbacks, and debugging
 - [Feature Overview](https://docs.stati.build/core-concepts/) — Detailed feature descriptions
 - [ISG Concept & TTL Model](https://docs.stati.build/core-concepts/isg/) — Incremental static generation guide
