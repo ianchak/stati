@@ -320,10 +320,11 @@ export function generateSEO(
     include = new Set<SEOTagType>();
     for (const tag of tags) {
       if (typeof tag === 'string') {
-        // Convert string to enum
-        const enumValue = SEOTagType[tag as keyof typeof SEOTagType];
-        if (enumValue) {
-          include.add(enumValue);
+        // Convert string to enum by checking if the string matches any enum value
+        // The enum values are lowercase strings like 'title', 'description', etc.
+        const enumEntry = Object.entries(SEOTagType).find(([_, value]) => value === tag);
+        if (enumEntry) {
+          include.add(enumEntry[1] as SEOTagType);
         }
       } else {
         include.add(tag);
