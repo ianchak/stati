@@ -3,9 +3,6 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "directories": {
-    "doc": "docs"
-  },
   "scripts": {
     "test": "vitest run",
     "test:create-stati": "npm run build -w packages/create-stati && cd examples && node ../packages/create-stati/dist/index.js test-scaffolded",
