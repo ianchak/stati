@@ -361,7 +361,7 @@ const stats = await build({
   includeDrafts: false,
 });
 
-console.log(`Built ${stats.pagesBuilt} pages in ${stats.duration}ms`);
+console.log(`Built ${stats.totalPages} pages in ${stats.buildTimeMs}ms`);
 ```
 
 **Returns:** Build statistics including pages built, duration, and cache hits.
@@ -408,7 +408,7 @@ Start a production preview server to test your built site locally.
 
 ```typescript
 {
-  port?: number;          // Port number (default: 3001)
+  port?: number;          // Port number (default: 4000)
   host?: string;          // Host address (default: 'localhost')
   open?: boolean;         // Auto-open browser (default: false)
   configPath?: string;    // Custom config file path
@@ -425,11 +425,11 @@ await build({ clean: true });
 
 // Then preview it
 const server = await createPreviewServer({
-  port: 3001,
+  port: 4000,
   open: true,
 });
 
-console.log(`Preview server running at http://localhost:3001`);
+console.log(`Preview server running at http://localhost:4000`);
 ```
 
 **Returns:** Server instance with methods to stop.
@@ -447,7 +447,7 @@ Invalidate cache by tags, paths, patterns, or age.
 - `tag:blog` — Invalidate pages with specific tag
 - `path:/posts` — Invalidate pages under path
 - `glob:/blog/**` — Invalidate by glob pattern
-- `age:3months` — Invalidate content older than 3 months
+- `age:3months` — Invalidate content younger than 3 months
 - No query — Clear entire cache
 
 **Examples:**
