@@ -266,8 +266,29 @@
 <script>
 // Sidebar functionality
 document.addEventListener('DOMContentLoaded', function() {
+    // Get sidebar element reference (used throughout)
+    const sidebar = document.getElementById('sidebar');
+
     // Initialize sidebar state
     const sidebarState = JSON.parse(localStorage.getItem('sidebarState') || '{}');
+
+    // Restore scroll position
+    const savedScrollPosition = localStorage.getItem('sidebarScrollPosition');
+    if (savedScrollPosition && sidebar) {
+        sidebar.scrollTop = parseInt(savedScrollPosition, 10);
+    }
+
+    // Save scroll position when user scrolls
+    let scrollTimeout;
+    if (sidebar) {
+        sidebar.addEventListener('scroll', () => {
+            // Debounce scroll events to avoid excessive localStorage writes
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(() => {
+                localStorage.setItem('sidebarScrollPosition', sidebar.scrollTop.toString());
+            }, 100);
+        });
+    }
 
     // Set up section toggles
     document.querySelectorAll('.section-toggle').forEach(toggle => {
@@ -350,7 +371,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Mobile sidebar toggle
     const mobileMenuButton = document.querySelector('[data-mobile-menu]');
-    const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebar-overlay');
 
     if (mobileMenuButton && sidebar && overlay) {
