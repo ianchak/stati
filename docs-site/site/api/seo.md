@@ -543,26 +543,6 @@ function escapeHtml(text: string): string
 
 ---
 
-#### `sanitizeStructuredData()`
-
-Sanitizes structured data object for safe JSON-LD output.
-
-**Signature:**
-
-```typescript
-function sanitizeStructuredData(data: Record<string, unknown>): Record<string, unknown>
-```
-
-**Parameters:**
-
-- `data` (Record<string, unknown>): Structured data to sanitize
-
-**Returns:**
-
-- `Record<string, unknown>`: Sanitized structured data
-
----
-
 #### `generateRobotsContent()`
 
 Generates robots meta tag content from SEO metadata.
