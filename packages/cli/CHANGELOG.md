@@ -1,5 +1,124 @@
 # @stati/cli
 
+## 1.4.0
+
+### Minor Changes
+
+- enhance scroll position handling and styling for active links
+
+  Commit: 787715d
+
+### Patch Changes
+
+- refactor SEO documentation
+
+  Commit: 20b8920
+
+- clarify age-based invalidation logic and arithmetic
+
+  Commit: 31c83ea
+
+- remove unused sanitizeStructuredData function and documentation
+
+  Commit: ba8819f
+
+- remove unused directories field from package.json
+
+  Commit: fc486f5
+
+- update introduction and features for clarity and conciseness
+
+  Commit: d667848
+
+- add comprehensive tests for core utilities and error handling
+
+  Commit: 6bb64e9
+
+- add author information to package.json
+
+  Commit: 3ead32d
+
+- enhance heading styles with drop shadow and tighter spacing
+
+  Commit: c3fc1f4
+
+- improve active link highlighting with section-specific classes
+
+  Commit: 280a641
+
+- Releasing 2 package(s)
+
+  Releases:
+
+  Commit: 5eef806
+
+- update partials section to reflect correct paths
+
+  Commit: 6131168
+
+- add hero image
+
+  Commit: 67f944f
+
+- add comprehensive SEO API reference and configuration guide
+
+  Commit: 7f91a5c
+
+- remove unnecessary animation classes from sections
+
+  Commit: 5f7eb29
+
+- update recipe collection for clarity and structure
+
+  Commit: 6198390
+
+- enhance SEO section with detailed features and configuration
+
+  Commit: 5fc33d2
+
+- update license information to include author details
+
+  Commit: a557204
+
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+  - @stati/core@1.7.0
+
 ## 1.3.5
 
 ### Patch Changes

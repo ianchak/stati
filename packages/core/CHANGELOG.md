@@ -1,5 +1,161 @@
 # @stati/core
 
+## 1.7.0
+
+### Minor Changes
+
+- add comprehensive SEO and sitemap configurations
+
+  Commit: e98261c
+
+- Add SEO and sitemap generation features
+
+  Commit: 12576c2
+
+- enhance scroll position handling and styling for active links
+
+  Commit: 787715d
+
+### Patch Changes
+
+- refactor SEO documentation
+
+  Commit: 20b8920
+
+- clarify age-based invalidation logic and arithmetic
+
+  Commit: 31c83ea
+
+- remove unused sanitizeStructuredData function and documentation
+
+  Commit: ba8819f
+
+- remove unused directories field from package.json
+
+  Commit: fc486f5
+
+- update introduction and features for clarity and conciseness
+
+  Commit: d667848
+
+- add comprehensive tests for core utilities and error handling
+
+  Commit: 6bb64e9
+
+- reorganize imports and restructure utility modules
+
+  Commit: 1efd2e4
+
+- add comprehensive tests for SEO utilities and robots.txt generator
+
+  Commit: 0a59cb9
+
+- extract debug logger helper to reduce duplication
+
+  Commit: 220549e
+
+- add author information to package.json
+
+  Commit: 3ead32d
+
+- enhance auto-inject options type definition
+
+  Commit: 4138f86
+
+- remove unused sanitizeStructuredData function and imports
+
+  Commit: 1cb3da6
+
+- add comprehensive tests for sitemap generation functionality
+
+  Commit: 6643a23
+
+- update log message for cleaning output and ISG cache
+
+  Commit: 2149083
+
+- improve age calculation logic for consistency
+
+  Commit: 4384fe0
+
+- add comprehensive tests for auto-injection functionality
+
+  Commit: e12f160
+
+- enhance heading styles with drop shadow and tighter spacing
+
+  Commit: c3fc1f4
+
+- improve active link highlighting with section-specific classes
+
+  Commit: 280a641
+
+- enhance cleaning process to include cache removal
+
+  Commit: 8a602eb
+
+- Releasing 2 package(s)
+
+  Releases:
+
+  Commit: 5eef806
+
+- improve SEO context handling and type definitions
+
+  Commit: ce07ed2
+
+- add logger to SEO context and update debug logging
+
+  Commit: d3c2f8c
+
+- replace process.env with getEnv and setEnv functions
+
+  Commit: 7546025
+
+- update partials section to reflect correct paths
+
+  Commit: 6131168
+
+- reorganize exports into barrel files for clarity
+
+  Commit: 5ded97b
+
+- add hero image
+
+  Commit: 67f944f
+
+- add comprehensive SEO API reference and configuration guide
+
+  Commit: 7f91a5c
+
+- log validation errors as warnings instead of throwing
+
+  Commit: 6f1893d
+
+- update exclude patterns to include test files
+
+  Commit: a105640
+
+- remove unnecessary animation classes from sections
+
+  Commit: 5f7eb29
+
+- update recipe collection for clarity and structure
+
+  Commit: 6198390
+
+- enhance SEO section with detailed features and configuration
+
+  Commit: 5fc33d2
+
+- add tests for sitemap and robots.txt generation
+
+  Commit: 4f2197c
+
+- update license information to include author details
+
+  Commit: a557204
+
 ## 1.6.4
 
 ### Patch Changes
