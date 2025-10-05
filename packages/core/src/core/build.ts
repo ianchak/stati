@@ -11,7 +11,7 @@ import { shouldRebuildPage, createCacheEntry, updateCacheEntry } from './isg/bui
 import { withBuildLock } from './isg/build-lock.js';
 import { generateSitemap } from '../seo/sitemap.js';
 import { generateRobotsTxtFromConfig } from '../seo/robots.js';
-import { autoInjectSEO } from '../seo/auto-inject.js';
+import { autoInjectSEO, type AutoInjectOptions } from '../seo/auto-inject.js';
 import type {
   BuildContext,
   BuildStats,
@@ -374,12 +374,7 @@ async function processPagesWithCache(
 
     // Auto-inject SEO tags if enabled
     if (config.seo?.autoInject !== false) {
-      const injectOptions: {
-        page: PageModel;
-        config: StatiConfig;
-        siteUrl: string;
-        debug?: boolean;
-      } = {
+      const injectOptions: AutoInjectOptions = {
         page,
         config,
         siteUrl: config.site.baseUrl,
