@@ -24,6 +24,22 @@ export interface AutoInjectOptions {
 }
 
 /**
+ * Helper function to conditionally log debug messages for SEO auto-injection.
+ * Checks both the explicit debug flag and the config-level debug setting.
+ *
+ * @param message - Debug message to log
+ * @param options - Object containing debug flag and config
+ */
+function logDebug(
+  message: string,
+  options: { debug: boolean | undefined; config: StatiConfig },
+): void {
+  if (options.debug || options.config.seo?.debug) {
+    console.warn(`[SEO Auto-Inject] ${message}`);
+  }
+}
+
+/**
  * Finds the position to inject SEO tags (before </head>)
  * @param html - HTML content
  * @returns Position index or -1 if not found
@@ -58,18 +74,17 @@ export function autoInjectSEO(html: string, options: AutoInjectOptions): string 
   const autoInjectEnabled = config.seo?.autoInject !== false;
 
   if (!autoInjectEnabled) {
-    if (debug || config.seo?.debug) {
-      console.warn(`[SEO Auto-Inject] Skipped for ${page.url} (disabled in config)`);
-    }
+    logDebug(`Skipped for ${page.url} (disabled in config)`, { debug, config });
     return html;
   }
 
   // Detect existing SEO tags in the HTML
   const existingTags = detectExistingSEOTags(html);
 
-  if (debug || config.seo?.debug) {
-    console.warn(`[SEO Auto-Inject] Existing tags in ${page.url}:`, Array.from(existingTags));
-  }
+  logDebug(`Existing tags in ${page.url}: ${Array.from(existingTags).join(', ')}`, {
+    debug,
+    config,
+  });
 
   // Build context with optional exclude parameter
   const context: SEOContext = {
@@ -88,9 +103,7 @@ export function autoInjectSEO(html: string, options: AutoInjectOptions): string 
 
   // If no SEO metadata was generated (all tags exist), return original HTML
   if (!seoMetadata || seoMetadata.trim().length === 0) {
-    if (debug || config.seo?.debug) {
-      console.warn(`[SEO Auto-Inject] No tags to inject for ${page.url} (all exist)`);
-    }
+    logDebug(`No tags to inject for ${page.url} (all exist)`, { debug, config });
     return html;
   }
 
@@ -98,9 +111,7 @@ export function autoInjectSEO(html: string, options: AutoInjectOptions): string 
   const headClosePos = findHeadClosePosition(html);
 
   if (headClosePos === -1) {
-    if (debug || config.seo?.debug) {
-      console.warn(`[SEO Auto-Inject] No </head> tag found in ${page.url}, skipping injection`);
-    }
+    logDebug(`No </head> tag found in ${page.url}, skipping injection`, { debug, config });
     return html;
   }
 
@@ -111,11 +122,10 @@ export function autoInjectSEO(html: string, options: AutoInjectOptions): string 
   // Add proper indentation (2 spaces) and newline
   const injected = `${before}  ${seoMetadata}\n${after}`;
 
-  if (debug || config.seo?.debug) {
-    console.warn(
-      `[SEO Auto-Inject] Injected ${existingTags.size === 0 ? 'all' : 'missing'} SEO tags into ${page.url}`,
-    );
-  }
+  logDebug(`Injected ${existingTags.size === 0 ? 'all' : 'missing'} SEO tags into ${page.url}`, {
+    debug,
+    config,
+  });
 
   return injected;
 }
