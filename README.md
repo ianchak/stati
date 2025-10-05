@@ -284,6 +284,8 @@ export default defineConfig({
 });
 ```
 
+This extended configuration example covers the most common options. For a full list of available settings, see the documentation.
+
 [View full configuration options →](https://docs.stati.build/configuration/)
 
 ---
