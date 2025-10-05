@@ -4,6 +4,8 @@
  */
 
 import type { SEOContext } from '../types/seo.js';
+import type { PageModel } from '../types/content.js';
+import type { StatiConfig, SiteConfig } from '../types/config.js';
 import { SEOTagType } from '../types/seo.js';
 import {
   escapeHtml,
@@ -300,7 +302,7 @@ export function generateTwitterCardTags(ctx: SEOContext): string[] {
  * Template helper function for generating SEO tags in Eta templates.
  * Provides a convenient API for selective SEO tag generation.
  *
- * @param stati - Template context object containing page and config
+ * @param context - Object containing page, config, and optional site
  * @param tags - Optional array of tag types to generate (strings or SEOTagType enums)
  * @returns HTML string containing generated SEO tags
  *
@@ -311,7 +313,11 @@ export function generateTwitterCardTags(ctx: SEOContext): string[] {
  * ```
  */
 export function generateSEO(
-  stati: { page: unknown; config: unknown; site?: unknown },
+  context: {
+    page: PageModel;
+    config: StatiConfig;
+    site?: SiteConfig;
+  },
   tags?: Array<SEOTagType | string>,
 ): string {
   // Convert tag names to SEOTagType enum values
@@ -333,21 +339,18 @@ export function generateSEO(
   }
 
   // Extract site URL from config
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const config = stati.config as any;
-  const siteUrl = config.site?.baseUrl || config.site?.url || '';
+  const siteUrl = context.config.site?.baseUrl || context.site?.baseUrl || '';
 
   // Generate SEO metadata
-  const context: SEOContext = {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    page: stati.page as any,
-    config: config,
+  const seoContext: SEOContext = {
+    page: context.page,
+    config: context.config,
     siteUrl,
   };
 
   if (include) {
-    context.include = include;
+    seoContext.include = include;
   }
 
-  return generateSEOMetadata(context);
+  return generateSEOMetadata(seoContext);
 }

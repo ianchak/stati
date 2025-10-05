@@ -882,26 +882,15 @@ describe('SEO Generator - generateSEO template helper', () => {
     expect(result).toContain('https://example.com/page');
   });
 
-  it('should extract siteUrl from config.site.url', () => {
-    const stati = {
-      page: createMockPage({ url: '/page' }),
-      config: {
-        site: {
-          url: 'https://example.com',
-        },
-      },
-    };
-
-    const result = generateSEO(stati, ['canonical']);
-    expect(result).toContain('https://example.com/page');
-  });
-
   it('should handle empty siteUrl', () => {
     const stati = {
       page: createMockPage({ url: '/page' }),
       config: {
-        site: {},
-      },
+        site: {
+          title: 'Test Site',
+          baseUrl: '', // Empty baseUrl to test empty siteUrl
+        },
+      } as StatiConfig,
     };
 
     const result = generateSEO(stati, ['canonical']);

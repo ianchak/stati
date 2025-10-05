@@ -295,6 +295,8 @@ export interface CollectionData {
 export interface TemplateContext {
   /** Site configuration and metadata */
   site: import('./config.js').SiteConfig;
+  /** Full Stati configuration (includes site, markdown, eta, etc.) */
+  config: import('./config.js').StatiConfig;
   /** Current page data including frontmatter and content */
   page: {
     path: string;
@@ -309,4 +311,6 @@ export interface TemplateContext {
   partials: Record<string, string>;
   /** Collection data for index pages (only available on collection index pages) */
   collection?: CollectionData;
+  /** Additional properties that may be added dynamically (e.g., custom filters, helpers) */
+  [key: string]: unknown;
 }
