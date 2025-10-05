@@ -4,6 +4,14 @@
 
 Built for developers who want modern tooling without the complexity. Write in Markdown, template with Eta, and deploy anywhere.
 
+[![Build](https://github.com/ianchak/stati/actions/workflows/ci.yml/badge.svg)](https://github.com/ianchak/stati/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/github/ianchak/stati/graph/badge.svg?token=V3DWFQ2W7E)](https://codecov.io/github/ianchak/stati)
+[![npm version](https://img.shields.io/npm/v/@stati/core.svg)](https://www.npmjs.com/package/@stati/core)
+[![Downloads](https://img.shields.io/npm/dm/@stati/core.svg)](https://npmjs.com/package/@stati/core)
+[![Bundle Size](https://img.shields.io/bundlephobia/minzip/@stati/core)](https://bundlephobia.com/package/@stati/core)
+[![License](https://img.shields.io/github/license/ianchak/stati.svg)](LICENSE)
+[![Docs](https://api.netlify.com/api/v1/badges/your-netlify-site-id/deploy-status)](https://stati.build)
+
 ---
 
 ## Why Stati?
