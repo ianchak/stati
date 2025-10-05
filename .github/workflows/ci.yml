@@ -12,4 +12,9 @@ jobs:
           node-version: 22
           cache: 'npm'
       - run: npm ci
-      - run: npm run test:ci
+      - run: npm run build
+      - run: npx vitest run --coverage
+      - name: Upload coverage reports to Codecov
+          uses: codecov/codecov-action@v5
+          with:
+            token: ${{ secrets.CODECOV_TOKEN }}
