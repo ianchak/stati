@@ -87,7 +87,7 @@ export {
   generateRobotsContent,
   validateSEOMetadata,
   detectExistingSEOTags,
-} from './seo/utils.js';
+} from './seo/utils/index.js';
 export { autoInjectSEO, shouldAutoInject } from './seo/auto-inject.js';
 
 // Import for implementation use

@@ -11,6 +11,7 @@ import type {
 } from '../types/sitemap.js';
 import type { PageModel } from '../types/content.js';
 import type { StatiConfig } from '../types/config.js';
+import { escapeHtml, resolveAbsoluteUrl } from './utils/index.js';
 
 /**
  * Maximum entries per sitemap file (per sitemap.org spec)
@@ -22,20 +23,6 @@ const MAX_SITEMAP_ENTRIES = 50000;
  * Reserved for future size-based splitting logic
  */
 const _MAX_SITEMAP_SIZE = 50 * 1024 * 1024;
-
-/**
- * Escapes XML special characters
- * @param text - Text to escape
- * @returns Escaped XML text
- */
-function escapeXml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
-}
 
 /**
  * Formats a date for sitemap lastmod field (W3C Datetime / ISO 8601)
@@ -73,27 +60,6 @@ function validateChangeFreq(changefreq?: string): ChangeFrequency | undefined {
     return changefreq as ChangeFrequency;
   }
   return undefined;
-}
-
-/**
- * Resolves absolute URL from page path and site URL
- * @param url - Relative or absolute URL
- * @param siteUrl - Base site URL
- * @returns Absolute URL
- */
-function resolveAbsoluteUrl(url: string, siteUrl: string): string {
-  // Already absolute
-  if (url.startsWith('http://') || url.startsWith('https://')) {
-    return url;
-  }
-
-  // Ensure siteUrl doesn't end with /
-  const baseUrl = siteUrl.endsWith('/') ? siteUrl.slice(0, -1) : siteUrl;
-
-  // Ensure url starts with /
-  const path = url.startsWith('/') ? url : `/${url}`;
-
-  return `${baseUrl}${path}`;
 }
 
 /**
@@ -276,14 +242,14 @@ export function generateSitemapEntry(
  */
 function generateEntryXml(entry: SitemapEntry): string {
   let xml = '  <url>\n';
-  xml += `    <loc>${escapeXml(entry.url)}</loc>\n`;
+  xml += `    <loc>${escapeHtml(entry.url)}</loc>\n`;
 
   if (entry.lastmod) {
-    xml += `    <lastmod>${escapeXml(entry.lastmod)}</lastmod>\n`;
+    xml += `    <lastmod>${escapeHtml(entry.lastmod)}</lastmod>\n`;
   }
 
   if (entry.changefreq) {
-    xml += `    <changefreq>${escapeXml(entry.changefreq)}</changefreq>\n`;
+    xml += `    <changefreq>${escapeHtml(entry.changefreq)}</changefreq>\n`;
   }
 
   if (entry.priority !== undefined) {
@@ -324,7 +290,7 @@ export function generateSitemapIndexXml(sitemapUrls: string[], siteUrl: string):
   for (const url of sitemapUrls) {
     const absoluteUrl = resolveAbsoluteUrl(url, siteUrl);
     xml += '  <sitemap>\n';
-    xml += `    <loc>${escapeXml(absoluteUrl)}</loc>\n`;
+    xml += `    <loc>${escapeHtml(absoluteUrl)}</loc>\n`;
     xml += '  </sitemap>\n';
   }
 

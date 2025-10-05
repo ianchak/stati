@@ -3,8 +3,8 @@
  * @module seo/robots
  */
 
-import { URL } from 'node:url';
 import type { RobotsTxtConfig } from '../types/config.js';
+import { isValidUrl, normalizeUrlPath, resolveAbsoluteUrl } from './utils/index.js';
 
 /**
  * User agent rule entry for robots.txt
@@ -47,29 +47,6 @@ const DEFAULT_ROBOTS_CONFIG: RobotsTxtOptions = {
 };
 
 /**
- * Validates a URL string
- * @param url - URL to validate
- * @returns true if valid URL
- */
-function isValidUrl(url: string): boolean {
-  try {
-    new URL(url);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Normalizes a path to ensure it starts with /
- * @param path - Path to normalize
- * @returns Normalized path
- */
-function normalizePath(path: string): string {
-  return path.startsWith('/') ? path : `/${path}`;
-}
-
-/**
  * Resolves a sitemap path to absolute URL
  * @param sitemap - Sitemap path or URL
  * @param siteUrl - Base site URL
@@ -83,13 +60,11 @@ function resolveSitemapUrl(sitemap: string, siteUrl?: string): string {
 
   // Relative path with siteUrl
   if (siteUrl) {
-    const baseUrl = siteUrl.endsWith('/') ? siteUrl.slice(0, -1) : siteUrl;
-    const sitemapPath = normalizePath(sitemap);
-    return `${baseUrl}${sitemapPath}`;
+    return resolveAbsoluteUrl(sitemap, siteUrl);
   }
 
   // Return normalized path
-  return normalizePath(sitemap);
+  return normalizeUrlPath(sitemap);
 }
 
 /**
@@ -130,14 +105,14 @@ export function generateRobotsTxt(options: RobotsTxtOptions = {}): string {
     // Allow rules
     if (rule.allow && rule.allow.length > 0) {
       for (const path of rule.allow) {
-        lines.push(`Allow: ${normalizePath(path)}`);
+        lines.push(`Allow: ${normalizeUrlPath(path)}`);
       }
     }
 
     // Disallow rules
     if (rule.disallow && rule.disallow.length > 0) {
       for (const path of rule.disallow) {
-        lines.push(`Disallow: ${normalizePath(path)}`);
+        lines.push(`Disallow: ${normalizeUrlPath(path)}`);
       }
     }
 

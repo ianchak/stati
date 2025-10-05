@@ -3,8 +3,7 @@ import { join, extname } from 'path';
 import { readFile } from 'fs/promises';
 import type { Logger } from '../types/index.js';
 import { loadConfig } from '../config/loader.js';
-import { resolveDevPaths } from './utils/paths.js';
-import { resolvePrettyUrl } from './utils/server.js';
+import { resolveDevPaths, resolvePrettyUrl } from './utils/index.js';
 import { DEFAULT_PREVIEW_PORT, DEFAULT_DEV_HOST } from '../constants.js';
 
 export interface PreviewServerOptions {

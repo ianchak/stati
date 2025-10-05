@@ -6,7 +6,7 @@
 import type { PageModel } from '../types/content.js';
 import type { StatiConfig } from '../types/config.js';
 import type { SEOContext } from '../types/seo.js';
-import { detectExistingSEOTags } from './utils.js';
+import { detectExistingSEOTags } from './utils/index.js';
 import { generateSEOMetadata } from './generator.js';
 
 /**

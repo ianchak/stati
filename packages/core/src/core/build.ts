@@ -1,4 +1,15 @@
-import { ensureDir, writeFile, remove, pathExists, stat, readdir, copyFile } from './utils/fs.js';
+import {
+  ensureDir,
+  writeFile,
+  remove,
+  pathExists,
+  stat,
+  readdir,
+  copyFile,
+  resolveOutDir,
+  resolveStaticDir,
+  resolveCacheDir,
+} from './utils/index.js';
 import { join, dirname, relative } from 'path';
 import { posix } from 'path';
 import { loadConfig } from '../config/loader.js';
@@ -6,9 +17,14 @@ import { loadContent } from './content.js';
 import { createMarkdownProcessor, renderMarkdown } from './markdown.js';
 import { createTemplateEngine, renderPage } from './templates.js';
 import { buildNavigation } from './navigation.js';
-import { loadCacheManifest, saveCacheManifest } from './isg/manifest.js';
-import { shouldRebuildPage, createCacheEntry, updateCacheEntry } from './isg/builder.js';
-import { withBuildLock } from './isg/build-lock.js';
+import {
+  loadCacheManifest,
+  saveCacheManifest,
+  shouldRebuildPage,
+  createCacheEntry,
+  updateCacheEntry,
+  withBuildLock,
+} from './isg/index.js';
 import { generateSitemap } from '../seo/sitemap.js';
 import { generateRobotsTxtFromConfig } from '../seo/robots.js';
 import { autoInjectSEO, type AutoInjectOptions } from '../seo/auto-inject.js';
@@ -21,7 +37,6 @@ import type {
   PageModel,
   NavNode,
 } from '../types/index.js';
-import { resolveOutDir, resolveStaticDir, resolveCacheDir } from './utils/paths.js';
 
 /**
  * Options for customizing the build process.

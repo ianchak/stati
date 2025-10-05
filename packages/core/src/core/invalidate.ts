@@ -1,6 +1,6 @@
-import { loadCacheManifest, saveCacheManifest } from './isg/manifest.js';
+import { loadCacheManifest, saveCacheManifest } from './isg/index.js';
 import type { CacheEntry } from '../types/index.js';
-import { resolveCacheDir } from './utils/paths.js';
+import { resolveCacheDir } from './utils/index.js';
 
 /**
  * Invalidation result containing affected cache entries.

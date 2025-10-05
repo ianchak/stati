@@ -5,7 +5,7 @@ import {
   generateRobotsContent,
   validateSEOMetadata,
   detectExistingSEOTags,
-} from '../../src/seo/utils.js';
+} from '../../src/seo/utils/index.js';
 import { SEOTagType } from '../../src/types/seo.js';
 import type { SEOMetadata } from '../../src/types/content.js';
 

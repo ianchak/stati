@@ -9,11 +9,15 @@ import type { FSWatcher } from 'chokidar';
 import { build } from './build.js';
 import { invalidate } from './invalidate.js';
 import { loadConfig } from '../config/loader.js';
-import { loadCacheManifest, saveCacheManifest } from './isg/manifest.js';
-import { resolveDevPaths, resolveCacheDir } from './utils/paths.js';
-import { resolvePrettyUrl } from './utils/server.js';
-import { createErrorOverlay, parseErrorDetails } from './utils/error-overlay.js';
-import { TemplateError } from './utils/template-errors.js';
+import { loadCacheManifest, saveCacheManifest } from './isg/index.js';
+import {
+  resolveDevPaths,
+  resolveCacheDir,
+  resolvePrettyUrl,
+  createErrorOverlay,
+  parseErrorDetails,
+  TemplateError,
+} from './utils/index.js';
 import { setEnv, getEnv } from '../env.js';
 import { DEFAULT_DEV_PORT, DEFAULT_DEV_HOST, TEMPLATE_EXTENSION } from '../constants.js';
 

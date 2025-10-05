@@ -3,9 +3,9 @@
  */
 
 import { URL } from 'node:url';
-import type { SEOMetadata, RobotsConfig } from '../types/content.js';
-import type { SEOValidationResult, SEOTagType } from '../types/seo.js';
-import { SEOTagType as SEOTagTypeEnum } from '../types/seo.js';
+import type { SEOMetadata, RobotsConfig } from '../../types/content.js';
+import type { SEOValidationResult, SEOTagType } from '../../types/seo.js';
+import { SEOTagType as SEOTagTypeEnum } from '../../types/seo.js';
 
 /**
  * HTML escape cache for performance optimization.

@@ -1,5 +1,5 @@
 import { createHash } from 'crypto';
-import { readFile, pathExists } from '../utils/fs.js';
+import { readFile, pathExists } from '../utils/index.js';
 
 /**
  * Creates a SHA-256 hash instance, updates it with data, and returns the hex digest.

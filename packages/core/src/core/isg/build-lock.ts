@@ -1,4 +1,4 @@
-import { writeFile, readFile, pathExists, remove, ensureDir } from '../utils/fs.js';
+import { writeFile, readFile, pathExists, remove, ensureDir } from '../utils/index.js';
 import { join, dirname } from 'path';
 import { hostname } from 'os';
 

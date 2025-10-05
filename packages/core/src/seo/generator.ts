@@ -12,7 +12,7 @@ import {
   validateSEOMetadata,
   generateRobotsContent,
   sanitizeStructuredData,
-} from './utils.js';
+} from './utils/index.js';
 
 /**
  * Generate complete SEO metadata for a page.
