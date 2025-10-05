@@ -306,50 +306,35 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Highlight active page
     const currentPath = window.location.pathname;
+
+    // Normalize path for comparison (handle trailing slashes and index.html)
+    const normalizePath = (path) => {
+        // Remove index.html if present
+        path = path.replace(/\/index\.html$/, '/');
+        // Ensure trailing slash for directories
+        if (!path.endsWith('/') && !path.includes('.')) {
+            path += '/';
+        }
+        return path;
+    };
+
+    const normalizedCurrentPath = normalizePath(currentPath);
+
     document.querySelectorAll('.sidebar-link').forEach(link => {
-        if (link.getAttribute('href') === currentPath) {
-            // Determine section-specific colors
+        const linkHref = link.getAttribute('href');
+        const normalizedLinkHref = normalizePath(linkHref);
+
+        if (normalizedLinkHref === normalizedCurrentPath) {
+            // Add the active class
+            link.classList.add('active');
+
+            // Determine section-specific colors for active state
             const section = link.closest('.nav-section');
             const toggle = section.querySelector('.section-toggle');
             const sectionName = toggle.getAttribute('data-section');
 
-            let bgClasses, textClasses;
-
-            switch(sectionName) {
-                case 'getting-started':
-                    bgClasses = ['bg-primary-100', 'dark:bg-primary-900/30'];
-                    textClasses = ['text-primary-700', 'dark:text-primary-300'];
-                    break;
-                case 'core-concepts':
-                    bgClasses = ['bg-emerald-100', 'dark:bg-emerald-900/30'];
-                    textClasses = ['text-emerald-700', 'dark:text-emerald-300'];
-                    break;
-                case 'configuration':
-                    bgClasses = ['bg-amber-100', 'dark:bg-amber-900/30'];
-                    textClasses = ['text-amber-700', 'dark:text-amber-300'];
-                    break;
-                case 'cli':
-                    bgClasses = ['bg-purple-100', 'dark:bg-purple-900/30'];
-                    textClasses = ['text-purple-700', 'dark:text-purple-300'];
-                    break;
-                case 'api':
-                    bgClasses = ['bg-red-100', 'dark:bg-red-900/30'];
-                    textClasses = ['text-red-700', 'dark:text-red-300'];
-                    break;
-                case 'examples':
-                    bgClasses = ['bg-cyan-100', 'dark:bg-cyan-900/30'];
-                    textClasses = ['text-cyan-700', 'dark:text-cyan-300'];
-                    break;
-                case 'advanced':
-                    bgClasses = ['bg-gray-100', 'dark:bg-gray-900/30'];
-                    textClasses = ['text-gray-700', 'dark:text-gray-300'];
-                    break;
-                default:
-                    bgClasses = ['bg-primary-100', 'dark:bg-primary-900/30'];
-                    textClasses = ['text-primary-700', 'dark:text-primary-300'];
-            }
-
-            link.classList.add(...bgClasses, ...textClasses, 'font-semibold');
+            // Add section-specific active class
+            link.classList.add(`active-${sectionName}`);
 
             // Expand parent section if needed
             const content = section.querySelector('.section-content');
