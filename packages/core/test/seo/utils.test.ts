@@ -138,21 +138,44 @@ describe('SEO Utils - sanitizeStructuredData', () => {
       deepObj = { nested: deepObj };
     }
 
-    sanitizeStructuredData(deepObj, mockLogger, 0, 50);
+    const result = sanitizeStructuredData(deepObj, mockLogger, 0, 50);
+
+    // Should warn about exceeding max depth
     expect(loggerWarnSpy).toHaveBeenCalled();
     expect(loggerWarnSpy).toHaveBeenCalledWith(
       expect.stringContaining('exceeds maximum nesting depth'),
     );
 
+    // With 55 nested levels and limit of 50, the deepest 5 levels should be removed
+    // The result should have nested objects up to depth 50, but the innermost value should be gone
+    expect(result).toBeDefined();
+    expect(result).toHaveProperty('nested');
+
+    // Verify that deeply nested values beyond the limit are removed
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let current: any = result;
+    let depth = 0;
+    while (current && typeof current === 'object' && 'nested' in current) {
+      current = current.nested;
+      depth++;
+    }
+
+    // Should have nested objects up to the limit, but not beyond
+    expect(depth).toBeLessThanOrEqual(51); // 50 nested levels + 1 for the root
+
     loggerWarnSpy.mockRestore();
   });
 
-  it('should truncate at max depth with custom limit', () => {
+  it('should remove deeply nested values at max depth with custom limit', () => {
     const data = { a: { b: { c: 'deep' } } };
     const loggerWarnSpy = vi.spyOn(mockLogger, 'warning');
 
-    sanitizeStructuredData(data, mockLogger, 0, 2);
+    const result = sanitizeStructuredData(data, mockLogger, 0, 2);
+
     expect(loggerWarnSpy).toHaveBeenCalled();
+    // With depth limit of 2, structure should be: { a: { b: {} } }
+    // The 'c' property at depth 3 should be removed
+    expect(result).toEqual({ a: { b: {} } });
 
     loggerWarnSpy.mockRestore();
   });

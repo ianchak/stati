@@ -66,10 +66,14 @@ export function escapeHtml(text: string): string {
  * Sanitize structured data to prevent XSS attacks and ensure safe JSON-LD output.
  * Recursively processes objects and arrays, escaping string values and enforcing depth limits.
  *
+ * Security: Objects exceeding max depth are completely removed rather than replaced with
+ * a string placeholder to prevent potential XSS vectors.
+ *
  * @param data - The data to sanitize
+ * @param logger - Logger instance for warnings
  * @param depth - Current recursion depth (internal use)
  * @param maxDepth - Maximum allowed recursion depth (default: 50)
- * @returns Sanitized data safe for JSON-LD output
+ * @returns Sanitized data safe for JSON-LD output, or undefined if max depth exceeded
  *
  * @example
  * ```typescript
@@ -77,7 +81,7 @@ export function escapeHtml(text: string): string {
  *   name: '<script>alert("xss")</script>',
  *   nested: { value: 'test' }
  * };
- * sanitizeStructuredData(data);
+ * sanitizeStructuredData(data, logger);
  * // Returns: { name: '&lt;script&gt;...', nested: { value: 'test' } }
  * ```
  */
@@ -88,10 +92,11 @@ export function sanitizeStructuredData(
   maxDepth: number = 50,
 ): unknown {
   // Prevent stack overflow from deeply nested objects
+  // Return undefined to remove the deeply nested value entirely (safer than string placeholder)
   if (depth > maxDepth) {
-    const message = `Structured data exceeds maximum nesting depth of ${maxDepth}, truncating`;
+    const message = `Structured data exceeds maximum nesting depth of ${maxDepth}, removing deeply nested object`;
     logger.warning(message);
-    return '[Object: max depth exceeded]';
+    return undefined;
   }
 
   // Handle primitives
@@ -104,19 +109,26 @@ export function sanitizeStructuredData(
 
   // Handle arrays
   if (Array.isArray(data)) {
-    return data.map((item) => sanitizeStructuredData(item, logger, depth + 1, maxDepth));
+    // Filter out undefined values that resulted from depth limit
+    return data
+      .map((item) => sanitizeStructuredData(item, logger, depth + 1, maxDepth))
+      .filter((item) => item !== undefined);
   }
 
   // Handle objects
   const sanitizedObject: Record<string, unknown> = {};
   for (const key in data) {
     if (Object.prototype.hasOwnProperty.call(data, key)) {
-      sanitizedObject[key] = sanitizeStructuredData(
+      const sanitizedValue = sanitizeStructuredData(
         (data as Record<string, unknown>)[key],
         logger,
         depth + 1,
         maxDepth,
       );
+      // Only include the property if it's not undefined (i.e., didn't exceed depth)
+      if (sanitizedValue !== undefined) {
+        sanitizedObject[key] = sanitizedValue;
+      }
     }
   }
   return sanitizedObject;

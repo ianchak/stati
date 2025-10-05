@@ -15,9 +15,11 @@ import { sanitizeStructuredData } from './utils/escape-and-validation.js';
  * Generate complete SEO metadata for a page.
  * Supports both whitelist (include) and blacklist (exclude) modes for selective tag generation.
  *
+ * Note: Validation errors are logged as warnings rather than throwing to allow builds to
+ * continue with degraded SEO. This prevents a single SEO issue from blocking the entire build.
+ *
  * @param ctx - SEO context containing page, config, siteUrl, and optional include/exclude sets
  * @returns HTML string containing all generated SEO tags
- * @throws Error if SEO metadata validation fails
  *
  * @example
  * ```typescript
@@ -35,13 +37,25 @@ export function generateSEOMetadata(ctx: SEOContext): string {
 
   // Validate SEO metadata
   const validation = validateSEOMetadata(seo, page.url);
+
+  // Log validation errors as warnings instead of throwing
+  // This allows builds to continue even with SEO issues
   if (!validation.valid) {
-    throw new Error(`SEO validation failed for ${page.url}: ${validation.errors.join(', ')}`);
+    logger.warning(`SEO validation failed for ${page.url}:`);
+    validation.errors.forEach((error) => {
+      logger.warning(`  - ${error}`);
+    });
+    if (config.seo?.debug) {
+      logger.warning('Build will continue, but SEO metadata may be incomplete or invalid.');
+    }
   }
 
   // Log warnings if any and debug is enabled
   if (validation.warnings.length > 0 && config.seo?.debug) {
-    logger.warning(`SEO warnings for ${page.url}: ${validation.warnings.join('; ')}`);
+    logger.warning(`SEO warnings for ${page.url}:`);
+    validation.warnings.forEach((warning) => {
+      logger.warning(`  - ${warning}`);
+    });
   }
 
   const meta: string[] = [];

@@ -288,7 +288,8 @@ describe('SEO Generator - generateSEOMetadata', () => {
     expect(result).not.toContain('<script>alert');
   });
 
-  it('should throw error on invalid SEO metadata', () => {
+  it('should log validation errors as warnings instead of throwing', () => {
+    const mockWarning = vi.fn();
     const page = createMockPage({
       frontMatter: {
         seo: {
@@ -298,13 +299,16 @@ describe('SEO Generator - generateSEOMetadata', () => {
     });
     const config = createMockConfig();
     const ctx: SEOContext = {
-      logger: createMockLogger(),
+      logger: createMockLogger({ warning: mockWarning }),
       page,
       config,
       siteUrl: 'https://example.com',
     };
 
-    expect(() => generateSEOMetadata(ctx)).toThrow('SEO validation failed');
+    // Should not throw, but should log warnings
+    expect(() => generateSEOMetadata(ctx)).not.toThrow();
+    expect(mockWarning).toHaveBeenCalled();
+    expect(mockWarning).toHaveBeenCalledWith(expect.stringContaining('SEO validation failed'));
   });
 
   it('should log warnings in debug mode', () => {
