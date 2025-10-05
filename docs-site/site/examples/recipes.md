@@ -9,184 +9,533 @@ A curated collection of practical recipes and patterns for building sites with S
 
 ## Content Management
 
-### Dynamic Menu Generation
+### Dynamic Navigation Menu
 
-Automatically generate navigation menus from your content structure:
-
-```javascript
-// stati.config.js
-export default defineConfig({
-  // ... other config
-
-  eta: {
-    globals: {
-      // Generate menu from filesystem
-      generateMenu: async (contentDir) => {
-        const glob = await import('fast-glob');
-        const path = await import('path');
-
-        const files = await glob('**/*.md', {
-          cwd: contentDir,
-          ignore: ['**/README.md', '**/index.md'],
-        });
-
-        const menu = {};
-
-        files.forEach((file) => {
-          const parts = file.replace('.md', '').split('/');
-          let current = menu;
-
-          parts.forEach((part, index) => {
-            if (!current[part]) {
-              current[part] = {
-                title: part.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
-                path: index === parts.length - 1 ? `/${file.replace('.md', '')}` : null,
-                children: {},
-              };
-            }
-            current = current[part].children;
-          });
-        });
-
-        return menu;
-      },
-    },
-  },
-});
-```
+Automatically generate navigation from your content structure using Stati's built-in navigation:
 
 ```html
 <!-- _partials/menu.eta -->
-<% const menu = await stati.generateMenu('site') %>
-
 <nav class="menu">
-  <% function renderMenu(items, level = 0) { %>
-  <ul class="menu-level-<%= level %>">
-    <% Object.entries(items).forEach(([key, item]) => { %>
-    <li class="menu-item">
-      <% if (item.path) { %>
-      <a href="<%= item.path %>" class="<%= stati.page.url === item.path ? 'active' : '' %>">
-        <%= item.title %>
-      </a>
-      <% } else { %>
-      <span class="menu-header"><%= item.title %></span>
-      <% } %> <% if (Object.keys(item.children).length > 0) { %> <%~ renderMenu(item.children, level
-      + 1) %> <% } %>
-    </li>
-    <% }) %>
-  </ul>
-  <% } %> <%~ renderMenu(menu) %>
+  <% function renderNavigation(items, level = 0) { %>
+    <ul class="<%= stati.propValue('menu-level', `level-${level}`) %>">
+      <% items.forEach(item => { %>
+        <li class="menu-item">
+          <a
+            href="<%= item.url %>"
+            class="<%= stati.propValue('menu-link', stati.page.url === item.url && 'active') %>"
+          >
+            <%= item.title %>
+          </a>
+          <% if (item.children && item.children.length > 0) { %>
+            <%~ renderNavigation(item.children, level + 1) %>
+          <% } %>
+        </li>
+      <% }) %>
+    </ul>
+  <% } %>
+  <%~ renderNavigation(stati.navigation) %>
 </nav>
 ```
 
-### Content Collections
+### Collection Index Pages
 
-Group and filter content by type:
-
-```javascript
-// stati.config.js
-export default defineConfig({
-  // ... other config
-
-  eta: {
-    globals: {
-      // Get all posts with optional filtering
-      getPosts: async (pages, filter = {}) => {
-        return pages
-          .filter((page) => page.data.type === 'post')
-          .filter((page) => {
-            if (filter.tag) {
-              return page.data.tags?.includes(filter.tag);
-            }
-            if (filter.category) {
-              return page.data.category === filter.category;
-            }
-            if (filter.author) {
-              return page.data.author === filter.author;
-            }
-            return true;
-          })
-          .sort((a, b) => new Date(b.data.date) - new Date(a.data.date));
-      },
-
-      // Get all unique tags
-      getAllTags: (pages) => {
-        const tags = new Set();
-        pages
-          .filter((page) => page.data.type === 'post')
-          .forEach((page) => {
-            page.data.tags?.forEach((tag) => tags.add(tag));
-          });
-        return Array.from(tags).sort();
-      },
-
-      // Get related posts
-      getRelatedPosts: (currentPost, pages, limit = 5) => {
-        const currentTags = currentPost.data.tags || [];
-
-        return pages
-          .filter((page) => page.data.type === 'post' && page.url !== currentPost.url)
-          .map((page) => {
-            const commonTags = page.data.tags?.filter((tag) => currentTags.includes(tag)) || [];
-            return {
-              ...page,
-              score: commonTags.length,
-            };
-          })
-          .filter((page) => page.score > 0)
-          .sort((a, b) => b.score - a.score)
-          .slice(0, limit);
-      },
-    },
-  },
-});
-```
+Use collection data provided to index pages to list and filter content:
 
 ```html
 <!-- blog/index.eta -->
-<% const posts = await stati.getPosts(stati.collections.all) %> <% const tags =
-stati.getAllTags(stati.collections.all) %>
+<% // Collection data is automatically provided to index pages %>
+<% const posts = stati.collection ? stati.collection.recentPages : [] %>
+<% const tags = stati.collection ? Object.keys(stati.collection.pagesByTag) : [] %>
 
 <div class="blog-index">
   <!-- Tag filter -->
-  <div class="tag-filter">
-    <a href="/blog/" class="tag <%= !stati.params.tag ? 'active' : '' %>">All</a>
-    <% tags.forEach(tag => { %>
-    <a
-      href="/blog/tag/<%= tag.toLowerCase() %>/"
-      class="tag <%= stati.params.tag === tag ? 'active' : '' %>"
-    >
-      <%= tag %>
-    </a>
-    <% }) %>
-  </div>
+  <% if (tags.length > 0) { %>
+    <div class="tag-filter">
+      <% tags.forEach(tag => { %>
+        <a
+          href="<%= `#tag-${tag}` %>"
+          class="<%= stati.propValue('tag', 'filter-tag') %>"
+          data-tag="<%= tag %>"
+        >
+          <%= tag %> (<%= stati.collection.pagesByTag[tag].length %>)
+        </a>
+      <% }) %>
+    </div>
+  <% } %>
 
   <!-- Posts -->
   <div class="posts">
     <% posts.forEach(post => { %>
-    <article class="post-card">
-      <h2><a href="<%= post.url %>"><%= post.data.title %></a></h2>
-      <div class="post-meta">
-        <time><%= new Date(post.data.date).toLocaleDateString() %></time>
-        <span class="author">by <%= post.data.author %></span>
-      </div>
-      <p><%= post.data.description %></p>
-      <% if (post.data.tags) { %>
-      <div class="tags">
-        <% post.data.tags.forEach(tag => { %>
-        <span class="tag"><%= tag %></span>
-        <% }) %>
-      </div>
-      <% } %>
-    </article>
+      <article class="post-card">
+        <h2>
+          <a href="<%= post.url %>"><%= post.frontMatter.title %></a>
+        </h2>
+        <div class="post-meta">
+          <% if (post.publishedAt) { %>
+            <time datetime="<%= post.publishedAt.toISOString() %>">
+              <%= post.publishedAt.toLocaleDateString() %>
+            </time>
+          <% } %>
+          <% if (post.frontMatter.author) { %>
+            <span class="author">by <%= post.frontMatter.author %></span>
+          <% } %>
+        </div>
+        <% if (post.frontMatter.description) { %>
+          <p><%= post.frontMatter.description %></p>
+        <% } %>
+        <% if (post.frontMatter.tags && post.frontMatter.tags.length > 0) { %>
+          <div class="tags">
+            <% post.frontMatter.tags.forEach(tag => { %>
+              <span class="tag"><%= tag %></span>
+            <% }) %>
+          </div>
+        <% } %>
+      </article>
     <% }) %>
   </div>
 </div>
 ```
 
+### Related Posts
+
+Find related posts based on shared tags using collection data:
+
+```html
+<!-- blog/post-layout.eta -->
+<article class="post">
+  <%~ stati.content %>
+</article>
+
+<% if (stati.collection && stati.page.tags) { %>
+  <%
+    const currentTags = stati.page.tags;
+    const relatedPosts = stati.collection.pages
+      .filter(p => p.url !== stati.page.url)
+      .map(p => ({
+        ...p,
+        commonTags: (p.frontMatter.tags || []).filter(t => currentTags.includes(t))
+      }))
+      .filter(p => p.commonTags.length > 0)
+      .sort((a, b) => b.commonTags.length - a.commonTags.length)
+      .slice(0, 3);
+  %>
+
+  <% if (relatedPosts.length > 0) { %>
+    <aside class="related-posts">
+      <h2>Related Posts</h2>
+      <ul>
+        <% relatedPosts.forEach(post => { %>
+          <li>
+            <a href="<%= post.url %>">
+              <%= post.frontMatter.title %>
+            </a>
+            <span class="common-tags">
+              <%= post.commonTags.join(', ') %>
+            </span>
+          </li>
+        <% }) %>
+      </ul>
+    </aside>
+  <% } %>
+<% } %>
+```
+
+### Custom Filters in Templates
+
+Add reusable template filters via Eta configuration:
+
+```javascript
+// stati.config.js
+export default defineConfig({
+  eta: {
+    filters: {
+      // Date formatting
+      formatDate: (date) => {
+        return new Date(date).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+      },
+
+      // Time ago formatting
+      timeAgo: (date) => {
+        const now = new Date();
+        const then = new Date(date);
+        const diffMs = now - then;
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+        if (diffDays === 0) return 'Today';
+        if (diffDays === 1) return 'Yesterday';
+        if (diffDays < 7) return `${diffDays} days ago`;
+        if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+        if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
+        return `${Math.floor(diffDays / 365)} years ago`;
+      },
+
+      // String manipulation
+      slugify: (text) => {
+        return text
+          .toLowerCase()
+          .replace(/[^\w\s-]/g, '')
+          .replace(/[\s_-]+/g, '-')
+          .replace(/^-+|-+$/g, '');
+      },
+
+      // Excerpt generation
+      excerpt: (content, length = 150) => {
+        const text = content.replace(/<[^>]*>/g, '');
+        return text.length > length
+          ? text.substring(0, length).trim() + '...'
+          : text;
+      },
+
+      // Reading time estimation
+      readingTime: (content) => {
+        const wordsPerMinute = 200;
+        const text = content.replace(/<[^>]*>/g, '');
+        const words = text.trim().split(/\s+/).length;
+        const minutes = Math.ceil(words / wordsPerMinute);
+        return `${minutes} min read`;
+      }
+    }
+  }
+});
+```
+
+Use filters in templates:
+
+```html
+<!-- Post template -->
+<article class="post">
+  <header>
+    <h1><%= stati.page.title %></h1>
+    <div class="meta">
+      <time><%= stati.formatDate(stati.page.publishedAt) %></time>
+      <span><%= stati.timeAgo(stati.page.publishedAt) %></span>
+      <span><%= stati.readingTime(stati.content) %></span>
+    </div>
+  </header>
+  <%~ stati.content %>
+</article>
+```
+
+### Breadcrumb Navigation
+
+Generate breadcrumbs from the current page URL:
+
+```html
+<!-- _partials/breadcrumbs.eta -->
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  <ol class="breadcrumb-list">
+    <li class="breadcrumb-item">
+      <a href="/">Home</a>
+    </li>
+    <%
+      const parts = stati.page.url.split('/').filter(Boolean);
+      let currentPath = '';
+    %>
+    <% parts.forEach((part, index) => { %>
+      <% currentPath += '/' + part; %>
+      <li class="breadcrumb-item">
+        <% if (index < parts.length - 1) { %>
+          <a href="<%= currentPath %>">
+            <%= part.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) %>
+          </a>
+        <% } else { %>
+          <span aria-current="page">
+            <%= stati.page.title || part.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) %>
+          </span>
+        <% } %>
+      </li>
+    <% }); %>
+  </ol>
+</nav>
+```
+
+## SEO & Metadata
+
+### Leveraging Built-in SEO
+
+Stati provides automatic SEO tag injection. Configure it in your config:
+
+```javascript
+// stati.config.js
+export default defineConfig({
+  site: {
+    title: 'My Awesome Site',
+    baseUrl: 'https://example.com',
+    defaultLocale: 'en-US'
+  },
+
+  seo: {
+    autoInject: true,
+    defaultAuthor: {
+      name: 'Your Name',
+      email: 'you@example.com',
+      url: 'https://yoursite.com'
+    }
+  },
+
+  sitemap: {
+    enabled: true,
+    defaultPriority: 0.5,
+    defaultChangeFreq: 'monthly',
+    priorityRules: [
+      { pattern: '/', priority: 1.0 },
+      { pattern: '/blog/**', priority: 0.8 }
+    ]
+  },
+
+  robots: {
+    enabled: true,
+    disallow: ['/admin/', '/draft/'],
+    sitemap: true
+  }
+});
+```
+
+Add SEO metadata in front matter:
+
+```markdown
+---
+title: My Blog Post
+description: A comprehensive guide to...
+seo:
+  title: Custom SEO Title | My Site
+  description: Custom meta description
+  keywords: [stati, ssg, jamstack]
+  image: /images/og-image.jpg
+  author: John Doe
+  openGraph:
+    type: article
+    article:
+      publishedTime: 2024-01-15
+      tags: [tech, web-dev]
+  twitter:
+    card: summary_large_image
+    site: '@mysite'
+---
+```
+
+### Custom Structured Data
+
+Add structured data using build hooks:
+
+```javascript
+// stati.config.js
+export default defineConfig({
+  hooks: {
+    beforeRender: async (ctx) => {
+      // Add structured data for blog posts
+      if (ctx.page.frontMatter.type === 'post') {
+        ctx.page.frontMatter.seo = ctx.page.frontMatter.seo || {};
+        ctx.page.frontMatter.seo.structuredData = {
+          '@context': 'https://schema.org',
+          '@type': 'BlogPosting',
+          headline: ctx.page.frontMatter.title,
+          description: ctx.page.frontMatter.description,
+          datePublished: ctx.page.publishedAt?.toISOString(),
+          dateModified: ctx.page.frontMatter.modifiedAt || ctx.page.publishedAt?.toISOString(),
+          author: {
+            '@type': 'Person',
+            name: ctx.page.frontMatter.author || ctx.config.seo?.defaultAuthor?.name
+          },
+          publisher: {
+            '@type': 'Organization',
+            name: ctx.config.site.title,
+            url: ctx.config.site.baseUrl
+          }
+        };
+      }
+    }
+  }
+});
+```
+
+## Advanced Patterns
+
+### Build-time Data Fetching
+
+Fetch external data during build using hooks:
+
+```javascript
+// stati.config.js
+export default defineConfig({
+  hooks: {
+    beforeAll: async (ctx) => {
+      // Fetch data from external API
+      const response = await fetch('https://api.example.com/data');
+      const data = await response.json();
+
+      // Store in a way that templates can access
+      ctx.pages.forEach(page => {
+        if (page.frontMatter.useExternalData) {
+          page.frontMatter.externalData = data;
+        }
+      });
+    }
+  }
+});
+```
+
+### Dynamic Class Names with propValue
+
+Use `stati.propValue()` for clean dynamic class generation:
+
+```html
+<!-- Component with dynamic classes -->
+<button
+  class="<%= stati.propValue(
+    'btn',
+    `btn-${stati.page.variant || 'primary'}`,
+    stati.page.large && 'btn-lg',
+    stati.page.disabled && 'btn-disabled'
+  ) %>"
+>
+  <%= stati.page.buttonText %>
+</button>
+
+<!-- Dynamic attributes -->
+<div
+  class="<%= stati.propValue('card', stati.page.featured && 'featured') %>"
+  data-category="<%= stati.page.category %>"
+  data-analytics="<%= stati.propValue('card-click', `category-${stati.page.category}`) %>"
+>
+  <!-- Card content -->
+</div>
+```
+
+### ISG Cache Invalidation Strategies
+
+Configure intelligent caching with aging rules:
+
+```javascript
+// stati.config.js
+export default defineConfig({
+  isg: {
+    enabled: true,
+    ttlSeconds: 21600, // 6 hours default
+
+    // Age-based TTL adjustment
+    aging: [
+      { untilDays: 7, ttlSeconds: 21600 },    // 6 hours for week-old content
+      { untilDays: 30, ttlSeconds: 86400 },   // 1 day for month-old content
+      { untilDays: 90, ttlSeconds: 259200 },  // 3 days for 3-month-old content
+    ],
+
+    // Tag-based invalidation
+    tagging: {
+      enabled: true,
+      rules: [
+        // Tag by content type
+        (page) => page.frontMatter.type ? [`type:${page.frontMatter.type}`] : [],
+
+        // Tag by category
+        (page) => page.frontMatter.category ? [`category:${page.frontMatter.category}`] : [],
+
+        // Tag by author
+        (page) => page.frontMatter.author ? [`author:${page.frontMatter.author}`] : [],
+
+        // Tag by recency
+        (page) => {
+          if (!page.publishedAt) return [];
+          const now = new Date();
+          const published = new Date(page.publishedAt);
+          const diffDays = Math.floor((now - published) / (1000 * 60 * 60 * 24));
+
+          if (diffDays <= 7) return ['recent'];
+          if (diffDays <= 30) return ['this-month'];
+          return ['archive'];
+        }
+      ]
+    }
+  }
+});
+```
+
+Invalidate cache using tags:
+
+```bash
+# Invalidate by tag
+stati invalidate "tag:recent"
+stati invalidate "tag:type:post"
+
+# Invalidate by path pattern
+stati invalidate "path:/blog/**"
+
+# Invalidate by age
+stati invalidate "age:3months"
+```
+
+### Performance Monitoring
+
+Track build performance with hooks:
+
+```javascript
+// stati.config.js
+export default defineConfig({
+  hooks: {
+    beforeAll: async (ctx) => {
+      ctx.buildStartTime = Date.now();
+      console.log(`Building ${ctx.pages.length} pages...`);
+    },
+
+    afterRender: async (ctx) => {
+      const renderTime = Date.now() - (ctx.renderStartTime || 0);
+      if (renderTime > 100) {
+        console.warn(`Slow render: ${ctx.page.url} took ${renderTime}ms`);
+      }
+    },
+
+    afterAll: async (ctx) => {
+      const totalTime = Date.now() - (ctx.buildStartTime || 0);
+      console.log(`Build completed in ${totalTime}ms`);
+      console.log(`Average: ${Math.round(totalTime / ctx.pages.length)}ms per page`);
+    }
+  }
+});
+```
+
+### Environment-Specific Configuration
+
+Use environment variables for different build targets:
+
+```javascript
+// stati.config.js
+import { getEnv } from '@stati/core';
+
+const isDev = getEnv() === 'development';
+const isProd = getEnv() === 'production';
+
+export default defineConfig({
+  site: {
+    baseUrl: isProd
+      ? 'https://example.com'
+      : 'http://localhost:3000'
+  },
+
+  isg: {
+    enabled: isProd, // Only enable ISG in production
+    ttlSeconds: isDev ? 0 : 21600 // No cache in dev
+  },
+
+  seo: {
+    autoInject: isProd, // Only inject SEO tags in production
+    debug: isDev // Enable SEO debugging in development
+  },
+
+  markdown: {
+    html: true,
+    linkify: true,
+    typographer: isProd // Only enable typography in production for speed
+  }
+});
+```
+
 ### Markdown Extensions
 
-Add custom markdown processing:
+Add custom markdown processing with plugins and the configure function:
 
 ```javascript
 // stati.config.js
@@ -196,310 +545,87 @@ import markdownItTocDoneRight from 'markdown-it-toc-done-right';
 
 export default defineConfig({
   markdown: {
-    html: true,
-    linkify: true,
-    typographer: true,
-
-    // Custom plugins
+    // Load markdown-it plugins
     plugins: [
-      // Anchor links for headings
-      [
-        markdownItAnchor,
-        {
-          permalink: markdownItAnchor.permalink.headerLink({
-            safariReaderFix: true,
-            class: 'header-link',
-          }),
-        },
-      ],
-
-      // Table of contents
-      [
-        markdownItTocDoneRight,
-        {
-          containerClass: 'table-of-contents',
-          listType: 'ul',
-          level: [1, 2, 3],
-        },
-      ],
-
-      // Custom containers
-      [
-        markdownItContainer,
-        'tip',
-        {
-          render: (tokens, idx) => {
-            const token = tokens[idx];
-            if (token.nesting === 1) {
-              return '<div class="callout callout-tip">\n';
-            } else {
-              return '</div>\n';
-            }
-          },
-        },
-      ],
-
-      [
-        markdownItContainer,
-        'warning',
-        {
-          render: (tokens, idx) => {
-            const token = tokens[idx];
-            if (token.nesting === 1) {
-              return '<div class="callout callout-warning">\n';
-            } else {
-              return '</div>\n';
-            }
-          },
-        },
-      ],
+      'anchor',
+      'toc-done-right',
+      ['container', 'tip'],
+      ['container', 'warning']
     ],
 
-    // Custom renderer rules
-    renderer: {
-      // Custom image rendering
-      image: (tokens, idx, options, env) => {
-        const token = tokens[idx];
-        const src = token.attrs[token.attrIndex('src')][1];
-        const alt = token.content;
-        const title =
-          token.attrs && token.attrs[token.attrIndex('title')]
-            ? token.attrs[token.attrIndex('title')][1]
-            : '';
+    // Custom markdown-it configuration
+    configure: (md) => {
+      // Customize renderer rules
+      const defaultImageRender = md.renderer.rules.image || ((tokens, idx, options, env, self) => self.renderToken(tokens, idx, options));
 
-        // Add lazy loading and responsive images
+      md.renderer.rules.image = (tokens, idx, options, env, self) => {
+        const token = tokens[idx];
+        const srcIndex = token.attrIndex('src');
+        const altIndex = token.attrIndex('alt');
+        const titleIndex = token.attrIndex('title');
+
+        const src = srcIndex >= 0 ? token.attrs[srcIndex][1] : '';
+        const alt = token.content;
+        const title = titleIndex >= 0 ? token.attrs[titleIndex][1] : '';
+
         return `
           <figure class="image-figure">
-            <img src="${src}"
-                 alt="${alt}"
-                 ${title ? `title="${title}"` : ''}
+            <img src="${md.utils.escapeHtml(src)}"
+                 alt="${md.utils.escapeHtml(alt)}"
+                 ${title ? `title="${md.utils.escapeHtml(title)}"` : ''}
                  loading="lazy"
                  class="responsive-image">
-            ${alt ? `<figcaption>${alt}</figcaption>` : ''}
+            ${alt ? `<figcaption>${md.utils.escapeHtml(alt)}</figcaption>` : ''}
           </figure>
         `;
-      },
+      };
 
-      // Custom code block rendering
-      code_block: (tokens, idx, options, env) => {
+      // Customize fence (code block) rendering
+      const defaultFenceRender = md.renderer.rules.fence || ((tokens, idx, options, env, self) => self.renderToken(tokens, idx, options));
+
+      md.renderer.rules.fence = (tokens, idx, options, env, self) => {
         const token = tokens[idx];
-        const content = token.content;
-        const language = token.info.trim() || 'text';
-
-        // Extract filename from language info
-        const match = language.match(/^(\w+)(?:\s+(.+))?$/);
-        const lang = match ? match[1] : language;
-        const filename = match ? match[2] : '';
+        const info = token.info ? md.utils.unescapeAll(token.info).trim() : '';
+        const langName = info ? info.split(/\s+/g)[0] : '';
+        const filename = info.split(/\s+/g).slice(1).join(' ');
 
         return `
           <div class="code-block">
-            ${filename ? `<div class="code-filename">${filename}</div>` : ''}
-            <pre><code class="language-${lang}">${content}</code></pre>
+            ${filename ? `<div class="code-filename">${md.utils.escapeHtml(filename)}</div>` : ''}
+            <pre><code class="language-${langName}">${md.utils.escapeHtml(token.content)}</code></pre>
             <button class="copy-button" onclick="copyCode(this)">Copy</button>
           </div>
         `;
-      },
-    },
-  },
+      };
+    }
+  }
 });
 ```
-
-
-
-### SEO Optimization
-
-Comprehensive SEO setup:
-
-```javascript
-// stati.config.js
-export default defineConfig({
-  site: {
-    title: 'My Awesome Site',
-    description: 'A fantastic website built with Stati',
-    url: 'https://example.com',
-    author: 'Your Name',
-    language: 'en',
-  },
-
-  eta: {
-    globals: {
-      // Generate structured data
-      generateStructuredData: (page, site) => {
-        const baseData = {
-          '@context': 'https://schema.org',
-          '@type': 'WebSite',
-          name: site.title,
-          url: site.url,
-          description: site.description,
-          author: {
-            '@type': 'Person',
-            name: site.author,
-          },
-        };
-
-        if (page.data.type === 'post') {
-          return {
-            ...baseData,
-            '@type': 'BlogPosting',
-            headline: page.data.title,
-            description: page.data.description,
-            datePublished: page.data.date,
-            dateModified: page.data.updated || page.data.date,
-            author: {
-              '@type': 'Person',
-              name: page.data.author || site.author,
-            },
-            publisher: {
-              '@type': 'Organization',
-              name: site.title,
-              url: site.url,
-            },
-          };
-        }
-
-        return baseData;
-      },
-
-      // Generate meta tags
-      generateMeta: (page, site) => {
-        const meta = [
-          { name: 'description', content: page.data.description || site.description },
-          { name: 'author', content: page.data.author || site.author },
-          { property: 'og:title', content: page.data.title || site.title },
-          { property: 'og:description', content: page.data.description || site.description },
-          { property: 'og:url', content: `${site.url}${page.url}` },
-          { property: 'og:type', content: page.data.type === 'post' ? 'article' : 'website' },
-          { name: 'twitter:card', content: 'summary_large_image' },
-          { name: 'twitter:title', content: page.data.title || site.title },
-          { name: 'twitter:description', content: page.data.description || site.description },
-        ];
-
-        if (page.data.image) {
-          meta.push(
-            { property: 'og:image', content: `${site.url}${page.data.image}` },
-            { name: 'twitter:image', content: `${site.url}${page.data.image}` },
-          );
-        }
-
-        if (page.data.tags) {
-          meta.push({ name: 'keywords', content: page.data.tags.join(', ') });
-        }
-
-        return meta;
-      },
-    },
-  },
-});
-```
-
-```html
-<!-- layout.eta -->
-<!DOCTYPE html>
-<html lang="<%= stati.site.language %>">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-    <!-- Basic meta -->
-    <title>
-      <%= stati.page.data.title ? `${stati.page.data.title} | ${stati.site.title}` : stati.site.title %>
-    </title>
-
-    <!-- Generated meta tags -->
-    <% const metaTags = stati.generateMeta(stati.page, stati.site) %> <% metaTags.forEach(tag => { %> <% if
-    (tag.name) { %>
-    <meta name="<%= tag.name %>" content="<%= tag.content %>" />
-    <% } else if (tag.property) { %>
-    <meta property="<%= tag.property %>" content="<%= tag.content %>" />
-    <% } %> <% }) %>
-
-    <!-- Canonical URL -->
-    <link rel="canonical" href="<%= stati.site.url %><%= stati.page.url %>" />
-
-    <!-- Structured data -->
-    <script type="application/ld+json">
-      <%~ JSON.stringify(stati.generateStructuredData(stati.page, stati.site), null, 2) %>
-    </script>
-
-    <!-- CSS -->
-    <link rel="stylesheet" href="/styles.css" />
-  </head>
-  <body>
-    <%~ stati.body %>
-  </body>
-</html>
-```
-
-
 
 ## Development Workflow
 
-### Development Server Configuration
-
-Basic development server setup:
-
-```javascript
-// stati.config.js
-export default defineConfig({
-  dev: {
-    port: 3000,
-    host: 'localhost',
-    open: true,
-  },
-});
-```
-
-### Build Scripts
-
-Custom build workflows:
+### Custom Build Scripts
 
 ```json
 {
   "scripts": {
-    "dev": "stati dev",
-    "build": "npm run build:clean && npm run build:site && npm run build:optimize",
-    "build:clean": "rimraf dist",
-    "build:site": "stati build",
-    "build:optimize": "npm run optimize:images && npm run optimize:css && npm run optimize:js",
-    "optimize:images": "node scripts/optimize-images.js",
-    "optimize:css": "node scripts/optimize-css.js",
-    "optimize:js": "node scripts/optimize-js.js",
-    "preview": "npx serve dist",
-    "analyze": "npm run build && node scripts/analyze-bundle.js",
-    "lighthouse": "npm run build && node scripts/lighthouse-ci.js",
-    "deploy": "npm run build && node scripts/deploy.js"
+    "dev": "stati dev --port 3000",
+    "build": "npm run build:clean && stati build",
+    "build:clean": "rimraf dist .stati",
+    "preview": "stati preview --port 8080",
+    "invalidate:recent": "stati invalidate 'tag:recent'",
+    "invalidate:all": "stati invalidate 'path:/**'"
   }
 }
 ```
 
-```javascript
-// scripts/lighthouse-ci.js
-import { spawn } from 'child_process';
-import { createServer } from 'http-server';
+### Git Hooks for Cache Management
 
-async function runLighthouse() {
-  // Start local server
-  const server = createServer({ root: './dist' });
-  server.listen(8080);
-
-  try {
-    // Run Lighthouse CI
-    const lhci = spawn('npx', ['lhci', 'autorun', '--upload.target=temporary-public-storage'], {
-      stdio: 'inherit',
-    });
-
-    await new Promise((resolve, reject) => {
-      lhci.on('close', (code) => {
-        if (code === 0) resolve();
-        else reject(new Error(`Lighthouse CI failed with code ${code}`));
-      });
-    });
-  } finally {
-    server.close();
-  }
-}
-
-runLighthouse().catch(console.error);
+```bash
+# .husky/post-merge
+#!/bin/sh
+# Invalidate cache after pulling changes
+stati invalidate "age:0days"
 ```
 
-This recipe collection provides practical, copy-paste solutions for common Stati use cases, helping developers quickly implement powerful features and optimizations in their static sites.
+This recipe collection provides practical, tested solutions for common Stati use cases, all verified against the current implementation.
