@@ -33,16 +33,63 @@ export type {
   BuildStats,
 } from './types/index.js';
 
-export type { BuildOptions } from './core/build.js';
-export type { DevServerOptions } from './core/dev.js';
-export type { PreviewServerOptions } from './core/preview.js';
-export type { InvalidationResult } from './core/invalidate.js';
+// SEO and Sitemap types
+export type {
+  SEOMetadata,
+  SEOConfig,
+  SEOContext,
+  SEOValidationResult,
+  SEOTagType,
+  RobotsConfig,
+  OpenGraphConfig,
+  OpenGraphImage,
+  OpenGraphArticle,
+  TwitterCardConfig,
+  AuthorConfig,
+} from './types/index.js';
 
-export { build } from './core/build.js';
-export { createDevServer } from './core/dev.js';
-export { createPreviewServer } from './core/preview.js';
+export type {
+  SitemapConfig,
+  SitemapEntry,
+  SitemapGenerationResult,
+  ChangeFrequency,
+} from './types/index.js';
+
+// Re-export core functionality from barrel
+export type {
+  BuildOptions,
+  DevServerOptions,
+  PreviewServerOptions,
+  InvalidationResult,
+} from './core/index.js';
+export { build, createDevServer, createPreviewServer, invalidate } from './core/index.js';
+
+// Re-export SEO functionality from barrel
+export type { AutoInjectOptions } from './seo/index.js';
+export {
+  generateSEOMetadata,
+  generateSEO,
+  generateOpenGraphTags,
+  generateTwitterCardTags,
+  generateSitemap,
+  generateSitemapEntry,
+  generateSitemapXml,
+  generateSitemapIndexXml,
+  generateRobotsTxt,
+  generateRobotsTxtFromConfig,
+  escapeHtml,
+  generateRobotsContent,
+  validateSEOMetadata,
+  detectExistingSEOTags,
+  normalizeUrlPath,
+  resolveAbsoluteUrl,
+  isValidUrl,
+  autoInjectSEO,
+  shouldAutoInject,
+} from './seo/index.js';
+
+// Re-export config and env utilities
 export { loadConfig } from './config/loader.js';
-export { invalidate } from './core/invalidate.js';
 export { setEnv, getEnv } from './env.js';
 
 // Import for implementation use

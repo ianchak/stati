@@ -534,5 +534,107 @@ describe('build.ts', () => {
 
       expect(mockLoadContent).toHaveBeenCalledWith(mockConfig, true);
     });
+
+    it('should generate sitemap when enabled', async () => {
+      const configWithSitemap: StatiConfig = {
+        ...mockConfig,
+        sitemap: {
+          enabled: true,
+          defaultPriority: 0.5,
+          defaultChangeFreq: 'monthly',
+        },
+      };
+
+      mockLoadConfig.mockResolvedValue(configWithSitemap);
+
+      await build();
+
+      // Should write sitemap.xml
+      const sitemapCall = mockWriteFile.mock.calls.find((call) => call[0].includes('sitemap.xml'));
+      expect(sitemapCall).toBeDefined();
+      expect(sitemapCall?.[0]).toMatch(/[/\\]test[/\\]project[/\\]dist[/\\]sitemap\.xml$/);
+      expect(sitemapCall?.[1]).toContain('<?xml version="1.0" encoding="UTF-8"?>');
+      expect(sitemapCall?.[1]).toContain('<urlset');
+      expect(sitemapCall?.[1]).toContain('https://example.com/');
+      expect(sitemapCall?.[1]).toContain('https://example.com/about');
+    });
+
+    it('should not generate sitemap when disabled', async () => {
+      const configWithoutSitemap: StatiConfig = {
+        ...mockConfig,
+        sitemap: {
+          enabled: false,
+        },
+      };
+
+      mockLoadConfig.mockResolvedValue(configWithoutSitemap);
+
+      await build();
+
+      // Should not write sitemap.xml
+      const sitemapCall = mockWriteFile.mock.calls.find((call) => call[0].includes('sitemap.xml'));
+      expect(sitemapCall).toBeUndefined();
+    });
+
+    it('should generate robots.txt when enabled', async () => {
+      const configWithRobots: StatiConfig = {
+        ...mockConfig,
+        robots: {
+          enabled: true,
+          allow: ['/'],
+          disallow: ['/admin'],
+        },
+      };
+
+      mockLoadConfig.mockResolvedValue(configWithRobots);
+
+      await build();
+
+      // Should write robots.txt
+      const robotsCall = mockWriteFile.mock.calls.find((call) => call[0].includes('robots.txt'));
+      expect(robotsCall).toBeDefined();
+      expect(robotsCall?.[0]).toMatch(/[/\\]test[/\\]project[/\\]dist[/\\]robots\.txt$/);
+      expect(robotsCall?.[1]).toContain('User-agent: *');
+      expect(robotsCall?.[1]).toContain('Allow: /');
+      expect(robotsCall?.[1]).toContain('Disallow: /admin');
+    });
+
+    it('should not generate robots.txt when disabled', async () => {
+      const configWithoutRobots: StatiConfig = {
+        ...mockConfig,
+        robots: {
+          enabled: false,
+        },
+      };
+
+      mockLoadConfig.mockResolvedValue(configWithoutRobots);
+
+      await build();
+
+      // Should not write robots.txt
+      const robotsCall = mockWriteFile.mock.calls.find((call) => call[0].includes('robots.txt'));
+      expect(robotsCall).toBeUndefined();
+    });
+
+    it('should handle sitemap and robots.txt write errors gracefully', async () => {
+      const configWithBoth: StatiConfig = {
+        ...mockConfig,
+        sitemap: { enabled: true },
+        robots: { enabled: true },
+      };
+
+      mockLoadConfig.mockResolvedValue(configWithBoth);
+
+      // Mock writeFile to throw error only for sitemap
+      mockWriteFile.mockImplementation((path: string) => {
+        if (path.includes('sitemap.xml')) {
+          return Promise.reject(new Error('Failed to write sitemap'));
+        }
+        return Promise.resolve();
+      });
+
+      // Should throw error when sitemap write fails
+      await expect(build()).rejects.toThrow('Failed to write sitemap');
+    });
   });
 });

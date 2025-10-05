@@ -3,17 +3,18 @@ import { join, dirname, relative, basename, posix } from 'path';
 import glob from 'fast-glob';
 import type { StatiConfig, PageModel, NavNode, CollectionData } from '../types/index.js';
 import { TEMPLATE_EXTENSION } from '../constants.js';
-import { getStatiVersion } from './utils/version.js';
-import { getEnv } from '../env.js';
 import {
+  getStatiVersion,
   isCollectionIndexPage,
   discoverLayout,
   getCollectionPathForPage,
-} from './utils/template-discovery.js';
-import { resolveSrcDir } from './utils/paths.js';
-import { createTemplateError } from './utils/template-errors.js';
-import { createValidatingPartialsProxy } from './utils/partial-validation.js';
-import { propValue } from './utils/template-utils.js';
+  resolveSrcDir,
+  createTemplateError,
+  createValidatingPartialsProxy,
+  propValue,
+} from './utils/index.js';
+import { getEnv } from '../env.js';
+import { generateSEO } from '../seo/index.js';
 
 /**
  * Groups pages by their tags for aggregation purposes.
@@ -242,7 +243,8 @@ export async function renderPage(
     generator: {
       version: getStatiVersion(),
     },
-    // Template utilities
+    // Stati utilities object with helper functions
+    generateSEO: (tags?: string[]) => generateSEO({ page, config, site: config.site }, tags),
     propValue,
   };
 

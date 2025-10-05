@@ -71,6 +71,9 @@ describe('HTML Output Snapshots', () => {
       title: 'Stati Documentation',
       baseUrl: 'https://example.com',
     },
+    seo: {
+      autoInject: false, // Disable auto-injection for snapshot tests
+    },
   };
 
   const mockEta = {

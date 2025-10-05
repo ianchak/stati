@@ -1,10 +1,9 @@
 import glob from 'fast-glob';
-import { readFile } from './utils/fs.js';
+import { readFile, resolveSrcDir } from './utils/index.js';
 import matter from 'gray-matter';
 import { relative, dirname, basename } from 'path';
 import type { PageModel, StatiConfig } from '../types/index.js';
 import { MARKDOWN_EXTENSION } from '../constants.js';
-import { resolveSrcDir } from './utils/paths.js';
 
 /**
  * Loads and parses all content files from the configured source directory.

@@ -1,203 +1,407 @@
-# Stati — Lightweight TypeScript Static Site Generator
+# Stati
 
-Stati is a **lightweight static site generator** (SSG) built in **TypeScript** using **Markdown-It**, and **Eta templates**. It prioritizes speed, simplicity, and developer experience with features like live reload development server, incremental static generation, and project scaffolding.
+**A minimal, TypeScript-first static site generator that's fast to learn and even faster to build with.**
+
+Built for developers who want modern tooling without the complexity. Write in Markdown, template with Eta, and deploy anywhere.
+
+---
+
+## Why Stati?
+
+- **Fast Setup** — Create a site in under 2 minutes with `npx create-stati`
+- **Simple by Design** — Markdown files become pages. No complex configuration required.
+- **Smart Caching** — Incremental builds with intelligent cache invalidation
+- **Your Choice of CSS** — Plain CSS, Sass, or Tailwind CSS
+- **SEO Ready** — Automatic meta tags, Open Graph, and structured data
 
 ---
 
 ## Quick Start
 
-### Create a New Project
-
 ```bash
-# Create a new Stati site
-npx create-stati
+# Create a new site
+npx create-stati my-site
 
-# Navigate to your project
+# Start building
 cd my-site
-
-# Install dependencies
 npm install
-
-# Start development server
 npm run dev
-
 ```
 
-The scaffolder will guide you through setting up a new project with your choice of styling (CSS, Sass, or Tailwind CSS).
+Your site is now running at `http://localhost:3000` with live reload. Edit `site/index.md` to see changes instantly.
 
 ---
 
-## Features
+## How It Works
 
-### Core Features
+Stati uses a simple file-based structure:
 
-- **Project Scaffolding** — `npx create-stati` with interactive setup and styling options
-- **Filesystem-based routing** from `site/` directory
-- **Markdown + front-matter** with customizable plugins
-- **Eta template engine** with layouts & partials support
-- **Hierarchical partial overriding** — customize templates per directory with inheritance
-- **Development server** with live reload and hot rebuilding
-- **Static asset copying** from `public/` directory
-- **TypeScript-first** configuration with full type safety
-- **Comprehensive testing** with Vitest and 440+ tests
-- **Draft page support** with `--include-drafts` flag
-- **Incremental Static Generation (ISG)** with TTL, aging, and freeze
-- **Cache manifest** with input hashing and dependency tracking
-- **Invalidation CLI** — invalidate by tag, path, or age
-- **Build modes** — incremental by default; `--force` and `--clean` supported
-- **CSS Preprocessing** — Sass and Tailwind CSS integration via scaffolder
+```
+my-site/
+├── site/           # Your content (Markdown + templates)
+│   ├── index.md    # Homepage
+│   └── about.md    # About page → /about/
+├── public/         # Static assets (CSS, images, fonts)
+└── stati.config.js # Optional configuration
+```
+
+**Write content:**
+```markdown
+---
+title: Welcome
+---
+
+# Hello Stati
+
+This is my first page. It's just Markdown.
+```
+
+**Pages are automatically routed:**
+- `site/index.md` → `/`
+- `site/blog/hello.md` → `/blog/hello/`
+- `site/about.md` → `/about/`
 
 ---
 
-## ISG at a glance
+## Key Features
 
-- Default builds are incremental when a cache exists; full rebuild on first run.
-- Pages rebuild when inputs change, TTL expires (unless frozen), or when explicitly invalidated.
-- Per-page overrides via front‑matter: `ttlSeconds`, `maxAgeCapDays`, `tags`, `publishedAt`.
-- Invalidate examples:
-  - `stati invalidate "tag:news"`
-  - `stati invalidate "path:/blog/2024/hello"`
-  - `stati invalidate "age:3months"`
+### Markdown-First
 
-See the ISG concept guide on [docs.stati.build/core-concepts/isg/](https://docs.stati.build/core-concepts/isg/) and configuration details at [docs.stati.build/configuration/](https://docs.stati.build/configuration/).
+Write content in Markdown with front-matter for metadata:
 
+```markdown
+---
+title: My Post
+description: A great article
+date: 2024-01-15
 ---
 
-## CLI Usage
+# My Post
 
-### Project Creation
+Your content here...
+```
+
+### Flexible Templating
+
+Customize layouts with [Eta templates](https://eta.js.org):
+
+```html
+<!-- site/layout.eta -->
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= stati.page.title %></title>
+  </head>
+  <body>
+    <%~ stati.page.content %>
+  </body>
+</html>
+```
+
+### Incremental Static Generation (ISG)
+
+Pages rebuild only when needed:
+- **Smart caching** — Only changed pages rebuild
+- **TTL-based refresh** — Control how long pages stay cached
+- **Tag-based invalidation** — Update related content together
 
 ```bash
-# Interactive setup
-npx create-stati
+# Invalidate by tag
+stati invalidate "tag:news"
 
-# Non-interactive with flags
-npx create-stati my-site --template=blank --styling=tailwind --git
+# Invalidate by path
+stati invalidate "path:/blog/2024/"
+
+# Invalidate by age
+stati invalidate "age:3months"
 ```
 
-**Scaffolding Options:**
+### Built-in SEO
 
-- **Templates**: `blank` (minimal starter)
-- **Styling**: `css`, `sass`, `tailwind`
-- **Features**: Git initialization, CSS preprocessing
+SEO optimization works automatically with zero configuration. Stati analyzes your pages and injects SEO metadata during build.
 
-### Available Commands
+**What's included by default:**
+- Meta tags (title, description, keywords)
+- Open Graph tags for Facebook/LinkedIn
+- Twitter Cards
+- Structured data (JSON-LD) when configured in frontmatter
 
-- **`stati build`** — Build your site with options for force rebuild, cleaning cache, and including drafts
-- **`stati dev`** — Start development server with configurable port, host, and auto-open browser
-- **`stati preview`** — Serve the built site locally for preview with configurable port and host
-- **`stati invalidate`** — Cache invalidation by tags, paths, patterns, or age
+You can also enable sitemap and robots.txt generation with a single config option.
 
-_Commands available when `@stati/cli` is installed in your project._
+### CSS Your Way
 
-### Development Workflow
+Choose your styling approach during setup:
 
 ```bash
-# Navigate to your Stati project
-cd my-stati-site
+npx create-stati my-site --styling=tailwind
+```
 
-# Development server with live reload
-npm run dev
+- **Plain CSS** — Simple and straightforward
+- **Sass/SCSS** — CSS with superpowers
+- **Tailwind CSS** — Utility-first framework
 
-# Build the site
-npm run build
+---
 
-# Preview the built site
-npm run preview
+## CLI Commands
 
-# Or use CLI commands directly
-stati dev --port 3000 --open
-stati build --force --clean --include-drafts
-stati preview --port 4000 --open
+```bash
+# Development
+npm run dev              # Start dev server with live reload
+npm run dev -- --port 8080 --open
+
+# Production
+npm run build            # Build site for production
+npm run build -- --clean --force
+
+# Preview
+npm run preview          # Test production build locally
+
+# Cache Management
+npx stati invalidate "tag:news"
+npx stati invalidate "path:/blog/"
+npx stati invalidate "age:6months"
 ```
 
 ---
 
-## 📦 Packages
+## Configuration
 
+Stati works with zero configuration, but you can customize it by creating `stati.config.js`:
+
+### Minimal Configuration
+
+```javascript
+import { defineConfig } from '@stati/core';
+
+export default defineConfig({
+  site: {
+    title: 'My Stati Site',
+    baseUrl: 'https://example.com',
+  },
+});
 ```
-packages/
-├─ @stati/core         → Core SSG engine with build, dev server, and content processing
-├─ @stati/cli          → Command-line interface (stati build, dev, preview, invalidate)
-└─ create-stati        → Project scaffolder (npx create-stati)
+
+This is all you need! Stati automatically enables:
+- **ISG caching** with 6-hour TTL
+- **SEO auto-injection** for all pages
+- **Markdown processing** with standard features
+
+### Extended Configuration
+
+Customize behavior or enable optional features:
+
+```javascript
+import { defineConfig } from '@stati/core';
+
+export default defineConfig({
+  // Directory configuration
+  srcDir: 'site',           // Content source (default: 'site')
+  outDir: 'dist',           // Build output (default: 'dist')
+  staticDir: 'public',      // Static assets (default: 'public')
+
+  // Site metadata
+  site: {
+    title: 'My Stati Site',
+    baseUrl: 'https://example.com',
+    defaultLocale: 'en-US',
+  },
+
+  // Markdown processing
+  markdown: {
+    plugins: [
+      'anchor',                                      // Add anchor links to headings
+      'toc-done-right',                             // Table of contents
+      ['external-links', { externalTarget: '_blank' }], // Open external links in new tab
+    ],
+    configure: (md) => {
+      // Configure MarkdownIt instance directly
+    },
+  },
+
+  // Eta template engine
+  eta: {
+    filters: {
+      formatDate: (date) => new Date(date).toLocaleDateString('en-US'),
+      slugify: (text) => text.toLowerCase().replace(/\s+/g, '-'),
+    },
+  },
+
+  // Incremental Static Generation (enabled by default)
+  isg: {
+    ttlSeconds: 86400,        // Cache TTL: 24 hours (default: 21600 / 6 hours)
+    maxAgeCapDays: 30,        // Max age for aging rules (default: 365)
+    aging: [
+      { untilDays: 7, ttlSeconds: 86400 },   // 1 day cache for week-old content
+      { untilDays: 30, ttlSeconds: 604800 }, // 1 week cache for month-old content
+    ],
+  },
+
+  // SEO configuration (auto-injection enabled by default)
+  seo: {
+    defaultAuthor: {
+      name: 'John Doe',
+      email: 'john@example.com',
+      url: 'https://johndoe.com',
+    },
+    debug: false,             // Enable SEO debug logging
+  },
+
+  // Sitemap generation (opt-in)
+  sitemap: {
+    enabled: true,
+    defaultPriority: 0.5,
+    defaultChangeFreq: 'monthly',
+    excludePatterns: ['/draft/**', '/admin/**'],
+    priorityRules: [
+      { pattern: '/', priority: 1.0 },
+      { pattern: '/blog/**', priority: 0.8 },
+    ],
+  },
+
+  // Robots.txt generation (opt-in)
+  robots: {
+    enabled: true,
+    disallow: ['/admin/', '/draft/'],
+    sitemap: true,            // Auto-include sitemap URL
+  },
+
+  // Development server
+  dev: {
+    port: 3000,
+    host: 'localhost',
+    open: true,               // Auto-open browser
+  },
+
+  // Build lifecycle hooks
+  hooks: {
+    beforeAll: async (ctx) => {
+      console.log(`Building ${ctx.pages.length} pages...`);
+    },
+    afterAll: async (ctx) => {
+      console.log('Build complete!');
+    },
+  },
+});
 ```
+
+This extended configuration example covers the most common options. For a full list of available settings, see the documentation.
+
+[View full configuration options →](https://docs.stati.build/configuration/)
 
 ---
 
-## Development Setup
+## Examples
 
-For contributors working on Stati itself:
+### Blog Post with SEO
 
-```bash
-# Install dependencies
-npm install
-
-# Build all packages
-npm run build --workspaces
-
-# Run tests to verify setup
-npm run test
-
-# Optional: Run full CI pipeline
-npm run test:ci
-```
-
+```markdown
+---
+title: Getting Started with Stati
+description: Learn how to build fast static sites
+date: 2024-01-15
+tags: [tutorial, stati]
+seo:
+  keywords: [static site generator, typescript, markdown]
+  openGraph:
+    image: /images/tutorial-cover.jpg
 ---
 
-## 📁 Development Scripts
+# Getting Started with Stati
 
-For contributors working on Stati itself:
+Your content here...
+```
 
-```bash
-# Linting and code quality
-npm run lint           # ESLint across packages
-npm run typecheck      # TypeScript compilation check
+### Custom Layout
 
-# Testing
-npm run test           # Run all tests with Vitest (358+ tests)
-
-# Building
-npm run build          # Build core, cli, and create-stati packages
-npm run build:demo     # Build packages and example blog
-
-# CI Pipeline
-npm run test:ci        # CI-specific testing with workspace support
-
-# Release management (via Changesets)
-npm run release:version   # Update package versions
-npm run release:publish   # Publish to npm
-npm run release          # Version + publish + push tags
+```html
+<!-- site/blog/layout.eta -->
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= stati.page.title %> - My Blog</title>
+  </head>
+  <body>
+    <article>
+      <h1><%= stati.page.title %></h1>
+      <time><%= stati.page.date %></time>
+      <%~ stati.page.content %>
+    </article>
+  </body>
+</html>
 ```
 
 ---
 
 ## Documentation
 
-- [Getting Started Guide](https://docs.stati.build/getting-started/) — Quick start and project setup
-- [Configuration Reference](https://docs.stati.build/configuration/) — Complete configuration reference
-- [Error Handling](https://docs.stati.build/api/error-handling/) — Error codes, fallbacks, and debugging
-- [Feature Overview](https://docs.stati.build/core-concepts/) — Detailed feature descriptions
-- [ISG Concept & TTL Model](https://docs.stati.build/core-concepts/isg/) — Incremental static generation guide
+- [**Getting Started**](https://docs.stati.build/getting-started/) — Installation and first steps
+- [**Core Concepts**](https://docs.stati.build/core-concepts/) — How Stati works
+- [**Configuration**](https://docs.stati.build/configuration/) — All configuration options
+- [**SEO Guide**](https://docs.stati.build/configuration/seo/) — Optimize for search engines
+- [**ISG & Caching**](https://docs.stati.build/core-concepts/isg/) — Smart rebuilds explained
+- [**API Reference**](https://docs.stati.build/api/) — Complete API documentation
+
+---
+
+## Project Structure
+
+This is a monorepo containing:
+
+```
+packages/
+├── @stati/core       # Core static site generator engine
+├── @stati/cli        # Command-line interface
+└── create-stati      # Project scaffolding tool
+```
+
+Each package can be used independently or together for the complete Stati experience.
+
+---
+
+## Requirements
+
+- **Node.js** 22.0.0 or higher
+- **npm** 8.0.0 or higher (or equivalent package manager)
 
 ---
 
 ## Contributing
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for setup, coding style, and PR instructions.
+We welcome contributions! See [CONTRIBUTING.md](./CONTRIBUTING.md) for:
+- Development setup
+- Coding guidelines
+- Testing requirements
+- PR process
 
 ---
 
 ## Philosophy
 
-- **Minimal dependencies**: Only essential packages (markdown-it, eta, yargs, fast-glob, etc.)
-- **TypeScript-first**: Full type safety with comprehensive interfaces and strict configuration
-- **Developer experience**: Fast builds, live reload, helpful error messages, and intuitive CLI
-- **Composable architecture**: Templates, layouts, partials, and hooks are all extensible
-- **Safe by default**: Drafts excluded from builds, robust error handling, comprehensive testing
-- **Getting started fast**: `npx create-stati` gets you running in under 2 minutes
+Stati is built on these principles:
+
+- **Simplicity over complexity** — Only include what you need
+- **Speed by default** — Fast builds, fast development, fast sites
+- **TypeScript-first** — Type safety throughout
+- **Developer experience** — Great tooling makes great sites
+- **Safe defaults** — Sensible choices that just work
 
 ---
 
 ## License
 
 MIT © [Imre Csige](https://github.com/ianchak)
+
+---
+
+## Quick Links
+
+- [Documentation](https://docs.stati.build)
+- [Examples](https://docs.stati.build/examples/)
+- [GitHub Issues](https://github.com/ianchak/stati/issues)
+- [Discussions](https://github.com/ianchak/stati/discussions)
+
+**Ready to build something?**
+
+```bash
+npx create-stati my-awesome-site
+```

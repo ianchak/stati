@@ -1,10 +1,14 @@
 import { join, dirname, relative, posix } from 'path';
-import { pathExists, readFile } from '../utils/fs.js';
+import {
+  pathExists,
+  readFile,
+  isCollectionIndexPage,
+  discoverLayout,
+  resolveSrcDir,
+} from '../utils/index.js';
 import glob from 'fast-glob';
 import type { PageModel, StatiConfig } from '../../types/index.js';
 import { TEMPLATE_EXTENSION } from '../../constants.js';
-import { isCollectionIndexPage, discoverLayout } from '../utils/template-discovery.js';
-import { resolveSrcDir } from '../utils/paths.js';
 
 /**
  * Error thrown when a circular dependency is detected in templates.

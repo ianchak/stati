@@ -64,8 +64,38 @@
     @apply relative;
   }
 
+  /* Base active state - fallback */
   .sidebar-link.active {
-    @apply text-primary-600 dark:text-primary-400 font-semibold bg-primary-50/60 dark:bg-primary-900/20;
+    @apply font-semibold;
+  }
+
+  /* Section-specific active states */
+  .sidebar-link.active-getting-started {
+    @apply text-primary-700 dark:text-primary-300 bg-primary-100 dark:bg-primary-900/30;
+  }
+
+  .sidebar-link.active-core-concepts {
+    @apply text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/30;
+  }
+
+  .sidebar-link.active-configuration {
+    @apply text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/30;
+  }
+
+  .sidebar-link.active-cli {
+    @apply text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/30;
+  }
+
+  .sidebar-link.active-api {
+    @apply text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-900/30;
+  }
+
+  .sidebar-link.active-examples {
+    @apply text-cyan-700 dark:text-cyan-300 bg-cyan-100 dark:bg-cyan-900/30;
+  }
+
+  .sidebar-link.active-advanced {
+    @apply text-gray-900 dark:text-gray-100 bg-gray-200 dark:bg-gray-800/50 font-bold;
   }
 
   /* Enhanced prose styles */

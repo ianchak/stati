@@ -1,4 +1,15 @@
-import { ensureDir, writeFile, remove, pathExists, stat, readdir, copyFile } from './utils/fs.js';
+import {
+  ensureDir,
+  writeFile,
+  remove,
+  pathExists,
+  stat,
+  readdir,
+  copyFile,
+  resolveOutDir,
+  resolveStaticDir,
+  resolveCacheDir,
+} from './utils/index.js';
 import { join, dirname, relative } from 'path';
 import { posix } from 'path';
 import { loadConfig } from '../config/loader.js';
@@ -6,9 +17,20 @@ import { loadContent } from './content.js';
 import { createMarkdownProcessor, renderMarkdown } from './markdown.js';
 import { createTemplateEngine, renderPage } from './templates.js';
 import { buildNavigation } from './navigation.js';
-import { loadCacheManifest, saveCacheManifest } from './isg/manifest.js';
-import { shouldRebuildPage, createCacheEntry, updateCacheEntry } from './isg/builder.js';
-import { withBuildLock } from './isg/build-lock.js';
+import {
+  loadCacheManifest,
+  saveCacheManifest,
+  shouldRebuildPage,
+  createCacheEntry,
+  updateCacheEntry,
+  withBuildLock,
+} from './isg/index.js';
+import {
+  generateSitemap,
+  generateRobotsTxtFromConfig,
+  autoInjectSEO,
+  type AutoInjectOptions,
+} from '../seo/index.js';
 import type {
   BuildContext,
   BuildStats,
@@ -18,7 +40,6 @@ import type {
   PageModel,
   NavNode,
 } from '../types/index.js';
-import { resolveOutDir, resolveStaticDir, resolveCacheDir } from './utils/paths.js';
 
 /**
  * Options for customizing the build process.
@@ -367,7 +388,23 @@ async function processPagesWithCache(
     }
 
     // Render with template
-    const finalHtml = await renderPage(page, htmlContent, config, eta, navigation, pages);
+    let finalHtml = await renderPage(page, htmlContent, config, eta, navigation, pages);
+
+    // Auto-inject SEO tags if enabled
+    if (config.seo?.autoInject !== false) {
+      const injectOptions: AutoInjectOptions = {
+        page,
+        config,
+        siteUrl: config.site.baseUrl,
+        logger,
+      };
+
+      if (config.seo?.debug !== undefined) {
+        injectOptions.debug = config.seo.debug;
+      }
+
+      finalHtml = autoInjectSEO(finalHtml, injectOptions);
+    }
 
     const renderTime = Date.now() - startTime;
 
@@ -524,6 +561,38 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
   // Copy static assets and count them
   let assetsCount = 0;
   assetsCount = await copyStaticAssets(config, outDir, logger);
+
+  // Generate sitemap if enabled
+  if (config.sitemap?.enabled) {
+    console.log(); // Add spacing before sitemap generation
+    logger.info('Generating sitemap...');
+
+    const sitemapResult = generateSitemap(pages, config, config.sitemap);
+    await writeFile(join(outDir, 'sitemap.xml'), sitemapResult.xml);
+
+    // Write additional sitemap files if split
+    if (sitemapResult.sitemaps) {
+      for (const { filename, xml } of sitemapResult.sitemaps) {
+        await writeFile(join(outDir, filename), xml);
+      }
+      logger.success(
+        `Generated sitemap index with ${sitemapResult.sitemaps.length} sitemaps (${sitemapResult.entryCount} entries)`,
+      );
+    } else {
+      logger.success(`Generated sitemap with ${sitemapResult.entryCount} entries`);
+    }
+  }
+
+  // Generate robots.txt if enabled
+  if (config.robots?.enabled) {
+    console.log(); // Add spacing before robots.txt generation
+    logger.info('Generating robots.txt...');
+
+    const robotsContent = generateRobotsTxtFromConfig(config.robots, config.site.baseUrl);
+    await writeFile(join(outDir, 'robots.txt'), robotsContent);
+
+    logger.success('Generated robots.txt');
+  }
 
   // Run afterAll hook
   if (config.hooks?.afterAll) {

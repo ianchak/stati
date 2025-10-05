@@ -1,3 +1,5 @@
+import { getEnv } from '../../env.js';
+
 /**
  * Creates inline error overlay HTML for missing partials
  */
@@ -99,7 +101,7 @@ export function createValidatingPartialsProxy(
 ): Record<string, string> {
   // In production, return partials as-is
   // Only skip validation if explicitly set to production
-  if (process.env.NODE_ENV === 'production') {
+  if (getEnv() === 'production') {
     return partials;
   }
 
