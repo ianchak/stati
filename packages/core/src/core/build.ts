@@ -25,9 +25,12 @@ import {
   updateCacheEntry,
   withBuildLock,
 } from './isg/index.js';
-import { generateSitemap } from '../seo/sitemap.js';
-import { generateRobotsTxtFromConfig } from '../seo/robots.js';
-import { autoInjectSEO, type AutoInjectOptions } from '../seo/auto-inject.js';
+import {
+  generateSitemap,
+  generateRobotsTxtFromConfig,
+  autoInjectSEO,
+  type AutoInjectOptions,
+} from '../seo/index.js';
 import type {
   BuildContext,
   BuildStats,

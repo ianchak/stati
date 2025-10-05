@@ -14,7 +14,7 @@ import {
   propValue,
 } from './utils/index.js';
 import { getEnv } from '../env.js';
-import { generateSEO } from '../seo/generator.js';
+import { generateSEO } from '../seo/index.js';
 
 /**
  * Groups pages by their tags for aggregation purposes.
