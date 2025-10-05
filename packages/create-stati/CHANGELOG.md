@@ -1,5 +1,37 @@
 # create-stati
 
+## 1.4.1
+
+### Patch Changes
+
+- update coverage configuration to include additional patterns
+
+  Commit: 1bf51dd
+
+- update CI workflow to include coverage reporting
+
+  Commit: c6b9c9f
+
+- update README to fix Docs badge link and remove Bundle Size badge
+
+  Commit: 924821e
+
+- add coverage configuration for testing
+
+  Commit: 623178c
+
+- update README with badges for build, coverage, npm version, and more
+
+  Commit: 3d96d09
+
+- enhance documentation for Stati CLI, Core, and Create Stati
+
+  Commit: adc2c63
+
+- fix indentation in CI workflow for Codecov action
+
+  Commit: 283ad35
+
 ## 1.4.0
 
 ### Minor Changes
