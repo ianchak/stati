@@ -8,6 +8,7 @@ import {
 import { SEOTagType } from '../../src/types/seo.js';
 import type { SEOContext } from '../../src/types/seo.js';
 import type { PageModel, StatiConfig } from '../../src/types/index.js';
+import type { Logger } from '../../src/types/logging.js';
 
 // Helper function to create a minimal page model for testing
 function createMockPage(overrides: Partial<PageModel> = {}): PageModel {
@@ -39,11 +40,26 @@ function createMockConfig(overrides: Partial<StatiConfig> = {}): StatiConfig {
   } as StatiConfig;
 }
 
+// Helper function to create a mock logger for testing
+function createMockLogger(overrides: Partial<Logger> = {}): Logger {
+  return {
+    info: vi.fn(),
+    success: vi.fn(),
+    warning: vi.fn(),
+    error: vi.fn(),
+    building: vi.fn(),
+    processing: vi.fn(),
+    stats: vi.fn(),
+    ...overrides,
+  };
+}
+
 describe('SEO Generator - generateSEOMetadata', () => {
   it('should generate basic title tag', () => {
     const page = createMockPage();
     const config = createMockConfig();
     const ctx: SEOContext = {
+      logger: createMockLogger(),
       page,
       config,
       siteUrl: 'https://example.com',
@@ -63,7 +79,12 @@ describe('SEO Generator - generateSEOMetadata', () => {
       },
     });
     const config = createMockConfig();
-    const ctx: SEOContext = { page, config, siteUrl: 'https://example.com' };
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
 
     const result = generateSEOMetadata(ctx);
     expect(result).toContain('<title>SEO Title</title>');
@@ -73,7 +94,12 @@ describe('SEO Generator - generateSEOMetadata', () => {
   it('should generate description meta tag', () => {
     const page = createMockPage();
     const config = createMockConfig();
-    const ctx: SEOContext = { page, config, siteUrl: 'https://example.com' };
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
 
     const result = generateSEOMetadata(ctx);
     expect(result).toContain('<meta name="description" content="A test page description">');
@@ -86,7 +112,12 @@ describe('SEO Generator - generateSEOMetadata', () => {
       },
     });
     const config = createMockConfig();
-    const ctx: SEOContext = { page, config, siteUrl: 'https://example.com' };
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
 
     const result = generateSEOMetadata(ctx);
     expect(result).toContain('<meta name="keywords" content="javascript, typescript, testing">');
@@ -95,7 +126,12 @@ describe('SEO Generator - generateSEOMetadata', () => {
   it('should generate canonical link with default URL', () => {
     const page = createMockPage({ url: '/test-page' });
     const config = createMockConfig();
-    const ctx: SEOContext = { page, config, siteUrl: 'https://example.com' };
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
 
     const result = generateSEOMetadata(ctx);
     expect(result).toContain('<link rel="canonical" href="https://example.com/test-page">');
@@ -110,7 +146,12 @@ describe('SEO Generator - generateSEOMetadata', () => {
       },
     });
     const config = createMockConfig();
-    const ctx: SEOContext = { page, config, siteUrl: 'https://example.com' };
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
 
     const result = generateSEOMetadata(ctx);
     expect(result).toContain('<link rel="canonical" href="https://custom.com/page">');
@@ -125,7 +166,12 @@ describe('SEO Generator - generateSEOMetadata', () => {
       },
     });
     const config = createMockConfig();
-    const ctx: SEOContext = { page, config, siteUrl: 'https://example.com' };
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
 
     const result = generateSEOMetadata(ctx);
     expect(result).toContain('<meta name="robots" content="noindex">');
@@ -140,7 +186,12 @@ describe('SEO Generator - generateSEOMetadata', () => {
       },
     });
     const config = createMockConfig();
-    const ctx: SEOContext = { page, config, siteUrl: 'https://example.com' };
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
 
     const result = generateSEOMetadata(ctx);
     expect(result).toContain('<meta name="author" content="John Doe">');
@@ -158,7 +209,12 @@ describe('SEO Generator - generateSEOMetadata', () => {
       },
     });
     const config = createMockConfig();
-    const ctx: SEOContext = { page, config, siteUrl: 'https://example.com' };
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
 
     const result = generateSEOMetadata(ctx);
     expect(result).toContain('<meta name="author" content="Jane Smith">');
@@ -173,7 +229,12 @@ describe('SEO Generator - generateSEOMetadata', () => {
         },
       },
     });
-    const ctx: SEOContext = { page, config, siteUrl: 'https://example.com' };
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
 
     const result = generateSEOMetadata(ctx);
     expect(result).toContain('<meta name="author" content="Site Author">');
@@ -191,7 +252,12 @@ describe('SEO Generator - generateSEOMetadata', () => {
       },
     });
     const config = createMockConfig();
-    const ctx: SEOContext = { page, config, siteUrl: 'https://example.com' };
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
 
     const result = generateSEOMetadata(ctx);
     expect(result).toContain('<script type="application/ld+json">');
@@ -210,7 +276,12 @@ describe('SEO Generator - generateSEOMetadata', () => {
       },
     });
     const config = createMockConfig();
-    const ctx: SEOContext = { page, config, siteUrl: 'https://example.com' };
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
 
     const result = generateSEOMetadata(ctx);
     expect(result).toContain('&lt;script&gt;');
@@ -226,13 +297,18 @@ describe('SEO Generator - generateSEOMetadata', () => {
       },
     });
     const config = createMockConfig();
-    const ctx: SEOContext = { page, config, siteUrl: 'https://example.com' };
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
 
     expect(() => generateSEOMetadata(ctx)).toThrow('SEO validation failed');
   });
 
   it('should log warnings in debug mode', () => {
-    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const mockWarning = vi.fn();
     const page = createMockPage({
       frontMatter: {
         seo: {
@@ -245,20 +321,20 @@ describe('SEO Generator - generateSEOMetadata', () => {
         debug: true,
       },
     });
-    const ctx: SEOContext = { page, config, siteUrl: 'https://example.com' };
+    const ctx: SEOContext = {
+      page,
+      config,
+      siteUrl: 'https://example.com',
+      logger: createMockLogger({ warning: mockWarning }),
+    };
 
     generateSEOMetadata(ctx);
-    expect(consoleWarnSpy).toHaveBeenCalled();
-    expect(consoleWarnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('SEO warnings'),
-      expect.any(String),
-    );
-
-    consoleWarnSpy.mockRestore();
+    expect(mockWarning).toHaveBeenCalled();
+    expect(mockWarning).toHaveBeenCalledWith(expect.stringContaining('SEO warnings'));
   });
 
   it('should not log warnings when debug is disabled', () => {
-    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const mockWarning = vi.fn();
     const page = createMockPage({
       frontMatter: {
         seo: {
@@ -271,12 +347,15 @@ describe('SEO Generator - generateSEOMetadata', () => {
         debug: false,
       },
     });
-    const ctx: SEOContext = { page, config, siteUrl: 'https://example.com' };
+    const ctx: SEOContext = {
+      page,
+      config,
+      siteUrl: 'https://example.com',
+      logger: createMockLogger({ warning: mockWarning }),
+    };
 
     generateSEOMetadata(ctx);
-    expect(consoleWarnSpy).not.toHaveBeenCalled();
-
-    consoleWarnSpy.mockRestore();
+    expect(mockWarning).not.toHaveBeenCalled();
   });
 });
 
@@ -285,6 +364,7 @@ describe('SEO Generator - Selective Generation (include mode)', () => {
     const page = createMockPage();
     const config = createMockConfig();
     const ctx: SEOContext = {
+      logger: createMockLogger(),
       page,
       config,
       siteUrl: 'https://example.com',
@@ -301,6 +381,7 @@ describe('SEO Generator - Selective Generation (include mode)', () => {
     const page = createMockPage();
     const config = createMockConfig();
     const ctx: SEOContext = {
+      logger: createMockLogger(),
       page,
       config,
       siteUrl: 'https://example.com',
@@ -317,6 +398,7 @@ describe('SEO Generator - Selective Generation (include mode)', () => {
     const page = createMockPage();
     const config = createMockConfig();
     const ctx: SEOContext = {
+      logger: createMockLogger(),
       page,
       config,
       siteUrl: 'https://example.com',
@@ -342,6 +424,7 @@ describe('SEO Generator - Selective Generation (include mode)', () => {
     });
     const config = createMockConfig();
     const ctx: SEOContext = {
+      logger: createMockLogger(),
       page,
       config,
       siteUrl: 'https://example.com',
@@ -365,6 +448,7 @@ describe('SEO Generator - Selective Generation (include mode)', () => {
     });
     const config = createMockConfig();
     const ctx: SEOContext = {
+      logger: createMockLogger(),
       page,
       config,
       siteUrl: 'https://example.com',
@@ -382,6 +466,7 @@ describe('SEO Generator - Selective Generation (exclude mode)', () => {
     const page = createMockPage();
     const config = createMockConfig();
     const ctx: SEOContext = {
+      logger: createMockLogger(),
       page,
       config,
       siteUrl: 'https://example.com',
@@ -406,6 +491,7 @@ describe('SEO Generator - Selective Generation (exclude mode)', () => {
     });
     const config = createMockConfig();
     const ctx: SEOContext = {
+      logger: createMockLogger(),
       page,
       config,
       siteUrl: 'https://example.com',
@@ -421,6 +507,7 @@ describe('SEO Generator - Selective Generation (exclude mode)', () => {
     const page = createMockPage();
     const config = createMockConfig();
     const ctx: SEOContext = {
+      logger: createMockLogger(),
       page,
       config,
       siteUrl: 'https://example.com',
@@ -439,7 +526,12 @@ describe('SEO Generator - generateOpenGraphTags', () => {
   it('should generate basic OG tags with fallbacks', () => {
     const page = createMockPage();
     const config = createMockConfig();
-    const ctx: SEOContext = { page, config, siteUrl: 'https://example.com' };
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
 
     const tags = generateOpenGraphTags(ctx);
     expect(tags.some((t) => t.includes('og:title'))).toBe(true);
@@ -461,7 +553,12 @@ describe('SEO Generator - generateOpenGraphTags', () => {
       },
     });
     const config = createMockConfig();
-    const ctx: SEOContext = { page, config, siteUrl: 'https://example.com' };
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
 
     const tags = generateOpenGraphTags(ctx);
     expect(tags.join('\n')).toContain('og:title" content="OG Title"');
@@ -479,7 +576,12 @@ describe('SEO Generator - generateOpenGraphTags', () => {
       },
     });
     const config = createMockConfig();
-    const ctx: SEOContext = { page, config, siteUrl: 'https://example.com' };
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
 
     const tags = generateOpenGraphTags(ctx);
     expect(tags.join('\n')).toContain('og:image" content="https://example.com/image.jpg"');
@@ -496,7 +598,12 @@ describe('SEO Generator - generateOpenGraphTags', () => {
       },
     });
     const config = createMockConfig();
-    const ctx: SEOContext = { page, config, siteUrl: 'https://example.com' };
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
 
     const tags = generateOpenGraphTags(ctx);
     expect(tags.join('\n')).toContain('og:image" content="https://example.com/images/og.jpg"');
@@ -518,7 +625,12 @@ describe('SEO Generator - generateOpenGraphTags', () => {
       },
     });
     const config = createMockConfig();
-    const ctx: SEOContext = { page, config, siteUrl: 'https://example.com' };
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
 
     const tags = generateOpenGraphTags(ctx);
     const joined = tags.join('\n');
@@ -539,7 +651,12 @@ describe('SEO Generator - generateOpenGraphTags', () => {
       },
     });
     const config = createMockConfig();
-    const ctx: SEOContext = { page, config, siteUrl: 'https://example.com' };
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
 
     const tags = generateOpenGraphTags(ctx);
     expect(tags.join('\n')).toContain('og:locale" content="en_US"');
@@ -554,7 +671,12 @@ describe('SEO Generator - generateOpenGraphTags', () => {
         defaultLocale: 'fr_FR',
       },
     });
-    const ctx: SEOContext = { page, config, siteUrl: 'https://example.com' };
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
 
     const tags = generateOpenGraphTags(ctx);
     expect(tags.join('\n')).toContain('og:locale" content="fr_FR"');
@@ -578,7 +700,12 @@ describe('SEO Generator - generateOpenGraphTags', () => {
       },
     });
     const config = createMockConfig();
-    const ctx: SEOContext = { page, config, siteUrl: 'https://example.com' };
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
 
     const tags = generateOpenGraphTags(ctx);
     const joined = tags.join('\n');
@@ -604,7 +731,12 @@ describe('SEO Generator - generateOpenGraphTags', () => {
       },
     });
     const config = createMockConfig();
-    const ctx: SEOContext = { page, config, siteUrl: 'https://example.com' };
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
 
     const tags = generateOpenGraphTags(ctx);
     expect(tags.join('\n')).not.toContain('article:published_time');
@@ -615,7 +747,12 @@ describe('SEO Generator - generateTwitterCardTags', () => {
   it('should generate basic Twitter Card tags', () => {
     const page = createMockPage();
     const config = createMockConfig();
-    const ctx: SEOContext = { page, config, siteUrl: 'https://example.com' };
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
 
     const tags = generateTwitterCardTags(ctx);
     expect(tags.some((t) => t.includes('twitter:card'))).toBe(true);
@@ -626,7 +763,12 @@ describe('SEO Generator - generateTwitterCardTags', () => {
   it('should use default card type', () => {
     const page = createMockPage();
     const config = createMockConfig();
-    const ctx: SEOContext = { page, config, siteUrl: 'https://example.com' };
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
 
     const tags = generateTwitterCardTags(ctx);
     expect(tags.join('\n')).toContain('twitter:card" content="summary_large_image"');
@@ -643,7 +785,12 @@ describe('SEO Generator - generateTwitterCardTags', () => {
       },
     });
     const config = createMockConfig();
-    const ctx: SEOContext = { page, config, siteUrl: 'https://example.com' };
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
 
     const tags = generateTwitterCardTags(ctx);
     expect(tags.join('\n')).toContain('twitter:card" content="summary"');
@@ -660,7 +807,12 @@ describe('SEO Generator - generateTwitterCardTags', () => {
       },
     });
     const config = createMockConfig();
-    const ctx: SEOContext = { page, config, siteUrl: 'https://example.com' };
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
 
     const tags = generateTwitterCardTags(ctx);
     expect(tags.join('\n')).toContain('twitter:site" content="@example"');
@@ -677,7 +829,12 @@ describe('SEO Generator - generateTwitterCardTags', () => {
       },
     });
     const config = createMockConfig();
-    const ctx: SEOContext = { page, config, siteUrl: 'https://example.com' };
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
 
     const tags = generateTwitterCardTags(ctx);
     expect(tags.join('\n')).toContain('twitter:creator" content="@johndoe"');
@@ -692,7 +849,12 @@ describe('SEO Generator - generateTwitterCardTags', () => {
       },
     });
     const config = createMockConfig();
-    const ctx: SEOContext = { page, config, siteUrl: 'https://example.com' };
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
 
     const tags = generateTwitterCardTags(ctx);
     expect(tags.join('\n')).toContain('twitter:creator" content="John Doe"');
@@ -707,7 +869,12 @@ describe('SEO Generator - generateTwitterCardTags', () => {
         },
       },
     });
-    const ctx: SEOContext = { page, config, siteUrl: 'https://example.com' };
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
 
     const tags = generateTwitterCardTags(ctx);
     expect(tags.join('\n')).toContain('twitter:creator" content="Site Author"');
@@ -726,7 +893,12 @@ describe('SEO Generator - generateTwitterCardTags', () => {
       },
     });
     const config = createMockConfig();
-    const ctx: SEOContext = { page, config, siteUrl: 'https://example.com' };
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
 
     const tags = generateTwitterCardTags(ctx);
     const joined = tags.join('\n');
@@ -745,7 +917,12 @@ describe('SEO Generator - generateTwitterCardTags', () => {
       },
     });
     const config = createMockConfig();
-    const ctx: SEOContext = { page, config, siteUrl: 'https://example.com' };
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
 
     const tags = generateTwitterCardTags(ctx);
     expect(tags.join('\n')).toContain('twitter:image" content="https://example.com/twitter.jpg"');
@@ -762,7 +939,12 @@ describe('SEO Generator - generateTwitterCardTags', () => {
       },
     });
     const config = createMockConfig();
-    const ctx: SEOContext = { page, config, siteUrl: 'https://example.com' };
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
 
     const tags = generateTwitterCardTags(ctx);
     expect(tags.join('\n')).toContain(
@@ -781,7 +963,12 @@ describe('SEO Generator - generateTwitterCardTags', () => {
       },
     });
     const config = createMockConfig();
-    const ctx: SEOContext = { page, config, siteUrl: 'https://example.com' };
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
 
     const tags = generateTwitterCardTags(ctx);
     expect(tags.join('\n')).toContain('twitter:image" content="https://example.com/og.jpg"');
@@ -799,7 +986,12 @@ describe('SEO Generator - generateTwitterCardTags', () => {
       },
     });
     const config = createMockConfig();
-    const ctx: SEOContext = { page, config, siteUrl: 'https://example.com' };
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
 
     const tags = generateTwitterCardTags(ctx);
     expect(tags.join('\n')).toContain('twitter:image:alt" content="Twitter image description"');

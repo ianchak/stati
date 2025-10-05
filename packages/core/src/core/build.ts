@@ -396,6 +396,7 @@ async function processPagesWithCache(
         page,
         config,
         siteUrl: config.site.baseUrl,
+        logger,
       };
 
       if (config.seo?.debug !== undefined) {

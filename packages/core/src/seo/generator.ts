@@ -6,6 +6,7 @@
 import type { SEOContext } from '../types/seo.js';
 import type { PageModel } from '../types/content.js';
 import type { StatiConfig, SiteConfig } from '../types/config.js';
+import type { Logger } from '../types/logging.js';
 import { SEOTagType } from '../types/seo.js';
 import {
   escapeHtml,
@@ -33,7 +34,7 @@ import {
  * ```
  */
 export function generateSEOMetadata(ctx: SEOContext): string {
-  const { page, config, siteUrl, exclude, include } = ctx;
+  const { page, config, siteUrl, exclude, include, logger } = ctx;
   const seo = page.frontMatter.seo || {};
 
   // Validate SEO metadata
@@ -44,7 +45,7 @@ export function generateSEOMetadata(ctx: SEOContext): string {
 
   // Log warnings if any and debug is enabled
   if (validation.warnings.length > 0 && config.seo?.debug) {
-    console.warn(`SEO warnings for ${page.url}:`, validation.warnings.join('; '));
+    logger.warning(`SEO warnings for ${page.url}: ${validation.warnings.join('; ')}`);
   }
 
   const meta: string[] = [];
@@ -341,11 +342,22 @@ export function generateSEO(
   // Extract site URL from config
   const siteUrl = context.config.site?.baseUrl || context.site?.baseUrl || '';
 
-  // Generate SEO metadata
+  // Generate SEO metadata with a no-op logger (warnings won't be shown in template context)
+  const noOpLogger: Logger = {
+    info: () => {},
+    success: () => {},
+    warning: () => {},
+    error: () => {},
+    building: () => {},
+    processing: () => {},
+    stats: () => {},
+  };
+
   const seoContext: SEOContext = {
     page: context.page,
     config: context.config,
     siteUrl,
+    logger: noOpLogger,
   };
 
   if (include) {

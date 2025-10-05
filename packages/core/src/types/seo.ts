@@ -4,6 +4,7 @@
 
 import type { PageModel } from './content.js';
 import type { StatiConfig } from './config.js';
+import type { Logger } from './logging.js';
 
 /**
  * Enum for SEO tag types used in selective generation and detection.
@@ -49,6 +50,8 @@ export interface SEOContext {
   config: StatiConfig;
   /** Base site URL (e.g., 'https://example.com') */
   siteUrl: string;
+  /** Logger for debug output */
+  logger: Logger;
   /** Set of tag types to exclude from generation (blacklist mode) */
   exclude?: Set<SEOTagType>;
   /** Set of tag types to include in generation (whitelist mode) */

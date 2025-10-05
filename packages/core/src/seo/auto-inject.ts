@@ -6,6 +6,7 @@
 import type { PageModel } from '../types/content.js';
 import type { StatiConfig } from '../types/config.js';
 import type { SEOContext } from '../types/seo.js';
+import type { Logger } from '../types/logging.js';
 import { detectExistingSEOTags } from './utils/index.js';
 import { generateSEOMetadata } from './generator.js';
 
@@ -19,6 +20,8 @@ export interface AutoInjectOptions {
   config: StatiConfig;
   /** Site base URL */
   siteUrl: string;
+  /** Logger for debug output */
+  logger: Logger;
   /** Enable debug logging */
   debug?: boolean;
 }
@@ -28,14 +31,15 @@ export interface AutoInjectOptions {
  * Checks both the explicit debug flag and the config-level debug setting.
  *
  * @param message - Debug message to log
- * @param options - Object containing debug flag and config
+ * @param options - Object containing debug flag, config, and logger
  */
 function logDebug(
   message: string,
-  options: { debug: boolean | undefined; config: StatiConfig },
+  options: { debug: boolean | undefined; config: StatiConfig; logger: Logger },
 ): void {
   if (options.debug || options.config.seo?.debug) {
-    console.warn(`[SEO Auto-Inject] ${message}`);
+    const logMessage = `[SEO Auto-Inject] ${message}`;
+    options.logger.warning(logMessage);
   }
 }
 
@@ -68,13 +72,13 @@ function findHeadClosePosition(html: string): number {
  * ```
  */
 export function autoInjectSEO(html: string, options: AutoInjectOptions): string {
-  const { page, config, siteUrl, debug } = options;
+  const { page, config, siteUrl, debug, logger } = options;
 
   // Check if auto-injection is enabled (default: true)
   const autoInjectEnabled = config.seo?.autoInject !== false;
 
   if (!autoInjectEnabled) {
-    logDebug(`Skipped for ${page.url} (disabled in config)`, { debug, config });
+    logDebug(`Skipped for ${page.url} (disabled in config)`, { debug, config, logger });
     return html;
   }
 
@@ -84,13 +88,15 @@ export function autoInjectSEO(html: string, options: AutoInjectOptions): string 
   logDebug(`Existing tags in ${page.url}: ${Array.from(existingTags).join(', ')}`, {
     debug,
     config,
+    logger,
   });
 
-  // Build context with optional exclude parameter
+  // Build context with optional exclude parameter and logger
   const context: SEOContext = {
     page,
     config,
     siteUrl,
+    logger,
   };
 
   // Only add exclude if we have existing tags
@@ -103,7 +109,7 @@ export function autoInjectSEO(html: string, options: AutoInjectOptions): string 
 
   // If no SEO metadata was generated (all tags exist), return original HTML
   if (!seoMetadata || seoMetadata.trim().length === 0) {
-    logDebug(`No tags to inject for ${page.url} (all exist)`, { debug, config });
+    logDebug(`No tags to inject for ${page.url} (all exist)`, { debug, config, logger });
     return html;
   }
 
@@ -111,7 +117,7 @@ export function autoInjectSEO(html: string, options: AutoInjectOptions): string 
   const headClosePos = findHeadClosePosition(html);
 
   if (headClosePos === -1) {
-    logDebug(`No </head> tag found in ${page.url}, skipping injection`, { debug, config });
+    logDebug(`No </head> tag found in ${page.url}, skipping injection`, { debug, config, logger });
     return html;
   }
 
@@ -125,6 +131,7 @@ export function autoInjectSEO(html: string, options: AutoInjectOptions): string 
   logDebug(`Injected ${existingTags.size === 0 ? 'all' : 'missing'} SEO tags into ${page.url}`, {
     debug,
     config,
+    logger,
   });
 
   return injected;
@@ -139,12 +146,6 @@ export function autoInjectSEO(html: string, options: AutoInjectOptions): string 
 export function shouldAutoInject(config: StatiConfig, _page: PageModel): boolean {
   // Check global config
   const globalEnabled = config.seo?.autoInject !== false;
-
-  // Check page-level override (if we add this feature in the future)
-  // const pageOverride = page.frontMatter.seo?.autoInject;
-  // if (pageOverride !== undefined) {
-  //   return pageOverride;
-  // }
 
   return globalEnabled;
 }

@@ -2,10 +2,25 @@
  * Auto-injection tests
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { autoInjectSEO, shouldAutoInject } from '../../src/seo/auto-inject.js';
 import type { PageModel } from '../../src/types/content.js';
 import type { StatiConfig } from '../../src/types/config.js';
+import type { Logger } from '../../src/types/logging.js';
+
+// Helper function to create a mock logger for testing
+function createMockLogger(overrides: Partial<Logger> = {}): Logger {
+  return {
+    info: vi.fn(),
+    success: vi.fn(),
+    warning: vi.fn(),
+    error: vi.fn(),
+    building: vi.fn(),
+    processing: vi.fn(),
+    stats: vi.fn(),
+    ...overrides,
+  };
+}
 
 describe('SEO Auto-Injection', () => {
   let samplePage: PageModel;
@@ -47,6 +62,7 @@ describe('SEO Auto-Injection', () => {
         page: samplePage,
         config: baseConfig,
         siteUrl: 'https://example.com',
+        logger: createMockLogger(),
       });
 
       expect(result).toContain('<title>SEO Test Page</title>');
@@ -62,6 +78,7 @@ describe('SEO Auto-Injection', () => {
         page: samplePage,
         config: baseConfig,
         siteUrl: 'https://example.com',
+        logger: createMockLogger(),
       });
 
       // Should be injected before </head>
@@ -78,6 +95,7 @@ describe('SEO Auto-Injection', () => {
         page: samplePage,
         config: baseConfig,
         siteUrl: 'https://example.com',
+        logger: createMockLogger(),
       });
 
       expect(result).toContain('<title>SEO Test Page</title>');
@@ -90,6 +108,7 @@ describe('SEO Auto-Injection', () => {
         page: samplePage,
         config: baseConfig,
         siteUrl: 'https://example.com',
+        logger: createMockLogger(),
       });
 
       expect(result).toBe(html);
@@ -102,6 +121,7 @@ describe('SEO Auto-Injection', () => {
         page: samplePage,
         config: baseConfig,
         siteUrl: 'https://example.com',
+        logger: createMockLogger(),
       });
 
       // Should have 2 spaces before injected tags
@@ -119,6 +139,7 @@ describe('SEO Auto-Injection', () => {
         page: samplePage,
         config: baseConfig,
         siteUrl: 'https://example.com',
+        logger: createMockLogger(),
       });
 
       expect(result).toBe(html);
@@ -140,6 +161,7 @@ describe('SEO Auto-Injection', () => {
         page: samplePage,
         config: configWithoutSeo,
         siteUrl: 'https://example.com',
+        logger: createMockLogger(),
       });
 
       // Without SEO config, should still inject (default is true)
@@ -155,6 +177,7 @@ describe('SEO Auto-Injection', () => {
         page: samplePage,
         config: baseConfig,
         siteUrl: 'https://example.com',
+        logger: createMockLogger(),
       });
 
       // Should keep existing title
@@ -175,6 +198,7 @@ describe('SEO Auto-Injection', () => {
         page: samplePage,
         config: baseConfig,
         siteUrl: 'https://example.com',
+        logger: createMockLogger(),
       });
 
       // Should keep existing description
@@ -195,6 +219,7 @@ describe('SEO Auto-Injection', () => {
         page: samplePage,
         config: baseConfig,
         siteUrl: 'https://example.com',
+        logger: createMockLogger(),
       });
 
       // Should keep existing keywords
@@ -216,6 +241,7 @@ describe('SEO Auto-Injection', () => {
         page: samplePage,
         config: baseConfig,
         siteUrl: 'https://example.com',
+        logger: createMockLogger(),
       });
 
       // Should keep existing canonical
@@ -242,6 +268,7 @@ describe('SEO Auto-Injection', () => {
         page: samplePage,
         config: baseConfig,
         siteUrl: 'https://example.com',
+        logger: createMockLogger(),
       });
 
       // Should keep existing OG tag
@@ -267,6 +294,7 @@ describe('SEO Auto-Injection', () => {
         page: samplePage,
         config: baseConfig,
         siteUrl: 'https://example.com',
+        logger: createMockLogger(),
       });
 
       // Should keep existing Twitter tag
@@ -289,6 +317,7 @@ describe('SEO Auto-Injection', () => {
         page: samplePage,
         config: baseConfig,
         siteUrl: 'https://example.com',
+        logger: createMockLogger(),
       });
 
       // Should keep existing robots
@@ -310,6 +339,7 @@ describe('SEO Auto-Injection', () => {
         page: samplePage,
         config: baseConfig,
         siteUrl: 'https://example.com',
+        logger: createMockLogger(),
       });
 
       // Should keep existing author
@@ -336,6 +366,7 @@ describe('SEO Auto-Injection', () => {
         page: samplePage,
         config: baseConfig,
         siteUrl: 'https://example.com',
+        logger: createMockLogger(),
       });
 
       // Should keep existing structured data
@@ -353,6 +384,7 @@ describe('SEO Auto-Injection', () => {
         page: samplePage,
         config: baseConfig,
         siteUrl: 'https://example.com',
+        logger: createMockLogger(),
       });
 
       // Should keep custom title
@@ -373,6 +405,7 @@ describe('SEO Auto-Injection', () => {
         page: samplePage,
         config: baseConfig,
         siteUrl: 'https://example.com',
+        logger: createMockLogger(),
       });
 
       // Should keep custom description and keywords
@@ -398,6 +431,7 @@ describe('SEO Auto-Injection', () => {
         page: samplePage,
         config: baseConfig,
         siteUrl: 'https://example.com',
+        logger: createMockLogger(),
       });
 
       // Should keep custom OG tag
@@ -430,6 +464,7 @@ describe('SEO Auto-Injection', () => {
         page: samplePage,
         config: baseConfig,
         siteUrl: 'https://example.com',
+        logger: createMockLogger(),
       });
 
       // Should keep existing title
@@ -464,6 +499,7 @@ describe('SEO Auto-Injection', () => {
         page: samplePage,
         config: baseConfig,
         siteUrl: 'https://example.com',
+        logger: createMockLogger(),
       });
 
       // Should be identical (or very similar with whitespace)
@@ -494,6 +530,7 @@ describe('SEO Auto-Injection', () => {
         page: pageWithoutSeo,
         config: baseConfig,
         siteUrl: 'https://example.com',
+        logger: createMockLogger(),
       });
 
       // Without SEO frontmatter, should still inject basic tags from page frontmatter
@@ -514,6 +551,7 @@ describe('SEO Auto-Injection', () => {
         page: samplePage,
         config: baseConfig,
         siteUrl: 'https://example.com',
+        logger: createMockLogger(),
       });
 
       // Should detect existing title and not inject new one
@@ -534,6 +572,7 @@ describe('SEO Auto-Injection', () => {
         page: samplePage,
         config: baseConfig,
         siteUrl: 'https://example.com',
+        logger: createMockLogger(),
       });
 
       // Should detect existing description
@@ -561,6 +600,7 @@ describe('SEO Auto-Injection', () => {
         page: samplePage,
         config: baseConfig,
         siteUrl: 'https://example.com',
+        logger: createMockLogger(),
       });
 
       // Should detect existing OG tag
@@ -579,6 +619,7 @@ describe('SEO Auto-Injection', () => {
         page: samplePage,
         config: baseConfig,
         siteUrl: 'https://example.com',
+        logger: createMockLogger(),
       });
 
       expect(result).toBe('');
@@ -591,6 +632,7 @@ describe('SEO Auto-Injection', () => {
         page: samplePage,
         config: baseConfig,
         siteUrl: 'https://example.com',
+        logger: createMockLogger(),
       });
 
       // Should inject before first </head>
@@ -606,6 +648,7 @@ describe('SEO Auto-Injection', () => {
         page: samplePage,
         config: baseConfig,
         siteUrl: 'https://example.com',
+        logger: createMockLogger(),
       });
 
       // Should still inject (detection might not catch malformed tag)
@@ -626,6 +669,7 @@ describe('SEO Auto-Injection', () => {
         page: samplePage,
         config: baseConfig,
         siteUrl: 'https://example.com',
+        logger: createMockLogger(),
       });
 
       // Should preserve existing structure
