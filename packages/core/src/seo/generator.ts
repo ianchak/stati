@@ -8,12 +8,8 @@ import type { PageModel } from '../types/content.js';
 import type { StatiConfig, SiteConfig } from '../types/config.js';
 import type { Logger } from '../types/logging.js';
 import { SEOTagType } from '../types/seo.js';
-import {
-  escapeHtml,
-  validateSEOMetadata,
-  generateRobotsContent,
-  sanitizeStructuredData,
-} from './utils/index.js';
+import { escapeHtml, validateSEOMetadata, generateRobotsContent } from './utils/index.js';
+import { sanitizeStructuredData } from './utils/escape-and-validation.js';
 
 /**
  * Generate complete SEO metadata for a page.
@@ -134,7 +130,7 @@ export function generateSEOMetadata(ctx: SEOContext): string {
 
   // JSON-LD Structured Data
   if (shouldGenerate(SEOTagType.StructuredData) && seo.structuredData) {
-    const sanitized = sanitizeStructuredData(seo.structuredData);
+    const sanitized = sanitizeStructuredData(seo.structuredData, logger);
     meta.push(`<script type="application/ld+json">${JSON.stringify(sanitized)}</script>`);
   }
 

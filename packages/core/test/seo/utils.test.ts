@@ -1,13 +1,24 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
   escapeHtml,
-  sanitizeStructuredData,
   generateRobotsContent,
   validateSEOMetadata,
   detectExistingSEOTags,
 } from '../../src/seo/utils/index.js';
+import { sanitizeStructuredData } from '../../src/seo/utils/escape-and-validation.js';
 import { SEOTagType } from '../../src/types/seo.js';
 import type { SEOMetadata } from '../../src/types/content.js';
+import type { Logger } from '../../src/types/logging.js';
+
+const mockLogger: Logger = {
+  info: vi.fn(),
+  success: vi.fn(),
+  warning: vi.fn(),
+  error: vi.fn(),
+  building: vi.fn(),
+  processing: vi.fn(),
+  stats: vi.fn(),
+};
 
 describe('SEO Utils - escapeHtml', () => {
   it('should escape all HTML special characters', () => {
@@ -68,7 +79,7 @@ describe('SEO Utils - escapeHtml', () => {
 describe('SEO Utils - sanitizeStructuredData', () => {
   it('should escape string values', () => {
     const data = { name: '<script>alert("xss")</script>' };
-    const result = sanitizeStructuredData(data);
+    const result = sanitizeStructuredData(data, mockLogger);
     expect(result).toEqual({
       name: '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;',
     });
@@ -84,7 +95,7 @@ describe('SEO Utils - sanitizeStructuredData', () => {
         },
       },
     };
-    const result = sanitizeStructuredData(data);
+    const result = sanitizeStructuredData(data, mockLogger);
     expect(result).toEqual({
       name: 'Test',
       nested: {
@@ -98,27 +109,27 @@ describe('SEO Utils - sanitizeStructuredData', () => {
 
   it('should handle arrays', () => {
     const data = ['<script>', 'safe', { value: 'test<' }];
-    const result = sanitizeStructuredData(data);
+    const result = sanitizeStructuredData(data, mockLogger);
     expect(result).toEqual(['&lt;script&gt;', 'safe', { value: 'test&lt;' }]);
   });
 
   it('should preserve numbers', () => {
     const data = { count: 42, price: 19.99 };
-    expect(sanitizeStructuredData(data)).toEqual({ count: 42, price: 19.99 });
+    expect(sanitizeStructuredData(data, mockLogger)).toEqual({ count: 42, price: 19.99 });
   });
 
   it('should preserve booleans', () => {
     const data = { active: true, disabled: false };
-    expect(sanitizeStructuredData(data)).toEqual({ active: true, disabled: false });
+    expect(sanitizeStructuredData(data, mockLogger)).toEqual({ active: true, disabled: false });
   });
 
   it('should preserve null', () => {
     const data = { value: null };
-    expect(sanitizeStructuredData(data)).toEqual({ value: null });
+    expect(sanitizeStructuredData(data, mockLogger)).toEqual({ value: null });
   });
 
   it('should handle depth limit and warn', () => {
-    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const loggerWarnSpy = vi.spyOn(mockLogger, 'warning');
 
     // Create deeply nested object beyond max depth
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -127,32 +138,29 @@ describe('SEO Utils - sanitizeStructuredData', () => {
       deepObj = { nested: deepObj };
     }
 
-    sanitizeStructuredData(deepObj, 0, 50);
-    expect(consoleWarnSpy).toHaveBeenCalled();
-    expect(consoleWarnSpy).toHaveBeenCalledWith(
+    sanitizeStructuredData(deepObj, mockLogger, 0, 50);
+    expect(loggerWarnSpy).toHaveBeenCalled();
+    expect(loggerWarnSpy).toHaveBeenCalledWith(
       expect.stringContaining('exceeds maximum nesting depth'),
     );
 
-    consoleWarnSpy.mockRestore();
+    loggerWarnSpy.mockRestore();
   });
 
   it('should truncate at max depth with custom limit', () => {
-    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const data = { a: { b: { c: 'deep' } } };
+    const loggerWarnSpy = vi.spyOn(mockLogger, 'warning');
 
-    const data = {
-      level1: {
-        level2: {
-          level3: {
-            level4: 'too deep',
-          },
-        },
-      },
-    };
+    sanitizeStructuredData(data, mockLogger, 0, 2);
+    expect(loggerWarnSpy).toHaveBeenCalled();
 
-    sanitizeStructuredData(data, 0, 2);
-    expect(consoleWarnSpy).toHaveBeenCalled();
+    loggerWarnSpy.mockRestore();
+  });
 
-    consoleWarnSpy.mockRestore();
+  it('should not escape safe values', () => {
+    const data = { safeString: 'This is safe' };
+    const result = sanitizeStructuredData(data, mockLogger);
+    expect(result).toEqual(data);
   });
 
   it('should handle mixed nested structures', () => {
@@ -166,7 +174,7 @@ describe('SEO Utils - sanitizeStructuredData', () => {
       },
     };
 
-    const result = sanitizeStructuredData(data);
+    const result = sanitizeStructuredData(data, mockLogger);
     expect(result).toEqual({
       items: [
         { name: '&lt;script&gt;', id: 1 },

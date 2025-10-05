@@ -6,6 +6,7 @@ import { URL } from 'node:url';
 import type { SEOMetadata, RobotsConfig } from '../../types/content.js';
 import type { SEOValidationResult, SEOTagType } from '../../types/seo.js';
 import { SEOTagType as SEOTagTypeEnum } from '../../types/seo.js';
+import type { Logger } from '../../types/logging.js';
 
 /**
  * HTML escape cache for performance optimization.
@@ -82,12 +83,14 @@ export function escapeHtml(text: string): string {
  */
 export function sanitizeStructuredData(
   data: unknown,
+  logger: Logger,
   depth: number = 0,
   maxDepth: number = 50,
 ): unknown {
   // Prevent stack overflow from deeply nested objects
   if (depth > maxDepth) {
-    console.warn(`Structured data exceeds maximum nesting depth of ${maxDepth}, truncating`);
+    const message = `Structured data exceeds maximum nesting depth of ${maxDepth}, truncating`;
+    logger.warning(message);
     return '[Object: max depth exceeded]';
   }
 
@@ -101,15 +104,22 @@ export function sanitizeStructuredData(
 
   // Handle arrays
   if (Array.isArray(data)) {
-    return data.map((item) => sanitizeStructuredData(item, depth + 1, maxDepth));
+    return data.map((item) => sanitizeStructuredData(item, logger, depth + 1, maxDepth));
   }
 
   // Handle objects
-  const sanitized: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(data)) {
-    sanitized[key] = sanitizeStructuredData(value, depth + 1, maxDepth);
+  const sanitizedObject: Record<string, unknown> = {};
+  for (const key in data) {
+    if (Object.prototype.hasOwnProperty.call(data, key)) {
+      sanitizedObject[key] = sanitizeStructuredData(
+        (data as Record<string, unknown>)[key],
+        logger,
+        depth + 1,
+        maxDepth,
+      );
+    }
   }
-  return sanitized;
+  return sanitizedObject;
 }
 
 /**

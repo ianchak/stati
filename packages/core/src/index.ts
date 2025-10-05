@@ -78,7 +78,6 @@ export {
   generateRobotsTxt,
   generateRobotsTxtFromConfig,
   escapeHtml,
-  sanitizeStructuredData,
   generateRobotsContent,
   validateSEOMetadata,
   detectExistingSEOTags,

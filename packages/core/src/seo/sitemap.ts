@@ -19,12 +19,6 @@ import { escapeHtml, resolveAbsoluteUrl } from './utils/index.js';
 const MAX_SITEMAP_ENTRIES = 50000;
 
 /**
- * Maximum sitemap file size in bytes (50MB per spec)
- * Reserved for future size-based splitting logic
- */
-const _MAX_SITEMAP_SIZE = 50 * 1024 * 1024;
-
-/**
  * Formats a date for sitemap lastmod field (W3C Datetime / ISO 8601)
  * @param date - Date to format
  * @returns ISO 8601 formatted date string (YYYY-MM-DD)
@@ -63,6 +57,40 @@ function validateChangeFreq(changefreq?: string): ChangeFrequency | undefined {
 }
 
 /**
+ * Escapes regex special characters in a string, except glob wildcards
+ * @param str - String to escape
+ * @returns String with regex special characters escaped
+ */
+function escapeRegexExceptGlob(str: string): string {
+  // Escape all regex special characters except * and ?
+  return str.replace(/[.+^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Checks if a page URL matches a list of patterns.
+ * @param url - The URL to check.
+ * @param patterns - An array of glob-style patterns.
+ * @returns `true` if the URL matches any pattern, `false` otherwise.
+ */
+function urlMatchesAnyPattern(url: string, patterns: string[]): boolean {
+  for (const pattern of patterns) {
+    // Simple glob patterns
+    if (pattern.includes('*') || pattern.includes('?')) {
+      // Escape regex special characters first, then convert glob wildcards
+      const escapedPattern = escapeRegexExceptGlob(pattern);
+      const regexPattern = escapedPattern.replace(/\*/g, '.*').replace(/\?/g, '.');
+      const regex = new RegExp('^' + regexPattern + '$');
+      if (regex.test(url)) {
+        return true;
+      }
+    } else if (url === pattern || url.startsWith(pattern)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Checks if a page matches exclude patterns
  * @param page - Page to check
  * @param patterns - Exclude patterns (glob or regex)
@@ -72,20 +100,7 @@ function matchesExcludePattern(page: PageModel, patterns?: string[]): boolean {
   if (!patterns || patterns.length === 0) {
     return false;
   }
-
-  for (const pattern of patterns) {
-    // Simple glob patterns
-    if (pattern.includes('*')) {
-      const regex = new RegExp('^' + pattern.replace(/\*/g, '.*').replace(/\?/g, '.') + '$');
-      if (regex.test(page.url)) {
-        return true;
-      }
-    } else if (page.url === pattern || page.url.startsWith(pattern)) {
-      return true;
-    }
-  }
-
-  return false;
+  return urlMatchesAnyPattern(page.url, patterns);
 }
 
 /**
@@ -98,20 +113,7 @@ function matchesIncludePattern(page: PageModel, patterns?: string[]): boolean {
   if (!patterns || patterns.length === 0) {
     return true; // Include all by default
   }
-
-  for (const pattern of patterns) {
-    // Simple glob patterns
-    if (pattern.includes('*')) {
-      const regex = new RegExp('^' + pattern.replace(/\*/g, '.*').replace(/\?/g, '.') + '$');
-      if (regex.test(page.url)) {
-        return true;
-      }
-    } else if (page.url === pattern || page.url.startsWith(pattern)) {
-      return true;
-    }
-  }
-
-  return false;
+  return urlMatchesAnyPattern(page.url, patterns);
 }
 
 /**
@@ -133,8 +135,11 @@ function determinePriority(
   // Check each rule in order (first match wins)
   for (const rule of rules) {
     const pattern = rule.pattern;
-    if (pattern.includes('*')) {
-      const regex = new RegExp('^' + pattern.replace(/\*/g, '.*').replace(/\?/g, '.') + '$');
+    if (pattern.includes('*') || pattern.includes('?')) {
+      // Escape regex special characters first, then convert glob wildcards
+      const escapedPattern = escapeRegexExceptGlob(pattern);
+      const regexPattern = escapedPattern.replace(/\*/g, '.*').replace(/\?/g, '.');
+      const regex = new RegExp('^' + regexPattern + '$');
       if (regex.test(page.url)) {
         return validatePriority(rule.priority);
       }

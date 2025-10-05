@@ -4,7 +4,7 @@
  */
 
 import type { RobotsTxtConfig } from '../types/config.js';
-import { isValidUrl, normalizeUrlPath, resolveAbsoluteUrl } from './utils/index.js';
+import { isValidUrl, resolveAbsoluteUrl, normalizeUrlPath } from './utils/index.js';
 
 /**
  * User agent rule entry for robots.txt
@@ -47,27 +47,6 @@ const DEFAULT_ROBOTS_CONFIG: RobotsTxtOptions = {
 };
 
 /**
- * Resolves a sitemap path to absolute URL
- * @param sitemap - Sitemap path or URL
- * @param siteUrl - Base site URL
- * @returns Absolute sitemap URL or original path
- */
-function resolveSitemapUrl(sitemap: string, siteUrl?: string): string {
-  // Already absolute URL
-  if (isValidUrl(sitemap)) {
-    return sitemap;
-  }
-
-  // Relative path with siteUrl
-  if (siteUrl) {
-    return resolveAbsoluteUrl(sitemap, siteUrl);
-  }
-
-  // Return normalized path
-  return normalizeUrlPath(sitemap);
-}
-
-/**
  * Generates robots.txt content from options
  * @param options - Robots.txt generation options
  * @returns Generated robots.txt content
@@ -98,55 +77,42 @@ export function generateRobotsTxt(options: RobotsTxtOptions = {}): string {
   // Use default rules if none provided
   const effectiveRules = rules.length > 0 ? rules : (DEFAULT_ROBOTS_CONFIG.rules ?? []);
 
-  // Generate user agent rules
-  for (const rule of effectiveRules) {
+  // Generate rules
+  effectiveRules.forEach((rule) => {
     lines.push(`User-agent: ${rule.userAgent}`);
 
-    // Allow rules
-    if (rule.allow && rule.allow.length > 0) {
-      for (const path of rule.allow) {
-        lines.push(`Allow: ${normalizeUrlPath(path)}`);
-      }
+    if (rule.allow) {
+      rule.allow.forEach((path) => lines.push(`Allow: ${normalizeUrlPath(path)}`));
     }
 
-    // Disallow rules
-    if (rule.disallow && rule.disallow.length > 0) {
-      for (const path of rule.disallow) {
-        lines.push(`Disallow: ${normalizeUrlPath(path)}`);
-      }
+    if (rule.disallow) {
+      rule.disallow.forEach((path) => lines.push(`Disallow: ${normalizeUrlPath(path)}`));
     }
 
-    // Crawl delay
-    if (rule.crawlDelay !== undefined) {
+    if (typeof rule.crawlDelay === 'number' && rule.crawlDelay > 0) {
       lines.push(`Crawl-delay: ${rule.crawlDelay}`);
     }
 
-    // Empty line between user agent blocks
-    lines.push('');
-  }
+    lines.push(''); // Add a blank line after each rule
+  });
 
-  // Add sitemap URLs
-  for (const sitemap of sitemaps) {
-    const sitemapUrl = resolveSitemapUrl(sitemap, siteUrl);
-    lines.push(`Sitemap: ${sitemapUrl}`);
-  }
-
-  // Add empty line if sitemaps were added
+  // Add sitemaps
   if (sitemaps.length > 0) {
-    lines.push('');
+    sitemaps.forEach((sitemap) => {
+      // Ensure sitemap URL is absolute
+      const sitemapUrl =
+        siteUrl && !isValidUrl(sitemap) ? resolveAbsoluteUrl(sitemap, siteUrl) : sitemap;
+      lines.push(`Sitemap: ${sitemapUrl}`);
+    });
+    lines.push(''); // Add a blank line
   }
 
   // Add custom directives
-  for (const directive of custom) {
-    lines.push(directive);
-  }
-
-  // Add final empty line if custom directives were added
   if (custom.length > 0) {
-    lines.push('');
+    lines.push(...custom, '');
   }
 
-  return lines.join('\n').trim() + '\n';
+  return lines.join('\n');
 }
 
 /**

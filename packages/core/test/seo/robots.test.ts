@@ -86,7 +86,7 @@ describe('Robots.txt Generator - generateRobotsTxt', () => {
     expect(result).toContain('Disallow: /private/');
   });
 
-  it('should include crawl delay', () => {
+  it('should include crawl delay if non-zero', () => {
     const result = generateRobotsTxt({
       rules: [
         {
@@ -99,7 +99,7 @@ describe('Robots.txt Generator - generateRobotsTxt', () => {
     expect(result).toContain('Crawl-delay: 10');
   });
 
-  it('should handle zero crawl delay', () => {
+  it('should not include crawl delay if zero', () => {
     const result = generateRobotsTxt({
       rules: [
         {
@@ -109,7 +109,7 @@ describe('Robots.txt Generator - generateRobotsTxt', () => {
         },
       ],
     });
-    expect(result).toContain('Crawl-delay: 0');
+    expect(result).not.toContain('Crawl-delay: 0');
   });
 
   it('should add sitemap URL', () => {

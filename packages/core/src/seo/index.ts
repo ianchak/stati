@@ -30,7 +30,6 @@ export type { AutoInjectOptions } from './auto-inject.js';
 // SEO utilities
 export {
   escapeHtml,
-  sanitizeStructuredData,
   generateRobotsContent,
   validateSEOMetadata,
   detectExistingSEOTags,
