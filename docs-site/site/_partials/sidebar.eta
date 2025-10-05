@@ -246,9 +246,9 @@
                         <span class="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-gray-500 transition-colors duration-200"></span>
                         Performance
                     </a>
-                    <a href="/advanced/seo-adoption/" class="sidebar-link flex items-center px-4 py-2.5 text-sm text-gray-600 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200 hover:bg-gray-50/60 dark:hover:bg-gray-900/20 rounded-lg transition-all duration-200 font-medium group">
+                    <a href="/advanced/seo-usage-scenarios/" class="sidebar-link flex items-center px-4 py-2.5 text-sm text-gray-600 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200 hover:bg-gray-50/60 dark:hover:bg-gray-900/20 rounded-lg transition-all duration-200 font-medium group">
                         <span class="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-gray-500 transition-colors duration-200"></span>
-                        SEO Adoption Guide
+                        SEO Usage Scenarios
                     </a>
                     <a href="/contributing/" class="sidebar-link flex items-center px-4 py-2.5 text-sm text-gray-600 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200 hover:bg-gray-50/60 dark:hover:bg-gray-900/20 rounded-lg transition-all duration-200 font-medium group">
                         <span class="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-gray-500 transition-colors duration-200"></span>

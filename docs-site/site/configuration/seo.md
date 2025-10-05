@@ -572,6 +572,5 @@ For large sites (10,000+ pages):
 
 ## Next Steps
 
-- [SEO Adoption Guide](/advanced/seo-adoption) - Learn different approaches to adding SEO to your project
+- [SEO Usage Scenarios](/advanced/seo-usage-scenarios) - Learn different approaches to using SEO in your project
 - [API Reference](/api/seo) - Detailed API documentation for SEO functions and types
-- [Examples](/examples/seo) - Real-world SEO examples and recipes

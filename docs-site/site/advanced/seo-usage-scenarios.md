@@ -1,87 +1,110 @@
 ---
-title: SEO Adoption Guide
-description: Learn different strategies for adopting SEO features in your Stati project, from automatic to fully custom control
+title: SEO Usage Scenarios
+description: Learn different strategies for using SEO features in your Stati project, from automatic to fully custom control
 layout: layout.eta
 ---
 
-# SEO Adoption Guide
+# SEO Usage Scenarios
 
-This guide covers five different approaches to adopting Stati's SEO features, from zero-configuration automatic injection to full custom control. Choose the approach that best fits your project's needs.
+This guide covers five different approaches to using Stati's SEO features, from zero-configuration automatic injection to full custom control. Choose the approach that best fits your project's requirements.
 
 ## Table of Contents
 
-- [Scenario 1: Existing Project (No Changes)](#scenario-1-existing-project-no-changes)
-- [Scenario 2: Enhanced SEO (Gradual Enhancement)](#scenario-2-enhanced-seo-gradual-enhancement)
-- [Scenario 3: Hybrid Mode (Granular Override)](#scenario-3-hybrid-mode-granular-override) ⭐ **Recommended**
+- [Scenario 1: Automatic SEO](#scenario-1-automatic-seo)
+- [Scenario 2: Enhanced SEO](#scenario-2-enhanced-seo)
+- [Scenario 3: Hybrid Mode](#scenario-3-hybrid-mode)
 - [Scenario 4: Selective Manual Control](#scenario-4-selective-manual-control)
 - [Scenario 5: Full Custom Control](#scenario-5-full-custom-control)
 - [Comparison Table](#comparison-table)
-- [Migration Path](#migration-path)
 - [Testing & Validation](#testing--validation)
 
 ---
 
-## Scenario 1: Existing Project (No Changes)
+## Scenario 1: Automatic SEO
 
-**Best for:** Projects that want instant SEO improvements with zero configuration.
+**Best for:** Projects that want comprehensive SEO with zero configuration and minimal maintenance.
 
-### What Happens
+### Overview
 
-When you upgrade Stati, SEO features activate automatically on your next build:
+Stati's default SEO behavior provides comprehensive SEO tags automatically without any configuration or template changes. This is the recommended starting point for most projects.
 
-✅ **Automatic SEO injection enabled** (default behavior)
-✅ **Basic meta tags generated** from site config and page content
-✅ **Sitemap available** (just needs to be enabled)
-✅ **No code changes required**
+**Features:**
 
-### Before Automatic SEO
+- Automatic SEO injection enabled (default behavior)
+- Basic meta tags generated from site config and page content
+- Sitemap generation available (requires baseUrl configured)
+- No code changes required
+
+### Configuration
+
+The minimal Stati configuration with automatic SEO:
+
+```typescript
+// stati.config.ts
+import { defineConfig } from '@stati/core';
+
+export default defineConfig({
+  site: {
+    title: 'My Site',
+    baseUrl: 'https://example.com',
+  },
+});
+```
+
+### How It Works
+
+With automatic SEO, a simple page template like this:
 
 ```html
 <!DOCTYPE html>
 <html>
 <head>
-  <!-- No SEO tags -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
   <h1>My Page</h1>
+  <p>Welcome to my page content.</p>
 </body>
 </html>
 ```
 
-### After Automatic SEO
+Gets these SEO tags automatically injected:
 
 ```html
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <!-- Auto-injected by Stati -->
   <title>My Page | My Site</title>
-  <meta name="description" content="Page content extracted from body">
+  <meta name="description" content="Welcome to my page content.">
   <link rel="canonical" href="https://example.com/my-page">
   <meta property="og:title" content="My Page">
-  <meta property="og:description" content="Page content extracted from body">
+  <meta property="og:description" content="Welcome to my page content.">
   <meta property="og:url" content="https://example.com/my-page">
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="My Page">
+  <meta name="twitter:description" content="Welcome to my page content.">
 </head>
 <body>
   <h1>My Page</h1>
+  <p>Welcome to my page content.</p>
 </body>
 </html>
 ```
 
-### Action Required
+### Optional: Enable Sitemap
 
-**None!** Just rebuild your site and SEO tags will be automatically injected.
-
-### Optional Enhancements
-
-Enable sitemap generation in `stati.config.ts`:
+Add sitemap generation to your configuration:
 
 ```typescript
 export default defineConfig({
   site: {
+    title: 'My Site',
     baseUrl: 'https://example.com', // Required for sitemap URLs
   },
   sitemap: {
@@ -90,17 +113,24 @@ export default defineConfig({
 });
 ```
 
+### When to Use
+
+- New projects that need SEO quickly
+- Projects with simple SEO requirements
+- Teams that prefer convention over configuration
+- Projects where developers have limited SEO expertise
+
 ---
 
-## Scenario 2: Enhanced SEO (Gradual Enhancement)
+## Scenario 2: Enhanced SEO
 
 **Best for:** Projects that want better SEO without changing templates.
 
-### Approach
+### Overview
 
-Keep automatic injection enabled and enhance SEO through configuration and frontmatter.
+Keep automatic injection enabled and enhance SEO through configuration and frontmatter. This approach provides granular control over SEO metadata on a per-page basis without touching template code.
 
-### Step 1: Configure Global SEO
+### Global Configuration
 
 ```typescript
 // stati.config.ts
@@ -109,6 +139,7 @@ import { defineConfig } from '@stati/core';
 export default defineConfig({
   site: {
     title: 'My Awesome Site',
+    description: 'Building amazing static sites with Stati',
     baseUrl: 'https://example.com',
   },
 
@@ -134,7 +165,7 @@ export default defineConfig({
 });
 ```
 
-### Step 2: Enhance Important Pages
+### Per-Page Enhancement
 
 Add SEO frontmatter to high-value pages:
 
@@ -178,7 +209,7 @@ sitemap:
 Your content here...
 ```
 
-### Step 3: Configure Sitemap Per-Page
+### Sitemap Control
 
 For pages you want to exclude or deprioritize:
 
@@ -199,24 +230,23 @@ sitemap:
 ---
 ```
 
-### Benefits
+### When to Use
 
-✅ **Zero template changes**
-✅ **Gradual enhancement** - improve pages over time
-✅ **Full control over important pages**
-✅ **Automatic fallback** for pages without SEO config
+- Projects where SEO needs vary by page
+- Content-heavy sites (blogs, documentation)
+- Teams where content authors control SEO
+- Projects with evolving SEO requirements
+- Sites with mixed content importance
 
 ---
 
-## Scenario 3: Hybrid Mode (Granular Override)
+## Scenario 3: Hybrid Mode
 
-**Best for:** Projects that need custom control over specific tags while automating the rest.
-
-⭐ **This is the recommended approach for most projects.**
+**Best for:** Projects that need custom control over specific tags while automating the rest. This is the recommended approach for projects with advanced SEO requirements.
 
 ### Concept
 
-Keep auto-injection enabled but manually override specific SEO tags when needed. Stati detects existing tags and skips auto-generating them.
+Keep auto-injection enabled but manually override specific SEO tags when needed. Stati detects existing tags and skips auto-generating them. This gives you fine-grained control where you need it while maintaining automatic fallbacks everywhere else.
 
 ### Example 1: Custom Title, Auto-Generate Rest
 
@@ -237,10 +267,11 @@ Keep auto-injection enabled but manually override specific SEO tags when needed.
 ```
 
 **Result:**
-- ✅ Your custom title is used
-- ✅ All other SEO tags are auto-generated (description, canonical, OG, Twitter, etc.)
 
-### Example 2: Custom OG Image, Auto-Generate Other OG Tags
+- Your custom title is used
+- All other SEO tags are auto-generated (description, canonical, OG, Twitter, etc.)
+
+### Example 2: Custom OG Image, Manual OG Tags
 
 ```html
 <!-- site/layout.eta -->
@@ -326,12 +357,13 @@ Understanding tag groups is critical for hybrid mode:
 | **Twitter Cards** | If **any** `twitter:*` tag exists, **all** Twitter tags are skipped |
 | **Individual Tags** | Title, description, keywords, author, robots, canonical are independent |
 
-### Benefits
+### When to Use
 
-✅ **Fine-grained control** where you need it
-✅ **Automatic fallback** everywhere else
-✅ **No duplication** - Stati detects existing tags
-✅ **Flexible** - override on a per-page basis with frontmatter
+- Projects with varying SEO requirements across sections
+- Sites that need custom logic for certain pages
+- Projects transitioning from custom SEO to automatic
+- Teams that want safety nets while customizing
+- Sites with complex title or description requirements
 
 ---
 
@@ -339,9 +371,26 @@ Understanding tag groups is critical for hybrid mode:
 
 **Best for:** Projects that want explicit control over which tags are generated.
 
-### Approach
+### Overview
 
-Use the `stati.generateSEO()` helper with specific tag types.
+Use the `stati.generateSEO()` helper with specific tag types to control exactly which tags Stati generates. This approach is more explicit than hybrid mode and prevents any automatic tag generation.
+
+### Configuration
+
+Disable auto-injection to avoid conflicts:
+
+```typescript
+// stati.config.ts
+export default defineConfig({
+  seo: {
+    autoInject: false, // Disable automatic injection
+    defaultAuthor: {
+      name: 'John Doe',
+      email: 'john@example.com',
+    },
+  },
+});
+```
 
 ### Example 1: Generate Only Title and Description
 
@@ -408,39 +457,34 @@ Use the `stati.generateSEO()` helper with specific tag types.
 </html>
 ```
 
-### Configuration
+### Available Tag Types
 
-**Disable** auto-injection to avoid conflicts:
+- `title` - Page title tag
+- `description` - Meta description tag
+- `keywords` - Meta keywords tag
+- `author` - Meta author tag
+- `robots` - Meta robots tag
+- `canonical` - Canonical link tag
+- `opengraph` - All Open Graph tags
+- `twitter` - All Twitter Card tags
 
-```typescript
-// stati.config.ts
-export default defineConfig({
-  seo: {
-    autoInject: false, // Disable automatic injection
-    defaultAuthor: {
-      name: 'John Doe',
-      email: 'john@example.com',
-    },
-  },
-});
-```
+### When to Use
 
-### Benefits
-
-✅ **Explicit control** over tag generation
-✅ **Predictable** - you control exactly what's generated
-✅ **Mix and match** - combine generated and custom tags
-✅ **Simple string API** - easy to use in templates
+- Projects that need explicit control over tag generation
+- Sites with strict SEO governance
+- Projects where only certain tags are needed
+- Teams that prefer predictable, explicit behavior
+- Sites with custom SEO validation requirements
 
 ---
 
 ## Scenario 5: Full Custom Control
 
-**Best for:** Projects with complex custom SEO requirements or migrating from existing SEO systems.
+**Best for:** Projects with complex custom SEO requirements or specific SEO systems.
 
-### Approach
+### Overview
 
-Disable automatic injection and manually implement all SEO tags.
+Disable automatic injection and manually implement all SEO tags. This gives you complete control over every aspect of SEO tag generation.
 
 ### Configuration
 
@@ -529,80 +573,45 @@ export default defineConfig({
 </html>
 ```
 
-### Benefits
+### When to Use
 
-✅ **Complete control** over every tag
-✅ **Custom logic** for complex requirements
-✅ **Migration-friendly** for existing SEO systems
-✅ **No magic** - everything is explicit
+- Projects with highly specific SEO requirements
+- Sites with custom SEO validation logic
+- Teams with dedicated SEO specialists
+- Projects integrating with external SEO systems
+- Sites that need non-standard SEO implementations
 
-### Drawbacks
+### Trade-offs
 
-❌ **More code to maintain**
-❌ **Manual escaping** required for user input
-❌ **No automatic fallbacks**
-❌ **Higher chance of errors** (missing tags, typos)
+**Advantages:**
+
+- Complete control over every tag
+- Custom logic for complex requirements
+- No automatic behavior to understand
+- Everything is explicit
+
+**Disadvantages:**
+
+- More code to maintain
+- Manual escaping required for user input
+- No automatic fallbacks
+- Higher chance of errors (missing tags, typos)
+- More testing required
 
 ---
 
 ## Comparison Table
 
-| Feature | Scenario 1<br>(No Changes) | Scenario 2<br>(Enhanced) | Scenario 3<br>(Hybrid) ⭐ | Scenario 4<br>(Selective) | Scenario 5<br>(Full Custom) |
-|---------|-------------|------------|----------|------------|-------------|
+| Feature | Scenario 1: Automatic | Scenario 2: Enhanced | Scenario 3: Hybrid | Scenario 4: Selective | Scenario 5: Full Custom |
+|---------|----------------------|---------------------|-------------------|----------------------|------------------------|
 | **Setup Effort** | None | Low | Low | Medium | High |
 | **Code Changes** | None | None | Minimal | Medium | Extensive |
 | **Control Level** | Low | Medium | High | High | Complete |
-| **Auto-Injection** | ✅ Yes | ✅ Yes | ✅ Yes | ❌ No | ❌ No |
-| **Custom Tags** | ❌ No | ✅ Frontmatter | ✅ Template | ✅ Template | ✅ Full |
-| **Fallback** | ✅ Always | ✅ Always | ✅ Partial | ❌ No | ❌ No |
-| **Type Safety** | N/A | N/A | Partial | ✅ Yes | Partial |
+| **Auto-Injection** | Yes | Yes | Yes | No | No |
+| **Custom Tags** | No | Frontmatter | Template | Template | Full |
+| **Fallback** | Always | Always | Partial | No | No |
 | **Maintenance** | Minimal | Low | Low | Medium | High |
 | **Best For** | New projects | Most projects | Advanced needs | Specific control | Complex SEO |
-
----
-
-## Migration Path
-
-### From No SEO → Automatic SEO
-
-1. Upgrade Stati (automatic SEO is enabled by default)
-2. Rebuild your site
-3. ✅ Done! SEO tags are auto-injected
-
-### From Automatic → Enhanced
-
-1. Keep `seo.autoInject: true`
-2. Add frontmatter to important pages
-3. Configure sitemap and robots.txt
-4. ✅ Gradual enhancement complete
-
-### From Automatic → Hybrid
-
-1. Keep `seo.autoInject: true`
-2. Add specific tags to templates where needed
-3. Stati detects and skips auto-generation for those tags
-4. ✅ Hybrid mode active
-
-### From Automatic → Selective
-
-1. Set `seo.autoInject: false`
-2. Add `stati.generateSEO(stati, ['title', 'description'])` to templates
-3. Add custom tags as needed
-4. ✅ Selective control implemented
-
-### From Automatic → Full Custom
-
-1. Set `seo.autoInject: false`
-2. Implement all SEO tags manually in templates
-3. Test thoroughly
-4. ✅ Full custom control achieved
-
-### From Hybrid → Selective or Full Custom
-
-1. Set `seo.autoInject: false`
-2. Move existing custom tags into explicit generation
-3. Add remaining tags (either via `generateSEO()` or manually)
-4. ✅ Migration complete
 
 ---
 
@@ -612,44 +621,38 @@ export default defineConfig({
 
 After implementing SEO, validate your setup:
 
-- [ ] **Build succeeds** without errors
-- [ ] **View page source** - verify SEO tags are present
-- [ ] **Check title tags** - correct format and no duplicates
-- [ ] **Check meta descriptions** - present and under 160 characters
-- [ ] **Check canonical URLs** - absolute URLs, correct protocol
-- [ ] **Check Open Graph tags** - og:title, og:description, og:image, og:url
-- [ ] **Check Twitter Cards** - twitter:card, twitter:title, twitter:image
-- [ ] **Check sitemap.xml** - exists at `/sitemap.xml`, valid XML
-- [ ] **Check robots.txt** - exists at `/robots.txt`, correct directives
-- [ ] **Validate structured data** - use [Google Rich Results Test](https://search.google.com/test/rich-results)
-- [ ] **Test social sharing** - use [Facebook Debugger](https://developers.facebook.com/tools/debug/) and [Twitter Card Validator](https://cards-dev.twitter.com/validator)
+- **Build succeeds** without errors
+- **View page source** - verify SEO tags are present
+- **Check title tags** - correct format and no duplicates
+- **Check meta descriptions** - present and under 160 characters
+- **Check canonical URLs** - absolute URLs, correct protocol
+- **Check Open Graph tags** - og:title, og:description, og:image, og:url
+- **Check Twitter Cards** - twitter:card, twitter:title, twitter:image
+- **Check sitemap.xml** - exists at `/sitemap.xml`, valid XML
+- **Check robots.txt** - exists at `/robots.txt`, correct directives
+- **Validate structured data** - use [Google Rich Results Test](https://search.google.com/test/rich-results)
+- **Test social sharing** - use [Facebook Debugger](https://developers.facebook.com/tools/debug/) and [Twitter Card Validator](https://cards-dev.twitter.com/validator)
 
-### Tools
+### Validation Tools
 
-**Validation:**
+**HTML & SEO:**
+
 - [W3C HTML Validator](https://validator.w3.org/)
 - [Google Rich Results Test](https://search.google.com/test/rich-results)
 - [Schema.org Validator](https://validator.schema.org/)
 
 **Social Media:**
+
 - [Facebook Sharing Debugger](https://developers.facebook.com/tools/debug/)
 - [Twitter Card Validator](https://cards-dev.twitter.com/validator)
 - [LinkedIn Post Inspector](https://www.linkedin.com/post-inspector/)
 
 **Search Console:**
+
 - [Google Search Console](https://search.google.com/search-console)
 - [Bing Webmaster Tools](https://www.bing.com/webmasters)
 
 ### Common Issues
-
-**Issue:** SEO tags appear twice
-
-**Solution:** Disable auto-injection if using manual tags:
-```typescript
-export default defineConfig({
-  seo: { autoInject: false }
-});
-```
 
 **Issue:** Open Graph tags not generated
 
@@ -680,18 +683,19 @@ export default defineConfig({
 
 For most projects, we recommend **Scenario 3: Hybrid Mode** because it offers:
 
-✅ **Best of both worlds** - automatic fallback + custom control
-✅ **Low maintenance** - minimal code to maintain
-✅ **Flexible** - override only what you need
-✅ **Safe** - Stati handles escaping and validation
-✅ **Gradual** - start automatic, add custom tags as needed
+- Best of both worlds - automatic fallback + custom control
+- Low maintenance - minimal code to maintain
+- Flexible - override only what you need
+- Safe - Stati handles escaping and validation
+- Gradual - start automatic, add custom tags as needed
+
+Start with Scenario 1 (Automatic) and move to Scenario 3 (Hybrid) as your SEO requirements evolve.
 
 ## Next Steps
 
 - [SEO Configuration Guide](/configuration/seo) - Complete SEO configuration reference
 - [SEO API Reference](/api/seo) - Detailed API documentation
-- [Examples & Recipes](/examples/seo) - Real-world SEO examples
 
 ---
 
-**Questions?** Check the [Troubleshooting section](/configuration/seo#troubleshooting) or open a [GitHub issue](https://github.com/ianchak/stati/issues).
+**Questions?** Check the [SEO Configuration documentation](/configuration/seo) or open a [GitHub issue](https://github.com/ianchak/stati/issues).

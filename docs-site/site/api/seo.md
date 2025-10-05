@@ -1232,5 +1232,5 @@ export default defineConfig({
 ## See Also
 
 - [SEO Configuration Guide](/configuration/seo) - User-friendly configuration guide
-- [SEO Adoption Guide](/advanced/seo-adoption) - Migration and adoption strategies
+- [SEO Usage Scenarios](/advanced/seo-usage-scenarios) - Usage strategies for different project needs
 - [Core Concepts: ISG](/core-concepts/isg) - How SEO integrates with ISG caching
