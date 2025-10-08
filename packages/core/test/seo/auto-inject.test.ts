@@ -124,9 +124,9 @@ describe('SEO Auto-Injection', () => {
         logger: createMockLogger(),
       });
 
-      // Should have 2 spaces before injected tags
-      expect(result).toMatch(/\n {2}<title>/);
-      expect(result).toMatch(/\n {2}<meta name="description"/);
+      // Should have 4 spaces before injected tags
+      expect(result).toMatch(/\n {4}<title>/);
+      expect(result).toMatch(/\n {4}<meta name="description"/);
     });
   });
 
