@@ -145,6 +145,21 @@ describe('Callable Partials', () => {
 
       expect(result).toContain('<!-- Error rendering partial');
     });
+
+    it('should allow access to function properties via Reflect.get', () => {
+      const renderedContent = '<header>Default Header</header>';
+      const callable = makeCallablePartial(
+        mockEta,
+        '/test/header.eta',
+        baseContext,
+        renderedContent,
+      );
+
+      // Access function properties like name, length, etc.
+      // This triggers the Reflect.get fallback in the proxy
+      expect(typeof callable.name).toBe('string');
+      expect(typeof callable.length).toBe('number');
+    });
   });
 
   describe('wrapPartialsAsCallable', () => {
