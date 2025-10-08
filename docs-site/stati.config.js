@@ -3,7 +3,7 @@ import { defineConfig } from '@stati/core';
 export default defineConfig({
   site: {
     title: 'Stati Documentation',
-    baseUrl: process.env.DEPLOY_URL || 'https://docs.stati.build',
+    baseUrl: 'https://docs.stati.build',
     defaultLocale: 'en-US',
   },
   markdown: {

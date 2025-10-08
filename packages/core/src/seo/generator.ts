@@ -8,7 +8,12 @@ import type { PageModel } from '../types/content.js';
 import type { StatiConfig, SiteConfig } from '../types/config.js';
 import type { Logger } from '../types/logging.js';
 import { SEOTagType } from '../types/seo.js';
-import { escapeHtml, validateSEOMetadata, generateRobotsContent } from './utils/index.js';
+import {
+  escapeHtml,
+  validateSEOMetadata,
+  generateRobotsContent,
+  resolveAbsoluteUrl,
+} from './utils/index.js';
 import { sanitizeStructuredData } from './utils/escape-and-validation.js';
 
 /**
@@ -111,7 +116,7 @@ export function generateSEOMetadata(ctx: SEOContext): string {
 
   // Canonical link
   if (shouldGenerate(SEOTagType.Canonical)) {
-    const canonical = seo.canonical || `${siteUrl}${page.url}`;
+    const canonical = seo.canonical || resolveAbsoluteUrl(page.url || '/', siteUrl);
     meta.push(`<link rel="canonical" href="${escapeHtml(canonical)}">`);
   }
 
@@ -173,7 +178,7 @@ export function generateOpenGraphTags(ctx: SEOContext): string[] {
   // Basic OG tags with fallback chain
   const ogTitle = og.title || seo.title || page.frontMatter.title || config.site.title;
   const ogDescription = og.description || seo.description || page.frontMatter.description;
-  const ogUrl = og.url || seo.canonical || `${siteUrl}${page.url}`;
+  const ogUrl = og.url || seo.canonical || resolveAbsoluteUrl(page.url || '/', siteUrl);
   const ogType = og.type || 'website';
   const ogSiteName = og.siteName || config.site.title;
 
