@@ -305,6 +305,33 @@ async function parseTemplateDependencies(
     }
   }
 
+  // Look for Stati callable partial patterns: stati.partials.name( or stati.partials['name'](
+  // This catches both direct property access and bracket notation with or without arguments
+  // Patterns allow for optional whitespace before the opening parenthesis
+  const callablePartialPatterns = [
+    /stati\.partials\.(\w+)\s*\(/g, // stati.partials.header( or stati.partials.header  (
+    /stati\.partials\[['"`]([^'"`]+)['"`]\]\s*\(/g, // stati.partials['header']( with whitespace
+  ];
+
+  for (const pattern of callablePartialPatterns) {
+    let match;
+    while ((match = pattern.exec(content)) !== null) {
+      const partialName = match[1];
+      if (partialName) {
+        // Resolve the partial by searching for it in underscore directories
+        const partialFileName = `${partialName}${TEMPLATE_EXTENSION}`;
+        const resolvedPath = await resolveTemplatePathInternal(
+          partialFileName,
+          srcDir,
+          templateDir,
+        );
+        if (resolvedPath) {
+          dependencies.push(resolvedPath);
+        }
+      }
+    }
+  }
+
   return dependencies;
 }
 
