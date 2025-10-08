@@ -153,7 +153,7 @@ export function generateSEOMetadata(ctx: SEOContext): string {
     meta.push(`<script type="application/ld+json">${JSON.stringify(sanitized)}</script>`);
   }
 
-  return meta.join('\n  ');
+  return meta.join('\n    ');
 }
 
 /**
