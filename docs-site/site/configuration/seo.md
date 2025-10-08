@@ -15,7 +15,7 @@ Stati provides comprehensive SEO support with automatic metadata generation, sit
 - [SEO Configuration Options](#seo-configuration-options)
 - [Frontmatter SEO Fields](#frontmatter-seo-fields)
 - [Sitemap Configuration](#sitemap-configuration)
-- [Robots.txt Configuration](#robotstxt-configuration)
+- [Robots.txt Configuration](#robots.txt-configuration)
 - [SEO Tag Types](#seo-tag-types)
 - [Best Practices](#best-practices)
 - [Troubleshooting](#troubleshooting)

@@ -125,8 +125,8 @@ export function autoInjectSEO(html: string, options: AutoInjectOptions): string 
   const before = html.substring(0, headClosePos);
   const after = html.substring(headClosePos);
 
-  // Add proper indentation (2 spaces) and newline
-  const injected = `${before}  ${seoMetadata}\n${after}`;
+  // Add proper indentation (4 spaces) and newline
+  const injected = `${before}    ${seoMetadata}\n${after}`;
 
   logDebug(`Injected ${existingTags.size === 0 ? 'all' : 'missing'} SEO tags into ${page.url}`, {
     debug,

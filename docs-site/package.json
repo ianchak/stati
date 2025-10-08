@@ -8,7 +8,7 @@
     "dev": "concurrently --prefix none \"npm run watch:css\" \"stati dev\"",
     "dev:local": "concurrently --prefix none \"npm run watch:css\" \"node ../packages/cli/dist/cli.js dev\"",
     "build": "npm run build:css && stati build",
-    "build:local": "npm run build:css && node ../packages/cli/dist/cli.js build",
+    "build:local": "npm run build:css && node ../packages/cli/dist/cli.js build --clean",
     "preview": "stati preview",
     "preview:local": "node ../packages/cli/dist/cli.js preview",
     "clean": "rimraf dist .stati",

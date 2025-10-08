@@ -157,6 +157,24 @@ describe('SEO Generator - generateSEOMetadata', () => {
     expect(result).toContain('<link rel="canonical" href="https://custom.com/page">');
   });
 
+  it('should handle undefined page.url gracefully in canonical link', () => {
+    const page = createMockPage({});
+    // Intentionally set url to undefined to simulate missing URL
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (page as any).url = undefined;
+    const config = createMockConfig();
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
+
+    const result = generateSEOMetadata(ctx);
+    expect(result).toContain('<link rel="canonical" href="https://example.com/">');
+    expect(result).not.toContain('undefined');
+  });
+
   it('should generate robots meta tag with noindex', () => {
     const page = createMockPage({
       frontMatter: {
@@ -543,6 +561,26 @@ describe('SEO Generator - generateOpenGraphTags', () => {
     expect(tags.some((t) => t.includes('og:url'))).toBe(true);
     expect(tags.some((t) => t.includes('og:type'))).toBe(true);
     expect(tags.some((t) => t.includes('og:site_name'))).toBe(true);
+  });
+
+  it('should handle undefined page.url gracefully in og:url', () => {
+    const page = createMockPage({});
+    // Intentionally set url to undefined to simulate missing URL
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (page as any).url = undefined;
+    const config = createMockConfig();
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
+
+    const tags = generateOpenGraphTags(ctx);
+    const ogUrlTag = tags.find((t) => t.includes('og:url'));
+    expect(ogUrlTag).toBeDefined();
+    expect(ogUrlTag).toContain('https://example.com/');
+    expect(ogUrlTag).not.toContain('undefined');
   });
 
   it('should use OG-specific title when provided', () => {
