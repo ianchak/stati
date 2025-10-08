@@ -513,9 +513,6 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
   // Load configuration
   const { config, outDir, cacheDir } = await loadAndValidateConfig(options);
 
-  // Load cache manifest for ISG
-  const { manifest } = await setupCacheAndManifest(cacheDir);
-
   // Initialize cache stats
   let cacheHits = 0;
   let cacheMisses = 0;
@@ -528,6 +525,9 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
   }
 
   await ensureDir(outDir);
+
+  // Load cache manifest for ISG (after potential clean operation)
+  const { manifest } = await setupCacheAndManifest(cacheDir);
 
   // Load content and build navigation
   console.log(); // Add spacing before content loading
