@@ -12,9 +12,10 @@ coverage:
 comment:
   layout: 'reach, diff, flags, files'
   behavior: default
-  require_changes: true
+  require_changes: false
   require_base: no
   require_head: yes
+  show_carryforward_flags: false
 
 github_checks:
   annotations: true

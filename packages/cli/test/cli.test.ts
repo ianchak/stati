@@ -3,6 +3,28 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
+// Define logger type locally
+interface Logger {
+  info: (msg: string) => void;
+  success: (msg: string) => void;
+  warning: (msg: string) => void;
+  error: (msg: string) => void;
+  building: (msg: string) => void;
+  processing: (msg: string) => void;
+  stats: (msg: string) => void;
+}
+
+// Create mock logger
+const mockLogger: Logger = {
+  info: vi.fn(),
+  success: vi.fn(),
+  warning: vi.fn(),
+  error: vi.fn(),
+  building: vi.fn(),
+  processing: vi.fn(),
+  stats: vi.fn(),
+};
+
 // Mock @stati/core to prevent actual build operations
 vi.mock('@stati/core', () => ({
   build: vi.fn().mockResolvedValue({
@@ -11,7 +33,11 @@ vi.mock('@stati/core', () => ({
     cacheHits: 2,
     cacheWrites: 3,
   }),
-  invalidate: vi.fn().mockResolvedValue(undefined),
+  invalidate: vi.fn().mockResolvedValue({
+    invalidatedCount: 3,
+    invalidatedPaths: ['/page1', '/page2', '/page3'],
+    clearedAll: false,
+  }),
   createDevServer: vi.fn().mockResolvedValue({
     start: vi.fn().mockResolvedValue(undefined),
     stop: vi.fn().mockResolvedValue(undefined),
@@ -21,10 +47,16 @@ vi.mock('@stati/core', () => ({
     stop: vi.fn().mockResolvedValue(undefined),
     url: 'http://localhost:4000',
   }),
+  setEnv: vi.fn(),
+}));
+
+// Mock logger module
+vi.mock('../src/logger.js', () => ({
+  createLogger: vi.fn(() => mockLogger),
 }));
 
 // Mock colors to prevent actual console output during tests
-vi.mock('../colors.js', () => ({
+vi.mock('../src/colors.js', () => ({
   log: {
     info: vi.fn(),
     success: vi.fn(),
