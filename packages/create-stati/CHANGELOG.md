@@ -1,5 +1,31 @@
 # create-stati
 
+## 1.5.0
+
+### Minor Changes
+
+- add initial codecov configuration for coverage reporting
+
+  Commit: 5fcfbd9
+
+- add sitemap configuration with priority rules
+
+  Commit: b9d2a3c
+
+- add robots configuration to enable sitemap
+
+  Commit: 4d33078
+
+### Patch Changes
+
+- update Codecov configuration to disable require_changes option
+
+  Commit: 9c9fc69
+
+- correct link reference for robots.txt configuration
+
+  Commit: 2d13853
+
 ## 1.4.1
 
 ### Patch Changes

@@ -1,5 +1,55 @@
 # @stati/core
 
+## 1.8.0
+
+### Minor Changes
+
+- add initial codecov configuration for coverage reporting
+
+  Commit: 5fcfbd9
+
+- add sitemap configuration with priority rules
+
+  Commit: b9d2a3c
+
+- add robots configuration to enable sitemap
+
+  Commit: 4d33078
+
+- enhance config loader tests with new scenarios and defaults
+
+  Commit: d281c2a
+
+### Patch Changes
+
+- improve priority matching for root and path prefixes
+
+  Commit: 1eedf70
+
+- update Codecov configuration to disable require_changes option
+
+  Commit: 9c9fc69
+
+- adjust indentation for injected SEO tags in HTML
+
+  Commit: 59ac767
+
+- add --clean option to local build script for better output
+
+  Commit: 824250f
+
+- update indentation for injected SEO tags to 4 spaces
+
+  Commit: 4d15e4f
+
+- correct link reference for robots.txt configuration
+
+  Commit: 2d13853
+
+- handle undefined page.url in canonical and OG tags
+
+  Commit: 3d744b6
+
 ## 1.7.1
 
 ### Patch Changes

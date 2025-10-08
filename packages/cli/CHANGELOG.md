@@ -1,5 +1,52 @@
 # @stati/cli
 
+## 1.5.0
+
+### Minor Changes
+
+- add initial codecov configuration for coverage reporting
+
+  Commit: 5fcfbd9
+
+- add comprehensive logger and colors tests
+
+  Commit: 889f96f
+
+- add sitemap configuration with priority rules
+
+  Commit: b9d2a3c
+
+- add robots configuration to enable sitemap
+
+  Commit: 4d33078
+
+### Patch Changes
+
+- update Codecov configuration to disable require_changes option
+
+  Commit: 9c9fc69
+
+- refactor console logging spies for clarity
+
+  Commit: 06421dc
+
+- correct link reference for robots.txt configuration
+
+  Commit: 2d13853
+
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+  - @stati/core@1.8.0
+
 ## 1.4.1
 
 ### Patch Changes
