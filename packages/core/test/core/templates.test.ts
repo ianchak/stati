@@ -493,20 +493,22 @@ describe('templates.ts', () => {
           }),
         );
 
-        // Verify final layout was rendered with rendered partials in context
-        expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
-          'layout.eta',
-          expect.objectContaining({
-            partials: {
-              header: mockHeaderContent,
-              footer: mockFooterContent,
-            },
-            page: expect.objectContaining({
-              url: '/test-page',
-              path: '/test-page',
-            }),
-          }),
+        // Verify final layout was rendered with callable partials in context
+        const layoutCall = mockEtaInstance.renderAsync.mock.calls.find(
+          (call) => call[0] === 'layout.eta',
         );
+        expect(layoutCall).toBeDefined();
+        expect(layoutCall![1]).toMatchObject({
+          page: expect.objectContaining({
+            url: '/test-page',
+            path: '/test-page',
+          }),
+        });
+        // Verify partials are callable and return expected content
+        expect(layoutCall![1].partials.header).toBeInstanceOf(Function);
+        expect(layoutCall![1].partials.footer).toBeInstanceOf(Function);
+        expect(layoutCall![1].partials.header.toString()).toBe(mockHeaderContent);
+        expect(layoutCall![1].partials.footer.toString()).toBe(mockFooterContent);
 
         expect(result).toBe(mockLayoutContent);
       });
@@ -565,13 +567,14 @@ describe('templates.ts', () => {
         );
 
         // Verify layout was still rendered with error placeholder for broken partial
-        expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
-          'layout.eta',
-          expect.objectContaining({
-            partials: {
-              broken: '<!-- Error rendering partial: broken -->',
-            },
-          }),
+        const layoutCall = mockEtaInstance.renderAsync.mock.calls.find(
+          (call) => call[0] === 'layout.eta',
+        );
+        expect(layoutCall).toBeDefined();
+        // Verify partial is callable and returns error placeholder
+        expect(layoutCall![1].partials.broken).toBeInstanceOf(Function);
+        expect(layoutCall![1].partials.broken.toString()).toBe(
+          '<!-- Error rendering partial: broken -->',
         );
 
         expect(result).toBe(mockLayoutContent);
@@ -614,14 +617,13 @@ describe('templates.ts', () => {
         );
 
         // Verify that the rendered content made it to the final context
-        expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
-          'layout.eta',
-          expect.objectContaining({
-            partials: {
-              test: mockContent,
-            },
-          }),
+        const layoutCall = mockEtaInstance.renderAsync.mock.calls.find(
+          (call) => call[0] === 'layout.eta',
         );
+        expect(layoutCall).toBeDefined();
+        // Verify partial is callable and returns expected content
+        expect(layoutCall![1].partials.test).toBeInstanceOf(Function);
+        expect(layoutCall![1].partials.test.toString()).toBe(mockContent);
 
         expect(result).toBe(mockLayoutContent);
       });
@@ -688,16 +690,17 @@ describe('templates.ts', () => {
           );
 
           // Verify final layout was called with all discovered partials
-          expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
-            expect.stringMatching(/.*layout\.eta/),
-            expect.objectContaining({
-              partials: expect.objectContaining({
-                header: rootHeaderContent,
-                footer: rootFooterContent,
-                sidebar: blogSidebarContent,
-              }),
-            }),
+          const layoutCall = mockEtaInstance.renderAsync.mock.calls.find(
+            (call) => typeof call[0] === 'string' && call[0].endsWith('layout.eta'),
           );
+          expect(layoutCall).toBeDefined();
+          // Verify all partials are callable and return expected content
+          expect(layoutCall![1].partials.header).toBeInstanceOf(Function);
+          expect(layoutCall![1].partials.footer).toBeInstanceOf(Function);
+          expect(layoutCall![1].partials.sidebar).toBeInstanceOf(Function);
+          expect(layoutCall![1].partials.header.toString()).toBe(rootHeaderContent);
+          expect(layoutCall![1].partials.footer.toString()).toBe(rootFooterContent);
+          expect(layoutCall![1].partials.sidebar.toString()).toBe(blogSidebarContent);
         });
 
         it('should allow more specific partials to override general ones', async () => {
@@ -744,14 +747,100 @@ describe('templates.ts', () => {
           );
 
           // Verify final layout uses the overridden partial
+          const layoutCall = mockEtaInstance.renderAsync.mock.calls.find(
+            (call) => typeof call[0] === 'string' && call[0].endsWith('layout.eta'),
+          );
+          expect(layoutCall).toBeDefined();
+          // Verify partial is callable and returns the docs version
+          expect(layoutCall![1].partials.header).toBeInstanceOf(Function);
+          expect(layoutCall![1].partials.header.toString()).toBe(docsHeaderContent); // Should be docs version, not root
+        });
+      });
+
+      describe('callable partials', () => {
+        it('should make partials callable with props', async () => {
+          mockGlob
+            .mockResolvedValueOnce([join(mockProjectRoot, 'src', '_partials')])
+            .mockResolvedValueOnce(['card.eta'])
+            .mockResolvedValue([]);
+
+          mockPathExists.mockResolvedValueOnce(true).mockResolvedValue(false);
+
+          const mockCardContent = '<div class="card">Default Card</div>';
+          const mockLayoutContent = '<html><body>layout</body></html>';
+
+          // Track calls to verify callable behavior
+          const renderCalls: Array<{ template: string; context: unknown }> = [];
+
+          mockEtaInstance.renderAsync.mockImplementation((template: string, context?: unknown) => {
+            renderCalls.push({ template, context });
+
+            if (template.includes('card.eta')) {
+              return Promise.resolve(mockCardContent);
+            } else if (template === 'layout.eta') {
+              return Promise.resolve(mockLayoutContent);
+            }
+            return Promise.resolve('');
+          });
+
+          await renderPage(mockPage, '<h1>Test content</h1>', mockConfig, mockEtaInstance as Eta);
+
+          // Verify that partials in the layout context are callable
+          const layoutCall = renderCalls.find((call) => call.template === 'layout.eta');
+          expect(layoutCall).toBeDefined();
+
+          // The partials should be wrapped as callable
+          const partialsInContext = (layoutCall?.context as Record<string, unknown>)
+            ?.partials as Record<string, unknown>;
+          expect(partialsInContext).toBeDefined();
+          expect(partialsInContext.card).toBeDefined();
+
+          // Verify that the callable partial has toString method
+          const cardPartial = partialsInContext.card as { toString: () => string };
+          expect(typeof cardPartial.toString).toBe('function');
+          expect(cardPartial.toString()).toBe(mockCardContent);
+        });
+
+        it('should support backwards compatibility with direct partial usage', async () => {
+          mockGlob
+            .mockResolvedValueOnce([join(mockProjectRoot, 'src', '_partials')])
+            .mockResolvedValueOnce(['header.eta'])
+            .mockResolvedValue([]);
+
+          mockPathExists.mockResolvedValueOnce(true).mockResolvedValue(false);
+
+          const mockHeaderContent = '<header>Site Header</header>';
+          const mockLayoutContent = '<html><body>layout</body></html>';
+
+          mockEtaInstance.renderAsync.mockImplementation((template: string) => {
+            if (template.includes('header.eta')) {
+              return Promise.resolve(mockHeaderContent);
+            } else if (template === 'layout.eta') {
+              return Promise.resolve(mockLayoutContent);
+            }
+            return Promise.resolve('');
+          });
+
+          const result = await renderPage(
+            mockPage,
+            '<h1>Test content</h1>',
+            mockConfig,
+            mockEtaInstance as Eta,
+          );
+
+          // Verify that old-style partial usage still works
           expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
-            expect.stringMatching(/.*layout\.eta/),
+            'layout.eta',
             expect.objectContaining({
               partials: expect.objectContaining({
-                header: docsHeaderContent, // Should be docs version, not root
+                header: expect.objectContaining({
+                  toString: expect.any(Function),
+                }),
               }),
             }),
           );
+
+          expect(result).toBe(mockLayoutContent);
         });
       });
     });

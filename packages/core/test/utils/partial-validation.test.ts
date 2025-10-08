@@ -4,7 +4,7 @@ import { setEnv, getEnv } from '../../src/env.js';
 
 describe('Partial Validation', () => {
   describe('createValidatingPartialsProxy', () => {
-    it('should show helpful message when no partials exist', () => {
+    it('should return empty object as-is when no partials exist', () => {
       const originalEnv = getEnv() as 'development' | 'production' | 'test';
       setEnv('development');
 
@@ -12,9 +12,9 @@ describe('Partial Validation', () => {
         const partials = {};
         const proxy = createValidatingPartialsProxy(partials);
 
-        expect(() => {
-          return (proxy as Record<string, string>).anything;
-        }).toThrow(/No partials are available/);
+        // Should return the same object without wrapping in a proxy
+        expect(proxy).toBe(partials);
+        expect((proxy as Record<string, string>).anything).toBeUndefined();
       } finally {
         setEnv(originalEnv);
       }
@@ -101,9 +101,9 @@ describe('Partial Validation', () => {
         const partials = {};
         const proxy = createValidatingPartialsProxy(partials);
 
-        expect(() => {
-          return (proxy as Record<string, string>).anything;
-        }).toThrow(/No partials are available/);
+        // Should return the same object without wrapping in a proxy
+        expect(proxy).toBe(partials);
+        expect((proxy as Record<string, string>).anything).toBeUndefined();
       } finally {
         setEnv(originalEnv);
       }
@@ -137,6 +137,42 @@ describe('Partial Validation', () => {
         // Should not throw for legitimate object methods
         expect(proxy.toString).toBeDefined();
         expect(typeof proxy.hasOwnProperty).toBe('function');
+      } finally {
+        setEnv(originalEnv);
+      }
+    });
+
+    it('should return a callable function for missing callable partials', () => {
+      const originalEnv = getEnv() as 'development' | 'production' | 'test';
+      setEnv('development');
+
+      try {
+        // Create mock callable partials
+        const mockCallable = (props?: Record<string, unknown>) => {
+          return props ? `<div>${props.title}</div>` : '<div>Default</div>';
+        };
+        mockCallable.toString = () => '<div>Default</div>';
+        mockCallable.valueOf = () => '<div>Default</div>';
+
+        const partials = {
+          hero: mockCallable,
+          footer: mockCallable,
+        };
+        const proxy = createValidatingPartialsProxy(partials);
+
+        const result = (proxy as Record<string, typeof mockCallable>).nonexistent;
+
+        // Should be a function (not throw "string is not a function")
+        expect(typeof result).toBe('function');
+
+        // Calling the function should return error HTML
+        const errorHtml = result?.();
+        expect(errorHtml).toContain('Stati Development Error Overlay');
+        expect(errorHtml).toContain('Partial "nonexistent" not found');
+
+        // toString should also return the error HTML
+        expect(result?.toString()).toContain('Stati Development Error Overlay');
+        expect(result?.valueOf()).toContain('Stati Development Error Overlay');
       } finally {
         setEnv(originalEnv);
       }

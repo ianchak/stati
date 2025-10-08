@@ -277,6 +277,135 @@ Partials are automatically available in templates:
 <%~ stati.partials.blogSidebar %>  <!-- From blog/_partials/sidebar.eta -->
 ```
 
+### Passing Data to Partials
+
+Partials can accept custom data, making them reusable like components. This is perfect for cards, buttons, or any content that varies slightly each time you use it.
+
+#### Basic Usage
+
+```eta
+<!-- Simple: no data needed -->
+<%~ stati.partials.header %>
+
+<!-- With custom data -->
+<%~ stati.partials.hero({
+  title: 'Welcome to Stati',
+  subtitle: 'Build fast static sites'
+}) %>
+
+<!-- In loops: render a card for each post -->
+<% posts.forEach(post => { %>
+  <%~ stati.partials.card({
+    title: post.title,
+    description: post.description,
+    url: post.url
+  }) %>
+<% }) %>
+```
+
+**How it works:**
+
+- Use partials as-is when no custom data is needed: `<%~ stati.partials.header %>`
+- Pass data by calling the partial like a function: `stati.partials.name({ ... })`
+- Access passed data inside the partial via `stati.props.propertyName`
+- All Stati data remains available: `stati.site`, `stati.page`, `stati.content`, etc.
+
+#### Creating a Reusable Partial
+
+Let's create a card component that accepts custom data.
+
+**Example partial** (`_partials/card.eta`):
+
+```eta
+<article class="card">
+  <h3><%= stati.props.title || 'Untitled' %></h3>
+  <% if (stati.props.description) { %>
+    <p><%= stati.props.description %></p>
+  <% } %>
+  <% if (stati.props.url) { %>
+    <a href="<%= stati.props.url %>">Read more →</a>
+  <% } %>
+</article>
+```
+
+**Using the card**:
+
+```eta
+<!-- Without data: uses defaults -->
+<%~ stati.partials.card %>
+<!-- Output: <article class="card"><h3>Untitled</h3></article> -->
+
+<!-- With custom data -->
+<%~ stati.partials.card({
+  title: 'Custom Title',
+  description: 'A great article',
+  url: '/blog/article'
+}) %>
+<!-- Output: full card with all fields -->
+
+<!-- Render multiple cards from a collection -->
+<div class="posts-grid">
+  <% stati.collection?.pages.forEach(post => { %>
+    <%~ stati.partials.card({
+      title: post.title,
+      description: post.description,
+      url: post.url
+    }) %>
+  <% }) %>
+</div>
+```
+
+#### Accessing Data Inside Partials
+
+Inside your partials, any data you pass is available via `stati.props`:
+
+```eta
+<!-- Inside _partials/hero.eta -->
+<section class="hero">
+  <h1><%= stati.props.title %></h1>
+  <p><%= stati.props.subtitle %></p>
+
+  <!-- You still have access to site data -->
+  <small>© <%= stati.site.title %></small>
+
+  <!-- And page data -->
+  <small>Current page: <%= stati.page.title %></small>
+</section>
+```
+
+#### Mixing Custom and Site Data
+
+You can combine data passed to the partial with Stati's global data:
+
+```eta
+<!-- _partials/page-header.eta -->
+<header>
+  <!-- Use custom title if provided, otherwise fall back to site title -->
+  <h1><%= stati.props.customTitle || stati.site.title %></h1>
+
+  <!-- Always show current page -->
+  <p>You're on: <%= stati.page.title %></p>
+
+  <!-- Use custom subtitle if provided -->
+  <% if (stati.props.subtitle) { %>
+    <p class="subtitle"><%= stati.props.subtitle %></p>
+  <% } %>
+</header>
+
+<!-- Usage -->
+<%~ stati.partials.pageHeader({
+  customTitle: 'Special Event',
+  subtitle: 'Join us for an amazing experience'
+}) %>
+```
+
+**Practical tips:**
+
+- Use `stati.props` for data that changes each time you use the partial
+- Use `stati.site` for global site information (title, URL, etc.)
+- Use `stati.page` for the current page's information
+- Provide sensible defaults with `||` for optional properties
+
 ### Hierarchical Partials
 
 Partials inherit from parent directories:

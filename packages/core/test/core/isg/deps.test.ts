@@ -374,5 +374,54 @@ describe('ISG Dependency Tracking', () => {
       // Should work regardless of path separator
       expect(Array.isArray(result)).toBe(true);
     });
+
+    it('should track callable partial dependencies from template content', async () => {
+      // Create a page with a layout that uses callable partials
+      const pageWithCallablePartials = {
+        ...mockPage,
+        sourcePath: join(absoluteSrcDir, 'test.md'),
+      };
+
+      // Mock layout file content with callable partial syntax
+      const layoutContent = `
+        <!DOCTYPE html>
+        <html>
+          <body>
+            <%~ stati.partials.header() %>
+            <%~ stati.partials.hero({ title: 'Welcome' }) %>
+            <main><%~ stati.content %></main>
+            <%~ stati.partials['footer']() %>
+          </body>
+        </html>
+      `;
+
+      // Mock pathExists for layout
+      mockPathExists.mockImplementation(async (path: string) => {
+        return path.includes('layout.eta');
+      });
+
+      // Mock readFile to return layout content with callable partials
+      mockReadFile.mockImplementation(async (path: string) => {
+        if (path.includes('layout.eta')) {
+          return layoutContent;
+        }
+        return 'template content';
+      });
+
+      // Mock glob to return the partial files
+      mockGlob.mockResolvedValue([
+        join(absoluteSrcDir, '_partials/header.eta'),
+        join(absoluteSrcDir, '_partials/hero.eta'),
+        join(absoluteSrcDir, '_partials/footer.eta'),
+      ]);
+
+      const result = await trackTemplateDependencies(pageWithCallablePartials, mockConfig);
+
+      // Should include layout and all partials
+      expect(result).toContain(join(absoluteSrcDir, 'layout.eta'));
+      expect(result).toContain(join(absoluteSrcDir, '_partials/header.eta'));
+      expect(result).toContain(join(absoluteSrcDir, '_partials/hero.eta'));
+      expect(result).toContain(join(absoluteSrcDir, '_partials/footer.eta'));
+    });
   });
 });

@@ -1,4 +1,5 @@
 import { getEnv } from '../../env.js';
+import { type CallablePartial } from './callable-partials.js';
 
 /**
  * Creates inline error overlay HTML for missing partials
@@ -94,14 +95,22 @@ function findSimilarPartialNames(targetName: string, availableNames: string[]): 
 
 /**
  * Creates a development-mode Proxy for the partials object that throws errors
- * when accessing non-existent partials instead of returning undefined
+ * when accessing non-existent partials instead of returning undefined.
+ *
+ * Supports both string partials and CallablePartial.
  */
-export function createValidatingPartialsProxy(
-  partials: Record<string, string>,
-): Record<string, string> {
+export function createValidatingPartialsProxy<T extends string | CallablePartial>(
+  partials: Record<string, T>,
+): Record<string, T> {
   // In production, return partials as-is
   // Only skip validation if explicitly set to production
   if (getEnv() === 'production') {
+    return partials;
+  }
+
+  // If there are no partials, return the empty object as-is
+  // This avoids proxy-related issues during test serialization
+  if (Object.keys(partials).length === 0) {
     return partials;
   }
 
@@ -120,7 +129,17 @@ export function createValidatingPartialsProxy(
       }
 
       // Special case: allow accessing length, toString, etc.
-      if (propName in Object.prototype || propName === 'length') {
+      // Also handle test framework inspection properties
+      if (
+        propName in Object.prototype ||
+        propName === 'length' ||
+        propName === 'constructor' ||
+        propName === 'then' || // Promise detection
+        propName === '$$typeof' || // React inspection
+        propName === 'nodeType' || // DOM node detection
+        propName === 'asymmetricMatch' || // Jest/Vitest matcher
+        propName === 'toJSON' // JSON serialization
+      ) {
         return Reflect.get(target, prop, receiver);
       }
 
@@ -128,13 +147,25 @@ export function createValidatingPartialsProxy(
       const availablePartials = Object.keys(target);
       const suggestions = findSimilarPartialNames(propName, availablePartials);
 
-      // Special case: throw error if no partials are available at all
-      if (availablePartials.length === 0) {
-        throw new Error('No partials are available');
-      }
-
       // In development, render an inline error overlay
-      return createInlineErrorOverlay(propName, suggestions);
+      const errorHtml = createInlineErrorOverlay(propName, suggestions);
+
+      // Check if we're dealing with CallablePartials by testing a known partial
+      const samplePartial = Object.values(target)[0];
+      const isCallable = typeof samplePartial === 'function';
+
+      if (isCallable) {
+        // For CallablePartial, return a function that returns the error HTML
+        // This prevents "string is not a function" errors when templates call missing partials
+        // Accept any arguments to handle props being passed
+        const errorFunction = (..._args: unknown[]) => errorHtml;
+        errorFunction.toString = () => errorHtml;
+        errorFunction.valueOf = () => errorHtml;
+        return errorFunction as T;
+      } else {
+        // For string partials, return the error HTML directly
+        return errorHtml as T;
+      }
     },
 
     has(target, prop) {

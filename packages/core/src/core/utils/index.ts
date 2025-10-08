@@ -41,6 +41,10 @@ export { propValue } from './template-utils.js';
 // Partial validation utilities
 export { createValidatingPartialsProxy } from './partial-validation.js';
 
+// Callable partial utilities
+export { makeCallablePartial, wrapPartialsAsCallable } from './callable-partials.js';
+export type { CallablePartial } from './callable-partials.js';
+
 // Template error utilities
 export { TemplateError, parseEtaError, createTemplateError } from './template-errors.js';
 

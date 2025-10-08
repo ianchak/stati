@@ -12,6 +12,7 @@ import {
   createTemplateError,
   createValidatingPartialsProxy,
   propValue,
+  wrapPartialsAsCallable,
 } from './utils/index.js';
 import { getEnv } from '../env.js';
 import { generateSEO } from '../seo/index.js';
@@ -277,9 +278,18 @@ export async function renderPage(
       try {
         // Create context with all previously rendered partials available
         const combinedPartials = { ...renderedPartials, ...passRenderedPartials };
+
+        // Wrap partials as callable before passing to validation proxy
+        const callablePartials = wrapPartialsAsCallable(
+          eta,
+          combinedPartials,
+          partialPaths,
+          baseContext,
+        );
+
         const partialContext = {
           ...baseContext,
-          partials: createValidatingPartialsProxy(combinedPartials), // Include both previous and current pass partials with validation
+          partials: createValidatingPartialsProxy(callablePartials), // Include both previous and current pass partials with validation
         };
 
         const renderedContent = await eta.renderAsync(partialPath, partialContext);
@@ -335,9 +345,12 @@ export async function renderPage(
     }
   }
 
+  // Wrap final rendered partials as callable before passing to layout context
+  const callablePartials = wrapPartialsAsCallable(eta, renderedPartials, partialPaths, baseContext);
+
   const context = {
     ...baseContext,
-    partials: createValidatingPartialsProxy(renderedPartials), // Add rendered partials with validation
+    partials: createValidatingPartialsProxy(callablePartials), // Add rendered partials with validation
   };
 
   try {
