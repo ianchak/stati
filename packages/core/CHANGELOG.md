@@ -1,5 +1,19 @@
 # @stati/core
 
+## 1.9.0
+
+### Minor Changes
+
+- add callable partials support for enhanced reusability
+
+  Commit: 1a131f1
+
+### Patch Changes
+
+- add test for accessing function properties via Reflect.get
+
+  Commit: df0eec0
+
 ## 1.8.0
 
 ### Minor Changes
