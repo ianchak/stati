@@ -143,8 +143,16 @@ function determinePriority(
       if (regex.test(page.url)) {
         return validatePriority(rule.priority);
       }
-    } else if (page.url === pattern || page.url.startsWith(pattern)) {
-      return validatePriority(rule.priority);
+    } else {
+      // For non-glob patterns, check exact match or path prefix
+      if (page.url === pattern) {
+        return validatePriority(rule.priority);
+      }
+      // For path prefix matching, ensure we match at path boundaries
+      // e.g., "/api" matches "/api/foo" but "/" only matches "/" exactly
+      if (pattern !== '/' && page.url.startsWith(pattern + '/')) {
+        return validatePriority(rule.priority);
+      }
     }
   }
 

@@ -249,6 +249,126 @@ describe('Sitemap Generation', () => {
       expect(entry?.priority).toBe(0.9); // First match wins
     });
 
+    it('should NOT match root pattern "/" with all URLs using startsWith', () => {
+      // This is the critical test for the bug fix
+      // "/" should only match "/" exactly, not all URLs that start with "/"
+      baseSitemapConfig.priorityRules = [
+        { pattern: '/', priority: 1.0 },
+        { pattern: '/test-*', priority: 0.5 },
+      ];
+
+      const entry = generateSitemapEntry(samplePage, baseConfig, baseSitemapConfig);
+
+      // /test-page should NOT match "/" pattern, should match "/test-*" pattern
+      expect(entry?.priority).toBe(0.5);
+    });
+
+    it('should match root pattern "/" only for homepage', () => {
+      const homePage = { ...samplePage, url: '/' };
+      baseSitemapConfig.priorityRules = [
+        { pattern: '/', priority: 1.0 },
+        { pattern: '/test-*', priority: 0.5 },
+      ];
+
+      const entry = generateSitemapEntry(homePage, baseConfig, baseSitemapConfig);
+
+      expect(entry?.priority).toBe(1.0);
+    });
+
+    it('should match path prefix patterns with children but not root', () => {
+      // Pattern "/api" should match "/api/foo" but not match "/apitest"
+      const apiChildPage = { ...samplePage, url: '/api/endpoint' };
+      const apiIndexPage = { ...samplePage, url: '/api' };
+      const apiUnrelatedPage = { ...samplePage, url: '/apitest' };
+
+      baseSitemapConfig.priorityRules = [{ pattern: '/api', priority: 0.8 }];
+      baseSitemapConfig.defaultPriority = 0.5;
+
+      const childEntry = generateSitemapEntry(apiChildPage, baseConfig, baseSitemapConfig);
+      const indexEntry = generateSitemapEntry(apiIndexPage, baseConfig, baseSitemapConfig);
+      const unrelatedEntry = generateSitemapEntry(apiUnrelatedPage, baseConfig, baseSitemapConfig);
+
+      expect(childEntry?.priority).toBe(0.8); // Should match prefix
+      expect(indexEntry?.priority).toBe(0.8); // Should match exact
+      expect(unrelatedEntry?.priority).toBe(0.5); // Should NOT match, use default
+    });
+
+    it('should handle glob patterns with double asterisk correctly', () => {
+      const childPage = { ...samplePage, url: '/docs/guide/intro' };
+      const indexPage = { ...samplePage, url: '/docs' };
+
+      baseSitemapConfig.priorityRules = [{ pattern: '/docs/**', priority: 0.9 }];
+      baseSitemapConfig.defaultPriority = 0.5;
+
+      const childEntry = generateSitemapEntry(childPage, baseConfig, baseSitemapConfig);
+      const indexEntry = generateSitemapEntry(indexPage, baseConfig, baseSitemapConfig);
+
+      expect(childEntry?.priority).toBe(0.9); // Matches glob
+      expect(indexEntry?.priority).toBe(0.5); // Does NOT match glob, uses default
+    });
+
+    it('should apply different priorities to different sections correctly', () => {
+      const pages = [
+        { url: '/', expected: 1.0 },
+        { url: '/getting-started/install', expected: 0.9 },
+        { url: '/getting-started/quick-start', expected: 0.9 },
+        { url: '/getting-started', expected: 0.7 }, // Index page doesn't match /*/**
+        { url: '/core-concepts/routing', expected: 0.9 },
+        { url: '/core-concepts', expected: 0.7 }, // Index page
+        { url: '/api/hooks', expected: 0.8 },
+        { url: '/api', expected: 0.7 }, // Index page
+        { url: '/blog/post-1', expected: 0.7 }, // No matching rule
+        { url: '/about', expected: 0.7 }, // No matching rule
+      ];
+
+      baseSitemapConfig.priorityRules = [
+        { pattern: '/', priority: 1.0 },
+        { pattern: '/getting-started/**', priority: 0.9 },
+        { pattern: '/core-concepts/**', priority: 0.9 },
+        { pattern: '/api/**', priority: 0.8 },
+      ];
+      baseSitemapConfig.defaultPriority = 0.7;
+
+      pages.forEach(({ url, expected }) => {
+        const page = { ...samplePage, url };
+        const entry = generateSitemapEntry(page, baseConfig, baseSitemapConfig);
+        expect(entry?.priority).toBe(expected);
+      });
+    });
+
+    it('should handle single asterisk glob patterns', () => {
+      // Note: In Stati's implementation, * matches any characters including slashes
+      // Use specific patterns or ** for subdirectories
+      const matchingPage1 = { ...samplePage, url: '/blog/my-post' };
+      const matchingPage2 = { ...samplePage, url: '/blog/2024/my-post' };
+      const nonMatchingPage = { ...samplePage, url: '/articles/post' };
+
+      baseSitemapConfig.priorityRules = [{ pattern: '/blog/*', priority: 0.8 }];
+      baseSitemapConfig.defaultPriority = 0.5;
+
+      const matchingEntry1 = generateSitemapEntry(matchingPage1, baseConfig, baseSitemapConfig);
+      const matchingEntry2 = generateSitemapEntry(matchingPage2, baseConfig, baseSitemapConfig);
+      const nonMatchingEntry = generateSitemapEntry(nonMatchingPage, baseConfig, baseSitemapConfig);
+
+      expect(matchingEntry1?.priority).toBe(0.8); // Matches /blog/*
+      expect(matchingEntry2?.priority).toBe(0.8); // Also matches (glob * includes /)
+      expect(nonMatchingEntry?.priority).toBe(0.5); // Doesn't match, different path
+    });
+
+    it('should handle question mark glob patterns', () => {
+      const matchingPage = { ...samplePage, url: '/page1' };
+      const nonMatchingPage = { ...samplePage, url: '/page12' };
+
+      baseSitemapConfig.priorityRules = [{ pattern: '/page?', priority: 0.8 }];
+      baseSitemapConfig.defaultPriority = 0.5;
+
+      const matchingEntry = generateSitemapEntry(matchingPage, baseConfig, baseSitemapConfig);
+      const nonMatchingEntry = generateSitemapEntry(nonMatchingPage, baseConfig, baseSitemapConfig);
+
+      expect(matchingEntry?.priority).toBe(0.8); // Matches /page?
+      expect(nonMatchingEntry?.priority).toBe(0.5); // Doesn't match, extra character
+    });
+
     it('should handle baseUrl without trailing slash', () => {
       const customConfig = {
         ...baseConfig,
