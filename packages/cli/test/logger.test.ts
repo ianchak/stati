@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createLogger } from '../src/logger.js';
 
 describe('logger', () => {
@@ -7,6 +7,22 @@ describe('logger', () => {
   });
 
   describe('createLogger', () => {
+    let consoleLogSpy: ReturnType<typeof vi.spyOn>;
+    let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
+    let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+      consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      consoleLogSpy.mockRestore();
+      consoleWarnSpy.mockRestore();
+      consoleErrorSpy.mockRestore();
+    });
+
     it('should create a logger with all required methods', () => {
       const logger = createLogger();
 
@@ -28,73 +44,59 @@ describe('logger', () => {
     });
 
     it('should create logger with info method that logs messages', () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
       const logger = createLogger();
 
       logger.info('test info message');
 
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
 
     it('should create logger with success method that logs messages', () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
       const logger = createLogger();
 
       logger.success('test success message');
 
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
 
     it('should create logger with warning method that logs messages', () => {
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const logger = createLogger();
 
       logger.warning('test warning message');
 
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
+      expect(consoleWarnSpy).toHaveBeenCalled();
     });
 
     it('should create logger with error method that logs messages', () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       const logger = createLogger();
 
       logger.error('test error message');
 
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
+      expect(consoleErrorSpy).toHaveBeenCalled();
     });
 
     it('should create logger with building method that logs messages', () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
       const logger = createLogger();
 
       logger.building('test building message');
 
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
 
     it('should create logger with processing method that logs messages', () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
       const logger = createLogger();
 
       logger.processing('test processing message');
 
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
 
     it('should create logger with stats method that logs messages', () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
       const logger = createLogger();
 
       logger.stats('test stats message');
 
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
   });
 });

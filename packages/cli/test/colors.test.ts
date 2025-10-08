@@ -1,9 +1,22 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { log } from '../src/colors.js';
 
 describe('colors', () => {
+  let consoleLogSpy: ReturnType<typeof vi.spyOn>;
+  let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    consoleLogSpy.mockRestore();
+    consoleWarnSpy.mockRestore();
+    consoleErrorSpy.mockRestore();
   });
 
   describe('log object', () => {
@@ -26,89 +39,60 @@ describe('colors', () => {
     });
 
     it('should have info method that logs with info formatting', () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
       log.info('test message');
 
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
 
     it('should have success method that logs with success formatting', () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
       log.success('test message');
 
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
 
     it('should have warning method that logs with warning formatting', () => {
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
       log.warning('test message');
 
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
+      expect(consoleWarnSpy).toHaveBeenCalled();
     });
 
     it('should have error method that logs with error formatting', () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
       log.error('test message');
 
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
+      expect(consoleErrorSpy).toHaveBeenCalled();
     });
 
     it('should have building method that logs with building formatting', () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
       log.building('test message');
 
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
 
     it('should have processing method that logs with processing formatting', () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
       log.processing('test message');
 
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
 
     it('should have stats method that logs with stats formatting', () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
       log.stats('test message');
 
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
 
     it('should have header method that logs with header formatting', () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
       log.header('test message');
 
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
 
     it('should have timing method that logs timing with formatting', () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
       log.timing('operation', 1500);
 
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
 
     it('should have statsTable method that logs table data', () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
       log.statsTable({
         totalPages: 10,
         assetsCount: 5,
@@ -118,13 +102,10 @@ describe('colors', () => {
         cacheMisses: 7,
       });
 
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
 
     it('should have navigationTree method that logs navigation tree', () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
       const mockTree = [
         {
           title: 'Page 1',
@@ -140,8 +121,7 @@ describe('colors', () => {
 
       log.navigationTree(mockTree);
 
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
   });
 
@@ -171,12 +151,9 @@ describe('colors', () => {
     });
 
     it('should have showRenderingTree method', () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
       log.showRenderingTree();
 
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
 
     it('should have clearRenderingTree method', () => {
@@ -190,39 +167,27 @@ describe('colors', () => {
 
   describe('file and url logging', () => {
     it('should have file method that logs file paths', () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
       log.file('Creating', '/path/to/file.ts');
 
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
 
     it('should have url method that logs URLs', () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
       log.url('Server', 'http://localhost:3000');
 
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
 
     it('should have step method that logs step information', () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
       log.step(1, 5, 'Processing files');
 
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
 
     it('should have progress method that logs progress', () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
       log.progress(50, 100, 'Building pages');
 
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
   });
 });
