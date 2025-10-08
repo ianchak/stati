@@ -38,4 +38,15 @@ export default defineConfig({
     ttlSeconds: 86400, // 24 hours for docs
     maxAgeCapDays: 30, // Docs update frequently
   },
+  sitemap: {
+    enabled: true,
+    defaultPriority: 0.7,
+    defaultChangeFreq: 'weekly',
+    priorityRules: [
+      { pattern: '/', priority: 1.0 },
+      { pattern: '/getting-started/**', priority: 0.9 },
+      { pattern: '/core-concepts/**', priority: 0.9 },
+      { pattern: '/api/**', priority: 0.8 },
+    ],
+  },
 });
