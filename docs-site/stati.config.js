@@ -49,4 +49,8 @@ export default defineConfig({
       { pattern: '/api/**', priority: 0.8 },
     ],
   },
+  robots: {
+    enabled: true,
+    sitemap: true,
+  },
 });
