@@ -2,6 +2,8 @@
  * Utility functions for Eta templates
  */
 
+import { trackTailwindClass, shouldTrackForTailwind } from './tailwind-inventory.js';
+
 type PropValueArg =
   | string
   | number
@@ -14,6 +16,9 @@ type PropValueArg =
 /**
  * Builds a property value from various inputs, similar to classnames but for any property.
  * Accepts strings, arrays, and objects. Filters out falsy values.
+ *
+ * Also tracks Tailwind classes for the class inventory when inventory tracking is enabled.
+ * This ensures dynamically-generated Tailwind classes are included in the CSS build.
  *
  * @param args - Values to combine
  * @returns Combined property value string
@@ -31,17 +36,35 @@ export function propValue(...args: PropValueArg[]): string {
     if (!arg) continue;
 
     if (typeof arg === 'string' || typeof arg === 'number') {
-      classes.push(String(arg));
+      const classStr = String(arg);
+      classes.push(classStr);
+
+      // Track for Tailwind inventory if it's a dynamic class
+      if (shouldTrackForTailwind(classStr)) {
+        trackTailwindClass(classStr);
+      }
     } else if (Array.isArray(arg)) {
-      classes.push(
-        ...arg
-          .filter((item) => item && (typeof item === 'string' || typeof item === 'number'))
-          .map(String),
-      );
+      const arrayClasses = arg
+        .filter((item) => item && (typeof item === 'string' || typeof item === 'number'))
+        .map(String);
+
+      classes.push(...arrayClasses);
+
+      // Track each class for Tailwind inventory
+      for (const classStr of arrayClasses) {
+        if (shouldTrackForTailwind(classStr)) {
+          trackTailwindClass(classStr);
+        }
+      }
     } else if (typeof arg === 'object') {
       for (const [key, value] of Object.entries(arg)) {
         if (value) {
           classes.push(key);
+
+          // Track for Tailwind inventory
+          if (shouldTrackForTailwind(key)) {
+            trackTailwindClass(key);
+          }
         }
       }
     }

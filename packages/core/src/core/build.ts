@@ -9,6 +9,12 @@ import {
   resolveOutDir,
   resolveStaticDir,
   resolveCacheDir,
+  enableInventoryTracking,
+  disableInventoryTracking,
+  clearInventory,
+  writeTailwindClassInventory,
+  getInventorySize,
+  isTailwindUsed,
 } from './utils/index.js';
 import { join, dirname, relative } from 'path';
 import { posix } from 'path';
@@ -526,6 +532,13 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
 
   await ensureDir(outDir);
 
+  // Enable Tailwind class inventory tracking only if Tailwind is detected
+  const hasTailwind = await isTailwindUsed();
+  if (hasTailwind) {
+    enableInventoryTracking();
+    clearInventory(); // Clear any previous inventory
+  }
+
   // Load cache manifest for ISG (after potential clean operation)
   const { manifest } = await setupCacheAndManifest(cacheDir);
 
@@ -554,6 +567,18 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
   );
   cacheHits = pageProcessingResult.cacheHits;
   cacheMisses = pageProcessingResult.cacheMisses;
+
+  // Write Tailwind class inventory after all templates have been rendered (if Tailwind is used)
+  if (hasTailwind) {
+    const inventorySize = getInventorySize();
+    if (inventorySize > 0) {
+      await writeTailwindClassInventory(cacheDir);
+      logger.info(`📝 Generated Tailwind class inventory (${inventorySize} classes tracked)`);
+    }
+
+    // Disable inventory tracking after build
+    disableInventoryTracking();
+  }
 
   // Save updated cache manifest
   await saveCacheManifest(cacheDir, manifest);

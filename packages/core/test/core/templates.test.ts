@@ -102,7 +102,6 @@ describe('templates.ts', () => {
         'layout.eta',
         expect.objectContaining({
           content: '<h1>Test content</h1>',
-          navigation: [],
           page: expect.objectContaining({
             title: 'Test Page',
             description: 'A test page',
@@ -143,7 +142,6 @@ describe('templates.ts', () => {
         'custom.eta',
         expect.objectContaining({
           content: '<h1>Test content</h1>',
-          navigation: [],
           page: expect.objectContaining({
             title: 'Test Page',
             description: 'A test page',

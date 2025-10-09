@@ -38,6 +38,22 @@ export {
 // Template utilities
 export { propValue } from './template-utils.js';
 
+// Tailwind inventory utilities
+export {
+  trackTailwindClass,
+  shouldTrackForTailwind,
+  enableInventoryTracking,
+  disableInventoryTracking,
+  clearInventory,
+  getInventory,
+  getInventorySize,
+  isTrackingEnabled,
+  writeTailwindClassInventory,
+  seedInventoryWithCommonPatterns,
+  isTailwindUsed,
+  resetTailwindDetection,
+} from './tailwind-inventory.js';
+
 // Partial validation utilities
 export { createValidatingPartialsProxy } from './partial-validation.js';
 
