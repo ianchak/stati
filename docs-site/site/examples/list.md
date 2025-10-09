@@ -1,6 +1,7 @@
 ---
-title: 'Examples & Templates'
+title: 'Overview'
 description: 'Learn Stati by exploring examples and getting started templates.'
+order: 1
 ---
 
 # Examples & Templates
@@ -92,8 +93,8 @@ export default defineConfig({
 ## Learning Resources
 
 - **Getting Started Guide** - [/getting-started/installation/](/getting-started/installation/)
-- **Configuration Reference** - [/configuration/](/configuration/)
-- **CLI Commands** - [/cli/](/cli/)
+- **Configuration Reference** - [/configuration/file/](/configuration/file/)
+- **CLI Commands** - [/cli/commands/](/cli/commands/)
 
 ## Community Examples
 

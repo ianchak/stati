@@ -300,16 +300,37 @@ export interface TemplateContext {
   /** Current page data including frontmatter and content */
   page: {
     path: string;
+    url: string;
     content: string;
+    navNode?: import('./navigation.js').NavNode; // Current page's navigation node
     [key: string]: unknown; // Frontmatter fields
   };
   /** Rendered markdown content */
   content: string;
-  /** Site navigation tree */
-  navigation: import('./navigation.js').NavNode[];
+  /** Navigation helpers and tree */
+  nav: {
+    /** The full navigation tree */
+    tree: import('./navigation.js').NavNode[];
+    /** Gets the full navigation tree */
+    getTree: () => import('./navigation.js').NavNode[];
+    /** Finds a navigation node by path or URL */
+    findNode: (path: string) => import('./navigation.js').NavNode | undefined;
+    /** Gets the children of a navigation node */
+    getChildren: (path: string) => import('./navigation.js').NavNode[];
+    /** Gets the parent of a navigation node */
+    getParent: (path?: string) => import('./navigation.js').NavNode | undefined;
+    /** Gets the siblings of a navigation node */
+    getSiblings: (path?: string, includeSelf?: boolean) => import('./navigation.js').NavNode[];
+    /** Gets a subtree starting from a specific path */
+    getSubtree: (path: string) => import('./navigation.js').NavNode[];
+    /** Gets the breadcrumb trail for a path */
+    getBreadcrumbs: (path?: string) => import('./navigation.js').NavNode[];
+    /** Gets the current page's navigation node */
+    getCurrentNode: () => import('./navigation.js').NavNode | undefined;
+  };
   /** Discovered partials from underscore folders in hierarchy */
   partials: Record<string, string>;
-  /** Collection data for index pages (only available on collection index pages) */
+  /** Collection data (available on index pages and child pages showing parent collection) */
   collection?: CollectionData;
   /** Additional properties that may be added dynamically (e.g., custom filters, helpers) */
   [key: string]: unknown;

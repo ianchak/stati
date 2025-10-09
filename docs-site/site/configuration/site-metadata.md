@@ -1,6 +1,7 @@
 ---
-title: 'Site Metadata Configuration'
-description: 'Configure site metadata, SEO settings, and global properties for your Stati site.'
+title: 'Site Metadata'
+description: 'Configure your site metadata for SEO and branding.'
+order: 2
 ---
 
 # Site Metadata Configuration

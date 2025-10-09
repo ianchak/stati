@@ -38,6 +38,21 @@ export {
 // Template utilities
 export { propValue } from './template-utils.js';
 
+// Tailwind inventory utilities
+export {
+  trackTailwindClass,
+  enableInventoryTracking,
+  disableInventoryTracking,
+  clearInventory,
+  getInventory,
+  getInventorySize,
+  isTrackingEnabled,
+  writeTailwindClassInventory,
+  isTailwindUsed,
+  resetTailwindDetection,
+  loadPreviousInventory,
+} from './tailwind-inventory.js';
+
 // Partial validation utilities
 export { createValidatingPartialsProxy } from './partial-validation.js';
 
@@ -47,6 +62,9 @@ export type { CallablePartial } from './callable-partials.js';
 
 // Template error utilities
 export { TemplateError, parseEtaError, createTemplateError } from './template-errors.js';
+
+// Navigation helper utilities
+export { createNavigationHelpers } from './navigation-helpers.js';
 
 // Server utilities
 export { resolvePrettyUrl } from './server.js';

@@ -1,6 +1,7 @@
 ---
-title: 'Incremental Static Generation (ISG)'
-description: 'Learn about Stati intelligent caching and incremental building system.'
+title: 'ISG'
+description: 'Learn about Incremental Static Generation and build caching.'
+order: 5
 ---
 
 # Incremental Static Generation (ISG)

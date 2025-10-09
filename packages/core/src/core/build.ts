@@ -9,6 +9,13 @@ import {
   resolveOutDir,
   resolveStaticDir,
   resolveCacheDir,
+  enableInventoryTracking,
+  disableInventoryTracking,
+  clearInventory,
+  writeTailwindClassInventory,
+  getInventorySize,
+  isTailwindUsed,
+  loadPreviousInventory,
 } from './utils/index.js';
 import { join, dirname, relative } from 'path';
 import { posix } from 'path';
@@ -24,6 +31,7 @@ import {
   createCacheEntry,
   updateCacheEntry,
   withBuildLock,
+  computeNavigationHash,
 } from './isg/index.js';
 import {
   generateSitemap,
@@ -257,6 +265,7 @@ async function loadContentAndBuildNavigation(
   navigation: NavNode[];
   md: import('markdown-it').default;
   eta: ReturnType<typeof createTemplateEngine>;
+  navigationHash: string;
 }> {
   // Load all content
   const pages = await loadContent(config, options.includeDrafts);
@@ -275,11 +284,14 @@ async function loadContentAndBuildNavigation(
     logger.navigationTree(navigation);
   }
 
+  // Compute navigation hash for change detection in dev server
+  const navigationHash = computeNavigationHash(navigation);
+
   // Create processors
   const md = await createMarkdownProcessor(config);
   const eta = createTemplateEngine(config);
 
-  return { pages, navigation, md, eta };
+  return { pages, navigation, md, eta, navigationHash };
 }
 
 /**
@@ -526,16 +538,43 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
 
   await ensureDir(outDir);
 
+  // Enable Tailwind class inventory tracking only if Tailwind is detected
+  const hasTailwind = await isTailwindUsed();
+  if (hasTailwind) {
+    enableInventoryTracking();
+    clearInventory(); // Clear any previous inventory
+
+    // Try to load from existing inventory file
+    const loadedCount = await loadPreviousInventory(cacheDir);
+    if (loadedCount > 0) {
+      // Write the initial inventory file immediately so Tailwind can scan it
+      // This is critical for dev server where Tailwind starts watching before template rendering
+      await writeTailwindClassInventory(cacheDir);
+      logger.info(`📦 Loaded ${loadedCount} classes from previous build for Tailwind scanner`);
+    } else {
+      // No previous inventory found - write an empty placeholder file
+      // This ensures Tailwind has a file to scan even on first build
+      // It will be populated with actual classes after template rendering
+      await writeTailwindClassInventory(cacheDir);
+      logger.info(
+        `📦 Created inventory file for Tailwind scanner (will be populated after rendering)`,
+      );
+    }
+  }
+
   // Load cache manifest for ISG (after potential clean operation)
   const { manifest } = await setupCacheAndManifest(cacheDir);
 
   // Load content and build navigation
   console.log(); // Add spacing before content loading
-  const { pages, navigation, md, eta } = await loadContentAndBuildNavigation(
+  const { pages, navigation, md, eta, navigationHash } = await loadContentAndBuildNavigation(
     config,
     options,
     logger,
   );
+
+  // Store navigation hash in manifest for change detection in dev server
+  manifest.navigationHash = navigationHash;
 
   // Process pages with ISG caching logic
   console.log(); // Add spacing before page processing
@@ -554,6 +593,18 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
   );
   cacheHits = pageProcessingResult.cacheHits;
   cacheMisses = pageProcessingResult.cacheMisses;
+
+  // Write Tailwind class inventory after all templates have been rendered (if Tailwind is used)
+  if (hasTailwind) {
+    const inventorySize = getInventorySize();
+    if (inventorySize > 0) {
+      await writeTailwindClassInventory(cacheDir);
+      logger.info(`📝 Generated Tailwind class inventory (${inventorySize} classes tracked)`);
+    }
+
+    // Disable inventory tracking after build
+    disableInventoryTracking();
+  }
 
   // Save updated cache manifest
   await saveCacheManifest(cacheDir, manifest);

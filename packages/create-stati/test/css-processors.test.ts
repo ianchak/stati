@@ -163,7 +163,8 @@ describe('CSSProcessor', () => {
       await expect(access(join(tempDir, 'tailwind.config.js'))).resolves.not.toThrow();
 
       const configContent = await readFile(join(tempDir, 'tailwind.config.js'), 'utf-8');
-      expect(configContent).toContain("content: ['./site/**/*.{md,eta,html}']");
+      expect(configContent).toContain('./site/**/*.{md,eta,html}');
+      expect(configContent).toContain('./.stati/tailwind-classes.html');
       expect(configContent).toContain('theme: {');
       expect(configContent).toContain('plugins: []');
     });

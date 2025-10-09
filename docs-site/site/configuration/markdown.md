@@ -1,6 +1,7 @@
 ---
-title: 'Markdown Configuration'
-description: 'Configure markdown processing, plugins, syntax highlighting, and content transformation for your Stati site.'
+title: 'Markdown Config'
+description: 'Configure markdown-it and customize markdown rendering behavior.'
+order: 4
 ---
 
 # Markdown Configuration

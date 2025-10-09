@@ -1,6 +1,7 @@
 ---
 title: 'TypeScript Types'
-description: 'Complete TypeScript type definitions and interfaces for Stati development with type safety and IntelliSense support.'
+description: 'Reference for TypeScript type definitions in Stati.'
+order: 5
 ---
 
 # TypeScript Types

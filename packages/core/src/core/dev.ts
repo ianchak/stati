@@ -9,7 +9,9 @@ import type { FSWatcher } from 'chokidar';
 import { build } from './build.js';
 import { invalidate } from './invalidate.js';
 import { loadConfig } from '../config/loader.js';
-import { loadCacheManifest, saveCacheManifest } from './isg/index.js';
+import { loadCacheManifest, saveCacheManifest, computeNavigationHash } from './isg/index.js';
+import { loadContent } from './content.js';
+import { buildNavigation } from './navigation.js';
 import {
   resolveDevPaths,
   resolveCacheDir,
@@ -136,8 +138,10 @@ async function performIncrementalRebuild(
     // Check if the changed file is a template/partial
     if (changedPath.endsWith(TEMPLATE_EXTENSION) || changedPath.includes('_partials')) {
       await handleTemplateChange(changedPath, configPath, devLogger);
+    } else if (changedPath.endsWith('.md')) {
+      await handleMarkdownChange(changedPath, configPath, devLogger);
     } else {
-      // Content or static file changed - use normal rebuild
+      // Static file changed - use normal rebuild
       await build({
         logger: devLogger,
         force: false,
@@ -242,6 +246,76 @@ async function handleTemplateChange(
       await build({
         logger,
         force: true,
+        clean: false,
+        ...(configPath && { configPath }),
+      });
+    }
+  } catch (_error) {
+    try {
+      // Fallback to full rebuild
+      await build({
+        logger,
+        force: false,
+        clean: false,
+        ...(configPath && { configPath }),
+      });
+    } catch (fallbackError) {
+      throw fallbackError instanceof Error ? fallbackError : new Error(String(fallbackError));
+    }
+  }
+}
+
+/**
+ * Handles markdown file changes by comparing navigation hashes.
+ * Only performs a full rebuild if navigation structure actually changed.
+ * Navigation changes come from frontmatter modifications (title, order, description).
+ * Content-only changes use incremental rebuilds.
+ */
+async function handleMarkdownChange(
+  _markdownPath: string,
+  configPath: string | undefined,
+  logger: Logger,
+): Promise<void> {
+  const cacheDir = resolveCacheDir();
+
+  try {
+    // Load existing cache manifest
+    const cacheManifest = await loadCacheManifest(cacheDir);
+
+    if (!cacheManifest || !cacheManifest.navigationHash) {
+      // No cache or no navigation hash exists, perform full rebuild
+      await build({
+        logger,
+        force: false,
+        clean: false,
+        ...(configPath && { configPath }),
+      });
+      return;
+    }
+
+    // Load config and content to rebuild navigation tree
+    const config = await loadConfig(configPath);
+    const pages = await loadContent(config);
+    const newNavigation = buildNavigation(pages);
+    const newNavigationHash = computeNavigationHash(newNavigation);
+
+    // Compare navigation hashes
+    if (newNavigationHash !== cacheManifest.navigationHash) {
+      // Navigation structure changed - clear cache and force full rebuild
+      logger.info?.('📊 Navigation structure changed, performing full rebuild...');
+
+      // Force rebuild bypasses ISG cache entirely
+      await build({
+        logger,
+        force: true, // Force rebuild to bypass cache
+        clean: false,
+        ...(configPath && { configPath }),
+      });
+    } else {
+      // Navigation unchanged - use incremental rebuild for content changes
+      await build({
+        logger,
+        force: false,
         clean: false,
         ...(configPath && { configPath }),
       });

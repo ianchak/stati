@@ -1,6 +1,7 @@
 ---
 title: 'Templates & Layouts'
-description: 'Learn how to use Eta templates and layout inheritance in Stati.'
+description: 'Learn how to create dynamic templates and layouts using Eta template engine.'
+order: 3
 ---
 
 # Templates & Layouts

@@ -1,6 +1,7 @@
 ---
-title: 'Filesystem-based Routing'
-description: 'Learn how Stati automatically generates routes from your file structure.'
+title: 'Filesystem Routing'
+description: 'Learn how Stati uses filesystem-based routing to generate URLs from your content.'
+order: 2
 ---
 
 # Filesystem-based Routing

@@ -1,6 +1,7 @@
 ---
 title: 'Project Structure'
 description: 'Understanding how Stati organizes your files and directories.'
+order: 3
 ---
 
 # Project Structure

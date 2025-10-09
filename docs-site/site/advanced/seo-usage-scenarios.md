@@ -2,6 +2,7 @@
 title: SEO Usage Scenarios
 description: Learn different strategies for using SEO features in your Stati project, from automatic to fully custom control
 layout: layout.eta
+order: 2
 ---
 
 # SEO Usage Scenarios

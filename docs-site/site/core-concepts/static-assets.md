@@ -1,6 +1,7 @@
 ---
-title: 'Static Assets & Bundling'
-description: 'Learn how Stati handles CSS, JavaScript, images, and other static assets.'
+title: 'Static Assets'
+description: 'Learn how to manage static files, CSS, JavaScript, images, and integrate with Tailwind CSS.'
+order: 6
 ---
 
 # Static Assets & Bundling
@@ -193,6 +194,8 @@ Use in templates:
 
 ## Tailwind CSS Integration
 
+Stati provides automatic support for dynamic Tailwind classes when using the `stati.propValue()` helper function. This ensures that dynamically-generated classes (like `from-${color}-50`) are properly included in your CSS build.
+
 ### Installation
 
 ```bash
@@ -202,11 +205,17 @@ npx tailwindcss init
 
 ### Configuration
 
+**Important**: Add `./.stati/tailwind-classes.html` to your content array to ensure dynamic classes are detected:
+
 ```javascript
 // tailwind.config.js
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: ['./site/**/*.{md,eta}', './src/**/*.{js,ts}'],
+  content: [
+    './site/**/*.{md,eta,html}',
+    './src/**/*.{js,ts}',
+    './.stati/tailwind-classes.html', // ← Required for dynamic class support
+  ],
   theme: {
     extend: {
       colors: {
@@ -224,6 +233,35 @@ export default {
   plugins: [require('@tailwindcss/typography'), require('@tailwindcss/forms')],
 };
 ```
+
+> **Note**: The `.stati/tailwind-classes.html` file is automatically generated during build and dev server startup. It contains all dynamic Tailwind classes used in your templates via `stati.propValue()`.
+
+### Dynamic Classes with propValue
+
+When using template variables to build Tailwind classes, use `stati.propValue()` to ensure they're tracked:
+
+```eta
+<%
+const color = 'primary'; // Could come from frontMatter or config
+%>
+
+<!-- ✅ Correct - Classes will be tracked and included -->
+<button class="<%= stati.propValue(`from-${color}-50`, `to-${color}-100`, 'px-4', 'py-2') %>">
+  Click me
+</button>
+
+<!-- ❌ Incorrect - Dynamic classes won't be detected by Tailwind -->
+<button class="<%= `from-${color}-50 to-${color}-100` %> px-4 py-2">
+  Click me
+</button>
+```
+
+The `propValue()` function:
+
+- Automatically tracks dynamic Tailwind classes for the inventory
+- Filters out falsy values
+- Works with strings, arrays, and objects (like classnames library)
+- Only tracks classes that match dynamic patterns (color utilities, variants, etc.)
 
 ### Usage in Templates
 

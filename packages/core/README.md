@@ -621,14 +621,14 @@ Automatic navigation hierarchy based on your file structure:
 ```html
 <!-- Show breadcrumbs -->
 <nav>
-  <% stati.page.breadcrumbs.forEach(crumb => { %>
+  <% stati.nav.getBreadcrumbs().forEach(crumb => { %>
     <a href="<%= crumb.url %>"><%= crumb.title %></a>
   <% }) %>
 </nav>
 
 <!-- Show navigation tree -->
 <ul>
-  <% stati.navigation.forEach(item => { %>
+  <% stati.nav.tree.forEach(item => { %>
     <li><a href="<%= item.url %>"><%= item.title %></a></li>
   <% }) %>
 </ul>

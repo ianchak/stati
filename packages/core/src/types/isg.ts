@@ -96,11 +96,14 @@ export interface CacheEntry {
  *   entries: {
  *     '/blog/post-1': { ... },
  *     '/about': { ... }
- *   }
+ *   },
+ *   navigationHash: 'sha256-abc123...'
  * };
  * ```
  */
 export interface CacheManifest {
   /** Map of page URLs to their cache entries */
   entries: Record<string, CacheEntry>;
+  /** Hash of the navigation tree structure (title, url, order, children) */
+  navigationHash?: string;
 }

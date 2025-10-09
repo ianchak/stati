@@ -1,6 +1,7 @@
 ---
-title: 'ISG Configuration'
+title: 'ISG Options'
 description: 'Configure Incremental Static Generation (ISG) for intelligent caching, TTL management, and performance optimization.'
+order: 5
 ---
 
 # ISG Configuration

@@ -1,6 +1,7 @@
 ---
-title: 'API Reference'
+title: 'Template API'
 description: 'Complete API reference for Stati template helpers, configuration options, and programmatic interface.'
+order: 1
 ---
 
 # API Reference
@@ -459,4 +460,4 @@ export default defineConfig({
 });
 ```
 
-This API reference covers all the major interfaces and functions available in Stati. For implementation examples and practical usage, refer to the [Examples](/examples/) section or explore the specific configuration guides in the [Configuration](/configuration/) section.
+This API reference covers all the major interfaces and functions available in Stati. For implementation examples and practical usage, refer to the [Examples](/examples/list/) section or explore the specific configuration guides in the [Configuration](/configuration/file/) section.

@@ -25,7 +25,12 @@ export {
 } from './deps.js';
 
 // Hash computation
-export { computeContentHash, computeFileHash, computeInputsHash } from './hash.js';
+export {
+  computeContentHash,
+  computeFileHash,
+  computeInputsHash,
+  computeNavigationHash,
+} from './hash.js';
 
 // TTL and aging
 export {
