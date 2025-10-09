@@ -15,6 +15,7 @@ import {
   writeTailwindClassInventory,
   getInventorySize,
   isTailwindUsed,
+  loadPreviousInventory,
 } from './utils/index.js';
 import { join, dirname, relative } from 'path';
 import { posix } from 'path';
@@ -537,6 +538,23 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
   if (hasTailwind) {
     enableInventoryTracking();
     clearInventory(); // Clear any previous inventory
+
+    // Try to load from existing inventory file
+    const loadedCount = await loadPreviousInventory(cacheDir);
+    if (loadedCount > 0) {
+      // Write the initial inventory file immediately so Tailwind can scan it
+      // This is critical for dev server where Tailwind starts watching before template rendering
+      await writeTailwindClassInventory(cacheDir);
+      logger.info(`📦 Loaded ${loadedCount} classes from previous build for Tailwind scanner`);
+    } else {
+      // No previous inventory found - write an empty placeholder file
+      // This ensures Tailwind has a file to scan even on first build
+      // It will be populated with actual classes after template rendering
+      await writeTailwindClassInventory(cacheDir);
+      logger.info(
+        `📦 Created inventory file for Tailwind scanner (will be populated after rendering)`,
+      );
+    }
   }
 
   // Load cache manifest for ISG (after potential clean operation)

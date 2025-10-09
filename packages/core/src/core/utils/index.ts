@@ -41,7 +41,6 @@ export { propValue } from './template-utils.js';
 // Tailwind inventory utilities
 export {
   trackTailwindClass,
-  shouldTrackForTailwind,
   enableInventoryTracking,
   disableInventoryTracking,
   clearInventory,
@@ -49,9 +48,9 @@ export {
   getInventorySize,
   isTrackingEnabled,
   writeTailwindClassInventory,
-  seedInventoryWithCommonPatterns,
   isTailwindUsed,
   resetTailwindDetection,
+  loadPreviousInventory,
 } from './tailwind-inventory.js';
 
 // Partial validation utilities

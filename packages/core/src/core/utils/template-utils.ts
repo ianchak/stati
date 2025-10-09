@@ -2,7 +2,7 @@
  * Utility functions for Eta templates
  */
 
-import { trackTailwindClass, shouldTrackForTailwind } from './tailwind-inventory.js';
+import { trackTailwindClass } from './tailwind-inventory.js';
 
 type PropValueArg =
   | string
@@ -39,9 +39,11 @@ export function propValue(...args: PropValueArg[]): string {
       const classStr = String(arg);
       classes.push(classStr);
 
-      // Track for Tailwind inventory if it's a dynamic class
-      if (shouldTrackForTailwind(classStr)) {
-        trackTailwindClass(classStr);
+      // Track ALL classes for Tailwind inventory
+      // Split space-separated classes and track each one individually
+      const individualClasses = classStr.split(/\s+/).filter(Boolean);
+      for (const cls of individualClasses) {
+        trackTailwindClass(cls);
       }
     } else if (Array.isArray(arg)) {
       const arrayClasses = arg
@@ -52,8 +54,9 @@ export function propValue(...args: PropValueArg[]): string {
 
       // Track each class for Tailwind inventory
       for (const classStr of arrayClasses) {
-        if (shouldTrackForTailwind(classStr)) {
-          trackTailwindClass(classStr);
+        const individualClasses = classStr.split(/\s+/).filter(Boolean);
+        for (const cls of individualClasses) {
+          trackTailwindClass(cls);
         }
       }
     } else if (typeof arg === 'object') {
@@ -62,8 +65,9 @@ export function propValue(...args: PropValueArg[]): string {
           classes.push(key);
 
           // Track for Tailwind inventory
-          if (shouldTrackForTailwind(key)) {
-            trackTailwindClass(key);
+          const individualClasses = key.split(/\s+/).filter(Boolean);
+          for (const cls of individualClasses) {
+            trackTailwindClass(cls);
           }
         }
       }
