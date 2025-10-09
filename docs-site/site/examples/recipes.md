@@ -33,8 +33,162 @@ Automatically generate navigation from your content structure using Stati's buil
       <% }) %>
     </ul>
   <% } %>
-  <%~ renderNavigation(stati.navigation) %>
+  <%~ renderNavigation(stati.nav.tree) %>
 </nav>
+```
+
+### Section-Specific Navigation
+
+Use `stati.page.navNode` to show the current page's child pages:
+
+```html
+<!-- _partials/section-nav.eta -->
+<% if (stati.page.navNode?.children && stati.page.navNode.children.length > 0) { %>
+  <nav class="section-navigation">
+    <h3><%= stati.page.navNode.title %></h3>
+
+    <!-- Show all child pages of the current page -->
+    <ul>
+      <% stati.page.navNode.children.forEach(page => { %>
+        <li>
+          <a
+            href="<%= page.url %>"
+            class="<%= stati.page.url === page.url ? 'active' : '' %>"
+          >
+            <%= page.title %>
+          </a>
+
+          <!-- Show nested children if they exist -->
+          <% if (page.children && page.children.length > 0) { %>
+            <ul class="subsection">
+              <% page.children.forEach(child => { %>
+                <li>
+                  <a
+                    href="<%= child.url %>"
+                    class="<%= stati.page.url === child.url ? 'active' : '' %>"
+                  >
+                    <%= child.title %>
+                  </a>
+                </li>
+              <% }) %>
+            </ul>
+          <% } %>
+        </li>
+      <% }) %>
+    </ul>
+  </nav>
+<% } %>
+```
+
+Common navigation patterns made easy:
+
+- **Current page's children** - Use `stati.page.navNode.children`
+- **Any section's children** - Use `stati.nav.getChildren('/path')`
+- **Current page's siblings** - Use `stati.nav.getSiblings()`
+
+Here are practical examples:
+
+```html
+<!-- _partials/docs-sidebar.eta -->
+<!-- Show children of the docs section, regardless of current page -->
+<aside class="docs-sidebar">
+  <h3>Documentation</h3>
+  <ul>
+    <% stati.nav.getChildren('/docs').forEach(page => { %>
+      <li>
+        <a
+          href="<%= page.url %>"
+          class="<%= stati.page.url === page.url ? 'active' : '' %>"
+        >
+          <%= page.title %>
+        </a>
+      </li>
+    <% }) %>
+  </ul>
+</aside>
+```
+
+```html
+<!-- _partials/sibling-nav.eta -->
+<!-- Show siblings of the current page -->
+<% const siblings = stati.nav.getSiblings() %>
+
+<% if (siblings.length > 0) { %>
+  <nav class="sibling-nav">
+    <h3>Related Pages</h3>
+    <ul>
+      <% siblings.forEach(sibling => { %>
+        <li>
+          <a href="<%= sibling.url %>"><%= sibling.title %></a>
+        </li>
+      <% }) %>
+    </ul>
+  </nav>
+<% } %>
+```
+
+```html
+<!-- _partials/multi-section-sidebar.eta -->
+<!-- Show multiple sections using getChildren() -->
+<aside class="sidebar">
+  <section>
+    <h3>Getting Started</h3>
+    <ul>
+      <% stati.nav.getChildren('/getting-started').forEach(page => { %>
+        <li><a href="<%= page.url %>"><%= page.title %></a></li>
+      <% }) %>
+    </ul>
+  </section>
+
+  <section>
+    <h3>Core Concepts</h3>
+    <ul>
+      <% stati.nav.getChildren('/core-concepts').forEach(page => { %>
+        <li><a href="<%= page.url %>"><%= page.title %></a></li>
+      <% }) %>
+    </ul>
+  </section>
+
+  <section>
+    <h3>API Reference</h3>
+    <ul>
+      <% stati.nav.getChildren('/api').forEach(page => { %>
+        <li><a href="<%= page.url %>"><%= page.title %></a></li>
+      <% }) %>
+    </ul>
+  </section>
+</aside>
+```
+
+### Prev/Next Navigation Using Siblings
+
+```html
+<!-- _partials/page-nav.eta -->
+<%
+  // Get siblings to create prev/next navigation
+  const siblings = stati.nav.getSiblings(undefined, true);
+  const currentIndex = siblings.findIndex(s => s.url === stati.page.url);
+  const prevPage = currentIndex > 0 ? siblings[currentIndex - 1] : null;
+  const nextPage = currentIndex < siblings.length - 1 ? siblings[currentIndex + 1] : null;
+%>
+
+<% if (prevPage || nextPage) { %>
+  <nav class="page-navigation">
+    <% if (prevPage) { %>
+      <a href="<%= prevPage.url %>" class="nav-prev">
+        <span class="label">← Previous</span>
+        <span class="title"><%= prevPage.title %></span>
+      </a>
+    <% } %>
+
+    <% if (nextPage) { %>
+      <a href="<%= nextPage.url %>" class="nav-next">
+        <span class="label">Next →</span>
+        <span class="title"><%= nextPage.title %></span>
+      </a>
+    <% } %>
+  </nav>
+<% } %>
 ```
 
 ### Collection Index Pages

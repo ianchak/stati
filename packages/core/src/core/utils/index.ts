@@ -48,6 +48,9 @@ export type { CallablePartial } from './callable-partials.js';
 // Template error utilities
 export { TemplateError, parseEtaError, createTemplateError } from './template-errors.js';
 
+// Navigation helper utilities
+export { createNavigationHelpers } from './navigation-helpers.js';
+
 // Server utilities
 export { resolvePrettyUrl } from './server.js';
 export type { PrettyUrlResult } from './server.js';
