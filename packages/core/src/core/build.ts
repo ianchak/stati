@@ -31,6 +31,7 @@ import {
   createCacheEntry,
   updateCacheEntry,
   withBuildLock,
+  computeNavigationHash,
 } from './isg/index.js';
 import {
   generateSitemap,
@@ -264,6 +265,7 @@ async function loadContentAndBuildNavigation(
   navigation: NavNode[];
   md: import('markdown-it').default;
   eta: ReturnType<typeof createTemplateEngine>;
+  navigationHash: string;
 }> {
   // Load all content
   const pages = await loadContent(config, options.includeDrafts);
@@ -282,11 +284,14 @@ async function loadContentAndBuildNavigation(
     logger.navigationTree(navigation);
   }
 
+  // Compute navigation hash for change detection in dev server
+  const navigationHash = computeNavigationHash(navigation);
+
   // Create processors
   const md = await createMarkdownProcessor(config);
   const eta = createTemplateEngine(config);
 
-  return { pages, navigation, md, eta };
+  return { pages, navigation, md, eta, navigationHash };
 }
 
 /**
@@ -562,11 +567,14 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
 
   // Load content and build navigation
   console.log(); // Add spacing before content loading
-  const { pages, navigation, md, eta } = await loadContentAndBuildNavigation(
+  const { pages, navigation, md, eta, navigationHash } = await loadContentAndBuildNavigation(
     config,
     options,
     logger,
   );
+
+  // Store navigation hash in manifest for change detection in dev server
+  manifest.navigationHash = navigationHash;
 
   // Process pages with ISG caching logic
   console.log(); // Add spacing before page processing

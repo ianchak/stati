@@ -1,6 +1,7 @@
 ---
 title: 'Markdown Pipeline'
-description: 'Learn how Stati processes Markdown with plugins and customization options.'
+description: 'Learn how Stati processes and renders Markdown content with advanced features.'
+order: 4
 ---
 
 # Markdown Pipeline

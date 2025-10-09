@@ -1,7 +1,7 @@
 ---
-title: 'CLI Commands'
+title: 'Commands'
 description: 'Learn about Stati command-line interface and available commands.'
-order: 4
+order: 1
 ---
 
 # CLI Commands

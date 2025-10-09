@@ -1,6 +1,7 @@
 ---
-title: 'Scaffolder (create-stati)'
+title: 'Scaffolder'
 description: 'Interactive scaffolding tool to quickly set up new Stati projects.'
+order: 2
 ---
 
 # Scaffolder (create-stati)

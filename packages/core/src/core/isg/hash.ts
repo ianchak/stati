@@ -105,8 +105,60 @@ export async function computeFileHash(filePath: string): Promise<string | null> 
  * ```
  */
 export function computeInputsHash(contentHash: string, depsHashes: string[]): string {
-  // Hash each dependency hash in sorted order for consistency
+  // Sort dependency hashes for consistency
   const sortedDepsHashes = [...depsHashes].sort();
 
   return createSha256Hash([contentHash, ...sortedDepsHashes]);
+}
+
+/**
+ * Computes a hash of the navigation tree structure.
+ * Used to detect when navigation has changed (title, url, order, children structure).
+ *
+ * @param navigation - The navigation tree to hash
+ * @returns SHA-256 hash as a hex string
+ *
+ * @example
+ * ```typescript
+ * const hash = computeNavigationHash(navigationTree);
+ * console.log(hash); // "sha256-abc123..."
+ * ```
+ */
+export function computeNavigationHash(navigation: unknown[]): string {
+  // Convert navigation tree to a deterministic JSON string
+  // Only include fields that affect navigation structure:
+  // - title (displayed in menu)
+  // - url (navigation links)
+  // - order (affects sorting)
+  // - children (nested structure)
+  interface NormalizedNode {
+    title: string;
+    url: string;
+    order?: number;
+    children?: NormalizedNode[];
+  }
+
+  const normalizeNavNode = (node: Record<string, unknown>): NormalizedNode => {
+    const normalized: NormalizedNode = {
+      title: String(node.title ?? ''),
+      url: String(node.url ?? ''),
+    };
+
+    if (node.order !== undefined && typeof node.order === 'number') {
+      normalized.order = node.order;
+    }
+
+    if (node.children && Array.isArray(node.children) && node.children.length > 0) {
+      normalized.children = node.children.map((child) =>
+        normalizeNavNode(child as Record<string, unknown>),
+      );
+    }
+
+    return normalized;
+  };
+
+  const normalizedNav = navigation.map((node) => normalizeNavNode(node as Record<string, unknown>));
+  const navJson = JSON.stringify(normalizedNav);
+
+  return createSha256Hash(navJson);
 }

@@ -58,6 +58,20 @@ describe('resolvePrettyUrl', () => {
     expect(result.filePath).toBe(join(outDir, 'about.html'));
   });
 
+  it('should fallback from path without trailing slash to .html file', async () => {
+    const result = await resolvePrettyUrl(outDir, '/about', join(outDir, 'about'));
+
+    expect(result.found).toBe(true);
+    expect(result.filePath).toBe(join(outDir, 'about.html'));
+  });
+
+  it('should fallback from nested path without trailing slash to .html file', async () => {
+    const result = await resolvePrettyUrl(outDir, '/contact', join(outDir, 'contact'));
+
+    expect(result.found).toBe(true);
+    expect(result.filePath).toBe(join(outDir, 'contact.html'));
+  });
+
   it('should return not found for non-existent paths', async () => {
     const result = await resolvePrettyUrl(outDir, '/nonexistent/', join(outDir, 'nonexistent'));
 

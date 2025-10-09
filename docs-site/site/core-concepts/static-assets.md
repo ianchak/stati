@@ -1,6 +1,7 @@
 ---
-title: 'Static Assets & Bundling'
-description: 'Learn how Stati handles CSS, JavaScript, images, and other static assets.'
+title: 'Static Assets'
+description: 'Learn how to manage static files, CSS, JavaScript, images, and integrate with Tailwind CSS.'
+order: 6
 ---
 
 # Static Assets & Bundling

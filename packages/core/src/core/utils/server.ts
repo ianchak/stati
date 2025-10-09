@@ -16,7 +16,7 @@ export interface PrettyUrlResult {
  * This handles common patterns like:
  * - /path/ -> /path/index.html
  * - /path/ -> /path.html (if no index.html exists)
- * - /path -> /path.html (when original path is not found)
+ * - /path -> /path.html (when original path is not found and has no extension)
  *
  * @param outDir The output directory to serve files from
  * @param requestPath The requested URL path
@@ -60,6 +60,18 @@ export async function resolvePrettyUrl(
       // For requests ending with /, try the corresponding .html file
       const pathWithoutSlash = requestPath.slice(0, -1);
       const htmlPath = join(outDir, `${pathWithoutSlash}.html`);
+
+      try {
+        const stats = await stat(htmlPath);
+        if (stats.isFile()) {
+          return { filePath: htmlPath, found: true };
+        }
+      } catch {
+        // Continue to not found
+      }
+    } else if (!requestPath.includes('.')) {
+      // For requests without trailing slash and without extension, try .html
+      const htmlPath = join(outDir, `${requestPath}.html`);
 
       try {
         const stats = await stat(htmlPath);

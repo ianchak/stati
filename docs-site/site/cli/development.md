@@ -1,6 +1,7 @@
 ---
-title: 'Development Server'
+title: 'Development'
 description: 'Learn how to use Stati development server for hot reloading, debugging, and efficient development workflows.'
+order: 3
 ---
 
 # Development Server

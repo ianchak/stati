@@ -1,5 +1,5 @@
 ---
-title: 'Getting Started'
+title: 'Introduction'
 description: 'Learn how to get started with Stati, the TypeScript-first static site generator.'
 order: 1
 ---

@@ -1,7 +1,8 @@
 ---
-title: 'SEO API Reference'
+title: 'SEO API'
 description: 'Complete API reference for Stati SEO functions, types, and configuration interfaces'
 layout: layout.eta
+order: 6
 ---
 
 # SEO API Reference

@@ -1,6 +1,7 @@
 ---
-title: 'Template Configuration'
-description: 'Configure the Eta template engine, layouts, partials, and custom filters for your Stati site.'
+title: 'Template Settings'
+description: 'Configure Eta template engine settings and customize the rendering behavior.'
+order: 3
 ---
 
 # Template Configuration

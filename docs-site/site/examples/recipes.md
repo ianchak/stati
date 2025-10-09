@@ -1,6 +1,7 @@
 ---
-title: 'Recipe Collection'
-description: 'Common patterns and solutions for Stati static site generation'
+title: 'Recipes'
+description: 'Practical recipes and patterns for common Stati use cases.'
+order: 2
 ---
 
 # Recipe Collection

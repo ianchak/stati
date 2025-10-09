@@ -1,7 +1,7 @@
 ---
-title: 'Contributing to Stati'
+title: 'Contributing'
 description: 'Learn how to contribute to Stati development, report issues, and help improve the project.'
-order: 8
+order: 3
 ---
 
 # Contributing to Stati
