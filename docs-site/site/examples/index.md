@@ -1,6 +1,7 @@
 ---
 title: 'Examples & Templates'
 description: 'Learn Stati by exploring examples and getting started templates.'
+order: 6
 ---
 
 # Examples & Templates

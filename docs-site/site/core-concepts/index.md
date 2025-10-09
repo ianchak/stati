@@ -1,6 +1,7 @@
 ---
 title: 'Core Concepts'
 description: 'Understand the fundamental concepts that power Stati.'
+order: 2
 ---
 
 # Core Concepts

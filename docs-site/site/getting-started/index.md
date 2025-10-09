@@ -1,6 +1,7 @@
 ---
 title: 'Getting Started'
 description: 'Learn how to get started with Stati, the TypeScript-first static site generator.'
+order: 1
 ---
 
 # Getting Started with Stati

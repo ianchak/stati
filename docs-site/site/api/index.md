@@ -1,6 +1,7 @@
 ---
 title: 'API Reference'
 description: 'Complete API reference for Stati template helpers, configuration options, and programmatic interface.'
+order: 5
 ---
 
 # API Reference

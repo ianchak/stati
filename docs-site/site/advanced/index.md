@@ -1,6 +1,7 @@
 ---
 title: 'Advanced Topics'
 description: 'Explore advanced Stati features including performance optimization, SEO, and complex deployment scenarios.'
+order: 7
 ---
 
 # Advanced Topics
