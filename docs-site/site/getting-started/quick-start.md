@@ -8,16 +8,11 @@ order: 4
 
 This guide will walk you through creating your first Stati site from scratch. You'll learn the basics of content creation, templating, and building.
 
-## Pre
-- [Available Examples](/examples/list/) - Explore currently implemented templates
-- [Configuration Reference](/configuration/file/) - Detailed configuration options
-
 ## Need Help?
 
 - Check the [API Reference](/api/reference/) for detailed documentation
 - Browse [Examples](/examples/list/) for inspiration
 - Visit the [Contributing](/advanced/contributing/) section to help improve Stati
-
 
 Before we start, make sure you have:
 
