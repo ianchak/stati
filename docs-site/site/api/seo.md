@@ -101,6 +101,8 @@ const html2 = generateSEO(stati, ['title', 'description']);
 
 Generates an XML sitemap from an array of pages.
 
+> **Production Only**: In Stati's build pipeline, sitemaps are only generated during production builds to improve development build performance.
+
 **Signature:**
 
 ```typescript
@@ -151,6 +153,8 @@ console.log(result.sitemaps);     // Array of sitemap files (if split)
 ### `generateRobotsTxt()`
 
 Generates robots.txt content from low-level options.
+
+> **Production Only**: In Stati's build pipeline, robots.txt is only generated during production builds to improve development build performance.
 
 **Signature:**
 

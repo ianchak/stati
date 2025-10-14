@@ -53,4 +53,17 @@ export default defineConfig({
     enabled: true,
     sitemap: true,
   },
+  rss: {
+    enabled: true,
+    feeds: [
+      {
+        filename: 'feed.xml',
+        title: 'Stati Documentation Updates',
+        description: 'Latest updates to Stati documentation',
+        language: 'en-US',
+        category: 'Documentation',
+        maxItems: 30,
+      },
+    ],
+  },
 });

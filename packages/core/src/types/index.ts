@@ -46,6 +46,9 @@ export type {
   SitemapGenerationResult,
 } from './sitemap.js';
 
+// RSS types
+export type { RSSConfig, RSSFeedConfig, RSSGenerationResult } from './rss.js';
+
 // Navigation types
 export type { NavNode } from './navigation.js';
 

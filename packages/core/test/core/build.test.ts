@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { build } from '../../src/core/build.js';
 import type { BuildOptions } from '../../src/core/build.js';
 import type { StatiConfig } from '../../src/types/index.js';
+import { setEnv } from '../../src/env.js';
 
 // Create hoisted mocks that are available during module hoisting
 const {
@@ -201,6 +202,8 @@ describe('build.ts', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    // Reset environment to development after each test to prevent side effects
+    setEnv('development');
   });
 
   describe('build', () => {
@@ -536,6 +539,9 @@ describe('build.ts', () => {
     });
 
     it('should generate sitemap when enabled', async () => {
+      // Set environment to production for sitemap generation
+      setEnv('production');
+
       const configWithSitemap: StatiConfig = {
         ...mockConfig,
         sitemap: {
@@ -577,6 +583,9 @@ describe('build.ts', () => {
     });
 
     it('should generate robots.txt when enabled', async () => {
+      // Set environment to production for robots.txt generation
+      setEnv('production');
+
       const configWithRobots: StatiConfig = {
         ...mockConfig,
         robots: {
@@ -617,6 +626,9 @@ describe('build.ts', () => {
     });
 
     it('should handle sitemap and robots.txt write errors gracefully', async () => {
+      // Set environment to production for sitemap/robots.txt generation
+      setEnv('production');
+
       const configWithBoth: StatiConfig = {
         ...mockConfig,
         sitemap: { enabled: true },
