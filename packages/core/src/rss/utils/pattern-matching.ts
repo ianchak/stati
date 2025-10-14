@@ -27,16 +27,19 @@ function globToRegex(pattern: string): RegExp {
   // Handle different glob patterns
   if (normalizedPattern.includes('**')) {
     // Handle ** (match any directory depth)
+    // ** requires at least one character to match
     const escapedPattern = escapeRegexExceptGlob(normalizedPattern);
     const regexPattern = escapedPattern
-      .replace(/\*\*/g, '.*')
-      .replace(/\*/g, '[^/]*')
+      .replace(/\*\*/g, '.+') // .+ requires at least one character
+      .replace(/\*/g, '[^/]*') // Single * matches any characters except /
       .replace(/\?/g, '.');
     return new RegExp('^' + regexPattern + '$');
   } else if (normalizedPattern.includes('*') || normalizedPattern.includes('?')) {
-    // Handle * (match within directory) and ? (single character)
+    // Handle * (matches within directory) and ? (single character)
     const escapedPattern = escapeRegexExceptGlob(normalizedPattern);
-    const regexPattern = escapedPattern.replace(/\*/g, '[^/]*').replace(/\?/g, '.');
+    const regexPattern = escapedPattern
+      .replace(/\*/g, '[^/]*') // * matches any characters except /
+      .replace(/\?/g, '.');
     return new RegExp('^' + regexPattern + '$');
   } else {
     // Exact match pattern
@@ -69,12 +72,31 @@ export function matchesAnyPattern(path: string, patterns: string[], allowPrefix 
         return true;
       }
     } else {
-      // For non-glob patterns, check exact match or prefix match
+      // For non-glob patterns, check exact match first
       if (normalizedPath === normalizedPattern) {
         return true;
       }
-      if (allowPrefix && normalizedPath.startsWith(normalizedPattern)) {
-        return true;
+
+      // For prefix matching with path boundaries
+      if (allowPrefix) {
+        // Special case: root pattern "/" should ONLY match "/" exactly
+        if (normalizedPattern === '/') {
+          continue; // Already checked exact match above, skip prefix matching
+        }
+
+        // For patterns ending with "/", they are explicitly prefix patterns
+        if (normalizedPattern.endsWith('/')) {
+          if (normalizedPath.startsWith(normalizedPattern)) {
+            return true;
+          }
+        } else {
+          // For other patterns, match if:
+          // 1. Path starts with pattern followed by "/"
+          // This ensures "/api" matches "/api/foo" but not "/apitest"
+          if (normalizedPath.startsWith(normalizedPattern + '/')) {
+            return true;
+          }
+        }
       }
     }
   }

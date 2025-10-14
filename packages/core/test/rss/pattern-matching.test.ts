@@ -45,7 +45,7 @@ describe('Pattern Matching Utilities', () => {
 
     it('should match URL patterns with wildcards', () => {
       expect(urlMatchesAnyPattern('/blog/post-1', ['/blog/*'])).toBe(true);
-      expect(urlMatchesAnyPattern('/blog/category/post', ['/blog/**'])).toBe(false); // Needs allowPrefix=false
+      expect(urlMatchesAnyPattern('/blog/category/post', ['/blog/**'])).toBe(true); // ** matches multiple path segments
       expect(urlMatchesAnyPattern('/docs/guide', ['/blog/**'])).toBe(false);
     });
 
