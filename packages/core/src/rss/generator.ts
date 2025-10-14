@@ -146,7 +146,7 @@ function getFieldValue<T>(
 
   // Type-safe access to frontMatter properties
   const frontMatter = page.frontMatter as Record<string, unknown>;
-  if (!frontMatter || typeof frontMatter !== 'object') {
+  if (frontMatter === null || frontMatter === undefined || typeof frontMatter !== 'object') {
     return undefined;
   }
 
