@@ -1,5 +1,41 @@
 # @stati/cli
 
+## 1.6.0
+
+### Minor Changes
+
+- enhance navigation with dynamic section rendering and styles
+
+  Commit: 4ab7152
+
+### Patch Changes
+
+- update links to configuration and documentation resources
+
+  Commit: 34c58f8
+
+- remove outdated examples and configuration references
+
+  Commit: 43ab1d1
+
+- add order field to documentation index files
+
+  Commit: afae959
+
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+  - @stati/core@1.10.0
+
 ## 1.5.0
 
 ### Minor Changes

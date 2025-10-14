@@ -1,5 +1,59 @@
 # @stati/core
 
+## 1.10.0
+
+### Minor Changes
+
+- enhance inventory management with previous build loading
+
+  Commit: 42b5e92
+
+- enhance navigation with dynamic section rendering and styles
+
+  Commit: 4ab7152
+
+- add dynamic class tracking and inventory management
+
+  Commit: b7485d4
+
+- Implement navigation helpers and update templates
+
+  Commit: 7229789
+
+### Patch Changes
+
+- add comprehensive tests for internal functions
+
+  Commit: 1808d3b
+
+- harden dev server and enhance documentation
+
+  Commit: 4a1dd8e
+
+- add integration tests for internal functions
+
+  Commit: 07707a0
+
+- update links to configuration and documentation resources
+
+  Commit: 34c58f8
+
+- refactor integration tests for better structure and reuse
+
+  Commit: e9e8499
+
+- remove outdated examples and configuration references
+
+  Commit: 43ab1d1
+
+- remove outdated ISG integration tests
+
+  Commit: d9b370f
+
+- add order field to documentation index files
+
+  Commit: afae959
+
 ## 1.9.0
 
 ### Minor Changes
