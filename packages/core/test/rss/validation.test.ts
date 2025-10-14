@@ -374,4 +374,203 @@ describe('RSS Validation', () => {
       expect(result.errors).toHaveLength(1);
     });
   });
+
+  describe('Edge Cases and Additional Validation', () => {
+    it('should handle undefined RSS config', () => {
+      const result = validateRSSConfig(undefined);
+
+      expect(result.valid).toBe(true);
+      expect(result.warnings).toContain('RSS configuration is not defined');
+    });
+
+    it('should validate empty title string', () => {
+      const feedConfig: RSSFeedConfig = {
+        filename: 'feed.xml',
+        title: '   ', // Empty after trim
+        description: 'A test feed',
+      };
+
+      const result = validateRSSFeedConfig(feedConfig);
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContain("Feed 0: 'title' is required and cannot be empty");
+    });
+
+    it('should validate empty description string', () => {
+      const feedConfig: RSSFeedConfig = {
+        filename: 'feed.xml',
+        title: 'Test Feed',
+        description: '   ', // Empty after trim
+      };
+
+      const result = validateRSSFeedConfig(feedConfig);
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContain("Feed 0: 'description' is required and cannot be empty");
+    });
+
+    it('should warn about zero TTL', () => {
+      const feedConfig: RSSFeedConfig = {
+        filename: 'feed.xml',
+        title: 'Test Feed',
+        description: 'A test feed',
+        ttl: 0,
+      };
+
+      const result = validateRSSFeedConfig(feedConfig);
+
+      expect(result.valid).toBe(true);
+      expect(result.warnings).toContain('Feed 0: ttl is 0, which means feed should not be cached');
+    });
+
+    it('should validate maxItems is positive', () => {
+      const feedConfig: RSSFeedConfig = {
+        filename: 'feed.xml',
+        title: 'Test Feed',
+        description: 'A test feed',
+        maxItems: 0,
+      };
+
+      const result = validateRSSFeedConfig(feedConfig);
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContain("Feed 0: 'maxItems' must be a positive number");
+    });
+
+    it('should validate maxItems is a number', () => {
+      const feedConfig: RSSFeedConfig = {
+        filename: 'feed.xml',
+        title: 'Test Feed',
+        description: 'A test feed',
+        maxItems: -5,
+      };
+
+      const result = validateRSSFeedConfig(feedConfig);
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContain("Feed 0: 'maxItems' must be a positive number");
+    });
+
+    it('should require sortFn when sortBy is custom', () => {
+      const feedConfig: RSSFeedConfig = {
+        filename: 'feed.xml',
+        title: 'Test Feed',
+        description: 'A test feed',
+        sortBy: 'custom',
+      };
+
+      const result = validateRSSFeedConfig(feedConfig);
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContain("Feed 0: 'sortFn' is required when sortBy is 'custom'");
+    });
+
+    it('should validate sortBy is a valid option', () => {
+      const feedConfig = {
+        filename: 'feed.xml',
+        title: 'Test Feed',
+        description: 'A test feed',
+        sortBy: 'invalid-sort',
+      } as unknown as RSSFeedConfig;
+
+      const result = validateRSSFeedConfig(feedConfig);
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContain(
+        "Feed 0: 'sortBy' must be one of: date-desc, date-asc, title-asc, title-desc, custom",
+      );
+    });
+
+    it('should require image fields when image is specified', () => {
+      const feedConfig = {
+        filename: 'feed.xml',
+        title: 'Test Feed',
+        description: 'A test feed',
+        image: {
+          url: '',
+          title: '',
+          link: '',
+        },
+      } as unknown as RSSFeedConfig;
+
+      const result = validateRSSFeedConfig(feedConfig);
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContain('Feed 0: image.url is required when image is specified');
+      expect(result.errors).toContain('Feed 0: image.title is required when image is specified');
+      expect(result.errors).toContain('Feed 0: image.link is required when image is specified');
+    });
+
+    it('should accept valid email with name for managingEditor', () => {
+      const feedConfig: RSSFeedConfig = {
+        filename: 'feed.xml',
+        title: 'Test Feed',
+        description: 'A test feed',
+        managingEditor: 'editor@example.com (John Doe)',
+      };
+
+      const result = validateRSSFeedConfig(feedConfig);
+
+      expect(result.valid).toBe(true);
+      expect(result.warnings).toHaveLength(0);
+    });
+
+    it('should accept valid email with name for webMaster', () => {
+      const feedConfig: RSSFeedConfig = {
+        filename: 'feed.xml',
+        title: 'Test Feed',
+        description: 'A test feed',
+        webMaster: 'webmaster@example.com (Jane Doe)',
+      };
+
+      const result = validateRSSFeedConfig(feedConfig);
+
+      expect(result.valid).toBe(true);
+      expect(result.warnings).toHaveLength(0);
+    });
+
+    it('should warn about empty contentPatterns array', () => {
+      const feedConfig: RSSFeedConfig = {
+        filename: 'feed.xml',
+        title: 'Test Feed',
+        description: 'A test feed',
+        contentPatterns: [],
+      };
+
+      const result = validateRSSFeedConfig(feedConfig);
+
+      expect(result.valid).toBe(true);
+      expect(result.warnings).toContain(
+        'Feed 0: contentPatterns is empty - feed may not include any content',
+      );
+    });
+
+    it('should pass validation with valid ttl value', () => {
+      const feedConfig: RSSFeedConfig = {
+        filename: 'feed.xml',
+        title: 'Test Feed',
+        description: 'A test feed',
+        ttl: 60,
+      };
+
+      const result = validateRSSFeedConfig(feedConfig);
+
+      expect(result.valid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+      expect(result.warnings).toHaveLength(0);
+    });
+
+    it('should use feed index in error messages', () => {
+      const feedConfig: RSSFeedConfig = {
+        filename: '',
+        title: 'Test',
+        description: 'Test',
+      };
+
+      const result = validateRSSFeedConfig(feedConfig, 5);
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContain("Feed 5: 'filename' is required");
+    });
+  });
 });

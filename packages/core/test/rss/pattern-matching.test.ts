@@ -183,4 +183,65 @@ describe('Pattern Matching Utilities', () => {
       expect(result.find((page) => page.slug === 'post-1')).toBeUndefined();
     });
   });
+
+  describe('Edge Cases and Additional Coverage', () => {
+    it('should handle exact match of root pattern /', () => {
+      expect(matchesAnyPattern('/', ['/'])).toBe(true);
+      expect(matchesAnyPattern('/blog', ['/'])).toBe(false); // Should not match prefix
+    });
+
+    it('should handle double asterisk requiring at least one character', () => {
+      expect(matchesAnyPattern('site/blog/post.md', ['site/**/post.md'])).toBe(true);
+      expect(matchesAnyPattern('site/post.md', ['site/**/post.md'])).toBe(false); // ** requires at least one character
+    });
+
+    it('should handle question mark wildcard', () => {
+      expect(matchesAnyPattern('site/blog/p.md', ['site/blog/?.md'])).toBe(true);
+      expect(matchesAnyPattern('site/blog/post.md', ['site/blog/?.md'])).toBe(false);
+    });
+
+    it('should handle patterns with special regex characters', () => {
+      expect(matchesAnyPattern('site/[test].md', ['site/[test].md'])).toBe(true);
+      expect(matchesAnyPattern('site/(test).md', ['site/(test).md'])).toBe(true);
+      expect(matchesAnyPattern('site/test+file.md', ['site/test+file.md'])).toBe(true);
+    });
+
+    it('should handle prefix matching with boundary check', () => {
+      expect(matchesAnyPattern('/api/foo', ['/api'])).toBe(true);
+      expect(matchesAnyPattern('/apitest', ['/api'])).toBe(false); // Should not match without boundary
+    });
+
+    it('should handle patterns ending with slash as prefix patterns', () => {
+      expect(matchesAnyPattern('site/blog/post.md', ['site/blog/'])).toBe(true);
+      expect(matchesAnyPattern('site/news/article.md', ['site/blog/'])).toBe(false);
+    });
+
+    it('should not allow prefix matching when allowPrefix is false', () => {
+      expect(matchesAnyPattern('site/blog/post.md', ['site/blog'], false)).toBe(false);
+      expect(matchesAnyPattern('site/blog', ['site/blog'], false)).toBe(true); // Exact match still works
+    });
+
+    it('should handle mixed glob and non-glob patterns', () => {
+      const patterns = ['site/exact.md', 'site/blog/**', 'site/news/*.md'];
+      expect(matchesAnyPattern('site/exact.md', patterns)).toBe(true);
+      expect(matchesAnyPattern('site/blog/deep/post.md', patterns)).toBe(true);
+      expect(matchesAnyPattern('site/news/article.md', patterns)).toBe(true);
+      expect(matchesAnyPattern('site/other/file.md', patterns)).toBe(false);
+    });
+
+    it('should handle single asterisk not matching slashes', () => {
+      expect(matchesAnyPattern('site/blog/post.md', ['site/*/post.md'])).toBe(true);
+      expect(matchesAnyPattern('site/blog/category/post.md', ['site/*/post.md'])).toBe(false);
+    });
+
+    it('should handle multiple question marks', () => {
+      expect(matchesAnyPattern('site/ab.md', ['site/??.md'])).toBe(true);
+      expect(matchesAnyPattern('site/abc.md', ['site/??.md'])).toBe(false);
+    });
+
+    it('should handle backslash normalization in patterns', () => {
+      expect(matchesAnyPattern('site/blog/post.md', ['site\\blog\\**'])).toBe(true);
+      expect(matchesAnyPattern('site\\blog\\post.md', ['site/blog/**'])).toBe(true);
+    });
+  });
 });
