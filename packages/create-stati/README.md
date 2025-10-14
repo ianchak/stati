@@ -223,9 +223,9 @@ my-site/
 ### Learn Stati
 
 - [Documentation](https://docs.stati.build) - Complete guides and tutorials
-- [Core Concepts](https://docs.stati.build/core-concepts/) - Templates, routing, and markdown
-- [Configuration](https://docs.stati.build/configuration/) - Site config, ISG, and hooks
-- [Examples](https://docs.stati.build/examples/) - Real-world recipes
+- [Core Concepts](https://docs.stati.build/core-concepts/overview/) - Templates, routing, and markdown
+- [Configuration](https://docs.stati.build/configuration/file/) - Site config, ISG, and hooks
+- [Examples](https://docs.stati.build/examples/list/) - Real-world recipes
 
 ### Customize Your Site
 
@@ -264,7 +264,7 @@ export default defineConfig({
 });
 ```
 
-You can customize this file to add features like SEO, sitemap, ISG caching, and more. See the [Configuration Guide](https://docs.stati.build/configuration/) for all options.
+You can customize this file to add features like SEO, sitemap, ISG caching, and more. See the [Configuration Guide](https://docs.stati.build/configuration/file/) for all options.
 
 ---
 
@@ -278,9 +278,9 @@ You can customize this file to add features like SEO, sitemap, ISG caching, and 
 ## Learn More
 
 - [Full Documentation](https://docs.stati.build) - Complete guides and tutorials
-- [CLI Commands](https://docs.stati.build/cli/) - All available commands
-- [Core Concepts](https://docs.stati.build/core-concepts/) - How Stati works
-- [Examples](https://docs.stati.build/examples/) - Real-world projects and recipes
+- [CLI Commands](https://docs.stati.build/cli/commands/) - All available commands
+- [Core Concepts](https://docs.stati.build/core-concepts/overview/) - How Stati works
+- [Examples](https://docs.stati.build/examples/list/) - Real-world projects and recipes
 
 ---
 
