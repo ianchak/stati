@@ -7,13 +7,14 @@
   "scripts": {
     "dev": "concurrently --prefix none \"npm run watch:css\" \"stati dev\"",
     "dev:local": "concurrently --prefix none \"npm run watch:css\" \"node ../packages/cli/dist/cli.js dev\"",
-    "build": "stati build && npm run build:css",
-    "build:local": "node ../packages/cli/dist/cli.js build --clean && npm run build:css",
+    "build": "stati build && npm run build:css && npm run copy:css",
+    "build:local": "node ../packages/cli/dist/cli.js build --clean && npm run build:css && npm run copy:css",
     "preview": "stati preview",
     "preview:local": "node ../packages/cli/dist/cli.js preview",
     "clean": "rimraf dist .stati",
     "build:css": "tailwindcss -i src/styles.css -o public/styles.css --minify",
-    "watch:css": "tailwindcss -i src/styles.css -o public/styles.css --watch"
+    "watch:css": "tailwindcss -i src/styles.css -o public/styles.css --watch",
+    "copy:css": "node -e \"require('fs').copyFileSync('public/styles.css', 'dist/styles.css')\""
   },
   "keywords": [
     "static-site",
@@ -22,7 +23,7 @@
   ],
   "stati": {
     "engine": "stati",
-    "version": "^1.4.0"
+    "version": "^1.10.0"
   },
   "author": "",
   "license": "MIT",

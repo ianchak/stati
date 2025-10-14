@@ -138,7 +138,8 @@ ${existingCSS
       ...packageJson.scripts,
       'build:css': 'tailwindcss -i src/styles.css -o public/styles.css --minify',
       'watch:css': 'tailwindcss -i src/styles.css -o public/styles.css --watch',
-      build: 'stati build && npm run build:css',
+      'copy:css': "node -e \"require('fs').copyFileSync('public/styles.css', 'dist/styles.css')\"",
+      build: 'stati build && npm run build:css && npm run copy:css',
       dev: 'concurrently --prefix none "npm run watch:css" "stati dev"',
     };
 
