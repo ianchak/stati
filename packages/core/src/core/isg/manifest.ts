@@ -93,7 +93,15 @@ export async function loadCacheManifest(cacheDir: string): Promise<CacheManifest
       console.warn(`Removed ${invalidEntryCount} invalid cache entries`);
     }
 
-    return { entries: validatedEntries };
+    // Return manifest with entries AND navigationHash (if present)
+    const resultManifest: CacheManifest = { entries: validatedEntries };
+
+    // Preserve navigationHash if it exists
+    if (typeof manifestObj.navigationHash === 'string') {
+      resultManifest.navigationHash = manifestObj.navigationHash;
+    }
+
+    return resultManifest;
   } catch (error) {
     const nodeError = error as NodeError;
     if (nodeError.code === 'ENOENT') {

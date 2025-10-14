@@ -1,7 +1,8 @@
 ---
-title: SEO Configuration
+title: 'SEO & Sitemap'
 description: Complete guide to SEO metadata generation, sitemap, and robots.txt configuration in Stati
 layout: layout.eta
+order: 6
 ---
 
 # SEO Configuration
@@ -133,17 +134,9 @@ Customize SEO metadata for individual pages using frontmatter:
 
 ```markdown
 ---
-title: My Page Title
-description: A compelling description for search engines
-seo:
-  title: Custom SEO Title (overrides page title)
-  description: Custom meta description
-  keywords: [seo, stati, static-site-generator]
-  canonical: https://example.com/canonical-url
-  noindex: false
-  author:
-    name: Jane Doe
-    email: jane@example.com
+title: 'SEO & Sitemap'
+description: 'Configure SEO settings, meta tags, and sitemap generation.'
+order: 6
 ---
 ```
 

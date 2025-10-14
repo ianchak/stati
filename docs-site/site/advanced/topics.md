@@ -1,6 +1,7 @@
 ---
-title: 'Advanced Topics'
+title: 'Performance'
 description: 'Explore advanced Stati features including performance optimization, SEO, and complex deployment scenarios.'
+order: 1
 ---
 
 # Advanced Topics
@@ -197,7 +198,7 @@ export default defineConfig({
 });
 ```
 
-For comprehensive development server and ISG configuration options, see the [Configuration Guide](/configuration/).
+For comprehensive development server and ISG configuration options, see the [Configuration Guide](/configuration/file/).
 
 ## Markdown Processing
 
@@ -268,4 +269,4 @@ These advanced topics showcase Stati's core capabilities for building sophistica
 - **Developer-Friendly** error handling and development workflow
 - **TypeScript-First** configuration with full type safety
 
-For specific implementation details, refer to the [API Reference](/api/) or explore the [Configuration Guide](/configuration/) for complete setup instructions.
+For specific implementation details, refer to the [API Reference](/api/reference/) or explore the [Configuration Guide](/configuration/file/) for complete setup instructions.

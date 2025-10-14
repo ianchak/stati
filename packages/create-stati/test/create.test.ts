@@ -116,9 +116,10 @@ describe('create-stati scaffolding', () => {
       expect(cssContent).toContain('@tailwind utilities');
       expect(cssContent).toContain('@layer components');
 
-      // Verify Tailwind config
+      // Verify Tailwind config includes both site files and inventory file
       const configContent = await readFile(join(result.targetDir, 'tailwind.config.js'), 'utf-8');
-      expect(configContent).toContain("content: ['./site/**/*.{md,eta,html}']");
+      expect(configContent).toContain('./site/**/*.{md,eta,html}');
+      expect(configContent).toContain('./.stati/tailwind-classes.html');
     });
 
     it('should initialize git repository when requested', async () => {

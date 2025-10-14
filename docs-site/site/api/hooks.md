@@ -1,6 +1,7 @@
 ---
 title: 'Build Hooks'
-description: 'Learn about Stati build lifecycle hooks and how to extend the build process.'
+description: 'Learn how to use build hooks to customize the Stati build process.'
+order: 2
 ---
 
 # Build Hooks

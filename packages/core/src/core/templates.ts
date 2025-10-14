@@ -13,6 +13,7 @@ import {
   createValidatingPartialsProxy,
   propValue,
   wrapPartialsAsCallable,
+  createNavigationHelpers,
 } from './utils/index.js';
 import { getEnv } from '../env.js';
 import { generateSEO } from '../seo/index.js';
@@ -122,6 +123,32 @@ function buildCollectionData(currentPage: PageModel, allPages: PageModel[]): Col
 }
 
 /**
+ * Builds collection data for a child page (showing parent collection data).
+ * Finds the parent collection and returns its data.
+ *
+ * @param currentPage - The current page being rendered
+ * @param allPages - All pages in the site
+ * @returns Collection data for the parent collection or undefined
+ */
+function buildParentCollectionData(
+  currentPage: PageModel,
+  allPages: PageModel[],
+): CollectionData | undefined {
+  // Get the parent collection path
+  const parentPath = getCollectionPathForPage(currentPage.url);
+
+  // Find the index page for the parent collection
+  const parentIndexPage = allPages.find((p) => p.url === parentPath);
+
+  if (parentIndexPage) {
+    // Build collection data for the parent
+    return buildCollectionData(parentIndexPage, allPages);
+  }
+
+  return undefined;
+}
+
+/**
  * Discovers partials in the hierarchy for a given page path.
  * Scans all parent directories for folders starting with underscore.
  *
@@ -211,11 +238,18 @@ export async function renderPage(
   const relativePath = relative(srcDir, page.sourcePath);
   const partialPaths = await discoverPartials(relativePath, config);
 
-  // Build collection data if this is an index page and all pages are provided
+  // Build collection data based on page type
   let collectionData: CollectionData | undefined;
   const isIndexPage = allPages && isCollectionIndexPage(page, allPages);
-  if (isIndexPage) {
-    collectionData = buildCollectionData(page, allPages);
+
+  if (allPages) {
+    if (isIndexPage) {
+      // For index pages, show their own collection data
+      collectionData = buildCollectionData(page, allPages);
+    } else {
+      // For child pages, show parent collection data
+      collectionData = buildParentCollectionData(page, allPages);
+    }
   }
 
   // Discover the appropriate layout using hierarchical layout.eta convention
@@ -227,6 +261,11 @@ export async function renderPage(
     isIndexPage,
   );
 
+  // Create navigation helpers
+  const navTree = navigation || [];
+  const navHelpers = createNavigationHelpers(navTree, page);
+  const currentNavNode = navHelpers.getCurrentNode();
+
   // Create base context for partial rendering
   const baseContext = {
     site: config.site,
@@ -235,10 +274,11 @@ export async function renderPage(
       path: page.url,
       url: page.url, // Add url property for compatibility
       content: body,
+      navNode: currentNavNode, // Add current page's navigation node
     },
     content: body,
-    navigation: navigation || [],
-    collection: collectionData, // Add collection data for index pages
+    nav: navHelpers, // Replace navigation with nav helpers
+    collection: collectionData, // Add collection data
     // Add custom filters to context
     ...(config.eta?.filters || {}),
     generator: {

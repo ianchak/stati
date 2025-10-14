@@ -1,3 +1,50 @@
+<%
+// Hardcoded section definitions with their routes, colors, icons, and display names
+const sections = [
+  {
+    path: '/getting-started',
+    displayName: 'Getting Started',
+    color: 'primary',
+    icon: 'M13 10V3L4 14h7v7l9-11h-7z',
+  },
+  {
+    path: '/core-concepts',
+    displayName: 'Core Concepts',
+    color: 'emerald',
+    icon: 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z',
+  },
+  {
+    path: '/configuration',
+    displayName: 'Configuration',
+    color: 'amber',
+    icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z',
+  },
+  {
+    path: '/cli',
+    displayName: 'CLI & Tooling',
+    color: 'purple',
+    icon: 'M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
+  },
+  {
+    path: '/api',
+    displayName: 'API Reference',
+    color: 'red',
+    icon: 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4',
+  },
+  {
+    path: '/examples',
+    displayName: 'Examples',
+    color: 'cyan',
+    icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10',
+  },
+  {
+    path: '/advanced',
+    displayName: 'Advanced',
+    color: 'gray',
+    icon: 'M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1',
+  },
+];
+%>
 <aside id="sidebar" class="fixed top-18 left-0 w-80 h-[calc(100vh-4.5rem)] bg-white/80 dark:bg-dark-900/80 backdrop-blur-xl border-r border-gray-200/60 dark:border-dark-700/60 overflow-y-auto transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out z-30 shadow-xl shadow-gray-900/5">
     <nav class="p-6">
         <!-- Search Bar -->
@@ -11,251 +58,38 @@
         </div>
 
         <div class="space-y-6">
-            <!-- Getting Started -->
+            <% // Iterate over hardcoded sections and list their child pages dynamically
+            sections.forEach(section => {
+              // Get child pages for this section using nav helper
+              const sectionChildren = stati.nav.getChildren(section.path);
+              const color = section.color;
+              const sectionSlug = section.path.substring(1); // Remove leading slash
+            %>
+            <!-- <%= section.displayName %> -->
             <div class="nav-section">
-                <button class="section-toggle flex items-center justify-between w-full px-4 py-3 text-left bg-gradient-to-r from-primary-50 to-primary-100/50 dark:from-primary-900/20 dark:to-primary-800/20 rounded-xl border border-primary-200/50 dark:border-primary-800/50 hover:shadow-md hover:shadow-primary-500/10 transition-all duration-200 group" data-section="getting-started">
+                <button class="<%= stati.propValue('section-toggle', 'flex', 'items-center', 'justify-between', 'w-full', 'px-4', 'py-3', 'text-left', `bg-gradient-to-r from-${color}-50 to-${color}-100/50 dark:from-${color}-900/20 dark:to-${color}-800/20`, 'rounded-xl', `border border-${color}-200/50 dark:border-${color}-800/50`, `hover:shadow-md hover:shadow-${color}-500/10`, 'transition-all', 'duration-200', 'group') %>" data-section="<%= sectionSlug %>">
                     <div class="flex items-center space-x-3">
-                        <div class="flex items-center justify-center w-8 h-8 bg-primary-500/10 dark:bg-primary-400/20 rounded-lg">
-                            <svg class="w-4 h-4 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        <div class="<%= stati.propValue('flex', 'items-center', 'justify-center', 'w-8', 'h-8', `bg-${color}-500/10 dark:bg-${color}-400/20`, 'rounded-lg') %>">
+                            <svg class="<%= stati.propValue('w-4', 'h-4', `text-${color}-600 dark:text-${color}-400`) %>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="<%= section.icon %>" />
                             </svg>
                         </div>
-                        <span class="font-semibold text-gray-900 dark:text-white text-sm">Getting Started</span>
+                        <span class="font-semibold text-gray-900 dark:text-white text-sm"><%= section.displayName %></span>
                     </div>
                     <svg class="w-4 h-4 text-gray-500 transform transition-transform duration-200 group-data-[expanded=true]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                     </svg>
                 </button>
-                <div class="section-content mt-2 space-y-1 pl-4" data-section="getting-started">
-                    <a href="/getting-started/" class="sidebar-link flex items-center px-4 py-2.5 text-sm text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-primary-50/60 dark:hover:bg-primary-900/20 rounded-lg transition-all duration-200 font-medium group">
-                        <span class="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-primary-500 transition-colors duration-200"></span>
-                        Introduction
+                <div class="section-content mt-2 space-y-1 pl-4" data-section="<%= sectionSlug %>">
+                    <% sectionChildren.forEach(page => { %>
+                    <a href="<%= page.url %>" class="<%= stati.propValue('sidebar-link', 'flex', 'items-center', 'px-4', 'py-2.5', 'text-sm', 'text-gray-600', `hover:text-${color}-600`, 'dark:text-gray-300', `dark:hover:text-${color}-400`, `hover:bg-${color}-50/60`, `dark:hover:bg-${color}-900/20`, 'rounded-lg', 'transition-all', 'duration-200', 'font-medium', 'group') %>">
+                        <span class="<%= stati.propValue('w-2', 'h-2', 'bg-gray-300', 'dark:bg-gray-600', 'rounded-full', 'mr-3', `group-hover:bg-${color}-500`, 'transition-colors', 'duration-200') %>"></span>
+                        <%= page.title %>
                     </a>
-                    <a href="/getting-started/installation/" class="sidebar-link flex items-center px-4 py-2.5 text-sm text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-primary-50/60 dark:hover:bg-primary-900/20 rounded-lg transition-all duration-200 font-medium group">
-                        <span class="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-primary-500 transition-colors duration-200"></span>
-                        Installation
-                    </a>
-                    <a href="/getting-started/project-structure/" class="sidebar-link flex items-center px-4 py-2.5 text-sm text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-primary-50/60 dark:hover:bg-primary-900/20 rounded-lg transition-all duration-200 font-medium group">
-                        <span class="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-primary-500 transition-colors duration-200"></span>
-                        Project Structure
-                    </a>
-                    <a href="/getting-started/quick-start/" class="sidebar-link flex items-center px-4 py-2.5 text-sm text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-primary-50/60 dark:hover:bg-primary-900/20 rounded-lg transition-all duration-200 font-medium group">
-                        <span class="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-primary-500 transition-colors duration-200"></span>
-                        Quick Start
-                    </a>
+                    <% }) %>
                 </div>
             </div>
-
-            <!-- Core Concepts -->
-            <div class="nav-section">
-                <button class="section-toggle flex items-center justify-between w-full px-4 py-3 text-left bg-gradient-to-r from-emerald-50 to-emerald-100/50 dark:from-emerald-900/20 dark:to-emerald-800/20 rounded-xl border border-emerald-200/50 dark:border-emerald-800/50 hover:shadow-md hover:shadow-emerald-500/10 transition-all duration-200 group" data-section="core-concepts">
-                    <div class="flex items-center space-x-3">
-                        <div class="flex items-center justify-center w-8 h-8 bg-emerald-500/10 dark:bg-emerald-400/20 rounded-lg">
-                            <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                            </svg>
-                        </div>
-                        <span class="font-semibold text-gray-900 dark:text-white text-sm">Core Concepts</span>
-                    </div>
-                    <svg class="w-4 h-4 text-gray-500 transform transition-transform duration-200 group-data-[expanded=true]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                </button>
-                <div class="section-content mt-2 space-y-1 pl-4" data-section="core-concepts">
-                    <a href="/core-concepts/routing/" class="sidebar-link flex items-center px-4 py-2.5 text-sm text-gray-600 hover:text-emerald-600 dark:text-gray-300 dark:hover:text-emerald-400 hover:bg-emerald-50/60 dark:hover:bg-emerald-900/20 rounded-lg transition-all duration-200 font-medium group">
-                        <span class="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-emerald-500 transition-colors duration-200"></span>
-                        Filesystem Routing
-                    </a>
-                    <a href="/core-concepts/templates/" class="sidebar-link flex items-center px-4 py-2.5 text-sm text-gray-600 hover:text-emerald-600 dark:text-gray-300 dark:hover:text-emerald-400 hover:bg-emerald-50/60 dark:hover:bg-emerald-900/20 rounded-lg transition-all duration-200 font-medium group">
-                        <span class="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-emerald-500 transition-colors duration-200"></span>
-                        Templates & Layouts
-                    </a>
-                    <a href="/core-concepts/markdown/" class="sidebar-link flex items-center px-4 py-2.5 text-sm text-gray-600 hover:text-emerald-600 dark:text-gray-300 dark:hover:text-emerald-400 hover:bg-emerald-50/60 dark:hover:bg-emerald-900/20 rounded-lg transition-all duration-200 font-medium group">
-                        <span class="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-emerald-500 transition-colors duration-200"></span>
-                        Markdown Pipeline
-                    </a>
-                    <a href="/core-concepts/isg/" class="sidebar-link flex items-center px-4 py-2.5 text-sm text-gray-600 hover:text-emerald-600 dark:text-gray-300 dark:hover:text-emerald-400 hover:bg-emerald-50/60 dark:hover:bg-emerald-900/20 rounded-lg transition-all duration-200 font-medium group">
-                        <span class="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-emerald-500 transition-colors duration-200"></span>
-                        ISG
-                    </a>
-                    <a href="/core-concepts/static-assets/" class="sidebar-link flex items-center px-4 py-2.5 text-sm text-gray-600 hover:text-emerald-600 dark:text-gray-300 dark:hover:text-emerald-400 hover:bg-emerald-50/60 dark:hover:bg-emerald-900/20 rounded-lg transition-all duration-200 font-medium group">
-                        <span class="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-emerald-500 transition-colors duration-200"></span>
-                        Static Assets
-                    </a>
-                </div>
-            </div>
-
-            <!-- Configuration -->
-            <div class="nav-section">
-                <button class="section-toggle flex items-center justify-between w-full px-4 py-3 text-left bg-gradient-to-r from-amber-50 to-amber-100/50 dark:from-amber-900/20 dark:to-amber-800/20 rounded-xl border border-amber-200/50 dark:border-amber-800/50 hover:shadow-md hover:shadow-amber-500/10 transition-all duration-200 group" data-section="configuration">
-                    <div class="flex items-center space-x-3">
-                        <div class="flex items-center justify-center w-8 h-8 bg-amber-500/10 dark:bg-amber-400/20 rounded-lg">
-                            <svg class="w-4 h-4 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                        </div>
-                        <span class="font-semibold text-gray-900 dark:text-white text-sm">Configuration</span>
-                    </div>
-                    <svg class="w-4 h-4 text-gray-500 transform transition-transform duration-200 group-data-[expanded=true]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                </button>
-                <div class="section-content mt-2 space-y-1 pl-4" data-section="configuration">
-                    <a href="/configuration/" class="sidebar-link flex items-center px-4 py-2.5 text-sm text-gray-600 hover:text-amber-600 dark:text-gray-300 dark:hover:text-amber-400 hover:bg-amber-50/60 dark:hover:bg-amber-900/20 rounded-lg transition-all duration-200 font-medium group">
-                        <span class="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-amber-500 transition-colors duration-200"></span>
-                        Configuration File
-                    </a>
-                    <a href="/configuration/site-metadata/" class="sidebar-link flex items-center px-4 py-2.5 text-sm text-gray-600 hover:text-amber-600 dark:text-gray-300 dark:hover:text-amber-400 hover:bg-amber-50/60 dark:hover:bg-amber-900/20 rounded-lg transition-all duration-200 font-medium group">
-                        <span class="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-amber-500 transition-colors duration-200"></span>
-                        Site Metadata
-                    </a>
-                    <a href="/configuration/templates/" class="sidebar-link flex items-center px-4 py-2.5 text-sm text-gray-600 hover:text-amber-600 dark:text-gray-300 dark:hover:text-amber-400 hover:bg-amber-50/60 dark:hover:bg-amber-900/20 rounded-lg transition-all duration-200 font-medium group">
-                        <span class="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-amber-500 transition-colors duration-200"></span>
-                        Template Settings
-                    </a>
-                    <a href="/configuration/markdown/" class="sidebar-link flex items-center px-4 py-2.5 text-sm text-gray-600 hover:text-amber-600 dark:text-gray-300 dark:hover:text-amber-400 hover:bg-amber-50/60 dark:hover:bg-amber-900/20 rounded-lg transition-all duration-200 font-medium group">
-                        <span class="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-amber-500 transition-colors duration-200"></span>
-                        Markdown Config
-                    </a>
-                    <a href="/configuration/isg/" class="sidebar-link flex items-center px-4 py-2.5 text-sm text-gray-600 hover:text-amber-600 dark:text-gray-300 dark:hover:text-amber-400 hover:bg-amber-50/60 dark:hover:bg-amber-900/20 rounded-lg transition-all duration-200 font-medium group">
-                        <span class="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-amber-500 transition-colors duration-200"></span>
-                        ISG Options
-                    </a>
-                    <a href="/configuration/seo/" class="sidebar-link flex items-center px-4 py-2.5 text-sm text-gray-600 hover:text-amber-600 dark:text-gray-300 dark:hover:text-amber-400 hover:bg-amber-50/60 dark:hover:bg-amber-900/20 rounded-lg transition-all duration-200 font-medium group">
-                        <span class="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-amber-500 transition-colors duration-200"></span>
-                        SEO & Sitemap
-                    </a>
-                </div>
-            </div>
-
-            <!-- CLI & Tooling -->
-            <div class="nav-section">
-                <button class="section-toggle flex items-center justify-between w-full px-4 py-3 text-left bg-gradient-to-r from-purple-50 to-purple-100/50 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl border border-purple-200/50 dark:border-purple-800/50 hover:shadow-md hover:shadow-purple-500/10 transition-all duration-200 group" data-section="cli">
-                    <div class="flex items-center space-x-3">
-                        <div class="flex items-center justify-center w-8 h-8 bg-purple-500/10 dark:bg-purple-400/20 rounded-lg">
-                            <svg class="w-4 h-4 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                        </div>
-                        <span class="font-semibold text-gray-900 dark:text-white text-sm">CLI & Tooling</span>
-                    </div>
-                    <svg class="w-4 h-4 text-gray-500 transform transition-transform duration-200 group-data-[expanded=true]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                </button>
-                <div class="section-content mt-2 space-y-1 pl-4" data-section="cli">
-                    <a href="/cli/" class="sidebar-link flex items-center px-4 py-2.5 text-sm text-gray-600 hover:text-purple-600 dark:text-gray-300 dark:hover:text-purple-400 hover:bg-purple-50/60 dark:hover:bg-purple-900/20 rounded-lg transition-all duration-200 font-medium group">
-                        <span class="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-purple-500 transition-colors duration-200"></span>
-                        Commands
-                    </a>
-                    <a href="/cli/scaffolder/" class="sidebar-link flex items-center px-4 py-2.5 text-sm text-gray-600 hover:text-purple-600 dark:text-gray-300 dark:hover:text-purple-400 hover:bg-purple-50/60 dark:hover:bg-purple-900/20 rounded-lg transition-all duration-200 font-medium group">
-                        <span class="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-purple-500 transition-colors duration-200"></span>
-                        Scaffolder
-                    </a>
-                    <a href="/cli/development/" class="sidebar-link flex items-center px-4 py-2.5 text-sm text-gray-600 hover:text-purple-600 dark:text-gray-300 dark:hover:text-purple-400 hover:bg-purple-50/60 dark:hover:bg-purple-900/20 rounded-lg transition-all duration-200 font-medium group">
-                        <span class="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-purple-500 transition-colors duration-200"></span>
-                        Development
-                    </a>
-                </div>
-            </div>
-
-            <!-- API Reference -->
-            <div class="nav-section">
-                <button class="section-toggle flex items-center justify-between w-full px-4 py-3 text-left bg-gradient-to-r from-red-50 to-red-100/50 dark:from-red-900/20 dark:to-red-800/20 rounded-xl border border-red-200/50 dark:border-red-800/50 hover:shadow-md hover:shadow-red-500/10 transition-all duration-200 group" data-section="api">
-                    <div class="flex items-center space-x-3">
-                        <div class="flex items-center justify-center w-8 h-8 bg-red-500/10 dark:bg-red-400/20 rounded-lg">
-                            <svg class="w-4 h-4 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                            </svg>
-                        </div>
-                        <span class="font-semibold text-gray-900 dark:text-white text-sm">API Reference</span>
-                    </div>
-                    <svg class="w-4 h-4 text-gray-500 transform transition-transform duration-200 group-data-[expanded=true]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                </button>
-                <div class="section-content mt-2 space-y-1 pl-4" data-section="api">
-                    <a href="/api/" class="sidebar-link flex items-center px-4 py-2.5 text-sm text-gray-600 hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400 hover:bg-red-50/60 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200 font-medium group">
-                        <span class="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-red-500 transition-colors duration-200"></span>
-                        Template API
-                    </a>
-                    <a href="/api/hooks/" class="sidebar-link flex items-center px-4 py-2.5 text-sm text-gray-600 hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400 hover:bg-red-50/60 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200 font-medium group">
-                        <span class="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-red-500 transition-colors duration-200"></span>
-                        Build Hooks
-                    </a>
-                    <a href="/api/error-handling/" class="sidebar-link flex items-center px-4 py-2.5 text-sm text-gray-600 hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400 hover:bg-red-50/60 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200 font-medium group">
-                        <span class="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-red-500 transition-colors duration-200"></span>
-                        Error Handling
-                    </a>
-                    <a href="/api/types/" class="sidebar-link flex items-center px-4 py-2.5 text-sm text-gray-600 hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400 hover:bg-red-50/60 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200 font-medium group">
-                        <span class="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-red-500 transition-colors duration-200"></span>
-                        TypeScript Types
-                    </a>
-                    <a href="/api/seo/" class="sidebar-link flex items-center px-4 py-2.5 text-sm text-gray-600 hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400 hover:bg-red-50/60 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200 font-medium group">
-                        <span class="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-red-500 transition-colors duration-200"></span>
-                        SEO API
-                    </a>
-                </div>
-            </div>
-
-            <!-- Examples -->
-            <div class="nav-section">
-                <button class="section-toggle flex items-center justify-between w-full px-4 py-3 text-left bg-gradient-to-r from-cyan-50 to-cyan-100/50 dark:from-cyan-900/20 dark:to-cyan-800/20 rounded-xl border border-cyan-200/50 dark:border-cyan-800/50 hover:shadow-md hover:shadow-cyan-500/10 transition-all duration-200 group" data-section="examples">
-                    <div class="flex items-center space-x-3">
-                        <div class="flex items-center justify-center w-8 h-8 bg-cyan-500/10 dark:bg-cyan-400/20 rounded-lg">
-                            <svg class="w-4 h-4 text-cyan-600 dark:text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                            </svg>
-                        </div>
-                        <span class="font-semibold text-gray-900 dark:text-white text-sm">Examples</span>
-                    </div>
-                    <svg class="w-4 h-4 text-gray-500 transform transition-transform duration-200 group-data-[expanded=true]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                </button>
-                <div class="section-content mt-2 space-y-1 pl-4" data-section="examples">
-                    <a href="/examples/" class="sidebar-link flex items-center px-4 py-2.5 text-sm text-gray-600 hover:text-cyan-600 dark:text-gray-300 dark:hover:text-cyan-400 hover:bg-cyan-50/60 dark:hover:bg-cyan-900/20 rounded-lg transition-all duration-200 font-medium group">
-                        <span class="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-cyan-500 transition-colors duration-200"></span>
-                        Overview
-                    </a>
-                    <a href="/examples/recipes/" class="sidebar-link flex items-center px-4 py-2.5 text-sm text-gray-600 hover:text-cyan-600 dark:text-gray-300 dark:hover:text-cyan-400 hover:bg-cyan-50/60 dark:hover:bg-cyan-900/20 rounded-lg transition-all duration-200 font-medium group">
-                        <span class="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-cyan-500 transition-colors duration-200"></span>
-                        Recipes
-                    </a>
-                </div>
-            </div>
-
-            <!-- Advanced & Contributing -->
-            <div class="nav-section">
-                <button class="section-toggle flex items-center justify-between w-full px-4 py-3 text-left bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-900/20 dark:to-gray-800/20 rounded-xl border border-gray-200/50 dark:border-gray-700/50 hover:shadow-md hover:shadow-gray-500/10 transition-all duration-200 group" data-section="advanced">
-                    <div class="flex items-center space-x-3">
-                        <div class="flex items-center justify-center w-8 h-8 bg-gray-500/10 dark:bg-gray-400/20 rounded-lg">
-                            <svg class="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                            </svg>
-                        </div>
-                        <span class="font-semibold text-gray-900 dark:text-white text-sm">Advanced</span>
-                    </div>
-                    <svg class="w-4 h-4 text-gray-500 transform transition-transform duration-200 group-data-[expanded=true]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                </button>
-                <div class="section-content mt-2 space-y-1 pl-4" data-section="advanced">
-                    <a href="/advanced/" class="sidebar-link flex items-center px-4 py-2.5 text-sm text-gray-600 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200 hover:bg-gray-50/60 dark:hover:bg-gray-900/20 rounded-lg transition-all duration-200 font-medium group">
-                        <span class="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-gray-500 transition-colors duration-200"></span>
-                        Performance
-                    </a>
-                    <a href="/advanced/seo-usage-scenarios/" class="sidebar-link flex items-center px-4 py-2.5 text-sm text-gray-600 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200 hover:bg-gray-50/60 dark:hover:bg-gray-900/20 rounded-lg transition-all duration-200 font-medium group">
-                        <span class="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-gray-500 transition-colors duration-200"></span>
-                        SEO Usage Scenarios
-                    </a>
-                    <a href="/contributing/" class="sidebar-link flex items-center px-4 py-2.5 text-sm text-gray-600 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200 hover:bg-gray-50/60 dark:hover:bg-gray-900/20 rounded-lg transition-all duration-200 font-medium group">
-                        <span class="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-gray-500 transition-colors duration-200"></span>
-                        Contributing
-                    </a>
-                </div>
-            </div>
+            <% }) %>
         </div>
     </nav>
 </aside>

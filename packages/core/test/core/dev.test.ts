@@ -67,6 +67,27 @@ vi.mock('../../src/core/invalidate.js', () => ({
   }),
 }));
 
+vi.mock('../../src/core/content.js', () => ({
+  loadContent: vi.fn().mockResolvedValue([
+    {
+      slug: 'index',
+      title: 'Home',
+      content: 'Home page content',
+      frontmatter: { title: 'Home' },
+    },
+  ]),
+}));
+
+vi.mock('../../src/core/navigation.js', () => ({
+  buildNavigation: vi.fn().mockReturnValue([{ title: 'Home', path: '/', children: [] }]),
+}));
+
+vi.mock('../../src/core/isg/index.js', () => ({
+  loadCacheManifest: vi.fn().mockResolvedValue(null),
+  saveCacheManifest: vi.fn().mockResolvedValue(undefined),
+  computeNavigationHash: vi.fn().mockReturnValue('hash123'),
+}));
+
 vi.mock('fs/promises', () => ({
   readFile: vi.fn().mockResolvedValue('<html><body>Test</body></html>'),
   stat: vi.fn().mockResolvedValue({ isDirectory: () => false }),
@@ -193,6 +214,148 @@ describe('Development Server', () => {
 
     // Verify logger messages
     expect(mockLogger.info).toHaveBeenCalledWith('Clearing cache for fresh development build...');
+
+    await devServer.stop();
+  });
+
+  it('should handle build errors during initial startup', async () => {
+    const mockLogger = {
+      info: vi.fn(),
+      error: vi.fn(),
+      success: vi.fn(),
+      warning: vi.fn(),
+      building: vi.fn(),
+      processing: vi.fn(),
+      stats: vi.fn(),
+    };
+
+    // Simulate build failure
+    const buildError = new Error('Build failed: template not found');
+    mockBuild.mockRejectedValueOnce(buildError);
+
+    const options: DevServerOptions = {
+      port: 8082,
+      logger: mockLogger,
+    };
+
+    const devServer = await createDevServer(options);
+
+    // Should not throw, but start with errors
+    await devServer.start();
+
+    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('Initial build failed'));
+    expect(mockLogger.warning).toHaveBeenCalledWith(
+      expect.stringContaining('Dev server will start with build errors'),
+    );
+
+    await devServer.stop();
+  });
+
+  it('should handle config loading errors', async () => {
+    const mockLogger = {
+      info: vi.fn(),
+      error: vi.fn(),
+      success: vi.fn(),
+      warning: vi.fn(),
+      building: vi.fn(),
+      processing: vi.fn(),
+      stats: vi.fn(),
+    };
+
+    mockLoadConfig.mockRejectedValueOnce(new Error('Config file not found'));
+
+    const options: DevServerOptions = {
+      port: 8083,
+      logger: mockLogger,
+      configPath: './custom.config.js',
+    };
+
+    await expect(createDevServer(options)).rejects.toThrow('Config file not found');
+  });
+
+  it('should handle custom config path', async () => {
+    const mockLogger = {
+      info: vi.fn(),
+      error: vi.fn(),
+      success: vi.fn(),
+      warning: vi.fn(),
+      building: vi.fn(),
+      processing: vi.fn(),
+      stats: vi.fn(),
+    };
+
+    const customConfigPath = './custom-stati.config.js';
+
+    const options: DevServerOptions = {
+      port: 8084,
+      logger: mockLogger,
+      configPath: customConfigPath,
+    };
+
+    const devServer = await createDevServer(options);
+
+    expect(mockLogger.info).toHaveBeenCalledWith(
+      expect.stringContaining(`Loading config from: ${customConfigPath}`),
+    );
+
+    await devServer.stop();
+  });
+
+  it('should open browser when open option is true', async () => {
+    const mockLogger = {
+      info: vi.fn(),
+      error: vi.fn(),
+      success: vi.fn(),
+      warning: vi.fn(),
+      building: vi.fn(),
+      processing: vi.fn(),
+      stats: vi.fn(),
+    };
+
+    const options: DevServerOptions = {
+      port: 8085,
+      logger: mockLogger,
+      open: true,
+    };
+
+    const devServer = await createDevServer(options);
+    await devServer.start();
+
+    // The open module should be dynamically imported and called
+    // We can't easily test this without actually opening a browser,
+    // but we verify the server starts without errors
+    expect(devServer.url).toBe('http://localhost:8085');
+
+    await devServer.stop();
+  });
+
+  it('should gracefully handle browser open failures', async () => {
+    const mockLogger = {
+      info: vi.fn(),
+      error: vi.fn(),
+      success: vi.fn(),
+      warning: vi.fn(),
+      building: vi.fn(),
+      processing: vi.fn(),
+      stats: vi.fn(),
+    };
+
+    // Mock import failure for 'open' module
+    vi.doMock('open', () => {
+      throw new Error('Module not found');
+    });
+
+    const options: DevServerOptions = {
+      port: 8086,
+      logger: mockLogger,
+      open: true,
+    };
+
+    const devServer = await createDevServer(options);
+    await devServer.start();
+
+    // Should log message about browser not opening
+    expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('Could not open browser'));
 
     await devServer.stop();
   });

@@ -1,6 +1,7 @@
 ---
 title: 'Installation'
 description: 'How to install Stati and create your first project.'
+order: 2
 ---
 
 # Installation
@@ -115,4 +116,4 @@ Your site should be available at `http://localhost:3000`.
 
 - Learn about the [Project Structure](/getting-started/project-structure/)
 - Follow the [Quick Start Guide](/getting-started/quick-start/)
-- Explore [Core Concepts](/core-concepts/)
+- Explore [Core Concepts](/core-concepts/overview/)

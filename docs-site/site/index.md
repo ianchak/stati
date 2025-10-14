@@ -7,10 +7,10 @@ hero:
   subtitle: 'Fast, minimal, and developer-friendly static site generator.'
   buttons:
     - text: 'Get Started'
-      url: '/getting-started/'
+      url: '/getting-started/introduction/'
       primary: true
     - text: 'View Examples'
-      url: '/examples/'
+      url: '/examples/list/'
       primary: false
 features:
   title: 'Why Choose Stati?'

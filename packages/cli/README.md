@@ -331,10 +331,10 @@ npm run build -- --clean
 ## Learn More
 
 - [Full Documentation](https://docs.stati.build) - Complete guides and tutorials
-- [CLI Reference](https://docs.stati.build/cli/) - Detailed command documentation
-- [Configuration](https://docs.stati.build/configuration/) - All configuration options
-- [Core Concepts](https://docs.stati.build/core-concepts/) - How Stati works
-- [Examples](https://docs.stati.build/examples/) - Real-world projects
+- [CLI Reference](https://docs.stati.build/cli/commands/) - Detailed command documentation
+- [Configuration](https://docs.stati.build/configuration/file/) - All configuration options
+- [Core Concepts](https://docs.stati.build/core-concepts/overview/) - How Stati works
+- [Examples](https://docs.stati.build/examples/list/) - Real-world projects
 
 ---
 

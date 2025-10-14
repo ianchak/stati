@@ -293,7 +293,7 @@ export default defineConfig({
 
 This extended configuration example covers the most common options. For a full list of available settings, see the documentation.
 
-[View full configuration options →](https://docs.stati.build/configuration/)
+[View full configuration options →](https://docs.stati.build/configuration/file/)
 
 ---
 
@@ -341,12 +341,12 @@ Your content here...
 
 ## Documentation
 
-- [**Getting Started**](https://docs.stati.build/getting-started/) — Installation and first steps
-- [**Core Concepts**](https://docs.stati.build/core-concepts/) — How Stati works
-- [**Configuration**](https://docs.stati.build/configuration/) — All configuration options
+- [**Getting Started**](https://docs.stati.build/getting-started/introduction/) — Installation and first steps
+- [**Core Concepts**](https://docs.stati.build/core-concepts/overview/) — How Stati works
+- [**Configuration**](https://docs.stati.build/configuration/file/) — All configuration options
 - [**SEO Guide**](https://docs.stati.build/configuration/seo/) — Optimize for search engines
-- [**ISG & Caching**](https://docs.stati.build/core-concepts/isg/) — Smart rebuilds explained
-- [**API Reference**](https://docs.stati.build/api/) — Complete API documentation
+- [**ISG & Caching**](https://docs.stati.build/configuration/isg/) — Smart rebuilds explained
+- [**API Reference**](https://docs.stati.build/api/reference/) — Complete API documentation
 
 ---
 
@@ -403,7 +403,7 @@ MIT © [Imre Csige](https://github.com/ianchak)
 ## Quick Links
 
 - [Documentation](https://docs.stati.build)
-- [Examples](https://docs.stati.build/examples/)
+- [Examples](https://docs.stati.build/examples/list/)
 - [GitHub Issues](https://github.com/ianchak/stati/issues)
 - [Discussions](https://github.com/ianchak/stati/discussions)
 

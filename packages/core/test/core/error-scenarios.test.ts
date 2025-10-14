@@ -493,8 +493,8 @@ describe('Error Scenario Tests', () => {
 
       // Should process all pages
       expect(mockRenderMarkdown).toHaveBeenCalledTimes(1000);
-      // Write one file per page (cache manifest is mocked and doesn't call writeFile)
-      expect(mockWriteFile).toHaveBeenCalledTimes(1000);
+      // Write one file per page + Tailwind inventory file
+      expect(mockWriteFile).toHaveBeenCalledTimes(1001);
       // ISG cache manifest should still be saved
       expect(mockSaveCacheManifest).toHaveBeenCalledTimes(1);
     });

@@ -327,7 +327,7 @@ export default defineConfig({
 });
 ```
 
-> **For the complete configuration reference** including all options, advanced features, and detailed explanations, see the [Configuration Guide](https://docs.stati.build/configuration/).
+> **For the complete configuration reference** including all options, advanced features, and detailed explanations, see the [Configuration Guide](https://docs.stati.build/configuration/file/).
 
 ---
 
@@ -621,14 +621,14 @@ Automatic navigation hierarchy based on your file structure:
 ```html
 <!-- Show breadcrumbs -->
 <nav>
-  <% stati.page.breadcrumbs.forEach(crumb => { %>
+  <% stati.nav.getBreadcrumbs().forEach(crumb => { %>
     <a href="<%= crumb.url %>"><%= crumb.title %></a>
   <% }) %>
 </nav>
 
 <!-- Show navigation tree -->
 <ul>
-  <% stati.navigation.forEach(item => { %>
+  <% stati.nav.tree.forEach(item => { %>
     <li><a href="<%= item.url %>"><%= item.title %></a></li>
   <% }) %>
 </ul>
@@ -739,9 +739,9 @@ export default defineConfig({
 ## Learn More
 
 - [**Full Documentation**](https://docs.stati.build) — Complete guides and tutorials
-- [**Configuration Guide**](https://docs.stati.build/configuration/) — All options explained
-- [**API Reference**](https://docs.stati.build/api/) — Detailed API docs
-- [**Examples**](https://docs.stati.build/examples/) — Real-world projects
+- [**Configuration Guide**](https://docs.stati.build/configuration/file/) — All options explained
+- [**API Reference**](https://docs.stati.build/api/reference/) — Detailed API docs
+- [**Examples**](https://docs.stati.build/examples/list/) — Real-world projects
 - [**Contributing**](https://github.com/ianchak/stati/blob/main/CONTRIBUTING.md) — Help improve Stati
 
 ---

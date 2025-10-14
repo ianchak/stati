@@ -1,13 +1,18 @@
 ---
-title: 'Quick Start Guide'
-description: 'Build your first Stati site step by step in just a few minutes.'
+title: 'Quick Start'
+description: 'Get up and running with Stati in minutes.'
+order: 4
 ---
 
 # Quick Start Guide
 
 This guide will walk you through creating your first Stati site from scratch. You'll learn the basics of content creation, templating, and building.
 
-## Prerequisites
+## Need Help?
+
+- Check the [API Reference](/api/reference/) for detailed documentation
+- Browse [Examples](/examples/list/) for inspiration
+- Visit the [Contributing](/advanced/contributing/) section to help improve Stati
 
 Before we start, make sure you have:
 
@@ -271,13 +276,13 @@ Now that you have a working Stati site, explore these topics:
 
 ### Examples and Learning Resources
 
-- [Available Examples](/examples/) - Explore currently implemented templates
-- [Configuration Reference](/configuration/) - Detailed configuration options
+- [Available Examples](/examples/list/) - Explore currently implemented templates
+- [Configuration Reference](/configuration/file/) - Detailed configuration options
 
 ## Need Help?
 
-- Check the [API Reference](/api/) for detailed documentation
-- Browse [Examples](/examples/) for inspiration
-- Visit the [Contributing](/contributing/) section to help improve Stati
+- Check the [API Reference](/api/reference/) for detailed documentation
+- Browse [Examples](/examples/list/) for inspiration
+- Visit the [Contributing](/advanced/contributing/) section to help improve Stati
 
 Congratulations! You've successfully created your first Stati site. Happy building! 🎉

@@ -1,6 +1,7 @@
 ---
 title: 'Error Handling'
-description: 'Learn about Stati error handling strategy, error codes, and debugging approaches.'
+description: 'Learn how Stati handles errors during build and development.'
+order: 3
 ---
 
 # Error Handling

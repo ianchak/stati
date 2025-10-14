@@ -1,6 +1,7 @@
 ---
-title: 'Configuration'
+title: 'Configuration File'
 description: 'Learn how to configure Stati with the stati.config.js file and available options.'
+order: 1
 ---
 
 # Configuration
