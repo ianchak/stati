@@ -203,7 +203,7 @@ describe('CSSProcessor', () => {
       expect(packageJson.scripts.dev).toBe(
         'concurrently --prefix none "npm run watch:css" "stati dev"',
       );
-      expect(packageJson.scripts.build).toBe('npm run build:css && stati build');
+      expect(packageJson.scripts.build).toBe('stati build && npm run build:css');
     });
   });
 

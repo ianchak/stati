@@ -138,7 +138,7 @@ ${existingCSS
       ...packageJson.scripts,
       'build:css': 'tailwindcss -i src/styles.css -o public/styles.css --minify',
       'watch:css': 'tailwindcss -i src/styles.css -o public/styles.css --watch',
-      build: 'npm run build:css && stati build',
+      build: 'stati build && npm run build:css',
       dev: 'concurrently --prefix none "npm run watch:css" "stati dev"',
     };
 
