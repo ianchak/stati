@@ -6,6 +6,7 @@
 import type { PageModel } from '../types/content.js';
 import type { StatiConfig } from '../types/config.js';
 import type { RSSFeedConfig, RSSGenerationResult } from '../types/rss.js';
+import type { Logger } from '../types/logging.js';
 import { escapeHtml } from '../seo/utils/index.js';
 import { filterByPatterns } from './utils/index.js';
 
@@ -118,19 +119,24 @@ function sortPages(pages: PageModel[], feedConfig: RSSFeedConfig): PageModel[] {
  * @param page - Page to extract value from
  * @param mapping - Field mapping (property name or function)
  * @param defaultProp - Default property name to use
+ * @param logger - Logger instance for warnings
  * @returns Extracted value or undefined
  */
 function getFieldValue<T>(
   page: PageModel,
   mapping: string | ((page: PageModel) => T) | undefined,
   defaultProp?: string,
+  logger?: Logger,
 ): T | undefined {
   if (typeof mapping === 'function') {
     try {
       return mapping(page);
     } catch (error) {
       // Log error but don't crash - return undefined for invalid mappings
-      console.warn(`Field mapping function failed for page ${page.slug}:`, error);
+      if (logger) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        logger.warning(`Field mapping function failed for page ${page.slug}: ${errorMessage}`);
+      }
       return undefined;
     }
   }
@@ -167,12 +173,14 @@ function buildPageUrl(page: PageModel, config: StatiConfig): string {
  * @param pages - All pages in the site
  * @param config - Stati configuration
  * @param feedConfig - Feed configuration
+ * @param logger - Logger instance for warnings (optional)
  * @returns RSS generation result
  */
 export function generateRSSFeed(
   pages: PageModel[],
   config: StatiConfig,
   feedConfig: RSSFeedConfig,
+  logger?: Logger,
 ): RSSGenerationResult {
   // Filter and sort pages
   let feedPages = filterPages(pages, feedConfig);
@@ -260,7 +268,7 @@ export function generateRSSFeed(
     xmlLines.push(`    <item>`);
 
     // Title
-    const title = getFieldValue<string>(page, itemMapping.title, 'title');
+    const title = getFieldValue<string>(page, itemMapping.title, 'title', logger);
     if (title) {
       xmlLines.push(`      <title>${escapeHtml(title)}</title>`);
     }
@@ -278,7 +286,12 @@ export function generateRSSFeed(
     if (itemMapping.includeContent && page.content) {
       xmlLines.push(`      <description><![CDATA[${page.content}]]></description>`);
     } else {
-      const description = getFieldValue<string>(page, itemMapping.description, 'description');
+      const description = getFieldValue<string>(
+        page,
+        itemMapping.description,
+        'description',
+        logger,
+      );
       if (description) {
         xmlLines.push(`      <description>${escapeHtml(description)}</description>`);
       }
@@ -286,15 +299,15 @@ export function generateRSSFeed(
 
     // Pub date
     const pubDate =
-      getFieldValue<Date | string>(page, itemMapping.pubDate, 'publishedAt') ||
-      getFieldValue<Date | string>(page, itemMapping.pubDate, 'date');
+      getFieldValue<Date | string>(page, itemMapping.pubDate, 'publishedAt', logger) ||
+      getFieldValue<Date | string>(page, itemMapping.pubDate, 'date', logger);
     const formattedPubDate = parseAndFormatDate(pubDate);
     if (formattedPubDate) {
       xmlLines.push(`      <pubDate>${formattedPubDate}</pubDate>`);
     }
 
     // Author
-    const author = getFieldValue<string | undefined>(page, itemMapping.author, 'author');
+    const author = getFieldValue<string | undefined>(page, itemMapping.author, 'author', logger);
     if (author) {
       xmlLines.push(`      <author>${escapeHtml(author)}</author>`);
     }
@@ -304,6 +317,7 @@ export function generateRSSFeed(
       page,
       itemMapping.category,
       'tags',
+      logger,
     );
     if (category) {
       const categories = Array.isArray(category) ? category : [category];
@@ -361,9 +375,14 @@ export function generateRSSFeed(
  * Generates all RSS feeds configured in the site
  * @param pages - All pages in the site
  * @param config - Stati configuration
+ * @param logger - Logger instance for warnings (optional)
  * @returns Array of RSS generation results
  */
-export function generateRSSFeeds(pages: PageModel[], config: StatiConfig): RSSGenerationResult[] {
+export function generateRSSFeeds(
+  pages: PageModel[],
+  config: StatiConfig,
+  logger?: Logger,
+): RSSGenerationResult[] {
   const rssConfig = config.rss;
   if (!rssConfig || !rssConfig.enabled || !rssConfig.feeds) {
     return [];
@@ -372,7 +391,7 @@ export function generateRSSFeeds(pages: PageModel[], config: StatiConfig): RSSGe
   const results: RSSGenerationResult[] = [];
 
   for (const feedConfig of rssConfig.feeds) {
-    const result = generateRSSFeed(pages, config, feedConfig);
+    const result = generateRSSFeed(pages, config, feedConfig, logger);
     results.push(result);
   }
 

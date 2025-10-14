@@ -677,7 +677,7 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
         } else if (pages.length === 0) {
           logger.warning('No pages found to include in RSS feeds');
         } else {
-          const rssResults = generateRSSFeeds(pages, config);
+          const rssResults = generateRSSFeeds(pages, config, logger);
 
           if (rssResults && rssResults.length > 0) {
             for (const result of rssResults) {

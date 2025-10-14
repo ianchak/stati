@@ -2,11 +2,12 @@
  * RSS feed generation tests
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { generateRSSFeed, generateRSSFeeds } from '../../src/rss/generator.js';
 import type { PageModel } from '../../src/types/content.js';
 import type { StatiConfig } from '../../src/types/config.js';
 import type { RSSFeedConfig } from '../../src/types/rss.js';
+import type { Logger } from '../../src/types/logging.js';
 
 describe('RSS Feed Generation', () => {
   let baseConfig: StatiConfig;
@@ -305,6 +306,51 @@ describe('RSS Feed Generation', () => {
       const firstItemEnd = itemSection.indexOf('</item>');
       const firstItem = itemSection.substring(0, firstItemEnd);
       expect(firstItem).not.toContain('<pubDate>');
+    });
+
+    it('should use logger when field mapping function throws error', () => {
+      const mockLogger: Logger = {
+        info: vi.fn(),
+        success: vi.fn(),
+        warning: vi.fn(),
+        error: vi.fn(),
+        building: vi.fn(),
+        processing: vi.fn(),
+        stats: vi.fn(),
+      };
+
+      baseFeedConfig.itemMapping = {
+        title: () => {
+          throw new Error('Field mapping error');
+        },
+      };
+
+      const result = generateRSSFeed(samplePages, baseConfig, baseFeedConfig, mockLogger);
+
+      // Should complete without throwing
+      expect(result.itemCount).toBe(3);
+
+      // Should have called logger.warning for each failed mapping
+      expect(mockLogger.warning).toHaveBeenCalled();
+      expect(mockLogger.warning).toHaveBeenCalledWith(
+        expect.stringContaining('Field mapping function failed'),
+      );
+      expect(mockLogger.warning).toHaveBeenCalledWith(
+        expect.stringContaining('Field mapping error'),
+      );
+    });
+
+    it('should not throw when logger is not provided and mapping fails', () => {
+      baseFeedConfig.itemMapping = {
+        description: () => {
+          throw new Error('Mapping error');
+        },
+      };
+
+      // Should not throw even without logger
+      expect(() => {
+        generateRSSFeed(samplePages, baseConfig, baseFeedConfig);
+      }).not.toThrow();
     });
 
     it('should generate valid XML structure', () => {
