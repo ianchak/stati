@@ -1,5 +1,25 @@
 # create-stati
 
+## 1.6.1
+
+### Patch Changes
+
+- update build scripts to include CSS copy step
+
+  Commit: 5f90bbc
+
+- update @stati/cli and @stati/core versions
+
+  Commit: 7077cfe
+
+- update @stati/cli and @stati/core versions
+
+  Commit: 6eb730a
+
+- update build script order for consistency
+
+  Commit: c8ced26
+
 ## 1.6.0
 
 ### Minor Changes

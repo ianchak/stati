@@ -1,5 +1,21 @@
 # @stati/cli
 
+## 1.6.1
+
+### Patch Changes
+
+- update @stati/cli and @stati/core versions
+
+  Commit: 7077cfe
+
+- update @stati/cli and @stati/core versions
+
+  Commit: 6eb730a
+
+- Updated dependencies
+- Updated dependencies
+  - @stati/core@1.10.1
+
 ## 1.6.0
 
 ### Minor Changes

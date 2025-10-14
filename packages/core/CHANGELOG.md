@@ -1,5 +1,17 @@
 # @stati/core
 
+## 1.10.1
+
+### Patch Changes
+
+- update @stati/cli and @stati/core versions
+
+  Commit: 7077cfe
+
+- update @stati/cli and @stati/core versions
+
+  Commit: 6eb730a
+
 ## 1.10.0
 
 ### Minor Changes
