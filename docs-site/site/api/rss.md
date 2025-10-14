@@ -486,6 +486,6 @@ export default defineConfig({
 
 ## See Also
 
-- [RSS Configuration Guide](../configuration/rss.md)
-- [SEO Configuration](./seo.md)
-- [Build Configuration](../configuration/file.md)
+- [RSS Configuration Guide](/configuration/rss)
+- [SEO Configuration](/api/seo)
+- [Build Configuration](/configuration/file)

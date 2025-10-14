@@ -556,6 +556,6 @@ If your feed has XML errors:
 
 ## Next Steps
 
-- Learn about [SEO configuration](./seo.md)
-- Configure [Sitemap generation](../configuration/seo.md)
-- Explore [Build hooks](../api/hooks.md)
+- Learn about [SEO configuration](/configuration/seo)
+- Configure [Sitemap generation](/configuration/seo)
+- Explore [Build hooks](/api/hooks)
