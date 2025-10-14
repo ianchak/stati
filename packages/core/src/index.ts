@@ -55,6 +55,9 @@ export type {
   ChangeFrequency,
 } from './types/index.js';
 
+// RSS types
+export type { RSSConfig, RSSFeedConfig, RSSGenerationResult } from './types/index.js';
+
 // Re-export core functionality from barrel
 export type {
   BuildOptions,
@@ -87,6 +90,15 @@ export {
   autoInjectSEO,
   shouldAutoInject,
 } from './seo/index.js';
+
+// Re-export RSS functionality
+export type { RSSValidationResult } from './rss/index.js';
+export {
+  generateRSSFeed,
+  generateRSSFeeds,
+  validateRSSConfig,
+  validateRSSFeedConfig,
+} from './rss/index.js';
 
 // Re-export config and env utilities
 export { loadConfig } from './config/loader.js';

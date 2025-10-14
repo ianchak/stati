@@ -337,22 +337,33 @@ describe('Sitemap Generation', () => {
     });
 
     it('should handle single asterisk glob patterns', () => {
-      // Note: In Stati's implementation, * matches any characters including slashes
-      // Use specific patterns or ** for subdirectories
+      // Single * matches within a path segment (not across slashes)
+      // Use ** for matching across subdirectories
       const matchingPage1 = { ...samplePage, url: '/blog/my-post' };
-      const matchingPage2 = { ...samplePage, url: '/blog/2024/my-post' };
-      const nonMatchingPage = { ...samplePage, url: '/articles/post' };
+      const matchingPage2 = { ...samplePage, url: '/blog/another' };
+      const nonMatchingPage1 = { ...samplePage, url: '/blog/2024/my-post' }; // Has subdirectory
+      const nonMatchingPage2 = { ...samplePage, url: '/articles/post' };
 
       baseSitemapConfig.priorityRules = [{ pattern: '/blog/*', priority: 0.8 }];
       baseSitemapConfig.defaultPriority = 0.5;
 
       const matchingEntry1 = generateSitemapEntry(matchingPage1, baseConfig, baseSitemapConfig);
       const matchingEntry2 = generateSitemapEntry(matchingPage2, baseConfig, baseSitemapConfig);
-      const nonMatchingEntry = generateSitemapEntry(nonMatchingPage, baseConfig, baseSitemapConfig);
+      const nonMatchingEntry1 = generateSitemapEntry(
+        nonMatchingPage1,
+        baseConfig,
+        baseSitemapConfig,
+      );
+      const nonMatchingEntry2 = generateSitemapEntry(
+        nonMatchingPage2,
+        baseConfig,
+        baseSitemapConfig,
+      );
 
       expect(matchingEntry1?.priority).toBe(0.8); // Matches /blog/*
-      expect(matchingEntry2?.priority).toBe(0.8); // Also matches (glob * includes /)
-      expect(nonMatchingEntry?.priority).toBe(0.5); // Doesn't match, different path
+      expect(matchingEntry2?.priority).toBe(0.8); // Matches /blog/*
+      expect(nonMatchingEntry1?.priority).toBe(0.5); // Doesn't match (has subdirectory)
+      expect(nonMatchingEntry2?.priority).toBe(0.5); // Doesn't match, different path
     });
 
     it('should handle question mark glob patterns', () => {

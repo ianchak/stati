@@ -227,6 +227,8 @@ seo:
 
 Stati can automatically generate XML sitemaps for your site.
 
+> **Production Only**: Sitemaps are only generated during production builds (`stati build`). They are skipped in development mode to improve build performance.
+
 ### Enable Sitemap Generation
 
 ```typescript
@@ -333,6 +335,8 @@ sitemap:
 ## Robots.txt Configuration
 
 Generate a `robots.txt` file to control search engine crawling.
+
+> **Production Only**: The robots.txt file is only generated during production builds (`stati build`). It is skipped in development mode to improve build performance.
 
 ### Enable Robots.txt
 

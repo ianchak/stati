@@ -12,6 +12,7 @@ import type {
 import type { PageModel } from '../types/content.js';
 import type { StatiConfig } from '../types/config.js';
 import { escapeHtml, resolveAbsoluteUrl } from './utils/index.js';
+import { urlMatchesAnyPattern } from '../rss/utils/index.js';
 
 /**
  * Maximum entries per sitemap file (per sitemap.org spec)
@@ -54,40 +55,6 @@ function validateChangeFreq(changefreq?: string): ChangeFrequency | undefined {
     return changefreq as ChangeFrequency;
   }
   return undefined;
-}
-
-/**
- * Escapes regex special characters in a string, except glob wildcards
- * @param str - String to escape
- * @returns String with regex special characters escaped
- */
-function escapeRegexExceptGlob(str: string): string {
-  // Escape all regex special characters except * and ?
-  return str.replace(/[.+^${}()|[\]\\]/g, '\\$&');
-}
-
-/**
- * Checks if a page URL matches a list of patterns.
- * @param url - The URL to check.
- * @param patterns - An array of glob-style patterns.
- * @returns `true` if the URL matches any pattern, `false` otherwise.
- */
-function urlMatchesAnyPattern(url: string, patterns: string[]): boolean {
-  for (const pattern of patterns) {
-    // Simple glob patterns
-    if (pattern.includes('*') || pattern.includes('?')) {
-      // Escape regex special characters first, then convert glob wildcards
-      const escapedPattern = escapeRegexExceptGlob(pattern);
-      const regexPattern = escapedPattern.replace(/\*/g, '.*').replace(/\?/g, '.');
-      const regex = new RegExp('^' + regexPattern + '$');
-      if (regex.test(url)) {
-        return true;
-      }
-    } else if (url === pattern || url.startsWith(pattern)) {
-      return true;
-    }
-  }
-  return false;
 }
 
 /**
@@ -135,24 +102,8 @@ function determinePriority(
   // Check each rule in order (first match wins)
   for (const rule of rules) {
     const pattern = rule.pattern;
-    if (pattern.includes('*') || pattern.includes('?')) {
-      // Escape regex special characters first, then convert glob wildcards
-      const escapedPattern = escapeRegexExceptGlob(pattern);
-      const regexPattern = escapedPattern.replace(/\*/g, '.*').replace(/\?/g, '.');
-      const regex = new RegExp('^' + regexPattern + '$');
-      if (regex.test(page.url)) {
-        return validatePriority(rule.priority);
-      }
-    } else {
-      // For non-glob patterns, check exact match or path prefix
-      if (page.url === pattern) {
-        return validatePriority(rule.priority);
-      }
-      // For path prefix matching, ensure we match at path boundaries
-      // e.g., "/api" matches "/api/foo" but "/" only matches "/" exactly
-      if (pattern !== '/' && page.url.startsWith(pattern + '/')) {
-        return validatePriority(rule.priority);
-      }
+    if (urlMatchesAnyPattern(page.url, [pattern])) {
+      return validatePriority(rule.priority);
     }
   }
 
