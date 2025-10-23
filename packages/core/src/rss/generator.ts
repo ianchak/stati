@@ -115,6 +115,15 @@ function sortPages(pages: PageModel[], feedConfig: RSSFeedConfig): PageModel[] {
 }
 
 /**
+ * Type guard to ensure we have a valid record-like object
+ * @param value - Value to check
+ * @returns True if value is a non-null object
+ */
+function isValidRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && value !== undefined && typeof value === 'object';
+}
+
+/**
  * Gets a value from page using field mapping with improved type safety
  * @param page - Page to extract value from
  * @param mapping - Field mapping (property name or function)
@@ -144,13 +153,13 @@ function getFieldValue<T>(
   const prop = mapping || defaultProp;
   if (!prop) return undefined;
 
-  // Type-safe access to frontMatter properties
-  const frontMatter = page.frontMatter as Record<string, unknown>;
-  if (frontMatter === null || frontMatter === undefined || typeof frontMatter !== 'object') {
+  // Type-safe access to frontMatter properties using type guard
+  // FrontMatter interface allows index signature for custom properties
+  if (!isValidRecord(page.frontMatter)) {
     return undefined;
   }
 
-  const value = frontMatter[prop];
+  const value = page.frontMatter[prop];
 
   // Return value with proper type checking
   return value !== undefined && value !== null ? (value as T) : undefined;
