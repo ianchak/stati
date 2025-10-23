@@ -39,6 +39,8 @@ import {
   autoInjectSEO,
   type AutoInjectOptions,
 } from '../seo/index.js';
+import { generateRSSFeeds, validateRSSConfig } from '../rss/index.js';
+import { getEnv } from '../env.js';
 import type {
   BuildContext,
   BuildStats,
@@ -613,8 +615,11 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
   let assetsCount = 0;
   assetsCount = await copyStaticAssets(config, outDir, logger);
 
-  // Generate sitemap if enabled
-  if (config.sitemap?.enabled) {
+  // Get current environment
+  const currentEnv = getEnv();
+
+  // Generate sitemap if enabled (only in production mode)
+  if (config.sitemap?.enabled && currentEnv === 'production') {
     console.log(); // Add spacing before sitemap generation
     logger.info('Generating sitemap...');
 
@@ -634,8 +639,8 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
     }
   }
 
-  // Generate robots.txt if enabled
-  if (config.robots?.enabled) {
+  // Generate robots.txt if enabled (only in production mode)
+  if (config.robots?.enabled && currentEnv === 'production') {
     console.log(); // Add spacing before robots.txt generation
     logger.info('Generating robots.txt...');
 
@@ -643,6 +648,56 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
     await writeFile(join(outDir, 'robots.txt'), robotsContent);
 
     logger.success('Generated robots.txt');
+  }
+
+  // Generate RSS feeds if enabled (only in production mode)
+  if (config.rss?.enabled && currentEnv === 'production') {
+    console.log(); // Add spacing before RSS generation
+    logger.info('Generating RSS feeds...');
+
+    try {
+      // Validate RSS configuration before generating
+      const validationResult = validateRSSConfig(config.rss);
+
+      if (!validationResult.valid) {
+        logger.error('RSS configuration validation failed:');
+        validationResult.errors.forEach((error) => logger.error(`  - ${error}`));
+        if (validationResult.warnings.length > 0) {
+          validationResult.warnings.forEach((warning) => logger.warning(`  - ${warning}`));
+        }
+      } else {
+        // Log warnings if any
+        if (validationResult.warnings.length > 0) {
+          validationResult.warnings.forEach((warning) => logger.warning(warning));
+        }
+
+        // Validate pages array before generating feeds
+        if (pages.length === 0) {
+          logger.warning('No pages found to include in RSS feeds');
+        } else {
+          const rssResults = generateRSSFeeds(pages, config, logger);
+
+          if (rssResults && rssResults.length > 0) {
+            for (const result of rssResults) {
+              await writeFile(join(outDir, result.filename), result.xml);
+              logger.success(
+                `Generated ${result.filename} with ${result.itemCount} items (${(result.sizeInBytes / 1024).toFixed(2)} KB)`,
+              );
+            }
+            logger.success(
+              `Generated ${rssResults.length} RSS feed${rssResults.length > 1 ? 's' : ''}`,
+            );
+          } else {
+            logger.info('No RSS feeds generated (no matching pages found)');
+          }
+        }
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error occurred during RSS generation';
+      logger.error(`Failed to generate RSS feeds: ${errorMessage}`);
+      // Don't throw - allow build to continue even if RSS generation fails
+    }
   }
 
   // Run afterAll hook

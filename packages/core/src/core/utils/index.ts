@@ -76,3 +76,6 @@ export type { ErrorDetails } from './error-overlay.js';
 
 // Version utilities
 export { getStatiVersion } from './version.js';
+
+// Glob pattern utilities
+export { globToRegex, matchesGlob } from './glob-patterns.js';

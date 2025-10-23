@@ -77,6 +77,8 @@ export interface StatiConfig {
   sitemap?: SitemapConfig;
   /** Robots.txt generation configuration */
   robots?: RobotsTxtConfig;
+  /** RSS feed generation configuration */
+  rss?: import('./rss.js').RSSConfig;
   /** Development server configuration */
   dev?: {
     /** Port for development server (default: 3000) */

@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { build } from '../../src/core/build.js';
 import type { BuildOptions } from '../../src/core/build.js';
 import type { StatiConfig } from '../../src/types/index.js';
+import type { RSSFeedConfig } from '../../src/types/rss.js';
+import { setEnv } from '../../src/env.js';
 
 // Create hoisted mocks that are available during module hoisting
 const {
@@ -201,6 +203,8 @@ describe('build.ts', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    // Reset environment to development after each test to prevent side effects
+    setEnv('development');
   });
 
   describe('build', () => {
@@ -536,6 +540,9 @@ describe('build.ts', () => {
     });
 
     it('should generate sitemap when enabled', async () => {
+      // Set environment to production for sitemap generation
+      setEnv('production');
+
       const configWithSitemap: StatiConfig = {
         ...mockConfig,
         sitemap: {
@@ -577,6 +584,9 @@ describe('build.ts', () => {
     });
 
     it('should generate robots.txt when enabled', async () => {
+      // Set environment to production for robots.txt generation
+      setEnv('production');
+
       const configWithRobots: StatiConfig = {
         ...mockConfig,
         robots: {
@@ -617,6 +627,9 @@ describe('build.ts', () => {
     });
 
     it('should handle sitemap and robots.txt write errors gracefully', async () => {
+      // Set environment to production for sitemap/robots.txt generation
+      setEnv('production');
+
       const configWithBoth: StatiConfig = {
         ...mockConfig,
         sitemap: { enabled: true },
@@ -635,6 +648,222 @@ describe('build.ts', () => {
 
       // Should throw error when sitemap write fails
       await expect(build()).rejects.toThrow('Failed to write sitemap');
+    });
+  });
+
+  describe('RSS Feed Generation', () => {
+    beforeEach(() => {
+      // Set environment to production for RSS generation
+      setEnv('production');
+    });
+
+    it('should generate RSS feeds when enabled', async () => {
+      const configWithRSS: StatiConfig = {
+        ...mockConfig,
+        rss: {
+          enabled: true,
+          feeds: [
+            {
+              filename: 'feed.xml',
+              title: 'Test Feed',
+              description: 'A test RSS feed',
+              contentPatterns: ['site/**'],
+            },
+          ],
+        },
+      };
+
+      mockLoadConfig.mockResolvedValue(configWithRSS);
+
+      await build();
+
+      // Should write feed.xml
+      const rssCall = mockWriteFile.mock.calls.find((call) => call[0].includes('feed.xml'));
+      expect(rssCall).toBeDefined();
+      expect(rssCall?.[0]).toMatch(/[/\\]test[/\\]project[/\\]dist[/\\]feed\.xml$/);
+      expect(rssCall?.[1]).toContain('<?xml version="1.0" encoding="UTF-8"?>');
+      expect(rssCall?.[1]).toContain('<rss version="2.0">');
+      expect(rssCall?.[1]).toContain('<title>Test Feed</title>');
+    });
+
+    it('should not generate RSS feeds when disabled', async () => {
+      const configWithoutRSS: StatiConfig = {
+        ...mockConfig,
+        rss: {
+          enabled: false,
+          feeds: [],
+        },
+      };
+
+      mockLoadConfig.mockResolvedValue(configWithoutRSS);
+
+      await build();
+
+      // Should not write any RSS files
+      const rssCall = mockWriteFile.mock.calls.find((call) => call[0].includes('.xml'));
+      expect(rssCall).toBeUndefined();
+    });
+
+    it('should handle RSS validation errors and not generate feeds', async () => {
+      const configWithInvalidRSS: StatiConfig = {
+        ...mockConfig,
+        rss: {
+          enabled: true,
+          feeds: [
+            {
+              filename: 'feed.xml',
+              title: '', // Invalid: empty title
+              description: '', // Invalid: empty description
+            } as RSSFeedConfig,
+          ],
+        },
+      };
+
+      mockLoadConfig.mockResolvedValue(configWithInvalidRSS);
+
+      const result = await build();
+
+      // Should complete build despite invalid RSS config
+      expect(result).toBeDefined();
+
+      // Should not write RSS file due to validation errors
+      const rssCall = mockWriteFile.mock.calls.find((call) => call[0].includes('feed.xml'));
+      expect(rssCall).toBeUndefined();
+    });
+
+    it('should handle RSS validation warnings and still generate feeds', async () => {
+      const configWithWarnings: StatiConfig = {
+        ...mockConfig,
+        rss: {
+          enabled: true,
+          feeds: [
+            {
+              filename: 'feed', // Warning: no .xml extension
+              title: 'Test Feed',
+              description: 'A test feed',
+              ttl: 0, // Warning: ttl is 0
+            },
+          ],
+        },
+      };
+
+      mockLoadConfig.mockResolvedValue(configWithWarnings);
+
+      await build();
+
+      // Should still write RSS file despite warnings
+      const rssCall = mockWriteFile.mock.calls.find((call) => call[0].includes('feed'));
+      expect(rssCall).toBeDefined();
+    });
+
+    it('should handle empty pages array for RSS generation', async () => {
+      const configWithRSS: StatiConfig = {
+        ...mockConfig,
+        rss: {
+          enabled: true,
+          feeds: [
+            {
+              filename: 'feed.xml',
+              title: 'Test Feed',
+              description: 'A test feed',
+            },
+          ],
+        },
+      };
+
+      mockLoadConfig.mockResolvedValue(configWithRSS);
+      mockLoadContent.mockResolvedValue([]); // No pages
+
+      await build();
+
+      // Should complete - RSS feed might be written with 0 items
+      expect(mockWriteFile).toHaveBeenCalled();
+    });
+
+    it('should handle RSS generation errors gracefully', async () => {
+      const configWithRSS: StatiConfig = {
+        ...mockConfig,
+        rss: {
+          enabled: true,
+          feeds: [
+            {
+              filename: 'feed.xml',
+              title: 'Test Feed',
+              description: 'A test feed',
+              filter: () => {
+                throw new Error('Filter function failed');
+              },
+            },
+          ],
+        },
+      };
+
+      mockLoadConfig.mockResolvedValue(configWithRSS);
+
+      // Build should complete despite RSS error
+      const result = await build();
+      expect(result).toBeDefined();
+    });
+
+    it('should generate multiple RSS feeds', async () => {
+      const configWithMultipleFeeds: StatiConfig = {
+        ...mockConfig,
+        rss: {
+          enabled: true,
+          feeds: [
+            {
+              filename: 'blog.xml',
+              title: 'Blog Feed',
+              description: 'Blog posts feed',
+              contentPatterns: ['site/blog/**'],
+            },
+            {
+              filename: 'news.xml',
+              title: 'News Feed',
+              description: 'News feed',
+              contentPatterns: ['site/news/**'],
+            },
+          ],
+        },
+      };
+
+      mockLoadConfig.mockResolvedValue(configWithMultipleFeeds);
+
+      await build();
+
+      // Should write both RSS files
+      const blogCall = mockWriteFile.mock.calls.find((call) => call[0].includes('blog.xml'));
+      const newsCall = mockWriteFile.mock.calls.find((call) => call[0].includes('news.xml'));
+
+      expect(blogCall).toBeDefined();
+      expect(newsCall).toBeDefined();
+    });
+
+    it('should not generate RSS feeds in development mode', async () => {
+      // Set environment to development
+      setEnv('development');
+
+      const configWithRSS: StatiConfig = {
+        ...mockConfig,
+        rss: {
+          enabled: true,
+          feeds: [
+            {
+              filename: 'feed.xml',
+              title: 'Test Feed',
+              description: 'A test feed',
+            },
+          ],
+        },
+      };
+
+      mockLoadConfig.mockResolvedValue(configWithRSS);
+
+      await build();
+
+      // Should not write RSS file in development mode
+      const rssCall = mockWriteFile.mock.calls.find((call) => call[0].includes('feed.xml'));
+      expect(rssCall).toBeUndefined();
     });
   });
 });
