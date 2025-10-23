@@ -238,11 +238,12 @@ export function generateRSSFeed(
     xmlLines.push(`    <webMaster>${escapeHtml(feedConfig.webMaster)}</webMaster>`);
   }
 
-  // Publication date (current date)
-  xmlLines.push(`    <pubDate>${formatRSSDate(new Date())}</pubDate>`);
+  // Publication date and last build date (use same timestamp for consistency)
+  const buildDate = new Date();
+  xmlLines.push(`    <pubDate>${formatRSSDate(buildDate)}</pubDate>`);
 
   // Last build date
-  xmlLines.push(`    <lastBuildDate>${formatRSSDate(new Date())}</lastBuildDate>`);
+  xmlLines.push(`    <lastBuildDate>${formatRSSDate(buildDate)}</lastBuildDate>`);
 
   if (feedConfig.category) {
     xmlLines.push(`    <category>${escapeHtml(feedConfig.category)}</category>`);
