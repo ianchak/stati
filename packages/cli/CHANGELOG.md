@@ -1,5 +1,30 @@
 # @stati/cli
 
+## 1.6.4
+
+### Patch Changes
+
+- 33c2d31: update links in RSS documentation for consistency
+- 2eaf13b: add build step to pre-commit hook
+- Updated dependencies [33c2d31]
+- Updated dependencies [2eaf13b]
+- Updated dependencies [33c2d31]
+- Updated dependencies [2eaf13b]
+- Updated dependencies [2eaf13b]
+- Updated dependencies [2eaf13b]
+- Updated dependencies [2eaf13b]
+- Updated dependencies [33c2d31]
+- Updated dependencies [33c2d31]
+- Updated dependencies [2eaf13b]
+- Updated dependencies [2eaf13b]
+- Updated dependencies [2eaf13b]
+- Updated dependencies [33c2d31]
+- Updated dependencies [33c2d31]
+- Updated dependencies [2eaf13b]
+- Updated dependencies [2eaf13b]
+- Updated dependencies [2eaf13b]
+  - @stati/core@1.11.0
+
 ## 1.6.3
 
 ### Patch Changes

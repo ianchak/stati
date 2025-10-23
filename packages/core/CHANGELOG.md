@@ -1,5 +1,30 @@
 # @stati/core
 
+## 1.11.0
+
+### Minor Changes
+
+- 33c2d31: enhance RSS feed generation with logging support for errors
+- 2eaf13b: add validation and generation for RSS feeds
+- 2eaf13b: add comprehensive tests for RSS feed generation and validation
+- 33c2d31: add validation and generation for RSS feeds
+- 2eaf13b: add type guard for valid record-like objects
+- 33c2d31: add comprehensive tests for RSS feed generation and validation
+- 2eaf13b: enhance RSS feed generation with logging support for errors
+
+### Patch Changes
+
+- 2eaf13b: improve globToRegex handling of \*\* patterns
+- 33c2d31: correct glob pattern matching logic for URL patterns
+- 2eaf13b: correct glob pattern matching logic for URL patterns
+- 2eaf13b: improve type safety for frontMatter access in getFieldValue
+- 33c2d31: update links in RSS documentation for consistency
+- 2eaf13b: add comprehensive tests for glob pattern utilities
+- 2eaf13b: add build step to pre-commit hook
+- 33c2d31: improve type safety for frontMatter access in getFieldValue
+- 2eaf13b: consolidate glob pattern matching utilities
+- 2eaf13b: validate pages array before generating RSS feeds
+
 ## 1.10.3
 
 ### Patch Changes

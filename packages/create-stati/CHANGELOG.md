@@ -1,5 +1,12 @@
 # create-stati
 
+## 1.6.4
+
+### Patch Changes
+
+- 33c2d31: update links in RSS documentation for consistency
+- 2eaf13b: add build step to pre-commit hook
+
 ## 1.6.3
 
 ### Patch Changes
