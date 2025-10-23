@@ -672,9 +672,7 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
         }
 
         // Validate pages array before generating feeds
-        if (!Array.isArray(pages)) {
-          logger.error('Cannot generate RSS feeds: pages is not an array');
-        } else if (pages.length === 0) {
+        if (pages.length === 0) {
           logger.warning('No pages found to include in RSS feeds');
         } else {
           const rssResults = generateRSSFeeds(pages, config, logger);
