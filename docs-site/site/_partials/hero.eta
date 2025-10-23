@@ -52,8 +52,14 @@
 
     <!-- Particles.js configuration -->
     <script>
-        // Initialize particles only if the library is loaded
-        if (typeof particlesJS !== 'undefined') {
+        // Initialize particles when the library is loaded (works with defer)
+        function initParticles() {
+            if (typeof particlesJS === 'undefined') {
+                // If deferred script hasn't loaded yet, wait for it
+                setTimeout(initParticles, 50);
+                return;
+            }
+
             particlesJS('particles-js', {
                 "particles": {
                     "number": {
@@ -180,5 +186,8 @@
             // Initial color setup
             setTimeout(updateParticleColors, 100);
         }
+
+        // Start initialization
+        initParticles();
     </script>
 </section>
