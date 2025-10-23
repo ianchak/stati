@@ -172,7 +172,7 @@ jobs:
         run: |
           set -e
           git push --follow-tags || {
-            echo "❌ Failed to push commits and tags to main branch"
+            echo "Failed to push commits and tags to main branch"
             echo ""
             echo "This is likely due to branch protection rules."
             echo ""
@@ -184,7 +184,67 @@ jobs:
             echo "Without these steps, the workflow cannot push version updates to protected branches."
             exit 1
           }
-          echo "✅ Successfully published packages and pushed version commits with tags"
+          echo "Successfully published packages and pushed version commits with tags"
+
+      - name: Create GitHub Releases
+        if: steps.check-changesets.outputs.has-changesets == 'true' || steps.auto-generate.outputs.generated == 'true'
+        run: |
+          set -e
+          echo "Creating GitHub releases for new tags..."
+
+          # Get all tags created by changeset publish
+          TAGS=$(git tag --points-at HEAD)
+
+          if [ -z "$TAGS" ]; then
+            echo "No tags found at HEAD, skipping release creation"
+            exit 0
+          fi
+
+          echo "Found tags: $TAGS"
+
+          # Create a release for each tag
+          for TAG in $TAGS; do
+            PACKAGE_NAME=$(echo "$TAG" | sed 's/@stati\///' | sed 's/@.*//')
+            VERSION=$(echo "$TAG" | sed 's/.*@//')
+
+            echo "Creating release for $TAG ($PACKAGE_NAME v$VERSION)"
+
+            # Extract changelog for this version from the package's CHANGELOG.md
+            CHANGELOG_FILE=""
+            case "$PACKAGE_NAME" in
+              "cli")
+                CHANGELOG_FILE="packages/cli/CHANGELOG.md"
+                ;;
+              "core")
+                CHANGELOG_FILE="packages/core/CHANGELOG.md"
+                ;;
+              "create-stati")
+                CHANGELOG_FILE="packages/create-stati/CHANGELOG.md"
+                ;;
+            esac
+
+            # Extract release notes from CHANGELOG.md if it exists
+            RELEASE_NOTES=""
+            if [ -f "$CHANGELOG_FILE" ]; then
+              # Extract the section for this version
+              RELEASE_NOTES=$(awk "/^## $VERSION/,/^## [0-9]/" "$CHANGELOG_FILE" | sed '1d;$d' | sed '/^$/d')
+            fi
+
+            if [ -z "$RELEASE_NOTES" ]; then
+              RELEASE_NOTES="Release of $PACKAGE_NAME v$VERSION"
+            fi
+
+            # Create the GitHub release
+            gh release create "$TAG" \
+              --title "$PACKAGE_NAME v$VERSION" \
+              --notes "$RELEASE_NOTES" \
+              --verify-tag \
+              || echo "Warning: Failed to create release for $TAG (may already exist)"
+          done
+
+          echo "GitHub releases created"
+        env:
+          GH_TOKEN: ${{ github.token }}
 
       - name: No changesets found
         if: steps.check-changesets.outputs.has-changesets == 'false' && steps.auto-generate.outputs.generated == 'false'
