@@ -21,11 +21,17 @@
   "files": [
     "dist"
   ],
+  "author": "Imre Csige <me@imrecsige.dev> (https://imrecsige.dev)",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ianchak/stati.git",
     "directory": "packages/core"
   },
+  "bugs": {
+    "url": "https://github.com/ianchak/stati/issues"
+  },
+  "homepage": "https://stati.build",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsc -p tsconfig.json --watch",
