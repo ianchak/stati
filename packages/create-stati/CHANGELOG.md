@@ -1,5 +1,11 @@
 # create-stati
 
+## 1.6.8
+
+### Patch Changes
+
+- update @stati/cli and @stati/core versions
+
 ## 1.6.7
 
 ### Patch Changes

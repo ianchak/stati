@@ -1,5 +1,13 @@
 # @stati/cli
 
+## 1.6.8
+
+### Patch Changes
+
+- update @stati/cli and @stati/core versions
+- Updated dependencies
+  - @stati/core@1.11.4
+
 ## 1.6.7
 
 ### Patch Changes
