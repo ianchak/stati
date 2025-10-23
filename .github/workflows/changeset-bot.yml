@@ -157,19 +157,3 @@ jobs:
               repo: context.repo.repo,
               body: message
             });
-
-      - name: Comment on PR - Already exists
-        if: steps.check-existing.outputs.exists == 'true'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const message = '**Changeset found!**\n\n' +
-              'This PR already has a changeset. No action needed from the bot.\n\n' +
-              'You can review/edit the changeset file(s) in `.changeset/` before merging.';
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: message
-            });
