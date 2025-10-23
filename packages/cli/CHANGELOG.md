@@ -1,5 +1,13 @@
 # @stati/cli
 
+## 1.6.6
+
+### Patch Changes
+
+- correct coverage range and configuration settings
+- Updated dependencies
+  - @stati/core@1.11.2
+
 ## 1.6.5
 
 ### Patch Changes

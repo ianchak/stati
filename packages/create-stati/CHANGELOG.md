@@ -1,5 +1,11 @@
 # create-stati
 
+## 1.6.6
+
+### Patch Changes
+
+- correct coverage range and configuration settings
+
 ## 1.6.5
 
 ### Patch Changes
