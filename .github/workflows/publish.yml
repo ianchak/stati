@@ -30,10 +30,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          # Use a PAT or default token with write permissions
+          # Use PAT to bypass branch protection rules
+          # Falls back to GITHUB_TOKEN if PAT not configured (will fail on protected branches)
           # Need fetch-depth: 0 for full history to properly handle tags
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PUBLISH_PAT || secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -171,10 +172,19 @@ jobs:
         run: |
           set -e
           git push --follow-tags || {
-            echo "Failed to push commits and tags"
+            echo "❌ Failed to push commits and tags to main branch"
+            echo ""
+            echo "This is likely due to branch protection rules."
+            echo ""
+            echo "Required setup (see workflow comments for details):"
+            echo "  1. Create a Fine-Grained PAT with Contents (Read/Write) permission"
+            echo "  2. Add it as repository secret: PUBLISH_PAT"
+            echo "  3. Add yourself to the branch protection bypass list"
+            echo ""
+            echo "Without these steps, the workflow cannot push version updates to protected branches."
             exit 1
           }
-          echo "Published packages and pushed version commits with tags"
+          echo "✅ Successfully published packages and pushed version commits with tags"
 
       - name: No changesets found
         if: steps.check-changesets.outputs.has-changesets == 'false' && steps.auto-generate.outputs.generated == 'false'
