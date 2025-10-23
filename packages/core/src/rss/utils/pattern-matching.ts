@@ -4,61 +4,7 @@
  * @module utils/pattern-matching
  */
 
-/**
- * Converts a glob pattern to a regular expression
- * Handles ** (match zero or more directory segments) and * (match within directory)
- * @param pattern - Glob pattern to convert
- * @returns Regular expression for pattern matching
- */
-function globToRegex(pattern: string): RegExp {
-  // Normalize pattern to use forward slashes
-  const normalizedPattern = pattern.replace(/\\/g, '/');
-
-  let regexStr = '^';
-  let i = 0;
-
-  while (i < normalizedPattern.length) {
-    const char = normalizedPattern[i];
-
-    if (char === '*') {
-      if (i + 1 < normalizedPattern.length && normalizedPattern[i + 1] === '*') {
-        // Handle ** (matches zero or more path segments)
-        if (i + 2 < normalizedPattern.length && normalizedPattern[i + 2] === '/') {
-          // **/ pattern - matches zero or more directories
-          regexStr += '(?:.*/)?';
-          i += 3;
-        } else if (i + 2 === normalizedPattern.length) {
-          // ** at end - matches everything
-          regexStr += '.*';
-          i += 2;
-        } else {
-          // ** in middle not followed by / - treat as matching everything until next separator
-          regexStr += '.*';
-          i += 2;
-        }
-      } else {
-        // Single * matches any characters except /
-        regexStr += '[^/]*';
-        i += 1;
-      }
-    } else if (char === '?') {
-      // ? matches any single character except /
-      regexStr += '[^/]';
-      i += 1;
-    } else if (char && '.+^$()[]{}|\\'.includes(char)) {
-      // Escape regex special characters
-      regexStr += '\\' + char;
-      i += 1;
-    } else {
-      // Regular character
-      regexStr += char;
-      i += 1;
-    }
-  }
-
-  regexStr += '$';
-  return new RegExp(regexStr);
-}
+import { globToRegex } from '../../core/utils/index.js';
 
 /**
  * Checks if a path matches any of the given glob patterns
