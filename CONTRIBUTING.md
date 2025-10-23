@@ -7,7 +7,7 @@ Thanks for your interest in contributing to **Stati** — a lightweight, TypeScr
 ## 🛠 Requirements
 
 - **Node.js** 22+ (see `engines` in package.json)
-- **npm** with workspace support
+- **npm** 11.5.1+ with workspace support (required for OIDC publishing)
 - Familiarity with TypeScript and monorepo layouts is helpful
 
 ---
@@ -168,23 +168,29 @@ npm run test:ci        # Full CI pipeline including tests
 
 ## 🏁 Release Flow
 
-After merging a PR with a changeset:
+**Releases are now fully automated!** When you merge a PR with a changeset to `main`, GitHub Actions automatically:
+
+1. Versions packages based on changesets
+2. Publishes to npm using OIDC authentication
+3. Pushes version commits and tags
+
+**You don't need to do anything manually.**
+
+### Changeset Commands (for development)
 
 ```bash
-# Update versions based on changesets
-npm run release:version
+# Create a changeset manually
+npm run changeset
 
-# Push changes and tags
-git push --follow-tags
+# Check pending changes
+npm run changeset:status
 
-# Publish packages to npm
-npm run release:publish
+# Auto-generate changesets from commits (used by CI)
+npm run changeset:generate
 
-# Or run the complete flow
-npm run release
+# Preview version changes
+npm run changeset:dry-run
 ```
-
-The project uses [Changesets](https://github.com/changesets/changesets) for version management and publishing.
 
 ---
 

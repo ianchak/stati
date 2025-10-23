@@ -1,0 +1,187 @@
+name: Publish Packages
+
+# This workflow uses npm Trusted Publishers (OIDC) for authentication
+# See: https://docs.npmjs.com/trusted-publishers
+# Why OIDC? npm is sunsetting classic tokens and limiting granular token lifetimes
+# Reference: https://github.blog/changelog/2025-09-29-strengthening-npm-security-important-changes-to-authentication-and-token-management/
+
+on:
+  workflow_run:
+    workflows: ['CI']
+    types: [completed]
+    branches: [main]
+
+# Prevent concurrent publish runs to avoid race conditions
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write # For pushing version commits and tags
+  id-token: write # Required for OIDC authentication with npm
+
+jobs:
+  publish:
+    # Only run if CI passed successfully
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Use a PAT or default token with write permissions
+          # Need fetch-depth: 0 for full history to properly handle tags
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install npm 11.5.1 or later (required for OIDC)
+        run: |
+          set -e
+          npm install -g npm@11.5.1 || {
+            echo "Failed to install npm 11.5.1"
+            exit 1
+          }
+
+      - name: Verify npm version meets OIDC requirements
+        run: |
+          set -e
+          NPM_VERSION=$(npm --version)
+          REQUIRED_VERSION="11.5.1"
+          echo "Current npm version: $NPM_VERSION"
+          echo "Required npm version: >= $REQUIRED_VERSION"
+
+          if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$NPM_VERSION" | sort -V | head -n1)" != "$REQUIRED_VERSION" ]; then
+            echo "Error: npm version $NPM_VERSION is less than required $REQUIRED_VERSION"
+            echo "OIDC-based publishing requires npm 11.5.1 or higher"
+            exit 1
+          fi
+          echo "npm version $NPM_VERSION meets OIDC requirements"
+
+      - name: Install dependencies
+        run: |
+          set -e
+          npm ci || {
+            echo "Failed to install dependencies"
+            exit 1
+          }
+
+      - name: Build packages
+        run: |
+          set -e
+          npm run build || {
+            echo "Build failed!"
+            exit 1
+          }
+
+      - name: Check for changesets
+        id: check-changesets
+        run: |
+          set -e
+          if [ -n "$(ls -A .changeset/*.md 2>/dev/null | grep -v README)" ]; then
+            echo "has-changesets=true" >> $GITHUB_OUTPUT
+            echo "Changesets found"
+          else
+            echo "has-changesets=false" >> $GITHUB_OUTPUT
+            echo "No changesets found"
+          fi
+
+      - name: Auto-generate changeset as fallback
+        if: steps.check-changesets.outputs.has-changesets == 'false'
+        id: auto-generate
+        run: |
+          set -e
+          echo "Attempting to generate changeset from recent commits..."
+          node scripts/generate-changesets.mjs || {
+            echo "Warning: Changeset generation script failed"
+            echo "generated=false" >> $GITHUB_OUTPUT
+            exit 0
+          }
+
+          if [ -n "$(ls -A .changeset/*.md 2>/dev/null | grep -v README)" ]; then
+            echo "generated=true" >> $GITHUB_OUTPUT
+            echo "Auto-generated changeset from commits"
+          else
+            echo "generated=false" >> $GITHUB_OUTPUT
+            echo "Could not generate changeset - no conventional commits found"
+          fi
+
+      - name: Configure git
+        if: steps.check-changesets.outputs.has-changesets == 'true' || steps.auto-generate.outputs.generated == 'true'
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Version packages
+        if: steps.check-changesets.outputs.has-changesets == 'true' || steps.auto-generate.outputs.generated == 'true'
+        run: |
+          set -e
+          npx changeset version || {
+            echo "Failed to version packages"
+            exit 1
+          }
+          echo "Version bump and changelogs created"
+
+      - name: Commit version changes
+        if: steps.check-changesets.outputs.has-changesets == 'true' || steps.auto-generate.outputs.generated == 'true'
+        run: |
+          set -e
+          git add .
+          git commit -m "chore: version packages [skip ci]" || {
+            echo "No changes to commit (this is OK)"
+            exit 0
+          }
+
+      - name: Publish to npm using OIDC
+        if: steps.check-changesets.outputs.has-changesets == 'true' || steps.auto-generate.outputs.generated == 'true'
+        run: |
+          set -e
+          # Retry logic for npm publish (network issues can occur)
+          MAX_RETRIES=3
+          RETRY_COUNT=0
+
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            if npx changeset publish; then
+              echo "Successfully published packages to npm"
+              exit 0
+            else
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                echo "Publish attempt $RETRY_COUNT failed, retrying in 10 seconds..."
+                sleep 10
+              else
+                echo "Failed to publish packages after $MAX_RETRIES attempts"
+                exit 1
+              fi
+            fi
+          done
+        # No NPM_TOKEN needed - OIDC authentication is automatic
+        # Provenance is automatically generated for public packages
+
+      - name: Push version commits and tags
+        if: steps.check-changesets.outputs.has-changesets == 'true' || steps.auto-generate.outputs.generated == 'true'
+        run: |
+          set -e
+          git push --follow-tags || {
+            echo "Failed to push commits and tags"
+            exit 1
+          }
+          echo "Published packages and pushed version commits with tags"
+
+      - name: No changesets found
+        if: steps.check-changesets.outputs.has-changesets == 'false' && steps.auto-generate.outputs.generated == 'false'
+        run: |
+          echo "No changesets found and could not auto-generate from commits"
+          echo "This is expected if:"
+          echo "  - No packages were changed"
+          echo "  - Only non-functional changes (docs, tests)"
+          echo "  - No conventional commits were used"
+          echo "Skipping publish."

@@ -1,19 +1,65 @@
 name: CI
+
 on:
   push: { branches: [main] }
   pull_request:
+
+# Prevent multiple CI runs for the same commit
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
+    # Skip CI on version commits made by the publish workflow to prevent infinite loops
+    # - Always run on pull_request events (they don't have head_commit)
+    # - On push events: skip if commit message contains [skip ci] OR actor is github-actions[bot]
+    # Note: The publish workflow uses github-actions[bot] and includes [skip ci] in commit messages
+    if: ${{ github.event_name == 'pull_request' || (!contains(github.event.head_commit.message, '[skip ci]') && github.actor != 'github-actions[bot]') }}
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: 'npm'
-      - run: npm ci
-      - run: npm run build
-      - run: npx vitest run --coverage
+
+      - name: Verify npm version
+        run: |
+          set -e
+          NPM_VERSION=$(npm --version)
+          REQUIRED_VERSION="11.5.1"
+          echo "Current npm version: $NPM_VERSION"
+          echo "Required npm version: >= $REQUIRED_VERSION (for OIDC publishing)"
+
+          if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$NPM_VERSION" | sort -V | head -n1)" != "$REQUIRED_VERSION" ]; then
+            echo "Warning: npm version $NPM_VERSION is less than required $REQUIRED_VERSION"
+            echo "Installing npm version $REQUIRED_VERSION..."
+            npm install -g npm@11.5.1 || { echo "Failed to install npm $REQUIRED_VERSION"; exit 1; }
+            echo "Updated npm to version $(npm --version)"
+          else
+            echo "npm version $NPM_VERSION meets requirements"
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build packages
+        run: |
+          set -e
+          npm run build || {
+            echo "Build failed!"
+            exit 1
+          }
+
+      - name: Run tests with coverage
+        run: |
+          set -e
+          npx vitest run --coverage || {
+            echo "Tests failed!"
+            exit 1
+          }
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:

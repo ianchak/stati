@@ -341,7 +341,7 @@ npm run build -- --clean
 ## Requirements
 
 - **Node.js** 22.0.0 or higher
-- **npm** 8.0.0 or higher (or equivalent package manager)
+- **npm** 11.5.1 or higher (or equivalent package manager)
 
 ---
 
