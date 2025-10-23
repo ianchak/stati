@@ -1,5 +1,11 @@
 # @stati/core
 
+## 1.11.2
+
+### Patch Changes
+
+- correct coverage range and configuration settings
+
 ## 1.11.1
 
 ### Patch Changes
