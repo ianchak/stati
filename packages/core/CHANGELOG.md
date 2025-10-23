@@ -1,5 +1,11 @@
 # @stati/core
 
+## 1.11.1
+
+### Patch Changes
+
+- add coverage range configuration to codecov.yml
+
 ## 1.11.0
 
 ### Minor Changes
