@@ -116,7 +116,7 @@ jobs:
 I analyzed your commits using conventional commit patterns and created ${changesetFiles.length > 1 ? 'changesets' : 'a changeset'}.
 
 **Generated files:**
-${changesetFiles.map(f => `- \`.changeset/${f}\``).join('\n')}
+${changesetFiles.map(f => \`- \\\`.changeset/${f}\\\`\`).join('\\n')}
 
 **What to do next:**
 1. Review the changeset file(s) above
@@ -125,8 +125,8 @@ ${changesetFiles.map(f => `- \`.changeset/${f}\``).join('\n')}
 4. Merge when ready
 
 **Tips:**
-- To skip changeset generation, add the \`skip-changeset\` label
-- For manual creation, run: \`npm run changeset\``
+- To skip changeset generation, add the \\\`skip-changeset\\\` label
+- For manual creation, run: \\\`npm run changeset\\\``
             });
 
       - name: Comment on PR - No conventional commits
@@ -143,20 +143,20 @@ ${changesetFiles.map(f => `- \`.changeset/${f}\``).join('\n')}
 I couldn't find or generate a changeset for this PR.
 
 **Possible reasons:**
-- No conventional commits found (e.g., \`feat:\`, \`fix:\`, etc.)
+- No conventional commits found (e.g., \\\`feat:\\\`, \\\`fix:\\\`, etc.)
 - Only non-functional changes (docs, tests, etc.)
 
 **What to do:**
 1. **If this PR should release packages:**
-   - Create a changeset manually: \`npm run changeset\`
+   - Create a changeset manually: \\\`npm run changeset\\\`
    - Or use conventional commits (see below)
 2. **If no release is needed:**
-   - Add the \`skip-changeset\` label to this PR
+   - Add the \\\`skip-changeset\\\` label to this PR
 
 **Conventional commit examples:**
-- \`feat: add new feature\` → minor version bump
-- \`fix: resolve bug\` → patch version bump
-- \`feat!: breaking change\` → major version bump
+- \\\`feat: add new feature\\\` → minor version bump
+- \\\`fix: resolve bug\\\` → patch version bump
+- \\\`feat!: breaking change\\\` → major version bump
 
 **Note:** Without a changeset, merging this PR won't trigger a package release.`
             });
@@ -174,5 +174,5 @@ I couldn't find or generate a changeset for this PR.
 
 This PR already has a changeset. No action needed from the bot.
 
-You can review/edit the changeset file(s) in \`.changeset/\` before merging.`
+You can review/edit the changeset file(s) in \\\`.changeset/\\\` before merging.`
             });
