@@ -5,7 +5,3 @@
 ---
 
 update links in RSS documentation for consistency
-
-
-
-Commit: 38f928a
