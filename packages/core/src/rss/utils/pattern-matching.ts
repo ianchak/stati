@@ -26,7 +26,7 @@ export function matchesAnyPattern(path: string, patterns: string[], allowPrefix 
 
     // Check if pattern is a glob pattern
     if (normalizedPattern.includes('*') || normalizedPattern.includes('?')) {
-      const regex = globToRegex(pattern);
+      const regex = globToRegex(normalizedPattern);
       if (regex.test(normalizedPath)) {
         return true;
       }
