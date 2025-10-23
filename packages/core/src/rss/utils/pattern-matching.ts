@@ -5,18 +5,8 @@
  */
 
 /**
- * Escapes regex special characters in a string, except glob wildcards (* and ?)
- * @param str - String to escape
- * @returns String with regex special characters escaped
- */
-function escapeRegexExceptGlob(str: string): string {
-  // Escape all regex special characters except * and ?
-  return str.replace(/[.+^${}()|[\]\\]/g, '\\$&');
-}
-
-/**
  * Converts a glob pattern to a regular expression
- * Handles ** (match any directory depth) and * (match within directory)
+ * Handles ** (match zero or more directory segments) and * (match within directory)
  * @param pattern - Glob pattern to convert
  * @returns Regular expression for pattern matching
  */
@@ -24,27 +14,50 @@ function globToRegex(pattern: string): RegExp {
   // Normalize pattern to use forward slashes
   const normalizedPattern = pattern.replace(/\\/g, '/');
 
-  // Handle different glob patterns
-  if (normalizedPattern.includes('**')) {
-    // Handle ** (match any directory depth)
-    // ** requires at least one character to match
-    const escapedPattern = escapeRegexExceptGlob(normalizedPattern);
-    const regexPattern = escapedPattern
-      .replace(/\*\*/g, '.+') // .+ requires at least one character
-      .replace(/\*/g, '[^/]*') // Single * matches any characters except /
-      .replace(/\?/g, '.');
-    return new RegExp('^' + regexPattern + '$');
-  } else if (normalizedPattern.includes('*') || normalizedPattern.includes('?')) {
-    // Handle * (matches within directory) and ? (single character)
-    const escapedPattern = escapeRegexExceptGlob(normalizedPattern);
-    const regexPattern = escapedPattern
-      .replace(/\*/g, '[^/]*') // * matches any characters except /
-      .replace(/\?/g, '.');
-    return new RegExp('^' + regexPattern + '$');
-  } else {
-    // Exact match pattern
-    return new RegExp('^' + escapeRegexExceptGlob(normalizedPattern) + '$');
+  let regexStr = '^';
+  let i = 0;
+
+  while (i < normalizedPattern.length) {
+    const char = normalizedPattern[i];
+
+    if (char === '*') {
+      if (i + 1 < normalizedPattern.length && normalizedPattern[i + 1] === '*') {
+        // Handle ** (matches zero or more path segments)
+        if (i + 2 < normalizedPattern.length && normalizedPattern[i + 2] === '/') {
+          // **/ pattern - matches zero or more directories
+          regexStr += '(?:.*/)?';
+          i += 3;
+        } else if (i + 2 === normalizedPattern.length) {
+          // ** at end - matches everything
+          regexStr += '.*';
+          i += 2;
+        } else {
+          // ** in middle not followed by / - treat as matching everything until next separator
+          regexStr += '.*';
+          i += 2;
+        }
+      } else {
+        // Single * matches any characters except /
+        regexStr += '[^/]*';
+        i += 1;
+      }
+    } else if (char === '?') {
+      // ? matches any single character except /
+      regexStr += '[^/]';
+      i += 1;
+    } else if (char && '.+^$()[]{}|\\'.includes(char)) {
+      // Escape regex special characters
+      regexStr += '\\' + char;
+      i += 1;
+    } else {
+      // Regular character
+      regexStr += char;
+      i += 1;
+    }
   }
+
+  regexStr += '$';
+  return new RegExp(regexStr);
 }
 
 /**

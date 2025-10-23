@@ -190,9 +190,10 @@ describe('Pattern Matching Utilities', () => {
       expect(matchesAnyPattern('/blog', ['/'])).toBe(false); // Should not match prefix
     });
 
-    it('should handle double asterisk requiring at least one character', () => {
+    it('should handle double asterisk matching zero or more directories', () => {
       expect(matchesAnyPattern('site/blog/post.md', ['site/**/post.md'])).toBe(true);
-      expect(matchesAnyPattern('site/post.md', ['site/**/post.md'])).toBe(false); // ** requires at least one character
+      expect(matchesAnyPattern('site/post.md', ['site/**/post.md'])).toBe(true); // ** matches zero directories (standard glob behavior)
+      expect(matchesAnyPattern('site/blog/category/post.md', ['site/**/post.md'])).toBe(true);
     });
 
     it('should handle question mark wildcard', () => {
@@ -242,6 +243,39 @@ describe('Pattern Matching Utilities', () => {
     it('should handle backslash normalization in patterns', () => {
       expect(matchesAnyPattern('site/blog/post.md', ['site\\blog\\**'])).toBe(true);
       expect(matchesAnyPattern('site\\blog\\post.md', ['site/blog/**'])).toBe(true);
+    });
+
+    it('should handle **/ at beginning of pattern', () => {
+      expect(matchesAnyPattern('post.md', ['**/post.md'])).toBe(true);
+      expect(matchesAnyPattern('blog/post.md', ['**/post.md'])).toBe(true);
+      expect(matchesAnyPattern('blog/2024/post.md', ['**/post.md'])).toBe(true);
+    });
+
+    it('should handle ** at end of pattern', () => {
+      expect(matchesAnyPattern('site/blog/post.md', ['site/blog/**'])).toBe(true);
+      expect(matchesAnyPattern('site/blog/category/post.md', ['site/blog/**'])).toBe(true);
+      expect(matchesAnyPattern('site/news/post.md', ['site/blog/**'])).toBe(false);
+    });
+
+    it('should handle multiple ** in pattern', () => {
+      expect(matchesAnyPattern('a/b/c/d/e.md', ['a/**/c/**/e.md'])).toBe(true);
+      expect(matchesAnyPattern('a/c/e.md', ['a/**/c/**/e.md'])).toBe(true);
+      expect(matchesAnyPattern('a/x/y/c/z/e.md', ['a/**/c/**/e.md'])).toBe(true);
+    });
+
+    it('should handle ** without slashes', () => {
+      expect(matchesAnyPattern('site/anything/here.md', ['site/**here.md'])).toBe(true);
+      expect(matchesAnyPattern('site/here.md', ['site/**here.md'])).toBe(true);
+    });
+
+    it('should differentiate between * and **', () => {
+      // * should not match across directories
+      expect(matchesAnyPattern('site/blog/post.md', ['site/*/post.md'])).toBe(true);
+      expect(matchesAnyPattern('site/blog/category/post.md', ['site/*/post.md'])).toBe(false);
+
+      // ** should match across directories
+      expect(matchesAnyPattern('site/blog/post.md', ['site/**/post.md'])).toBe(true);
+      expect(matchesAnyPattern('site/blog/category/post.md', ['site/**/post.md'])).toBe(true);
     });
   });
 });
