@@ -1,5 +1,20 @@
 # @stati/cli
 
+## 1.6.3
+
+### Patch Changes
+
+- add repository field to package metadata
+- enhance CI workflows and add changeset bot for automation
+- Releasing 3 package(s)
+
+  Releases:
+
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+  - @stati/core@1.10.3
+
 ## 1.6.2
 
 ### Patch Changes

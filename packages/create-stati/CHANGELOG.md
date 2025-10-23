@@ -1,5 +1,15 @@
 # create-stati
 
+## 1.6.3
+
+### Patch Changes
+
+- add repository field to package metadata
+- enhance CI workflows and add changeset bot for automation
+- Releasing 3 package(s)
+
+  Releases:
+
 ## 1.6.2
 
 ### Patch Changes
