@@ -1,5 +1,11 @@
 # @stati/core
 
+## 1.11.3
+
+### Patch Changes
+
+- update package.json metadata fields
+
 ## 1.11.2
 
 ### Patch Changes

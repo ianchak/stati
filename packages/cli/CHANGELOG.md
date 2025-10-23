@@ -1,5 +1,13 @@
 # @stati/cli
 
+## 1.6.7
+
+### Patch Changes
+
+- update package.json metadata fields
+- Updated dependencies
+  - @stati/core@1.11.3
+
 ## 1.6.6
 
 ### Patch Changes

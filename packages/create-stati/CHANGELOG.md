@@ -1,5 +1,11 @@
 # create-stati
 
+## 1.6.7
+
+### Patch Changes
+
+- update package.json metadata fields
+
 ## 1.6.6
 
 ### Patch Changes
