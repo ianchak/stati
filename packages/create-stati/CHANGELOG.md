@@ -1,5 +1,11 @@
 # create-stati
 
+## 1.6.5
+
+### Patch Changes
+
+- add coverage range configuration to codecov.yml
+
 ## 1.6.4
 
 ### Patch Changes
