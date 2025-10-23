@@ -64,49 +64,32 @@ The foundation of your site configuration:
 ```javascript
 export default defineConfig({
   site: {
-    // Basic information
-    title: 'Stati Documentation',
-    description: 'TypeScript-first static site generator',
-    baseUrl: 'https://stati.dev',
-
-    // Localization
-    defaultLocale: 'en-US',
-    alternateLocales: ['es', 'fr', 'de'],
-
-    // Social and SEO
-    author: 'John Doe',
-    social: {
-      twitter: 'https://twitter.com/stati',
-      github: 'https://github.com/stati/stati',
-      linkedin: 'https://linkedin.com/company/stati',
-    },
-
-    // Custom metadata
-    meta: {
-      keywords: ['static site generator', 'typescript', 'ssg'],
-      themeColor: '#0066cc',
-      msapplicationTileColor: '#0066cc',
-    },
+    title: 'Stati Documentation',        // Required
+    baseUrl: 'https://stati.dev',         // Required
+    defaultLocale: 'en-US',               // Optional
   },
 });
 ```
 
+**Required Fields:**
+- `title` (string) - The site's title, used in templates and metadata
+- `baseUrl` (string) - Base URL for the site, used for absolute URL generation
+
+**Optional Fields:**
+- `defaultLocale` (string) - Default locale for internationalization (e.g., 'en-US', 'fr-FR')
+
 ### Markdown Configuration
 
-Customize markdown processing:
-
-### Markdown Configuration
-
-Configure markdown processing:
+Configure markdown processing with plugins and custom renderer modifications:
 
 ```javascript
 export default defineConfig({
   markdown: {
     // Plugin configuration - array of plugin names or [name, options] tuples
     plugins: [
-      'anchor',                    // Add anchors to headings
-      'toc-done-right',           // Table of contents
-      ['footnote', { /* options */ }],  // Footnotes with options
+      'anchor',                    // markdown-it-anchor - Add anchors to headings
+      'toc-done-right',           // markdown-it-toc-done-right - Table of contents
+      ['footnote', { /* options */ }],  // markdown-it-footnote - Footnotes with options
     ],
 
     // Custom markdown-it configuration function
@@ -123,6 +106,10 @@ export default defineConfig({
   },
 });
 ```
+
+**Available Options:**
+- `plugins` (array) - Array of markdown-it plugin names (strings) or [name, options] tuples
+- `configure` (function) - Function that receives the markdown-it instance for custom configuration
 
 ### Template Configuration
 
@@ -161,7 +148,7 @@ export default defineConfig({
 
 ### ISG Configuration
 
-Configure Incremental Static Generation:
+Configure Incremental Static Generation for smart caching:
 
 ```javascript
 export default defineConfig({
@@ -177,30 +164,30 @@ export default defineConfig({
 
     // Aging rules for progressive cache extension
     aging: [
-      { untilDays: 7, ttlSeconds: 86400 },    // 1 day for week-old content
-      { untilDays: 30, ttlSeconds: 604800 },  // 1 week for month-old content
-        { age: '90d', ttl: '7d' },
-      ],
-    },
-
-    // Custom dependencies
-    dependencies: {
-      'blog/index.md': ['blog/**/*.md'],
-      'sitemap.xml': ['**/*.md'],
-      'rss.xml': ['blog/**/*.md'],
-    },
-
-    // Tag-based invalidation
-    tags: {
-      blog: ['blog/**/*.md'],
-      docs: ['docs/**/*.md'],
-      navigation: ['**/layout.eta', '_partials/nav.eta'],
-    },
-
-    // Always rebuild certain files
-    alwaysRebuild: ['index.md', 'sitemap.xml', 'rss.xml'],
+      { untilDays: 7, ttlSeconds: 86400 },     // 1 day for week-old content
+      { untilDays: 30, ttlSeconds: 604800 },   // 1 week for month-old content
+      { untilDays: 365, ttlSeconds: 2592000 }, // 30 days for year-old content
+    ],
   },
 });
+```
+
+**Available Options:**
+- `enabled` (boolean) - Enable or disable ISG caching (default: false)
+- `ttlSeconds` (number) - Default cache time-to-live in seconds (default: 3600)
+- `maxAgeCapDays` (number) - Maximum age in days for applying aging rules
+- `aging` (array) - Array of aging rules with `untilDays` and `ttlSeconds` properties
+
+**Aging Rules:**
+
+Aging rules allow you to progressively extend cache TTL based on content age. Each rule specifies a time threshold (`untilDays`) and the cache duration (`ttlSeconds`) to apply to content that reaches that age.
+
+```javascript
+// Example: older content gets cached longer
+aging: [
+  { untilDays: 7, ttlSeconds: 86400 },    // 1 day cache for content 7+ days old
+  { untilDays: 30, ttlSeconds: 604800 },  // 1 week cache for content 30+ days old
+]
 ```
 
 ### Development Server
@@ -222,53 +209,64 @@ export default defineConfig({
 
 ### Build Hooks
 
-Add custom logic to the build process:
+Add custom logic at various stages of the build process:
 
 ```javascript
 export default defineConfig({
   hooks: {
-    // Before build starts
-    async beforeBuild(context) {
+    // Before build starts - receives BuildContext
+    async beforeAll(context) {
       console.log('Starting build...');
-
-      // Generate dynamic content
-      await generateSitemap(context.pages);
-      await generateRSSFeed(context.posts);
+      console.log(`Building ${context.pages.length} pages`);
+      console.log(`Output directory: ${context.config.outDir}`);
     },
 
-    // After build completes
-    async afterBuild(stats) {
-      console.log(`Build completed in ${stats.buildTime}ms`);
-      console.log(`Generated ${stats.pageCount} pages`);
-
-      // Post-build tasks can be added here
+    // After build completes - receives BuildContext
+    async afterAll(context) {
+      console.log('Build completed!');
+      console.log(`Generated ${context.pages.length} pages`);
     },
 
-    // Before each page renders
-    beforeRender(page) {
-      // Add computed properties
-      page.readingTime = calculateReadingTime(page.content);
-      page.wordCount = countWords(page.content);
+    // Before each page renders - receives PageContext
+    async beforeRender(context) {
+      // Add computed properties to the page
+      context.page.frontMatter.readingTime = calculateReadingTime(context.page.content);
+      context.page.frontMatter.wordCount = countWords(context.page.content);
     },
 
-    // After each page renders
-    afterRender(page, html) {
-      // Validate HTML
-      if (process.env.NODE_ENV === 'development') {
-        validateHTML(html, page.path);
-      }
+    // After each page renders - receives PageContext
+    async afterRender(context) {
+      console.log(`Rendered: ${context.page.slug}`);
     },
   },
 });
 ```
 
+**Available Hooks:**
+- `beforeAll` (function) - Called before starting the build process, receives `BuildContext`
+- `afterAll` (function) - Called after completing the build process, receives `BuildContext`
+- `beforeRender` (function) - Called before rendering each page, receives `PageContext`
+- `afterRender` (function) - Called after rendering each page, receives `PageContext`
 
+**Context Types:**
 
+```typescript
+// BuildContext - passed to beforeAll and afterAll
+interface BuildContext {
+  config: StatiConfig;  // The resolved configuration
+  pages: PageModel[];   // Array of all loaded pages
+}
 
+// PageContext - passed to beforeRender and afterRender
+interface PageContext {
+  page: PageModel;      // The page being processed
+  config: StatiConfig;  // The resolved configuration
+}
+```
 
 ## Environment-based Configuration
 
-### Environment Variables
+You can use environment variables to configure your site differently for development, staging, and production:
 
 ```javascript
 // stati.config.js
@@ -281,143 +279,45 @@ export default defineConfig({
     baseUrl: isProd ? 'https://my-site.com' : 'http://localhost:3000',
   },
 
-  // Development-only features
-  ...(isDev && {
-    dev: {
-      port: 3000,
-      open: true,
-    },
-  }),
+  // Enable ISG only in production
+  isg: {
+    enabled: isProd,
+    ttlSeconds: isProd ? 3600 : 0,
+  },
 
-  // Production-only optimizations
-  ...(isProd && {
-    build: {
-      minify: true,
-      sourcemap: false,
-    },
-  }),
+  // Development server configuration
+  dev: {
+    port: parseInt(process.env.PORT || '3000'),
+    open: isDev,
+  },
 });
 ```
 
-### Multiple Configurations
+### Multiple Configuration Files
+
+You can split configuration across multiple files:
 
 ```javascript
-// stati.config.base.js
+// config/base.js
 export const baseConfig = {
   site: {
-    title: 'My Site'
+    title: 'My Site',
+    baseUrl: 'https://example.com',
   },
-  markdown: {
-    options: {
-      html: true,
-      linkify: true
-    }
-  }
 };
 
-// stati.config.dev.js
-import { baseConfig } from './stati.config.base.js';
+// stati.config.js
+import { baseConfig } from './config/base.js';
 
 export default defineConfig({
   ...baseConfig,
-  dev: {
-    port: 3000,
-    open: true
-  }
-});
 
-// stati.config.prod.js
-import { baseConfig } from './stati.config.base.js';
-
-export default defineConfig({
-  ...baseConfig,
-  build: {
-    minify: true,
-    sourcemap: false
-  }
-});
-```
-
-## Configuration Validation
-
-### Schema Validation
-
-Stati validates your configuration and provides helpful error messages:
-
-```javascript
-// Invalid configuration examples with error messages
-export default defineConfig({
-  // Directory validation
-  srcDir: 123, // ❌ Error: srcDir must be a string
-  outDir: null, // ❌ Error: outDir must be a string
-  staticDir: [], // ❌ Error: staticDir must be a string
-
-  // Site metadata validation
+  // Environment-specific overrides
   site: {
-    title: 123, // ❌ Error: title must be a string
-    baseUrl: 'invalid-url', // ❌ Error: baseUrl must be a valid URL
-    description: false, // ❌ Error: description must be a string
-  },
-
-  // ISG validation
-  isg: {
-    enabled: 'yes', // ❌ Error: enabled must be a boolean
-    ttlSeconds: 'invalid', // ❌ Error: ttlSeconds must be a number
-    maxAgeCapDays: -1, // ❌ Error: maxAgeCapDays must be positive
-    aging: 'not-array', // ❌ Error: aging must be an array
-    freezeAfterDays: 'never', // ❌ Error: freezeAfterDays must be a number
-  },
-
-  // Template validation
-  eta: {
-    filters: 'not-object', // ❌ Error: filters must be an object
-    autoEscape: 'yes', // ❌ Error: autoEscape must be a boolean
-  },
-
-  // Hook validation
-  hooks: {
-    beforeAll: 'not-function', // ❌ Error: hooks must be functions
-    afterRender: () => {}, // ✅ Valid function
+    ...baseConfig.site,
+    baseUrl: process.env.SITE_URL || baseConfig.site.baseUrl,
   },
 });
-```
-
-### Validation Error Output
-
-When validation fails, Stati provides detailed error messages:
-
-```text
-Configuration validation failed:
-
-❌ site.title: Expected string but received number
-❌ site.baseUrl: "invalid-url" is not a valid URL
-❌ isg.ttlSeconds: Expected number but received string
-❌ isg.aging[0].untilDays: Missing required property
-❌ hooks.beforeAll: Expected function but received string
-
-Build aborted. Please fix configuration errors and try again.
-```
-
-### Configuration Testing
-
-Test your configuration:
-
-```javascript
-// scripts/test-config.js
-import { validateConfig } from '@stati/core/config';
-import config from '../stati.config.js';
-
-const result = validateConfig(config);
-
-if (result.errors.length > 0) {
-  console.error('Configuration errors:');
-  result.errors.forEach((error) => {
-    console.error(`- ${error.path}: ${error.message}`);
-  });
-  process.exit(1);
-}
-
-console.log('Configuration is valid!');
 ```
 
 ## Best Practices
@@ -432,12 +332,12 @@ console.log('Configuration is valid!');
      // Site metadata
      site: {
        title: 'My Site',
-       description: 'A great site',
+       baseUrl: 'https://example.com',
      },
 
      // Markdown processing
      markdown: {
-       options: { html: true },
+       plugins: ['anchor'],  // markdown-it-anchor
      },
    });
    ```
@@ -447,13 +347,8 @@ console.log('Configuration is valid!');
    ```javascript
    export default defineConfig({
      site: {
+       title: 'My Site',
        baseUrl: process.env.SITE_URL || 'http://localhost:3000',
-     },
-
-     // Don't commit secrets to config
-     external: {
-       apiKey: process.env.API_KEY, // ✅ Good
-       // apiKey: 'secret-key' // ❌ Bad
      },
    });
    ```
@@ -463,12 +358,13 @@ console.log('Configuration is valid!');
    ```javascript
    // config/site.js
    export const siteConfig = {
-     /* ... */
+     title: 'My Site',
+     baseUrl: 'https://example.com',
    };
 
    // config/markdown.js
    export const markdownConfig = {
-     /* ... */
+     plugins: ['anchor', 'toc-done-right'],  // Stati auto-prepends 'markdown-it-'
    };
 
    // stati.config.js
@@ -481,51 +377,16 @@ console.log('Configuration is valid!');
    });
    ```
 
-## Environment-Specific Configuration
+## Multi-Environment Configuration
 
 Configure different settings for development, staging, and production:
-
-### Basic Environment Detection
-
-```javascript
-export default defineConfig({
-  site: {
-    title: 'My Site',
-    baseUrl: process.env.NODE_ENV === 'production'
-      ? 'https://mysite.com'
-      : 'http://localhost:3000',
-
-    // Enable analytics only in production
-    analytics: process.env.NODE_ENV === 'production' ? {
-      googleId: 'GA-XXXXXXXXX',
-      plausible: 'mysite.com'
-    } : undefined,
-  },
-
-  // ISG only in production
-  isg: {
-    enabled: process.env.NODE_ENV === 'production',
-    ttlSeconds: process.env.NODE_ENV === 'production' ? 3600 : 0,
-  },
-
-  // Different markdown options per environment
-  markdown: {
-    options: {
-      html: true,
-      // Stricter validation in development
-      linkify: process.env.NODE_ENV !== 'production',
-    },
-  },
-});
-```
-
-### Multi-Environment Setup
 
 ```javascript
 // config/environments.js
 const environments = {
   development: {
     site: {
+      title: 'My Site (Dev)',
       baseUrl: 'http://localhost:3000',
     },
     isg: { enabled: false },
@@ -534,13 +395,15 @@ const environments = {
 
   staging: {
     site: {
+      title: 'My Site (Staging)',
       baseUrl: 'https://staging.mysite.com',
     },
-    isg: { enabled: true, ttlSeconds: 300 }, // 5 minutes
+    isg: { enabled: true, ttlSeconds: 300 },
   },
 
   production: {
     site: {
+      title: 'My Site',
       baseUrl: 'https://mysite.com',
     },
     isg: {
@@ -549,8 +412,7 @@ const environments = {
       aging: [
         { untilDays: 7, ttlSeconds: 21600 },
         { untilDays: 30, ttlSeconds: 86400 },
-        { untilDays: 365, ttlSeconds: 604800 }
-      ]
+      ],
     },
   },
 };
@@ -567,83 +429,11 @@ const env = process.env.NODE_ENV || 'development';
 const envConfig = environments[env] || environments.development;
 
 export default defineConfig({
-  // Base configuration
   srcDir: 'site',
   outDir: 'dist',
+  staticDir: 'public',
 
-  // Merge environment-specific config
   ...envConfig,
-
-  // Override with environment variables
-  site: {
-    ...envConfig.site,
-    title: process.env.SITE_TITLE || envConfig.site.title,
-    baseUrl: process.env.SITE_URL || envConfig.site.baseUrl,
-  },
-});
-```
-
-### Configuration with Secrets
-
-```javascript
-export default defineConfig({
-  site: {
-    title: 'My Site',
-    baseUrl: process.env.SITE_URL || 'http://localhost:3000',
-  },
-
-  // External service configuration
-  external: {
-    cms: {
-      endpoint: process.env.CMS_ENDPOINT,
-      apiKey: process.env.CMS_API_KEY,
-    },
-
-    analytics: process.env.ANALYTICS_ID ? {
-      id: process.env.ANALYTICS_ID,
-      domain: process.env.ANALYTICS_DOMAIN,
-    } : undefined,
-  },
-
-  // Build-time feature flags
-  features: {
-    comments: process.env.ENABLE_COMMENTS === 'true',
-    search: process.env.ENABLE_SEARCH === 'true',
-    newsletter: !!process.env.NEWSLETTER_API_KEY,
-  },
-});
-```
-
-### Performance Configuration
-
-```javascript
-export default defineConfig({
-  // Optimize for your content
-  isg: {
-    // Short TTL for frequently updated content
-    ttlSeconds: 300, // 5 minutes for news sites
-
-    // Longer TTL for static content
-    dependencies: {
-      'docs/**/*.md': { ttlSeconds: 86400 }, // 24 hours for docs
-    },
-  },
-
-  // Optimize builds
-  build: {
-    // Enable parallel processing
-    parallel: true,
-
-    // Optimize chunks
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['lodash', 'date-fns'],
-          utils: ['./src/utils/index.js'],
-        },
-      },
-    },
-  },
 });
 ```
 
@@ -651,9 +441,11 @@ export default defineConfig({
 
 For detailed information about specific configuration options, see:
 
-- **[Site Metadata](/configuration/site-metadata/)** - Title, description, SEO settings
-- **[Template Settings](/configuration/templates/)** - Eta configuration and helpers
-- **[Markdown Configuration](/configuration/markdown/)** - Plugins and processing options
-- **[ISG Options](/configuration/isg/)** - Caching and dependency management
+- **[Site Metadata](/configuration/site-metadata/)** - Site title, base URL, and locale settings
+- **[Template Settings](/configuration/templates/)** - Eta template engine configuration
+- **[Markdown Configuration](/configuration/markdown/)** - Plugins and markdown-it processing
+- **[ISG Options](/configuration/isg/)** - Incremental static generation and caching
+- **[SEO Configuration](/configuration/seo/)** - SEO metadata and optimization
+- **[RSS Configuration](/configuration/rss/)** - RSS feed generation
 
 The configuration system is designed to grow with your needs while maintaining simplicity for basic use cases. Start with minimal configuration and add complexity as your site evolves.
