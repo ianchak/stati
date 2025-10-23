@@ -1,5 +1,12 @@
 # @stati/core
 
+## 1.10.2
+
+### Patch Changes
+
+- add repository field to package metadata
+- enhance CI workflows and add changeset bot for automation
+
 ## 1.10.1
 
 ### Patch Changes
