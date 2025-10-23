@@ -13,6 +13,27 @@ import { execSync } from 'child_process';
 const WORKSPACE_PACKAGES = ['@stati/core', '@stati/cli', 'create-stati'];
 const CHANGESET_DIR = path.join(process.cwd(), '.changeset');
 
+// Patterns for commits to skip
+const SKIP_COMMIT_PATTERNS = [
+  /^chore: version packages/i,
+  /^chore: release/i,
+  /\[skip ci\]/i,
+  /\[skip changeset\]/i,
+  /^Merge pull request/,
+  /^Merge branch/,
+  /^chore: add auto-generated changeset/i,
+  /^Update .+ from .+/, // Dependabot commits
+];
+
+// Workspace root files that affect all packages
+const WORKSPACE_ROOT_FILES = [
+  'package.json',
+  'package-lock.json',
+  'tsconfig.base.json',
+  'vitest.config.ts',
+  'eslint.config.mjs',
+];
+
 // Map conventional commit types to changeset types
 const COMMIT_TYPE_TO_CHANGESET = {
   feat: 'minor',
@@ -32,13 +53,27 @@ const COMMIT_TYPE_TO_CHANGESET = {
 
 function getCommitsSinceLastTag() {
   try {
+    // Check if we're in a PR context (GitHub Actions)
+    const baseBranch = process.env.GITHUB_BASE_REF;
+    const headBranch = process.env.GITHUB_HEAD_REF;
+
+    if (baseBranch && headBranch) {
+      console.log(`PR context detected: ${headBranch} -> ${baseBranch}`);
+      const commits = execSync(
+        `git log origin/${baseBranch}..${headBranch} --pretty=format:"%H|%s|%b"`,
+        { encoding: 'utf8' },
+      );
+      return commits.split('\n').filter(Boolean);
+    } // Otherwise, get commits since last tag
     const lastTag = execSync('git describe --tags --abbrev=0', { encoding: 'utf8' }).trim();
+    console.log(`Using commits since tag: ${lastTag}`);
     const commits = execSync(`git log ${lastTag}..HEAD --pretty=format:"%H|%s|%b"`, {
       encoding: 'utf8',
     });
     return commits.split('\n').filter(Boolean);
   } catch {
     // If no tags exist, get all commits
+    console.log('No tags found, analyzing all commits');
     const commits = execSync('git log --pretty=format:"%H|%s|%b"', { encoding: 'utf8' });
     return commits.split('\n').filter(Boolean);
   }
@@ -52,34 +87,53 @@ function parseCommit(commitLine) {
 
   // Simple regex-based parsing for conventional commits
   // Pattern: type(scope): description or type: description
-  const conventionalPattern = /^(\w+)(?:\(([^)]+)\))?: (.+)/;
+  // Also supports type!: for breaking changes (e.g., "feat!: breaking change")
+  //
+  // BREAKING CHANGE DETECTION:
+  // This parser detects breaking changes in two ways:
+  // 1. The "!" marker after the type: feat!, fix!, chore!, etc.
+  // 2. The text "BREAKING CHANGE" anywhere in the commit body
+  //
+  // Note: This follows the Conventional Commits v1.0.0 specification.
+  // Other formats (e.g., "BREAKING:" prefix) are not supported and will be
+  // treated as regular commits. If you need custom breaking change detection,
+  // modify the isBreaking check below.
+  const conventionalPattern = /^(\w+)(!)?(?:\(([^)]+)\))?: (.+)/;
   const match = subject.match(conventionalPattern);
 
   if (match) {
-    const [, type, scope, description] = match;
+    const [, type, breakingMarker, scope, description] = match;
 
-    // Check for breaking changes
-    const isBreaking = subject.includes('!') || body.includes('BREAKING CHANGE');
+    // Check for breaking changes (! marker or BREAKING CHANGE in body)
+    const isBreaking = breakingMarker === '!' || body.includes('BREAKING CHANGE');
 
     return {
       hash: hash.substring(0, 7),
+      fullHash: hash,
       type,
       scope: scope || null,
       subject: description,
       body: body || '',
       notes: isBreaking ? [{ title: 'BREAKING CHANGE', text: body }] : [],
+      raw: subject,
     };
   }
 
   // Fallback for non-conventional commits
   return {
     hash: hash.substring(0, 7),
+    fullHash: hash,
     type: null,
     scope: null,
     subject,
     body: body || '',
     notes: [],
+    raw: subject,
   };
+}
+
+function shouldSkipCommit(commit) {
+  return SKIP_COMMIT_PATTERNS.some((pattern) => pattern.test(commit.raw || commit.subject));
 }
 
 function determineChangesetType(commit) {
@@ -93,29 +147,123 @@ function determineChangesetType(commit) {
 }
 
 function determineAffectedPackages(commit) {
-  // Simple heuristic: check which packages are affected based on file changes
   try {
-    const changedFiles = execSync(`git show --name-only ${commit.hash}`, { encoding: 'utf8' });
-    const packages = [];
+    // Use git diff-tree for more reliable file detection
+    const changedFiles = execSync(
+      `git diff-tree --no-commit-id --name-only -r ${commit.fullHash}`,
+      { encoding: 'utf8' },
+    )
+      .split('\n')
+      .filter(Boolean);
 
-    if (changedFiles.includes('packages/core/')) packages.push('@stati/core');
-    if (changedFiles.includes('packages/cli/')) packages.push('@stati/cli');
-    if (changedFiles.includes('packages/create-stati/')) packages.push('create-stati');
+    const packages = new Set();
 
-    // If no specific package is detected, assume all packages are affected
-    return packages.length > 0 ? packages : WORKSPACE_PACKAGES;
-  } catch {
+    for (const file of changedFiles) {
+      // Check for package-specific changes
+      if (file.startsWith('packages/core/')) {
+        packages.add('@stati/core');
+      }
+      if (file.startsWith('packages/cli/')) {
+        packages.add('@stati/cli');
+      }
+      if (file.startsWith('packages/create-stati/')) {
+        packages.add('create-stati');
+      }
+
+      // Check for workspace root changes that affect all packages
+      if (WORKSPACE_ROOT_FILES.some((rootFile) => file === rootFile)) {
+        console.log(`  Workspace root file changed: ${file} - affecting all packages`);
+        return WORKSPACE_PACKAGES;
+      }
+    }
+
+    // If no specific package detected, check if only non-package files changed
+    const onlyNonPackageFiles = changedFiles.every(
+      (file) =>
+        file.startsWith('.github/') ||
+        file.startsWith('docs-site/') ||
+        file.startsWith('examples/') ||
+        file === 'README.md' ||
+        file === 'LICENSE' ||
+        file === 'CONTRIBUTING.md' ||
+        file.endsWith('.md'),
+    );
+
+    if (onlyNonPackageFiles && packages.size === 0) {
+      console.log(`Only non-package files changed - skipping`);
+      return null; // Signal to skip this commit
+    }
+
+    // If specific packages detected, return them
+    if (packages.size > 0) {
+      return Array.from(packages);
+    }
+
+    // Default: affect all packages (conservative approach)
+    console.log(`Could not determine specific packages - affecting all`);
+    return WORKSPACE_PACKAGES;
+  } catch (error) {
+    console.error(`Error determining affected packages:`, error);
     // Fallback to all packages
     return WORKSPACE_PACKAGES;
   }
 }
 
 function generateChangesetId() {
-  const adjectives = ['happy', 'silly', 'brave', 'calm', 'eager', 'fair', 'gentle', 'kind'];
-  const nouns = ['cat', 'dog', 'bird', 'fish', 'bear', 'wolf', 'fox', 'deer'];
+  const adjectives = [
+    'happy',
+    'silly',
+    'brave',
+    'calm',
+    'eager',
+    'fair',
+    'gentle',
+    'kind',
+    'proud',
+    'witty',
+    'wise',
+    'clever',
+    'bright',
+    'swift',
+  ];
+  const nouns = [
+    'cat',
+    'dog',
+    'bird',
+    'fish',
+    'bear',
+    'wolf',
+    'fox',
+    'deer',
+    'lion',
+    'tiger',
+    'panda',
+    'owl',
+    'hawk',
+    'eagle',
+  ];
+  const verbs = [
+    'jumps',
+    'runs',
+    'flies',
+    'swims',
+    'dances',
+    'sings',
+    'laughs',
+    'plays',
+    'sleeps',
+    'dreams',
+  ];
+
   const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
   const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
-  return `${randomAdjective}-${randomNoun}-${Date.now().toString(36)}`;
+  const randomVerb = verbs[Math.floor(Math.random() * verbs.length)];
+
+  // Add timestamp suffix to guarantee uniqueness even with same random words
+  // Format: adjective-noun-verb-timestamp (e.g., happy-cat-jumps-k2j5x9)
+  const timestamp = Date.now().toString(36);
+
+  return `${randomAdjective}-${randomNoun}-${randomVerb}-${timestamp}`;
 }
 
 function createChangeset(commit, changesetType, affectedPackages) {
@@ -126,19 +274,26 @@ function createChangeset(commit, changesetType, affectedPackages) {
   // Generate changeset content
   const packageChanges = affectedPackages.map((pkg) => `"${pkg}": ${changesetType}`).join('\n');
 
+  // Clean up subject and body for better readability
+  const cleanSubject = commit.subject.trim();
+  const cleanBody = commit.body ? commit.body.trim() : '';
+
+  // Add breaking change notice
+  const breakingNotice =
+    commit.notes.length > 0
+      ? '\n\n**BREAKING CHANGE**\n\nThis is a breaking change that requires attention during upgrade.\n'
+      : '';
+
   const changesetContent = `---
 ${packageChanges}
 ---
 
-${commit.subject}
-
-${commit.body || ''}
-
-Commit: ${commit.hash}
+${cleanSubject}
+${cleanBody ? `\n${cleanBody}` : ''}${breakingNotice}
 `;
 
-  fs.writeFileSync(filepath, changesetContent);
-  console.log(`Created changeset: ${filename}`);
+  fs.writeFileSync(filepath, changesetContent.trim() + '\n');
+  console.log(`  Created changeset: ${filename}`);
   return filename;
 }
 
@@ -163,7 +318,7 @@ function main() {
   try {
     commits = getCommitsSinceLastTag();
   } catch (error) {
-    console.error('Error getting commits:', error.message);
+    console.error('Error getting commits:', error);
     process.exit(1);
   }
   if (commits.length === 0) {
@@ -178,40 +333,69 @@ function main() {
     const subject = parts[1] || '';
     console.log(`  ${i + 1}. ${hash.substring(0, 7)} - ${subject}`);
   });
+
+  console.log('\nProcessing commits...\n');
   let generatedChangesets = 0;
+  let skippedCommits = 0;
 
   for (const commitLine of commits) {
     const commit = parseCommit(commitLine);
 
-    // Skip commits that are not conventional or are changeset commits
-    if (!commit.type || commit.subject.includes('chore: release packages')) {
-      console.log(`Skipping: ${commit.hash} - ${commit.subject} (no type: ${!commit.type})`);
+    // Skip commits based on patterns
+    if (shouldSkipCommit(commit)) {
+      console.log(`Skipping: ${commit.hash} - ${commit.subject}`);
+      console.log(`   Reason: Matches skip pattern`);
+      skippedCommits++;
+      continue;
+    }
+
+    // Skip commits without a conventional type
+    if (!commit.type) {
+      console.log(`Skipping: ${commit.hash} - ${commit.subject}`);
+      console.log(`   Reason: Not a conventional commit`);
+      skippedCommits++;
       continue;
     }
 
     const changesetType = determineChangesetType(commit);
     const affectedPackages = determineAffectedPackages(commit);
 
-    console.log(
-      `${commit.type}(${commit.scope || 'general'}): ${commit.subject} -> ${changesetType}`,
-    );
+    // Skip if no packages affected (e.g., docs-only changes)
+    if (!affectedPackages || affectedPackages.length === 0) {
+      console.log(`Skipping: ${commit.hash} - ${commit.subject}`);
+      console.log(`   Reason: No packages affected`);
+      skippedCommits++;
+      continue;
+    }
+
+    console.log(`\nProcessing: ${commit.type}(${commit.scope || 'general'}): ${commit.subject}`);
+    console.log(`   Version bump: ${changesetType}`);
+    console.log(`   Packages: ${affectedPackages.join(', ')}`);
 
     createChangeset(commit, changesetType, affectedPackages);
     generatedChangesets++;
   }
 
-  console.log(`✅ Generated ${generatedChangesets} changesets`);
+  console.log(`\n${'='.repeat(60)}`);
+  console.log(`Generated ${generatedChangesets} changeset${generatedChangesets !== 1 ? 's' : ''}`);
+  console.log(`Skipped ${skippedCommits} commit${skippedCommits !== 1 ? 's' : ''}`);
+  console.log(`${'='.repeat(60)}\n`);
 
   if (generatedChangesets > 0) {
-    console.log('\nNext steps:');
+    console.log('Next steps:');
     console.log('1. Review the generated changesets in .changeset/');
-    console.log('2. Edit them if needed');
+    console.log('2. Edit them if needed (adjust version type or description)');
     console.log('3. Run "npm run changeset:status" to see pending changes');
-    console.log('4. Run "npm run release:version" to bump versions');
+    console.log('4. Commit and push to continue');
+  } else {
+    console.log('Tips for generating changesets:');
+    console.log('- Use conventional commits: feat:, fix:, chore:, etc.');
+    console.log('- Make changes to package files (not just docs/examples)');
+    console.log('- Or create changesets manually: npm run changeset');
   }
 }
 
-export { main, parseCommit, determineChangesetType, determineAffectedPackages };
+export { main, parseCommit, determineChangesetType, determineAffectedPackages, shouldSkipCommit };
 
 // Run main if this is the entry point
 if (
