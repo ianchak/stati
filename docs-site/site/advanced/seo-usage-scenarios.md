@@ -17,7 +17,7 @@ This guide covers five different approaches to using Stati's SEO features, from 
 - [Scenario 4: Selective Manual Control](#scenario-4-selective-manual-control)
 - [Scenario 5: Full Custom Control](#scenario-5-full-custom-control)
 - [Comparison Table](#comparison-table)
-- [Testing & Validation](#testing--validation)
+- [Testing & Validation](#testing-validation)
 
 ---
 

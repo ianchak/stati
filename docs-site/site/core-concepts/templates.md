@@ -47,8 +47,8 @@ data-id="<%= `item-${id}` %>"
 
 ```eta
 <!-- Variables -->
-<h1><%= stati.title %></h1>
-<p><%= stati.description %></p>
+<h1><%= stati.page.title %></h1>
+<p><%= stati.page.description %></p>
 
 <!-- Raw HTML (unescaped) -->
 <div><%~ stati.content %></div>
@@ -77,11 +77,11 @@ In your templates, you have access to:
 
 ```eta
 <!-- Page data -->
-<%= stati.title %>          <!-- From front matter -->
-<%= stati.description %>    <!-- From front matter -->
+<%= stati.page.title %>     <!-- From front matter -->
+<%= stati.page.description %> <!-- From front matter -->
 <%= stati.content %>        <!-- Rendered markdown content -->
-<%= stati.url %>            <!-- Current page URL -->
-<%= stati.date %>           <!-- Page date (if specified) -->
+<%= stati.page.url %>       <!-- Current page URL -->
+<%= stati.page.date %>      <!-- Page date (if specified) -->
 
 <!-- Site data -->
 <%= stati.site.title %>     <!-- Site title from config -->
@@ -148,8 +148,8 @@ The first match wins, providing maximum flexibility while maintaining sensible d
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= stati.title ? `${stati.title} | ${stati.site.title}` : stati.site.title %></title>
-    <meta name="description" content="<%= stati.description || stati.site.description %>">
+    <title><%= stati.page.title ? `${stati.page.title} | ${stati.site.title}` : stati.site.title %></title>
+    <meta name="description" content="<%= stati.page.description || stati.site.description %>">
 
     <!-- Favicon -->
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -158,10 +158,10 @@ The first match wins, providing maximum flexibility while maintaining sensible d
     <link rel="stylesheet" href="/styles.css">
 
     <!-- SEO Meta Tags -->
-    <meta property="og:title" content="<%= stati.title || stati.site.title %>">
-    <meta property="og:description" content="<%= stati.description || stati.site.description %>">
+    <meta property="og:title" content="<%= stati.page.title || stati.site.title %>">
+    <meta property="og:description" content="<%= stati.page.description || stati.site.description %>">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="<%= stati.site.baseUrl + stati.url %>">
+    <meta property="og:url" content="<%= stati.site.baseUrl + stati.page.url %>">
 </head>
 <body>
     <%~ stati.partials.header %>
@@ -187,17 +187,17 @@ The first match wins, providing maximum flexibility while maintaining sensible d
     </aside>
 
     <article class="blog-content">
-        <% if (stati.title) { %>
+        <% if (stati.page.title) { %>
         <header class="post-header">
-            <h1><%= stati.title %></h1>
-            <% if (stati.date) { %>
-            <time datetime="<%= stati.date %>">
-                <%= new Date(stati.date).toLocaleDateString() %>
+            <h1><%= stati.page.title %></h1>
+            <% if (stati.page.date) { %>
+            <time datetime="<%= stati.page.date %>">
+                <%= new Date(stati.page.date).toLocaleDateString() %>
             </time>
             <% } %>
-            <% if (stati.tags) { %>
+            <% if (stati.page.tags) { %>
             <div class="tags">
-                <% stati.tags.forEach(tag => { %>
+                <% stati.page.tags.forEach(tag => { %>
                 <span class="tag"><%= tag %></span>
                 <% }); %>
             </div>
@@ -448,19 +448,19 @@ Template usage:
 
 ```eta
 <article>
-    <h1><%= stati.title %></h1>
+    <h1><%= stati.page.title %></h1>
 
-    <% if (stati.featured) { %>
+    <% if (stati.page.featured) { %>
     <div class="featured-badge">Featured Post</div>
     <% } %>
 
     <div class="post-meta">
-        <span>By <%= stati.author %></span>
-        <time><%= new Date(stati.date).toLocaleDateString() %></time>
+        <span>By <%= stati.page.author %></span>
+        <time><%= new Date(stati.page.date).toLocaleDateString() %></time>
     </div>
 
     <div class="tags">
-        <% stati.tags.forEach(tag => { %>
+        <% stati.page.tags.forEach(tag => { %>
         <a href="/tags/<%= tag %>/" class="tag">#<%= tag %></a>
         <% }); %>
     </div>
@@ -509,7 +509,7 @@ Access site configuration in any template:
 
 ```eta
 <!-- Format dates -->
-<time><%= new Date(stati.date).toLocaleDateString('en-US', {
+<time><%= new Date(stati.page.date).toLocaleDateString('en-US', {
   year: 'numeric',
   month: 'long',
   day: 'numeric'
@@ -518,7 +518,7 @@ Access site configuration in any template:
 <!-- Relative time -->
 <%
 const now = new Date();
-const postDate = new Date(stati.date);
+const postDate = new Date(stati.page.date);
 const diffTime = Math.abs(now - postDate);
 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 %>
@@ -530,7 +530,7 @@ const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   <% } else if (diffDays < 7) { %>
     <%= diffDays %> days ago
   <% } else { %>
-    <%= new Date(stati.date).toLocaleDateString() %>
+    <%= new Date(stati.page.date).toLocaleDateString() %>
   <% } %>
 </span>
 ```
@@ -545,7 +545,7 @@ function truncate(text, length = 150) {
   return text.slice(0, length) + '...';
 }
 %>
-<p class="excerpt"><%= truncate(stati.description) %></p>
+<p class="excerpt"><%= truncate(stati.page.description) %></p>
 
 <!-- Slugify text -->
 <%
@@ -700,10 +700,10 @@ You can access Stati's version information in templates using `stati.generator.v
 <% if (stati.site.debug) { %>
 <pre style="background: #f0f0f0; padding: 1rem; font-size: 12px;">
 <%= JSON.stringify({
-  title: stati.title,
-  url: stati.url,
-  layout: stati.layout,
-  keys: Object.keys(it)
+  title: stati.page.title,
+  url: stati.page.url,
+  layout: stati.page.layout,
+  keys: Object.keys(stati)
 }, null, 2) %>
 </pre>
 <% } %>
@@ -715,8 +715,8 @@ You can access Stati's version information in templates using `stati.generator.v
 <!-- Graceful degradation -->
 <% try { %>
     <div class="author-info">
-        <img src="<%= stati.author.avatar %>" alt="<%= stati.author.name %>">
-        <span><%= stati.author.name %></span>
+        <img src="<%= stati.page.author.avatar %>" alt="<%= stati.page.author.name %>">
+        <span><%= stati.page.author.name %></span>
     </div>
 <% } catch (error) { %>
     <div class="author-info">
@@ -725,8 +725,8 @@ You can access Stati's version information in templates using `stati.generator.v
 <% } %>
 
 <!-- Safe property access -->
-<% if (stati.author && stati.author.name) { %>
-    <span class="author">By <%= stati.author.name %></span>
+<% if (stati.page.author && stati.page.author.name) { %>
+    <span class="author">By <%= stati.page.author.name %></span>
 <% } %>
 ```
 

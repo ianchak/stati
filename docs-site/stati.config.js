@@ -8,7 +8,17 @@ export default defineConfig({
   },
   markdown: {
     plugins: [
-      'anchor',
+      [
+        'anchor',
+        {
+          slugify: (s) =>
+            s
+              .toLowerCase()
+              .trim()
+              .replace(/[\s\W-]+/g, '-') // Replace spaces and non-word chars with hyphens
+              .replace(/^-+|-+$/g, ''), // Remove leading/trailing hyphens
+        },
+      ],
       'toc-done-right',
       ['external-links', { externalTarget: '_blank' }],
       [
