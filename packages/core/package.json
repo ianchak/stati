@@ -1,6 +1,6 @@
 {
   "name": "@stati/core",
-  "version": "1.10.1",
+  "version": "1.10.3",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -21,6 +21,11 @@
   "files": [
     "dist"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ianchak/stati.git",
+    "directory": "packages/core"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsc -p tsconfig.json --watch",

@@ -1,0 +1,175 @@
+name: Changeset Bot
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+
+# Prevent multiple bot runs for the same PR
+concurrency:
+  group: changeset-bot-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check-and-suggest:
+    # Skip if PR has 'skip-changeset' label or is from a fork
+    if: |
+      !contains(github.event.pull_request.labels.*.name, 'skip-changeset') &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check for existing changesets
+        id: check-existing
+        run: |
+          set -e
+          if [ -n "$(ls -A .changeset/*.md 2>/dev/null | grep -v README)" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Changeset already exists"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "No changeset found"
+          fi
+
+      - name: Install dependencies
+        if: steps.check-existing.outputs.exists == 'false'
+        run: |
+          set -e
+          npm ci || {
+            echo "Failed to install dependencies"
+            exit 1
+          }
+
+      - name: Generate changeset suggestion
+        if: steps.check-existing.outputs.exists == 'false'
+        id: generate
+        run: |
+          set -e
+          echo "Generating changeset from commits..."
+          node scripts/generate-changesets.mjs || {
+            echo "Warning: Changeset generation failed"
+            echo "failed=true" >> $GITHUB_OUTPUT
+            exit 0
+          }
+          echo "failed=false" >> $GITHUB_OUTPUT
+
+      - name: Commit auto-generated changeset
+        if: steps.check-existing.outputs.exists == 'false' && steps.generate.outputs.failed == 'false'
+        id: commit-changeset
+        run: |
+          set -e
+          if [ -n "$(git status --porcelain .changeset/)" ]; then
+            git config user.name "changeset-bot[bot]"
+            git config user.email "changeset-bot[bot]@users.noreply.github.com"
+            git add .changeset/
+            git commit -m "chore: add auto-generated changeset [skip ci]" || {
+              echo "Failed to commit changeset"
+              echo "committed=false" >> $GITHUB_OUTPUT
+              exit 0
+            }
+            git push || {
+              echo "Failed to push changeset"
+              echo "committed=false" >> $GITHUB_OUTPUT
+              exit 0
+            }
+            echo "committed=true" >> $GITHUB_OUTPUT
+            echo "Auto-generated changeset committed"
+          else
+            echo "committed=false" >> $GITHUB_OUTPUT
+            echo "No conventional commits found to generate changeset"
+          fi
+
+      - name: Comment on PR - Success
+        if: steps.commit-changeset.outputs.committed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const changesetFiles = require('child_process')
+              .execSync('ls .changeset/*.md | grep -v README || true')
+              .toString()
+              .trim()
+              .split('\n')
+              .filter(Boolean)
+              .map(f => f.replace('.changeset/', ''));
+
+            const filesList = changesetFiles.map(f => '- `.changeset/' + f + '`').join('\n');
+            const countText = changesetFiles.length > 1 ? 'changesets' : 'a changeset';
+
+            const message = '🤖 **Auto-generated changeset added!**\n\n' +
+              'I analyzed your commits using conventional commit patterns and created ' + countText + '.\n\n' +
+              '**Generated files:**\n' + filesList + '\n\n' +
+              '**What to do next:**\n' +
+              '1. Review the changeset file(s) above\n' +
+              '2. Edit if needed (adjust version bump type or description)\n' +
+              '3. Commit any changes to this PR\n' +
+              '4. Merge when ready\n\n' +
+              '**Tips:**\n' +
+              '- To skip changeset generation, add the `skip-changeset` label\n' +
+              '- For manual creation, run: `npm run changeset`';
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: message
+            });
+
+      - name: Comment on PR - No conventional commits
+        if: steps.check-existing.outputs.exists == 'false' && steps.commit-changeset.outputs.committed == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const message = '**No changeset detected**\n\n' +
+              'I couldn\'t find or generate a changeset for this PR.\n\n' +
+              '**Possible reasons:**\n' +
+              '- No conventional commits found (e.g., `feat:`, `fix:`, etc.)\n' +
+              '- Only non-functional changes (docs, tests, etc.)\n\n' +
+              '**What to do:**\n' +
+              '1. **If this PR should release packages:**\n' +
+              '   - Create a changeset manually: `npm run changeset`\n' +
+              '   - Or use conventional commits (see below)\n' +
+              '2. **If no release is needed:**\n' +
+              '   - Add the `skip-changeset` label to this PR\n\n' +
+              '**Conventional commit examples:**\n' +
+              '- `feat: add new feature` → minor version bump\n' +
+              '- `fix: resolve bug` → patch version bump\n' +
+              '- `feat!: breaking change` → major version bump\n\n' +
+              '**Note:** Without a changeset, merging this PR won\'t trigger a package release.';
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: message
+            });
+
+      - name: Comment on PR - Already exists
+        if: steps.check-existing.outputs.exists == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const message = '**Changeset found!**\n\n' +
+              'This PR already has a changeset. No action needed from the bot.\n\n' +
+              'You can review/edit the changeset file(s) in `.changeset/` before merging.';
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: message
+            });

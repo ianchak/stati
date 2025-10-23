@@ -16,8 +16,10 @@ This guide will walk you through creating your first Stati site from scratch. Yo
 
 Before we start, make sure you have:
 
-- **Node.js** 22.0.0 or higher
-- **npm** 8.0.0 or higher
+## Prerequisites
+
+- Node.js 22+
+- npm 11.5.1 or higher
 - A text editor (VS Code recommended)
 
 ## Step 1: Create a New Project

@@ -21,11 +21,10 @@
     "changeset": "changeset",
     "changeset:status": "changeset status",
     "changeset:generate": "node scripts/generate-changesets.mjs",
-    "release:version": "changeset version && echo Note: Pathspec warnings above are normal when processing changesets",
-    "release:publish": "changeset publish",
-    "release:dry": "changeset version --dry-run",
-    "release": "npm run build && npm run changeset:generate && npm run release:version && npm run release:publish && git push --follow-tags",
-    "release:manual": "npm run build && npm run release:version && npm run release:publish && git push --follow-tags",
+    "changeset:version": "changeset version && echo Note: Pathspec warnings above are normal when processing changesets",
+    "changeset:publish": "changeset publish",
+    "changeset:dry-run": "changeset version --dry-run",
+    "release:emergency": "npm run build && npm run changeset:version && npm run changeset:publish && git push --follow-tags",
     "prepare": "husky"
   },
   "repository": {
@@ -46,7 +45,8 @@
     "examples/*"
   ],
   "engines": {
-    "node": ">=22"
+    "node": ">=22",
+    "npm": ">=11.5.1"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^0.5.1",
