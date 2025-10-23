@@ -368,7 +368,7 @@ Each package can be used independently or together for the complete Stati experi
 ## Requirements
 
 - **Node.js** 22.0.0 or higher
-- **npm** 8.0.0 or higher (or equivalent package manager)
+- **npm** 11.5.1 or higher (or equivalent package manager)
 
 ---
 

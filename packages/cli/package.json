@@ -1,6 +1,6 @@
 {
   "name": "@stati/cli",
-  "version": "1.6.1",
+  "version": "1.6.3",
   "type": "module",
   "bin": {
     "stati": "./dist/cli.js"
@@ -8,13 +8,18 @@
   "files": [
     "dist"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ianchak/stati.git",
+    "directory": "packages/cli"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsc -p tsconfig.json --watch",
     "test": "vitest run"
   },
   "dependencies": {
-    "@stati/core": "^1.10.1",
+    "@stati/core": "^1.10.3",
     "yargs": "^17.7.2"
   },
   "devDependencies": {
