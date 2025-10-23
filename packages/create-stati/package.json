@@ -8,6 +8,11 @@
   "files": [
     "dist"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ianchak/stati.git",
+    "directory": "packages/create-stati"
+  },
   "scripts": {
     "build": "rimraf dist && tsc -p tsconfig.json && npm run copy-templates",
     "copy-templates": "node -e \"const fs=require('fs-extra');fs.copySync('../../examples','dist/templates',{filter:(src)=>!src.includes('node_modules')&&!src.includes('.stati')&&!src.includes('dist')});\"",
