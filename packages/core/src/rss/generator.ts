@@ -192,8 +192,7 @@ export function generateRSSFeed(
   logger?: Logger,
 ): RSSGenerationResult {
   // Filter and sort pages
-  let feedPages = filterPages(pages, feedConfig);
-  feedPages = sortPages(feedPages, feedConfig);
+  let feedPages = sortPages(filterPages(pages, feedConfig), feedConfig);
 
   // Limit to maxItems if specified
   if (feedConfig.maxItems && feedConfig.maxItems > 0) {
