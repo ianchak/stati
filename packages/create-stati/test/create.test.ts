@@ -211,5 +211,101 @@ describe('create-stati scaffolding', () => {
       );
       expect(packageJson.name).toBe('');
     });
+
+    it('should skip dependency installation when install is false', async () => {
+      const projectDir = join(tempDir, 'test-no-install');
+
+      // Ensure clean state - remove directory if it exists from previous runs
+      try {
+        await rm(projectDir, { recursive: true, force: true });
+      } catch {
+        // Directory doesn't exist, which is fine
+      }
+
+      const options: CreateOptions = {
+        projectName: 'test-no-install',
+        template: 'blank',
+        styling: 'css',
+        gitInit: false,
+        install: false,
+        dir: projectDir,
+      };
+
+      const result = await createSite(options);
+
+      // Project should be created successfully
+      expect(result.projectName).toBe('test-no-install');
+      await expect(access(join(result.targetDir, 'package.json'))).resolves.not.toThrow();
+
+      // node_modules should not exist
+      await expect(access(join(result.targetDir, 'node_modules'))).rejects.toThrow();
+    });
+
+    it('should handle dependency installation gracefully when install is true', async () => {
+      const projectDir = join(tempDir, 'test-with-install');
+
+      // Ensure clean state - remove directory if it exists from previous runs
+      try {
+        await rm(projectDir, { recursive: true, force: true });
+      } catch {
+        // Directory doesn't exist, which is fine
+      }
+
+      const options: CreateOptions = {
+        projectName: 'test-with-install',
+        template: 'blank',
+        styling: 'css',
+        gitInit: false,
+        install: true,
+        dir: projectDir,
+      };
+
+      // Mock console to capture installation messages
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const result = await createSite(options);
+
+      // Project should be created successfully
+      expect(result.projectName).toBe('test-with-install');
+      await expect(access(join(result.targetDir, 'package.json'))).resolves.not.toThrow();
+
+      // Installation might fail in test environment, but that's okay - it should warn, not throw
+      // The test passes as long as the project is created
+
+      consoleSpy.mockRestore();
+      consoleWarnSpy.mockRestore();
+    }, 30000); // Increase timeout to 30 seconds for npm install
+
+    it('should use specified package manager when provided', async () => {
+      const projectDir = join(tempDir, 'test-with-pnpm');
+      const options: CreateOptions = {
+        projectName: 'test-with-pnpm',
+        template: 'blank',
+        styling: 'css',
+        gitInit: false,
+        install: true,
+        packageManager: 'pnpm',
+        dir: projectDir,
+      };
+
+      // Mock console to capture installation messages
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const result = await createSite(options);
+
+      // Project should be created successfully
+      expect(result.projectName).toBe('test-with-pnpm');
+      await expect(access(join(result.targetDir, 'package.json'))).resolves.not.toThrow();
+
+      // Check that the console log was called with pnpm
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Installing dependencies with pnpm'),
+      );
+
+      consoleSpy.mockRestore();
+      consoleWarnSpy.mockRestore();
+    }, 30000); // Increase timeout to 30 seconds for package manager install
   });
 });

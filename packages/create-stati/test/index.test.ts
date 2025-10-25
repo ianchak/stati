@@ -12,9 +12,13 @@ vi.mock('inquirer', () => ({
   default: mockInquirer,
 }));
 
-vi.mock('../src/create.js', () => ({
-  createSite: mockCreateSite,
-}));
+vi.mock('../src/create.js', async (importOriginal) => {
+  const actual = (await importOriginal()) as typeof import('../src/create.js');
+  return {
+    ...actual,
+    createSite: mockCreateSite,
+  };
+});
 
 // Mock console methods
 const mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -70,19 +74,39 @@ describe('create-stati CLI', () => {
       );
     });
 
-    it('should parse git initialization flags', async () => {
-      const result1 = await parseArgs(['test-project', '--git']);
-      const result2 = await parseArgs(['test-project', '--no-git']);
+    it('should parse git initialization flag', async () => {
+      const result = await parseArgs(['test-project', '--no-git']);
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          gitInit: false,
+        }),
+      );
+    });
+
+    it('should parse install flags', async () => {
+      const result = await parseArgs(['test-project', '--no-install']);
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          install: false,
+        }),
+      );
+    });
+
+    it('should parse package-manager flag', async () => {
+      const result1 = await parseArgs(['test-project', '--package-manager=pnpm']);
+      const result2 = await parseArgs(['test-project', '--package-manager', 'yarn']);
 
       expect(result1).toEqual(
         expect.objectContaining({
-          gitInit: true,
+          packageManager: 'pnpm',
         }),
       );
 
       expect(result2).toEqual(
         expect.objectContaining({
-          gitInit: false,
+          packageManager: 'yarn',
         }),
       );
     });
@@ -93,6 +117,7 @@ describe('create-stati CLI', () => {
         '--styling=sass',
         '--no-git',
         '--template=blank',
+        '--package-manager=pnpm',
       ]);
 
       expect(result).toEqual({
@@ -100,6 +125,7 @@ describe('create-stati CLI', () => {
         styling: 'sass',
         gitInit: false,
         template: 'blank',
+        packageManager: 'pnpm',
       });
     });
 

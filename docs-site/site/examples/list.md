@@ -61,6 +61,8 @@ npm create stati my-site
 # - Template: blank (only option currently)
 # - Styling: CSS, Sass, or Tailwind CSS
 # - Git initialization
+# - Dependency installation (automatic or manual)
+# - Package manager selection (npm, yarn, pnpm, bun)
 ```
 
 ### Manual Setup

@@ -15,7 +15,7 @@ The `create-stati` package provides an interactive scaffolding tool to quickly s
 npm create stati my-site
 
 # Non-interactive with options
-npm create stati my-site --template=blank --styling=tailwind --git
+npm create stati my-site --template=blank --styling=tailwind
 ```
 
 Running the scaffolder will:
@@ -24,9 +24,12 @@ Running the scaffolder will:
 - Copy the blank starter template files into that directory
 - Update `package.json` with your project name and Stati metadata
 - Set up optional styling scripts based on the chosen styling option
-- Initialize a Git repository when `--git` is supplied (defaults to prompt)
+- Initialize a Git repository by default (use `--no-git` to skip)
+- Install dependencies automatically when enabled (defaults to prompt)
 
-> **Note:** Dependencies are not installed automatically. Follow the post-creation steps below to install packages.
+> **Note:** You can skip automatic dependency installation with `--no-install` and install them manually later.
+>
+> **Non-Interactive Mode:** When using CLI flags (non-interactive mode), dependencies are installed by default using `npm`. Use `--package-manager` to specify a different package manager (yarn, pnpm, or bun).
 
 ## Interactive Setup
 
@@ -35,6 +38,8 @@ The scaffolder will prompt you for:
 1. **Project name** - Name for your new Stati site
 2. **Styling solution** - Choose between CSS, Sass, or Tailwind CSS
 3. **Git initialization** - Whether to initialize a Git repository
+4. **Dependency installation** - Whether to install dependencies automatically
+5. **Package manager** - Which package manager to use (if multiple are detected)
 
 ## Command Line Options
 
@@ -42,11 +47,12 @@ The scaffolder will prompt you for:
 npx create-stati <project-name> [options]
 
 Options:
-  --template <name>     Template to use (currently: blank)
-  --styling <type>      CSS solution (css|sass|tailwind)
-  --git                 Initialize git repository
-  --no-git              Skip git initialization
-  --help, -h            Show help message
+  --template <name>        Template to use (currently: blank)
+  --styling <type>         CSS solution (css|sass|tailwind)
+  --no-git                 Skip git initialization (default: initializes Git)
+  --no-install             Skip dependency installation (default: installs dependencies)
+  --package-manager <pm>   Package manager to use (npm|yarn|pnpm|bun)
+  --help, -h               Show help message
 ```
 
 ## Project Templates
@@ -90,7 +96,7 @@ After creating your site:
 
 ```bash
 cd my-site
-npm install
+npm install  # Skip if you installed dependencies during setup
 npm run dev
 ```
 

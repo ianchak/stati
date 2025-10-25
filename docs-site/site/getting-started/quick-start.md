@@ -43,7 +43,7 @@ Navigate to your new project:
 cd my-first-site
 ```
 
-> **Next step:** Run `npm install` once you're inside the project—dependencies aren't installed automatically by the scaffolder.
+> **Note:** If you chose to install dependencies during scaffolding, they're already installed. Otherwise, run `npm install` before continuing.
 
 ## Step 2: Explore the Project Structure
 
