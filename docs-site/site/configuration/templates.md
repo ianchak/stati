@@ -185,8 +185,6 @@ export default defineConfig({
 });
 ```
 
-Define powerful custom filters for template processing:
-
 ## Filter Examples
 
 Here are practical filter examples you can use in your project:
