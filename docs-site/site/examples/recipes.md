@@ -577,47 +577,33 @@ export default defineConfig({
       { untilDays: 7, ttlSeconds: 21600 },    // 6 hours for week-old content
       { untilDays: 30, ttlSeconds: 86400 },   // 1 day for month-old content
       { untilDays: 90, ttlSeconds: 259200 },  // 3 days for 3-month-old content
-    ],
-
-    // Tag-based invalidation
-    tagging: {
-      enabled: true,
-      rules: [
-        // Tag by content type
-        (page) => page.frontMatter.type ? [`type:${page.frontMatter.type}`] : [],
-
-        // Tag by category
-        (page) => page.frontMatter.category ? [`category:${page.frontMatter.category}`] : [],
-
-        // Tag by author
-        (page) => page.frontMatter.author ? [`author:${page.frontMatter.author}`] : [],
-
-        // Tag by recency
-        (page) => {
-          if (!page.publishedAt) return [];
-          const now = new Date();
-          const published = new Date(page.publishedAt);
-          const diffDays = Math.floor((now - published) / (1000 * 60 * 60 * 24));
-
-          if (diffDays <= 7) return ['recent'];
-          if (diffDays <= 30) return ['this-month'];
-          return ['archive'];
-        }
-      ]
-    }
+    ]
   }
 });
 ```
 
-Invalidate cache using tags:
+**Cache Tags:**
+
+Stati automatically extracts tags from each page's frontmatter `tags` array field. These tags can be used for targeted cache invalidation.
+
+**Example frontmatter:**
+
+```markdown
+---
+title: My Blog Post
+tags: [blog, tutorial, javascript]
+---
+```
+
+This page will be tagged with `blog`, `tutorial`, and `javascript` in the cache, allowing you to invalidate all related content:
 
 ```bash
-# Invalidate by tag
-stati invalidate "tag:recent"
-stati invalidate "tag:type:post"
+# Invalidate by tag from frontmatter
+stati invalidate "tag:blog"
+stati invalidate "tag:tutorial"
 
-# Invalidate by path pattern
-stati invalidate "path:/blog/**"
+# Invalidate by glob pattern
+stati invalidate "glob:/blog/**"
 
 # Invalidate by age
 stati invalidate "age:3months"
