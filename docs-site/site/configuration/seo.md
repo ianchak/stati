@@ -37,7 +37,7 @@ By default, Stati automatically injects SEO metadata into all pages during build
 When auto-injection is enabled (default), Stati automatically generates:
 
 - **Title tag** - From page title or site title
-- **Meta description** - From page description or excerpt
+- **Meta description** - From page description
 - **Meta keywords** - From page tags or keywords
 - **Canonical URL** - Based on page URL and site base URL
 - **Author meta tag** - From page author or site default author
