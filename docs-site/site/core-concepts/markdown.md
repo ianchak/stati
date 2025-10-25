@@ -23,7 +23,7 @@ Stati supports all standard Markdown syntax out of the box:
 
 **Bold text** and _italic text_
 
-[Links](https://example.com) and [internal links](/about/)
+[Links](https://example.com) and [internal links](/getting-started/introduction/)
 
 - Unordered lists
 - With multiple items

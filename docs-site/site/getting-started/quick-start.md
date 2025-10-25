@@ -144,7 +144,9 @@ Edit `site/layout.eta` to add navigation:
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title><%= stati.page.title ? `${stati.page.title} | ${stati.site.title}` : stati.site.title %></title>
-    <meta name="description" content="<%= stati.page.description || stati.site.description %>" />
+    <% if (stati.page.description) { %>
+    <meta name="description" content="<%= stati.page.description %>" />
+    <% } %>
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>

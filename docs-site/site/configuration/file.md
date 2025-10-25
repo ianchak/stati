@@ -20,8 +20,8 @@ import { defineConfig } from '@stati/core';
 export default defineConfig({
   site: {
     title: 'My Stati Site',
-    description: 'A modern static site built with Stati',
     baseUrl: 'https://my-site.com',
+    defaultLocale: 'en-US',
   },
 });
 ```
@@ -32,12 +32,11 @@ For full type safety, use `stati.config.ts`:
 
 ```typescript
 import { defineConfig } from '@stati/core';
-import type { StatiConfig } from '@stati/core/types';
+import type { StatiConfig } from '@stati/core';
 
 const config: StatiConfig = {
   site: {
     title: 'My Stati Site',
-    description: 'A modern static site built with Stati',
     baseUrl: 'https://my-site.com',
     defaultLocale: 'en-US',
   },

@@ -54,16 +54,16 @@ data-id="<%= `item-${id}` %>"
 <div><%~ stati.content %></div>
 
 <!-- Conditionals -->
-<% if (stati.user) { %>
-  <p>Welcome, <%= stati.user.name %>!</p>
+<% if (stati.page.author) { %>
+  <p>Written by <%= stati.page.author %></p>
 <% } else { %>
-  <p>Please log in.</p>
+  <p>Author unknown</p>
 <% } %>
 
 <!-- Loops -->
 <ul>
-<% stati.posts.forEach(post => { %>
-  <li><a href="<%= post.url %>"><%= post.title %></a></li>
+<% (stati.collection?.pages || []).forEach(page => { %>
+  <li><a href="<%= page.url %>"><%= page.title %></a></li>
 <% }); %>
 </ul>
 
@@ -86,13 +86,13 @@ In your templates, you have access to:
 <!-- Site data -->
 <%= stati.site.title %>     <!-- Site title from config -->
 <%= stati.site.baseUrl %>   <!-- Site base URL -->
-<%= stati.site.description %> <!-- Site description -->
+<%= stati.site.defaultLocale %> <!-- Default locale (optional) -->
 
 <!-- Generator data -->
 <%= stati.generator.version %> <!-- Stati core version -->
 
-<!-- Template data -->
-<%= stati.layout %>         <!-- Current layout name -->
+<!-- Page frontmatter data -->
+<%= stati.page.layout %>    <!-- Layout name from frontmatter -->
 <%= stati.partials.header %> <!-- Partial templates -->
 ```
 
@@ -149,7 +149,9 @@ The first match wins, providing maximum flexibility while maintaining sensible d
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= stati.page.title ? `${stati.page.title} | ${stati.site.title}` : stati.site.title %></title>
-    <meta name="description" content="<%= stati.page.description || stati.site.description %>">
+    <% if (stati.page.description) { %>
+    <meta name="description" content="<%= stati.page.description %>">
+    <% } %>
 
     <!-- Favicon -->
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -159,7 +161,9 @@ The first match wins, providing maximum flexibility while maintaining sensible d
 
     <!-- SEO Meta Tags -->
     <meta property="og:title" content="<%= stati.page.title || stati.site.title %>">
-    <meta property="og:description" content="<%= stati.page.description || stati.site.description %>">
+    <% if (stati.page.description) { %>
+    <meta property="og:description" content="<%= stati.page.description %>">
+    <% } %>
     <meta property="og:type" content="website">
     <meta property="og:url" content="<%= stati.site.baseUrl + stati.page.url %>">
 </head>
@@ -255,10 +259,10 @@ site/
         </div>
 
         <ul class="nav-links">
-            <li><a href="/" class="<%= stati.url === '/' ? 'active' : '' %>">Home</a></li>
-            <li><a href="/blog/" class="<%= stati.url.startsWith('/blog/') ? 'active' : '' %>">Blog</a></li>
-            <li><a href="/docs/" class="<%= stati.url.startsWith('/docs/') ? 'active' : '' %>">Docs</a></li>
-            <li><a href="/about/" class="<%= stati.url === '/about/' ? 'active' : '' %>">About</a></li>
+            <li><a href="/" class="<%= stati.page.url === '/' ? 'active' : '' %>">Home</a></li>
+            <li><a href="/blog/" class="<%= stati.page.url.startsWith('/blog/') ? 'active' : '' %>">Blog</a></li>
+            <li><a href="/docs/" class="<%= stati.page.url.startsWith('/docs/') ? 'active' : '' %>">Docs</a></li>
+            <li><a href="/about/" class="<%= stati.page.url === '/about/' ? 'active' : '' %>">About</a></li>
         </ul>
     </nav>
 </header>
@@ -273,9 +277,6 @@ Partials are automatically available in templates:
 <%~ stati.partials.header %>
 <%~ stati.partials.footer %>
 <%~ stati.partials.sidebar %>
-
-<!-- Partials can be nested -->
-<%~ stati.partials.blogSidebar %>  <!-- From blog/_partials/sidebar.eta -->
 ```
 
 ### Passing Data to Partials
@@ -471,38 +472,6 @@ Template usage:
 </article>
 ```
 
-### Global Site Data
-
-Access site configuration in any template:
-
-```eta
-<!-- Site metadata -->
-<title><%= stati.site.title %></title>
-<meta name="description" content="<%= stati.site.description %>">
-
-<!-- Social links -->
-<% if (stati.site.social) { %>
-<div class="social-links">
-    <% Object.entries(stati.site.social).forEach(([platform, url]) => { %>
-    <a href="<%= url %>" target="_blank" rel="noopener">
-        <%= platform.charAt(0).toUpperCase() + platform.slice(1) %>
-    </a>
-    <% }); %>
-</div>
-<% } %>
-
-<!-- Navigation from config -->
-<% if (stati.site.navigation) { %>
-<nav>
-    <% stati.site.navigation.forEach(item => { %>
-    <a href="<%= item.url %>" class="<%= stati.url === item.url ? 'active' : '' %>">
-        <%= item.title %>
-    </a>
-    <% }); %>
-</nav>
-<% } %>
-```
-
 ## Custom Filters and Helpers
 
 ### Date Formatting
@@ -559,97 +528,6 @@ function slugify(text) {
 <a href="/tags/<%= slugify(tag) %>/" class="tag-link">#<%= tag %></a>
 ```
 
-### URL Helpers
-
-```eta
-<!-- Active link helper -->
-<%
-function isActive(linkUrl, currentUrl) {
-  if (linkUrl === '/') return currentUrl === '/';
-  return currentUrl.startsWith(linkUrl);
-}
-%>
-<a href="/blog/" class="<%= isActive('/blog/', stati.url) ? 'active' : '' %>">Blog</a>
-
-<!-- Absolute URL helper -->
-<%
-function absoluteUrl(path) {
-  return stati.site.baseUrl + path;
-}
-%>
-<link rel="canonical" href="<%= absoluteUrl(stati.url) %>">
-```
-
-## Advanced Template Patterns
-
-### Template Composition
-
-Break down complex layouts into smaller, reusable components:
-
-```eta
-<!-- Main layout -->
-<div class="page-wrapper">
-    <%~ stati.partials.pageHeader %>
-
-    <div class="page-content">
-        <% if (stati.sidebar !== false) { %>
-        <%~ stati.partials.sidebar %>
-        <% } %>
-
-        <main class="main-content">
-            <%~ stati.content %>
-        </main>
-    </div>
-
-    <%~ stati.partials.pageFooter %>
-</div>
-```
-
-### Conditional Layouts
-
-Choose different layouts based on content type:
-
-```eta
-<!-- In your layout -->
-<% if (stati.layout === 'post') { %>
-    <%~ stati.partials.postLayout %>
-<% } else if (stati.layout === 'page') { %>
-    <%~ stati.partials.pageLayout %>
-<% } else { %>
-    <%~ stati.partials.defaultLayout %>
-<% } %>
-```
-
-### Dynamic Navigation
-
-Generate navigation from content structure:
-
-```eta
-<%
-// Get all pages in a section
-function getSectionPages(section) {
-  // This would be populated by Stati's content system
-  return stati.site.pages.filter(page =>
-    page.url.startsWith(`/${section}/`) &&
-    page.url !== `/${section}/`
-  );
-}
-%>
-
-<nav class="section-nav">
-    <h3>Documentation</h3>
-    <ul>
-        <% getSectionPages('docs').forEach(page => { %>
-        <li>
-            <a href="<%= page.url %>" class="<%= stati.url === page.url ? 'active' : '' %>">
-                <%= page.title %>
-            </a>
-        </li>
-        <% }); %>
-    </ul>
-</nav>
-```
-
 ## Performance Considerations
 
 ### Template Caching
@@ -689,45 +567,6 @@ You can access Stati's version information in templates using `stati.generator.v
 <footer>
     <p>Generated with Stati v<%= stati.generator.version %></p>
 </footer>
-```
-
-## Testing Templates
-
-### Template Debugging
-
-```eta
-<!-- Debug current context -->
-<% if (stati.site.debug) { %>
-<pre style="background: #f0f0f0; padding: 1rem; font-size: 12px;">
-<%= JSON.stringify({
-  title: stati.page.title,
-  url: stati.page.url,
-  layout: stati.page.layout,
-  keys: Object.keys(stati)
-}, null, 2) %>
-</pre>
-<% } %>
-```
-
-### Error Handling
-
-```eta
-<!-- Graceful degradation -->
-<% try { %>
-    <div class="author-info">
-        <img src="<%= stati.page.author.avatar %>" alt="<%= stati.page.author.name %>">
-        <span><%= stati.page.author.name %></span>
-    </div>
-<% } catch (error) { %>
-    <div class="author-info">
-        <span>Anonymous Author</span>
-    </div>
-<% } %>
-
-<!-- Safe property access -->
-<% if (stati.page.author && stati.page.author.name) { %>
-    <span class="author">By <%= stati.page.author.name %></span>
-<% } %>
 ```
 
 Understanding templates and layouts is crucial for creating maintainable Stati sites. Next, learn about the [Markdown Pipeline](/core-concepts/markdown/) to understand how your content gets processed.

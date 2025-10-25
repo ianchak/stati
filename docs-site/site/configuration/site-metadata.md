@@ -1,16 +1,16 @@
 ---
 title: 'Site Metadata'
-description: 'Configure your site metadata for SEO and branding.'
+description: 'Configure site title, URL, and SEO metadata for your Stati site.'
 order: 2
 ---
 
 # Site Metadata Configuration
 
-Site metadata provides essential information about your website, including SEO properties, social media cards, and global site settings. Stati automatically injects this metadata into your pages and templates.
+Stati provides a streamlined approach to site metadata and SEO. The `site` configuration object contains essential site information, while SEO metadata is managed separately through page frontmatter and the SEO configuration system.
 
-## Basic Site Configuration
+## Site Configuration
 
-The `site` configuration object contains core metadata for your Stati site:
+The `site` object contains three core properties that define your site's identity:
 
 ```javascript
 // stati.config.js
@@ -19,252 +19,232 @@ import { defineConfig } from '@stati/core';
 export default defineConfig({
   site: {
     title: 'My Stati Site',
-    description: 'A fast static site built with Stati',
-    url: 'https://mysite.com',
-    author: {
-      name: 'John Doe',
-      email: 'john@example.com',
-      url: 'https://johndoe.com',
-    },
-    language: 'en',
-    timezone: 'America/New_York',
+    baseUrl: 'https://example.com',
+    defaultLocale: 'en-US', // Optional
   },
 });
 ```
 
-## Required Properties
+### Available Properties
 
-### Basic Information
+#### `title` (required)
+
+The site's title, used in templates and metadata.
 
 ```javascript
 export default defineConfig({
   site: {
-    // Site title - used in <title> tags and metadata
     title: 'My Amazing Blog',
-
-    // Site description - used for meta description and social cards
-    description: 'Thoughts on web development, technology, and life',
-
-    // Full site URL - required for sitemaps and social cards
-    url: 'https://blog.example.com',
+    baseUrl: 'https://blog.example.com',
   },
 });
 ```
 
-These three properties are **required** for proper SEO and social media integration.
-
-## Author Information
-
-Configure author details for blog posts and articles:
-
-```javascript
-export default defineConfig({
-  site: {
-    author: {
-      name: 'Jane Smith',
-      email: 'jane@example.com',
-      url: 'https://janesmith.dev',
-      avatar: '/images/jane-avatar.jpg',
-      bio: 'Full-stack developer passionate about web performance',
-      social: {
-        twitter: '@janesmith',
-        github: 'janesmith',
-        linkedin: 'janesmith',
-      },
-    },
-  },
-});
-```
-
-Author information is available in templates as `site.author`:
+Access in templates:
 
 ```html
-<!-- In your Eta templates -->
-<article>
-  <header>
-    <h1><%= post.title %></h1>
-    <p>By <a href="<%= site.author.url %>"><%= site.author.name %></a></p>
-  </header>
-</article>
+<title><%= stati.page.title %> | <%= stati.site.title %></title>
 ```
 
-## SEO Configuration
+#### `baseUrl` (required)
 
-### Meta Tags
-
-Configure default meta tags for all pages:
+Base URL for the site, used for absolute URL generation, sitemaps, and canonical links.
 
 ```javascript
 export default defineConfig({
   site: {
-    meta: {
-      // Viewport settings
-      viewport: 'width=device-width, initial-scale=1',
-
-      // Theme color for mobile browsers
-      themeColor: '#3b82f6',
-
-      // Default keywords (can be overridden per page)
-      keywords: ['stati', 'static site generator', 'blog'],
-
-      // Robots meta tag
-      robots: 'index, follow',
-
-      // Language and locale
-      language: 'en',
-      locale: 'en_US',
-    },
+    title: 'My Site',
+    baseUrl: 'https://mysite.com', // No trailing slash
   },
 });
 ```
 
-### Open Graph Settings
+**Important:** Do not include a trailing slash in `baseUrl`.
 
-Configure Open Graph metadata for social media sharing:
+#### `defaultLocale` (optional)
 
-```javascript
-export default defineConfig({
-  site: {
-    openGraph: {
-      // Default Open Graph type
-      type: 'website',
-
-      // Default image for social cards
-      image: '/images/og-default.jpg',
-
-      // Image dimensions
-      imageWidth: 1200,
-      imageHeight: 630,
-
-      // Site name for social cards
-      siteName: 'My Stati Site',
-
-      // Locale for Open Graph
-      locale: 'en_US',
-    },
-  },
-});
-```
-
-### Twitter Cards
-
-Configure Twitter card metadata:
-
-```javascript
-export default defineConfig({
-  site: {
-    twitter: {
-      // Card type: summary, summary_large_image, app, player
-      card: 'summary_large_image',
-
-      // Your Twitter handle
-      site: '@mysite',
-
-      // Content creator's Twitter handle
-      creator: '@johndoe',
-
-      // Default Twitter image
-      image: '/images/twitter-card.jpg',
-    },
-  },
-});
-```
-
-## Advanced Metadata
-
-### Structured Data
-
-Configure JSON-LD structured data:
-
-```javascript
-export default defineConfig({
-  site: {
-    structuredData: {
-      // Organization schema
-      organization: {
-        '@type': 'Organization',
-        name: 'My Company',
-        url: 'https://mycompany.com',
-        logo: 'https://mycompany.com/logo.png',
-        contactPoint: {
-          '@type': 'ContactPoint',
-          telephone: '+1-555-0123',
-          contactType: 'customer service',
-        },
-      },
-
-      // Website schema
-      website: {
-        '@type': 'WebSite',
-        name: 'My Stati Site',
-        url: 'https://mysite.com',
-        potentialAction: {
-          '@type': 'SearchAction',
-          target: 'https://mysite.com/search?q={search_term_string}',
-          'query-input': 'required name=search_term_string',
-        },
-      },
-    },
-  },
-});
-```
-
-### Analytics and Tracking
-
-Configure analytics and tracking codes:
-
-```javascript
-export default defineConfig({
-  site: {
-    analytics: {
-      // Google Analytics 4
-      googleAnalytics: 'GA-MEASUREMENT-ID',
-
-      // Google Tag Manager
-      googleTagManager: 'GTM-XXXXXXX',
-
-      // Fathom Analytics
-      fathom: {
-        siteId: 'ABCDEFGH',
-        honorDNT: true,
-      },
-
-      // Custom tracking scripts
-      customScripts: [
-        {
-          src: 'https://analytics.example.com/script.js',
-          async: true,
-          defer: true,
-        },
-      ],
-    },
-  },
-});
-```
-
-## Advanced Site Configuration
-
-Stati supports custom metadata configuration for enhanced SEO and functionality:
+Default locale for internationalization support.
 
 ```javascript
 export default defineConfig({
   site: {
     title: 'My Site',
     baseUrl: 'https://example.com',
-    defaultLocale: 'en-US', // Optional locale setting
-          locale: 'ar_SA',
-          direction: 'rtl',
-        },
-      },
+    defaultLocale: 'en-US',
+  },
+});
+```
 
-      // URL structure for languages
-      strategy: 'prefix', // 'prefix' or 'domain'
+Common locale formats:
+- `'en-US'` - English (United States)
+- `'en-GB'` - English (United Kingdom)
+- `'es-ES'` - Spanish (Spain)
+- `'fr-FR'` - French (France)
+- `'de-DE'` - German (Germany)
 
-      // Fallback behavior
-      fallbackLanguage: 'en',
+## Author Configuration
+
+Author information is configured through the `seo.defaultAuthor` property, not the `site` object:
+
+```javascript
+export default defineConfig({
+  site: {
+    title: 'My Blog',
+    baseUrl: 'https://blog.example.com',
+  },
+  seo: {
+    defaultAuthor: {
+      name: 'Jane Smith',
+      email: 'jane@example.com',
+      url: 'https://janesmith.dev',
     },
   },
 });
+```
+
+**Per-Page Authors:** Override the default author in page frontmatter:
+
+```markdown
+---
+title: 'My Post'
+author:
+  name: 'John Doe'
+  email: 'john@example.com'
+  url: 'https://johndoe.com'
+---
+
+# Post Content# Post Content
+```
+
+## SEO Metadata
+
+Stati manages SEO metadata through page frontmatter and the SEO configuration system. See the [SEO Configuration](./seo.md) guide for details.
+
+### Page-Level SEO
+
+All SEO metadata is defined in page frontmatter:
+
+```markdown
+---
+title: 'My Page Title'
+description: 'A compelling description for search engines'
+keywords: ['seo', 'metadata', 'stati']
+author:
+  name: 'Jane Smith'
+  email: 'jane@example.com'
+robots: 'index, follow'
+canonical: 'https://example.com/canonical-url'
+---
+
+# Page Content
+```
+
+### SEO Tag Injection
+
+Stati offers **two approaches** for injecting SEO tags into your pages:
+
+#### 1. Automatic Injection (Default)
+
+By default, Stati **automatically injects SEO tags** during the build process. No template code required:
+
+```javascript
+// stati.config.js
+export default defineConfig({
+  site: {
+    title: 'My Site',
+    baseUrl: 'https://example.com',
+  },
+  seo: {
+    autoInject: true, // Default: true
+  },
+});
+```
+
+Stati's build system automatically:
+- Detects existing SEO tags in your HTML
+- Generates missing tags from page frontmatter
+- Injects them before `</head>`
+- Skips tags that already exist (no duplication)
+
+**Your template needs NO SEO code** - just a standard HTML structure:
+
+```html
+<!DOCTYPE html>
+<html lang="<%= stati.site.defaultLocale || 'en' %>">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- SEO tags auto-injected here during build -->
+  </head>
+  <body>
+    <%~ stati.content %>
+  </body>
+</html>
+```
+
+#### 2. Manual Injection with `generateSEO()`
+
+For **explicit control over tag placement**, use the `generateSEO()` helper in templates:
+
+```html
+<!DOCTYPE html>
+<html lang="<%= stati.site.defaultLocale || 'en' %>">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <%~ stati.generateSEO() %>
+
+    <!-- Additional custom meta tags -->
+  </head>
+  <body>
+    <%~ stati.content %>
+  </body>
+</html>
+```
+
+**Selective tag generation:**
+
+```html
+<!-- Generate only specific tags -->
+<%~ stati.generateSEO(['title', 'description', 'opengraph']) %>
+
+<!-- Generate all standard tags -->
+<%~ stati.generateSEO() %>
+```
+
+**Note:** When using `generateSEO()` in templates, auto-injection still runs but only adds **missing tags** (no duplication).
+
+**Disable auto-injection** if you want full manual control:
+
+```javascript
+export default defineConfig({
+  seo: {
+    autoInject: false, // Disable automatic injection
+  },
+});
+```
+
+See [SEO API Reference](../api/seo.md) for complete `generateSEO()` documentation.
+
+## Template Usage
+
+Access site configuration in Eta templates:
+
+```html
+<!-- Site title -->
+<title><%= stati.page.title %> | <%= stati.site.title %></title>
+
+<!-- Base URL for absolute links -->
+<link rel="canonical" href="<%= stati.site.baseUrl %><%= stati.page.url %>" />
+
+<!-- Locale -->
+<html lang="<%= stati.site.defaultLocale || 'en' %>">
+
+<!-- Author from SEO config (if configured) -->
+<% if (stati.page.author) { %>
+  <meta name="author" content="<%= stati.page.author.name %>" />
+<% } %>
 ```
 
 ## Environment-Specific Configuration
@@ -275,121 +255,135 @@ Configure different metadata for different environments:
 export default defineConfig({
   site: {
     title: 'My Site',
-    url: process.env.NODE_ENV === 'production' ? 'https://mysite.com' : 'http://localhost:3000',
-
-    // Disable analytics in development
-    analytics:
+    baseUrl:
       process.env.NODE_ENV === 'production'
-        ? {
-            googleAnalytics: 'GA-MEASUREMENT-ID',
-          }
-        : {},
-
-    // Different robots behavior
-    meta: {
-      robots: process.env.NODE_ENV === 'production' ? 'index, follow' : 'noindex, nofollow',
-    },
+        ? 'https://mysite.com'
+        : 'http://localhost:3000',
+    defaultLocale: 'en-US',
+  },
+  seo: {
+    // Disable auto-injection in development for manual control
+    autoInject: process.env.NODE_ENV === 'production',
+    debug: process.env.NODE_ENV === 'development',
   },
 });
 ```
 
-## Template Usage
+## Sitemap and Robots.txt
 
-Access site metadata in your Eta templates:
+Configure automated sitemap and robots.txt generation:
 
-```html
-<!DOCTYPE html>
-<html lang="<%= site.language %>">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="<%= site.meta.viewport %>" />
-    <title><%= page.title %> | <%= site.title %></title>
-    <meta name="description" content="<%= page.description || site.description %>" />
-
-    <!-- Open Graph -->
-    <meta property="og:title" content="<%= page.title %> | <%= site.title %>" />
-    <meta property="og:description" content="<%= page.description || site.description %>" />
-    <meta property="og:url" content="<%= site.url %><%= page.path %>" />
-    <meta property="og:image" content="<%= page.image || site.openGraph.image %>" />
-
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="<%= site.twitter.card %>" />
-    <meta name="twitter:site" content="<%= site.twitter.site %>" />
-
-    <!-- Structured Data -->
-    <% if (site.structuredData) { %>
-    <script type="application/ld+json">
-      <%- JSON.stringify(site.structuredData) %>
-    </script>
-    <% } %>
-  </head>
-  <body>
-    <!-- Your content -->
-  </body>
-</html>
+```javascript
+export default defineConfig({
+  site: {
+    title: 'My Site',
+    baseUrl: 'https://example.com',
+  },
+  sitemap: {
+    enabled: true,
+    hostname: 'https://example.com',
+  },
+  robotsTxt: {
+    enabled: true,
+    sitemap: true, // Auto-reference sitemap.xml
+    userAgents: [
+      {
+        userAgent: 'Googlebot',
+        allow: ['/'],
+      },
+    ],
+  },
+});
 ```
 
-## Page-Level Overrides
+See [SEO Configuration](./seo.md) for complete sitemap and robots.txt options.
 
-Override site metadata at the page level using front matter:
+## RSS Feeds
 
-```markdown
----
-title: 'Custom Page Title'
-description: 'Custom page description that overrides site default'
-image: '/images/custom-page-image.jpg'
-openGraph:
-  type: 'article'
-  publishedTime: '2024-01-15T10:00:00Z'
-twitter:
-  card: 'summary'
----
+Configure RSS feeds for your content:
 
-# Page Content
-
-This page has custom metadata that overrides the site defaults.
+```javascript
+export default defineConfig({
+  site: {
+    title: 'My Blog',
+    baseUrl: 'https://blog.example.com',
+  },
+  rss: {
+    enabled: true,
+    feeds: [
+      {
+        filename: 'feed.xml',
+        title: 'My Blog Feed',
+        description: 'Latest posts from my blog',
+        contentPatterns: ['blog/**/*.md'],
+      },
+    ],
+  },
+});
 ```
+
+See [RSS Configuration](./rss.md) for complete RSS feed options.
 
 ## Validation and Testing
 
 ### Metadata Validation
 
-Test your metadata manually using external tools and validation services.
+Test your metadata using external validation tools:
 
-### Testing Tools
+- [Facebook Sharing Debugger](https://developers.facebook.com/tools/debug/)
+- [Twitter Card Validator](https://cards-dev.twitter.com/validator)
+- [LinkedIn Post Inspector](https://www.linkedin.com/post-inspector/)
+- [Google Rich Results Test](https://search.google.com/test/rich-results)
 
-Use these tools to test your metadata:
+### SEO Debugging
 
-- **Facebook Debugger**: https://developers.facebook.com/tools/debug/
-- **Twitter Card Validator**: https://cards-dev.twitter.com/validator
-- **LinkedIn Post Inspector**: https://www.linkedin.com/post-inspector/
-- **Google Rich Results Test**: https://search.google.com/test/rich-results
+Enable SEO debug logging:
+
+```javascript
+export default defineConfig({
+  site: {
+    title: 'My Site',
+    baseUrl: 'https://example.com',
+  },
+  seo: {
+    debug: true, // Enable detailed SEO generation logs
+  },
+});
+```
 
 ## Best Practices
 
-### SEO Optimization
+### Site Configuration
 
-1. **Unique Titles**: Ensure each page has a unique, descriptive title
-2. **Meta Descriptions**: Write compelling descriptions under 160 characters
-3. **Structured Data**: Use appropriate schema markup for your content type
-4. **Image Optimization**: Use high-quality images with proper alt text
+1. **Use HTTPS:** Always use HTTPS URLs for `baseUrl` in production
+2. **No Trailing Slashes:** Don't include trailing slashes in `baseUrl`
+3. **Consistent Title:** Use a clear, descriptive site title
+4. **Proper Locale:** Set `defaultLocale` if building multilingual sites
 
-### Social Media
+### SEO Metadata
 
-1. **Consistent Branding**: Use consistent images and messaging across platforms
-2. **Optimal Dimensions**: Use 1200x630px for Open Graph images
-3. **Compelling Content**: Write engaging descriptions for social sharing
+1. **Unique Titles:** Every page should have a unique, descriptive title (50-60 chars)
+2. **Meta Descriptions:** Write compelling descriptions under 160 characters
+3. **Author Attribution:** Set `seo.defaultAuthor` for blogs and content sites
+4. **Canonical URLs:** Use `baseUrl` consistently for canonical links
 
-### Performance
+### Per-Page Frontmatter
 
-1. **Minimal Scripts**: Only include necessary analytics and tracking scripts
-2. **Async Loading**: Load analytics scripts asynchronously when possible
-3. **CDN Usage**: Host images and assets on a CDN for better performance
+1. **Required Fields:** Always include `title` and `description` in frontmatter
+2. **Keywords:** Use 3-5 relevant keywords per page
+3. **Author Override:** Specify authors per-page for multi-author sites
+4. **Robots Control:** Use `robots` frontmatter for page-specific indexing rules
 
-### Accessibility
+### Testing
 
-1. **Language Declaration**: Always specify the page language
-2. **Proper Meta Tags**: Include viewport and other accessibility-related meta tags
-3. **Alt Text**: Provide descriptive alt text for all images
+1. **Validate Markup:** Use validation tools before deploying
+2. **Test Social Sharing:** Preview how links appear on social platforms
+3. **Monitor SEO:** Track how your pages appear in search results
+4. **Use Debug Mode:** Enable `seo.debug` during development
 
-Site metadata is the foundation of good SEO and social media presence. Take time to configure it properly and test across different platforms to ensure your content is properly represented when shared.
+## Related Configuration
+
+- [SEO Configuration](./seo.md) - Complete SEO setup including Open Graph and Twitter Cards
+- [RSS Configuration](./rss.md) - RSS feed generation
+- [Sitemap Configuration](./seo.md#sitemap-configuration) - XML sitemap generation
+- [Template Configuration](./templates.md) - Access metadata in templates

@@ -401,7 +401,7 @@ export default defineConfig({
 <html>
 <head>
   <!-- Generate only title and description -->
-  <%~ stati.generateSEO(stati, ['title', 'description']) %>
+  <%~ stati.generateSEO(['title', 'description']) %>
 
   <!-- Add custom tags -->
   <link rel="canonical" href="<%= stati.site.baseUrl %><%= stati.page.url %>">
@@ -421,7 +421,7 @@ export default defineConfig({
 <html>
 <head>
   <!-- Generate basic SEO tags -->
-  <%~ stati.generateSEO(stati, ['title', 'description', 'canonical', 'author']) %>
+  <%~ stati.generateSEO(['title', 'description', 'canonical', 'author']) %>
 
   <!-- Custom Open Graph -->
   <meta property="og:title" content="<%= stati.page.title %> | <%= stati.site.title %>">
@@ -447,7 +447,7 @@ export default defineConfig({
 <html>
 <head>
   <!-- Generate multiple specific tag types -->
-  <%~ stati.generateSEO(stati, ['title', 'description', 'canonical', 'opengraph']) %>
+  <%~ stati.generateSEO(['title', 'description', 'canonical', 'opengraph']) %>
 
   <!-- Add custom tags -->
   <meta name="theme-color" content="#000000">
@@ -534,7 +534,9 @@ export default defineConfig({
 
   <!-- Manual Open Graph -->
   <meta property="og:title" content="<%= stati.page.title || stati.site.title %>">
-  <meta property="og:description" content="<%= stati.page.description || stati.site.description %>">
+  <% if (stati.page.description) { %>
+  <meta property="og:description" content="<%= stati.page.description %>">
+  <% } %>
   <meta property="og:url" content="<%= stati.site.baseUrl %><%= stati.page.url %>">
   <meta property="og:type" content="<%= stati.page.type || 'website' %>">
 

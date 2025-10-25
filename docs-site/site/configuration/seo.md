@@ -71,7 +71,7 @@ Generate all SEO tags:
 
 ```html
 <head>
-  <%~ stati.generateSEO(stati) %>
+  <%~ stati.generateSEO() %>
   <!-- Your custom tags here -->
 </head>
 ```
@@ -82,7 +82,7 @@ Generate only specific SEO tags using tag type strings:
 
 ```html
 <head>
-  <%~ stati.generateSEO(stati, ['title', 'description', 'canonical']) %>
+  <%~ stati.generateSEO(['title', 'description', 'canonical']) %>
   <!-- Add custom Open Graph tags -->
   <meta property="og:custom" content="value">
 </head>

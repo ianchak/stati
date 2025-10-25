@@ -141,6 +141,9 @@ stati invalidate tag:blog
 # Invalidate specific path
 stati invalidate path:/about
 
+# Invalidate paths matching glob pattern
+stati invalidate glob:blog/**
+
 # Invalidate entries rendered in the last week
 stati invalidate age:1week
 

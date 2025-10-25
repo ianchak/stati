@@ -306,8 +306,8 @@ permalink: '/docs/auth/'
 When linking between pages, use absolute paths from the site root:
 
 ```markdown
-Check out our [About page](/about/) for more information.
-Visit the [API documentation](/docs/api/) to learn more.
+Check out our [Getting Started page](/getting-started/introduction/) for more information.
+Visit the [API documentation](/api/reference/) to learn more.
 ```
 
 ### Navigation Helpers
@@ -316,13 +316,13 @@ In templates, you can access routing information:
 
 ```eta
 <nav>
-  <% if (stati.url === '/') { %>
+  <% if (stati.page.url === '/') { %>
     <a href="/" class="active">Home</a>
   <% } else { %>
     <a href="/">Home</a>
   <% } %>
 
-  <% if (stati.url.startsWith('/blog/')) { %>
+  <% if (stati.page.url.startsWith('/blog/')) { %>
     <a href="/blog/" class="active">Blog</a>
   <% } else { %>
     <a href="/blog/">Blog</a>
@@ -338,7 +338,7 @@ Generate breadcrumbs from the URL structure:
 <nav class="breadcrumbs">
   <a href="/">Home</a>
   <%
-  const parts = stati.url.split('/').filter(Boolean);
+  const parts = stati.page.url.split('/').filter(Boolean);
   let currentPath = '';
   %>
   <% parts.forEach((part, index) => { %>
