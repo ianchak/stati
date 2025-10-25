@@ -1,5 +1,11 @@
 # @stati/core
 
+## 1.11.5
+
+### Patch Changes
+
+- c4f6a32: update documentation for SEO, templates, and routing
+
 ## 1.11.4
 
 ### Patch Changes

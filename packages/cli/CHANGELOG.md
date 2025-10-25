@@ -1,5 +1,13 @@
 # @stati/cli
 
+## 1.6.9
+
+### Patch Changes
+
+- c4f6a32: update documentation for SEO, templates, and routing
+- Updated dependencies [c4f6a32]
+  - @stati/core@1.11.5
+
 ## 1.6.8
 
 ### Patch Changes
