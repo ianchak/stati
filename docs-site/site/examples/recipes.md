@@ -664,12 +664,6 @@ export default defineConfig({
   seo: {
     autoInject: isProd, // Only inject SEO tags in production
     debug: isDev // Enable SEO debugging in development
-  },
-
-  markdown: {
-    html: true,
-    linkify: true,
-    typographer: isProd // Only enable typography in production for speed
   }
 });
 ```
@@ -680,13 +674,9 @@ Add custom markdown processing with plugins and the configure function:
 
 ```javascript
 // stati.config.js
-import markdownItContainer from 'markdown-it-container';
-import markdownItAnchor from 'markdown-it-anchor';
-import markdownItTocDoneRight from 'markdown-it-toc-done-right';
-
 export default defineConfig({
   markdown: {
-    // Load markdown-it plugins
+    // Load markdown-it plugins (Stati auto-prepends 'markdown-it-')
     plugins: [
       'anchor',
       'toc-done-right',
