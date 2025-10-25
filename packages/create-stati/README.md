@@ -286,7 +286,7 @@ You can customize this file to add features like SEO, sitemap, ISG caching, and 
 
 ## Requirements
 
-- **Node.js** 22.0.0 or higher
+- **Node.js** >=22
 - **npm** 11.5.1 or higher (or yarn/pnpm equivalent)
 
 ---

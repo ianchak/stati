@@ -16,7 +16,7 @@ Stati provides comprehensive SEO support with automatic metadata generation, sit
 - [SEO Configuration Options](#seo-configuration-options)
 - [Frontmatter SEO Fields](#frontmatter-seo-fields)
 - [Sitemap Configuration](#sitemap-configuration)
-- [Robots.txt Configuration](#robots.txt-configuration)
+- [Robots.txt Configuration](#robots-txt-configuration)
 - [SEO Tag Types](#seo-tag-types)
 - [Best Practices](#best-practices)
 - [Troubleshooting](#troubleshooting)
@@ -37,7 +37,7 @@ By default, Stati automatically injects SEO metadata into all pages during build
 When auto-injection is enabled (default), Stati automatically generates:
 
 - **Title tag** - From page title or site title
-- **Meta description** - From page description or excerpt
+- **Meta description** - From page description
 - **Meta keywords** - From page tags or keywords
 - **Canonical URL** - Based on page URL and site base URL
 - **Author meta tag** - From page author or site default author
@@ -71,7 +71,7 @@ Generate all SEO tags:
 
 ```html
 <head>
-  <%~ stati.generateSEO(stati) %>
+  <%~ stati.generateSEO() %>
   <!-- Your custom tags here -->
 </head>
 ```
@@ -82,7 +82,7 @@ Generate only specific SEO tags using tag type strings:
 
 ```html
 <head>
-  <%~ stati.generateSEO(stati, ['title', 'description', 'canonical']) %>
+  <%~ stati.generateSEO(['title', 'description', 'canonical']) %>
   <!-- Add custom Open Graph tags -->
   <meta property="og:custom" content="value">
 </head>
@@ -361,14 +361,27 @@ export default defineConfig({
   robots: {
     enabled: true,
 
-    // Disallow specific paths
+    // User agent specific rules
+    userAgents: [
+      {
+        userAgent: 'Googlebot',
+        allow: ['/public/'],
+        disallow: ['/admin/', '/private/'],
+      },
+      {
+        userAgent: 'Bingbot',
+        disallow: ['/admin/'],
+      },
+    ],
+
+    // Global disallow rules (applies to all user agents)
     disallow: [
       '/admin/',
       '/private/',
       '/api/',
     ],
 
-    // Explicitly allow paths (useful with disallow wildcards)
+    // Global allow rules (useful with disallow wildcards)
     allow: [
       '/api/public/',
     ],
@@ -381,11 +394,8 @@ export default defineConfig({
 
     // Custom lines to add to robots.txt
     customLines: [
-      'User-agent: Googlebot',
-      'Disallow: /nogooglebot/',
-      '',
-      'User-agent: *',
-      'Allow: /',
+      'User-agent: AnotherBot',
+      'Disallow: /restricted/',
     ],
   },
 });
@@ -395,15 +405,25 @@ export default defineConfig({
 
 With the above configuration, Stati generates:
 
-```
+```txt
+User-agent: Googlebot
+Allow: /public/
+Disallow: /admin/
+Disallow: /private/
+
+User-agent: Bingbot
+Disallow: /admin/
+
 User-agent: *
-Allow: /
 Disallow: /admin/
 Disallow: /private/
 Disallow: /api/
 Allow: /api/public/
 
 Sitemap: https://example.com/sitemap.xml
+
+User-agent: AnotherBot
+Disallow: /restricted/
 ```
 
 ## SEO Tag Types
@@ -565,7 +585,7 @@ For large sites (10,000+ pages):
 - Sitemap generation is optimized and handles large sites efficiently
 - Auto-injection adds minimal overhead (~1-2ms per page)
 - Consider using `sitemap.filter` to exclude unnecessary pages
-- Use `sitemap.maxUrlsPerFile` with `generateIndex: true` for very large sites
+- Use `generateIndex: true` for sites with more than 50,000 URLs to split into multiple sitemaps
 
 ## Next Steps
 

@@ -46,7 +46,7 @@ site/
 
 Stati automatically generates clean URLs by:
 
-- Removing file extensions (`.md`, `.eta`)
+- Removing the `.md` file extension
 - Converting `index` files to directory URLs
 - Adding trailing slashes for consistency
 
@@ -56,22 +56,37 @@ blog/index.md → /blog/
 blog/my-post.md → /blog/my-post/
 ```
 
-### Slug Generation
+### Important: No Automatic Slug Transform ation
 
-File names are converted to URL-friendly slugs:
+**Stati preserves filenames exactly as written** (minus the `.md` extension). There is NO automatic:
+- Lowercase conversion
+- Space/underscore to hyphen conversion
+- Special character removal
+- Slug beautification
+
+This means you must use URL-safe filenames from the start:
 
 ```
-My First Post.md → /my-first-post/
-Hello_World.md → /hello-world/
-2024-01-15-news.md → /2024-01-15-news/
+✅ Good (URL-safe):
+about.md → /about/
+my-post.md → /my-post/
+getting-started.md → /getting-started/
+
+⚠️ Problematic (not URL-safe):
+About.md → /About/ (case-sensitive URL)
+my_post.md → /my_post/ (underscore in URL)
+my post.md → /my post/ (space in URL - breaks)
+post!.md → /post!/ (special chars - problematic)
 ```
 
-### Special Cases
+### Filename Best Practices
 
-- **Uppercase letters** → converted to lowercase
-- **Spaces and underscores** → converted to hyphens
-- **Special characters** → removed or converted
-- **Multiple hyphens** → collapsed to single hyphens
+To ensure clean, working URLs:
+
+1. **Use lowercase**: `about.md` not `About.md`
+2. **Use hyphens for word separation**: `my-post.md` not `my_post.md` or `my post.md`
+3. **Avoid special characters**: Use only letters, numbers, and hyphens
+4. **Keep names descriptive but concise**: `getting-started.md` not `getting_started_with_our_platform.md`
 
 ## Nested Routing
 
@@ -108,11 +123,11 @@ site/
 
 ### Files and Directories Excluded from Routing
 
-Stati excludes certain files and directories from URL generation to allow for better project organization:
+Stati excludes certain files and directories from URL generation:
 
 #### **Files and Folders Starting with `_` (Underscore)**
 
-**Critical Rule**: Any file or directory starting with `_` is excluded from routing and used for organization:
+**Critical Rule**: Any file or directory starting with `_` is excluded from routing:
 
 ```text
 site/
@@ -129,25 +144,31 @@ site/
 │   └── config.json
 ├── _drafts/             ❌ Not routed - Draft content
 │   └── upcoming-post.md
-├── _utils/              ❌ Not routed - Utility files
-│   └── helpers.js
-├── partials/            ✅ Routed - Creates /partials/ page
-│   └── content.md       ✅ Routed - Creates /partials/content/ page
-└── published.md         ✅ Routed - Creates /published/ page
+├── partials/            ✅ Routed - Creates /partials/ (no underscore)
+│   └── content.md       ✅ Routed - Creates /partials/content/
+└── published.md         ✅ Routed - Creates /published/
 ```
 
-#### **Special Files Excluded from Routing**
+#### **Non-Markdown Files**
+
+Only `.md` files become pages. All other file types are automatically excluded:
 
 ```text
 site/
-├── layout.eta           ❌ Not routed - Layout template
-├── .DS_Store           ❌ Not routed - System files
-├── .gitkeep            ❌ Not routed - Git placeholder
-├── Thumbs.db           ❌ Not routed - Windows thumbnail cache
-├── desktop.ini         ❌ Not routed - Windows system file
-├── README.md           ✅ Routed - Creates /readme/ page
-└── index.md            ✅ Routed - Creates / homepage
+├── layout.eta           ❌ Not routed - Template file (.eta)
+├── config.js            ❌ Not routed - JavaScript file
+├── styles.css           ❌ Not routed - Stylesheet
+├── image.png            ❌ Not routed - Image file
+├── .DS_Store            ❌ Not routed - Not markdown
+├── .gitkeep             ❌ Not routed - Not markdown
+├── README.md            ✅ Routed - Creates /readme/ (is markdown!)
+└── index.md             ✅ Routed - Creates / homepage
 ```
+
+**Note:** `README.md` files ARE routed because they are markdown files. If you don't want a README to appear on your site, either:
+- Use a different extension: `README.txt`
+- Place it in an underscore folder: `_docs/README.md`
+- Mark it as draft in front matter: `draft: true`
 
 #### **Use Cases for Underscore Exclusion**
 
@@ -239,7 +260,7 @@ site/
 
 ## Front Matter URL Override
 
-You can override the automatic URL generation using front matter:
+You can completely override the automatic URL generation using the `permalink` field in front matter:
 
 ```markdown
 ---
@@ -250,16 +271,32 @@ permalink: '/custom-path/'
 # This page will be available at /custom-path/
 ```
 
-Or for more complex scenarios:
+**Important:** When using `permalink`:
+- Must be a static string (no template variables or date formatting)
+- Must start with `/`
+- Should end with `/` for consistency
+- Completely replaces the file-path-based URL
+
+Example use cases:
 
 ```markdown
 ---
-title: 'Product Launch'
-date: '2024-01-15'
-permalink: '/announcements/{{ date | date: "yyyy" }}/product-launch/'
+# Override deeply nested file path
+# File: site/archive/2023/old-posts/article.md
+# Without permalink: /archive/2023/old-posts/article/
+# With permalink: /featured/article/
+permalink: '/featured/article/'
 ---
+```
 
-# This uses template syntax in the permalink
+```markdown
+---
+# Shorten long category paths
+# File: site/documentation/api-reference/authentication.md
+# Without permalink: /documentation/api-reference/authentication/
+# With permalink: /docs/auth/
+permalink: '/docs/auth/'
+---
 ```
 
 ## Working with the Router
@@ -269,8 +306,8 @@ permalink: '/announcements/{{ date | date: "yyyy" }}/product-launch/'
 When linking between pages, use absolute paths from the site root:
 
 ```markdown
-Check out our [About page](/about/) for more information.
-Visit the [API documentation](/docs/api/) to learn more.
+Check out our [Getting Started page](/getting-started/introduction/) for more information.
+Visit the [API documentation](/api/reference/) to learn more.
 ```
 
 ### Navigation Helpers
@@ -279,13 +316,13 @@ In templates, you can access routing information:
 
 ```eta
 <nav>
-  <% if (stati.url === '/') { %>
+  <% if (stati.page.url === '/') { %>
     <a href="/" class="active">Home</a>
   <% } else { %>
     <a href="/">Home</a>
   <% } %>
 
-  <% if (stati.url.startsWith('/blog/')) { %>
+  <% if (stati.page.url.startsWith('/blog/')) { %>
     <a href="/blog/" class="active">Blog</a>
   <% } else { %>
     <a href="/blog/">Blog</a>
@@ -301,7 +338,7 @@ Generate breadcrumbs from the URL structure:
 <nav class="breadcrumbs">
   <a href="/">Home</a>
   <%
-  const parts = stati.url.split('/').filter(Boolean);
+  const parts = stati.page.url.split('/').filter(Boolean);
   let currentPath = '';
   %>
   <% parts.forEach((part, index) => { %>

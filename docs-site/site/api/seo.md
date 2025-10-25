@@ -74,13 +74,13 @@ function generateSEO(
 
 ```html
 <!-- Generate all SEO tags -->
-<%~ stati.generateSEO(stati) %>
+<%~ stati.generateSEO() %>
 
 <!-- Generate specific tags using strings (in Eta templates) -->
-<%~ stati.generateSEO(stati, ['title', 'description', 'canonical']) %>
+<%~ stati.generateSEO(['title', 'description', 'canonical']) %>
 
 <!-- Generate specific tags with Open Graph and Twitter -->
-<%~ stati.generateSEO(stati, ['title', 'opengraph', 'twitter']) %>
+<%~ stati.generateSEO(['title', 'opengraph', 'twitter']) %>
 ```
 
 **Programmatic Usage (TypeScript):**
@@ -89,10 +89,10 @@ function generateSEO(
 import { generateSEO, SEOTagType } from '@stati/core';
 
 // Using enum values in TypeScript code
-const html = generateSEO(stati, [SEOTagType.Title, SEOTagType.OpenGraph]);
+const html = generateSEO({ page, config, site: config.site }, [SEOTagType.Title, SEOTagType.OpenGraph]);
 
 // Or using strings
-const html2 = generateSEO(stati, ['title', 'description']);
+const html2 = generateSEO({ page, config, site: config.site }, ['title', 'description']);
 ```
 
 ---

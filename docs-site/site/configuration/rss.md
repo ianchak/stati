@@ -498,7 +498,7 @@ if (result.warnings.length > 0) {
 - TTL set to 0 (no caching)
 - Empty content patterns array
 
-For more details on validation, see the [RSS API Reference](../api/rss.md#validation).
+For more details on validation, see the [RSS API Reference](../api/rss.md#rssvalidationresult).
 
 ## Development vs Production
 

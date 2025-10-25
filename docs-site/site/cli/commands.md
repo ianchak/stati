@@ -8,11 +8,16 @@ order: 1
 
 Stati provides a simple and powerful command-line interface for building, developing, and managing your static sites. The CLI is designed to be intuitive while providing advanced options for complex workflows.
 
+## Requirements
+
+- Node.js 22 or higher
+- npm 11.5.1 or higher
+
 ## Available Commands
 
 ### `stati dev`
 
-Start the development server with hot reload and incremental builds.
+Start development server with hot reload and incremental builds.
 
 ```bash
 stati dev [options]
@@ -20,10 +25,12 @@ stati dev [options]
 
 **Options:**
 
-- `--port <port>` - Port to run the server on (default: 3000)
-- `--host <host>` - Host to bind to (default: localhost)
-- `--open` - Open browser automatically
-- `--config <file>` - Custom config file path
+| Flag | Type | Default | Description |
+|------|------|---------|-------------|
+| `--port` | number | 3000 | Port to run the dev server on |
+| `--host` | string | localhost | Host to bind the dev server to |
+| `--open` | boolean | false | Open browser after starting server |
+| `--config` | string | - | Path to config file |
 
 **Examples:**
 
@@ -43,7 +50,7 @@ stati dev --config stati.staging.js
 
 ### `stati preview`
 
-Serve the built site locally for preview.
+Start preview server for built site.
 
 ```bash
 stati preview [options]
@@ -51,10 +58,12 @@ stati preview [options]
 
 **Options:**
 
-- `--port <port>` - Port to run the server on (default: 4000)
-- `--host <host>` - Host to bind to (default: localhost)
-- `--open` - Open browser automatically
-- `--config <file>` - Custom config file path
+| Flag | Type | Default | Description |
+|------|------|---------|-------------|
+| `--port` | number | 4000 | Port to run the preview server on |
+| `--host` | string | localhost | Host to bind the preview server to |
+| `--open` | boolean | false | Open browser after starting server |
+| `--config` | string | - | Path to config file |
 
 **Examples:**
 
@@ -74,7 +83,7 @@ stati preview --config stati.prod.js
 
 ### `stati build`
 
-Build your site for production.
+Build site for production.
 
 ```bash
 stati build [options]
@@ -82,10 +91,12 @@ stati build [options]
 
 **Options:**
 
-- `--clean` - Clean output directory before build
-- `--force` - Force rebuild (ignore cache)
-- `--include-drafts` - Include pages marked with `draft: true` in the build
-- `--config <file>` - Custom config file path
+| Flag | Type | Default | Description |
+|------|------|---------|-------------|
+| `--force` | boolean | false | Force full rebuild without deleting cache |
+| `--clean` | boolean | false | Clean cache before building |
+| `--config` | string | - | Path to config file |
+| `--include-drafts` | boolean | false | Include draft pages in the build |
 
 **Examples:**
 
@@ -105,7 +116,7 @@ stati build --include-drafts
 
 ### `stati invalidate`
 
-Invalidate ISG cache entries.
+Invalidate cache entries by tag, path, pattern, or age.
 
 ```bash
 stati invalidate [query]
@@ -113,11 +124,13 @@ stati invalidate [query]
 
 **Query Patterns:**
 
-- `tag:name` - Invalidate by tag
-- `path:/route` - Invalidate a specific path or any nested routes
-- `glob:pattern` - Invalidate paths matching glob expressions (e.g., `glob:blog/**`)
-- `age:duration` - Invalidate entries rendered within the specified time window (e.g., `3months`, `1week`) using exact calendar arithmetic
-- Empty query - Clear all cache
+| Pattern | Format | Example | Description |
+|---------|--------|---------|-------------|
+| Tag | `tag:value` | `tag:blog` | Invalidate by tag |
+| Path | `path:/route` | `path:/about` | Invalidate specific path or nested routes |
+| Glob | `glob:pattern` | `glob:blog/**` | Invalidate paths matching glob expressions |
+| Age | `age:duration` | `age:1week` | Invalidate entries rendered within specified time window (uses calendar arithmetic) |
+| Clear All | (empty) | `stati invalidate` | Clear entire cache |
 
 **Examples:**
 
@@ -127,6 +140,9 @@ stati invalidate tag:blog
 
 # Invalidate specific path
 stati invalidate path:/about
+
+# Invalidate paths matching glob pattern
+stati invalidate glob:blog/**
 
 # Invalidate entries rendered in the last week
 stati invalidate age:1week
@@ -171,7 +187,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
@@ -196,7 +212,7 @@ jobs:
   publish = "dist"
 
 [build.environment]
-  NODE_VERSION = "18"
+  NODE_VERSION = "22"
 ```
 
 **Vercel:**

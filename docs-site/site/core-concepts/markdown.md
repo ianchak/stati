@@ -23,7 +23,7 @@ Stati supports all standard Markdown syntax out of the box:
 
 **Bold text** and _italic text_
 
-[Links](https://example.com) and [internal links](/about/)
+[Links](https://example.com) and [internal links](/getting-started/introduction/)
 
 - Unordered lists
 - With multiple items
@@ -320,13 +320,13 @@ estimatedTime: '30 minutes'
 Access in templates:
 
 ```eta
-<article class="difficulty-<%= stati.difficulty %>">
+<article class="<%= stati.propValue('difficulty', `difficulty-${stati.page.difficulty}`) %>">
   <header>
-    <h1><%= stati.title %></h1>
+    <h1><%= stati.page.title %></h1>
     <div class="meta">
-      <span>Difficulty: <%= stati.difficulty %></span>
-      <span>Est. time: <%= stati.estimatedTime %></span>
-      <span>Last updated: <%= new Date(stati.lastModified).toLocaleDateString() %></span>
+      <span>Difficulty: <%= stati.page.difficulty %></span>
+      <span>Est. time: <%= stati.page.estimatedTime %></span>
+      <span>Last updated: <%= new Date(stati.page.lastModified).toLocaleDateString() %></span>
     </div>
   </header>
 

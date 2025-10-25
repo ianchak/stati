@@ -1,5 +1,11 @@
 # create-stati
 
+## 1.6.9
+
+### Patch Changes
+
+- c4f6a32: update documentation for SEO, templates, and routing
+
 ## 1.6.8
 
 ### Patch Changes

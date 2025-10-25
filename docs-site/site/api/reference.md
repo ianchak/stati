@@ -117,23 +117,99 @@ function stripHtml(html) {
 <meta name="description" content="<%= truncate(stripHtml(stati.content), 160) %>">
 ```
 
-### Partial Templates
+### Built-in Helpers
+
+#### `stati.propValue(...args)`
+
+Builds property values from various inputs, similar to the `classnames` library. Accepts strings, arrays, and objects, filtering out falsy values. Especially useful for building dynamic HTML attributes that support space-separated tokens (like `class` or `data-analytics`).
+
+**Signature:**
+
+```typescript
+stati.propValue(...args: (string | number | boolean | null | undefined | Record<string, any> | any[])[]): string
+```
+
+**Examples:**
 
 ```eta
-<!-- Include partials -->
+<!-- Basic usage -->
+<button class="<%= stati.propValue('btn', `btn-${variant}`, isActive && 'is-active') %>">
+  Click me
+</button>
+
+<!-- Array syntax -->
+<div class="<%= stati.propValue(['card', 'card-hover', featured && 'featured']) %>">
+  Card content
+</div>
+
+<!-- Object syntax (keys with truthy values are included) -->
+<article class="<%= stati.propValue({
+  'post': true,
+  'post-featured': stati.page.featured,
+  'post-draft': stati.page.draft,
+  [`post-${stati.page.category}`]: stati.page.category
+}) %>">
+  Article content
+</article>
+
+<!-- Data attributes -->
+<div
+  class="<%= stati.propValue('card', `hover:border-${color}-300`) %>"
+  data-analytics="<%= stati.propValue('card-click', `category-${stati.page.category}`) %>"
+>
+  Card with analytics
+</div>
+```
+
+**Important Notes:**
+
+- Eta does NOT support partial dynamic attributes like `class="static-<%= dynamic %>-morestatic"`. All attribute values must be fully dynamic.
+- For single concatenated values (like `data-id="item-42"`), use template literals: `data-id="<%=`item-${id}`%>"`.
+- `propValue()` also tracks Tailwind classes for inventory when Tailwind integration is enabled, ensuring dynamically-generated classes are included in the CSS build.
+
+For more details on Eta template limitations and best practices, see [Template Configuration](/configuration/templates/).
+
+### Partial Templates
+
+Partials are reusable templates from underscore-prefixed directories (e.g., `_partials/`, `_components/`, `_layouts/`), available as callable functions in `stati.partials`.
+
+**Basic Usage:**
+
+```eta
+<!-- Without props (pre-rendered) -->
 <%~ stati.partials.header %>
 <%~ stati.partials.footer %>
-<%~ stati.partials.navigation %>
 
-<!-- Conditional partials -->
+<!-- With props (re-rendered dynamically) -->
+<%~ stati.partials.card({ title: 'Hello', featured: true }) %>
+
+<!-- Conditional -->
 <% if (stati.partials.sidebar) { %>
   <%~ stati.partials.sidebar %>
 <% } %>
+```
 
-<!-- Partials with data -->
-<%~ stati.partials.postMeta %>
-<%~ stati.partials.tagList %>
-<%~ stati.partials.shareButtons %>
+**Defining Partials:**
+
+```eta
+<!-- site/_partials/card.eta or site/_components/card.eta -->
+<article class="<%= stati.propValue('card', stati.props.featured && 'featured') %>">
+  <h2><%= stati.props.title %></h2>
+  <p><%= stati.props.description %></p>
+  <a href="<%= stati.props.url %>">Read more</a>
+</article>
+```
+
+**Props vs Context:**
+
+- Props passed to partials are available as `stati.props` within the partial
+- Partials also have full access to `stati.page`, `stati.site`, `stati.content`, etc.
+- Without props: uses pre-rendered content (fast)
+- With props: re-renders with merged context (dynamic)
+
+```eta
+<!-- Fallback pattern: props → page → site -->
+<%= stati.props?.author || stati.page.author || stati.site.author %>
 ```
 
 ## Configuration API
