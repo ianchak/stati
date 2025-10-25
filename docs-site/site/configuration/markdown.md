@@ -1,16 +1,16 @@
 ---
 title: 'Markdown Config'
-description: 'Configure markdown-it and customize markdown rendering behavior.'
+description: 'Configure markdown-it plugins and customize markdown rendering.'
 order: 4
 ---
 
 # Markdown Configuration
 
-Stati uses [markdown-it](https://github.com/markdown-it/markdown-it) as its markdown processor, providing extensive customization options for content processing, syntax highlighting, and plugin integration.
+Stati uses [markdown-it](https://github.com/markdown-it/markdown-it) as its markdown processor. The engine is configured with sensible defaults, and you can extend it with plugins or customize rendering behavior.
 
-## Basic Markdown Configuration
+## Configuration Options
 
-Configure markdown processing in your `stati.config.js`:
+Stati provides two options for markdown customization:
 
 ```javascript
 // stati.config.js
@@ -18,697 +18,387 @@ import { defineConfig } from '@stati/core';
 
 export default defineConfig({
   markdown: {
-    // Enable HTML tags in markdown
-    html: true,
+    // Array of markdown-it plugins
+    plugins: [
+      'anchor',                    // Plugin name only
+      ['prism', { options }],      // Plugin with options
+    ],
 
-    // Automatically convert links
-    linkify: true,
-
-    // Enable typographic replacements
-    typographer: true,
-
-    // Quote and dash replacements
-    quotes: '""''',
-
-    // Line breaks behavior
-    breaks: false,
-
-    // Enable language detection for code blocks
-    langPrefix: 'language-',
-
-    // Highlight.js configuration
-    highlight: {
-      enabled: true,
-      theme: 'github',
-      lineNumbers: true
-    }
-  }
-});
-```
-
-## Core Parser Options
-
-### HTML and Safety
-
-```javascript
-export default defineConfig({
-  markdown: {
-    // Allow HTML tags in markdown
-    html: true,
-
-    // Automatically convert URLs to links
-    linkify: true,
-
-    // Link validation and security
-    linkValidation: {
-      // Validate external links
-      validateExternal: true,
-
-      // Allowed protocols
-      allowedProtocols: ['http', 'https', 'mailto', 'tel'],
-
-      // Add security attributes to external links
-      externalLinkAttributes: {
-        target: '_blank',
-        rel: 'noopener noreferrer',
-      },
+    // Custom configuration function
+    configure: (md) => {
+      // Receive markdown-it instance
+      // Customize rendering, add plugins, etc.
     },
   },
 });
 ```
 
-### Typography
+## Default Settings
+
+Stati creates markdown-it with these hardcoded settings (not configurable):
+
+- **HTML enabled**: HTML tags are allowed in markdown source
+- **Linkify enabled**: URLs are automatically converted to links
+- **Typographer enabled**: Smart quotes and typography replacements
+
+These defaults provide a good balance of functionality and security for most use cases.
+
+## Markdown Plugins
+
+The `plugins` option accepts an array of markdown-it plugins. Stati automatically prepends `markdown-it-` to plugin names.
+
+### Plugin Format
+
+**Simple plugin** (string):
 
 ```javascript
 export default defineConfig({
   markdown: {
-    // Enable smart quotes and dashes
-    typographer: true,
-
-    // Custom quote characters
-    quotes: '""''', // English quotes
-    // quotes: '«»„"', // German quotes
-    // quotes: '「」「」', // Japanese quotes
-
-    // Typography replacements
-    replacements: {
-      // Em dash
-      '---': '—',
-
-      // En dash
-      '--': '–',
-
-      // Ellipsis
-      '...': '…',
-
-      // Copyright
-      '(c)': '©',
-
-      // Trademark
-      '(tm)': '™',
-
-      // Registered trademark
-      '(r)': '®'
-    }
-  }
+    plugins: ['anchor', 'footnote', 'emoji'],
+  },
 });
 ```
 
-### Line Breaks and Formatting
+**Plugin with options** (array):
 
 ```javascript
 export default defineConfig({
   markdown: {
-    // Convert line breaks to <br>
-    breaks: false,
+    plugins: [
+      ['anchor', {
+        slugify: (s) => s.toLowerCase().trim().replace(/[\s\W-]+/g, '-'),
+      }],
+      ['prism', {
+        defaultLanguage: 'javascript',
+      }],
+    ],
+  },
+});
+```
 
-    // Tab size for code blocks
-    tabSize: 2,
+### Plugin Installation
 
-    // Normalize whitespace
-    normalize: true,
+Plugins must be installed as npm dependencies:
 
-    // Table formatting
-    tables: {
-      enabled: true,
+```bash
+npm install markdown-it-anchor
+npm install markdown-it-footnote
+npm install @widgetbot/markdown-it-prism
+```
 
-      // Add CSS classes to tables
-      className: 'table table-striped',
+### Common Plugins
 
-      // Table alignment
-      align: true,
+| Plugin | Package | Purpose |
+|--------|---------|---------|
+| `anchor` | `markdown-it-anchor` | Add IDs to headings |
+| `prism` | `@widgetbot/markdown-it-prism` | Syntax highlighting |
+| `toc-done-right` | `markdown-it-toc-done-right` | Table of contents |
+| `footnote` | `markdown-it-footnote` | Footnote support |
+| `emoji` | `markdown-it-emoji` | Emoji shortcuts :smile: |
+| `external-links` | `markdown-it-external-links` | External link attributes |
+| `container` | `markdown-it-container` | Custom containers |
+| `attrs` | `markdown-it-attrs` | Add attributes to elements |
+
+### Example: Complete Plugin Setup
+
+```javascript
+export default defineConfig({
+  markdown: {
+    plugins: [
+      // Add IDs to headings for deep linking
+      ['anchor', {
+        slugify: (s) => s.toLowerCase().trim().replace(/[\s\W-]+/g, '-'),
+        permalink: false,
+      }],
+
+      // Generate table of contents
+      'toc-done-right',
+
+      // Syntax highlighting with Prism.js
+      ['prism', {
+        defaultLanguage: 'javascript',
+      }],
+
+      // Add target="_blank" to external links
+      ['external-links', {
+        externalTarget: '_blank',
+        internalDomains: ['stati.build'],
+      }],
+
+      // Support for ::: container syntax
+      ['container', 'warning'],
+      ['container', 'tip'],
+
+      // Footnote support
+      'footnote',
+
+      // Emoji shortcuts
+      'emoji',
+    ],
+  },
+});
+```
+
+## Custom Configuration
+
+The `configure` option accepts a function that receives the markdown-it instance. This runs **after** plugins are loaded, allowing you to override plugin behavior.
+
+### Basic Customization
+
+```javascript
+export default defineConfig({
+  markdown: {
+    configure: (md) => {
+      // Modify markdown-it options
+      md.set({ breaks: true });
+
+      // Configure linkify
+      md.linkify.set({ fuzzyEmail: false });
+
+      // Add plugins programmatically
+      md.use(somePlugin, options);
     },
   },
 });
+```
+
+### Custom Renderer Rules
+
+Customize how specific markdown elements are rendered:
+
+```javascript
+export default defineConfig({
+  markdown: {
+    configure: (md) => {
+      // Customize heading rendering
+      md.renderer.rules.heading_open = (tokens, idx) => {
+        const level = tokens[idx].tag;
+        const label = tokens[idx + 1].content;
+        return `<${level} class="heading heading-${level}" data-label="${label}">`;
+      };
+
+      // Customize link rendering
+      const defaultLinkOpen = md.renderer.rules.link_open ||
+        ((tokens, idx, options, env, self) => self.renderToken(tokens, idx, options));
+
+      md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
+        const aIndex = tokens[idx].attrIndex('href');
+        if (aIndex >= 0) {
+          const href = tokens[idx].attrs[aIndex][1];
+
+          // Add class to external links
+          if (href.startsWith('http')) {
+            tokens[idx].attrPush(['class', 'external-link']);
+            tokens[idx].attrPush(['rel', 'noopener noreferrer']);
+          }
+        }
+        return defaultLinkOpen(tokens, idx, options, env, self);
+      };
+    },
+  },
+});
+```
+
+### Custom Block Syntax
+
+Create custom container syntax:
+
+```javascript
+import container from 'markdown-it-container';
+
+export default defineConfig({
+  markdown: {
+    plugins: [
+      ['container', 'warning'],
+      ['container', 'tip'],
+      ['container', 'danger'],
+    ],
+  },
+});
+```
+
+**Usage in markdown:**
+
+```markdown
+::: warning
+This is a warning message
+:::
+
+::: tip
+This is a helpful tip
+:::
 ```
 
 ## Syntax Highlighting
 
-### Highlight.js Configuration
+Stati doesn't provide built-in syntax highlighting. You have two options:
 
-```javascript
-export default defineConfig({
-  markdown: {
-    highlight: {
-      // Enable syntax highlighting
-      enabled: true,
+### Option 1: Client-Side (Recommended)
 
-      // Highlight.js theme
-      theme: 'github', // 'github', 'monokai', 'solarized-dark', etc.
+Use the `markdown-it-prism` plugin with Prism.js:
 
-      // Additional themes for dark mode
-      themes: {
-        light: 'github',
-        dark: 'github-dark',
-      },
-
-      // Show line numbers
-      lineNumbers: true,
-
-      // Copy button
-      copyButton: true,
-
-      // Language detection
-      autoDetect: true,
-
-      // Supported languages
-      languages: [
-        'javascript',
-        'typescript',
-        'python',
-        'java',
-        'cpp',
-        'html',
-        'css',
-        'scss',
-        'json',
-        'yaml',
-        'markdown',
-        'bash',
-        'shell',
-        'sql',
-        'php',
-        'ruby',
-        'go',
-        'rust',
-      ],
-
-      // Custom language aliases
-      aliases: {
-        js: 'javascript',
-        ts: 'typescript',
-        py: 'python',
-        sh: 'shell',
-      },
-    },
-  },
-});
+**Install:**
+```bash
+npm install @widgetbot/markdown-it-prism prismjs
 ```
 
-### Prism.js Configuration
-
-Alternative syntax highlighter:
-
+**Configure:**
 ```javascript
 export default defineConfig({
   markdown: {
-    highlight: {
-      engine: 'prism', // Use Prism instead of Highlight.js
-
-      theme: 'prism-tomorrow',
-
-      // Prism plugins
-      plugins: ['line-numbers', 'copy-to-clipboard', 'show-language', 'toolbar'],
-
-      // Custom Prism configuration
-      prismConfig: {
-        languages: ['javascript', 'css', 'markup'],
-        showLineNumbers: true,
-        normalizeWhitespace: true,
-      },
-    },
-  },
-});
-```
-
-## Markdown Extensions
-
-### Common Extensions
-
-```javascript
-export default defineConfig({
-  markdown: {
-    extensions: {
-      // GitHub Flavored Markdown
-      gfm: {
-        enabled: true,
-
-        // Strikethrough text
-        strikethrough: true,
-
-        // Task lists
-        taskLists: true,
-
-        // Tables
-        tables: true,
-
-        // Automatic link detection
-        linkify: true,
-      },
-
-      // Footnotes
-      footnotes: {
-        enabled: true,
-
-        // Footnote anchor text
-        anchorText: '↩',
-
-        // Footnote prefix
-        prefix: 'fn',
-
-        // Back reference prefix
-        backrefPrefix: 'fnref',
-      },
-
-      // Abbreviations
-      abbreviations: {
-        enabled: true,
-
-        // Global abbreviations
-        definitions: {
-          HTML: 'HyperText Markup Language',
-          CSS: 'Cascading Style Sheets',
-          JS: 'JavaScript',
-        },
-      },
-
-      // Definition lists
-      definitionLists: true,
-
-      // Math expressions
-      math: {
-        enabled: true,
-        engine: 'katex', // 'katex' or 'mathjax'
-
-        // Inline math delimiters
-        inlineDelimiters: [
-          ['$', '$'],
-          ['\\(', '\\)'],
-        ],
-
-        // Block math delimiters
-        blockDelimiters: [
-          ['$$', '$$'],
-          ['\\[', '\\]'],
-        ],
-      },
-    },
-  },
-});
-```
-
-### Markdown-it Plugin Support
-
-Stati supports markdown-it plugins for extending markdown processing capabilities:
-
-```javascript
-export default defineConfig({
-  markdown: {
-    // Array of plugins to load - each can be a string or [name, options]
     plugins: [
-      // Simple plugin name (will load markdown-it-{name})
-      'anchor',
-      'toc-done-right',
+      ['prism', { defaultLanguage: 'javascript' }],
+    ],
+  },
+});
+```
 
-      // Plugin with options
-      ['container', {
-        name: 'warning',
-        render: (tokens, idx) => {
-          // Custom rendering logic
+**Add to layout:**
+```html
+<link rel="stylesheet" href="/path/to/prism.css">
+<script src="/path/to/prism.js"></script>
+```
+
+**Pros:** Simple setup, many themes available, works well for static sites
+**Cons:** Requires JavaScript, flash of unstyled code before JS loads
+
+### Option 2: Server-Side
+
+Use any server-side highlighter in the `configure` function:
+
+```javascript
+import { getHighlighter } from 'shiki';
+
+export default defineConfig({
+  markdown: {
+    configure: async (md) => {
+      const highlighter = await getHighlighter({
+        theme: 'nord',
+        langs: ['javascript', 'typescript', 'python', 'html', 'css'],
+      });
+
+      md.options.highlight = (code, lang) => {
+        if (lang && highlighter.getLoadedLanguages().includes(lang)) {
+          return highlighter.codeToHtml(code, { lang });
         }
-      }],
-
-      'emoji',
-      'footnote'
-    ],
-
-    // Alternative: configure manually with setup function
-    configure: (md) => {
-      // Import and use plugins directly
-      md.use(require('markdown-it-anchor'), {
-        permalink: true,
-        permalinkBefore: true
-      });
-
-      md.use(require('markdown-it-toc-done-right'), {
-        includeLevel: [1, 2, 3]
-      });
-    }
-  }
-});
-```
-
-**Available Plugin Formats:**
-
-- `'plugin-name'` - Loads `markdown-it-plugin-name` with default options
-- `['plugin-name', options]` - Loads plugin with custom options
-- Use `configure` function for complex plugin setups
-
-**Popular markdown-it Plugins:**
-
-- `markdown-it-anchor` - Heading anchors
-- `markdown-it-toc-done-right` - Table of contents
-- `markdown-it-container` - Custom containers
-- `markdown-it-emoji` - Emoji support
-- `markdown-it-footnote` - Footnotes
-
-## Content Processing
-
-### Front Matter Processing
-
-```javascript
-export default defineConfig({
-  markdown: {
-    frontMatter: {
-      // Front matter delimiter
-      delimiter: '---',
-
-      // Allowed formats
-      formats: ['yaml', 'json', 'toml'],
-
-      // Default values
-      defaults: {
-        draft: false,
-        publishedAt: () => new Date().toISOString(),
-        author: 'Default Author',
-      },
-
-      // Validation rules
-      validation: {
-        title: 'required|string',
-        description: 'string|max:160',
-        tags: 'array',
-        publishedAt: 'date',
-      },
+        return ''; // Return empty string for unsupported languages
+      };
     },
   },
 });
 ```
 
-### Content Transformation
+**Pros:** No JavaScript required, no flash of unstyled code
+**Cons:** More complex setup, increases build time
 
-```javascript
-export default defineConfig({
-  markdown: {
-    transforms: [
-      // Auto-generate table of contents
-      {
-        name: 'toc',
-        transform: (content, page) => {
-          const toc = generateTableOfContents(content);
-          page.toc = toc;
-          return content;
-        },
-      },
+## Front Matter
 
-      // Extract reading time
-      {
-        name: 'reading-time',
-        transform: (content, page) => {
-          const wordsPerMinute = 200;
-          const words = content.replace(/\s+/g, ' ').split(' ').length;
-          page.readingTime = Math.ceil(words / wordsPerMinute);
-          return content;
-        },
-      },
+Stati automatically parses YAML front matter from markdown files using `gray-matter`. This is not configurable.
 
-      // Process custom shortcodes
-      {
-        name: 'shortcodes',
-        transform: (content) => {
-          return content.replace(
-            /\{\{< youtube ([^>]+) >\}\}/g,
-            '<div class="youtube-embed"><iframe src="https://www.youtube.com/embed/$1"></iframe></div>',
-          );
-        },
-      },
+**Example:**
 
-      // Image optimization
-      {
-        name: 'images',
-        transform: (content) => {
-          return content.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, src) => {
-            // Add loading="lazy" and optimize image paths
-            return `<img src="${src}" alt="${alt}" loading="lazy" class="responsive-image">`;
-          });
-        },
-      },
-    ],
-  },
-});
+```markdown
+---
+title: My Page Title
+description: Page description
+date: 2024-01-15
+tags: [stati, markdown]
+author: John Doe
+---
+
+# Your content here
 ```
 
-## Advanced Features
+All front matter fields are available in templates:
 
-### Code Block Enhancements
-
-````javascript
-export default defineConfig({
-  markdown: {
-    codeBlocks: {
-      // Filename display
-      showFilename: true,
-
-      // Language badges
-      showLanguage: true,
-
-      // Copy button
-      copyButton: {
-        enabled: true,
-        text: 'Copy',
-        successText: 'Copied!',
-      },
-
-      // Line highlighting
-      lineHighlight: {
-        enabled: true,
-
-        // Syntax: ```js {1,3-5}
-        marker: /\{([^}]+)\}/,
-      },
-
-      // Diff highlighting
-      diff: {
-        enabled: true,
-
-        // + for additions, - for deletions
-        markers: {
-          addition: '+',
-          deletion: '-',
-        },
-      },
-    },
-  },
-});
-````
-
-### Link Processing
-
-```javascript
-export default defineConfig({
-  markdown: {
-    links: {
-      // Internal link processing
-      internal: {
-        // Convert .md links to .html
-        convertExtensions: true,
-
-        // Validate internal links exist
-        validate: true,
-
-        // Base path for internal links
-        basePath: '/',
-      },
-
-      // External link processing
-      external: {
-        // Add target="_blank"
-        openInNewTab: true,
-
-        // Add rel="noopener noreferrer"
-        addSecurity: true,
-
-        // Add external link icon
-        addIcon: true,
-
-        // Custom attributes
-        attributes: {
-          class: 'external-link',
-        },
-      },
-    },
-  },
-});
-```
-
-### Image Processing
-
-```javascript
-export default defineConfig({
-  markdown: {
-    images: {
-      // Lazy loading
-      lazyLoading: true,
-
-      // Responsive images
-      responsive: {
-        enabled: true,
-
-        // Generate multiple sizes
-        sizes: [400, 800, 1200],
-
-        // Image formats
-        formats: ['webp', 'avif', 'jpeg'],
-      },
-
-      // Image optimization
-      optimization: {
-        enabled: true,
-
-        // Quality settings
-        quality: 80,
-
-        // Compression
-        compression: 'lossy',
-      },
-
-      // Figure generation
-      figures: {
-        enabled: true,
-
-        // Generate <figure> tags
-        wrap: true,
-
-        // Caption from alt text
-        captionFromAlt: true,
-      },
-    },
-  },
-});
-```
-
-## Performance Optimization
-
-### Caching
-
-```javascript
-export default defineConfig({
-  markdown: {
-    cache: {
-      // Enable markdown parsing cache
-      enabled: true,
-
-      // Cache directory
-      directory: '.stati/markdown-cache',
-
-      // Cache strategy
-      strategy: 'content-hash', // 'content-hash' | 'mtime'
-
-      // Cache TTL
-      ttl: 1000 * 60 * 60 * 24, // 24 hours
-
-      // Max cache size
-      maxSize: 100 * 1024 * 1024, // 100MB
-    },
-  },
-});
-```
-
-### Processing Optimization
-
-```javascript
-export default defineConfig({
-  markdown: {
-    performance: {
-      // Parallel processing
-      parallel: {
-        enabled: true,
-        maxWorkers: require('os').cpus().length,
-      },
-
-      // Streaming for large files
-      streaming: {
-        enabled: true,
-        chunkSize: 64 * 1024, // 64KB chunks
-      },
-
-      // Memory optimization
-      memory: {
-        // Clear parser cache after processing
-        clearCache: true,
-
-        // Garbage collection hints
-        gc: true,
-      },
-    },
-  },
-});
-```
-
-## Testing and Validation
-
-### Content Validation
-
-```javascript
-export default defineConfig({
-  markdown: {
-    validation: {
-      // Validate markdown syntax
-      syntax: true,
-
-      // Check for broken links
-      links: {
-        internal: true,
-        external: false, // Can be slow
-      },
-
-      // Validate front matter
-      frontMatter: true,
-
-      // Check for accessibility issues
-      accessibility: {
-        headingStructure: true,
-        altText: true,
-        colorContrast: false,
-      },
-    },
-  },
-});
-```
-
-### Debug Mode
-
-```javascript
-export default defineConfig({
-  markdown: {
-    debug: {
-      // Enable debug mode in development
-      enabled: process.env.NODE_ENV === 'development',
-
-      // Show processing time
-      timing: true,
-
-      // Log parser warnings
-      warnings: true,
-
-      // Output debug information
-      verbose: false,
-    },
-  },
-});
+```eta
+<h1><%= stati.page.title %></h1>
+<p><%= stati.page.description %></p>
+<time><%= new Date(stati.page.date).toLocaleDateString() %></time>
 ```
 
 ## Best Practices
 
-### Content Organization
+### Plugin Selection
 
-1. **Consistent Front Matter**: Use consistent field names across all content
-2. **Semantic Headings**: Use proper heading hierarchy (h1 → h2 → h3)
-3. **Alt Text**: Always provide descriptive alt text for images
-4. **Link Context**: Provide meaningful link text and context
+1. **Install only what you need** - Each plugin adds processing overhead
+2. **Check compatibility** - Ensure plugins work with your markdown-it version
+3. **Test thoroughly** - Some plugins may conflict with each other
+
+### Custom Rendering
+
+1. **Use configure for overrides** - The configure function runs after plugins
+2. **Preserve defaults** - Store default renderer before overriding
+3. **Handle edge cases** - Check for null/undefined values in custom rules
 
 ### Performance
 
-1. **Image Optimization**: Use optimized images with appropriate formats
-2. **Lazy Loading**: Enable lazy loading for images and heavy content
-3. **Caching**: Enable markdown processing cache in production
-4. **Code Splitting**: Split large markdown files into smaller chunks
+1. **Limit plugins** - Too many plugins slow down builds
+2. **Cache compiled results** - Stati caches in production automatically
+3. **Optimize images** - Large images slow down markdown parsing
 
-### SEO and Accessibility
+## Complete Example
 
-1. **Meta Descriptions**: Include descriptions in front matter
-2. **Heading Structure**: Maintain logical heading hierarchy
-3. **Link Accessibility**: Use descriptive link text
-4. **Language**: Specify content language in front matter
+A production-ready markdown configuration:
 
-Markdown configuration is essential for creating rich, accessible, and performant content. Take advantage of Stati's extensive markdown processing capabilities to create engaging documentation and blog content.
+```javascript
+import { defineConfig } from '@stati/core';
+
+export default defineConfig({
+  markdown: {
+    plugins: [
+      // Heading anchors
+      ['anchor', {
+        slugify: (s) => s.toLowerCase().trim().replace(/[\s\W-]+/g, '-'),
+      }],
+
+      // Table of contents
+      'toc-done-right',
+
+      // Syntax highlighting
+      ['prism', { defaultLanguage: 'javascript' }],
+
+      // External links
+      ['external-links', {
+        externalTarget: '_blank',
+        internalDomains: ['stati.build'],
+      }],
+
+      // Custom containers
+      ['container', 'warning'],
+      ['container', 'tip'],
+
+      // Footnotes
+      'footnote',
+    ],
+
+    configure: (md) => {
+      // Add custom CSS classes to links
+      const defaultLinkOpen = md.renderer.rules.link_open ||
+        ((tokens, idx, options, env, self) => self.renderToken(tokens, idx, options));
+
+      md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
+        const aIndex = tokens[idx].attrIndex('href');
+        if (aIndex >= 0) {
+          const href = tokens[idx].attrs[aIndex][1];
+          if (href.startsWith('http')) {
+            tokens[idx].attrPush(['class', 'external-link']);
+          } else {
+            tokens[idx].attrPush(['class', 'internal-link']);
+          }
+        }
+        return defaultLinkOpen(tokens, idx, options, env, self);
+      };
+
+      // Enable line breaks
+      md.set({ breaks: true });
+    },
+  },
+});
+```
+
+## Next Steps
+
+- Learn about [Templates & Layouts](/core-concepts/templates/) for rendering markdown
+- Explore [Markdown concepts](/core-concepts/markdown/) for content authoring
+- See [API Reference](/api/reference/) for programmatic usage

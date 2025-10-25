@@ -100,7 +100,7 @@ Customize layouts with [Eta templates](https://eta.js.org):
     <title><%= stati.page.title %></title>
   </head>
   <body>
-    <%~ stati.page.content %>
+    <%~ stati.content %>
   </body>
 </html>
 ```
@@ -331,7 +331,7 @@ Your content here...
     <article>
       <h1><%= stati.page.title %></h1>
       <time><%= stati.page.date %></time>
-      <%~ stati.page.content %>
+      <%~ stati.content %>
     </article>
   </body>
 </html>

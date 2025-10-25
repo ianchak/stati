@@ -152,7 +152,7 @@ Customize layouts with [Eta templates](https://eta.js.org):
     <title><%= stati.page.title %></title>
   </head>
   <body>
-    <%~ stati.page.content %>
+    <%~ stati.content %>
   </body>
 </html>
 ```
@@ -600,7 +600,7 @@ Powered by [Eta](https://eta.js.org) for fast, flexible templates:
   <body>
     <%~ include('_partials/header') %>
     <main>
-      <%~ stati.page.content %>
+      <%~ stati.content %>
     </main>
     <%~ include('_partials/footer') %>
   </body>
@@ -731,7 +731,7 @@ export default defineConfig({
 
 ## Requirements
 
-- **Node.js** 22.0.0 or higher
+- **Node.js** >=22
 - **npm** 11.5.1 or higher (or equivalent package manager)
 
 ---

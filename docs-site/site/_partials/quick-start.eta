@@ -43,7 +43,7 @@
                         <% if (command.parts) { %>
                         <% for (let i = 0; i < command.parts.length; i++) { %>
                         <% let part = command.parts[i]; %>
-                        <span class="<%= `text-${part.color}-400` %>"><%= part.text %></span><% if (i < command.parts.length - 1) { %> <% } %>
+                        <span class="<%= stati.propValue(`text-${part.color}-400`) %>"><%= part.text %></span><% if (i < command.parts.length - 1) { %> <% } %>
                         <% } %>
                         <% } else { %>
                         <%= command.text %>

@@ -406,7 +406,7 @@ Direct access to the current page's navigation node with all its properties and 
 ```html
 <!-- _partials/nested-nav.eta -->
 <% function renderNavTree(nodes, level = 0) { %>
-  <ul class="nav-level-<%= level %>">
+  <ul class="<%= stati.propValue(`nav-level-${level}`) %>">
     <% nodes.forEach(node => { %>
       <li>
         <a

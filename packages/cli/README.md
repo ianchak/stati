@@ -340,7 +340,7 @@ npm run build -- --clean
 
 ## Requirements
 
-- **Node.js** 22.0.0 or higher
+- **Node.js** >=22
 - **npm** 11.5.1 or higher (or equivalent package manager)
 
 ---

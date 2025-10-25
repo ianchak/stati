@@ -50,113 +50,13 @@ export default defineConfig({
 
 ## SEO and Metadata
 
-### Template-Based Meta Tags
+Stati includes built-in support for SEO optimization, sitemap generation, and robots.txt creation. For comprehensive documentation on these features, see:
 
-Stati provides the page context in templates for SEO optimization:
+- [SEO Configuration](/configuration/seo/) - Configure automatic SEO meta tags, Open Graph, Twitter Cards, and Schema.org
+- [SEO API](/api/seo/) - Use the `generateSEO()` function in templates
+- [SEO Usage Scenarios](/advanced/seo-usage-scenarios/) - Real-world examples and patterns
 
-```eta
-<head>
-  <!-- Basic SEO with Stati page context -->
-  <title><%= stati.title ? `${stati.title} | ${stati.site.title}` : stati.site.title %></title>
-  <meta name="description" content="<%= stati.description || stati.site.description %>">
-  <link rel="canonical" href="<%= stati.site.baseUrl + stati.url %>">
-
-  <!-- Open Graph -->
-  <meta property="og:type" content="<%= stati.type || 'website' %>">
-  <meta property="og:title" content="<%= stati.title || stati.site.title %>">
-  <meta property="og:description" content="<%= stati.description || stati.site.description %>">
-  <meta property="og:url" content="<%= stati.site.baseUrl + stati.url %>">
-  <meta property="og:site_name" content="<%= stati.site.title %>">
-
-  <% if (stati.image) { %>
-  <meta property="og:image" content="<%= stati.site.baseUrl + stati.image %>">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
-  <% } %>
-
-  <!-- Twitter Cards -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="<%= stati.title || stati.site.title %>">
-  <meta name="twitter:description" content="<%= stati.description || stati.site.description %>">
-  <% if (stati.site.social && stati.site.social.twitter) { %>
-  <meta name="twitter:site" content="<%= stati.site.social.twitter %>">
-  <% } %>
-
-  <!-- Schema.org JSON-LD -->
-  <script type="application/ld+json">
-  <%
-  const schema = {
-    "@context": "https://schema.org",
-    "@type": stati.schemaType || "WebPage",
-    "name": stati.title || stati.site.title,
-    "description": stati.description || stati.site.description,
-    "url": stati.site.baseUrl + stati.url
-  };
-
-  if (stati.author) {
-    schema.author = {
-      "@type": "Person",
-      "name": stati.author
-    };
-  }
-
-  if (stati.date) {
-    schema.datePublished = stati.date;
-    schema.dateModified = stati.lastModified || stati.date;
-  }
-  %>
-  <%~ JSON.stringify(schema, null, 2) %>
-  </script>
-</head>
-```
-
-### Build Hooks for SEO Assets
-
-Stati's build hooks enable custom SEO asset generation:
-
-```javascript
-import fs from 'fs';
-
-export default defineConfig({
-  site: {
-    title: 'My Stati Site',
-    baseUrl: 'https://example.com',
-  },
-
-  hooks: {
-    afterAll: async (ctx) => {
-      // Generate sitemap.xml
-      const sitemap = generateSitemap(ctx.pages, ctx.config.site);
-      fs.writeFileSync('dist/sitemap.xml', sitemap);
-
-      // Generate robots.txt
-      const robots = `User-agent: *
-Allow: /
-
-Sitemap: ${ctx.config.site.baseUrl}/sitemap.xml`;
-      fs.writeFileSync('dist/robots.txt', robots);
-    },
-  },
-});
-
-function generateSitemap(pages, site) {
-  const entries = pages
-    .map((page) => `  <url>
-    <loc>${site.baseUrl}${page.url}</loc>
-    <lastmod>${page.date || new Date().toISOString()}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>`)
-    .join('\n');
-
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${entries}
-</urlset>`;
-}
-```
-
-For comprehensive build hook documentation and examples, see the [Build Hooks API](/api/hooks/).
+These built-in features handle sitemap.xml and robots.txt generation automatically based on your configuration.
 
 ## Development and Deployment
 
@@ -247,10 +147,10 @@ Every template receives the `stati` object with comprehensive page and site data
 
 ```eta
 <!-- Enhanced template context beyond basic usage -->
-<%= stati.title %>          <!-- Page title -->
+<%= stati.page.title %>     <!-- Page title -->
 <%= stati.content %>        <!-- Rendered markdown content -->
-<%= stati.url %>            <!-- Page URL -->
-<%= stati.frontMatter %>    <!-- Full front matter object -->
+<%= stati.page.url %>       <!-- Page URL -->
+<%= stati.page %>           <!-- Full page object with frontMatter properties -->
 
 <%= stati.site.title %>     <!-- Site title -->
 <%= stati.site.baseUrl %>   <!-- Site base URL -->
