@@ -227,9 +227,9 @@ jobs:
 
 ## Global Options
 
-All commands support these global options:
+Most commands support these options:
 
-- `--config <path>` - Path to configuration file
+- `--config <path>` - Path to configuration file (supported by `build`, `dev`, and `preview`)
 - `--help` - Show command help
 - `--version` - Show version information
 
@@ -256,9 +256,10 @@ Stati uses project-specific configuration files:
 stati dev --config stati.dev.js
 stati build --config stati.prod.js
 
-# Default config file locations
-stati.config.js  # Primary config
-stati.config.ts  # TypeScript config
+# Default config file locations (searched in this order)
+stati.config.ts   # TypeScript config
+stati.config.js   # JavaScript config
+stati.config.mjs  # ES Module config
 ```
 
 ## Development Workflows
