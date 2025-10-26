@@ -176,11 +176,22 @@ Once your site is created, follow these steps:
 
 ### 1. Install Dependencies (if needed)
 
-If you chose to install dependencies during scaffolding, you can skip this step. Otherwise:
+If you chose to install dependencies during scaffolding, you can skip this step. Otherwise, navigate to your project directory and install dependencies with your preferred package manager:
 
 ```bash
 cd my-site
+
+# Using npm
 npm install
+
+# Using yarn
+yarn install
+
+# Using pnpm
+pnpm install
+
+# Using bun
+bun install
 ```
 
 ### 2. Start Development
