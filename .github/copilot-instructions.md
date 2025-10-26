@@ -51,6 +51,7 @@
 - Packages ship as ESM (`"type": "module"`); import locals with explicit `.js` extensions and use helpers from `core/utils/fs.ts` instead of `fs` directly.
 - Strict TypeScript everywhere; export runtime symbols and types from separate barrels (`types/` for declarations). Avoid default exports except in configs.
 - Tests live beside features (`packages/*/src/tests`), use Vitest in `node` mode with `mockReset`/`restoreMocks`, and prefer temporary directories for file-system assertions.
+- **Utils naming**: All utility files in `utils/` folders must use the `.utils.ts` suffix (e.g., `fs.utils.ts`, `error-overlay.utils.ts`). Each `utils/` folder must have an `index.ts` barrel that re-exports all utilities from that folder.
 
 ## Troubleshooting
 
