@@ -4,6 +4,7 @@ import { ExampleManager } from './examples.js';
 import { PackageJsonModifier } from './package-json.js';
 import { CSSProcessor } from './css-processors.js';
 import type { StylingOption } from './css-processors.js';
+import { isCommandAvailable, spawnProcess } from './utils/process.js';
 
 /**
  * Result of a dependency installation attempt
@@ -23,51 +24,15 @@ export type PackageManager = (typeof ALLOWED_PACKAGE_MANAGERS)[number];
  * Detect all available package managers installed on the system
  */
 export async function detectAvailablePackageManagers(): Promise<PackageManager[]> {
-  try {
-    const { spawn } = await import('child_process');
+  const available: PackageManager[] = [];
 
-    const available: PackageManager[] = [];
-
-    for (const manager of ALLOWED_PACKAGE_MANAGERS) {
-      try {
-        await new Promise<void>((resolve, reject) => {
-          // Only use shell on Windows
-          const child = spawn(manager, ['--version'], {
-            stdio: 'ignore',
-            shell: process.platform === 'win32',
-          });
-
-          const timeout = global.setTimeout(() => {
-            child.kill();
-            reject(new Error('Timeout'));
-          }, 5000); // 5 second timeout to account for slower systems
-
-          child.on('error', () => {
-            global.clearTimeout(timeout);
-            reject();
-          });
-
-          child.on('exit', (code) => {
-            global.clearTimeout(timeout);
-            if (code === 0) {
-              resolve();
-            } else {
-              reject();
-            }
-          });
-        });
-        available.push(manager);
-      } catch (_error) {
-        // Manager not available, skip
-        continue;
-      }
+  for (const manager of ALLOWED_PACKAGE_MANAGERS) {
+    if (await isCommandAvailable(manager, 5000)) {
+      available.push(manager);
     }
-
-    return available;
-  } catch (_error) {
-    // Error detecting package managers, return empty array
-    return [];
   }
+
+  return available;
 }
 
 /**
@@ -276,24 +241,9 @@ export class ProjectScaffolder {
 
   private async initializeGit(targetDir: string): Promise<void> {
     try {
-      // Import spawn for better security and control
-      const { spawn } = await import('child_process');
-
-      await new Promise<void>((resolve, reject) => {
-        const child = spawn('git', ['init'], {
-          cwd: targetDir,
-          stdio: 'ignore',
-          shell: process.platform === 'win32',
-        });
-
-        child.on('error', reject);
-        child.on('exit', (code) => {
-          if (code === 0) {
-            resolve();
-          } else {
-            reject(new Error(`git init exited with code ${code}`));
-          }
-        });
+      await spawnProcess('git', ['init'], {
+        cwd: targetDir,
+        stdio: 'ignore',
       });
 
       // Create .gitignore if it doesn't exist
@@ -379,33 +329,9 @@ coverage/
     console.log(`\n📦 Installing dependencies with ${packageManager}...`);
 
     try {
-      const { spawn } = await import('child_process');
-
-      await new Promise<void>((resolve, reject) => {
-        // SECURITY: shell: true is safe here ONLY because packageManager has been
-        // validated above to be from ALLOWED_PACKAGE_MANAGERS (hardcoded list).
-        // Any future modifications to ALLOWED_PACKAGE_MANAGERS must maintain this guarantee.
-        const child = spawn(packageManager, ['install'], {
-          cwd: safeTargetDir,
-          stdio: 'inherit', // Show install progress to user
-          shell: process.platform === 'win32',
-        });
-
-        child.on('error', (error) => {
-          reject(
-            new Error(
-              `Failed to spawn ${packageManager}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            ),
-          );
-        });
-
-        child.on('exit', (code) => {
-          if (code === 0) {
-            resolve();
-          } else {
-            reject(new Error(`${packageManager} install exited with code ${code}`));
-          }
-        });
+      await spawnProcess(packageManager, ['install'], {
+        cwd: safeTargetDir,
+        stdio: 'inherit', // Show install progress to user
       });
 
       console.log('Dependencies installed successfully');
