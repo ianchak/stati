@@ -191,13 +191,15 @@ describe('CSSProcessor', () => {
 
       expect(packageJson.scripts).toHaveProperty('build:css');
       expect(packageJson.scripts).toHaveProperty('watch:css');
-      expect(packageJson.scripts['build:css']).toContain('tailwindcss');
-      expect(packageJson.scripts['watch:css']).toContain('tailwindcss');
-      expect(packageJson.scripts['watch:css']).toContain('--watch');
+      expect(packageJson.scripts['build:css']).toContain('stati tailwindcss:build');
+      expect(packageJson.scripts['watch:css']).toContain('stati tailwindcss:watch');
 
       // Verify input/output paths
       expect(packageJson.scripts['build:css']).toContain('-i src/styles.css -o public/styles.css');
       expect(packageJson.scripts['watch:css']).toContain('-i src/styles.css -o public/styles.css');
+
+      // Verify build script includes minify flag
+      expect(packageJson.scripts['build:css']).toContain('--minify');
 
       // Scripts should be modified to integrate CSS processing
       expect(packageJson.scripts.dev).toBe(
