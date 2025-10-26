@@ -95,22 +95,6 @@ describe('Security and edge cases', () => {
   });
 
   describe('detectAvailablePackageManagers edge cases', () => {
-    it('should handle detection with DEBUG mode enabled', async () => {
-      const originalDebug = process.env.DEBUG;
-      process.env.DEBUG = 'true';
-
-      const consoleSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
-
-      const managers = await detectAvailablePackageManagers();
-
-      // Should at least detect npm in CI/test environment
-      expect(Array.isArray(managers)).toBe(true);
-
-      // Restore
-      process.env.DEBUG = originalDebug;
-      consoleSpy.mockRestore();
-    });
-
     it('should return all available managers', async () => {
       const managers = await detectAvailablePackageManagers();
 
@@ -143,35 +127,6 @@ describe('Security and edge cases', () => {
       expect(result.projectName).toBe('test-permissions');
       await expect(access(join(result.targetDir, 'package.json'))).resolves.not.toThrow();
 
-      consoleWarnSpy.mockRestore();
-      consoleLogSpy.mockRestore();
-    }, 30000);
-
-    it('should provide error message when DEBUG is enabled', async () => {
-      const originalDebug = process.env.DEBUG;
-      process.env.DEBUG = 'true';
-
-      const projectDir = join(tempDir, 'test-debug-install');
-      const options: CreateOptions = {
-        projectName: 'test-debug-install',
-        template: 'blank',
-        styling: 'css',
-        gitInit: false,
-        install: true,
-        packageManager: 'npm',
-        dir: projectDir,
-      };
-
-      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
-      // Create the project
-      const result = await createSite(options);
-
-      expect(result.projectName).toBe('test-debug-install');
-
-      // Restore
-      process.env.DEBUG = originalDebug;
       consoleWarnSpy.mockRestore();
       consoleLogSpy.mockRestore();
     }, 30000);

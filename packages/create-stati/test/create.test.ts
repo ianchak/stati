@@ -475,24 +475,5 @@ describe('create-stati scaffolding', () => {
       const managers = await detectAvailablePackageManagers();
       expect(managers).toContain('npm');
     });
-
-    it('should return empty array on catastrophic failure', async () => {
-      // Save original DEBUG value
-      const originalDebug = process.env.DEBUG;
-
-      // Enable DEBUG mode to test debug logging
-      process.env.DEBUG = 'true';
-
-      const consoleSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
-
-      // Can't easily force a catastrophic failure in detectAvailablePackageManagers
-      // but we can at least test it runs without throwing
-      const managers = await detectAvailablePackageManagers();
-      expect(Array.isArray(managers)).toBe(true);
-
-      // Restore DEBUG
-      process.env.DEBUG = originalDebug;
-      consoleSpy.mockRestore();
-    });
   });
 });

@@ -57,28 +57,15 @@ export async function detectAvailablePackageManagers(): Promise<PackageManager[]
           });
         });
         available.push(manager);
-      } catch (error) {
+      } catch (_error) {
         // Manager not available, skip
-        // Log at debug level if verbose logging is enabled
-        if (process.env.DEBUG) {
-          console.debug(
-            `Package manager ${manager} not detected:`,
-            error instanceof Error ? error.message : 'Unknown error',
-          );
-        }
         continue;
       }
     }
 
     return available;
-  } catch (error) {
-    // Log error for debugging purposes
-    if (process.env.DEBUG) {
-      console.debug(
-        'Error detecting package managers:',
-        error instanceof Error ? error.message : 'Unknown error',
-      );
-    }
+  } catch (_error) {
+    // Error detecting package managers, return empty array
     return [];
   }
 }
@@ -432,11 +419,6 @@ coverage/
       // Installation is optional, so we warn instead of failing the entire scaffolding
       console.warn('\nWarning: Failed to install dependencies:', errorMessage);
       console.warn(suggestion);
-
-      // Log stack trace in debug mode
-      if (process.env.DEBUG && capturedError.stack) {
-        console.warn('Stack trace:', capturedError.stack);
-      }
 
       return { success: false, error: capturedError };
     }
