@@ -1,5 +1,12 @@
 # @stati/core
 
+## 1.12.0
+
+### Minor Changes
+
+- f0d1296: add mergeServerOptions utility for config handling
+- f0d1296: add configuration for preview server in settings
+
 ## 1.11.6
 
 ### Patch Changes
