@@ -1,6 +1,13 @@
 import { readFile, writeFile, mkdir, unlink } from 'fs/promises';
 import { join } from 'path';
 import { updatePackageJson } from './utils/index.js';
+import {
+  SASS_VERSION,
+  TAILWIND_VERSION,
+  AUTOPREFIXER_VERSION,
+  POSTCSS_VERSION,
+  CONCURRENTLY_VERSION,
+} from './constants.js';
 
 export type StylingOption = 'css' | 'sass' | 'tailwind';
 
@@ -105,8 +112,8 @@ ${existingCSS
   private async updatePackageForSass(projectDir: string): Promise<void> {
     await updatePackageJson(projectDir, {
       devDependencies: {
-        sass: '^1.77.0',
-        concurrently: '^9.0.0',
+        sass: SASS_VERSION,
+        concurrently: CONCURRENTLY_VERSION,
       },
       scripts: {
         'build:css': 'sass styles/main.scss public/styles.css --style=compressed',
@@ -120,10 +127,10 @@ ${existingCSS
   private async updatePackageForTailwind(projectDir: string): Promise<void> {
     await updatePackageJson(projectDir, {
       devDependencies: {
-        tailwindcss: '^3.4.0',
-        autoprefixer: '^10.4.0',
-        postcss: '^8.4.0',
-        concurrently: '^9.0.0',
+        tailwindcss: TAILWIND_VERSION,
+        autoprefixer: AUTOPREFIXER_VERSION,
+        postcss: POSTCSS_VERSION,
+        concurrently: CONCURRENTLY_VERSION,
       },
       scripts: {
         'build:css': 'tailwindcss -i src/styles.css -o public/styles.css --minify',
