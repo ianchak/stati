@@ -14,8 +14,8 @@ If you're new to Stati, start with our scaffolding tool:
 
 ```bash
 npx create-stati my-site
+
 cd my-site
-npm install
 npm run dev
 ```
 

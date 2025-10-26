@@ -14,8 +14,8 @@ If you're new to Stati, start by creating a new site with our scaffolding tool:
 
 ```bash
 npx create-stati my-site
+
 cd my-site
-npm install
 npm run dev
 ```
 
@@ -246,13 +246,7 @@ stati invalidate
    cd my-site
    ```
 
-3. **Install dependencies:**
-
-   ```bash
-   npm install
-   ```
-
-4. **Start developing:**
+3. **Start developing:**
 
    ```bash
    npm run dev
@@ -260,14 +254,14 @@ stati invalidate
 
    Your site will be available at `http://localhost:3000`
 
-5. **Make changes:**
+4. **Make changes:**
 
    - Edit `site/index.md` for your homepage content
    - Modify `site/layout.eta` for your HTML structure
    - Update `public/styles.css` for styling
    - Configure `stati.config.js` for site settings
 
-6. **Build for production:**
+5. **Build for production:**
 
    ```bash
    npm run build
@@ -275,7 +269,7 @@ stati invalidate
 
    Your static site will be in the `dist/` directory
 
-7. **Preview production build:**
+6. **Preview production build:**
 
    ```bash
    npm run preview
