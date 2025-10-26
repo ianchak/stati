@@ -313,10 +313,10 @@ coverage/
    * @throws {Error} Only throws if packageManager validation fails (before attempting install)
    */
   private async installDependencies(targetDir: string): Promise<InstallResult> {
-    const packageManager = this.options.packageManager || 'npm';
+    const packageManager: PackageManager = this.options.packageManager || 'npm';
 
     // Validate package manager is in the allowed list
-    if (!ALLOWED_PACKAGE_MANAGERS.includes(packageManager as PackageManager)) {
+    if (!ALLOWED_PACKAGE_MANAGERS.includes(packageManager)) {
       throw new Error(
         `SECURITY: Invalid package manager '${packageManager}'. ` +
           `Only allowed values are: ${ALLOWED_PACKAGE_MANAGERS.join(', ')}`,
