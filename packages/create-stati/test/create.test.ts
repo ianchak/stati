@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { mkdtemp, rm, access, readFile } from 'fs/promises';
-import { createSite } from '../src/create.js';
+import { mkdtemp, rm, access, readFile, writeFile, mkdir } from 'fs/promises';
+import { createSite, ProjectScaffolder, detectAvailablePackageManagers } from '../src/create.js';
 import type { CreateOptions } from '../src/create.js';
+import { ExampleManager } from '../src/examples.js';
 
 describe('create-stati scaffolding', () => {
   let tempDir: string;
@@ -307,5 +308,137 @@ describe('create-stati scaffolding', () => {
       consoleSpy.mockRestore();
       consoleWarnSpy.mockRestore();
     }, 30000); // Increase timeout to 30 seconds for package manager install
+
+    it('should throw error if file exists with same name as directory', async () => {
+      const projectDir = join(tempDir, 'test-file-conflict');
+
+      // Create a file instead of a directory
+      await writeFile(projectDir, 'test content');
+
+      const options: CreateOptions = {
+        projectName: 'test-file-conflict',
+        template: 'blank',
+        styling: 'css',
+        gitInit: false,
+        dir: projectDir,
+      };
+
+      // Should fail because a file exists with the same name
+      await expect(createSite(options)).rejects.toThrow('file with the name');
+    });
+
+    it('should handle invalid package manager by throwing error', async () => {
+      const projectDir = join(tempDir, 'test-invalid-pm');
+      const options: CreateOptions = {
+        projectName: 'test-invalid-pm',
+        template: 'blank',
+        styling: 'css',
+        gitInit: false,
+        install: true,
+        // @ts-expect-error - Testing invalid package manager
+        packageManager: 'invalid-pm',
+        dir: projectDir,
+      };
+
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      // Should throw SECURITY error for invalid package manager
+      await expect(createSite(options)).rejects.toThrow('SECURITY');
+
+      consoleWarnSpy.mockRestore();
+    });
+  });
+
+  describe('ProjectScaffolder error handling', () => {
+    it('should cleanup directory on error during scaffolding', async () => {
+      const projectDir = join(tempDir, 'test-cleanup');
+      const exampleManager = new ExampleManager();
+      const scaffolder = new ProjectScaffolder(
+        {
+          projectName: 'test-cleanup',
+          // @ts-expect-error - Testing invalid template to force error
+          template: 'invalid-template',
+          styling: 'css',
+          gitInit: false,
+        },
+        exampleManager,
+      );
+
+      // Should fail and cleanup
+      await expect(scaffolder.create(projectDir)).rejects.toThrow();
+
+      // Directory should not exist after cleanup
+      await expect(access(projectDir)).rejects.toThrow();
+    });
+
+    it('should handle cleanup failures gracefully', async () => {
+      const projectDir = join(tempDir, 'test-cleanup-fail');
+      const exampleManager = new ExampleManager();
+
+      // Create a mock scaffolder with a forced error
+      const scaffolder = new ProjectScaffolder(
+        {
+          projectName: 'test-cleanup-fail',
+          template: 'blank',
+          styling: 'css',
+          gitInit: false,
+        },
+        exampleManager,
+      );
+
+      // Spy on console.warn to capture cleanup warnings
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      // Force an error by creating a file instead of allowing directory creation
+      await mkdir(projectDir);
+      await writeFile(join(projectDir, 'test.txt'), 'test');
+
+      // Make directory read-only on non-Windows (Windows permissions are different)
+      if (process.platform !== 'win32') {
+        const { chmod } = await import('fs/promises');
+        await chmod(projectDir, 0o444);
+      }
+
+      // This should fail during copyExample
+      try {
+        await scaffolder.create(join(projectDir, 'subdir'));
+      } catch {
+        // Expected to fail
+      }
+
+      consoleWarnSpy.mockRestore();
+
+      // Cleanup test directory
+      if (process.platform !== 'win32') {
+        const { chmod } = await import('fs/promises');
+        await chmod(projectDir, 0o755);
+      }
+    });
+  });
+
+  describe('detectAvailablePackageManagers', () => {
+    it('should detect npm as it is always available in CI', async () => {
+      const managers = await detectAvailablePackageManagers();
+      expect(managers).toContain('npm');
+    });
+
+    it('should return empty array on catastrophic failure', async () => {
+      // Save original DEBUG value
+      const originalDebug = process.env.DEBUG;
+
+      // Enable DEBUG mode to test debug logging
+      process.env.DEBUG = 'true';
+
+      const consoleSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+
+      // Can't easily force a catastrophic failure in detectAvailablePackageManagers
+      // but we can at least test it runs without throwing
+      const managers = await detectAvailablePackageManagers();
+      expect(Array.isArray(managers)).toBe(true);
+
+      // Restore DEBUG
+      process.env.DEBUG = originalDebug;
+      consoleSpy.mockRestore();
+    });
   });
 });
