@@ -236,12 +236,14 @@ export async function runCLI(cliOptions?: Partial<CreateOptions> | null): Promis
     console.log(logger.success(`✅ Successfully created Stati project '${result.projectName}'`));
 
     // Display next steps
+    const pm = createOptions.packageManager || 'npm';
+    const devCommand = pm === 'npm' ? 'npm run dev' : `${pm} dev`;
     console.log(logger.warning('\nNext steps:'));
     console.log(`  cd ${result.projectName}`);
     if (!createOptions.install) {
       console.log('  npm install');
     }
-    console.log('  npm run dev');
+    console.log(`  ${devCommand}`);
     console.log('\n🌟 Happy building with Stati!');
   } catch (error) {
     console.error(logger.error('❌ Failed to create Stati site'));
