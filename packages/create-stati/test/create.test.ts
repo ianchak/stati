@@ -414,6 +414,60 @@ describe('create-stati scaffolding', () => {
         await chmod(projectDir, 0o755);
       }
     });
+
+    it('should handle git initialization failure gracefully', async () => {
+      const projectDir = join(tempDir, 'test-git-fail');
+      const options: CreateOptions = {
+        projectName: 'test-git-fail',
+        template: 'blank',
+        styling: 'css',
+        gitInit: true,
+        dir: projectDir,
+      };
+
+      // Mock console.warn to capture git error messages
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      // Create site with git init - it may fail if git is not available or path has issues
+      // But the project should still be created successfully
+      const result = await createSite(options);
+
+      expect(result.projectName).toBe('test-git-fail');
+      await expect(access(join(result.targetDir, 'package.json'))).resolves.not.toThrow();
+
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('should use projectName as directory when dir option is not provided', async () => {
+      const originalCwd = process.cwd();
+
+      // Change to temp directory for this test
+      process.chdir(tempDir);
+
+      try {
+        const options: CreateOptions = {
+          projectName: 'test-no-dir-option',
+          template: 'blank',
+          styling: 'css',
+          gitInit: false,
+          // No dir option provided
+        };
+
+        const result = await createSite(options);
+
+        expect(result.projectName).toBe('test-no-dir-option');
+        // Should use projectName as the directory
+        expect(result.targetDir).toContain('test-no-dir-option');
+
+        await expect(access(join(result.targetDir, 'package.json'))).resolves.not.toThrow();
+
+        // Cleanup
+        await rm(result.targetDir, { recursive: true, force: true });
+      } finally {
+        // Restore original directory
+        process.chdir(originalCwd);
+      }
+    });
   });
 
   describe('detectAvailablePackageManagers', () => {

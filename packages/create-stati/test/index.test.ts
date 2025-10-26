@@ -431,6 +431,28 @@ describe('create-stati CLI', () => {
         }),
       );
     });
+
+    it('should default to npm in non-interactive mode when install is true', async () => {
+      // Non-interactive: all options provided
+      await runCLI({
+        projectName: 'test-project',
+        template: 'blank',
+        styling: 'css',
+        gitInit: false,
+        install: true,
+        // No packageManager specified
+      });
+
+      // Should not prompt for anything
+      expect(mockInquirer.prompt).not.toHaveBeenCalled();
+
+      // Should use npm as default
+      expect(mockCreateSite).toHaveBeenCalledWith(
+        expect.objectContaining({
+          packageManager: 'npm',
+        }),
+      );
+    });
   });
 
   describe('parseArgs - error handling', () => {
