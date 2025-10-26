@@ -3,7 +3,7 @@ import { Eta } from 'eta';
 import {
   makeCallablePartial,
   wrapPartialsAsCallable,
-} from '../../src/core/utils/callable-partials.js';
+} from '../../src/core/utils/callable-partials.utils.js';
 
 describe('Callable Partials', () => {
   let mockEta: Eta;

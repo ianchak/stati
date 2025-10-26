@@ -34,7 +34,9 @@ describe('getStatiVersion', () => {
     vi.clearAllMocks();
 
     // Setup default mocks for path resolution
-    mockFileURLToPath.mockReturnValue('/mock/path/to/packages/core/dist/core/utils/version.js');
+    mockFileURLToPath.mockReturnValue(
+      '/mock/path/to/packages/core/dist/core/utils/version.utils.js',
+    );
     mockDirname.mockReturnValue('/mock/path/to/packages/core/dist/core/utils');
     mockJoin.mockReturnValue('/mock/path/to/packages/core/package.json');
   });
@@ -53,14 +55,14 @@ describe('getStatiVersion', () => {
     mockReadFileSync.mockReturnValue(JSON.stringify(mockPackageJson));
 
     // Act
-    const { getStatiVersion } = await import('../../src/core/utils/version.js');
+    const { getStatiVersion } = await import('../../src/core/utils/version.utils.js');
     const version = getStatiVersion();
 
     // Assert
     expect(version).toBe('1.6.0');
-    expect(mockFileURLToPath).toHaveBeenCalledWith(expect.stringContaining('version.ts'));
+    expect(mockFileURLToPath).toHaveBeenCalledWith(expect.stringContaining('version.utils.ts'));
     expect(mockDirname).toHaveBeenCalledWith(
-      '/mock/path/to/packages/core/dist/core/utils/version.js',
+      '/mock/path/to/packages/core/dist/core/utils/version.utils.js',
     );
     expect(mockJoin).toHaveBeenCalledWith(
       '/mock/path/to/packages/core/dist/core/utils',
@@ -81,7 +83,7 @@ describe('getStatiVersion', () => {
     });
 
     // Act
-    const { getStatiVersion } = await import('../../src/core/utils/version.js');
+    const { getStatiVersion } = await import('../../src/core/utils/version.utils.js');
     const version = getStatiVersion();
 
     // Assert
@@ -97,7 +99,7 @@ describe('getStatiVersion', () => {
     mockReadFileSync.mockReturnValue('{ invalid json content');
 
     // Act
-    const { getStatiVersion } = await import('../../src/core/utils/version.js');
+    const { getStatiVersion } = await import('../../src/core/utils/version.utils.js');
     const version = getStatiVersion();
 
     // Assert
@@ -118,7 +120,7 @@ describe('getStatiVersion', () => {
     mockReadFileSync.mockReturnValue(JSON.stringify(mockPackageJson));
 
     // Act
-    const { getStatiVersion } = await import('../../src/core/utils/version.js');
+    const { getStatiVersion } = await import('../../src/core/utils/version.utils.js');
     const version = getStatiVersion();
 
     // Assert
@@ -135,7 +137,7 @@ describe('getStatiVersion', () => {
     mockReadFileSync.mockReturnValue(JSON.stringify(mockPackageJson));
 
     // Act
-    const { getStatiVersion } = await import('../../src/core/utils/version.js');
+    const { getStatiVersion } = await import('../../src/core/utils/version.utils.js');
     const version = getStatiVersion();
 
     // Assert
@@ -152,7 +154,7 @@ describe('getStatiVersion', () => {
     mockReadFileSync.mockReturnValue(JSON.stringify(mockPackageJson));
 
     // Act
-    const { getStatiVersion } = await import('../../src/core/utils/version.js');
+    const { getStatiVersion } = await import('../../src/core/utils/version.utils.js');
     const version = getStatiVersion();
 
     // Assert
@@ -169,7 +171,7 @@ describe('getStatiVersion', () => {
     mockReadFileSync.mockReturnValue(JSON.stringify(mockPackageJson));
 
     // Act
-    const { getStatiVersion } = await import('../../src/core/utils/version.js');
+    const { getStatiVersion } = await import('../../src/core/utils/version.utils.js');
     const version = getStatiVersion();
 
     // Assert
@@ -195,7 +197,7 @@ describe('getStatiVersion', () => {
       mockReadFileSync.mockReturnValue(JSON.stringify(mockPackageJson));
 
       // Act
-      const { getStatiVersion } = await import('../../src/core/utils/version.js');
+      const { getStatiVersion } = await import('../../src/core/utils/version.utils.js');
       const version = getStatiVersion();
 
       // Assert
@@ -205,7 +207,7 @@ describe('getStatiVersion', () => {
 
   it('should use the correct path resolution for compiled code', async () => {
     // Arrange - Simulate the compiled context
-    const compiledPath = '/project/packages/core/dist/core/utils/version.js';
+    const compiledPath = '/project/packages/core/dist/core/utils/version.utils.js';
     const compiledDir = '/project/packages/core/dist/core/utils';
     const expectedPackagePath = '/project/packages/core/package.json';
 
@@ -221,7 +223,7 @@ describe('getStatiVersion', () => {
     mockReadFileSync.mockReturnValue(JSON.stringify(mockPackageJson));
 
     // Act
-    const { getStatiVersion } = await import('../../src/core/utils/version.js');
+    const { getStatiVersion } = await import('../../src/core/utils/version.utils.js');
     const version = getStatiVersion();
 
     // Assert
@@ -239,7 +241,7 @@ describe('getStatiVersion', () => {
     });
 
     // Act
-    const { getStatiVersion } = await import('../../src/core/utils/version.js');
+    const { getStatiVersion } = await import('../../src/core/utils/version.utils.js');
     const version = getStatiVersion();
 
     // Assert
@@ -251,7 +253,7 @@ describe('getStatiVersion', () => {
     mockReadFileSync.mockReturnValue(Buffer.from('binary content') as unknown as string);
 
     // Act
-    const { getStatiVersion } = await import('../../src/core/utils/version.js');
+    const { getStatiVersion } = await import('../../src/core/utils/version.utils.js');
     const version = getStatiVersion();
 
     // Assert

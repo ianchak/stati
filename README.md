@@ -31,7 +31,7 @@ npx create-stati my-site
 
 # Start building
 cd my-site
-npm install
+npm install  # Skip if you installed dependencies during setup
 npm run dev
 ```
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createValidatingPartialsProxy } from '../../src/core/utils/partial-validation.js';
+import { createValidatingPartialsProxy } from '../../src/core/utils/partial-validation.utils.js';
 import { setEnv, getEnv } from '../../src/env.js';
 
 describe('Partial Validation', () => {

@@ -1,9 +1,9 @@
 import { join, dirname } from 'path';
 import { posix } from 'path';
-import { pathExists } from './fs.js';
+import { pathExists } from './fs.utils.js';
 import type { StatiConfig, PageModel } from '../../types/index.js';
 import { LAYOUT_TEMPLATE } from '../../constants.js';
-import { resolveSrcDir } from './paths.js';
+import { resolveSrcDir } from './paths.utils.js';
 
 /**
  * Shared template discovery utilities.

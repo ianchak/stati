@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { globToRegex, matchesGlob } from '../../src/core/utils/glob-patterns.js';
+import { globToRegex, matchesGlob } from '../../src/core/utils/glob-patterns.utils.js';
 
 describe('Glob Pattern Utilities', () => {
   describe('globToRegex', () => {

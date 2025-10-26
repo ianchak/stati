@@ -1,5 +1,8 @@
 import { readFile, writeFile, mkdir, unlink } from 'fs/promises';
 import { join } from 'path';
+import { updatePackageJson, formatErrorMessage } from './utils/index.js';
+import { SASS_CONFIG, TAILWIND_CONFIG } from './constants.js';
+import type { CSSProcessorConfig } from './constants.js';
 
 export type StylingOption = 'css' | 'sass' | 'tailwind';
 
@@ -56,11 +59,9 @@ ${existingCSS
       await unlink(cssPath);
 
       // 3. Update package.json
-      await this.updatePackageForSass(projectDir);
+      await this.updatePackageForCssProcessor(projectDir, SASS_CONFIG);
     } catch (error) {
-      throw new Error(
-        `Failed to setup Sass: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      );
+      throw new Error(`Failed to setup Sass: ${formatErrorMessage(error)}`);
     }
   }
 
@@ -93,57 +94,27 @@ ${existingCSS
 
       // 2. Create configs
       await this.createTailwindConfig(projectDir);
-      await this.updatePackageForTailwind(projectDir);
+      await this.updatePackageForCssProcessor(projectDir, TAILWIND_CONFIG);
     } catch (error) {
-      throw new Error(
-        `Failed to setup Tailwind: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      );
+      throw new Error(`Failed to setup Tailwind: ${formatErrorMessage(error)}`);
     }
   }
 
-  private async updatePackageForSass(projectDir: string): Promise<void> {
-    const packageJsonPath = join(projectDir, 'package.json');
-    const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf-8'));
-
-    packageJson.devDependencies = {
-      ...packageJson.devDependencies,
-      sass: '^1.77.0',
-      concurrently: '^9.0.0',
-    };
-
-    packageJson.scripts = {
-      ...packageJson.scripts,
-      'build:css': 'sass styles/main.scss public/styles.css --style=compressed',
-      'watch:css': 'sass styles/main.scss public/styles.css --watch',
-      build: 'npm run build:css && stati build',
-      dev: 'concurrently --prefix none "npm run watch:css" "stati dev"',
-    };
-
-    await writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n');
-  }
-
-  private async updatePackageForTailwind(projectDir: string): Promise<void> {
-    const packageJsonPath = join(projectDir, 'package.json');
-    const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf-8'));
-
-    packageJson.devDependencies = {
-      ...packageJson.devDependencies,
-      tailwindcss: '^3.4.0',
-      autoprefixer: '^10.4.0',
-      postcss: '^8.4.0',
-      concurrently: '^9.0.0',
-    };
-
-    packageJson.scripts = {
-      ...packageJson.scripts,
-      'build:css': 'tailwindcss -i src/styles.css -o public/styles.css --minify',
-      'watch:css': 'tailwindcss -i src/styles.css -o public/styles.css --watch',
-      'copy:css': "node -e \"require('fs').copyFileSync('public/styles.css', 'dist/styles.css')\"",
-      build: 'stati build && npm run build:css && npm run copy:css',
-      dev: 'concurrently --prefix none "npm run watch:css" "stati dev"',
-    };
-
-    await writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n');
+  /**
+   * Update package.json with CSS processor configuration.
+   * Unified method for all CSS processors (Sass, Tailwind, etc.)
+   *
+   * @param projectDir - The project directory
+   * @param config - CSS processor configuration object
+   */
+  private async updatePackageForCssProcessor(
+    projectDir: string,
+    config: CSSProcessorConfig,
+  ): Promise<void> {
+    await updatePackageJson(projectDir, {
+      devDependencies: config.devDependencies,
+      scripts: config.scripts,
+    });
   }
 
   private async createTailwindConfig(projectDir: string): Promise<void> {

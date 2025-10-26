@@ -1,6 +1,6 @@
 import { readFile } from 'fs/promises';
-import { pathExists } from './fs.js';
-import type { ErrorDetails } from './error-overlay.js';
+import { pathExists } from './fs.utils.js';
+import type { ErrorDetails } from './error-overlay.utils.js';
 
 /**
  * Enhanced template error that includes file context and suggestions.

@@ -24,20 +24,22 @@ This command will launch an interactive setup wizard that guides you through cre
 - **Project name**: The directory for your new site.
 - **Styling solution**: Choose between plain CSS, Sass, or Tailwind CSS.
 - **Git initialization**: Optionally initialize a new Git repository.
+- **Dependency installation**: Choose whether to install dependencies automatically.
+- **Package manager**: Select your preferred package manager (npm, yarn, pnpm, or bun) if multiple are available.
 
 ### Command-Line Options
 
 You can also pass command-line arguments to pre-configure the scaffolder and skip some interactive prompts.
 
 ```bash
-npx create-stati my-site --styling tailwind --git
+npx create-stati my-site --styling tailwind
 ```
 
 This will:
 
 1. Create a new directory called `my-site`.
 2. Set up a basic Stati project with Tailwind CSS.
-3. Initialize a Git repository.
+3. Initialize a Git repository (default behavior).
 
 Here are the available options:
 
@@ -45,8 +47,9 @@ Here are the available options:
 | --- | --- |
 | `[project-name]` | Sets the project directory name. |
 | `--styling` | Sets the styling solution (`css`, `sass`, or `tailwind`). |
-| `--git` | Initializes a Git repository. |
-| `--no-git` | Skips Git initialization. |
+| `--no-git` | Skips Git initialization (default: initializes Git). |
+| `--no-install` | Skips dependency installation (default: installs dependencies). |
+| `--package-manager` | Specifies the package manager to use (`npm`, `yarn`, `pnpm`, or `bun`). |
 | `--template` | Specifies a project template to use (currently only `blank` is available). |
 
 

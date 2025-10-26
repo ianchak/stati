@@ -5,7 +5,7 @@ import {
   validateSEOMetadata,
   detectExistingSEOTags,
 } from '../../src/seo/utils/index.js';
-import { sanitizeStructuredData } from '../../src/seo/utils/escape-and-validation.js';
+import { sanitizeStructuredData } from '../../src/seo/utils/escape-and-validation.utils.js';
 import { SEOTagType } from '../../src/types/seo.js';
 import type { SEOMetadata } from '../../src/types/content.js';
 import type { Logger } from '../../src/types/logging.js';

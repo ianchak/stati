@@ -9,7 +9,7 @@ export {
   generateRobotsContent,
   validateSEOMetadata,
   detectExistingSEOTags,
-} from './escape-and-validation.js';
+} from './escape-and-validation.utils.js';
 
 // Re-export URL utilities
-export { normalizeUrlPath, resolveAbsoluteUrl, isValidUrl } from './url.js';
+export { normalizeUrlPath, resolveAbsoluteUrl, isValidUrl } from './url.utils.js';

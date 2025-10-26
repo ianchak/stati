@@ -37,22 +37,28 @@ npx create-stati my-site --template=blank --styling=tailwind --git
 
 - `--template <name>` - Template to use (currently: `blank`)
 - `--styling <type>` - CSS solution (`css` | `sass` | `tailwind`)
-- `--git` - Initialize git repository
-- `--no-git` - Skip git initialization
+- `--no-git` - Skip git initialization (default: initializes Git)
+- `--no-install` - Skip dependency installation (default: installs dependencies)
+- `--package-manager <pm>` - Package manager to use (`npm` | `yarn` | `pnpm` | `bun`)
 - `--help`, `-h` - Show help message
 
 **Examples:**
 
 ```bash
-# Plain CSS with Git
-npx create-stati my-blog --styling=css --git
+# Plain CSS (Git initialized by default)
+npx create-stati my-blog --styling=css
 
-# Tailwind without Git
-npx create-stati my-portfolio --styling=tailwind --no-git
+# Tailwind without Git and skip install
+npx create-stati my-portfolio --styling=tailwind --no-git --no-install
 
-# Sass with all defaults
-npx create-stati my-docs --styling=sass
+# Sass with pnpm as package manager
+npx create-stati my-docs --styling=sass --package-manager=pnpm
+
+# Full control with all options
+npx create-stati my-site --styling=tailwind --no-git --no-install --package-manager=yarn
 ```
+
+> **Note:** In non-interactive mode (when using CLI flags), dependencies are installed by default using `npm`. Use `--package-manager` to specify a different package manager (yarn, pnpm, or bun).
 
 ---
 
@@ -68,9 +74,17 @@ When you run `npx create-stati`, you'll see a friendly wizard:
     Sass/SCSS
     Tailwind CSS
 ? Initialize a git repository? (Y/n)
+? Install dependencies? (Y/n)
+? Which package manager would you like to use? (Use arrow keys)
+  > npm
+    yarn
+    pnpm
+    bun
 ```
 
 Each choice is explained, so you can make the right decision for your project.
+
+> **Note:** The package manager prompt only appears if you choose to install dependencies and multiple package managers are detected on your system.
 
 ---
 
@@ -160,11 +174,24 @@ Choose the styling approach that fits your workflow.
 
 Once your site is created, follow these steps:
 
-### 1. Install Dependencies
+### 1. Install Dependencies (if needed)
+
+If you chose to install dependencies during scaffolding, you can skip this step. Otherwise, navigate to your project directory and install dependencies with your preferred package manager:
 
 ```bash
 cd my-site
+
+# Using npm
 npm install
+
+# Using yarn
+yarn install
+
+# Using pnpm
+pnpm install
+
+# Using bun
+bun install
 ```
 
 ### 2. Start Development

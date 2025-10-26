@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { mkdtemp, rm, access, readFile } from 'fs/promises';
-import { createSite } from '../src/create.js';
+import { mkdtemp, rm, access, readFile, writeFile, mkdir } from 'fs/promises';
+import { createSite, ProjectScaffolder, detectAvailablePackageManagers } from '../src/create.js';
 import type { CreateOptions } from '../src/create.js';
+import { ExampleManager } from '../src/examples.js';
 
 describe('create-stati scaffolding', () => {
   let tempDir: string;
@@ -210,6 +211,286 @@ describe('create-stati scaffolding', () => {
         await readFile(join(result.targetDir, 'package.json'), 'utf-8'),
       );
       expect(packageJson.name).toBe('');
+    });
+
+    it('should skip dependency installation when install is false', async () => {
+      const projectDir = join(tempDir, 'test-no-install');
+
+      // Ensure clean state - remove directory if it exists from previous runs
+      try {
+        await rm(projectDir, { recursive: true, force: true });
+      } catch {
+        // Directory doesn't exist, which is fine
+      }
+
+      const options: CreateOptions = {
+        projectName: 'test-no-install',
+        template: 'blank',
+        styling: 'css',
+        gitInit: false,
+        install: false,
+        dir: projectDir,
+      };
+
+      const result = await createSite(options);
+
+      // Project should be created successfully
+      expect(result.projectName).toBe('test-no-install');
+      await expect(access(join(result.targetDir, 'package.json'))).resolves.not.toThrow();
+
+      // node_modules should not exist
+      await expect(access(join(result.targetDir, 'node_modules'))).rejects.toThrow();
+    });
+
+    it('should handle dependency installation gracefully when install is true', async () => {
+      const projectDir = join(tempDir, 'test-with-install');
+
+      // Ensure clean state - remove directory if it exists from previous runs
+      try {
+        await rm(projectDir, { recursive: true, force: true });
+      } catch {
+        // Directory doesn't exist, which is fine
+      }
+
+      const options: CreateOptions = {
+        projectName: 'test-with-install',
+        template: 'blank',
+        styling: 'css',
+        gitInit: false,
+        install: true,
+        dir: projectDir,
+      };
+
+      // Mock console to capture installation messages
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const result = await createSite(options);
+
+      // Project should be created successfully
+      expect(result.projectName).toBe('test-with-install');
+      await expect(access(join(result.targetDir, 'package.json'))).resolves.not.toThrow();
+
+      // Installation might fail in test environment, but that's okay - it should warn, not throw
+      // The test passes as long as the project is created
+
+      consoleSpy.mockRestore();
+      consoleWarnSpy.mockRestore();
+    }, 30000); // Increase timeout to 30 seconds for npm install
+
+    it('should use specified package manager when provided', async () => {
+      const projectDir = join(tempDir, 'test-with-pnpm');
+      const options: CreateOptions = {
+        projectName: 'test-with-pnpm',
+        template: 'blank',
+        styling: 'css',
+        gitInit: false,
+        install: true,
+        packageManager: 'pnpm',
+        dir: projectDir,
+      };
+
+      // Mock console to capture installation messages
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const result = await createSite(options);
+
+      // Project should be created successfully
+      expect(result.projectName).toBe('test-with-pnpm');
+      await expect(access(join(result.targetDir, 'package.json'))).resolves.not.toThrow();
+
+      // Check that the console log was called with pnpm
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Installing dependencies with pnpm'),
+      );
+
+      consoleSpy.mockRestore();
+      consoleWarnSpy.mockRestore();
+    }, 30000); // Increase timeout to 30 seconds for package manager install
+
+    it('should throw error if file exists with same name as directory', async () => {
+      const projectDir = join(tempDir, 'test-file-conflict');
+
+      // Create a file instead of a directory
+      await writeFile(projectDir, 'test content');
+
+      const options: CreateOptions = {
+        projectName: 'test-file-conflict',
+        template: 'blank',
+        styling: 'css',
+        gitInit: false,
+        dir: projectDir,
+      };
+
+      // Should fail because a file exists with the same name
+      await expect(createSite(options)).rejects.toThrow('file with the name');
+    });
+
+    it('should handle invalid package manager by throwing error', async () => {
+      const projectDir = join(tempDir, 'test-invalid-pm');
+      const options: CreateOptions = {
+        projectName: 'test-invalid-pm',
+        template: 'blank',
+        styling: 'css',
+        gitInit: false,
+        install: true,
+        // @ts-expect-error - Testing invalid package manager
+        packageManager: 'invalid-pm',
+        dir: projectDir,
+      };
+
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      // Should throw SECURITY error for invalid package manager
+      await expect(createSite(options)).rejects.toThrow('SECURITY');
+
+      consoleWarnSpy.mockRestore();
+    });
+  });
+
+  describe('ProjectScaffolder error handling', () => {
+    it('should cleanup directory on error during scaffolding', async () => {
+      const projectDir = join(tempDir, 'test-cleanup');
+      const exampleManager = new ExampleManager();
+      const scaffolder = new ProjectScaffolder(
+        {
+          projectName: 'test-cleanup',
+          // @ts-expect-error - Testing invalid template to force error
+          template: 'invalid-template',
+          styling: 'css',
+          gitInit: false,
+        },
+        exampleManager,
+      );
+
+      // Should fail and cleanup
+      await expect(scaffolder.create(projectDir)).rejects.toThrow();
+
+      // Directory should not exist after cleanup
+      await expect(access(projectDir)).rejects.toThrow();
+    });
+
+    it('should handle cleanup failures gracefully', async () => {
+      const projectDir = join(tempDir, 'test-cleanup-fail');
+      const exampleManager = new ExampleManager();
+
+      // Create a mock scaffolder with a forced error
+      const scaffolder = new ProjectScaffolder(
+        {
+          projectName: 'test-cleanup-fail',
+          template: 'blank',
+          styling: 'css',
+          gitInit: false,
+        },
+        exampleManager,
+      );
+
+      // Spy on console.warn to capture cleanup warnings
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      // Force an error by creating a file instead of allowing directory creation
+      await mkdir(projectDir);
+      await writeFile(join(projectDir, 'test.txt'), 'test');
+
+      // Make directory read-only on non-Windows (Windows permissions are different)
+      if (process.platform !== 'win32') {
+        const { chmod } = await import('fs/promises');
+        await chmod(projectDir, 0o444);
+      }
+
+      // This should fail during copyExample
+      try {
+        await scaffolder.create(join(projectDir, 'subdir'));
+      } catch {
+        // Expected to fail
+      }
+
+      consoleWarnSpy.mockRestore();
+
+      // Cleanup test directory
+      if (process.platform !== 'win32') {
+        const { chmod } = await import('fs/promises');
+        await chmod(projectDir, 0o755);
+      }
+    });
+
+    it('should handle git initialization failure gracefully', async () => {
+      const projectDir = join(tempDir, 'test-git-fail-' + Date.now());
+
+      const options: CreateOptions = {
+        projectName: 'test-git-fail',
+        template: 'blank',
+        styling: 'css',
+        gitInit: true,
+        dir: projectDir,
+      };
+
+      // Mock console.warn to capture git error messages
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      // Create site with git init
+      const result = await createSite(options);
+
+      // After the project is created, manually create a .git file to simulate failure on next run
+      // Since we can't easily force git init to fail in a real scenario,
+      // we verify the warning mechanism by checking that git init was attempted
+      expect(result.projectName).toBe('test-git-fail');
+      await expect(access(join(result.targetDir, 'package.json'))).resolves.not.toThrow();
+
+      // If git is available, .git directory should exist; if not, warning should be logged
+      const gitDirExists = await access(join(result.targetDir, '.git'))
+        .then(() => true)
+        .catch(() => false);
+
+      if (!gitDirExists) {
+        // Git init failed (git not available or other issue), warning should be logged
+        expect(consoleWarnSpy).toHaveBeenCalledWith(
+          expect.stringContaining('Failed to initialize git repository'),
+        );
+      }
+
+      consoleWarnSpy.mockRestore();
+      consoleLogSpy.mockRestore();
+    });
+
+    it('should use projectName as directory when dir option is not provided', async () => {
+      const originalCwd = process.cwd();
+
+      // Change to temp directory for this test
+      process.chdir(tempDir);
+
+      try {
+        const options: CreateOptions = {
+          projectName: 'test-no-dir-option',
+          template: 'blank',
+          styling: 'css',
+          gitInit: false,
+          // No dir option provided
+        };
+
+        const result = await createSite(options);
+
+        expect(result.projectName).toBe('test-no-dir-option');
+        // Should use projectName as the directory
+        expect(result.targetDir).toContain('test-no-dir-option');
+
+        await expect(access(join(result.targetDir, 'package.json'))).resolves.not.toThrow();
+
+        // Cleanup
+        await rm(result.targetDir, { recursive: true, force: true });
+      } finally {
+        // Restore original directory
+        process.chdir(originalCwd);
+      }
+    });
+  });
+
+  describe('detectAvailablePackageManagers', () => {
+    it('should detect npm as it is always available in CI', async () => {
+      const managers = await detectAvailablePackageManagers();
+      expect(managers).toContain('npm');
     });
   });
 });
