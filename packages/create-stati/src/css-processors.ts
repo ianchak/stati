@@ -1,5 +1,6 @@
 import { readFile, writeFile, mkdir, unlink } from 'fs/promises';
 import { join } from 'path';
+import { updatePackageJson } from './utils/package-json.js';
 
 export type StylingOption = 'css' | 'sass' | 'tailwind';
 
@@ -102,48 +103,37 @@ ${existingCSS
   }
 
   private async updatePackageForSass(projectDir: string): Promise<void> {
-    const packageJsonPath = join(projectDir, 'package.json');
-    const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf-8'));
-
-    packageJson.devDependencies = {
-      ...packageJson.devDependencies,
-      sass: '^1.77.0',
-      concurrently: '^9.0.0',
-    };
-
-    packageJson.scripts = {
-      ...packageJson.scripts,
-      'build:css': 'sass styles/main.scss public/styles.css --style=compressed',
-      'watch:css': 'sass styles/main.scss public/styles.css --watch',
-      build: 'npm run build:css && stati build',
-      dev: 'concurrently --prefix none "npm run watch:css" "stati dev"',
-    };
-
-    await writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n');
+    await updatePackageJson(projectDir, {
+      devDependencies: {
+        sass: '^1.77.0',
+        concurrently: '^9.0.0',
+      },
+      scripts: {
+        'build:css': 'sass styles/main.scss public/styles.css --style=compressed',
+        'watch:css': 'sass styles/main.scss public/styles.css --watch',
+        build: 'npm run build:css && stati build',
+        dev: 'concurrently --prefix none "npm run watch:css" "stati dev"',
+      },
+    });
   }
 
   private async updatePackageForTailwind(projectDir: string): Promise<void> {
-    const packageJsonPath = join(projectDir, 'package.json');
-    const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf-8'));
-
-    packageJson.devDependencies = {
-      ...packageJson.devDependencies,
-      tailwindcss: '^3.4.0',
-      autoprefixer: '^10.4.0',
-      postcss: '^8.4.0',
-      concurrently: '^9.0.0',
-    };
-
-    packageJson.scripts = {
-      ...packageJson.scripts,
-      'build:css': 'tailwindcss -i src/styles.css -o public/styles.css --minify',
-      'watch:css': 'tailwindcss -i src/styles.css -o public/styles.css --watch',
-      'copy:css': "node -e \"require('fs').copyFileSync('public/styles.css', 'dist/styles.css')\"",
-      build: 'stati build && npm run build:css && npm run copy:css',
-      dev: 'concurrently --prefix none "npm run watch:css" "stati dev"',
-    };
-
-    await writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n');
+    await updatePackageJson(projectDir, {
+      devDependencies: {
+        tailwindcss: '^3.4.0',
+        autoprefixer: '^10.4.0',
+        postcss: '^8.4.0',
+        concurrently: '^9.0.0',
+      },
+      scripts: {
+        'build:css': 'tailwindcss -i src/styles.css -o public/styles.css --minify',
+        'watch:css': 'tailwindcss -i src/styles.css -o public/styles.css --watch',
+        'copy:css':
+          "node -e \"require('fs').copyFileSync('public/styles.css', 'dist/styles.css')\"",
+        build: 'stati build && npm run build:css && npm run copy:css',
+        dev: 'concurrently --prefix none "npm run watch:css" "stati dev"',
+      },
+    });
   }
 
   private async createTailwindConfig(projectDir: string): Promise<void> {
