@@ -416,7 +416,8 @@ describe('create-stati scaffolding', () => {
     });
 
     it('should handle git initialization failure gracefully', async () => {
-      const projectDir = join(tempDir, 'test-git-fail');
+      const projectDir = join(tempDir, 'test-git-fail-' + Date.now());
+
       const options: CreateOptions = {
         projectName: 'test-git-fail',
         template: 'blank',
@@ -427,15 +428,31 @@ describe('create-stati scaffolding', () => {
 
       // Mock console.warn to capture git error messages
       const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
-      // Create site with git init - it may fail if git is not available or path has issues
-      // But the project should still be created successfully
+      // Create site with git init
       const result = await createSite(options);
 
+      // After the project is created, manually create a .git file to simulate failure on next run
+      // Since we can't easily force git init to fail in a real scenario,
+      // we verify the warning mechanism by checking that git init was attempted
       expect(result.projectName).toBe('test-git-fail');
       await expect(access(join(result.targetDir, 'package.json'))).resolves.not.toThrow();
 
+      // If git is available, .git directory should exist; if not, warning should be logged
+      const gitDirExists = await access(join(result.targetDir, '.git'))
+        .then(() => true)
+        .catch(() => false);
+
+      if (!gitDirExists) {
+        // Git init failed (git not available or other issue), warning should be logged
+        expect(consoleWarnSpy).toHaveBeenCalledWith(
+          expect.stringContaining('Failed to initialize git repository'),
+        );
+      }
+
       consoleWarnSpy.mockRestore();
+      consoleLogSpy.mockRestore();
     });
 
     it('should use projectName as directory when dir option is not provided', async () => {

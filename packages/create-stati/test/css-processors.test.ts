@@ -223,5 +223,32 @@ describe('CSSProcessor', () => {
       // No public/styles.css file created
       await expect(cssProcessor.processStyling(tempDir, 'sass')).rejects.toThrow();
     });
+
+    it('should throw descriptive error when Tailwind setup fails', async () => {
+      const packageJson = { name: 'test', scripts: {} };
+      await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson, null, 2));
+
+      // Create src directory but make it read-only to force write failure
+      await mkdir(join(tempDir, 'src'), { recursive: true });
+
+      if (process.platform !== 'win32') {
+        const { chmod } = await import('fs/promises');
+        await chmod(join(tempDir, 'src'), 0o444); // read-only
+
+        try {
+          await expect(cssProcessor.processStyling(tempDir, 'tailwind')).rejects.toThrow(
+            /Failed to setup Tailwind/,
+          );
+        } finally {
+          // Restore permissions for cleanup
+          await chmod(join(tempDir, 'src'), 0o755);
+        }
+      } else {
+        // On Windows, permissions work differently
+        // We'll skip this specific test on Windows as it's hard to simulate
+        // The error path is still covered on Unix systems
+        expect(true).toBe(true); // Placeholder to keep test valid
+      }
+    });
   });
 });
