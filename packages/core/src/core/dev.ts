@@ -407,15 +407,12 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
   ws.onmessage = function(event) {
     const data = JSON.parse(event.data);
     if (data.type === 'reload') {
-      console.log('Reloading page due to file changes...');
+      console.log('⚡ Reloading page due to file changes...');
       window.location.reload();
     }
   };
-  ws.onopen = function() {
-    console.log('Connected to Stati dev server');
-  };
   ws.onclose = function() {
-    console.log('Lost connection to Stati dev server');
+    // Suppress disconnection logs - not informative for users
     // Try to reconnect after a delay
     setTimeout(() => window.location.reload(), 1000);
   };
@@ -609,11 +606,10 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
           });
 
           wsServer.on('connection', (ws: unknown) => {
-            logger.info?.('Browser connected for live reload');
-
+            // Suppress connection logs - not informative for users
             const websocket = ws as { on: (event: string, handler: () => void) => void };
             websocket.on('close', () => {
-              logger.info?.('Browser disconnected from live reload');
+              // Suppress disconnection logs - not informative for users
             });
           });
         } catch (_error) {
@@ -679,6 +675,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
       logger.info?.(`  📁 ${outDir}`);
       logger.info?.('Watching:');
       watchPaths.forEach((path) => logger.info?.(`  📁 ${path}`));
+      logger.info?.('');
 
       // Open browser if requested
       if (open) {
