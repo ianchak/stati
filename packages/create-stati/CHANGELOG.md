@@ -1,5 +1,51 @@
 # create-stati
 
+## 1.7.0
+
+### Minor Changes
+
+- a10572a: add support for package manager selection and install options
+- a10572a: add tests for project scaffolding and package manager handling
+- efe254f: add support for package manager selection and install options
+
+### Patch Changes
+
+- a10572a: enhance tests for error handling and package manager detection
+- a10572a: simplify package manager assignment in runCLI function
+- a10572a: update installation instructions for additional package managers
+- a10572a: extract CSS processor configuration
+
+  Create configuration-driven approach for CSS processors to reduce duplication
+
+- a10572a: enforce type for package manager in installDependencies
+- a10572a: improve directory path validation and normalization
+- a10572a: extract package.json manipulation utilities
+  - Create src/utils/package-json.ts with reusable helpers
+
+- a10572a: extract error formatting utility
+
+  Extract repeated error formatting pattern into reusable utility function.
+
+- a10572a: extract process spawning utilities
+  - Create src/utils/process.ts with spawnProcess and isCommandAvailable helpers
+
+- a10572a: add barrel export and update all imports
+  - Create src/utils/index.ts as barrel export for all utilities
+
+- a10572a: add comprehensive tests for error and package JSON utilities
+- a10572a: correct regex pattern for directory path validation
+- a10572a: unify logging with shared logger
+  - Create src/utils/logger.ts with colored output helpers
+
+- a10572a: centralize dependency versions
+
+  Extract hardcoded version strings to constants.ts for single source of truth.
+
+- a10572a: add tests for git initialization and directory handling
+- a10572a: simplify error handling and logging
+- a10572a: reorganize utility functions naming and improve validation logic
+- a10572a: use global timeout functions for better compatibility
+
 ## 1.6.9
 
 ### Patch Changes

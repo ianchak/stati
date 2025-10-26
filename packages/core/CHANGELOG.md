@@ -1,5 +1,11 @@
 # @stati/core
 
+## 1.11.6
+
+### Patch Changes
+
+- a10572a: reorganize utility functions naming and improve validation logic
+
 ## 1.11.5
 
 ### Patch Changes
