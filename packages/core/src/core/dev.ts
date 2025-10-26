@@ -20,6 +20,7 @@ import {
   parseErrorDetails,
   TemplateError,
   createFallbackLogger,
+  mergeServerOptions,
 } from './utils/index.js';
 import { setEnv, getEnv } from '../env.js';
 import { DEFAULT_DEV_PORT, DEFAULT_DEV_HOST, TEMPLATE_EXTENSION } from '../constants.js';
@@ -344,13 +345,17 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
   );
 
   // Merge config values with options (options take precedence)
-  const {
-    port = config.dev?.port ?? DEFAULT_DEV_PORT,
-    host = config.dev?.host ?? DEFAULT_DEV_HOST,
-    open = config.dev?.open ?? false,
-    configPath,
-    logger = createFallbackLogger(),
-  } = options;
+  const { port, host, open } = mergeServerOptions({
+    options,
+    config: config.dev,
+    defaults: {
+      port: DEFAULT_DEV_PORT,
+      host: DEFAULT_DEV_HOST,
+      open: false,
+    },
+  });
+
+  const { configPath, logger = createFallbackLogger() } = options;
 
   setEnv('development');
 

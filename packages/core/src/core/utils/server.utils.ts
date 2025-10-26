@@ -87,3 +87,50 @@ export async function resolvePrettyUrl(
     return { filePath: null, found: false };
   }
 }
+
+/**
+ * Options for merging server configuration
+ */
+export interface MergeServerOptionsParams<T> {
+  /** Options passed programmatically */
+  options: T;
+  /** Configuration object from config file */
+  config: { port?: number; host?: string; open?: boolean } | undefined;
+  /** Default values to use when neither options nor config provide a value */
+  defaults: {
+    port: number;
+    host: string;
+    open: boolean;
+  };
+}
+
+/**
+ * Result of merging server options
+ */
+export interface MergedServerOptions {
+  /** Merged port value */
+  port: number;
+  /** Merged host value */
+  host: string;
+  /** Merged open browser value */
+  open: boolean;
+}
+
+/**
+ * Merges server options with config file values and defaults.
+ * Programmatic options take precedence over config file, which takes precedence over defaults.
+ *
+ * @param params - The merge parameters
+ * @returns Merged server options
+ */
+export function mergeServerOptions<T extends { port?: number; host?: string; open?: boolean }>(
+  params: MergeServerOptionsParams<T>,
+): MergedServerOptions {
+  const { options, config, defaults } = params;
+
+  return {
+    port: options.port ?? config?.port ?? defaults.port,
+    host: options.host ?? config?.host ?? defaults.host,
+    open: options.open ?? config?.open ?? defaults.open,
+  };
+}

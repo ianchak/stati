@@ -3,7 +3,12 @@ import { join, extname } from 'path';
 import { readFile } from 'fs/promises';
 import type { Logger, StatiConfig } from '../types/index.js';
 import { loadConfig } from '../config/loader.js';
-import { resolveDevPaths, resolvePrettyUrl, createFallbackLogger } from './utils/index.js';
+import {
+  resolveDevPaths,
+  resolvePrettyUrl,
+  createFallbackLogger,
+  mergeServerOptions,
+} from './utils/index.js';
 import { DEFAULT_PREVIEW_PORT, DEFAULT_DEV_HOST } from '../constants.js';
 
 export interface PreviewServerOptions {
@@ -62,12 +67,17 @@ export async function createPreviewServer(
   );
 
   // Merge config values with options (options take precedence)
-  const {
-    port = config.preview?.port ?? DEFAULT_PREVIEW_PORT,
-    host = config.preview?.host ?? DEFAULT_DEV_HOST,
-    open = config.preview?.open ?? false,
-    logger = createFallbackLogger(),
-  } = options;
+  const { port, host, open } = mergeServerOptions({
+    options,
+    config: config.preview,
+    defaults: {
+      port: DEFAULT_PREVIEW_PORT,
+      host: DEFAULT_DEV_HOST,
+      open: false,
+    },
+  });
+
+  const logger = options.logger ?? createFallbackLogger();
 
   const url = `http://${host}:${port}`;
   let httpServer: ReturnType<typeof createServer> | null = null;

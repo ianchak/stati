@@ -219,7 +219,7 @@ export default defineConfig({
 });
 ```
 
-> **Note:** CLI options (e.g., `stati dev --port 8080`) take precedence over config file settings.
+> **Note:** CLI options (e.g., `stati dev --port 8080` or `stati preview --port 8080`) take precedence over config file settings.
 
 ## Advanced Configuration
 
