@@ -99,6 +99,7 @@ function isErrorWithCode(error: unknown): error is { code: string } {
 /**
  * Validate and sanitize a directory path to prevent path traversal and other security issues.
  * This function:
+ * - Normalizes input (trim whitespace, handle unicode)
  * - Resolves to an absolute path
  * - Rejects paths with null bytes
  * - Ensures the path is within safe boundaries (not root or system directories)
@@ -108,8 +109,12 @@ function isErrorWithCode(error: unknown): error is { code: string } {
  * The parent scaffolding logic will perform additional validation before writing files.
  */
 function validateDirectoryPath(dirPath: string): string {
+  // Normalize input: trim whitespace and normalize unicode characters
+  // This prevents bypasses using trailing/leading spaces or unicode variants
+  const trimmedPath = dirPath.trim().normalize('NFC');
+
   // Resolve to absolute path to prevent relative path exploits
-  const absolutePath = resolve(dirPath);
+  const absolutePath = resolve(trimmedPath);
 
   // Basic validation - reject paths with null bytes
   if (absolutePath.includes('\0')) {
@@ -117,7 +122,7 @@ function validateDirectoryPath(dirPath: string): string {
   }
 
   // Normalize path separators and convert to lowercase for consistent comparison
-  const normalizedPath = absolutePath.replace(/\\/g, '/').toLowerCase();
+  const normalizedPath = absolutePath.replace(/\\/g, '/').toLowerCase().trim();
   const pathParts = normalizedPath.split('/').filter(Boolean);
 
   // Reject if trying to write to root or system-critical paths
