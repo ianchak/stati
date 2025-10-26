@@ -1,13 +1,8 @@
 import { readFile, writeFile, mkdir, unlink } from 'fs/promises';
 import { join } from 'path';
 import { updatePackageJson, formatErrorMessage } from './utils/index.js';
-import {
-  SASS_VERSION,
-  TAILWIND_VERSION,
-  AUTOPREFIXER_VERSION,
-  POSTCSS_VERSION,
-  CONCURRENTLY_VERSION,
-} from './constants.js';
+import { SASS_CONFIG, TAILWIND_CONFIG } from './constants.js';
+import type { CSSProcessorConfig } from './constants.js';
 
 export type StylingOption = 'css' | 'sass' | 'tailwind';
 
@@ -64,7 +59,7 @@ ${existingCSS
       await unlink(cssPath);
 
       // 3. Update package.json
-      await this.updatePackageForSass(projectDir);
+      await this.updatePackageForCssProcessor(projectDir, SASS_CONFIG);
     } catch (error) {
       throw new Error(`Failed to setup Sass: ${formatErrorMessage(error)}`);
     }
@@ -99,43 +94,26 @@ ${existingCSS
 
       // 2. Create configs
       await this.createTailwindConfig(projectDir);
-      await this.updatePackageForTailwind(projectDir);
+      await this.updatePackageForCssProcessor(projectDir, TAILWIND_CONFIG);
     } catch (error) {
       throw new Error(`Failed to setup Tailwind: ${formatErrorMessage(error)}`);
     }
   }
 
-  private async updatePackageForSass(projectDir: string): Promise<void> {
+  /**
+   * Update package.json with CSS processor configuration.
+   * Unified method for all CSS processors (Sass, Tailwind, etc.)
+   *
+   * @param projectDir - The project directory
+   * @param config - CSS processor configuration object
+   */
+  private async updatePackageForCssProcessor(
+    projectDir: string,
+    config: CSSProcessorConfig,
+  ): Promise<void> {
     await updatePackageJson(projectDir, {
-      devDependencies: {
-        sass: SASS_VERSION,
-        concurrently: CONCURRENTLY_VERSION,
-      },
-      scripts: {
-        'build:css': 'sass styles/main.scss public/styles.css --style=compressed',
-        'watch:css': 'sass styles/main.scss public/styles.css --watch',
-        build: 'npm run build:css && stati build',
-        dev: 'concurrently --prefix none "npm run watch:css" "stati dev"',
-      },
-    });
-  }
-
-  private async updatePackageForTailwind(projectDir: string): Promise<void> {
-    await updatePackageJson(projectDir, {
-      devDependencies: {
-        tailwindcss: TAILWIND_VERSION,
-        autoprefixer: AUTOPREFIXER_VERSION,
-        postcss: POSTCSS_VERSION,
-        concurrently: CONCURRENTLY_VERSION,
-      },
-      scripts: {
-        'build:css': 'tailwindcss -i src/styles.css -o public/styles.css --minify',
-        'watch:css': 'tailwindcss -i src/styles.css -o public/styles.css --watch',
-        'copy:css':
-          "node -e \"require('fs').copyFileSync('public/styles.css', 'dist/styles.css')\"",
-        build: 'stati build && npm run build:css && npm run copy:css',
-        dev: 'concurrently --prefix none "npm run watch:css" "stati dev"',
-      },
+      devDependencies: config.devDependencies,
+      scripts: config.scripts,
     });
   }
 
