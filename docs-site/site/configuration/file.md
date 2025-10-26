@@ -204,6 +204,23 @@ export default defineConfig({
 });
 ```
 
+### Preview Server
+
+Configure the preview server:
+
+```javascript
+export default defineConfig({
+  preview: {
+    // Server configuration
+    port: 4000,        // Port for preview server
+    host: 'localhost', // Host to bind to
+    open: false,       // Whether to open browser automatically
+  },
+});
+```
+
+> **Note:** CLI options (e.g., `stati dev --port 8080` or `stati preview --port 8080`) take precedence over config file settings.
+
 ## Advanced Configuration
 
 ### Build Hooks
@@ -242,6 +259,7 @@ export default defineConfig({
 ```
 
 **Available Hooks:**
+
 - `beforeAll` (function) - Called before starting the build process, receives `BuildContext`
 - `afterAll` (function) - Called after completing the build process, receives `BuildContext`
 - `beforeRender` (function) - Called before rendering each page, receives `PageContext`

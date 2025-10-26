@@ -359,4 +359,65 @@ describe('Development Server', () => {
 
     await devServer.stop();
   });
+
+  it('should use dev config values from config file', async () => {
+    // Mock config with dev settings
+    mockLoadConfig.mockResolvedValueOnce({
+      srcDir: 'site',
+      outDir: 'dist',
+      staticDir: 'public',
+      site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
+      dev: {
+        port: 5000,
+        host: '0.0.0.0',
+        open: true,
+      },
+    });
+
+    const devServer = await createDevServer();
+
+    expect(devServer).toBeDefined();
+    expect(devServer.url).toBe('http://0.0.0.0:5000');
+  });
+
+  it('should override dev config values with programmatic options', async () => {
+    // Mock config with dev settings
+    mockLoadConfig.mockResolvedValueOnce({
+      srcDir: 'site',
+      outDir: 'dist',
+      staticDir: 'public',
+      site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
+      dev: {
+        port: 5000,
+        host: '0.0.0.0',
+        open: true,
+      },
+    });
+
+    // Programmatic options should override config
+    const options: DevServerOptions = {
+      port: 6000,
+      host: '127.0.0.1',
+    };
+
+    const devServer = await createDevServer(options);
+
+    expect(devServer).toBeDefined();
+    expect(devServer.url).toBe('http://127.0.0.1:6000');
+  });
+
+  it('should use defaults when no dev config and no options provided', async () => {
+    mockLoadConfig.mockResolvedValueOnce({
+      srcDir: 'site',
+      outDir: 'dist',
+      staticDir: 'public',
+      site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
+      // No dev config
+    });
+
+    const devServer = await createDevServer();
+
+    expect(devServer).toBeDefined();
+    expect(devServer.url).toBe('http://localhost:3000'); // DEFAULT_DEV_HOST:DEFAULT_DEV_PORT
+  });
 });

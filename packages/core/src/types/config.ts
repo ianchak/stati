@@ -88,6 +88,15 @@ export interface StatiConfig {
     /** Whether to open browser automatically (default: false) */
     open?: boolean;
   };
+  /** Preview server configuration */
+  preview?: {
+    /** Port for preview server (default: 4000) */
+    port?: number;
+    /** Host for preview server (default: 'localhost') */
+    host?: string;
+    /** Whether to open browser automatically (default: false) */
+    open?: boolean;
+  };
   /** Build lifecycle hooks */
   hooks?: BuildHooks;
 }

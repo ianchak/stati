@@ -67,8 +67,12 @@ export { TemplateError, parseEtaError, createTemplateError } from './template-er
 export { createNavigationHelpers } from './navigation-helpers.utils.js';
 
 // Server utilities
-export { resolvePrettyUrl } from './server.utils.js';
-export type { PrettyUrlResult } from './server.utils.js';
+export { resolvePrettyUrl, mergeServerOptions } from './server.utils.js';
+export type {
+  PrettyUrlResult,
+  MergedServerOptions,
+  MergeServerOptionsParams,
+} from './server.utils.js';
 
 // Error overlay utilities
 export { createErrorOverlay, parseErrorDetails } from './error-overlay.utils.js';
@@ -79,3 +83,6 @@ export { getStatiVersion } from './version.utils.js';
 
 // Glob pattern utilities
 export { globToRegex, matchesGlob } from './glob-patterns.utils.js';
+
+// Logger utilities
+export { createFallbackLogger } from './logger.utils.js';
