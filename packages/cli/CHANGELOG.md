@@ -1,5 +1,13 @@
 # @stati/cli
 
+## 1.6.10
+
+### Patch Changes
+
+- remove npm install step from getting started guide
+- Updated dependencies
+  - @stati/core@1.12.1
+
 ## 1.6.9
 
 ### Patch Changes

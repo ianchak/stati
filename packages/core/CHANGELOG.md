@@ -1,5 +1,11 @@
 # @stati/core
 
+## 1.12.1
+
+### Patch Changes
+
+- remove npm install step from getting started guide
+
 ## 1.12.0
 
 ### Minor Changes
