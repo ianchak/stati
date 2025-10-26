@@ -220,10 +220,7 @@ export async function runCLI(cliOptions?: Partial<CreateOptions> | null): Promis
       options.packageManager = pmAnswer.packageManager;
     } else if (prompts.length > 0 && availableManagers.length === 1) {
       // Interactive mode with only one manager: use it
-      const manager = availableManagers[0];
-      if (manager) {
-        options.packageManager = manager;
-      }
+      options.packageManager = availableManagers[0]!;
     } else {
       // Non-interactive mode: always default to npm
       options.packageManager = 'npm';
