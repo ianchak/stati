@@ -338,11 +338,11 @@ async function handleMarkdownChange(
 }
 
 export async function createDevServer(options: DevServerOptions = {}): Promise<DevServer> {
+  const logger = options.logger ?? createFallbackLogger();
+  const { configPath } = options;
+
   // Load configuration first to get defaults from config file
-  const { config, outDir, srcDir, staticDir } = await loadDevConfig(
-    options.configPath,
-    options.logger ?? createFallbackLogger(),
-  );
+  const { config, outDir, srcDir, staticDir } = await loadDevConfig(configPath, logger);
 
   // Merge config values with options (options take precedence)
   const { port, host, open } = mergeServerOptions({
@@ -354,9 +354,6 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
       open: false,
     },
   });
-
-  const { configPath } = options;
-  const logger = options.logger ?? createFallbackLogger();
 
   setEnv('development');
 
