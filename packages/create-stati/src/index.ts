@@ -2,6 +2,7 @@
 import inquirer from 'inquirer';
 import { createSite, detectAvailablePackageManagers, ALLOWED_PACKAGE_MANAGERS } from './create.js';
 import type { CreateOptions, PackageManager } from './create.js';
+import { logger } from './utils/logger.js';
 
 /**
  * Validate that a string is a valid package manager
@@ -10,26 +11,12 @@ function isValidPackageManager(value: string): value is PackageManager {
   return ALLOWED_PACKAGE_MANAGERS.includes(value as PackageManager);
 }
 
-/**
- * Professional color palette for Stati CLI - matching the main CLI colors
- */
-const colors = {
-  brand: (text: string) => `\x1b[38;2;79;70;229m${text}\x1b[0m`, // #4f46e5 - Professional indigo
-  success: (text: string) => `\x1b[38;2;22;163;74m${text}\x1b[0m`, // #16a34a - Muted forest green
-  error: (text: string) => `\x1b[38;2;220;38;38m${text}\x1b[0m`, // #dc2626 - Muted red
-  warning: (text: string) => `\x1b[38;2;217;119;6m${text}\x1b[0m`, // #d97706 - Muted amber
-  info: (text: string) => `\x1b[38;2;37;99;235m${text}\x1b[0m`, // #2563eb - Muted steel blue
-  muted: (text: string) => `\x1b[38;2;107;114;128m${text}\x1b[0m`, // #6b7280 - Warm gray
-  highlight: (text: string) => `\x1b[38;2;8;145;178m${text}\x1b[0m`, // #0891b2 - Muted teal
-  bold: (text: string) => `\x1b[1m${text}\x1b[0m`, // Bold styling
-};
-
 export async function parseArgs(
   args: string[] = process.argv.slice(2),
 ): Promise<Partial<CreateOptions> | null> {
   // Check for help flag
   if (args.includes('--help') || args.includes('-h')) {
-    console.log(`${colors.bold('create-stati')} - Create a new Stati static site
+    console.log(`${logger.bold('create-stati')} - Create a new Stati static site
 
 Usage:
   create-stati [project-name] [options]
@@ -80,7 +67,7 @@ Examples:
           // Check for missing or empty value
           if (!pmValue || pmValue.trim() === '') {
             console.error(
-              colors.error(
+              logger.error(
                 `Missing value for --package-manager. Allowed values: ${ALLOWED_PACKAGE_MANAGERS.join(', ')}`,
               ),
             );
@@ -89,7 +76,7 @@ Examples:
             options.packageManager = pmValue;
           } else {
             console.error(
-              colors.error(
+              logger.error(
                 `Invalid package manager: '${pmValue}'. Allowed values: ${ALLOWED_PACKAGE_MANAGERS.join(', ')}`,
               ),
             );
@@ -117,8 +104,8 @@ export async function runCLI(cliOptions?: Partial<CreateOptions> | null): Promis
 
   const options = cliOptions || {};
 
-  console.log(colors.bold(colors.brand('Welcome to Stati')));
-  console.log(colors.muted('Create a new static site with Stati\n'));
+  console.log(logger.bold(logger.brand('Welcome to Stati')));
+  console.log(logger.muted('Create a new static site with Stati\n'));
 
   // Determine what prompts we need based on CLI args
   const prompts = [];
@@ -241,15 +228,15 @@ export async function runCLI(cliOptions?: Partial<CreateOptions> | null): Promis
     ...(options.packageManager && { packageManager: options.packageManager }),
   };
 
-  console.log(colors.highlight('Creating Stati project...'));
+  console.log(logger.highlight('Creating Stati project...'));
 
   try {
     const result = await createSite(createOptions);
 
-    console.log(colors.success(`✅ Successfully created Stati project '${result.projectName}'`));
+    console.log(logger.success(`✅ Successfully created Stati project '${result.projectName}'`));
 
     // Display next steps
-    console.log(colors.warning('\nNext steps:'));
+    console.log(logger.warning('\nNext steps:'));
     console.log(`  cd ${result.projectName}`);
     if (!createOptions.install) {
       console.log('  npm install');
@@ -257,8 +244,8 @@ export async function runCLI(cliOptions?: Partial<CreateOptions> | null): Promis
     console.log('  npm run dev');
     console.log('\n🌟 Happy building with Stati!');
   } catch (error) {
-    console.error(colors.error('❌ Failed to create Stati site'));
-    console.error(colors.error(error instanceof Error ? error.message : 'Unknown error'));
+    console.error(logger.error('❌ Failed to create Stati site'));
+    console.error(logger.error(error instanceof Error ? error.message : 'Unknown error'));
     process.exit(1);
   }
 }
@@ -276,7 +263,7 @@ if (
     import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/')))
 ) {
   main().catch((err: unknown) => {
-    console.error(colors.error('An error occurred:'), err);
+    console.error(logger.error('An error occurred:'), err);
     process.exit(1);
   });
 }
