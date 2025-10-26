@@ -5,8 +5,8 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "concurrently --prefix none \"npm run watch:css\" \"stati dev\"",
-    "dev:local": "concurrently --prefix none \"npm run watch:css\" \"node ../packages/cli/dist/cli.js dev\"",
+    "dev": "concurrently --prefix none \"npm run watch:css:silent\" \"stati dev\"",
+    "dev:local": "concurrently --prefix none \"npm run watch:css:silent\" \"node ../packages/cli/dist/cli.js dev\"",
     "build": "stati build && npm run build:css && npm run copy:css",
     "build:local": "node ../packages/cli/dist/cli.js build --clean && npm run build:css && npm run copy:css",
     "preview": "stati preview",
@@ -14,6 +14,7 @@
     "clean": "rimraf dist .stati",
     "build:css": "tailwindcss -i src/styles.css -o public/styles.css --minify",
     "watch:css": "tailwindcss -i src/styles.css -o public/styles.css --watch",
+    "watch:css:silent": "node -e \"const { spawn } = require('child_process'); const proc = spawn('npx', ['tailwindcss', '-i', 'src/styles.css', '-o', 'public/styles.css', '--watch'], { stdio: 'ignore' }); process.on('SIGINT', () => proc.kill()); process.on('SIGTERM', () => proc.kill());\"",
     "copy:css": "node -e \"require('fs').copyFileSync('public/styles.css', 'dist/styles.css')\""
   },
   "keywords": [

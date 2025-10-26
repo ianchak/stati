@@ -30,6 +30,7 @@ export interface CSSProcessorConfig {
   scripts: {
     'build:css': string;
     'watch:css': string;
+    'watch:css:silent'?: string;
     build: string;
     dev: string;
     'copy:css'?: string; // Optional copy script for processors that need it
@@ -67,8 +68,10 @@ export const TAILWIND_CONFIG: CSSProcessorConfig = {
   scripts: {
     'build:css': 'tailwindcss -i src/styles.css -o public/styles.css --minify',
     'watch:css': 'tailwindcss -i src/styles.css -o public/styles.css --watch',
+    'watch:css:silent':
+      "node -e \"const { spawn } = require('child_process'); const proc = spawn('npx', ['tailwindcss', '-i', 'src/styles.css', '-o', 'public/styles.css', '--watch'], { stdio: 'ignore' }); process.on('SIGINT', () => proc.kill()); process.on('SIGTERM', () => proc.kill());\"",
     'copy:css': "node -e \"require('fs').copyFileSync('public/styles.css', 'dist/styles.css')\"",
     build: 'stati build && npm run build:css && npm run copy:css',
-    dev: 'concurrently --prefix none "npm run watch:css" "stati dev"',
+    dev: 'concurrently --prefix none "npm run watch:css:silent" "stati dev"',
   },
 };
