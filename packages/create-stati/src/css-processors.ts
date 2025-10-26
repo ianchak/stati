@@ -1,6 +1,6 @@
 import { readFile, writeFile, mkdir, unlink } from 'fs/promises';
 import { join } from 'path';
-import { updatePackageJson } from './utils/index.js';
+import { updatePackageJson, formatErrorMessage } from './utils/index.js';
 import {
   SASS_VERSION,
   TAILWIND_VERSION,
@@ -66,9 +66,7 @@ ${existingCSS
       // 3. Update package.json
       await this.updatePackageForSass(projectDir);
     } catch (error) {
-      throw new Error(
-        `Failed to setup Sass: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      );
+      throw new Error(`Failed to setup Sass: ${formatErrorMessage(error)}`);
     }
   }
 
@@ -103,9 +101,7 @@ ${existingCSS
       await this.createTailwindConfig(projectDir);
       await this.updatePackageForTailwind(projectDir);
     } catch (error) {
-      throw new Error(
-        `Failed to setup Tailwind: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      );
+      throw new Error(`Failed to setup Tailwind: ${formatErrorMessage(error)}`);
     }
   }
 

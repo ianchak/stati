@@ -5,3 +5,4 @@
 export * from './logger.utils.js';
 export * from './process.utils.js';
 export * from './package-json.utils.js';
+export * from './error.utils.js';

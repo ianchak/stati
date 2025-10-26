@@ -1,4 +1,4 @@
-import { readPackageJson, writePackageJson } from './utils/index.js';
+import { readPackageJson, writePackageJson, formatErrorMessage } from './utils/index.js';
 
 export interface ProjectOptions {
   projectName: string;
@@ -23,9 +23,7 @@ export class PackageJsonModifier {
       // Write back with proper formatting
       await writePackageJson(projectDir, packageJson);
     } catch (error) {
-      throw new Error(
-        `Failed to modify package.json: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      );
+      throw new Error(`Failed to modify package.json: ${formatErrorMessage(error)}`);
     }
   }
 }
