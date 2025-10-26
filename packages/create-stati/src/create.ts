@@ -1,6 +1,5 @@
 import { mkdir, rm, access, stat } from 'fs/promises';
 import { join, resolve } from 'path';
-import { setTimeout, clearTimeout } from 'timers';
 import { ExampleManager } from './examples.js';
 import { PackageJsonModifier } from './package-json.js';
 import { CSSProcessor } from './css-processors.js';
@@ -38,18 +37,18 @@ export async function detectAvailablePackageManagers(): Promise<PackageManager[]
             shell: process.platform === 'win32',
           });
 
-          const timeout = setTimeout(() => {
+          const timeout = global.setTimeout(() => {
             child.kill();
             reject(new Error('Timeout'));
           }, 5000); // 5 second timeout to account for slower systems
 
           child.on('error', () => {
-            clearTimeout(timeout);
+            global.clearTimeout(timeout);
             reject();
           });
 
           child.on('exit', (code) => {
-            clearTimeout(timeout);
+            global.clearTimeout(timeout);
             if (code === 0) {
               resolve();
             } else {
