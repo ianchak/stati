@@ -1,5 +1,11 @@
 # create-stati
 
+## 1.8.0
+
+### Minor Changes
+
+- update next steps message to use package manager
+
 ## 1.7.0
 
 ### Minor Changes
