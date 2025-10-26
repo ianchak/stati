@@ -4,8 +4,7 @@ import { ExampleManager } from './examples.js';
 import { PackageJsonModifier } from './package-json.js';
 import { CSSProcessor } from './css-processors.js';
 import type { StylingOption } from './css-processors.js';
-import { isCommandAvailable, spawnProcess } from './utils/process.js';
-import { logger } from './utils/logger.js';
+import { isCommandAvailable, spawnProcess, logger } from './utils/index.js';
 
 /**
  * Result of a dependency installation attempt

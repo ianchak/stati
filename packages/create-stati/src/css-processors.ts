@@ -1,6 +1,6 @@
 import { readFile, writeFile, mkdir, unlink } from 'fs/promises';
 import { join } from 'path';
-import { updatePackageJson } from './utils/package-json.js';
+import { updatePackageJson } from './utils/index.js';
 
 export type StylingOption = 'css' | 'sass' | 'tailwind';
 

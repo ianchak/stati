@@ -1,4 +1,4 @@
-import { readPackageJson, writePackageJson } from './utils/package-json.js';
+import { readPackageJson, writePackageJson } from './utils/index.js';
 
 export interface ProjectOptions {
   projectName: string;

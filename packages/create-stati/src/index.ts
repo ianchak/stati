@@ -2,7 +2,7 @@
 import inquirer from 'inquirer';
 import { createSite, detectAvailablePackageManagers, ALLOWED_PACKAGE_MANAGERS } from './create.js';
 import type { CreateOptions, PackageManager } from './create.js';
-import { logger } from './utils/logger.js';
+import { logger } from './utils/index.js';
 
 /**
  * Validate that a string is a valid package manager
