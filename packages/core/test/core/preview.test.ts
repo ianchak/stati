@@ -101,4 +101,65 @@ describe('Preview Server', () => {
 
     await expect(createPreviewServer()).rejects.toThrow('Config not found');
   });
+
+  it('should use preview config values from config file', async () => {
+    // Mock config with preview settings
+    mockLoadConfig.mockResolvedValueOnce({
+      srcDir: 'site',
+      outDir: 'dist',
+      staticDir: 'public',
+      site: { title: 'Test Site', baseUrl: 'http://localhost:4000' },
+      preview: {
+        port: 5000,
+        host: '0.0.0.0',
+        open: true,
+      },
+    });
+
+    const previewServer = await createPreviewServer();
+
+    expect(previewServer).toBeDefined();
+    expect(previewServer.url).toBe('http://0.0.0.0:5000');
+  });
+
+  it('should override config values with programmatic options', async () => {
+    // Mock config with preview settings
+    mockLoadConfig.mockResolvedValueOnce({
+      srcDir: 'site',
+      outDir: 'dist',
+      staticDir: 'public',
+      site: { title: 'Test Site', baseUrl: 'http://localhost:4000' },
+      preview: {
+        port: 5000,
+        host: '0.0.0.0',
+        open: true,
+      },
+    });
+
+    // Programmatic options should override config
+    const options: PreviewServerOptions = {
+      port: 6000,
+      host: '127.0.0.1',
+    };
+
+    const previewServer = await createPreviewServer(options);
+
+    expect(previewServer).toBeDefined();
+    expect(previewServer.url).toBe('http://127.0.0.1:6000');
+  });
+
+  it('should use defaults when no config and no options provided', async () => {
+    mockLoadConfig.mockResolvedValueOnce({
+      srcDir: 'site',
+      outDir: 'dist',
+      staticDir: 'public',
+      site: { title: 'Test Site', baseUrl: 'http://localhost:4000' },
+      // No preview config
+    });
+
+    const previewServer = await createPreviewServer();
+
+    expect(previewServer).toBeDefined();
+    expect(previewServer.url).toBe('http://localhost:4000'); // DEFAULT_DEV_HOST:DEFAULT_PREVIEW_PORT
+  });
 });

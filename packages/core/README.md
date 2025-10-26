@@ -312,6 +312,13 @@ export default defineConfig({
     open: false,
   },
 
+  // Preview server
+  preview: {
+    port: 4000,
+    host: 'localhost',
+    open: false,
+  },
+
   // Build lifecycle hooks
   hooks: {
     beforeAll: async (ctx) => {

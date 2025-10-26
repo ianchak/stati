@@ -1,9 +1,9 @@
 import { createServer } from 'http';
 import { join, extname } from 'path';
 import { readFile } from 'fs/promises';
-import type { Logger } from '../types/index.js';
+import type { Logger, StatiConfig } from '../types/index.js';
 import { loadConfig } from '../config/loader.js';
-import { resolveDevPaths, resolvePrettyUrl } from './utils/index.js';
+import { resolveDevPaths, resolvePrettyUrl, createFallbackLogger } from './utils/index.js';
 import { DEFAULT_PREVIEW_PORT, DEFAULT_DEV_HOST } from '../constants.js';
 
 export interface PreviewServerOptions {
@@ -31,7 +31,7 @@ export interface PreviewServer {
 async function loadPreviewConfig(
   configPath: string | undefined,
   logger: Logger,
-): Promise<{ outDir: string }> {
+): Promise<{ outDir: string; config: StatiConfig }> {
   try {
     if (configPath) {
       logger.info?.(`Loading config from: ${configPath}`);
@@ -39,7 +39,7 @@ async function loadPreviewConfig(
     const config = await loadConfig(process.cwd());
     const { outDir } = resolveDevPaths(config);
 
-    return { outDir };
+    return { outDir, config };
   } catch (error) {
     logger.error?.(
       `Failed to load config: ${error instanceof Error ? error.message : String(error)}`,
@@ -55,27 +55,22 @@ async function loadPreviewConfig(
 export async function createPreviewServer(
   options: PreviewServerOptions = {},
 ): Promise<PreviewServer> {
+  // Load configuration first to get defaults from config file
+  const { outDir, config } = await loadPreviewConfig(
+    options.configPath,
+    options.logger ?? createFallbackLogger(),
+  );
+
+  // Merge config values with options (options take precedence)
   const {
-    port = DEFAULT_PREVIEW_PORT,
-    host = DEFAULT_DEV_HOST,
-    open = false,
-    configPath,
-    logger = {
-      info: () => {},
-      success: () => {},
-      error: (msg: string) => console.error(msg),
-      warning: (msg: string) => console.warn(msg),
-      building: () => {},
-      processing: () => {},
-      stats: () => {},
-    },
+    port = config.preview?.port ?? DEFAULT_PREVIEW_PORT,
+    host = config.preview?.host ?? DEFAULT_DEV_HOST,
+    open = config.preview?.open ?? false,
+    logger = createFallbackLogger(),
   } = options;
 
   const url = `http://${host}:${port}`;
   let httpServer: ReturnType<typeof createServer> | null = null;
-
-  // Load configuration
-  const { outDir } = await loadPreviewConfig(configPath, logger);
 
   /**
    * Gets MIME type for a file based on its extension

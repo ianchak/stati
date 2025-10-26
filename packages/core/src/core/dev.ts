@@ -19,6 +19,7 @@ import {
   createErrorOverlay,
   parseErrorDetails,
   TemplateError,
+  createFallbackLogger,
 } from './utils/index.js';
 import { setEnv, getEnv } from '../env.js';
 import { DEFAULT_DEV_PORT, DEFAULT_DEV_HOST, TEMPLATE_EXTENSION } from '../constants.js';
@@ -336,20 +337,19 @@ async function handleMarkdownChange(
 }
 
 export async function createDevServer(options: DevServerOptions = {}): Promise<DevServer> {
+  // Load configuration first to get defaults from config file
+  const { config, outDir, srcDir, staticDir } = await loadDevConfig(
+    options.configPath,
+    options.logger ?? createFallbackLogger(),
+  );
+
+  // Merge config values with options (options take precedence)
   const {
-    port = DEFAULT_DEV_PORT,
-    host = DEFAULT_DEV_HOST,
-    open = false,
+    port = config.dev?.port ?? DEFAULT_DEV_PORT,
+    host = config.dev?.host ?? DEFAULT_DEV_HOST,
+    open = config.dev?.open ?? false,
     configPath,
-    logger = {
-      info: (msg: string) => console.log(msg),
-      success: (msg: string) => console.log(msg),
-      error: (msg: string) => console.error(msg),
-      warning: (msg: string) => console.warn(msg),
-      building: (msg: string) => console.log(msg),
-      processing: (msg: string) => console.log(msg),
-      stats: (msg: string) => console.log(msg),
-    },
+    logger = createFallbackLogger(),
   } = options;
 
   setEnv('development');
@@ -367,9 +367,6 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
   };
   let watcher: FSWatcher | null = null;
   const isBuildingRef = { value: false };
-
-  // Load configuration
-  const { config: _config, outDir, srcDir, staticDir } = await loadDevConfig(configPath, logger);
 
   /**
    * Gets MIME type for a file based on its extension

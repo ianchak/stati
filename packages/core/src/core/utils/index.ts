@@ -79,3 +79,6 @@ export { getStatiVersion } from './version.utils.js';
 
 // Glob pattern utilities
 export { globToRegex, matchesGlob } from './glob-patterns.utils.js';
+
+// Logger utilities
+export { createFallbackLogger } from './logger.utils.js';
