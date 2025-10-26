@@ -355,7 +355,8 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
     },
   });
 
-  const { configPath, logger = createFallbackLogger() } = options;
+  const { configPath } = options;
+  const logger = options.logger ?? createFallbackLogger();
 
   setEnv('development');
 

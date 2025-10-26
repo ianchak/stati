@@ -60,11 +60,10 @@ async function loadPreviewConfig(
 export async function createPreviewServer(
   options: PreviewServerOptions = {},
 ): Promise<PreviewServer> {
+  const logger = options.logger ?? createFallbackLogger();
+
   // Load configuration first to get defaults from config file
-  const { outDir, config } = await loadPreviewConfig(
-    options.configPath,
-    options.logger ?? createFallbackLogger(),
-  );
+  const { outDir, config } = await loadPreviewConfig(options.configPath, logger);
 
   // Merge config values with options (options take precedence)
   const { port, host, open } = mergeServerOptions({
@@ -76,8 +75,6 @@ export async function createPreviewServer(
       open: false,
     },
   });
-
-  const logger = options.logger ?? createFallbackLogger();
 
   const url = `http://${host}:${port}`;
   let httpServer: ReturnType<typeof createServer> | null = null;
