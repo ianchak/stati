@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { createErrorOverlay, parseErrorDetails } from '../../src/core/utils/error-overlay.js';
+import { createErrorOverlay, parseErrorDetails } from '../../src/core/utils/error-overlay.utils.js';
 import {
   TemplateError,
   createTemplateError,
   parseEtaError,
-} from '../../src/core/utils/template-errors.js';
+} from '../../src/core/utils/template-errors.utils.js';
 
 describe('Error Overlay', () => {
   describe('createErrorOverlay', () => {

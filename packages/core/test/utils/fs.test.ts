@@ -26,7 +26,7 @@ import {
   stat,
   readdir,
   copyFile,
-} from '../../src/core/utils/fs.js';
+} from '../../src/core/utils/fs.utils.js';
 
 // Get the mocked functions from the default export
 const mockReadFile = fse.readFile as any;

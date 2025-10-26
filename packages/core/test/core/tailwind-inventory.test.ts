@@ -1,6 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { join } from 'path';
-import { readFile, pathExists, remove, writeFile, ensureDir } from '../../src/core/utils/fs.js';
+import {
+  readFile,
+  pathExists,
+  remove,
+  writeFile,
+  ensureDir,
+} from '../../src/core/utils/fs.utils.js';
 import {
   trackTailwindClass,
   enableInventoryTracking,
@@ -13,8 +19,8 @@ import {
   loadPreviousInventory,
   isTailwindUsed,
   resetTailwindDetection,
-} from '../../src/core/utils/tailwind-inventory.js';
-import { propValue } from '../../src/core/utils/template-utils.js';
+} from '../../src/core/utils/tailwind-inventory.utils.js';
+import { propValue } from '../../src/core/utils/template.utils.js';
 import { mkdtemp } from 'fs/promises';
 import { tmpdir } from 'os';
 

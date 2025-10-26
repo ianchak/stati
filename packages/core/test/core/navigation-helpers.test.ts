@@ -8,7 +8,7 @@ import {
   getBreadcrumbs,
   getCurrentNode,
   createNavigationHelpers,
-} from '../../src/core/utils/navigation-helpers.js';
+} from '../../src/core/utils/navigation-helpers.utils.js';
 import type { NavNode, PageModel } from '../../src/types/index.js';
 
 describe('Navigation Helpers', () => {

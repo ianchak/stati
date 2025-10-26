@@ -3,4 +3,8 @@
  * @module rss/utils
  */
 
-export { matchesAnyPattern, urlMatchesAnyPattern, filterByPatterns } from './pattern-matching.js';
+export {
+  matchesAnyPattern,
+  urlMatchesAnyPattern,
+  filterByPatterns,
+} from './pattern-matching.utils.js';

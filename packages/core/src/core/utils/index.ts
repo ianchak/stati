@@ -13,7 +13,7 @@ export {
   copyFile,
   readdir,
   stat,
-} from './fs.js';
+} from './fs.utils.js';
 
 // Path resolution utilities
 export {
@@ -26,17 +26,17 @@ export {
   resolveSrcPath,
   resolveOutPath,
   resolveStaticPath,
-} from './paths.js';
+} from './paths.utils.js';
 
 // Template discovery utilities
 export {
   discoverLayout,
   isCollectionIndexPage,
   getCollectionPathForPage,
-} from './template-discovery.js';
+} from './template-discovery.utils.js';
 
 // Template utilities
-export { propValue } from './template-utils.js';
+export { propValue } from './template.utils.js';
 
 // Tailwind inventory utilities
 export {
@@ -51,31 +51,31 @@ export {
   isTailwindUsed,
   resetTailwindDetection,
   loadPreviousInventory,
-} from './tailwind-inventory.js';
+} from './tailwind-inventory.utils.js';
 
 // Partial validation utilities
-export { createValidatingPartialsProxy } from './partial-validation.js';
+export { createValidatingPartialsProxy } from './partial-validation.utils.js';
 
 // Callable partial utilities
-export { makeCallablePartial, wrapPartialsAsCallable } from './callable-partials.js';
-export type { CallablePartial } from './callable-partials.js';
+export { makeCallablePartial, wrapPartialsAsCallable } from './callable-partials.utils.js';
+export type { CallablePartial } from './callable-partials.utils.js';
 
 // Template error utilities
-export { TemplateError, parseEtaError, createTemplateError } from './template-errors.js';
+export { TemplateError, parseEtaError, createTemplateError } from './template-errors.utils.js';
 
 // Navigation helper utilities
-export { createNavigationHelpers } from './navigation-helpers.js';
+export { createNavigationHelpers } from './navigation-helpers.utils.js';
 
 // Server utilities
-export { resolvePrettyUrl } from './server.js';
-export type { PrettyUrlResult } from './server.js';
+export { resolvePrettyUrl } from './server.utils.js';
+export type { PrettyUrlResult } from './server.utils.js';
 
 // Error overlay utilities
-export { createErrorOverlay, parseErrorDetails } from './error-overlay.js';
-export type { ErrorDetails } from './error-overlay.js';
+export { createErrorOverlay, parseErrorDetails } from './error-overlay.utils.js';
+export type { ErrorDetails } from './error-overlay.utils.js';
 
 // Version utilities
-export { getStatiVersion } from './version.js';
+export { getStatiVersion } from './version.utils.js';
 
 // Glob pattern utilities
-export { globToRegex, matchesGlob } from './glob-patterns.js';
+export { globToRegex, matchesGlob } from './glob-patterns.utils.js';

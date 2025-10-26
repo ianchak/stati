@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { propValue } from '../../src/core/utils/template-utils.js';
+import { propValue } from '../../src/core/utils/template.utils.js';
 
 describe('propValue', () => {
   it('combines string arguments into a space-separated value', () => {

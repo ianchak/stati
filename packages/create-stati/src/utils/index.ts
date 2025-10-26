@@ -2,6 +2,6 @@
  * Barrel export for create-stati utilities
  */
 
-export * from './logger.js';
-export * from './process.js';
-export * from './package-json.js';
+export * from './logger.utils.js';
+export * from './process.utils.js';
+export * from './package-json.utils.js';

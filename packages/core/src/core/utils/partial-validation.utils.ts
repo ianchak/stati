@@ -1,5 +1,5 @@
 import { getEnv } from '../../env.js';
-import { type CallablePartial } from './callable-partials.js';
+import { type CallablePartial } from './callable-partials.utils.js';
 
 /**
  * Creates inline error overlay HTML for missing partials

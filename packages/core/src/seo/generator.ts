@@ -14,7 +14,7 @@ import {
   generateRobotsContent,
   resolveAbsoluteUrl,
 } from './utils/index.js';
-import { sanitizeStructuredData } from './utils/escape-and-validation.js';
+import { sanitizeStructuredData } from './utils/escape-and-validation.utils.js';
 
 /**
  * Generate complete SEO metadata for a page.

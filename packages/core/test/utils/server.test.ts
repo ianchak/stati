@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { mkdir, writeFile, rm } from 'fs/promises';
 import { join } from 'path';
-import { resolvePrettyUrl } from '../../src/core/utils/server.js';
+import { resolvePrettyUrl } from '../../src/core/utils/server.utils.js';
 
 describe('resolvePrettyUrl', () => {
   const testDir = join(process.cwd(), 'test-server-utils');

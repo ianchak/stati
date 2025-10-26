@@ -7,7 +7,7 @@
  * final CSS output.
  */
 
-import { writeFile, ensureDir, pathExists, readFile } from './fs.js';
+import { writeFile, ensureDir, pathExists, readFile } from './fs.utils.js';
 import { join } from 'path';
 
 /**

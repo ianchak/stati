@@ -2,7 +2,7 @@
  * Utility functions for Eta templates
  */
 
-import { trackTailwindClass } from './tailwind-inventory.js';
+import { trackTailwindClass } from './tailwind-inventory.utils.js';
 
 type PropValueArg =
   | string
