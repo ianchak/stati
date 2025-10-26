@@ -166,7 +166,7 @@ function validateDirectoryPath(dirPath: string): string {
     if (!normalizedPattern.startsWith('/')) {
       // Pattern like 'windows' should match 'c:/windows' or 'd:/windows'
       const regex = new RegExp(
-        `^[a-z]:/` + normalizedPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(/|$)',
+        `^[a-z]:/${normalizedPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(/|$)`,
       );
       if (regex.test(normalizedPath) || normalizedPath.includes(`/${normalizedPattern}/`)) {
         throw new Error(
