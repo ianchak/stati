@@ -1,8 +1,8 @@
-<section class="py-20 lg:py-24 bg-gradient-to-b from-gray-50/50 to-white dark:from-dark-900/50 dark:to-dark-950 relative overflow-hidden">
-    <!-- Background decoration -->
+<section class="py-20 lg:py-24 bg-gradient-to-b from-white via-gray-50/40 to-gray-50 dark:from-dark-950 dark:via-dark-900/40 dark:to-dark-900 relative overflow-hidden">
+    <!-- Decorative background elements -->
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
-        <div class="absolute top-1/4 -left-20 w-96 h-96 bg-primary-100/20 dark:bg-primary-900/10 rounded-full blur-3xl"></div>
-        <div class="absolute bottom-1/4 -right-20 w-96 h-96 bg-blue-100/20 dark:bg-blue-900/10 rounded-full blur-3xl"></div>
+        <div class="absolute top-1/4 -left-24 w-96 h-96 bg-indigo-300/12 dark:bg-indigo-800/10 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-1/4 -right-24 w-80 h-80 bg-purple-300/10 dark:bg-purple-800/8 rounded-full blur-3xl"></div>
     </div>
 
     <div class="relative z-10 max-w-7xl mx-auto px-6 lg:px-12">

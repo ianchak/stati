@@ -1,9 +1,9 @@
 <!-- Quick Start Section -->
-<section class="py-20 lg:py-24 bg-gray-50 dark:bg-dark-900 relative overflow-hidden">
-    <!-- Minimal background decoration -->
-    <div class="absolute inset-0">
-        <div class="absolute top-1/4 left-1/4 w-56 h-56 bg-emerald-50 dark:bg-emerald-950/40 rounded-full blur-3xl opacity-70"></div>
-        <div class="absolute bottom-1/4 right-1/4 w-48 h-48 bg-gray-100 dark:bg-gray-800/60 rounded-full blur-3xl opacity-60"></div>
+<section class="py-20 lg:py-24 bg-gradient-to-b from-gray-50 to-white dark:from-dark-900 dark:to-dark-950 relative overflow-hidden">
+    <!-- Decorative background elements -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute top-1/4 -left-16 w-72 h-72 bg-emerald-300/15 dark:bg-emerald-800/10 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-1/4 -right-16 w-64 h-64 bg-cyan-300/12 dark:bg-cyan-800/8 rounded-full blur-3xl"></div>
     </div>
 
     <div class="relative max-w-6xl mx-auto px-6 lg:px-8">

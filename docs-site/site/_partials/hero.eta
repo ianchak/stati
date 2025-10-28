@@ -1,14 +1,14 @@
 <!-- Hero Section -->
-<section class="relative bg-white dark:bg-dark-950 overflow-hidden">
-    <!-- Subtle animated background -->
+<section class="relative bg-gradient-to-b from-white via-white to-gray-50/30 dark:from-dark-950 dark:via-dark-950 dark:to-dark-900/30 overflow-hidden">
+    <!-- Decorative background elements -->
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
-        <!-- Soft gradient orbs -->
-        <div class="<%= stati.propValue('absolute top-0 left-1/4 w-96 h-96 bg-primary-500/5 dark:bg-primary-500/10 rounded-full blur-3xl animate-pulse') %>"></div>
-        <div class="<%= stati.propValue('absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/5 dark:bg-blue-500/10 rounded-full blur-3xl animate-pulse') %>" style="animation-delay: 2s"></div>
+        <!-- Animated gradient orbs -->
+        <div class="<%= stati.propValue('absolute -top-20 left-1/4 w-96 h-96 bg-primary-400/8 dark:bg-primary-500/12 rounded-full blur-3xl animate-pulse') %>"></div>
+        <div class="<%= stati.propValue('absolute -bottom-20 right-1/4 w-96 h-96 bg-blue-400/8 dark:bg-blue-500/12 rounded-full blur-3xl animate-pulse') %>" style="animation-delay: 2s"></div>
     </div>
 
     <!-- Particles container -->
-    <div id="particles-js" class="<%= stati.propValue('absolute inset-0 opacity-30 dark:opacity-20') %>"></div>
+    <div id="particles-js" class="<%= stati.propValue('absolute inset-0 opacity-40 dark:opacity-30') %>"></div>
 
     <!-- Content -->
     <div class="<%= stati.propValue('relative z-10 max-w-7xl mx-auto px-6 lg:px-12 py-32 lg:py-48') %>">
@@ -93,22 +93,22 @@
                         "type": "circle"
                     },
                     "opacity": {
-                        "value": 0.2,
+                        "value": 0.4,
                         "random": true,
                         "anim": {
                             "enable": true,
-                            "speed": 0.8,
-                            "opacity_min": 0.05,
+                            "speed": 1,
+                            "opacity_min": 0.15,
                             "sync": false
                         }
                     },
                     "size": {
-                        "value": 3,
+                        "value": 3.5,
                         "random": true,
                         "anim": {
                             "enable": true,
-                            "speed": 1.5,
-                            "size_min": 0.5,
+                            "speed": 2,
+                            "size_min": 1,
                             "sync": false
                         }
                     },
@@ -116,8 +116,8 @@
                         "enable": true,
                         "distance": 150,
                         "color": "#3b82f6",
-                        "opacity": 0.15,
-                        "width": 1
+                        "opacity": 0.25,
+                        "width": 1.5
                     },
                     "move": {
                         "enable": true,
@@ -161,7 +161,7 @@
 
                     particles.color.value = newColors;
                     particles.line_linked.color = isDark ? "#60a5fa" : "#3b82f6";
-                    particles.line_linked.opacity = isDark ? 0.1 : 0.15;
+                    particles.line_linked.opacity = isDark ? 0.2 : 0.25;
 
                     if (particles.array) {
                         particles.array.forEach((particle, index) => {
