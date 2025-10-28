@@ -59,20 +59,45 @@
 
     <script>
         // Scroll to top functionality
-        const scrollToTopBtn = document.getElementById('scroll-to-top');
-        window.addEventListener('scroll', () => {
-            if (window.pageYOffset > 300) {
-                scrollToTopBtn.classList.remove('opacity-0', 'pointer-events-none');
-                scrollToTopBtn.classList.add('opacity-100');
-            } else {
-                scrollToTopBtn.classList.add('opacity-0', 'pointer-events-none');
-                scrollToTopBtn.classList.remove('opacity-100');
-            }
-        });
+        (function() {
+            const scrollToTopBtn = document.getElementById('scroll-to-top');
+            let scrollHandler, clickHandler;
 
-        scrollToTopBtn.addEventListener('click', () => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
+            function initializeScrollToTop() {
+                if (!scrollToTopBtn) return;
+
+                scrollHandler = () => {
+                    if (window.pageYOffset > 300) {
+                        scrollToTopBtn.classList.remove('opacity-0', 'pointer-events-none');
+                        scrollToTopBtn.classList.add('opacity-100');
+                    } else {
+                        scrollToTopBtn.classList.add('opacity-0', 'pointer-events-none');
+                        scrollToTopBtn.classList.remove('opacity-100');
+                    }
+                };
+                window.addEventListener('scroll', scrollHandler);
+
+                clickHandler = () => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                };
+                scrollToTopBtn.addEventListener('click', clickHandler);
+            }
+
+            function cleanupScrollToTop() {
+                if (scrollHandler) {
+                    window.removeEventListener('scroll', scrollHandler);
+                }
+                if (scrollToTopBtn && clickHandler) {
+                    scrollToTopBtn.removeEventListener('click', clickHandler);
+                }
+            }
+
+            // Initialize on load
+            document.addEventListener('DOMContentLoaded', initializeScrollToTop);
+
+            // Cleanup on unload to prevent memory leaks
+            window.addEventListener('beforeunload', cleanupScrollToTop);
+        })();
     </script>
 </body>
 </html>

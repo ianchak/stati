@@ -93,26 +93,50 @@
     (function() {
         const mobileMenuBtn = document.getElementById('mobile-menu-btn');
         const mobileNav = document.getElementById('mobile-nav');
+        let clickHandler, documentClickHandler, resizeHandler;
 
-        if (mobileMenuBtn && mobileNav) {
-            mobileMenuBtn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                mobileNav.classList.toggle('hidden');
-            });
+        function initializeMobileMenu() {
+            if (mobileMenuBtn && mobileNav) {
+                clickHandler = function(e) {
+                    e.stopPropagation();
+                    mobileNav.classList.toggle('hidden');
+                };
+                mobileMenuBtn.addEventListener('click', clickHandler);
 
-            // Close menu when clicking outside
-            document.addEventListener('click', function(e) {
-                if (!mobileNav.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
-                    mobileNav.classList.add('hidden');
-                }
-            });
+                // Close menu when clicking outside
+                documentClickHandler = function(e) {
+                    if (!mobileNav.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
+                        mobileNav.classList.add('hidden');
+                    }
+                };
+                document.addEventListener('click', documentClickHandler);
 
-            // Close menu on window resize to desktop
-            window.addEventListener('resize', function() {
-                if (window.innerWidth >= 1024) {
-                    mobileNav.classList.add('hidden');
-                }
-            });
+                // Close menu on window resize to desktop
+                resizeHandler = function() {
+                    if (window.innerWidth >= 1024) {
+                        mobileNav.classList.add('hidden');
+                    }
+                };
+                window.addEventListener('resize', resizeHandler);
+            }
         }
+
+        function cleanupMobileMenu() {
+            if (mobileMenuBtn && clickHandler) {
+                mobileMenuBtn.removeEventListener('click', clickHandler);
+            }
+            if (documentClickHandler) {
+                document.removeEventListener('click', documentClickHandler);
+            }
+            if (resizeHandler) {
+                window.removeEventListener('resize', resizeHandler);
+            }
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', initializeMobileMenu);
+
+        // Cleanup on unload to prevent memory leaks
+        window.addEventListener('beforeunload', cleanupMobileMenu);
     })();
 </script>

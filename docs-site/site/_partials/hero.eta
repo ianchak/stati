@@ -71,115 +71,149 @@
 
     <!-- Particles.js configuration -->
     <script>
-        function initParticles() {
-            if (typeof particlesJS === 'undefined') {
-                setTimeout(initParticles, 50);
-                return;
-            }
+        (function() {
+            let particlesInitialized = false;
+            let observer = null;
+            let initTimeout = null;
 
-            particlesJS('particles-js', {
-                "particles": {
-                    "number": {
-                        "value": 60,
-                        "density": {
+            function initParticles() {
+                if (particlesInitialized) return;
+
+                if (typeof particlesJS === 'undefined') {
+                    initTimeout = setTimeout(initParticles, 50);
+                    return;
+                }
+
+                particlesInitialized = true;
+
+                particlesJS('particles-js', {
+                    "particles": {
+                        "number": {
+                            "value": 60,
+                            "density": {
+                                "enable": true,
+                                "value_area": 1000
+                            }
+                        },
+                        "color": {
+                            "value": ["#3b82f6", "#6366f1"]
+                        },
+                        "shape": {
+                            "type": "circle"
+                        },
+                        "opacity": {
+                            "value": 0.4,
+                            "random": true,
+                            "anim": {
+                                "enable": true,
+                                "speed": 1,
+                                "opacity_min": 0.15,
+                                "sync": false
+                            }
+                        },
+                        "size": {
+                            "value": 3.5,
+                            "random": true,
+                            "anim": {
+                                "enable": true,
+                                "speed": 2,
+                                "size_min": 1,
+                                "sync": false
+                            }
+                        },
+                        "line_linked": {
                             "enable": true,
-                            "value_area": 1000
-                        }
-                    },
-                    "color": {
-                        "value": ["#3b82f6", "#6366f1"]
-                    },
-                    "shape": {
-                        "type": "circle"
-                    },
-                    "opacity": {
-                        "value": 0.4,
-                        "random": true,
-                        "anim": {
+                            "distance": 150,
+                            "color": "#3b82f6",
+                            "opacity": 0.25,
+                            "width": 1.5
+                        },
+                        "move": {
                             "enable": true,
                             "speed": 1,
-                            "opacity_min": 0.15,
-                            "sync": false
+                            "direction": "none",
+                            "random": true,
+                            "straight": false,
+                            "out_mode": "out",
+                            "bounce": false
                         }
                     },
-                    "size": {
-                        "value": 3.5,
-                        "random": true,
-                        "anim": {
-                            "enable": true,
-                            "speed": 2,
-                            "size_min": 1,
-                            "sync": false
-                        }
-                    },
-                    "line_linked": {
-                        "enable": true,
-                        "distance": 150,
-                        "color": "#3b82f6",
-                        "opacity": 0.25,
-                        "width": 1.5
-                    },
-                    "move": {
-                        "enable": true,
-                        "speed": 1,
-                        "direction": "none",
-                        "random": true,
-                        "straight": false,
-                        "out_mode": "out",
-                        "bounce": false
-                    }
-                },
-                "interactivity": {
-                    "detect_on": "canvas",
-                    "events": {
-                        "onhover": {
-                            "enable": true,
-                            "mode": "grab"
+                    "interactivity": {
+                        "detect_on": "canvas",
+                        "events": {
+                            "onhover": {
+                                "enable": true,
+                                "mode": "grab"
+                            },
+                            "resize": true
                         },
-                        "resize": true
-                    },
-                    "modes": {
-                        "grab": {
-                            "distance": 180,
-                            "line_linked": {
-                                "opacity": 0.3
+                        "modes": {
+                            "grab": {
+                                "distance": 180,
+                                "line_linked": {
+                                    "opacity": 0.3
+                                }
                             }
                         }
+                    },
+                    "retina_detect": true
+                });
+
+                // Dark mode adaptation
+                const updateParticleColors = () => {
+                    const isDark = document.documentElement.classList.contains('dark') ||
+                                  window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+                    if (window.pJSDom && window.pJSDom[0] && window.pJSDom[0].pJS) {
+                        const particles = window.pJSDom[0].pJS.particles;
+                        const newColors = isDark ? ["#60a5fa", "#818cf8"] : ["#3b82f6", "#6366f1"];
+
+                        particles.color.value = newColors;
+                        particles.line_linked.color = isDark ? "#60a5fa" : "#3b82f6";
+                        particles.line_linked.opacity = isDark ? 0.2 : 0.25;
+
+                        if (particles.array) {
+                            particles.array.forEach((particle, index) => {
+                                particle.color.value = newColors[index % newColors.length];
+                            });
+                        }
                     }
-                },
-                "retina_detect": true
-            });
+                };
 
-            // Dark mode adaptation
-            const updateParticleColors = () => {
-                const isDark = document.documentElement.classList.contains('dark') ||
-                              window.matchMedia('(prefers-color-scheme: dark)').matches;
+                observer = new MutationObserver(updateParticleColors);
+                observer.observe(document.documentElement, {
+                    attributes: true,
+                    attributeFilter: ['class']
+                });
 
-                if (window.pJSDom && window.pJSDom[0] && window.pJSDom[0].pJS) {
-                    const particles = window.pJSDom[0].pJS.particles;
-                    const newColors = isDark ? ["#60a5fa", "#818cf8"] : ["#3b82f6", "#6366f1"];
+                setTimeout(updateParticleColors, 100);
+            }
 
-                    particles.color.value = newColors;
-                    particles.line_linked.color = isDark ? "#60a5fa" : "#3b82f6";
-                    particles.line_linked.opacity = isDark ? 0.2 : 0.25;
-
-                    if (particles.array) {
-                        particles.array.forEach((particle, index) => {
-                            particle.color.value = newColors[index % newColors.length];
-                        });
-                    }
+            function cleanupParticles() {
+                // Clear any pending initialization timeout
+                if (initTimeout) {
+                    clearTimeout(initTimeout);
+                    initTimeout = null;
                 }
-            };
 
-            const observer = new MutationObserver(updateParticleColors);
-            observer.observe(document.documentElement, {
-                attributes: true,
-                attributeFilter: ['class']
-            });
+                // Disconnect MutationObserver
+                if (observer) {
+                    observer.disconnect();
+                    observer = null;
+                }
 
-            setTimeout(updateParticleColors, 100);
-        }
+                // Destroy particles.js instance if it exists
+                if (window.pJSDom && window.pJSDom[0]) {
+                    window.pJSDom[0].pJS.fn.vendors.destroypJS();
+                    window.pJSDom = [];
+                }
+            }
 
-        initParticles();
+            // Initialize particles
+            initParticles();
+
+            // Cleanup on unload to prevent memory leaks
+            window.addEventListener('beforeunload', cleanupParticles);
+        })();
     </script>
 </section>
