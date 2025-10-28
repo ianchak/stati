@@ -6,6 +6,9 @@ export default defineConfig({
     baseUrl: 'https://docs.stati.build',
     defaultLocale: 'en-US',
   },
+  dev: {
+    open: true,
+  },
   markdown: {
     plugins: [
       [
