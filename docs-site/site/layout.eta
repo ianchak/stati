@@ -33,19 +33,17 @@
 
         <main id="main-content" class="flex-1 ml-0 lg:ml-80 transition-all duration-300 ease-in-out">
             <div class="relative max-w-7xl mx-auto">
-                <div class="flex">
+                <div class="flex gap-8">
                     <!-- Main content area -->
-                    <div class="flex-1 min-w-0 px-6 lg:px-12 py-12 lg:py-16">
-                        <div class="prose prose-lg dark:prose-invert max-w-none prose-headings:scroll-mt-24 prose-pre:bg-dark-800 prose-pre:shadow-soft-lg prose-code:bg-gray-100 dark:prose-code:bg-dark-700 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:font-medium">
+                    <div class="flex-1 min-w-0 px-6 lg:px-12 py-12 lg:py-16 overflow-x-hidden">
+                        <div class="prose prose-lg dark:prose-invert prose-headings:scroll-mt-24 prose-pre:bg-dark-800 prose-pre:shadow-soft-lg prose-code:bg-gray-100 dark:prose-code:bg-dark-700 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:font-medium prose-pre:max-w-full">
                             <%~ stati.content %>
                         </div>
                     </div>
 
                     <!-- Table of Contents area -->
-                    <div class="hidden xl:block w-80 flex-shrink-0 py-12">
-                        <div class="sticky top-24">
-                            <%~ stati.partials.toc %>
-                        </div>
+                    <div class="hidden xl:block w-80 flex-shrink-0 py-12 pr-6">
+                        <%~ stati.partials.toc %>
                     </div>
                 </div>
             </div>
