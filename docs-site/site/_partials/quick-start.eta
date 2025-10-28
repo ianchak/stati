@@ -8,10 +8,10 @@
 
     <div class="relative max-w-6xl mx-auto px-6 lg:px-8">
         <div class="text-center mb-16">
-            <h2 class="text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-6">
+            <h2 class="text-4xl lg:text-5xl font-bold mb-4 bg-gradient-to-r from-gray-900 via-primary-700 to-gray-900 dark:from-gray-100 dark:via-primary-400 dark:to-gray-100 bg-clip-text text-transparent">
                 <%= stati.page.quickStart?.title || 'Get Started' %>
             </h2>
-            <p class="text-xl lg:text-2xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
+            <p class="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
                 <%= stati.page.quickStart?.subtitle %>
             </p>
         </div>
