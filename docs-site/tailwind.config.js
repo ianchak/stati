@@ -63,6 +63,7 @@ export default {
       spacing: {
         18: '4.5rem',
         88: '22rem',
+        192: '48rem',
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-in-out',

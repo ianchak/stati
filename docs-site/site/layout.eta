@@ -24,6 +24,13 @@
     <div class="flex min-h-screen">
         <%~ stati.partials.sidebar %>
 
+        <!-- Floating sidebar toggle button for mobile -->
+        <button id="sidebar-toggle-btn" data-mobile-menu class="fixed bottom-8 left-8 lg:hidden bg-primary-600 hover:bg-primary-700 text-white p-3 rounded-full shadow-lg hover:shadow-glow transition-all duration-300 z-40">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+        </button>
+
         <main id="main-content" class="flex-1 ml-0 lg:ml-80 transition-all duration-300 ease-in-out">
             <div class="relative max-w-7xl mx-auto">
                 <div class="flex">

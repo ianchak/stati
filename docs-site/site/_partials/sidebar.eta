@@ -45,7 +45,7 @@ const sections = [
   },
 ];
 %>
-<aside id="sidebar" class="fixed top-18 left-0 w-80 h-[calc(100vh-4.5rem)] bg-white/80 dark:bg-dark-900/80 backdrop-blur-xl border-r border-gray-200/60 dark:border-dark-700/60 overflow-y-auto transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out z-30 shadow-xl shadow-gray-900/5">
+<aside id="sidebar" class="fixed top-18 left-0 w-80 h-[calc(100vh-4.5rem)] bg-white/80 dark:bg-dark-900/80 backdrop-blur-xl border-r border-gray-200/60 dark:border-dark-700/60 overflow-y-auto transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out z-40 shadow-xl shadow-gray-900/5">
     <nav class="p-6">
         <!-- Search Bar -->
         <div class="mb-8">
@@ -206,17 +206,35 @@ document.addEventListener('DOMContentLoaded', function() {
     // Mobile sidebar toggle
     const mobileMenuButton = document.querySelector('[data-mobile-menu]');
     const overlay = document.getElementById('sidebar-overlay');
+    const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
 
     if (mobileMenuButton && sidebar && overlay) {
         mobileMenuButton.addEventListener('click', () => {
+            const isHidden = sidebar.classList.contains('-translate-x-full');
             sidebar.classList.toggle('-translate-x-full');
             overlay.classList.toggle('opacity-0');
             overlay.classList.toggle('pointer-events-none');
+
+            // Hide toggle button when sidebar is open
+            if (sidebarToggleBtn) {
+                if (isHidden) {
+                    // Sidebar is opening
+                    sidebarToggleBtn.classList.add('opacity-0', 'pointer-events-none');
+                } else {
+                    // Sidebar is closing
+                    sidebarToggleBtn.classList.remove('opacity-0', 'pointer-events-none');
+                }
+            }
         });
 
         overlay.addEventListener('click', () => {
             sidebar.classList.add('-translate-x-full');
             overlay.classList.add('opacity-0', 'pointer-events-none');
+
+            // Show toggle button when sidebar is closed
+            if (sidebarToggleBtn) {
+                sidebarToggleBtn.classList.remove('opacity-0', 'pointer-events-none');
+            }
         });
 
         // Close sidebar when clicking outside on mobile
@@ -228,17 +246,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 !sidebar.classList.contains('-translate-x-full')) {
                 sidebar.classList.add('-translate-x-full');
                 overlay.classList.add('opacity-0', 'pointer-events-none');
+
+                // Show toggle button when sidebar is closed
+                if (sidebarToggleBtn) {
+                    sidebarToggleBtn.classList.remove('opacity-0', 'pointer-events-none');
+                }
             }
         });
 
         // Close sidebar on window resize to desktop
         window.addEventListener('resize', () => {
             if (window.innerWidth >= 1024) {
+                // Desktop: show sidebar, hide overlay, hide toggle button
                 sidebar.classList.remove('-translate-x-full');
                 overlay.classList.add('opacity-0', 'pointer-events-none');
-            } else if (!sidebar.classList.contains('-translate-x-full')) {
-                // Ensure overlay is visible when sidebar is open on mobile
-                overlay.classList.remove('opacity-0', 'pointer-events-none');
+                if (sidebarToggleBtn) {
+                    sidebarToggleBtn.classList.add('opacity-0', 'pointer-events-none');
+                }
+            } else {
+                // Mobile: hide sidebar by default, show toggle button
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('opacity-0', 'pointer-events-none');
+                if (sidebarToggleBtn) {
+                    sidebarToggleBtn.classList.remove('opacity-0', 'pointer-events-none');
+                }
             }
         });
     }
