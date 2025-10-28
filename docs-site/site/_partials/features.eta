@@ -24,9 +24,7 @@
             const colors = ['primary', 'emerald', 'amber', 'purple', 'red', 'cyan'];
             const color = colors[i % colors.length];
             %>
-            <div class="<%= stati.propValue(
-                'relative bg-white/60 dark:bg-dark-800/60 backdrop-blur-sm p-8 rounded-2xl border border-gray-200/50 dark:border-dark-600/50'
-            ) %>">
+            <div class="relative bg-white/60 dark:bg-dark-800/60 backdrop-blur-sm p-8 rounded-2xl border border-gray-200/50 dark:border-dark-600/50">
                 <!-- Icon background with gradient -->
                 <div class="<%= stati.propValue(
                     'relative w-20 h-20 flex items-center justify-center mx-auto mb-6 bg-gradient-to-br rounded-2xl border',
@@ -69,7 +67,7 @@
                 </div>
 
                 <div class="text-center">
-                    <h3 class="<%= stati.propValue('text-2xl font-bold text-gray-900 dark:text-white mb-4') %>">
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
                         <%= feature.title %>
                     </h3>
                     <p class="text-gray-600 dark:text-gray-300 leading-relaxed text-lg">

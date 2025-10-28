@@ -67,10 +67,10 @@ const sections = [
             %>
             <!-- <%= section.displayName %> -->
             <div class="nav-section">
-                <button class="<%= stati.propValue('section-toggle', 'flex', 'items-center', 'justify-between', 'w-full', 'px-4', 'py-3', 'text-left', `bg-gradient-to-r from-${color}-50 to-${color}-100/50 dark:from-${color}-900/20 dark:to-${color}-800/20`, 'rounded-xl', `border border-${color}-200/50 dark:border-${color}-800/50`, `hover:shadow-md hover:shadow-${color}-500/10`, 'transition-all', 'duration-200', 'group') %>" data-section="<%= sectionSlug %>">
+                <button class="<%= stati.propValue('section-toggle flex items-center justify-between w-full px-4 py-3 text-left rounded-xl transition-all duration-200 group', `bg-gradient-to-r from-${color}-50 to-${color}-100/50 dark:from-${color}-900/20 dark:to-${color}-800/20`, `border border-${color}-200/50 dark:border-${color}-800/50`, `hover:shadow-md hover:shadow-${color}-500/10`) %>" data-section="<%= sectionSlug %>">
                     <div class="flex items-center space-x-3">
-                        <div class="<%= stati.propValue('flex', 'items-center', 'justify-center', 'w-8', 'h-8', `bg-${color}-500/10 dark:bg-${color}-400/20`, 'rounded-lg') %>">
-                            <svg class="<%= stati.propValue('w-4', 'h-4', `text-${color}-600 dark:text-${color}-400`) %>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="<%= stati.propValue('flex items-center justify-center w-8 h-8 rounded-lg', `bg-${color}-500/10 dark:bg-${color}-400/20`) %>">
+                            <svg class="<%= stati.propValue('w-4 h-4', `text-${color}-600 dark:text-${color}-400`) %>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="<%= section.icon %>" />
                             </svg>
                         </div>
@@ -82,8 +82,8 @@ const sections = [
                 </button>
                 <div class="section-content mt-2 space-y-1 pl-4" data-section="<%= sectionSlug %>">
                     <% sectionChildren.forEach(page => { %>
-                    <a href="<%= page.url %>" class="<%= stati.propValue('sidebar-link', 'flex', 'items-center', 'px-4', 'py-2.5', 'text-sm', 'text-gray-600', `hover:text-${color}-600`, 'dark:text-gray-300', `dark:hover:text-${color}-400`, `hover:bg-${color}-50/60`, `dark:hover:bg-${color}-900/20`, 'rounded-lg', 'transition-all', 'duration-200', 'font-medium', 'group') %>">
-                        <span class="<%= stati.propValue('w-2', 'h-2', 'bg-gray-300', 'dark:bg-gray-600', 'rounded-full', 'mr-3', `group-hover:bg-${color}-500`, 'transition-colors', 'duration-200') %>"></span>
+                    <a href="<%= page.url %>" class="<%= stati.propValue('sidebar-link flex items-center px-4 py-2.5 text-sm text-gray-600 dark:text-gray-300 rounded-lg transition-all duration-200 font-medium group', `hover:text-${color}-600 dark:hover:text-${color}-400`, `hover:bg-${color}-50/60 dark:hover:bg-${color}-900/20`) %>">
+                        <span class="<%= stati.propValue('w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 transition-colors duration-200', `group-hover:bg-${color}-500`) %>"></span>
                         <%= page.title %>
                     </a>
                     <% }) %>
