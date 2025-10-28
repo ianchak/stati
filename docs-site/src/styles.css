@@ -20,6 +20,23 @@
     @apply bg-gray-400 dark:bg-dark-500;
   }
 
+  /* Refined scrollbar for TOC */
+  #toc-nav::-webkit-scrollbar {
+    @apply w-1.5;
+  }
+
+  #toc-nav::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  #toc-nav::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+  }
+
+  #toc-nav::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400 dark:bg-gray-500;
+  }
+
   /* Better focus styles */
   *:focus {
     @apply outline-none ring-2 ring-primary-500/50 ring-offset-2 ring-offset-white dark:ring-offset-dark-900;
