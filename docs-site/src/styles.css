@@ -214,10 +214,6 @@
     @apply min-w-0;
   }
 
-  .prose pre {
-    @apply overflow-x-auto;
-  }
-
   .prose table {
     @apply block overflow-x-auto;
   }
