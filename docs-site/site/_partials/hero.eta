@@ -33,7 +33,7 @@
                 <% for (let button of (stati.page.hero?.buttons || [])) { %>
                 <% if (button.primary) { %>
                 <a href="<%= button.url %>"
-                   class="<%= stati.propValue('group relative bg-gradient-to-r from-primary-600 to-blue-600 hover:from-primary-700 hover:to-blue-700 text-white px-10 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5') %>">
+                   class="<%= stati.propValue('group relative bg-gradient-to-r from-primary-500 to-blue-700 hover:from-primary-600 hover:to-blue-800 text-white px-10 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5') %>">
                     <span class="<%= stati.propValue('relative flex items-center gap-2') %>">
                         <%= button.text %>
                         <svg class="<%= stati.propValue('w-5 h-5 transition-transform duration-300 group-hover:translate-x-1') %>"
