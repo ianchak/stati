@@ -209,6 +209,25 @@
     @apply text-primary-700 dark:text-primary-300;
   }
 
+  /* Constrain prose content to prevent horizontal overflow */
+  .prose {
+    @apply min-w-0;
+  }
+
+  .prose pre {
+    @apply overflow-x-auto;
+  }
+
+  .prose table {
+    @apply block overflow-x-auto;
+  }
+
+  .prose img,
+  .prose video,
+  .prose iframe {
+    @apply max-w-full;
+  }
+
   /* Button components */
   .btn-primary {
     @apply bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-semibold px-6 py-3 rounded-lg shadow-soft hover:shadow-glow transition-all duration-300 transform hover:scale-105;
