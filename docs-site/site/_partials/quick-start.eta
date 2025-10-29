@@ -64,7 +64,7 @@
         <% if (stati.page.quickStart?.link) { %>
         <div class="text-center mt-12">
             <a href="<%= stati.page.quickStart.link.url %>"
-               class="group inline-flex items-center px-6 py-3 bg-white/90 dark:bg-dark-800/80 backdrop-blur-sm border border-gray-300 dark:border-dark-600 hover:border-primary-400 dark:hover:border-primary-600 text-gray-700 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-400 rounded-xl font-semibold transition-all duration-300 hover:shadow-lg hover:shadow-primary-500/10 hover:-translate-y-0.5">
+               class="group inline-flex items-center px-6 py-3 bg-white/90 dark:bg-dark-800/80 backdrop-blur-sm border border-gray-300 dark:border-dark-600 hover:border-primary-400 dark:hover:border-primary-600 text-gray-700 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-400 rounded-xl font-semibold transition-all duration-300 hover:shadow-lg hover:shadow-gray-900/10 dark:hover:shadow-black/20 hover:-translate-y-0.5">
                 <%= stati.page.quickStart.link.text %>
                 <svg class="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
