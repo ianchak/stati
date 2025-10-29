@@ -159,7 +159,7 @@
   }
 
   .prose code {
-    @apply bg-gray-100 dark:bg-dark-700 px-2.5 py-1 rounded-md text-sm font-mono text-primary-700 dark:text-primary-300 font-medium;
+    @apply bg-gray-100 dark:bg-dark-800 px-2.5 py-1 rounded-md text-sm font-mono text-primary-700 dark:text-primary-300 font-medium;
   }
 
   .prose pre {
@@ -167,7 +167,13 @@
   }
 
   .prose pre code {
-    @apply bg-transparent p-0 text-inherit rounded-none;
+    @apply bg-transparent px-0 py-0 text-inherit rounded-none;
+  }
+
+  .prose pre code,
+  .dark .prose pre code {
+    background-color: transparent;
+    color: inherit;
   }
 
   .prose blockquote {
