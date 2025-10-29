@@ -6,7 +6,7 @@
         <div class="absolute bottom-1/4 -left-20 w-96 h-96 bg-blue-200/12 dark:bg-blue-800/8 rounded-full blur-3xl"></div>
     </div>
 
-    <div class="relative max-w-6xl mx-auto px-6 lg:px-8">
+    <div class="relative max-w-7xl mx-auto px-6 lg:px-8">
         <div class="text-center mb-20">
             <h2 class="text-4xl lg:text-5xl font-bold mb-4 bg-gradient-to-r from-gray-900 via-primary-700 to-gray-900 dark:from-gray-100 dark:via-primary-400 dark:to-gray-100 bg-clip-text text-transparent">
                 <%= stati.page.features?.title || 'Features' %>
