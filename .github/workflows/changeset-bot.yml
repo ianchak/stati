@@ -112,15 +112,7 @@ jobs:
 
             const message = '🤖 **Auto-generated changeset added!**\n\n' +
               'I analyzed your commits using conventional commit patterns and created ' + countText + '.\n\n' +
-              '**Generated files:**\n' + filesList + '\n\n' +
-              '**What to do next:**\n' +
-              '1. Review the changeset file(s) above\n' +
-              '2. Edit if needed (adjust version bump type or description)\n' +
-              '3. Commit any changes to this PR\n' +
-              '4. Merge when ready\n\n' +
-              '**Tips:**\n' +
-              '- To skip changeset generation, add the `skip-changeset` label\n' +
-              '- For manual creation, run: `npm run changeset`';
+              '**Generated files:**\n' + filesList + '\n';
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
@@ -138,18 +130,7 @@ jobs:
               'I couldn\'t find or generate a changeset for this PR.\n\n' +
               '**Possible reasons:**\n' +
               '- No conventional commits found (e.g., `feat:`, `fix:`, etc.)\n' +
-              '- Only non-functional changes (docs, tests, etc.)\n\n' +
-              '**What to do:**\n' +
-              '1. **If this PR should release packages:**\n' +
-              '   - Create a changeset manually: `npm run changeset`\n' +
-              '   - Or use conventional commits (see below)\n' +
-              '2. **If no release is needed:**\n' +
-              '   - Add the `skip-changeset` label to this PR\n\n' +
-              '**Conventional commit examples:**\n' +
-              '- `feat: add new feature` → minor version bump\n' +
-              '- `fix: resolve bug` → patch version bump\n' +
-              '- `feat!: breaking change` → major version bump\n\n' +
-              '**Note:** Without a changeset, merging this PR won\'t trigger a package release.';
+              '- Only non-functional changes (docs, tests, etc.)';
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
