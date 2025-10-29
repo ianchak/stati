@@ -24,12 +24,12 @@
             const colors = ['primary', 'emerald', 'amber', 'purple', 'red', 'cyan'];
             const color = colors[i % colors.length];
             %>
-            <div class="relative bg-white/60 dark:bg-dark-800/60 backdrop-blur-sm p-8 rounded-2xl border border-gray-200/50 dark:border-dark-600/50">
+            <div class="relative bg-white/70 dark:bg-dark-800/60 backdrop-blur-sm p-8 rounded-2xl border border-gray-200/70 dark:border-dark-600/50 shadow-lg shadow-gray-900/5">
                 <!-- Icon background with gradient -->
                 <div class="<%= stati.propValue(
-                    'relative w-20 h-20 flex items-center justify-center mx-auto mb-6 bg-gradient-to-br rounded-2xl border',
+                    'relative w-20 h-20 flex items-center justify-center mx-auto mb-6 bg-gradient-to-br rounded-2xl border shadow-sm',
                     `from-${color}-50 to-${color}-100/50 dark:from-${color}-900/20 dark:to-${color}-800/20`,
-                    `border-${color}-200/50 dark:border-${color}-800/50`
+                    `border-${color}-200/70 dark:border-${color}-800/50`
                 ) %>">
                     <% if (feature.icon === 'code-bracket') { %>
                         <svg class="<%= stati.propValue('w-10 h-10', `text-${color}-600 dark:text-${color}-400`) %>" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">

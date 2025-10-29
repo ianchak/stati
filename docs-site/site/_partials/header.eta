@@ -37,6 +37,21 @@
 
                 <!-- External links and controls -->
                 <div class="hidden lg:flex items-center space-x-2">
+                    <!-- Theme toggle button -->
+                    <button id="theme-toggle"
+                            class="p-2.5 rounded-lg text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-dark-700 transition-all duration-200 group"
+                            title="Toggle theme"
+                            aria-label="Toggle dark mode">
+                        <!-- Sun icon (visible in dark mode) -->
+                        <svg class="w-5 h-5 hidden dark:block group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                        <!-- Moon icon (visible in light mode) -->
+                        <svg class="w-5 h-5 block dark:hidden group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                        </svg>
+                    </button>
+
                     <a href="https://github.com/ianchak/stati"
                        class="p-2.5 rounded-lg text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-dark-700 transition-all duration-200 group"
                        target="_blank"
@@ -74,6 +89,22 @@
                 Examples
             </a>
             <div class="border-t border-gray-200/50 dark:border-dark-700/50 my-2 pt-2">
+                <!-- Theme toggle for mobile -->
+                <button id="theme-toggle-mobile"
+                        class="flex items-center gap-3 w-full px-4 py-3 rounded-lg text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white hover:bg-gray-100/60 dark:hover:bg-dark-700/60 transition-all duration-200 font-medium"
+                        aria-label="Toggle dark mode">
+                    <!-- Sun icon (visible in dark mode) -->
+                    <svg class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    <!-- Moon icon (visible in light mode) -->
+                    <svg class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                    </svg>
+                    <span class="hidden dark:block">Light Mode</span>
+                    <span class="block dark:hidden">Dark Mode</span>
+                </button>
+
                 <a href="https://github.com/ianchak/stati"
                    class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white hover:bg-gray-100/60 dark:hover:bg-dark-700/60 transition-all duration-200 font-medium"
                    target="_blank"
@@ -138,5 +169,87 @@
 
         // Cleanup on unload to prevent memory leaks
         window.addEventListener('beforeunload', cleanupMobileMenu);
+    })();
+
+    // Theme toggle functionality
+    (function() {
+        const STORAGE_KEY = 'theme';
+        let themeToggleBtn, themeToggleMobileBtn, systemMediaQuery;
+        let clickHandler, mobileClickHandler, mediaQueryHandler;
+
+        function getSystemTheme() {
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+
+        function applyTheme(theme) {
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+            applyTheme(newTheme);
+            localStorage.setItem(STORAGE_KEY, newTheme);
+        }
+
+        function initializeTheme() {
+            themeToggleBtn = document.getElementById('theme-toggle');
+            themeToggleMobileBtn = document.getElementById('theme-toggle-mobile');
+
+            // Check for saved theme preference or default to system preference
+            const savedTheme = localStorage.getItem(STORAGE_KEY);
+
+            if (savedTheme) {
+                // User has a saved preference
+                applyTheme(savedTheme);
+            } else {
+                // No saved preference - use system preference
+                applyTheme(getSystemTheme());
+
+                // Listen for system theme changes when no preference is saved
+                systemMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+                mediaQueryHandler = (e) => {
+                    // Only apply system theme if user hasn't set a preference
+                    if (!localStorage.getItem(STORAGE_KEY)) {
+                        applyTheme(e.matches ? 'dark' : 'light');
+                    }
+                };
+                systemMediaQuery.addEventListener('change', mediaQueryHandler);
+            }
+
+            // Bind click handlers
+            if (themeToggleBtn) {
+                clickHandler = toggleTheme;
+                themeToggleBtn.addEventListener('click', clickHandler);
+            }
+
+            if (themeToggleMobileBtn) {
+                mobileClickHandler = toggleTheme;
+                themeToggleMobileBtn.addEventListener('click', mobileClickHandler);
+            }
+        }
+
+        function cleanupTheme() {
+            if (themeToggleBtn && clickHandler) {
+                themeToggleBtn.removeEventListener('click', clickHandler);
+            }
+            if (themeToggleMobileBtn && mobileClickHandler) {
+                themeToggleMobileBtn.removeEventListener('click', mobileClickHandler);
+            }
+            if (systemMediaQuery && mediaQueryHandler) {
+                systemMediaQuery.removeEventListener('change', mediaQueryHandler);
+            }
+        }
+
+        // Initialize theme immediately (before DOMContentLoaded to prevent flash)
+        initializeTheme();
+
+        // Cleanup on unload
+        window.addEventListener('beforeunload', cleanupTheme);
     })();
 </script>

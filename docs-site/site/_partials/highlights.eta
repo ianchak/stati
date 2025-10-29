@@ -20,31 +20,31 @@
         <div class="max-w-6xl mx-auto">
             <!-- Tab Buttons -->
             <div class="flex flex-wrap justify-center gap-3 mb-8" role="tablist">
-                <button class="feature-tab active px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 bg-gradient-to-r from-primary-500 to-blue-700 text-white shadow-lg"
+                <button class="feature-tab active px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 bg-gradient-to-r from-primary-500 to-blue-600 text-white shadow-md shadow-gray-900/10 dark:shadow-black/20"
                         data-tab="typescript"
                         role="tab"
                         aria-selected="true">
                     TypeScript-First
                 </button>
-                <button class="feature-tab px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 bg-white dark:bg-dark-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-700 border-2 border-gray-200 dark:border-dark-600"
+                <button class="feature-tab px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 bg-white/90 dark:bg-dark-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700 hover:shadow-sm hover:shadow-gray-900/5 dark:hover:shadow-black/10 border border-gray-300/60 dark:border-dark-600"
                         data-tab="isg"
                         role="tab"
                         aria-selected="false">
                     ISG & Caching
                 </button>
-                <button class="feature-tab px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 bg-white dark:bg-dark-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-700 border-2 border-gray-200 dark:border-dark-600"
+                <button class="feature-tab px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 bg-white/90 dark:bg-dark-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700 hover:shadow-sm hover:shadow-gray-900/5 dark:hover:shadow-black/10 border border-gray-300/60 dark:border-dark-600"
                         data-tab="templates"
                         role="tab"
                         aria-selected="false">
                     Eta Templates
                 </button>
-                <button class="feature-tab px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 bg-white dark:bg-dark-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-700 border-2 border-gray-200 dark:border-dark-600"
+                <button class="feature-tab px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 bg-white/90 dark:bg-dark-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700 hover:shadow-sm hover:shadow-gray-900/5 dark:hover:shadow-black/10 border border-gray-300/60 dark:border-dark-600"
                         data-tab="routing"
                         role="tab"
                         aria-selected="false">
                     Filesystem Routing
                 </button>
-                <button class="feature-tab px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 bg-white dark:bg-dark-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-700 border-2 border-gray-200 dark:border-dark-600"
+                <button class="feature-tab px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 bg-white/90 dark:bg-dark-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700 hover:shadow-sm hover:shadow-gray-900/5 dark:hover:shadow-black/10 border border-gray-300/60 dark:border-dark-600"
                         data-tab="markdown"
                         role="tab"
                         aria-selected="false">
@@ -53,7 +53,7 @@
             </div>
 
             <!-- Tab Content -->
-            <div class="feature-content-wrapper bg-white/60 dark:bg-dark-800/60 backdrop-blur-sm rounded-2xl border-2 border-gray-200/60 dark:border-dark-600/60 shadow-xl overflow-hidden lg:h-192">
+            <div class="feature-content-wrapper bg-white/80 dark:bg-dark-800/60 backdrop-blur-sm rounded-2xl border border-gray-200 dark:border-dark-600/60 shadow-2xl shadow-gray-900/10 dark:shadow-black/50 overflow-hidden lg:h-192">
 
                 <!-- TypeScript Tab -->
                 <div class="feature-content h-full active p-8 lg:p-12" data-content="typescript" role="tabpanel">
@@ -85,7 +85,7 @@
                                     <span class="text-gray-700 dark:text-gray-300">Catch configuration errors before build</span>
                                 </li>
                             </ul>
-                            <a href="/configuration/file/" class="inline-flex items-center gap-2 mt-6 px-6 py-3 bg-gradient-to-r from-primary-500 to-blue-700 hover:from-primary-600 hover:to-blue-800 text-white font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
+                            <a href="/configuration/file/" class="inline-flex items-center gap-2 mt-6 px-6 py-3 bg-gradient-to-r from-primary-500 to-blue-700 hover:from-primary-600 hover:to-blue-800 text-white font-semibold rounded-lg transition-all duration-200 shadow-md shadow-gray-900/10 dark:shadow-black/20 hover:shadow-lg hover:shadow-gray-900/15 dark:hover:shadow-black/30">
                                 Learn More
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -93,7 +93,7 @@
                             </a>
                         </div>
                         <div class="relative">
-                            <pre class="language-typescript rounded-xl overflow-hidden shadow-lg"><code class="language-typescript">import { defineConfig } from '@stati/core';
+                            <pre class="language-typescript rounded-xl overflow-hidden shadow-md shadow-gray-900/5 dark:shadow-black/10"><code class="language-typescript">import { defineConfig } from '@stati/core';
 
 export default defineConfig({
   site: {
@@ -149,7 +149,7 @@ export default defineConfig({
                                     <span class="text-gray-700 dark:text-gray-300">Flexible cache invalidation by path, tag, or age</span>
                                 </li>
                             </ul>
-                            <a href="/configuration/isg/" class="inline-flex items-center gap-2 mt-6 px-6 py-3 bg-gradient-to-r from-primary-500 to-blue-700 hover:from-primary-600 hover:to-blue-800 text-white font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
+                            <a href="/configuration/isg/" class="inline-flex items-center gap-2 mt-6 px-6 py-3 bg-gradient-to-r from-primary-500 to-blue-700 hover:from-primary-600 hover:to-blue-800 text-white font-semibold rounded-lg transition-all duration-200 shadow-md shadow-gray-900/10 dark:shadow-black/20 hover:shadow-lg hover:shadow-gray-900/15 dark:hover:shadow-black/30">
                                 Learn More
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -157,7 +157,7 @@ export default defineConfig({
                             </a>
                         </div>
                         <div class="relative">
-                            <pre class="language-bash rounded-xl overflow-hidden shadow-lg"><code class="language-bash"># Only rebuilds changed files
+                            <pre class="language-bash rounded-xl overflow-hidden shadow-md shadow-gray-900/5 dark:shadow-black/10"><code class="language-bash"># Only rebuilds changed files
 npm run build
 
 # Invalidate specific paths
@@ -172,7 +172,7 @@ stati invalidate age:7days
 # Force full rebuild
 stati build --clean</code></pre>
                             <div class="mt-4">
-                                <pre class="language-javascript rounded-xl overflow-hidden shadow-lg"><code class="language-javascript">// Programmatic invalidation
+                                <pre class="language-javascript rounded-xl overflow-hidden shadow-md shadow-gray-900/5 dark:shadow-black/10"><code class="language-javascript">// Programmatic invalidation
 import { invalidate } from '@stati/core';
 
 await invalidate('tag:blog');
@@ -212,7 +212,7 @@ await invalidate('path:/about/ age:30days');</code></pre>
                                     <span class="text-gray-700 dark:text-gray-300">Callable partials with <code class="text-sm bg-gray-100 dark:bg-dark-700 px-2 py-1 rounded">stati.props</code> for custom data</span>
                                 </li>
                             </ul>
-                            <a href="/core-concepts/templates/" class="inline-flex items-center gap-2 mt-6 px-6 py-3 bg-gradient-to-r from-primary-500 to-blue-700 hover:from-primary-600 hover:to-blue-800 text-white font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
+                            <a href="/core-concepts/templates/" class="inline-flex items-center gap-2 mt-6 px-6 py-3 bg-gradient-to-r from-primary-500 to-blue-700 hover:from-primary-600 hover:to-blue-800 text-white font-semibold rounded-lg transition-all duration-200 shadow-md shadow-gray-900/10 dark:shadow-black/20 hover:shadow-lg hover:shadow-gray-900/15 dark:hover:shadow-black/30">
                                 Learn More
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -220,7 +220,7 @@ await invalidate('path:/about/ age:30days');</code></pre>
                             </a>
                         </div>
                         <div class="relative">
-                            <pre class="language-html rounded-xl overflow-hidden shadow-lg"><code class="language-html">&lt;!-- Layout nesting: site/blog/layout.eta --&gt;
+                            <pre class="language-html rounded-xl overflow-hidden shadow-md shadow-gray-900/5 dark:shadow-black/10"><code class="language-html">&lt;!-- Layout nesting: site/blog/layout.eta --&gt;
 &lt;div class="blog-container"&gt;
   &lt;aside&gt;
     &lt;%~ stati.partials.sidebar %&gt;
@@ -277,7 +277,7 @@ await invalidate('path:/about/ age:30days');</code></pre>
                                     <span class="text-gray-700 dark:text-gray-300">Override URLs with <code class="text-sm bg-gray-100 dark:bg-dark-700 px-2 py-1 rounded">permalink</code> in frontmatter</span>
                                 </li>
                             </ul>
-                            <a href="/core-concepts/routing/" class="inline-flex items-center gap-2 mt-6 px-6 py-3 bg-gradient-to-r from-primary-500 to-blue-700 hover:from-primary-600 hover:to-blue-800 text-white font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
+                            <a href="/core-concepts/routing/" class="inline-flex items-center gap-2 mt-6 px-6 py-3 bg-gradient-to-r from-primary-500 to-blue-700 hover:from-primary-600 hover:to-blue-800 text-white font-semibold rounded-lg transition-all duration-200 shadow-md shadow-gray-900/10 dark:shadow-black/20 hover:shadow-lg hover:shadow-gray-900/15 dark:hover:shadow-black/30">
                                 Learn More
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -285,21 +285,21 @@ await invalidate('path:/about/ age:30days');</code></pre>
                             </a>
                         </div>
                         <div class="relative space-y-4">
-                            <pre class="language-text rounded-xl overflow-hidden shadow-lg"><code class="language-text"># Basic routing
+                            <pre class="language-text rounded-xl overflow-hidden shadow-md shadow-gray-900/5 dark:shadow-black/10"><code class="language-text"># Basic routing
 site/
 ├── index.md              → /
 ├── about.md              → /about/
 └── blog/
     ├── index.md          → /blog/
     └── first-post.md     → /blog/first-post/</code></pre>
-                            <pre class="language-text rounded-xl overflow-hidden shadow-lg"><code class="language-text"># Underscore exclusion
+                            <pre class="language-text rounded-xl overflow-hidden shadow-md shadow-gray-900/5 dark:shadow-black/10"><code class="language-text"># Underscore exclusion
 site/
 ├── _partials/            ❌ Not routed
 │   └── header.eta
 ├── _components/          ❌ Not routed
 │   └── card.eta
 └── published.md          ✅ → /published/</code></pre>
-                            <pre class="language-markdown rounded-xl overflow-hidden shadow-lg"><code class="language-markdown"># Permalink override
+                            <pre class="language-markdown rounded-xl overflow-hidden shadow-md shadow-gray-900/5 dark:shadow-black/10"><code class="language-markdown"># Permalink override
 ---
 title: 'Featured Article'
 permalink: '/featured/article/'
@@ -339,7 +339,7 @@ permalink: '/featured/article/'
                                     <span class="text-gray-700 dark:text-gray-300">Extensible with any markdown-it plugin</span>
                                 </li>
                             </ul>
-                            <a href="/core-concepts/markdown/" class="inline-flex items-center gap-2 mt-6 px-6 py-3 bg-gradient-to-r from-primary-500 to-blue-700 hover:from-primary-600 hover:to-blue-800 text-white font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
+                            <a href="/core-concepts/markdown/" class="inline-flex items-center gap-2 mt-6 px-6 py-3 bg-gradient-to-r from-primary-500 to-blue-700 hover:from-primary-600 hover:to-blue-800 text-white font-semibold rounded-lg transition-all duration-200 shadow-md shadow-gray-900/10 dark:shadow-black/20 hover:shadow-lg hover:shadow-gray-900/15 dark:hover:shadow-black/30">
                                 Learn More
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -347,7 +347,7 @@ permalink: '/featured/article/'
                             </a>
                         </div>
                         <div class="relative">
-                            <pre class="language-markdown rounded-xl overflow-hidden shadow-lg"><code class="language-markdown">---
+                            <pre class="language-markdown rounded-xl overflow-hidden shadow-md shadow-gray-900/5 dark:shadow-black/10"><code class="language-markdown">---
 title: 'My Blog Post'
 date: '2024-01-15'
 tags: ['stati', 'markdown']
@@ -393,16 +393,16 @@ Auto-link: https://stati.build</code></pre>
                 function switchToTab(targetTab, focusTab = null) {
                     // Update tabs
                     tabs.forEach(t => {
-                        t.classList.remove('active', 'bg-gradient-to-r', 'from-primary-500', 'to-blue-700', 'text-white', 'shadow-lg');
-                        t.classList.add('bg-white', 'dark:bg-dark-800', 'text-gray-700', 'dark:text-gray-300', 'hover:bg-gray-50', 'dark:hover:bg-dark-700', 'border-2', 'border-gray-200', 'dark:border-dark-600');
+                        t.classList.remove('active', 'bg-gradient-to-r', 'from-primary-500', 'to-blue-600', 'text-white', 'shadow-md', 'shadow-gray-900/10', 'dark:shadow-black/20');
+                        t.classList.add('bg-white/90', 'dark:bg-dark-800', 'text-gray-700', 'dark:text-gray-300', 'hover:bg-gray-100', 'dark:hover:bg-dark-700', 'hover:shadow-sm', 'hover:shadow-gray-900/5', 'dark:hover:shadow-black/10', 'border', 'border-gray-300/60', 'dark:border-dark-600');
                         t.setAttribute('aria-selected', 'false');
                         t.setAttribute('tabindex', '-1');
                     });
 
                     const activeTab = document.querySelector(`[data-tab="${targetTab}"]`);
                     if (activeTab) {
-                        activeTab.classList.remove('bg-white', 'dark:bg-dark-800', 'text-gray-700', 'dark:text-gray-300', 'hover:bg-gray-50', 'dark:hover:bg-dark-700', 'border-2', 'border-gray-200', 'dark:border-dark-600');
-                        activeTab.classList.add('active', 'bg-gradient-to-r', 'from-primary-500', 'to-blue-700', 'text-white', 'shadow-lg');
+                        activeTab.classList.remove('bg-white/90', 'dark:bg-dark-800', 'text-gray-700', 'dark:text-gray-300', 'hover:bg-gray-100', 'dark:hover:bg-dark-700', 'hover:shadow-sm', 'hover:shadow-gray-900/5', 'dark:hover:shadow-black/10', 'border', 'border-gray-300/60', 'dark:border-dark-600');
+                        activeTab.classList.add('active', 'bg-gradient-to-r', 'from-primary-500', 'to-blue-600', 'text-white', 'shadow-md', 'shadow-gray-900/10', 'dark:shadow-black/20');
                         activeTab.setAttribute('aria-selected', 'true');
                         activeTab.setAttribute('tabindex', '0');
 
