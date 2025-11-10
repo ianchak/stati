@@ -182,9 +182,9 @@ export function watchTailwindCSS(
   }
 
   if (!options.verbose) {
-    logger.info('Watching CSS with Tailwind CSS (non-verbose mode)...');
+    logger.info('Watching CSS with Tailwind CSS (non-verbose mode)...\n');
   } else {
-    logger.info('Watching CSS with Tailwind CSS (verbose mode)...');
+    logger.info('Watching CSS with Tailwind CSS (verbose mode)...\n');
   }
 
   const proc = spawn(tailwindCmd, args, {
@@ -206,6 +206,12 @@ export function watchTailwindCSS(
 
     // Tailwind writes some info to stderr, we need to filter actual errors
     const lowerMessage = message.toLowerCase();
+
+    // Filter out shutdown messages
+    if (lowerMessage.includes('stopping') || lowerMessage.includes('shutting down')) {
+      return;
+    }
+
     const isError =
       (lowerMessage.includes('error') ||
         lowerMessage.includes('failed') ||

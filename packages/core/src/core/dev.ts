@@ -709,7 +709,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
         httpServer = null;
       }
 
-      logger.info?.('🛑 Dev server stopped');
+      logger.info?.('Dev server stopped');
     },
   };
 

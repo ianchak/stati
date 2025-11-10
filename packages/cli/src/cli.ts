@@ -171,22 +171,30 @@ const cli = yargs(hideBin(process.argv))
         }
 
         // Handle graceful shutdown
-        let isShuttingDown = false;
+        let shutdownInProgress = false;
         const shutdown = async () => {
-          if (isShuttingDown) return;
-          isShuttingDown = true;
+          // Immediate guard before any async operations
+          if (shutdownInProgress) {
+            return;
+          }
+          shutdownInProgress = true;
 
-          log.info('\n🛑 Shutting down dev server...');
+          log.info('\nShutting down dev server...');
+
           if (tailwindWatcher && !tailwindWatcher.killed) {
-            log.info('🛑 Stopping Tailwind CSS watcher...');
             tailwindWatcher.kill('SIGTERM');
           }
           await devServer.stop();
           process.exit(0);
         };
 
-        process.on('SIGINT', shutdown);
-        process.on('SIGTERM', shutdown);
+        // Remove any existing listeners to prevent duplicates
+        process.removeAllListeners('SIGINT');
+        process.removeAllListeners('SIGTERM');
+
+        // Use once() instead of on() to ensure handler only fires once per signal
+        process.once('SIGINT', shutdown);
+        process.once('SIGTERM', shutdown);
       } catch (error) {
         log.error(`Dev server failed: ${error instanceof Error ? error.message : String(error)}`);
         process.exit(1);
@@ -245,7 +253,7 @@ const cli = yargs(hideBin(process.argv))
 
         // Handle graceful shutdown
         const shutdown = async () => {
-          log.info('\n🛑 Shutting down preview server...');
+          log.info('\nShutting down preview server...');
           await previewServer.stop();
           process.exit(0);
         };

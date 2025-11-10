@@ -211,7 +211,7 @@ describe('Tailwind CSS CLI Commands', () => {
       await new Promise((resolve) => globalThis.setTimeout(resolve, 20));
 
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'Watching CSS with Tailwind CSS (non-verbose mode)...',
+        'Watching CSS with Tailwind CSS (non-verbose mode)...\n',
       );
       expect(spawn).toHaveBeenCalledWith(
         'npx',
@@ -237,7 +237,7 @@ describe('Tailwind CSS CLI Commands', () => {
       await new Promise((resolve) => globalThis.setTimeout(resolve, 20));
 
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'Watching CSS with Tailwind CSS (verbose mode)...',
+        'Watching CSS with Tailwind CSS (verbose mode)...\n',
       );
       expect(mockLogger.info).not.toHaveBeenCalledWith(expect.stringContaining('errors only'));
 
