@@ -2,6 +2,7 @@ import typography from '@tailwindcss/typography';
 
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: [
     './site/**/*.{md,eta,html}',
     './public/**/*.js',
@@ -63,6 +64,7 @@ export default {
       spacing: {
         18: '4.5rem',
         88: '22rem',
+        192: '48rem',
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-in-out',

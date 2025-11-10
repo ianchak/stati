@@ -20,6 +20,23 @@
     @apply bg-gray-400 dark:bg-dark-500;
   }
 
+  /* Refined scrollbar for TOC */
+  #toc-nav::-webkit-scrollbar {
+    @apply w-1.5;
+  }
+
+  #toc-nav::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  #toc-nav::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+  }
+
+  #toc-nav::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400 dark:bg-gray-500;
+  }
+
   /* Better focus styles */
   *:focus {
     @apply outline-none ring-2 ring-primary-500/50 ring-offset-2 ring-offset-white dark:ring-offset-dark-900;
@@ -142,15 +159,21 @@
   }
 
   .prose code {
-    @apply bg-gray-100 dark:bg-dark-700 px-2.5 py-1 rounded-md text-sm font-mono text-primary-700 dark:text-primary-300 font-medium;
+    @apply bg-gray-100 dark:bg-dark-800 px-2.5 py-1 rounded-md text-sm font-mono text-primary-700 dark:text-primary-300 font-medium;
   }
 
   .prose pre {
-    @apply bg-dark-800 text-gray-100 p-6 rounded-xl overflow-x-auto mb-6 shadow-soft-lg border border-dark-700/50;
+    @apply bg-gray-50 dark:bg-dark-800 text-gray-800 dark:text-gray-100 p-6 rounded-xl overflow-x-auto mb-6 shadow-soft-lg border border-gray-200 dark:border-dark-700/50 max-w-full;
   }
 
   .prose pre code {
-    @apply bg-transparent p-0 text-inherit rounded-none;
+    @apply bg-transparent px-0 py-0 text-inherit rounded-none;
+  }
+
+  .prose pre code,
+  .dark .prose pre code {
+    background-color: transparent;
+    color: inherit;
   }
 
   .prose blockquote {
@@ -190,6 +213,21 @@
 
   .prose a:hover {
     @apply text-primary-700 dark:text-primary-300;
+  }
+
+  /* Constrain prose content to prevent horizontal overflow */
+  .prose {
+    @apply min-w-0;
+  }
+
+  .prose table {
+    @apply block overflow-x-auto;
+  }
+
+  .prose img,
+  .prose video,
+  .prose iframe {
+    @apply max-w-full;
   }
 
   /* Button components */

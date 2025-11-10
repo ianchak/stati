@@ -21,26 +21,29 @@
 
     <%~ stati.partials.header %>
 
-    <div class="flex min-h-screen">
+    <div class="flex">
         <%~ stati.partials.sidebar %>
 
-        <main id="main-content" class="flex-1 ml-0 lg:ml-80 transition-all duration-300 ease-in-out">
-            <div class="relative max-w-7xl mx-auto">
-                <div class="flex">
-                    <!-- Main content area -->
-                    <div class="flex-1 min-w-0 px-6 lg:px-12 py-12 lg:py-16">
-                        <div class="prose prose-lg dark:prose-invert max-w-none prose-headings:scroll-mt-24 prose-pre:bg-dark-800 prose-pre:shadow-soft-lg prose-code:bg-gray-100 dark:prose-code:bg-dark-700 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:font-medium">
-                            <%~ stati.content %>
-                        </div>
-                    </div>
+        <!-- Floating sidebar toggle button for mobile -->
+        <button id="sidebar-toggle-btn" data-mobile-menu class="fixed bottom-8 left-8 lg:hidden bg-primary-600 hover:bg-primary-700 text-white p-3 rounded-full shadow-lg hover:shadow-glow transition-all duration-300 z-40">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+        </button>
 
-                    <!-- Table of Contents area -->
-                    <div class="hidden xl:block w-80 flex-shrink-0 py-12">
-                        <div class="sticky top-24">
-                            <%~ stati.partials.toc %>
-                        </div>
+        <main id="main-content" class="flex-1 min-w-0 transition-all duration-300 ease-in-out">
+            <div class="flex min-w-0">
+                <!-- Main content area -->
+                <div class="flex-1 min-w-0 px-6 lg:px-12 py-12 lg:py-16 overflow-x-auto">
+                    <div class="prose prose-lg dark:prose-invert max-w-[80ch] mx-auto prose-headings:scroll-mt-24 prose-pre:bg-dark-800 prose-pre:shadow-soft-lg prose-code:bg-gray-100 dark:prose-code:bg-dark-800 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:font-medium">
+                        <%~ stati.content %>
                     </div>
                 </div>
+
+                <!-- Table of Contents area -->
+                <aside class="hidden xl:block w-80 flex-shrink-0 pr-6">
+                    <%~ stati.partials.toc %>
+                </aside>
             </div>
         </main>
     </div>
@@ -56,20 +59,45 @@
 
     <script>
         // Scroll to top functionality
-        const scrollToTopBtn = document.getElementById('scroll-to-top');
-        window.addEventListener('scroll', () => {
-            if (window.pageYOffset > 300) {
-                scrollToTopBtn.classList.remove('opacity-0', 'pointer-events-none');
-                scrollToTopBtn.classList.add('opacity-100');
-            } else {
-                scrollToTopBtn.classList.add('opacity-0', 'pointer-events-none');
-                scrollToTopBtn.classList.remove('opacity-100');
-            }
-        });
+        (function() {
+            const scrollToTopBtn = document.getElementById('scroll-to-top');
+            let scrollHandler, clickHandler;
 
-        scrollToTopBtn.addEventListener('click', () => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
+            function initializeScrollToTop() {
+                if (!scrollToTopBtn) return;
+
+                scrollHandler = () => {
+                    if (window.pageYOffset > 300) {
+                        scrollToTopBtn.classList.remove('opacity-0', 'pointer-events-none');
+                        scrollToTopBtn.classList.add('opacity-100');
+                    } else {
+                        scrollToTopBtn.classList.add('opacity-0', 'pointer-events-none');
+                        scrollToTopBtn.classList.remove('opacity-100');
+                    }
+                };
+                window.addEventListener('scroll', scrollHandler);
+
+                clickHandler = () => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                };
+                scrollToTopBtn.addEventListener('click', clickHandler);
+            }
+
+            function cleanupScrollToTop() {
+                if (scrollHandler) {
+                    window.removeEventListener('scroll', scrollHandler);
+                }
+                if (scrollToTopBtn && clickHandler) {
+                    scrollToTopBtn.removeEventListener('click', clickHandler);
+                }
+            }
+
+            // Initialize on load
+            document.addEventListener('DOMContentLoaded', initializeScrollToTop);
+
+            // Cleanup on unload to prevent memory leaks
+            window.addEventListener('beforeunload', cleanupScrollToTop);
+        })();
     </script>
 </body>
 </html>

@@ -1,50 +1,69 @@
 <!-- Hero Section -->
-<section class="relative bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/50 dark:from-dark-950 dark:via-dark-900/90 dark:to-dark-800/80 py-24 lg:py-32 overflow-hidden">
-    <!-- Particles.js container -->
-    <div id="particles-js" class="absolute inset-0"></div>
-
-    <!-- Animated background elements -->
+<section class="relative bg-gradient-to-b from-white via-white to-gray-50/30 dark:from-dark-950 dark:via-dark-950 dark:to-dark-900/30 overflow-hidden">
+    <!-- Decorative background elements -->
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
-        <div class="absolute -top-24 -left-24 w-96 h-96 bg-gradient-to-br from-primary-200/20 to-blue-200/15 dark:from-primary-800/15 dark:to-blue-800/10 rounded-full blur-3xl animate-pulse"></div>
-        <div class="absolute -bottom-24 -right-24 w-80 h-80 bg-gradient-to-tl from-indigo-200/20 to-purple-200/15 dark:from-indigo-800/15 dark:to-purple-800/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s"></div>
+        <!-- Animated gradient orbs -->
+        <div class="absolute -top-20 left-1/4 w-96 h-96 bg-primary-400/8 dark:bg-primary-500/12 rounded-full blur-3xl animate-pulse"></div>
+        <div class="absolute -bottom-20 right-1/4 w-96 h-96 bg-blue-400/8 dark:bg-blue-500/12 rounded-full blur-3xl animate-pulse" style="animation-delay: 2s"></div>
     </div>
 
-    <!-- Grid pattern overlay -->
-    <div class="absolute inset-0 bg-grid-pattern opacity-3 dark:opacity-5 pointer-events-none"></div>
+    <!-- Particles container -->
+    <div id="particles-js" class="absolute inset-0 opacity-40 dark:opacity-30"></div>
 
-    <div class="relative max-w-7xl mx-auto px-6 lg:px-8">
+    <!-- Content -->
+    <div class="relative z-10 max-w-7xl mx-auto px-6 lg:px-12 py-32 lg:py-48">
         <div class="text-center">
-            <h1 class="text-6xl lg:text-8xl font-extrabold mb-8 leading-tight tracking-tight">
-                <span class="bg-gradient-to-r from-primary-600 via-blue-600 to-indigo-600 dark:from-primary-400 dark:via-blue-400 dark:to-indigo-400 bg-clip-text text-transparent drop-shadow-sm"
-                      style="text-shadow: 0 0 20px rgba(59, 130, 246, 0.2); letter-spacing: -0.025em;">
-                    <%= stati.page.hero?.title || stati.site.title %>
-                </span>
-            </h1>
+            <!-- Main Title -->
+            <div class="mb-8">
+                <h1 class="text-9xl sm:text-[10rem] md:text-[12rem] lg:text-[14rem] xl:text-[16rem] font-black leading-none tracking-tighter">
+                    <span class="inline-block bg-gradient-to-br from-primary-600 via-primary-500 to-blue-600 dark:from-primary-400 dark:via-primary-300 dark:to-blue-400 bg-clip-text text-transparent"
+                          style="letter-spacing: -0.05em;">
+                        <%= stati.page.hero?.title || stati.site.title %>
+                    </span>
+                </h1>
+            </div>
 
-            <p class="text-xl lg:text-2xl text-gray-600 dark:text-gray-300 mb-12 max-w-4xl mx-auto leading-relaxed font-medium">
+            <!-- Subtitle -->
+            <p class="text-xl sm:text-2xl md:text-3xl text-gray-600 dark:text-gray-300 mb-16 max-w-3xl mx-auto leading-relaxed font-light">
                 <%~ stati.page.hero?.subtitle || stati.page.description %>
             </p>
 
-            <div class="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16">
+            <!-- CTA Buttons -->
+            <div class="flex flex-col sm:flex-row gap-5 justify-center items-center">
                 <% for (let button of (stati.page.hero?.buttons || [])) { %>
+                <% if (button.primary) { %>
                 <a href="<%= button.url %>"
-                   class="<%= button.primary ? `group relative bg-gradient-to-r from-primary-500 via-primary-600 to-blue-600 hover:from-primary-600 hover:via-primary-700 hover:to-blue-700 text-white shadow-glow hover:shadow-glow-lg border border-primary-400/20 hover:border-primary-300/30 hover:-translate-y-1 hover:scale-[1.02] px-8 py-4 rounded-2xl font-semibold transition-all duration-300 transform` : `group bg-white/90 dark:bg-dark-800/90 backdrop-blur-md border border-gray-200/60 dark:border-dark-600/60 hover:border-primary-300/40 dark:hover:border-primary-600/40 text-gray-800 dark:text-gray-100 hover:bg-white dark:hover:bg-dark-700/90 shadow-soft hover:shadow-soft-lg hover:-translate-y-0.5 hover:scale-[1.02] px-8 py-4 rounded-2xl font-semibold transition-all duration-300 transform` %>">
-                    <% if (button.primary) { %>
-                    <div class="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    <% } %>
-                    <span class="relative flex items-center">
+                   class="group relative bg-gradient-to-r from-primary-500 to-blue-600 hover:from-primary-600 hover:to-blue-700 text-white px-10 py-4 rounded-xl font-semibold text-lg shadow-lg shadow-gray-900/10 dark:shadow-black/30 hover:shadow-xl hover:shadow-gray-900/15 dark:hover:shadow-black/40 transition-all duration-300 hover:-translate-y-0.5">
+                    <span class="relative flex items-center gap-2">
                         <%= button.text %>
-                        <% if (button.primary) { %>
-                        <svg class="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                        <svg class="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1"
+                             fill="none"
+                             stroke="currentColor"
+                             viewBox="0 0 24 24">
+                            <path stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                  stroke-width="2"
+                                  d="M13 7l5 5m0 0l-5 5m5-5H6" />
                         </svg>
-                        <% } else { %>
-                        <svg class="ml-2 w-5 h-5 text-gray-500 dark:text-gray-400 group-hover:text-primary-600 dark:group-hover:text-primary-400 group-hover:translate-x-0.5 transition-all duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                        </svg>
-                        <% } %>
                     </span>
                 </a>
+                <% } else { %>
+                <a href="<%= button.url %>"
+                   class="group bg-white/90 dark:bg-dark-800/80 backdrop-blur-sm border border-gray-300 dark:border-dark-600 hover:border-primary-400 dark:hover:border-primary-500 text-gray-900 dark:text-gray-100 px-10 py-4 rounded-xl font-semibold text-lg shadow-lg shadow-gray-900/10 dark:shadow-black/20 hover:shadow-xl hover:shadow-gray-900/15 dark:hover:shadow-black/30 transition-all duration-300 hover:-translate-y-0.5">
+                    <span class="relative flex items-center gap-2">
+                        <%= button.text %>
+                        <svg class="w-5 h-5 text-gray-500 dark:text-gray-400 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-transform duration-300 group-hover:translate-x-0.5"
+                             fill="none"
+                             stroke="currentColor"
+                             viewBox="0 0 24 24">
+                            <path stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                  stroke-width="2"
+                                  d="M9 5l7 7-7 7" />
+                        </svg>
+                    </span>
+                </a>
+                <% } %>
                 <% } %>
             </div>
         </div>
@@ -52,142 +71,149 @@
 
     <!-- Particles.js configuration -->
     <script>
-        // Initialize particles when the library is loaded (works with defer)
-        function initParticles() {
-            if (typeof particlesJS === 'undefined') {
-                // If deferred script hasn't loaded yet, wait for it
-                setTimeout(initParticles, 50);
-                return;
-            }
+        (function() {
+            let particlesInitialized = false;
+            let observer = null;
+            let initTimeout = null;
 
-            particlesJS('particles-js', {
-                "particles": {
-                    "number": {
-                        "value": 120,
-                        "density": {
-                            "enable": true,
-                            "value_area": 800
-                        }
-                    },
-                    "color": {
-                        "value": ["#3b82f6", "#6366f1", "#8b5cf6", "#06b6d4"]
-                    },
-                    "shape": {
-                        "type": ["circle", "triangle", "polygon"],
-                        "stroke": {
-                            "width": 0,
-                            "color": "#000000"
-                        },
-                        "polygon": {
-                            "nb_sides": 6
-                        }
-                    },
-                    "opacity": {
-                        "value": 0.3,
-                        "random": true,
-                        "anim": {
-                            "enable": true,
-                            "speed": 1,
-                            "opacity_min": 0.1,
-                            "sync": false
-                        }
-                    },
-                    "size": {
-                        "value": 3,
-                        "random": true,
-                        "anim": {
-                            "enable": true,
-                            "speed": 2,
-                            "size_min": 0.5,
-                            "sync": false
-                        }
-                    },
-                    "line_linked": {
-                        "enable": true,
-                        "distance": 150,
-                        "color": "#3b82f6",
-                        "opacity": 0.2,
-                        "width": 1
-                    },
-                    "move": {
-                        "enable": true,
-                        "speed": 1.5,
-                        "direction": "none",
-                        "random": true,
-                        "straight": false,
-                        "out_mode": "out",
-                        "bounce": false,
-                        "attract": {
-                            "enable": true,
-                            "rotateX": 600,
-                            "rotateY": 1200
-                        }
-                    }
-                },
-                "interactivity": {
-                    "detect_on": "canvas",
-                    "events": {
-                        "onhover": {
-                            "enable": true,
-                            "mode": "grab"
-                        },
-                        "onclick": {
-                            "enable": true,
-                            "mode": "push"
-                        },
-                        "resize": true
-                    },
-                    "modes": {
-                        "grab": {
-                            "distance": 200,
-                            "line_linked": {
-                                "opacity": 0.5
+            function initParticles() {
+                if (particlesInitialized) return;
+
+                if (typeof particlesJS === 'undefined') {
+                    initTimeout = setTimeout(initParticles, 50);
+                    return;
+                }
+
+                particlesInitialized = true;
+
+                particlesJS('particles-js', {
+                    "particles": {
+                        "number": {
+                            "value": 60,
+                            "density": {
+                                "enable": true,
+                                "value_area": 1000
                             }
                         },
-                        "push": {
-                            "particles_nb": 4
+                        "color": {
+                            "value": ["#3b82f6", "#6366f1"]
+                        },
+                        "shape": {
+                            "type": "circle"
+                        },
+                        "opacity": {
+                            "value": 0.4,
+                            "random": true,
+                            "anim": {
+                                "enable": true,
+                                "speed": 1,
+                                "opacity_min": 0.15,
+                                "sync": false
+                            }
+                        },
+                        "size": {
+                            "value": 3.5,
+                            "random": true,
+                            "anim": {
+                                "enable": true,
+                                "speed": 2,
+                                "size_min": 1,
+                                "sync": false
+                            }
+                        },
+                        "line_linked": {
+                            "enable": true,
+                            "distance": 150,
+                            "color": "#3b82f6",
+                            "opacity": 0.25,
+                            "width": 1.5
+                        },
+                        "move": {
+                            "enable": true,
+                            "speed": 1,
+                            "direction": "none",
+                            "random": true,
+                            "straight": false,
+                            "out_mode": "out",
+                            "bounce": false
+                        }
+                    },
+                    "interactivity": {
+                        "detect_on": "canvas",
+                        "events": {
+                            "onhover": {
+                                "enable": true,
+                                "mode": "grab"
+                            },
+                            "resize": true
+                        },
+                        "modes": {
+                            "grab": {
+                                "distance": 180,
+                                "line_linked": {
+                                    "opacity": 0.3
+                                }
+                            }
+                        }
+                    },
+                    "retina_detect": true
+                });
+
+                // Dark mode adaptation
+                const updateParticleColors = () => {
+                    const isDark = document.documentElement.classList.contains('dark') ||
+                                  window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+                    if (window.pJSDom && window.pJSDom[0] && window.pJSDom[0].pJS) {
+                        const particles = window.pJSDom[0].pJS.particles;
+                        const newColors = isDark ? ["#60a5fa", "#818cf8"] : ["#3b82f6", "#6366f1"];
+
+                        particles.color.value = newColors;
+                        particles.line_linked.color = isDark ? "#60a5fa" : "#3b82f6";
+                        particles.line_linked.opacity = isDark ? 0.2 : 0.25;
+
+                        if (particles.array) {
+                            particles.array.forEach((particle, index) => {
+                                particle.color.value = newColors[index % newColors.length];
+                            });
                         }
                     }
-                },
-                "retina_detect": true
-            });
+                };
 
-            // Dark mode adaptation
-            const updateParticleColors = () => {
-                const isDark = document.documentElement.classList.contains('dark') ||
-                              window.matchMedia('(prefers-color-scheme: dark)').matches;
+                observer = new MutationObserver(updateParticleColors);
+                observer.observe(document.documentElement, {
+                    attributes: true,
+                    attributeFilter: ['class']
+                });
 
-                if (window.pJSDom && window.pJSDom[0] && window.pJSDom[0].pJS) {
-                    const particles = window.pJSDom[0].pJS.particles;
-                    const newColors = isDark ?
-                        ["#60a5fa", "#818cf8", "#a78bfa", "#22d3ee"] :
-                        ["#3b82f6", "#6366f1", "#8b5cf6", "#06b6d4"];
+                setTimeout(updateParticleColors, 100);
+            }
 
-                    particles.color.value = newColors;
-                    particles.line_linked.color = isDark ? "#60a5fa" : "#3b82f6";
-                    particles.line_linked.opacity = isDark ? 0.15 : 0.2;
-
-                    // Update existing particles
-                    if (particles.array) {
-                        particles.array.forEach((particle, index) => {
-                            particle.color.value = newColors[index % newColors.length];
-                        });
-                    }
+            function cleanupParticles() {
+                // Clear any pending initialization timeout
+                if (initTimeout) {
+                    clearTimeout(initTimeout);
+                    initTimeout = null;
                 }
-            };
 
-            // Watch for theme changes
-            const observer = new MutationObserver(updateParticleColors);
-            observer.observe(document.documentElement, {
-                attributes: true,
-                attributeFilter: ['class']
-            });
+                // Disconnect MutationObserver
+                if (observer) {
+                    observer.disconnect();
+                    observer = null;
+                }
 
-            // Initial color setup
-            setTimeout(updateParticleColors, 100);
-        }
+                // Destroy particles.js instance if it exists
+                if (window.pJSDom && window.pJSDom[0]) {
+                    window.pJSDom[0].pJS.fn.vendors.destroypJS();
+                    window.pJSDom = [];
+                }
+            }
 
-        // Start initialization
-        initParticles();
+            // Initialize particles
+            initParticles();
+
+            // Cleanup on unload to prevent memory leaks
+            window.addEventListener('beforeunload', cleanupParticles);
+        })();
     </script>
 </section>

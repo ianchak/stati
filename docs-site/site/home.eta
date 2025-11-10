@@ -33,6 +33,7 @@
         <div class="relative z-10">
             <%~ stati.partials.hero %>
             <%~ stati.partials.features %>
+            <%~ stati.partials.highlights %>
             <%~ stati.partials['quick-start'] %>
         </div>
     </main>
