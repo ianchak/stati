@@ -31,7 +31,6 @@
     "@stati/cli": "^1.6.5",
     "@stati/core": "^1.11.1",
     "autoprefixer": "^10.4.0",
-    "concurrently": "^9.0.0",
     "markdown-it-anchor": "^9.2.0",
     "markdown-it-external-links": "^0.0.6",
     "markdown-it-prism": "^3.0.0",
