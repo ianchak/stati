@@ -8,12 +8,11 @@
     "dev": "stati dev --tailwind-input src/styles.css --tailwind-output public/styles.css",
     "dev:local": "node ../packages/cli/dist/cli.js dev --tailwind-input src/styles.css --tailwind-output public/styles.css",
     "build": "stati build && npm run build:css && npm run copy:css",
-    "build:local": "node ../packages/cli/dist/cli.js build --clean && npm run build:css:local && npm run copy:css:local",
+    "build:local": "node ../packages/cli/dist/cli.js build --clean && npm run build:css && npm run copy:css",
     "preview": "stati preview",
     "preview:local": "node ../packages/cli/dist/cli.js preview",
     "clean": "rimraf dist .stati",
     "build:css": "tailwindcss -i src/styles.css -o public/styles.css --minify",
-    "build:css:local": "tailwindcss -i src/styles.css -o public/styles.css --minify",
     "copy:css": "node -e \"require('fs').copyFileSync('public/styles.css', 'dist/styles.css')\""
   },
   "keywords": [
