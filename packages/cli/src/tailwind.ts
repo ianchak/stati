@@ -166,42 +166,13 @@ export async function watchTailwindCSS(options: TailwindOptions, logger: Logger)
     }
 
     const proc = spawn('npx', args, {
-      stdio: ['ignore', 'pipe', 'pipe'],
+      stdio: 'ignore', // Detach stdio to let it run in the background
       shell: true,
+      detached: true, // Detach the process
     });
 
-    proc.stdout?.on('data', (data) => {
-      const message = data.toString().trim();
-      // Only show stdout in verbose mode
-      if (options.verbose && message) {
-        logger.info(message);
-      }
-    });
-
-    proc.stderr?.on('data', (data) => {
-      const message = data.toString().trim();
-      if (!message) return;
-
-      // Tailwind writes some info to stderr, we need to filter actual errors
-      const lowerMessage = message.toLowerCase();
-      const isError =
-        (lowerMessage.includes('error') ||
-          lowerMessage.includes('failed') ||
-          lowerMessage.includes('cannot find') ||
-          lowerMessage.includes('unexpected') ||
-          lowerMessage.includes('syntax error')) &&
-        !lowerMessage.includes('rebuilding') &&
-        !lowerMessage.includes('done in');
-
-      if (isError) {
-        // Always show errors regardless of verbose mode
-        logger.error(message);
-      } else if (options.verbose) {
-        // In verbose mode, show informational messages from stderr
-        logger.info(message);
-      }
-      // In non-verbose mode, ignore non-error stderr messages (Rebuilding, Done, etc.)
-    });
+    // Unref the child process to allow the parent to exit independently
+    proc.unref();
 
     proc.on('error', (err) => {
       logger.error(`Failed to start Tailwind CSS: ${err.message}`);
@@ -209,26 +180,16 @@ export async function watchTailwindCSS(options: TailwindOptions, logger: Logger)
       reject(err);
     });
 
-    proc.on('close', (code) => {
+    proc.on('exit', (code) => {
       if (code !== 0 && code !== null) {
-        logger.error(`Tailwind CSS watcher exited with code ${code}`);
-        reject(new Error(`Watcher exited with code ${code}`));
+        logger.error(`Tailwind CSS watcher exited unexpectedly with code ${code}`);
+        // Since this is a detached process, we can't reject the promise here
+        // as the parent might have already exited. We just log the error.
       }
     });
 
-    // Handle graceful shutdown
-    const cleanup = () => {
-      logger.info('Stopping Tailwind CSS watcher...');
-      proc.kill('SIGTERM');
-      // Force kill after 2 seconds if not terminated
-      globalThis.setTimeout(() => {
-        if (!proc.killed) {
-          proc.kill('SIGKILL');
-        }
-      }, 2000);
-    };
-
-    process.on('SIGINT', cleanup);
-    process.on('SIGTERM', cleanup);
+    // Since the process is detached, we can resolve immediately,
+    // assuming the watcher has started successfully.
+    resolve();
   });
 }
