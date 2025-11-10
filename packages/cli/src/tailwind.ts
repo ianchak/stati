@@ -6,7 +6,6 @@ import type { createLogger } from './logger.js';
 export interface TailwindOptions {
   input: string;
   output: string;
-  minify?: boolean;
   verbose?: boolean;
 }
 

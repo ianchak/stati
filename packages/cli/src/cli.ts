@@ -121,10 +121,6 @@ const cli = yargs(hideBin(process.argv))
           type: 'string',
           description: 'Output file for Tailwind CSS watcher.',
         })
-        .option('tailwind-minify', {
-          type: 'boolean',
-          description: 'Minify Tailwind CSS output.',
-        })
         .option('tailwind-verbose', {
           type: 'boolean',
           description: 'Show all Tailwind CSS output in dev mode.',
@@ -163,7 +159,6 @@ const cli = yargs(hideBin(process.argv))
             {
               input: argv['tailwind-input'],
               output: argv['tailwind-output'],
-              minify: !!argv['tailwind-minify'],
               verbose: !!argv['tailwind-verbose'],
             },
             coloredLogger,
