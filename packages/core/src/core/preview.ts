@@ -184,7 +184,7 @@ export async function createPreviewServer(
       });
 
       logger.success?.(`Preview server running at ${url}`);
-      logger.info?.(`\nServing from:`);
+      logger.info?.(`\nServing:`);
       logger.info?.(`  📁 ${outDir}`);
 
       // Open browser if requested

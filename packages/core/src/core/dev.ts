@@ -671,7 +671,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
       });
 
       logger.success?.(`Dev server running at ${url}`);
-      logger.info?.(`\nServing from:`);
+      logger.info?.(`\nServing:`);
       logger.info?.(`  📁 ${outDir}`);
       logger.info?.('Watching:');
       watchPaths.forEach((path) => logger.info?.(`  📁 ${path}`));
