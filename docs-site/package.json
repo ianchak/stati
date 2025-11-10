@@ -6,14 +6,16 @@
   "private": true,
   "scripts": {
     "dev": "concurrently --prefix none \"npm run watch:css\" \"stati dev\"",
-    "dev:local": "concurrently --prefix none \"npm run watch:css\" \"node ../packages/cli/dist/cli.js dev\"",
+    "dev:local": "concurrently --prefix none \"npm run watch:css:local\" \"node ../packages/cli/dist/cli.js dev\"",
     "build": "stati build && npm run build:css && npm run copy:css",
-    "build:local": "node ../packages/cli/dist/cli.js build --clean && npm run build:css && npm run copy:css",
+    "build:local": "node ../packages/cli/dist/cli.js build --clean && npm run build:css:local && npm run copy:css:local",
     "preview": "stati preview",
     "preview:local": "node ../packages/cli/dist/cli.js preview",
     "clean": "rimraf dist .stati",
     "build:css": "stati tailwindcss:build -i src/styles.css -o public/styles.css --minify",
+    "build:css:local": "node ../packages/cli/dist/cli.js tailwindcss:build -i src/styles.css -o public/styles.css --minify",
     "watch:css": "stati tailwindcss:watch -i src/styles.css -o public/styles.css",
+    "watch:css:local": "node ../packages/cli/dist/cli.js tailwindcss:watch -i src/styles.css -o public/styles.css",
     "copy:css": "node -e \"require('fs').copyFileSync('public/styles.css', 'dist/styles.css')\""
   },
   "keywords": [
