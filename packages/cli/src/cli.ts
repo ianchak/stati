@@ -8,7 +8,7 @@ import { build, invalidate, createDevServer, createPreviewServer, setEnv } from 
 import type { BuildOptions, DevServerOptions, PreviewServerOptions } from '@stati/core';
 import { log } from './colors.js';
 import { createLogger } from './logger.js';
-import { buildTailwindCSS, watchTailwindCSS } from './tailwind.js';
+import { watchTailwindCSS } from './tailwind.js';
 import { spawn } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -255,88 +255,6 @@ const cli = yargs(hideBin(process.argv))
       } catch (error) {
         log.error(
           `Preview server failed: ${error instanceof Error ? error.message : String(error)}`,
-        );
-        process.exit(1);
-      }
-    },
-  )
-  .command(
-    'tailwindcss:build',
-    'Build CSS using Tailwind CSS',
-    (y) =>
-      y
-        .option('i', {
-          alias: 'input',
-          type: 'string',
-          demandOption: true,
-          description: 'Input CSS file',
-        })
-        .option('o', {
-          alias: 'output',
-          type: 'string',
-          demandOption: true,
-          description: 'Output CSS file',
-        })
-        .option('minify', {
-          type: 'boolean',
-          default: false,
-          description: 'Minify the output CSS',
-        }),
-    async (argv) => {
-      try {
-        const logger = createLogger();
-        await buildTailwindCSS(
-          {
-            input: argv.i as string,
-            output: argv.o as string,
-            minify: argv.minify as boolean,
-          },
-          logger,
-        );
-      } catch (error) {
-        log.error(
-          `Tailwind CSS build failed: ${error instanceof Error ? error.message : String(error)}`,
-        );
-        process.exit(1);
-      }
-    },
-  )
-  .command(
-    'tailwindcss:watch',
-    'Watch and rebuild CSS using Tailwind CSS',
-    (y) =>
-      y
-        .option('i', {
-          alias: 'input',
-          type: 'string',
-          demandOption: true,
-          description: 'Input CSS file',
-        })
-        .option('o', {
-          alias: 'output',
-          type: 'string',
-          demandOption: true,
-          description: 'Output CSS file',
-        })
-        .option('verbose', {
-          type: 'boolean',
-          default: false,
-          description: 'Show all Tailwind CSS output (default: errors only)',
-        }),
-    async (argv) => {
-      try {
-        const logger = createLogger();
-        await watchTailwindCSS(
-          {
-            input: argv.i as string,
-            output: argv.o as string,
-            verbose: argv.verbose as boolean,
-          },
-          logger,
-        );
-      } catch (error) {
-        log.error(
-          `Tailwind CSS watcher failed: ${error instanceof Error ? error.message : String(error)}`,
         );
         process.exit(1);
       }

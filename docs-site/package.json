@@ -12,10 +12,8 @@
     "preview": "stati preview",
     "preview:local": "node ../packages/cli/dist/cli.js preview",
     "clean": "rimraf dist .stati",
-    "build:css": "stati tailwindcss:build -i src/styles.css -o public/styles.css --minify",
-    "build:css:local": "node ../packages/cli/dist/cli.js tailwindcss:build -i src/styles.css -o public/styles.css --minify",
-    "watch:css": "stati tailwindcss:watch -i src/styles.css -o public/styles.css",
-    "watch:css:local": "node ../packages/cli/dist/cli.js tailwindcss:watch -i src/styles.css -o public/styles.css",
+    "build:css": "tailwindcss -i src/styles.css -o public/styles.css --minify",
+    "build:css:local": "tailwindcss -i src/styles.css -o public/styles.css --minify",
     "copy:css": "node -e \"require('fs').copyFileSync('public/styles.css', 'dist/styles.css')\""
   },
   "keywords": [
