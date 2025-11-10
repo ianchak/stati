@@ -40,9 +40,11 @@ describe('Tailwind CSS CLI Commands', () => {
 
     vi.mocked(spawn).mockReturnValue(mockProcess as never);
     vi.mocked(existsSync).mockImplementation((path) => {
-      // Return false for tailwindcss executables in .bin to force npx usage
+      // Simulate that tailwindcss executable exists locally
+      // This is required because the new behavior throws an error if it's not found
       if (typeof path === 'string' && path.includes('.bin') && path.includes('tailwindcss')) {
-        return false;
+        // On Windows, check for .cmd file
+        return path.endsWith('.cmd');
       }
       return true;
     });
@@ -71,9 +73,10 @@ describe('Tailwind CSS CLI Commands', () => {
 
       expect(mockLogger.info).toHaveBeenCalledWith('Building CSS with Tailwind CSS...');
       expect(mockLogger.success).toHaveBeenCalledWith('CSS built successfully');
+      // Should use local executable (.cmd on Windows)
       expect(spawn).toHaveBeenCalledWith(
-        'npx',
-        ['tailwindcss', '-i', 'src/styles.css', '-o', 'public/styles.css'],
+        expect.stringContaining('tailwindcss'),
+        ['-i', 'src/styles.css', '-o', 'public/styles.css'],
         expect.objectContaining({ shell: true }),
       );
     });
@@ -94,9 +97,10 @@ describe('Tailwind CSS CLI Commands', () => {
 
       await promise;
 
+      // Should use local executable (.cmd on Windows)
       expect(spawn).toHaveBeenCalledWith(
-        'npx',
-        ['tailwindcss', '-i', 'src/styles.css', '-o', 'public/styles.css', '--minify'],
+        expect.stringContaining('tailwindcss'),
+        ['-i', 'src/styles.css', '-o', 'public/styles.css', '--minify'],
         expect.objectContaining({ shell: true }),
       );
     });
@@ -213,10 +217,11 @@ describe('Tailwind CSS CLI Commands', () => {
       expect(mockLogger.info).toHaveBeenCalledWith(
         'Watching CSS with Tailwind CSS (non-verbose mode)...\n',
       );
+      // Should use local executable (.cmd on Windows)
       expect(spawn).toHaveBeenCalledWith(
-        'npx',
-        ['tailwindcss', '-i', 'src/styles.css', '-o', 'public/styles.css', '--watch'],
-        expect.objectContaining({ shell: false }),
+        expect.stringContaining('tailwindcss'),
+        ['-i', 'src/styles.css', '-o', 'public/styles.css', '--watch'],
+        expect.objectContaining({ shell: true }),
       );
 
       // Cleanup
@@ -355,6 +360,30 @@ describe('Tailwind CSS CLI Commands', () => {
 
       expect(mockLogger.error).toHaveBeenCalledWith(
         expect.stringContaining('Input file not found'),
+      );
+    });
+
+    it('should throw error when tailwindcss executable is not found', async () => {
+      vi.mocked(existsSync).mockImplementation((path) => {
+        // Simulate tailwindcss executable not found
+        if (typeof path === 'string' && path.includes('.bin') && path.includes('tailwindcss')) {
+          return false;
+        }
+        return true;
+      });
+
+      expect(() =>
+        watchTailwindCSS(
+          {
+            input: 'src/styles.css',
+            output: 'public/styles.css',
+          },
+          mockLogger,
+        ),
+      ).toThrow('Tailwind CSS not found');
+
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.stringContaining('Tailwind CSS executable not found'),
       );
     });
   });

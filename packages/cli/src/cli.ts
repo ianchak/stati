@@ -181,9 +181,25 @@ const cli = yargs(hideBin(process.argv))
 
           log.info('\nShutting down dev server...');
 
+          // Stop Tailwind watcher and wait for it to fully exit
           if (tailwindWatcher && !tailwindWatcher.killed) {
-            tailwindWatcher.kill('SIGTERM');
+            await new Promise<void>((resolve) => {
+              // Set a timeout in case the process doesn't exit cleanly
+              const timeout = global.setTimeout(() => {
+                log.warning('Tailwind watcher did not exit cleanly, forcing shutdown');
+                tailwindWatcher?.kill('SIGKILL');
+                resolve();
+              }, 3000);
+
+              tailwindWatcher.once('close', () => {
+                global.clearTimeout(timeout);
+                resolve();
+              });
+
+              tailwindWatcher.kill('SIGTERM');
+            });
           }
+
           await devServer.stop();
           process.exit(0);
         };

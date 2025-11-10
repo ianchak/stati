@@ -83,7 +83,47 @@ export async function buildTailwindCSS(options: TailwindOptions, logger: Logger)
   }
 
   return new Promise((resolve, reject) => {
-    const args = ['tailwindcss', '-i', options.input, '-o', options.output];
+    // Find the tailwindcss executable
+    // Must use local node_modules/.bin/tailwindcss (works with npm/pnpm/yarn classic)
+    let tailwindCmd: string;
+    let args: string[];
+
+    // Try to find local tailwindcss executable
+    try {
+      const localTailwindPath = join(process.cwd(), 'node_modules', '.bin', 'tailwindcss');
+      const localTailwindCmdPath = localTailwindPath + '.cmd';
+
+      if (existsSync(localTailwindCmdPath)) {
+        // Use .cmd version on Windows
+        tailwindCmd = localTailwindCmdPath;
+        args = ['-i', options.input, '-o', options.output];
+      } else if (existsSync(localTailwindPath)) {
+        // Use direct executable (Unix-like systems)
+        tailwindCmd = localTailwindPath;
+        args = ['-i', options.input, '-o', options.output];
+      } else {
+        // Executable not found, throw error
+        const errorMsg =
+          'Tailwind CSS executable not found in node_modules/.bin/\n' +
+          'Make sure tailwindcss is installed locally:\n' +
+          '  npm install -D tailwindcss\n' +
+          '  or\n' +
+          '  pnpm add -D tailwindcss';
+        logger.error(errorMsg);
+        throw new Error('Tailwind CSS not found in node_modules');
+      }
+    } catch (err) {
+      // If it's our thrown error, re-throw it
+      if (err instanceof Error && err.message.includes('Tailwind CSS not found')) {
+        throw err;
+      }
+      // For other errors during resolution, throw a descriptive error
+      const errorMsg =
+        'Failed to locate Tailwind CSS executable:\n' +
+        '  Make sure tailwindcss is installed: npm install -D tailwindcss';
+      logger.error(errorMsg);
+      throw new Error('Failed to locate Tailwind CSS executable');
+    }
 
     if (options.minify) {
       args.push('--minify');
@@ -91,7 +131,7 @@ export async function buildTailwindCSS(options: TailwindOptions, logger: Logger)
 
     logger.info('Building CSS with Tailwind CSS...');
 
-    const proc = spawn('npx', args, {
+    const proc = spawn(tailwindCmd, args, {
       stdio: ['ignore', 'pipe', 'pipe'],
       shell: true,
     });
@@ -160,10 +200,11 @@ export function watchTailwindCSS(
   }
 
   // Find the tailwindcss executable
-  let tailwindCmd = 'npx';
-  let args = ['tailwindcss', '-i', options.input, '-o', options.output, '--watch'];
+  // Must use local node_modules/.bin/tailwindcss (works with npm/pnpm/yarn classic)
+  let tailwindCmd: string;
+  let args: string[];
 
-  // Try to find local tailwindcss first
+  // Try to find local tailwindcss executable
   try {
     const localTailwindPath = join(process.cwd(), 'node_modules', '.bin', 'tailwindcss');
     const localTailwindCmdPath = localTailwindPath + '.cmd';
@@ -176,9 +217,28 @@ export function watchTailwindCSS(
       // Use direct executable (Unix-like systems)
       tailwindCmd = localTailwindPath;
       args = ['-i', options.input, '-o', options.output, '--watch'];
+    } else {
+      // Executable not found, throw error
+      const errorMsg =
+        'Tailwind CSS executable not found in node_modules/.bin/\n' +
+        'Make sure tailwindcss is installed locally:\n' +
+        '  npm install -D tailwindcss\n' +
+        '  or\n' +
+        '  pnpm add -D tailwindcss';
+      logger.error(errorMsg);
+      throw new Error('Tailwind CSS not found in node_modules');
     }
-  } catch {
-    // Fall back to npx
+  } catch (err) {
+    // If it's our thrown error, re-throw it
+    if (err instanceof Error && err.message.includes('Tailwind CSS not found')) {
+      throw err;
+    }
+    // For other errors during resolution, throw a descriptive error
+    const errorMsg =
+      'Failed to locate Tailwind CSS executable:\n' +
+      '  Make sure tailwindcss is installed: npm install -D tailwindcss';
+    logger.error(errorMsg);
+    throw new Error('Failed to locate Tailwind CSS executable');
   }
 
   if (!options.verbose) {
@@ -189,56 +249,78 @@ export function watchTailwindCSS(
 
   const proc = spawn(tailwindCmd, args, {
     stdio: ['inherit', 'pipe', 'pipe'],
-    shell: tailwindCmd !== 'npx', // Use shell when using local executable
+    shell: true,
   });
 
   proc.stdout?.on('data', (data) => {
-    const message = data.toString().trim();
-    // Only show stdout in verbose mode
-    if (options.verbose && message) {
-      logger.info(message);
+    try {
+      const message = data.toString().trim();
+      // Only show stdout in verbose mode
+      if (options.verbose && message) {
+        logger.info(message);
+      }
+    } catch (err) {
+      // Fallback to console if logger fails
+      console.error('Logger error processing stdout:', err);
     }
   });
 
   proc.stderr?.on('data', (data) => {
-    const message = data.toString().trim();
-    if (!message) return;
+    try {
+      const message = data.toString().trim();
+      if (!message) return;
 
-    // Tailwind writes some info to stderr, we need to filter actual errors
-    const lowerMessage = message.toLowerCase();
+      // Tailwind writes some info to stderr, we need to filter actual errors
+      const lowerMessage = message.toLowerCase();
 
-    // Filter out shutdown messages
-    if (lowerMessage.includes('stopping') || lowerMessage.includes('shutting down')) {
-      return;
+      // Filter out shutdown messages
+      if (lowerMessage.includes('stopping') || lowerMessage.includes('shutting down')) {
+        return;
+      }
+
+      const isError =
+        (lowerMessage.includes('error') ||
+          lowerMessage.includes('failed') ||
+          lowerMessage.includes('cannot find') ||
+          lowerMessage.includes('unexpected') ||
+          lowerMessage.includes('syntax error')) &&
+        !lowerMessage.includes('rebuilding') &&
+        !lowerMessage.includes('done in');
+
+      if (isError) {
+        // Always show errors regardless of verbose mode
+        logger.error(message);
+      } else if (options.verbose && lowerMessage.includes('done in')) {
+        // Show completion messages only in verbose mode
+        logger.info(message.replace(/^Done in/i, 'Tailwind done in'));
+      }
+      // Suppress all other Tailwind output to reduce chatter
+    } catch (err) {
+      // Fallback to console if logger fails
+      console.error('Logger error processing stderr:', err);
+      console.error('Original message:', data.toString());
     }
-
-    const isError =
-      (lowerMessage.includes('error') ||
-        lowerMessage.includes('failed') ||
-        lowerMessage.includes('cannot find') ||
-        lowerMessage.includes('unexpected') ||
-        lowerMessage.includes('syntax error')) &&
-      !lowerMessage.includes('rebuilding') &&
-      !lowerMessage.includes('done in');
-
-    if (isError) {
-      // Always show errors regardless of verbose mode
-      logger.error(message);
-    } else if (options.verbose && lowerMessage.includes('done in')) {
-      // Show completion messages only in verbose mode
-      logger.info(message.replace(/^Done in/i, 'Tailwind done in'));
-    }
-    // Suppress all other Tailwind output to reduce chatter
   });
 
   proc.on('error', (err) => {
-    logger.error(`Failed to start Tailwind CSS: ${err.message}`);
-    logger.error('Make sure tailwindcss is installed: npm install -D tailwindcss');
+    try {
+      logger.error(`Failed to start Tailwind CSS: ${err.message}`);
+      logger.error('Make sure tailwindcss is installed: npm install -D tailwindcss');
+    } catch (_logErr) {
+      // Fallback to console if logger fails
+      console.error('Failed to start Tailwind CSS:', err.message);
+      console.error('Make sure tailwindcss is installed: npm install -D tailwindcss');
+    }
   });
 
   proc.on('close', (code) => {
-    if (code !== 0 && code !== null) {
-      logger.error(`Tailwind CSS watcher exited with code ${code}`);
+    try {
+      if (code !== 0 && code !== null) {
+        logger.error(`Tailwind CSS watcher exited with code ${code}`);
+      }
+    } catch (_err) {
+      // Fallback to console if logger fails
+      console.error(`Tailwind CSS watcher exited with code ${code}`);
     }
   });
 
