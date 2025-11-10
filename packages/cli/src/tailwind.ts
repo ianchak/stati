@@ -185,11 +185,13 @@ export async function watchTailwindCSS(options: TailwindOptions, logger: Logger)
       // Tailwind writes some info to stderr, we need to filter actual errors
       const lowerMessage = message.toLowerCase();
       const isError =
-        lowerMessage.includes('error') ||
-        lowerMessage.includes('failed') ||
-        lowerMessage.includes('cannot find') ||
-        lowerMessage.includes('unexpected') ||
-        lowerMessage.includes('syntax error');
+        (lowerMessage.includes('error') ||
+          lowerMessage.includes('failed') ||
+          lowerMessage.includes('cannot find') ||
+          lowerMessage.includes('unexpected') ||
+          lowerMessage.includes('syntax error')) &&
+        !lowerMessage.includes('rebuilding') &&
+        !lowerMessage.includes('done in');
 
       if (isError) {
         // Always show errors regardless of verbose mode
