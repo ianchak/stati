@@ -9,6 +9,7 @@ import type { BuildOptions, DevServerOptions, PreviewServerOptions } from '@stat
 import { log } from './colors.js';
 import { createLogger } from './logger.js';
 import { buildTailwindCSS, watchTailwindCSS } from './tailwind.js';
+import { spawn } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -111,6 +112,23 @@ const cli = yargs(hideBin(process.argv))
         .option('config', {
           type: 'string',
           description: 'Path to config file',
+        })
+        .option('tailwind-input', {
+          type: 'string',
+          description: 'Input file for Tailwind CSS watcher.',
+        })
+        .option('tailwind-output', {
+          type: 'string',
+          description: 'Output file for Tailwind CSS watcher.',
+        })
+        .option('tailwind-minify', {
+          type: 'boolean',
+          description: 'Minify Tailwind CSS output.',
+        })
+        .option('tailwind-verbose', {
+          type: 'boolean',
+          description: 'Show all Tailwind CSS output in dev mode.',
+          default: false,
         }),
     async (argv) => {
       const devOptions: DevServerOptions = {
@@ -138,9 +156,31 @@ const cli = yargs(hideBin(process.argv))
         const devServer = await createDevServer(devOptions);
         await devServer.start();
 
+        // Start Tailwind watcher if configured (after dev server is running)
+        let tailwindWatcher: ReturnType<typeof spawn> | null = null;
+        if (argv['tailwind-input'] && argv['tailwind-output']) {
+          tailwindWatcher = watchTailwindCSS(
+            {
+              input: argv['tailwind-input'],
+              output: argv['tailwind-output'],
+              minify: !!argv['tailwind-minify'],
+              verbose: !!argv['tailwind-verbose'],
+            },
+            coloredLogger,
+          );
+        }
+
         // Handle graceful shutdown
+        let isShuttingDown = false;
         const shutdown = async () => {
+          if (isShuttingDown) return;
+          isShuttingDown = true;
+
           log.info('\n🛑 Shutting down dev server...');
+          if (tailwindWatcher && !tailwindWatcher.killed) {
+            log.info('🛑 Stopping Tailwind CSS watcher...');
+            tailwindWatcher.kill('SIGTERM');
+          }
           await devServer.stop();
           process.exit(0);
         };

@@ -5,8 +5,8 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "concurrently --prefix none \"npm run watch:css\" \"stati dev\"",
-    "dev:local": "concurrently --prefix none \"npm run watch:css:local\" \"node ../packages/cli/dist/cli.js dev\"",
+    "dev": "stati dev --tailwind-input src/styles.css --tailwind-output public/styles.css",
+    "dev:local": "node ../packages/cli/dist/cli.js dev --tailwind-input src/styles.css --tailwind-output public/styles.css",
     "build": "stati build && npm run build:css && npm run copy:css",
     "build:local": "node ../packages/cli/dist/cli.js build --clean && npm run build:css:local && npm run copy:css:local",
     "preview": "stati preview",

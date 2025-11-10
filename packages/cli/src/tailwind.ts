@@ -148,7 +148,10 @@ export async function buildTailwindCSS(options: TailwindOptions, logger: Logger)
  * Watch and rebuild CSS using Tailwind CSS CLI
  * In non-verbose mode, only errors are shown. Use --verbose to see all output.
  */
-export async function watchTailwindCSS(options: TailwindOptions, logger: Logger): Promise<void> {
+export function watchTailwindCSS(
+  options: TailwindOptions,
+  logger: Logger,
+): import('child_process').ChildProcess {
   // Validate before running
   const validation = validateOptions(options, logger);
   if (!validation.valid) {
@@ -156,40 +159,82 @@ export async function watchTailwindCSS(options: TailwindOptions, logger: Logger)
     throw new Error(validation.error);
   }
 
-  return new Promise((resolve, reject) => {
-    const args = ['tailwindcss', '-i', options.input, '-o', options.output, '--watch'];
+  // Find the tailwindcss executable
+  let tailwindCmd = 'npx';
+  let args = ['tailwindcss', '-i', options.input, '-o', options.output, '--watch'];
 
-    if (!options.verbose) {
-      logger.info('Watching CSS with Tailwind CSS (errors only, use --verbose for all output)...');
-    } else {
-      logger.info('Watching CSS with Tailwind CSS...');
+  // Try to find local tailwindcss first
+  try {
+    const localTailwindPath = join(process.cwd(), 'node_modules', '.bin', 'tailwindcss');
+    const localTailwindCmdPath = localTailwindPath + '.cmd';
+
+    if (existsSync(localTailwindCmdPath)) {
+      // Use .cmd version on Windows
+      tailwindCmd = localTailwindCmdPath;
+      args = ['-i', options.input, '-o', options.output, '--watch'];
+    } else if (existsSync(localTailwindPath)) {
+      // Use direct executable (Unix-like systems)
+      tailwindCmd = localTailwindPath;
+      args = ['-i', options.input, '-o', options.output, '--watch'];
     }
+  } catch {
+    // Fall back to npx
+  }
 
-    const proc = spawn('npx', args, {
-      stdio: 'ignore', // Detach stdio to let it run in the background
-      shell: true,
-      detached: true, // Detach the process
-    });
+  if (!options.verbose) {
+    logger.info('Watching CSS with Tailwind CSS (non-verbose mode)...');
+  } else {
+    logger.info('Watching CSS with Tailwind CSS (verbose mode)...');
+  }
 
-    // Unref the child process to allow the parent to exit independently
-    proc.unref();
-
-    proc.on('error', (err) => {
-      logger.error(`Failed to start Tailwind CSS: ${err.message}`);
-      logger.error('Make sure tailwindcss is installed: npm install -D tailwindcss');
-      reject(err);
-    });
-
-    proc.on('exit', (code) => {
-      if (code !== 0 && code !== null) {
-        logger.error(`Tailwind CSS watcher exited unexpectedly with code ${code}`);
-        // Since this is a detached process, we can't reject the promise here
-        // as the parent might have already exited. We just log the error.
-      }
-    });
-
-    // Since the process is detached, we can resolve immediately,
-    // assuming the watcher has started successfully.
-    resolve();
+  const proc = spawn(tailwindCmd, args, {
+    stdio: ['inherit', 'pipe', 'pipe'],
+    shell: tailwindCmd !== 'npx', // Use shell when using local executable
   });
+
+  proc.stdout?.on('data', (data) => {
+    const message = data.toString().trim();
+    // Only show stdout in verbose mode
+    if (options.verbose && message) {
+      logger.info(message);
+    }
+  });
+
+  proc.stderr?.on('data', (data) => {
+    const message = data.toString().trim();
+    if (!message) return;
+
+    // Tailwind writes some info to stderr, we need to filter actual errors
+    const lowerMessage = message.toLowerCase();
+    const isError =
+      (lowerMessage.includes('error') ||
+        lowerMessage.includes('failed') ||
+        lowerMessage.includes('cannot find') ||
+        lowerMessage.includes('unexpected') ||
+        lowerMessage.includes('syntax error')) &&
+      !lowerMessage.includes('rebuilding') &&
+      !lowerMessage.includes('done in');
+
+    if (isError) {
+      // Always show errors regardless of verbose mode
+      logger.error(message);
+    } else if (options.verbose && lowerMessage.includes('done in')) {
+      // Show completion messages only in verbose mode
+      logger.info(message.replace(/^Done in/i, 'Tailwind done in'));
+    }
+    // Suppress all other Tailwind output to reduce chatter
+  });
+
+  proc.on('error', (err) => {
+    logger.error(`Failed to start Tailwind CSS: ${err.message}`);
+    logger.error('Make sure tailwindcss is installed: npm install -D tailwindcss');
+  });
+
+  proc.on('close', (code) => {
+    if (code !== 0 && code !== null) {
+      logger.error(`Tailwind CSS watcher exited with code ${code}`);
+    }
+  });
+
+  return proc;
 }

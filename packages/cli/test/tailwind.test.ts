@@ -39,7 +39,13 @@ describe('Tailwind CSS CLI Commands', () => {
     });
 
     vi.mocked(spawn).mockReturnValue(mockProcess as never);
-    vi.mocked(existsSync).mockReturnValue(true);
+    vi.mocked(existsSync).mockImplementation((path) => {
+      // Return false for tailwindcss executables in .bin to force npx usage
+      if (typeof path === 'string' && path.includes('.bin') && path.includes('tailwindcss')) {
+        return false;
+      }
+      return true;
+    });
   });
 
   afterEach(() => {
@@ -199,19 +205,18 @@ describe('Tailwind CSS CLI Commands', () => {
           output: 'public/styles.css',
         },
         mockLogger,
-      ).catch(() => {}); // Ignore rejection
+      );
 
       // Wait for watcher to start
       await new Promise((resolve) => globalThis.setTimeout(resolve, 20));
 
       expect(mockLogger.info).toHaveBeenCalledWith(
-        expect.stringContaining('Watching CSS with Tailwind CSS'),
+        'Watching CSS with Tailwind CSS (non-verbose mode)...',
       );
-      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('errors only'));
       expect(spawn).toHaveBeenCalledWith(
         'npx',
         ['tailwindcss', '-i', 'src/styles.css', '-o', 'public/styles.css', '--watch'],
-        expect.objectContaining({ shell: true }),
+        expect.objectContaining({ shell: false }),
       );
 
       // Cleanup
@@ -226,12 +231,14 @@ describe('Tailwind CSS CLI Commands', () => {
           verbose: true,
         },
         mockLogger,
-      ).catch(() => {}); // Ignore rejection
+      );
 
       // Wait for watcher to start
       await new Promise((resolve) => globalThis.setTimeout(resolve, 20));
 
-      expect(mockLogger.info).toHaveBeenCalledWith('Watching CSS with Tailwind CSS...');
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Watching CSS with Tailwind CSS (verbose mode)...',
+      );
       expect(mockLogger.info).not.toHaveBeenCalledWith(expect.stringContaining('errors only'));
 
       // Cleanup
@@ -246,20 +253,16 @@ describe('Tailwind CSS CLI Commands', () => {
           verbose: false,
         },
         mockLogger,
-      ).catch(() => {}); // Ignore rejection
+      );
 
-      // Wait for watcher to start then emit messages
-      await new Promise((resolve) => globalThis.setTimeout(resolve, 10));
-      mockProcess.stderr.emit('data', Buffer.from('Rebuilding...'));
-      mockProcess.stderr.emit('data', Buffer.from('Done in 50ms'));
+      // Wait for watcher to start
+      await new Promise((resolve) => globalThis.setTimeout(resolve, 20));
+      mockProcess.stderr.emit('data', Buffer.from('Done in 123ms\n'));
+      mockProcess.stderr.emit('data', Buffer.from('Rebuilding...\n'));
 
-      // Wait a bit more for processing
-      await new Promise((resolve) => globalThis.setTimeout(resolve, 10));
-
-      // Info messages should not be logged in non-verbose mode
-      const infoCalls = vi.mocked(mockLogger.info).mock.calls;
-      expect(infoCalls.some((call) => call[0]?.includes('Rebuilding'))).toBe(false);
-      expect(infoCalls.some((call) => call[0]?.includes('Done in'))).toBe(false);
+      // Should not log informational messages in non-verbose mode
+      expect(mockLogger.info).not.toHaveBeenCalledWith('Done in 123ms');
+      expect(mockLogger.info).not.toHaveBeenCalledWith('Rebuilding...');
 
       // Cleanup
       mockProcess.emit('close', 0);
@@ -273,18 +276,16 @@ describe('Tailwind CSS CLI Commands', () => {
           verbose: true,
         },
         mockLogger,
-      ).catch(() => {}); // Ignore rejection
+      );
 
-      // Wait for watcher to start then emit messages
-      await new Promise((resolve) => globalThis.setTimeout(resolve, 10));
-      mockProcess.stdout.emit('data', Buffer.from('Watching for changes...'));
-      mockProcess.stderr.emit('data', Buffer.from('Rebuilding...'));
+      // Wait for watcher to start
+      await new Promise((resolve) => globalThis.setTimeout(resolve, 20));
+      mockProcess.stderr.emit('data', Buffer.from('Done in 123ms\n'));
+      mockProcess.stderr.emit('data', Buffer.from('Rebuilding...\n'));
 
-      // Wait a bit more for processing
-      await new Promise((resolve) => globalThis.setTimeout(resolve, 10));
-
-      expect(mockLogger.info).toHaveBeenCalledWith('Watching for changes...');
-      expect(mockLogger.info).toHaveBeenCalledWith('Rebuilding...');
+      // Should log completion messages in verbose mode
+      expect(mockLogger.info).toHaveBeenCalledWith('Tailwind done in 123ms');
+      // Rebuilding messages are suppressed to reduce chatter
 
       // Cleanup
       mockProcess.emit('close', 0);
@@ -295,17 +296,13 @@ describe('Tailwind CSS CLI Commands', () => {
         {
           input: 'src/styles.css',
           output: 'public/styles.css',
-          verbose: false,
         },
         mockLogger,
-      ).catch(() => {}); // Ignore rejection
+      );
 
       // Wait for watcher to start then emit error
-      await new Promise((resolve) => globalThis.setTimeout(resolve, 10));
-      mockProcess.stderr.emit('data', Buffer.from('Error: Failed to compile'));
-
-      // Wait a bit more for processing
-      await new Promise((resolve) => globalThis.setTimeout(resolve, 10));
+      await new Promise((resolve) => globalThis.setTimeout(resolve, 20));
+      mockProcess.stderr.emit('data', Buffer.from('Error: Failed to compile\n'));
 
       expect(mockLogger.error).toHaveBeenCalledWith('Error: Failed to compile');
 
@@ -314,7 +311,7 @@ describe('Tailwind CSS CLI Commands', () => {
     });
 
     it('should handle watcher errors', async () => {
-      const promise = watchTailwindCSS(
+      watchTailwindCSS(
         {
           input: 'src/styles.css',
           output: 'public/styles.css',
@@ -322,16 +319,14 @@ describe('Tailwind CSS CLI Commands', () => {
         mockLogger,
       );
 
-      globalThis.setTimeout(() => {
-        mockProcess.emit('error', new Error('Watcher failed'));
-      }, 10);
+      // Emit error
+      mockProcess.emit('error', new Error('Watcher failed'));
 
-      await expect(promise).rejects.toThrow('Watcher failed');
       expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('Failed to start'));
     });
 
     it('should handle non-zero exit codes', async () => {
-      const promise = watchTailwindCSS(
+      watchTailwindCSS(
         {
           input: 'src/styles.css',
           output: 'public/styles.css',
@@ -339,18 +334,16 @@ describe('Tailwind CSS CLI Commands', () => {
         mockLogger,
       );
 
-      globalThis.setTimeout(() => {
-        mockProcess.emit('close', 1);
-      }, 10);
+      // Emit close with non-zero code
+      mockProcess.emit('close', 1);
 
-      await expect(promise).rejects.toThrow('Watcher exited with code 1');
       expect(mockLogger.error).toHaveBeenCalledWith('Tailwind CSS watcher exited with code 1');
     });
 
     it('should validate input file exists', async () => {
       vi.mocked(existsSync).mockReturnValue(false);
 
-      await expect(
+      expect(() =>
         watchTailwindCSS(
           {
             input: 'nonexistent.css',
@@ -358,7 +351,7 @@ describe('Tailwind CSS CLI Commands', () => {
           },
           mockLogger,
         ),
-      ).rejects.toThrow('Input file not found');
+      ).toThrow('Input file not found');
 
       expect(mockLogger.error).toHaveBeenCalledWith(
         expect.stringContaining('Input file not found'),

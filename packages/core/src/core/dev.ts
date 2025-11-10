@@ -370,6 +370,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
   };
   let watcher: FSWatcher | null = null;
   const isBuildingRef = { value: false };
+  let isStopping = false;
 
   /**
    * Gets MIME type for a file based on its extension
@@ -689,6 +690,8 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
     },
 
     async stop(): Promise<void> {
+      if (isStopping) return;
+      isStopping = true;
       if (watcher) {
         await watcher.close();
         watcher = null;
