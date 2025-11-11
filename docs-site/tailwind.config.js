@@ -41,6 +41,7 @@ export default {
       fontFamily: {
         sans: [
           'Inter',
+          'Inter Fallback',
           'system-ui',
           '-apple-system',
           'BlinkMacSystemFont',
@@ -50,6 +51,7 @@ export default {
         ],
         mono: [
           'Fira Code',
+          'Fira Code Fallback',
           'Menlo',
           'Monaco',
           'Consolas',

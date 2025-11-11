@@ -3,6 +3,25 @@
 @tailwind utilities;
 
 @layer base {
+  /* Fallback font adjustments to minimize layout shift */
+  @font-face {
+    font-family: 'Inter Fallback';
+    src: local('Arial');
+    size-adjust: 106%;
+    ascent-override: 90%;
+    descent-override: 22%;
+    line-gap-override: 0%;
+  }
+
+  @font-face {
+    font-family: 'Fira Code Fallback';
+    src: local('Courier New');
+    size-adjust: 95%;
+    ascent-override: 88%;
+    descent-override: 22%;
+    line-gap-override: 0%;
+  }
+
   /* Custom scrollbar for better dark theme support */
   ::-webkit-scrollbar {
     @apply w-2;
