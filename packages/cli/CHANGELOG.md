@@ -1,5 +1,16 @@
 # @stati/cli
 
+## 1.7.0
+
+### Minor Changes
+
+- ccca616: add Tailwind CSS build and watch commands to CLI
+
+### Patch Changes
+
+- Updated dependencies [ccca616]
+  - @stati/core@1.12.2
+
 ## 1.6.10
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # create-stati
 
+## 1.9.0
+
+### Minor Changes
+
+- ccca616: add Tailwind CSS build and watch commands to CLI
+- ccca616: add silent watch script for Tailwind CSS processing
+
 ## 1.8.0
 
 ### Minor Changes

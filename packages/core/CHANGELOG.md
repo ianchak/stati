@@ -1,5 +1,11 @@
 # @stati/core
 
+## 1.12.2
+
+### Patch Changes
+
+- ccca616: enhance console logs for better user feedback
+
 ## 1.12.1
 
 ### Patch Changes
