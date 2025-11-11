@@ -1,5 +1,11 @@
 # @stati/core
 
+## 1.12.3
+
+### Patch Changes
+
+- update @stati/cli and @stati/core to latest versions
+
 ## 1.12.2
 
 ### Patch Changes

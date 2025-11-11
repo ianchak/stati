@@ -1,5 +1,11 @@
 # create-stati
 
+## 1.9.1
+
+### Patch Changes
+
+- update @stati/cli and @stati/core to latest versions
+
 ## 1.9.0
 
 ### Minor Changes

@@ -1,5 +1,13 @@
 # @stati/cli
 
+## 1.7.1
+
+### Patch Changes
+
+- update @stati/cli and @stati/core to latest versions
+- Updated dependencies
+  - @stati/core@1.12.3
+
 ## 1.7.0
 
 ### Minor Changes
