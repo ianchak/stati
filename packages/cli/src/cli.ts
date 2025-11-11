@@ -9,7 +9,6 @@ import type { BuildOptions, DevServerOptions, PreviewServerOptions } from '@stat
 import { log } from './colors.js';
 import { createLogger } from './logger.js';
 import { watchTailwindCSS } from './tailwind.js';
-import { spawn } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -153,7 +152,7 @@ const cli = yargs(hideBin(process.argv))
         await devServer.start();
 
         // Start Tailwind watcher if configured (after dev server is running)
-        let tailwindWatcher: ReturnType<typeof spawn> | null = null;
+        let tailwindWatcher: ReturnType<typeof watchTailwindCSS> | null = null;
         if (argv['tailwind-input'] && argv['tailwind-output']) {
           tailwindWatcher = watchTailwindCSS(
             {
