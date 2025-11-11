@@ -1,5 +1,13 @@
 # @stati/cli
 
+## 1.7.2
+
+### Patch Changes
+
+- 832b5de: update documentation links to point to new site URL
+- Updated dependencies [832b5de]
+  - @stati/core@1.12.4
+
 ## 1.7.1
 
 ### Patch Changes

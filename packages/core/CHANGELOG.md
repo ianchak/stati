@@ -1,5 +1,11 @@
 # @stati/core
 
+## 1.12.4
+
+### Patch Changes
+
+- 832b5de: update documentation links to point to new site URL
+
 ## 1.12.3
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # create-stati
 
+## 1.9.2
+
+### Patch Changes
+
+- 832b5de: update documentation links to point to new site URL
+
 ## 1.9.1
 
 ### Patch Changes
