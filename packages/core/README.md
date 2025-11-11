@@ -216,7 +216,7 @@ This is all you need! Stati automatically enables:
 
 ### Extended Configuration (Common Options)
 
-Below are commonly used configuration options. This is **not a complete list** — see the [full configuration documentation](https://docs.stati.build/configuration/) for all available options.
+Below are commonly used configuration options. This is **not a complete list** — see the [full configuration documentation](https://stati.build/configuration/) for all available options.
 
 ```javascript
 import { defineConfig } from '@stati/core';
@@ -334,7 +334,7 @@ export default defineConfig({
 });
 ```
 
-> **For the complete configuration reference** including all options, advanced features, and detailed explanations, see the [Configuration Guide](https://docs.stati.build/configuration/file/).
+> **For the complete configuration reference** including all options, advanced features, and detailed explanations, see the [Configuration Guide](https://stati.build/configuration/file/).
 
 ---
 
@@ -554,7 +554,7 @@ import type {
 } from '@stati/core/types';
 ```
 
-> **Need more types?** This is a curated list of commonly used types. For the complete type reference including all SEO, sitemap, and configuration types, see the [API Types Documentation](https://docs.stati.build/api/types/).
+> **Need more types?** This is a curated list of commonly used types. For the complete type reference including all SEO, sitemap, and configuration types, see the [API Types Documentation](https://stati.build/api/types/).
 
 ---
 
@@ -745,10 +745,10 @@ export default defineConfig({
 
 ## Learn More
 
-- [**Full Documentation**](https://docs.stati.build) — Complete guides and tutorials
-- [**Configuration Guide**](https://docs.stati.build/configuration/file/) — All options explained
-- [**API Reference**](https://docs.stati.build/api/reference/) — Detailed API docs
-- [**Examples**](https://docs.stati.build/examples/list/) — Real-world projects
+- [**Full Documentation**](https://stati.build) — Complete guides and tutorials
+- [**Configuration Guide**](https://stati.build/configuration/file/) — All options explained
+- [**API Reference**](https://stati.build/api/reference/) — Detailed API docs
+- [**Examples**](https://stati.build/examples/list/) — Real-world projects
 - [**Contributing**](https://github.com/ianchak/stati/blob/main/CONTRIBUTING.md) — Help improve Stati
 
 ---
@@ -769,7 +769,7 @@ Stati Core is built on these principles:
 
 - [GitHub Issues](https://github.com/ianchak/stati/issues) — Report bugs or request features
 - [Discussions](https://github.com/ianchak/stati/discussions) — Ask questions, share ideas
-- [Documentation](https://docs.stati.build) — Comprehensive guides
+- [Documentation](https://stati.build) — Comprehensive guides
 
 ---
 

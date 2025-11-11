@@ -249,10 +249,10 @@ my-site/
 
 ### Learn Stati
 
-- [Documentation](https://docs.stati.build) - Complete guides and tutorials
-- [Core Concepts](https://docs.stati.build/core-concepts/overview/) - Templates, routing, and markdown
-- [Configuration](https://docs.stati.build/configuration/file/) - Site config, ISG, and hooks
-- [Examples](https://docs.stati.build/examples/list/) - Real-world recipes
+- [Documentation](https://stati.build) - Complete guides and tutorials
+- [Core Concepts](https://stati.build/core-concepts/overview/) - Templates, routing, and markdown
+- [Configuration](https://stati.build/configuration/file/) - Site config, ISG, and hooks
+- [Examples](https://stati.build/examples/list/) - Real-world recipes
 
 ### Customize Your Site
 
@@ -291,7 +291,7 @@ export default defineConfig({
 });
 ```
 
-You can customize this file to add features like SEO, sitemap, ISG caching, and more. See the [Configuration Guide](https://docs.stati.build/configuration/file/) for all options.
+You can customize this file to add features like SEO, sitemap, ISG caching, and more. See the [Configuration Guide](https://stati.build/configuration/file/) for all options.
 
 ---
 
@@ -304,10 +304,10 @@ You can customize this file to add features like SEO, sitemap, ISG caching, and 
 
 ## Learn More
 
-- [Full Documentation](https://docs.stati.build) - Complete guides and tutorials
-- [CLI Commands](https://docs.stati.build/cli/commands/) - All available commands
-- [Core Concepts](https://docs.stati.build/core-concepts/overview/) - How Stati works
-- [Examples](https://docs.stati.build/examples/list/) - Real-world projects and recipes
+- [Full Documentation](https://stati.build) - Complete guides and tutorials
+- [CLI Commands](https://stati.build/cli/commands/) - All available commands
+- [Core Concepts](https://stati.build/core-concepts/overview/) - How Stati works
+- [Examples](https://stati.build/examples/list/) - Real-world projects and recipes
 
 ---
 
@@ -315,7 +315,7 @@ You can customize this file to add features like SEO, sitemap, ISG caching, and 
 
 - [GitHub Issues](https://github.com/ianchak/stati/issues) - Report bugs or request features
 - [Discussions](https://github.com/ianchak/stati/discussions) - Ask questions, share ideas
-- [Documentation](https://docs.stati.build) - Comprehensive guides
+- [Documentation](https://stati.build) - Comprehensive guides
 
 ---
 

@@ -9,7 +9,7 @@ Built for developers who want modern tooling without the complexity. Write in Ma
 [![npm version](https://img.shields.io/npm/v/@stati/core.svg)](https://www.npmjs.com/package/@stati/core)
 [![Downloads](https://img.shields.io/npm/dm/@stati/core.svg)](https://npmjs.com/package/@stati/core)
 [![License](https://img.shields.io/github/license/ianchak/stati.svg)](LICENSE)
-[![Docs](https://api.netlify.com/api/v1/badges/fa476271-ada2-4830-ac30-fcff95aeca03/deploy-status)](https://docs.stati.build)
+[![Docs](https://api.netlify.com/api/v1/badges/fa476271-ada2-4830-ac30-fcff95aeca03/deploy-status)](https://stati.build)
 
 ---
 
@@ -292,7 +292,7 @@ export default defineConfig({
 
 This extended configuration example covers the most common options. For a full list of available settings, see the documentation.
 
-[View full configuration options →](https://docs.stati.build/configuration/file/)
+[View full configuration options →](https://stati.build/configuration/file/)
 
 ---
 
@@ -340,12 +340,12 @@ Your content here...
 
 ## Documentation
 
-- [**Getting Started**](https://docs.stati.build/getting-started/introduction/) — Installation and first steps
-- [**Core Concepts**](https://docs.stati.build/core-concepts/overview/) — How Stati works
-- [**Configuration**](https://docs.stati.build/configuration/file/) — All configuration options
-- [**SEO Guide**](https://docs.stati.build/configuration/seo/) — Optimize for search engines
-- [**ISG & Caching**](https://docs.stati.build/configuration/isg/) — Smart rebuilds explained
-- [**API Reference**](https://docs.stati.build/api/reference/) — Complete API documentation
+- [**Getting Started**](https://stati.build/getting-started/introduction/) — Installation and first steps
+- [**Core Concepts**](https://stati.build/core-concepts/overview/) — How Stati works
+- [**Configuration**](https://stati.build/configuration/file/) — All configuration options
+- [**SEO Guide**](https://stati.build/configuration/seo/) — Optimize for search engines
+- [**ISG & Caching**](https://stati.build/configuration/isg/) — Smart rebuilds explained
+- [**API Reference**](https://stati.build/api/reference/) — Complete API documentation
 
 ---
 
@@ -401,8 +401,8 @@ MIT © [Imre Csige](https://github.com/ianchak)
 
 ## Quick Links
 
-- [Documentation](https://docs.stati.build)
-- [Examples](https://docs.stati.build/examples/list/)
+- [Documentation](https://stati.build)
+- [Examples](https://stati.build/examples/list/)
 - [GitHub Issues](https://github.com/ianchak/stati/issues)
 - [Discussions](https://github.com/ianchak/stati/discussions)
 
