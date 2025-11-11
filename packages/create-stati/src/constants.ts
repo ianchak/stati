@@ -55,7 +55,7 @@ export const SASS_CONFIG: CSSProcessorConfig = {
 
 /**
  * Tailwind CSS processor configuration
- * Uses Stati's built-in Tailwind CSS commands
+ * Uses Tailwind CLI for production builds and Stati's built-in Tailwind support for development
  */
 export const TAILWIND_CONFIG: CSSProcessorConfig = {
   devDependencies: {
