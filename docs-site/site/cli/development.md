@@ -61,6 +61,32 @@ This logic lives in `handleTemplateChange` inside `packages/core/src/core/dev.ts
 
 Static files inside `public/` are part of the watch list. When assets change they are recopied into `dist/` during the rebuild, so image and favicon updates appear on the next refresh.
 
+## Tailwind CSS Integration
+
+Stati includes built-in Tailwind CSS support for the development server. When you provide `--tailwind-input` and `--tailwind-output` flags, Stati automatically starts a Tailwind CSS watcher alongside the dev server:
+
+```bash
+stati dev --tailwind-input src/styles.css --tailwind-output public/styles.css
+```
+
+**How it works:**
+
+- Stati spawns a Tailwind CLI process in watch mode using the locally installed `tailwindcss` executable from `node_modules/.bin/`.
+- By default, only errors are shown (quiet mode) to keep the console clean.
+- Use `--tailwind-verbose` to see all Tailwind output including "done in Xms" messages.
+- When you stop the dev server (`Ctrl+C`), the Tailwind watcher is automatically stopped as well.
+
+**Requirements:**
+
+- You must have `tailwindcss` installed locally in your project (`npm install -D tailwindcss`).
+- Stati will check for the installation and show an error if it's not found.
+
+**Example with verbose output:**
+
+```bash
+stati dev --tailwind-input src/styles.css --tailwind-output public/styles.css --tailwind-verbose
+```
+
 ## Browser feedback
 
 - Successful rebuilds simply reload the page.

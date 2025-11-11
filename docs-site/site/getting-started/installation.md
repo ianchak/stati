@@ -52,6 +52,7 @@ Here are the available options:
 | `--package-manager` | Specifies the package manager to use (`npm`, `yarn`, `pnpm`, or `bun`). |
 | `--template` | Specifies a project template to use (currently only `blank` is available). |
 
+> **Tip:** If you choose Tailwind CSS, the scaffolder sets up Stati's built-in Tailwind integration in the dev script. This runs both the dev server and Tailwind watcher in a single process—no need for separate build scripts or process managers!
 
 ## Manual Installation
 

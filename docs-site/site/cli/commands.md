@@ -31,6 +31,9 @@ stati dev [options]
 | `--host` | string | localhost | Host to bind the dev server to |
 | `--open` | boolean | false | Open browser after starting server |
 | `--config` | string | - | Path to config file |
+| `--tailwind-input` | string | - | Input file path for Tailwind CSS watcher |
+| `--tailwind-output` | string | - | Output file path for compiled Tailwind CSS |
+| `--tailwind-verbose` | boolean | false | Show all Tailwind CSS output (default shows errors only) |
 
 **Examples:**
 
@@ -46,6 +49,12 @@ stati dev --open
 
 # Custom config file
 stati dev --config stati.staging.js
+
+# With Tailwind CSS integration
+stati dev --tailwind-input src/styles.css --tailwind-output public/styles.css
+
+# Tailwind with verbose output
+stati dev --tailwind-input src/styles.css --tailwind-output public/styles.css --tailwind-verbose
 ```
 
 ### `stati preview`
