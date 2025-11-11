@@ -274,8 +274,8 @@ async function loadContentAndBuildNavigation(
   logger.info(`📄 Found ${pages.length} pages`);
 
   // Build navigation from pages
-  console.log(); // Add spacing before navigation step
   if (logger.step) {
+    console.log(); // Add spacing before navigation step
     logger.step(1, 3, 'Building navigation');
   }
   const navigation = buildNavigation(pages);
@@ -471,8 +471,8 @@ async function copyStaticAssets(
     return 0;
   }
 
-  console.log(); // Add spacing before asset copying
   if (logger.step) {
+    console.log(); // Add spacing before asset copying
     logger.step(3, 3, 'Copying static assets');
   }
   logger.info(`Copying static assets from ${config.staticDir}`);
@@ -568,7 +568,9 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
   const { manifest } = await setupCacheAndManifest(cacheDir);
 
   // Load content and build navigation
-  console.log(); // Add spacing before content loading
+  if (logger.step) {
+    console.log(); // Add spacing before content loading
+  }
   const { pages, navigation, md, eta, navigationHash } = await loadContentAndBuildNavigation(
     config,
     options,
@@ -579,7 +581,9 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
   manifest.navigationHash = navigationHash;
 
   // Process pages with ISG caching logic
-  console.log(); // Add spacing before page processing
+  if (logger.step) {
+    console.log(); // Add spacing before page processing
+  }
   const buildTime = new Date();
   const pageProcessingResult = await processPagesWithCache(
     pages,
@@ -620,7 +624,9 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
 
   // Generate sitemap if enabled (only in production mode)
   if (config.sitemap?.enabled && currentEnv === 'production') {
-    console.log(); // Add spacing before sitemap generation
+    if (logger.step) {
+      console.log(); // Add spacing before sitemap generation
+    }
     logger.info('Generating sitemap...');
 
     const sitemapResult = generateSitemap(pages, config, config.sitemap);
@@ -641,7 +647,9 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
 
   // Generate robots.txt if enabled (only in production mode)
   if (config.robots?.enabled && currentEnv === 'production') {
-    console.log(); // Add spacing before robots.txt generation
+    if (logger.step) {
+      console.log(); // Add spacing before robots.txt generation
+    }
     logger.info('Generating robots.txt...');
 
     const robotsContent = generateRobotsTxtFromConfig(config.robots, config.site.baseUrl);
@@ -652,7 +660,9 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
 
   // Generate RSS feeds if enabled (only in production mode)
   if (config.rss?.enabled && currentEnv === 'production') {
-    console.log(); // Add spacing before RSS generation
+    if (logger.step) {
+      console.log(); // Add spacing before RSS generation
+    }
     logger.info('Generating RSS feeds...');
 
     try {

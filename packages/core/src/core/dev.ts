@@ -370,6 +370,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
   };
   let watcher: FSWatcher | null = null;
   const isBuildingRef = { value: false };
+  let isStopping = false;
 
   /**
    * Gets MIME type for a file based on its extension
@@ -407,15 +408,12 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
   ws.onmessage = function(event) {
     const data = JSON.parse(event.data);
     if (data.type === 'reload') {
-      console.log('Reloading page due to file changes...');
+      console.log('⚡ Reloading page due to file changes...');
       window.location.reload();
     }
   };
-  ws.onopen = function() {
-    console.log('Connected to Stati dev server');
-  };
   ws.onclose = function() {
-    console.log('Lost connection to Stati dev server');
+    // Suppress disconnection logs - not informative for users
     // Try to reconnect after a delay
     setTimeout(() => window.location.reload(), 1000);
   };
@@ -609,11 +607,10 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
           });
 
           wsServer.on('connection', (ws: unknown) => {
-            logger.info?.('Browser connected for live reload');
-
+            // Suppress connection logs - not informative for users
             const websocket = ws as { on: (event: string, handler: () => void) => void };
             websocket.on('close', () => {
-              logger.info?.('Browser disconnected from live reload');
+              // Suppress disconnection logs - not informative for users
             });
           });
         } catch (_error) {
@@ -675,10 +672,11 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
       });
 
       logger.success?.(`Dev server running at ${url}`);
-      logger.info?.(`\nServing from:`);
+      logger.info?.(`\nServing:`);
       logger.info?.(`  📁 ${outDir}`);
       logger.info?.('Watching:');
       watchPaths.forEach((path) => logger.info?.(`  📁 ${path}`));
+      logger.info?.('');
 
       // Open browser if requested
       if (open) {
@@ -692,6 +690,8 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
     },
 
     async stop(): Promise<void> {
+      if (isStopping) return;
+      isStopping = true;
       if (watcher) {
         await watcher.close();
         watcher = null;
@@ -709,7 +709,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
         httpServer = null;
       }
 
-      logger.info?.('🛑 Dev server stopped');
+      logger.info?.('Dev server stopped');
     },
   };
 

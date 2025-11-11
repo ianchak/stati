@@ -29,7 +29,7 @@ export interface CSSProcessorConfig {
   /** Scripts to add/override in package.json scripts */
   scripts: {
     'build:css': string;
-    'watch:css': string;
+    'watch:css'?: string; // Optional - Tailwind uses dev server integration
     build: string;
     dev: string;
     'copy:css'?: string; // Optional copy script for processors that need it
@@ -55,20 +55,18 @@ export const SASS_CONFIG: CSSProcessorConfig = {
 
 /**
  * Tailwind CSS processor configuration
- * Uses Tailwind CLI with PostCSS and Autoprefixer
+ * Uses Tailwind CLI for production builds and Stati's built-in Tailwind support for development
  */
 export const TAILWIND_CONFIG: CSSProcessorConfig = {
   devDependencies: {
     tailwindcss: TAILWIND_VERSION,
     autoprefixer: AUTOPREFIXER_VERSION,
     postcss: POSTCSS_VERSION,
-    concurrently: CONCURRENTLY_VERSION,
   },
   scripts: {
     'build:css': 'tailwindcss -i src/styles.css -o public/styles.css --minify',
-    'watch:css': 'tailwindcss -i src/styles.css -o public/styles.css --watch',
     'copy:css': "node -e \"require('fs').copyFileSync('public/styles.css', 'dist/styles.css')\"",
     build: 'stati build && npm run build:css && npm run copy:css',
-    dev: 'concurrently --prefix none "npm run watch:css" "stati dev"',
+    dev: 'stati dev --tailwind-input src/styles.css --tailwind-output public/styles.css',
   },
 };

@@ -108,7 +108,7 @@ describe('create-stati scaffolding', () => {
       expect(packageJson.devDependencies).toHaveProperty('tailwindcss');
       expect(packageJson.devDependencies).toHaveProperty('autoprefixer');
       expect(packageJson.devDependencies).toHaveProperty('postcss');
-      expect(packageJson.devDependencies).toHaveProperty('concurrently');
+      expect(packageJson.devDependencies).not.toHaveProperty('concurrently');
 
       // Verify Tailwind CSS content
       const cssContent = await readFile(join(result.targetDir, 'src', 'styles.css'), 'utf-8');

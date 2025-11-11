@@ -305,6 +305,33 @@ The `propValue()` function:
 </html>
 ```
 
+### Development with Built-in Watcher
+
+Stati's development server includes integrated Tailwind CSS support. Simply pass the input and output file paths:
+
+```bash
+stati dev --tailwind-input src/styles.css --tailwind-output public/styles.css
+```
+
+This starts both the Stati dev server and Tailwind watcher in a single process. When you stop the dev server (`Ctrl+C`), the Tailwind watcher stops automatically.
+
+**Quiet mode (default):**
+
+- Shows only errors from Tailwind
+- Keeps console output clean during development
+
+**Verbose mode:**
+
+- Use `--tailwind-verbose` flag to see all Tailwind output
+- Helpful for debugging or monitoring compilation times
+
+**Requirements:**
+
+- `tailwindcss` must be installed locally in your project
+- Stati validates the installation before starting the watcher
+
+See the [Development Server](/cli/development/) documentation for more details on Tailwind integration.
+
 ## JavaScript Processing
 
 ### Basic JavaScript

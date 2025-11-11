@@ -8,6 +8,7 @@ import { build, invalidate, createDevServer, createPreviewServer, setEnv } from 
 import type { BuildOptions, DevServerOptions, PreviewServerOptions } from '@stati/core';
 import { log } from './colors.js';
 import { createLogger } from './logger.js';
+import { watchTailwindCSS } from './tailwind.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -110,6 +111,19 @@ const cli = yargs(hideBin(process.argv))
         .option('config', {
           type: 'string',
           description: 'Path to config file',
+        })
+        .option('tailwind-input', {
+          type: 'string',
+          description: 'Input file for Tailwind CSS watcher.',
+        })
+        .option('tailwind-output', {
+          type: 'string',
+          description: 'Output file for Tailwind CSS watcher.',
+        })
+        .option('tailwind-verbose', {
+          type: 'boolean',
+          description: 'Show all Tailwind CSS output in dev mode.',
+          default: false,
         }),
     async (argv) => {
       const devOptions: DevServerOptions = {
@@ -137,15 +151,60 @@ const cli = yargs(hideBin(process.argv))
         const devServer = await createDevServer(devOptions);
         await devServer.start();
 
+        // Start Tailwind watcher if configured (after dev server is running)
+        let tailwindWatcher: ReturnType<typeof watchTailwindCSS> | null = null;
+        if (argv['tailwind-input'] && argv['tailwind-output']) {
+          tailwindWatcher = watchTailwindCSS(
+            {
+              input: argv['tailwind-input'],
+              output: argv['tailwind-output'],
+              verbose: !!argv['tailwind-verbose'],
+            },
+            coloredLogger,
+          );
+        }
+
         // Handle graceful shutdown
+        let shutdownInProgress = false;
         const shutdown = async () => {
-          log.info('\n🛑 Shutting down dev server...');
+          // Immediate guard before any async operations
+          if (shutdownInProgress) {
+            return;
+          }
+          shutdownInProgress = true;
+
+          log.info('\nShutting down dev server...');
+
+          // Stop Tailwind watcher and wait for it to fully exit
+          if (tailwindWatcher && !tailwindWatcher.killed) {
+            await new Promise<void>((resolve) => {
+              // Set a timeout in case the process doesn't exit cleanly
+              const timeout = global.setTimeout(() => {
+                log.warning('Tailwind watcher did not exit cleanly, forcing shutdown');
+                tailwindWatcher?.kill('SIGKILL');
+                resolve();
+              }, 3000);
+
+              tailwindWatcher.once('close', () => {
+                global.clearTimeout(timeout);
+                resolve();
+              });
+
+              tailwindWatcher.kill('SIGTERM');
+            });
+          }
+
           await devServer.stop();
           process.exit(0);
         };
 
-        process.on('SIGINT', shutdown);
-        process.on('SIGTERM', shutdown);
+        // Remove any existing listeners to prevent duplicates
+        process.removeAllListeners('SIGINT');
+        process.removeAllListeners('SIGTERM');
+
+        // Use once() instead of on() to ensure handler only fires once per signal
+        process.once('SIGINT', shutdown);
+        process.once('SIGTERM', shutdown);
       } catch (error) {
         log.error(`Dev server failed: ${error instanceof Error ? error.message : String(error)}`);
         process.exit(1);
@@ -204,7 +263,7 @@ const cli = yargs(hideBin(process.argv))
 
         // Handle graceful shutdown
         const shutdown = async () => {
-          log.info('\n🛑 Shutting down preview server...');
+          log.info('\nShutting down preview server...');
           await previewServer.stop();
           process.exit(0);
         };

@@ -177,7 +177,7 @@ describe('CSSProcessor', () => {
       expect(packageJson.devDependencies).toHaveProperty('tailwindcss');
       expect(packageJson.devDependencies).toHaveProperty('autoprefixer');
       expect(packageJson.devDependencies).toHaveProperty('postcss');
-      expect(packageJson.devDependencies).toHaveProperty('concurrently');
+      expect(packageJson.devDependencies).not.toHaveProperty('concurrently');
 
       // Preserved dependencies
       expect(packageJson.devDependencies['@stati/cli']).toBe('^1.0.0');
@@ -190,18 +190,13 @@ describe('CSSProcessor', () => {
       const packageJson = JSON.parse(await readFile(join(tempDir, 'package.json'), 'utf-8'));
 
       expect(packageJson.scripts).toHaveProperty('build:css');
-      expect(packageJson.scripts).toHaveProperty('watch:css');
-      expect(packageJson.scripts['build:css']).toContain('tailwindcss');
-      expect(packageJson.scripts['watch:css']).toContain('tailwindcss');
-      expect(packageJson.scripts['watch:css']).toContain('--watch');
+      expect(packageJson.scripts['build:css']).toBe(
+        'tailwindcss -i src/styles.css -o public/styles.css --minify',
+      );
 
-      // Verify input/output paths
-      expect(packageJson.scripts['build:css']).toContain('-i src/styles.css -o public/styles.css');
-      expect(packageJson.scripts['watch:css']).toContain('-i src/styles.css -o public/styles.css');
-
-      // Scripts should be modified to integrate CSS processing
+      // Dev script should use integrated Tailwind support
       expect(packageJson.scripts.dev).toBe(
-        'concurrently --prefix none "npm run watch:css" "stati dev"',
+        'stati dev --tailwind-input src/styles.css --tailwind-output public/styles.css',
       );
       expect(packageJson.scripts.build).toBe(
         'stati build && npm run build:css && npm run copy:css',

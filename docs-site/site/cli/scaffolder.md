@@ -20,7 +20,7 @@ npm create stati my-site --template=blank --styling=tailwind
 
 Running the scaffolder will:
 
-- Create a new project directory (or reuse the provided `--dir` target)
+- Create a new project directory
 - Copy the blank starter template files into that directory
 - Update `package.json` with your project name and Stati metadata
 - Set up optional styling scripts based on the chosen styling option
@@ -29,7 +29,7 @@ Running the scaffolder will:
 
 > **Note:** You can skip automatic dependency installation with `--no-install` and install them manually later.
 >
-> **Non-Interactive Mode:** When using CLI flags (non-interactive mode), dependencies are installed by default using `npm`. Use `--package-manager` to specify a different package manager (yarn, pnpm, or bun).
+> **Non-Interactive Mode:** When all required options are provided via CLI flags, dependencies are installed automatically by default using `npm`. Use `--package-manager` to specify a different package manager (yarn, pnpm, or bun).
 
 ## Interactive Setup
 
@@ -81,14 +81,20 @@ Choose your preferred styling approach:
 
 ### Sass
 
+- Creates `styles/main.scss` from the base CSS file
 - SCSS support with build scripts
 - Automatic compilation during development and build
+- Scripts added: `build:css`, `watch:css`
+- Modified scripts: `build` and `dev` to include CSS compilation
 
 ### Tailwind CSS
 
-- Generates a `tailwind.config.js` tailored to the Stati content directory
-- Adds a source stylesheet at `src/styles.css` compiled to `public/styles.css`
-- Configures `build:css` and `watch:css` scripts that run the Tailwind CLI alongside Stati
+- Generates `tailwind.config.js` with content paths for `site/**/*.{md,eta,html}` and `.stati/tailwind-classes.html`
+- Creates source stylesheet at `src/styles.css` compiled to `public/styles.css`
+- Scripts added: `build:css`, `copy:css`
+- Modified scripts:
+  - `dev`: Uses Stati's built-in Tailwind integration (single process)
+  - `build`: Runs Stati build, then CSS compilation, then copy to dist
 
 ## Post-Creation Setup
 
@@ -102,7 +108,7 @@ npm run dev
 
 ## Package Scripts
 
-All created projects include these scripts:
+All created projects include these base scripts:
 
 ```json
 {
@@ -114,6 +120,8 @@ All created projects include these scripts:
   }
 }
 ```
+
+> **Note:** When using Sass or Tailwind CSS, the `build` and `dev` scripts are automatically modified to include CSS compilation steps. See the [Styling Solutions](#styling-solutions) section for details.
 
 ## Generated Project Structure
 
