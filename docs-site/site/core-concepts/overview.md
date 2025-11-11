@@ -35,7 +35,6 @@ Every feature in Stati is designed with performance in mind:
 
 - Fast development server with automatic full-page reloads
 - Incremental builds that only process changed files
-- Incremental builds that only process changed files
 - Smart caching that adapts to your content
 
 ### Minimal Dependencies
