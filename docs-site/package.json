@@ -27,8 +27,8 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@stati/cli": "^1.6.5",
-    "@stati/core": "^1.11.1",
+    "@stati/cli": "^1.7.0",
+    "@stati/core": "^1.12.2",
     "autoprefixer": "^10.4.0",
     "markdown-it-anchor": "^9.2.0",
     "markdown-it-external-links": "^0.0.6",
