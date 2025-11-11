@@ -41,7 +41,7 @@
                 </div>
 
                 <!-- Table of Contents area -->
-                <aside class="hidden xl:block w-80 flex-shrink-0 pr-6">
+                <aside class="hidden xl:block w-80 min-w-80 flex-shrink-0 pr-6">
                     <%~ stati.partials.toc %>
                 </aside>
             </div>
