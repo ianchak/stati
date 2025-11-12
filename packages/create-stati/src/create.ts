@@ -109,6 +109,22 @@ function validateDirectoryPath(dirPath: string): string {
     'windows.old', // Old Windows installations
   ];
 
+  // Exceptions: paths that should be allowed despite matching system patterns
+  const allowedExceptions: string[] = [];
+
+  // macOS temporary directories (os.tmpdir())
+  if (process.platform === 'darwin') {
+    allowedExceptions.push('/var/folders/');
+  }
+
+  // Check if the path is in an allowed exception
+  for (const exception of allowedExceptions) {
+    const normalizedExc = exception.toLowerCase().trim();
+    if (normalizedPath.startsWith(normalizedExc)) {
+      return absolutePath; // Allow this path
+    }
+  }
+
   // Check if the path contains or starts with any system directory
   for (const pattern of systemPathPatterns) {
     // Normalize the pattern to lowercase and trim whitespace
