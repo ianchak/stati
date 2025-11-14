@@ -6,7 +6,7 @@
   "scripts": {
     "test": "vitest run",
     "test:create-stati": "npm run build -w packages/create-stati && cd examples && node ../packages/create-stati/dist/index.js test-scaffolded",
-    "test:create-stati:cleanup": "cd examples && rmdir /s /q test-scaffolded 2>nul || echo Test directory cleaned or did not exist",
+    "test:create-stati:cleanup": "node -e \"require('node:fs').rmSync('examples/test-scaffolded', { recursive: true, force: true })\"",
     "lint": "eslint . --ext .ts",
     "lint:ci": "eslint examples --ext .ts --ext .js",
     "typecheck": "tsc -p tsconfig.base.json --noEmit",
