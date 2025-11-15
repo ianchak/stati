@@ -49,7 +49,7 @@ export const SASS_CONFIG: CSSProcessorConfig = {
     'build:css': 'sass styles/main.scss public/styles.css --style=compressed',
     'watch:css': 'sass styles/main.scss public/styles.css --watch',
     build: 'npm run build:css && stati build',
-    dev: 'concurrently --prefix none "npm run watch:css" "stati dev"',
+    dev: 'concurrently --prefix none -P "npm run watch:css" "stati dev {@}"',
   },
 };
 
