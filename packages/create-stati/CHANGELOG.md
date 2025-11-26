@@ -1,5 +1,11 @@
 # create-stati
 
+## 1.9.3
+
+### Patch Changes
+
+- 65f4d31: allow macOS temporary folders when creating a project (72)
+
 ## 1.9.2
 
 ### Patch Changes
