@@ -1,5 +1,13 @@
 # @stati/cli
 
+## 1.7.3
+
+### Patch Changes
+
+- resolve #74 cleanup script error
+- Updated dependencies
+  - @stati/core@1.12.5
+
 ## 1.7.2
 
 ### Patch Changes
