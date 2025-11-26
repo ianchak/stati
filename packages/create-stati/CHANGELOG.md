@@ -1,5 +1,11 @@
 # create-stati
 
+## 1.9.4
+
+### Patch Changes
+
+- resolve #74 cleanup script error
+
 ## 1.9.3
 
 ### Patch Changes

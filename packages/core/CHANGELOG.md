@@ -1,5 +1,11 @@
 # @stati/core
 
+## 1.12.5
+
+### Patch Changes
+
+- resolve #74 cleanup script error
+
 ## 1.12.4
 
 ### Patch Changes
