@@ -66,7 +66,7 @@ export const TAILWIND_CONFIG: CSSProcessorConfig = {
   scripts: {
     'build:css': 'tailwindcss -i src/styles.css -o public/styles.css --minify',
     'copy:css':
-      "node -e \"require('node:fs').copyFileSync('public/styles.css', 'dist/styles.css')\"",
+      "node -e \"require('node:fs').copyFileSync('public/styles.css','dist/styles.css')\"",
     build: 'stati build && npm run build:css && npm run copy:css',
     dev: 'stati dev --tailwind-input src/styles.css --tailwind-output public/styles.css',
   },

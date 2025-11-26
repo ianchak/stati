@@ -15,7 +15,7 @@
     "clean:cache": "node -e \"require('node:fs').rmSync('.stati',{recursive:true,force:true})\"",
     "clean": "npm run clean:dist && npm run clean:cache",
     "build:css": "tailwindcss -i src/styles.css -o public/styles.css --minify",
-    "copy:css": "node -e \"require('node:fs').copyFileSync('public/styles.css', 'dist/styles.css')\""
+    "copy:css": "node -e \"require('node:fs').copyFileSync('public/styles.css','dist/styles.css')\""
   },
   "keywords": [
     "static-site",
