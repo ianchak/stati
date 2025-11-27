@@ -1,5 +1,11 @@
 # create-stati
 
+## 1.9.5
+
+### Patch Changes
+
+- 26252d9: replace rimraf with node fs methods for cleaning
+
 ## 1.9.4
 
 ### Patch Changes
