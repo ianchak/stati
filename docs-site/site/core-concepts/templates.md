@@ -106,10 +106,10 @@ Stati supports hierarchical layouts that inherit from parent directories:
 site/
 ├── layout.eta           # Root layout (all pages)
 └── blog/
-    ├── layout.eta       # Blog layout (inherits from root)
+    ├── layout.eta       # Blog layout (override for /blog pages)
     ├── index.md
     └── posts/
-        ├── layout.eta   # Post layout (inherits from blog)
+        ├── layout.eta   # Post layout (override for /blog/posts pages)
         └── my-post.md
 ```
 

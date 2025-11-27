@@ -6,9 +6,9 @@ order: 3
 
 # Project Structure
 
-When you create a new Stati project, you'll get a clean and organized directory structure designed for simplicity and flexibility.
+Stati organizes your files in a clean and structured way, designed for simplicity and flexibility.
 
-## Default Project Structure
+## Example Structure
 
 ```
 my-stati-site/
@@ -21,6 +21,8 @@ my-stati-site/
     ├── index.md
     ├── layout.eta
     └── _partials/
+        ├── header.eta
+        └── footer.eta
 ```
 
 ## Key Directories
@@ -88,9 +90,9 @@ Standard Node.js package file with your dependencies and build scripts.
 ### Layouts
 
 - **`layout.eta`** - Default layout template
-- **`blog/layout.eta`** - Section-specific layout (inherits from parent)
+- **`blog/layout.eta`** - Section-specific layout
 
-You can also use page specific layouts if you want, by referring to the layouts name in the front matter of your page. For example: `layout: home`
+You can also use page specific layouts if you want, by referring to the layouts name in the front matter of your page. For example: `layout: home` refers to `home.eta`
 
 ### Content Files
 
@@ -139,8 +141,8 @@ site/
 Layouts and partials cascade down the directory tree:
 
 1. `site/layout.eta` (root layout)
-2. `site/blog/layout.eta` (inherits from root)
-3. `site/blog/tutorials/layout.eta` (inherits from blog)
+2. `site/blog/layout.eta` (override for /blog pages)
+3. `site/blog/tutorials/layout.eta` (override for /blog/tutorials pages)
 
 ### Index Files
 
