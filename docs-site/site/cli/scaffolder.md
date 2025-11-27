@@ -116,7 +116,9 @@ All created projects include these base scripts:
     "dev": "stati dev",
     "build": "stati build",
     "preview": "stati preview",
-    "clean": "rimraf dist .stati"
+    "clean:dist": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "clean:cache": "node -e \"require('node:fs').rmSync('.stati',{recursive:true,force:true})\"",
+    "clean": "npm run clean:dist && npm run clean:cache"
   }
 }
 ```

@@ -742,7 +742,9 @@ export default defineConfig({
   "scripts": {
     "dev": "stati dev --port 3000",
     "build": "npm run build:clean && stati build",
-    "build:clean": "rimraf dist .stati",
+    "build:clean:dist": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build:clean:cache": "node -e \"require('node:fs').rmSync('.stati',{recursive:true,force:true})\"",
+    "build:clean": "npm run build:clean:dist && npm run build:clean:cache",
     "preview": "stati preview --port 8080",
     "invalidate:recent": "stati invalidate 'tag:recent'",
     "invalidate:all": "stati invalidate 'path:/**'"

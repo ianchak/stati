@@ -11,9 +11,11 @@
     "build:local": "node ../packages/cli/dist/cli.js build --clean && npm run build:css && npm run copy:css",
     "preview": "stati preview",
     "preview:local": "node ../packages/cli/dist/cli.js preview",
-    "clean": "rimraf dist .stati",
+    "clean:dist": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "clean:cache": "node -e \"require('node:fs').rmSync('.stati',{recursive:true,force:true})\"",
+    "clean": "npm run clean:dist && npm run clean:cache",
     "build:css": "tailwindcss -i src/styles.css -o public/styles.css --minify",
-    "copy:css": "node -e \"require('fs').copyFileSync('public/styles.css', 'dist/styles.css')\""
+    "copy:css": "node -e \"require('node:fs').copyFileSync('public/styles.css','dist/styles.css')\""
   },
   "keywords": [
     "static-site",
@@ -36,7 +38,6 @@
     "markdown-it-toc-done-right": "^4.2.0",
     "postcss": "^8.4.0",
     "prismjs": "^1.30.0",
-    "rimraf": "^5.0.0",
     "tailwindcss": "^3.4.0",
     "@tailwindcss/typography": "^0.5.16"
   },
