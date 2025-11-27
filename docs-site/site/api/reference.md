@@ -10,7 +10,7 @@ Stati provides a comprehensive API for templates, configuration, and programmati
 
 ## Template API
 
-### Template Context (`it`)
+### Template Context (`stati`)
 
 Every Eta template receives a `TemplateContext` object with site metadata, front matter, and rendered content:
 
