@@ -113,7 +113,7 @@ describe('CSSProcessor', () => {
 
       // Scripts should be modified to integrate CSS processing
       expect(packageJson.scripts.dev).toBe(
-        'concurrently --prefix none "npm run watch:css" "stati dev"',
+        'concurrently --prefix none -P "npm run watch:css" "stati dev {@}"',
       );
       expect(packageJson.scripts.build).toBe('npm run build:css && stati build');
     });
