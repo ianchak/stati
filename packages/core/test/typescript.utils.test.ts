@@ -121,7 +121,7 @@ describe('typescript.utils', () => {
       });
 
       // Assert
-      expect(result.bundleFilename).toBe('');
+      expect(result.bundleFilename).toBeUndefined();
       expect(mockLogger.warning).toHaveBeenCalledWith(
         expect.stringContaining('TypeScript entry point not found'),
       );

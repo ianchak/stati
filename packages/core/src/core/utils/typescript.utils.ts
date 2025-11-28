@@ -31,8 +31,8 @@ export interface CompileOptions {
  * Result of TypeScript compilation.
  */
 export interface CompileResult {
-  /** The generated bundle filename (e.g., 'bundle-a1b2c3d4.js') */
-  bundleFilename: string;
+  /** The generated bundle filename (e.g., 'bundle-a1b2c3d4.js'), or undefined if compilation was skipped */
+  bundleFilename?: string;
 }
 
 /**
@@ -93,7 +93,7 @@ export async function compileTypeScript(options: CompileOptions): Promise<Compil
   if (!(await pathExists(entryPath))) {
     logger.warning(`TypeScript entry point not found: ${entryPath}`);
     logger.warning('Skipping TypeScript compilation.');
-    return { bundleFilename: '' };
+    return {};
   }
 
   logger.info('Compiling TypeScript...');
