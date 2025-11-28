@@ -5,7 +5,7 @@ import { readFile } from 'fs/promises';
 import { WebSocketServer } from 'ws';
 import chokidar from 'chokidar';
 import type { BuildContext } from 'esbuild';
-import type { StatiConfig, Logger, StatiAssets } from '../types/index.js';
+import type { StatiConfig, Logger } from '../types/index.js';
 import type { FSWatcher } from 'chokidar';
 import { build } from './build.js';
 import { invalidate } from './invalidate.js';
@@ -22,7 +22,6 @@ import {
   TemplateError,
   createFallbackLogger,
   mergeServerOptions,
-  compileTypeScript,
   createTypeScriptWatcher,
 } from './utils/index.js';
 import { setEnv, getEnv } from '../env.js';
@@ -634,28 +633,9 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
         });
       });
 
-      // TypeScript compilation and watcher setup
+      // TypeScript watcher setup (initial compilation is handled by performInitialBuild)
       if (config.typescript?.enabled) {
         try {
-          // Initial TypeScript compilation for development
-          const tsResult = await compileTypeScript({
-            projectRoot: process.cwd(),
-            config: config.typescript,
-            outDir: config.outDir || 'dist',
-            mode: 'development',
-            logger,
-          });
-
-          // Create assets object for templates (not actively used in dev, but available)
-          if (tsResult?.bundleFilename) {
-            const assets: StatiAssets = {
-              bundleName: tsResult.bundleFilename,
-              bundlePath: `/${config.typescript.outDir || '_assets'}/${tsResult.bundleFilename}`,
-            };
-            // Assets are passed through the build pipeline, no need to store separately
-            void assets; // Satisfy unused variable check
-          }
-
           // Start TypeScript watcher for hot reload
           tsWatcher = await createTypeScriptWatcher({
             projectRoot: process.cwd(),
