@@ -1,9 +1,10 @@
-import { mkdir, rm, access, stat } from 'fs/promises';
-import { join, resolve } from 'path';
+import { mkdir, rm, access, stat, writeFile, readFile } from 'fs/promises';
+import { join, resolve, dirname } from 'path';
 import { ExampleManager } from './examples.js';
 import { PackageJsonModifier } from './package-json.js';
 import { CSSProcessor } from './css-processors.js';
 import type { StylingOption } from './css-processors.js';
+import { setupTypeScript } from './typescript-processor.js';
 import { isCommandAvailable, spawnProcess, logger } from './utils/index.js';
 
 /**
@@ -178,10 +179,99 @@ export interface CreateOptions {
   projectName: string;
   template: 'blank';
   styling: StylingOption;
+  typescript?: boolean;
   gitInit?: boolean;
   install?: boolean;
   packageManager?: PackageManager;
   dir?: string;
+}
+
+/**
+ * Generate the appropriate config file based on options.
+ * Returns TypeScript config when typescript is enabled, JavaScript otherwise.
+ */
+function generateConfigFile(options: CreateOptions): { filename: string; content: string } {
+  if (options.typescript) {
+    return {
+      filename: 'stati.config.ts',
+      content: generateTypeScriptConfig(options),
+    };
+  }
+
+  return {
+    filename: 'stati.config.js',
+    content: generateJavaScriptConfig(options),
+  };
+}
+
+/**
+ * Generate TypeScript configuration file content.
+ * Includes full TypeScript config with all settings.
+ */
+function generateTypeScriptConfig(options: CreateOptions): string {
+  return `import { defineConfig } from '@stati/core';
+
+export default defineConfig({
+  site: {
+    title: '${options.projectName}',
+    description: 'A Stati site',
+  },
+  typescript: {
+    enabled: true,
+    srcDir: 'src',
+    outDir: '_assets',
+    entryPoint: 'main.ts',
+    bundleName: 'bundle',
+    hash: true,
+  },
+});
+`;
+}
+
+/**
+ * Generate JavaScript configuration file content.
+ * Minimal config without TypeScript settings.
+ */
+function generateJavaScriptConfig(options: CreateOptions): string {
+  return `import { defineConfig } from '@stati/core';
+
+export default defineConfig({
+  site: {
+    title: '${options.projectName}',
+    description: 'A Stati site',
+  },
+});
+`;
+}
+
+/**
+ * Update layout.eta to include TypeScript bundle script tag.
+ * Adds a conditional script tag before the closing </body> tag.
+ */
+async function updateLayoutWithScript(projectDir: string): Promise<void> {
+  const layoutPath = join(projectDir, 'site', 'layout.eta');
+
+  try {
+    let content = await readFile(layoutPath, 'utf-8');
+
+    // Add script tag before closing </body>
+    // Uses stati.assets.bundlePath for the full asset URL
+    content = content.replace(
+      '</body>',
+      `<% if (stati.assets?.bundlePath) { %>
+  <script type="module" src="<%= stati.assets.bundlePath %>"></script>
+<% } %>
+</body>`,
+    );
+
+    await writeFile(layoutPath, content);
+  } catch (error) {
+    // Layout file might not exist in all templates, log warning
+    logger.warn(
+      'Warning: Could not update layout.eta with TypeScript script: ' +
+        (error instanceof Error ? error.message : 'Unknown error'),
+    );
+  }
 }
 
 export class ProjectScaffolder {
@@ -201,20 +291,42 @@ export class ProjectScaffolder {
       // 2. Copy example files directly
       await this.examplesManager.copyExample(this.options.template, targetDir);
 
-      // 3. Modify package.json with project name
-      const packageModifier = new PackageJsonModifier({ projectName: this.options.projectName });
+      // 3. Generate and write config file (stati.config.ts or stati.config.js)
+      const configFile = generateConfigFile(this.options);
+      await writeFile(join(targetDir, configFile.filename), configFile.content);
+
+      // 4. Setup TypeScript if enabled
+      if (this.options.typescript) {
+        const tsSetup = setupTypeScript();
+
+        // Write TypeScript files (tsconfig.json, src/main.ts)
+        for (const [relativePath, content] of tsSetup.files) {
+          const filePath = join(targetDir, relativePath);
+          await mkdir(dirname(filePath), { recursive: true });
+          await writeFile(filePath, content);
+        }
+
+        // Update layout.eta with script tag
+        await updateLayoutWithScript(targetDir);
+      }
+
+      // 5. Modify package.json with project name and TypeScript deps if needed
+      const packageModifier = new PackageJsonModifier({
+        projectName: this.options.projectName,
+        typescript: this.options.typescript,
+      });
       await packageModifier.modifyPackageJson(targetDir);
 
-      // 4. Setup CSS preprocessing if requested
+      // 6. Setup CSS preprocessing if requested
       const cssProcessor = new CSSProcessor();
       await cssProcessor.processStyling(targetDir, this.options.styling);
 
-      // 5. Initialize git (optional)
+      // 7. Initialize git (optional)
       if (this.options.gitInit) {
         await this.initializeGit(targetDir);
       }
 
-      // 6. Install dependencies (optional)
+      // 8. Install dependencies (optional)
       if (this.options.install) {
         await this.installDependencies(targetDir);
       }

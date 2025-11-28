@@ -257,6 +257,7 @@ describe('create-stati CLI', () => {
         projectName: 'test-project',
         template: 'blank',
         styling: 'css',
+        typescript: false, // TypeScript defaults to false in non-interactive mode
         gitInit: false,
         install: false,
       });

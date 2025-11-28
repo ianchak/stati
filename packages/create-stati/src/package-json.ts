@@ -1,7 +1,9 @@
 import { readPackageJson, writePackageJson, formatErrorMessage } from './utils/index.js';
+import { setupTypeScript } from './typescript-processor.js';
 
 export interface ProjectOptions {
   projectName: string;
+  typescript?: boolean | undefined;
 }
 
 export class PackageJsonModifier {
@@ -19,6 +21,23 @@ export class PackageJsonModifier {
         engine: 'stati',
         version: packageJson.devDependencies?.['@stati/core'] || '^1.4.0',
       };
+
+      // Add TypeScript dependencies and scripts if enabled
+      if (this.options.typescript) {
+        const tsSetup = setupTypeScript();
+
+        // Merge TypeScript devDependencies
+        packageJson.devDependencies = {
+          ...packageJson.devDependencies,
+          ...tsSetup.devDependencies,
+        };
+
+        // Merge TypeScript scripts
+        packageJson.scripts = {
+          ...packageJson.scripts,
+          ...tsSetup.scripts,
+        };
+      }
 
       // Write back with proper formatting
       await writePackageJson(projectDir, packageJson);
