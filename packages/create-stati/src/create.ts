@@ -293,6 +293,15 @@ export class ProjectScaffolder {
 
       // 3. Generate and write config file (stati.config.ts or stati.config.js)
       const configFile = generateConfigFile(this.options);
+      // Remove template config file if we're writing a different one (e.g., TS replacing JS)
+      const templateConfigPath = join(targetDir, 'stati.config.js');
+      if (configFile.filename !== 'stati.config.js') {
+        try {
+          await rm(templateConfigPath);
+        } catch {
+          // Ignore if file doesn't exist
+        }
+      }
       await writeFile(join(targetDir, configFile.filename), configFile.content);
 
       // 4. Setup TypeScript if enabled
