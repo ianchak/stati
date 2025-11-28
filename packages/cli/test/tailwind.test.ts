@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { watchTailwindCSS } from '../src/tailwind.js';
 import { createLogger } from '../src/logger.js';
-import { spawn } from 'child_process';
-import { existsSync } from 'fs';
-import { EventEmitter } from 'events';
+import { spawn } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { EventEmitter } from 'node:events';
 
 // Mock dependencies
 vi.mock('child_process');

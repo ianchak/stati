@@ -1,5 +1,5 @@
 import { Eta } from 'eta';
-import { join, dirname, relative, basename, posix } from 'path';
+import { join, dirname, relative, basename, posix } from 'node:path';
 import glob from 'fast-glob';
 import type { StatiConfig, PageModel, NavNode, CollectionData } from '../types/index.js';
 import { TEMPLATE_EXTENSION } from '../constants.js';

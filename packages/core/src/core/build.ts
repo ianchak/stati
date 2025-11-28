@@ -19,8 +19,7 @@ import {
   compileTypeScript,
 } from './utils/index.js';
 import type { CompileResult } from './utils/index.js';
-import { join, dirname, relative } from 'path';
-import { posix } from 'path';
+import { join, dirname, relative, posix } from 'node:path';
 import { loadConfig } from '../config/loader.js';
 import { loadContent } from './content.js';
 import { createMarkdownProcessor, renderMarkdown } from './markdown.js';

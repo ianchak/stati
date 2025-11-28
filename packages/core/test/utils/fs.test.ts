@@ -16,7 +16,7 @@ vi.mock('fs-extra', () => ({
 }));
 
 import fse from 'fs-extra';
-import type { WriteFileOptions, Stats, Dirent } from 'fs';
+import type { WriteFileOptions, Stats, Dirent } from 'node:fs';
 import {
   readFile,
   writeFile,

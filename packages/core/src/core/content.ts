@@ -1,7 +1,7 @@
 import glob from 'fast-glob';
 import { readFile, resolveSrcDir } from './utils/index.js';
 import matter from 'gray-matter';
-import { relative, dirname, basename } from 'path';
+import { relative, dirname, basename } from 'node:path';
 import type { PageModel, StatiConfig } from '../types/index.js';
 import { MARKDOWN_EXTENSION } from '../constants.js';
 

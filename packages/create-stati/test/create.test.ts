@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { tmpdir } from 'os';
-import { join } from 'path';
-import { mkdtemp, rm, access, readFile, writeFile, mkdir } from 'fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { mkdtemp, rm, access, readFile, writeFile, mkdir } from 'node:fs/promises';
 import { createSite, ProjectScaffolder, detectAvailablePackageManagers } from '../src/create.js';
 import type { CreateOptions } from '../src/create.js';
 import { ExampleManager } from '../src/examples.js';

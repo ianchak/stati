@@ -1,6 +1,6 @@
-import { existsSync } from 'fs';
-import { join, resolve } from 'path';
-import { pathToFileURL } from 'url';
+import { existsSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import type { StatiConfig } from '../types/index.js';
 import { validateISGConfig, ISGConfigurationError } from '../core/isg/validation.js';
 import { compileStatiConfig, cleanupCompiledConfig } from '../core/utils/index.js';

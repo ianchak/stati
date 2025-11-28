@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createTemplateEngine, renderPage } from '../../src/core/templates.js';
 import type { StatiConfig, PageModel } from '../../src/types/index.js';
 import type { Eta } from 'eta';
-import { join } from 'path';
+import { join } from 'node:path';
 
 // Create hoisted mocks
 const { mockPathExists, mockGlob, MockEta } = vi.hoisted(() => ({

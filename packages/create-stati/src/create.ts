@@ -1,5 +1,5 @@
-import { mkdir, rm, access, stat, writeFile, readFile } from 'fs/promises';
-import { join, resolve, dirname } from 'path';
+import { mkdir, rm, access, stat, writeFile, readFile } from 'node:fs/promises';
+import { join, resolve, dirname } from 'node:path';
 import { ExampleManager } from './examples.js';
 import { PackageJsonModifier } from './package-json.js';
 import { CSSProcessor } from './css-processors.js';

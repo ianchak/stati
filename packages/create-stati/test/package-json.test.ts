@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { tmpdir } from 'os';
-import { join } from 'path';
-import { mkdtemp, rm, writeFile, readFile } from 'fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { mkdtemp, rm, writeFile, readFile } from 'node:fs/promises';
 import { PackageJsonModifier } from '../src/package-json.js';
 
 describe('PackageJsonModifier', () => {

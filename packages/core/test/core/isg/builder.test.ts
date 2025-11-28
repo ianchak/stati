@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { join } from 'path';
+import { join } from 'node:path';
 import type { PageModel, CacheEntry, StatiConfig } from '../../../src/types/index.js';
 
 // Mock all ISG modules that the builder depends on - use factory functions

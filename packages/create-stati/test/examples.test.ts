@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { tmpdir } from 'os';
-import { join } from 'path';
-import { mkdtemp, rm, writeFile, mkdir, access, readFile } from 'fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { mkdtemp, rm, writeFile, mkdir, access, readFile } from 'node:fs/promises';
 import { ExampleManager } from '../src/examples.js';
 
 describe('ExampleManager', () => {

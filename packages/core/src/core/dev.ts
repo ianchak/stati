@@ -1,7 +1,6 @@
-import { createServer } from 'http';
-import { join, extname } from 'path';
-import { posix } from 'path';
-import { readFile } from 'fs/promises';
+import { createServer } from 'node:http';
+import { join, extname, posix } from 'node:path';
+import { readFile } from 'node:fs/promises';
 import { WebSocketServer } from 'ws';
 import chokidar from 'chokidar';
 import type { BuildContext } from 'esbuild';

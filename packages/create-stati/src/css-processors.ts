@@ -1,5 +1,5 @@
-import { readFile, writeFile, mkdir, unlink } from 'fs/promises';
-import { join } from 'path';
+import { readFile, writeFile, mkdir, unlink } from 'node:fs/promises';
+import { join } from 'node:path';
 import { updatePackageJson, formatErrorMessage } from './utils/index.js';
 import { SASS_CONFIG, TAILWIND_CONFIG } from './constants.js';
 import type { CSSProcessorConfig } from './constants.js';

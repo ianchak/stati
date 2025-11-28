@@ -1,5 +1,4 @@
-import { join } from 'path';
-import { posix } from 'path';
+import { join, posix } from 'node:path';
 import type { StatiConfig } from '../../types/index.js';
 import {
   DEFAULT_SRC_DIR,

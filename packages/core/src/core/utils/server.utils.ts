@@ -1,5 +1,5 @@
-import { join } from 'path';
-import { stat } from 'fs/promises';
+import { join } from 'node:path';
+import { stat } from 'node:fs/promises';
 
 /**
  * Result of attempting to resolve a pretty URL path

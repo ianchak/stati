@@ -1,6 +1,6 @@
-import { createServer } from 'http';
-import { join, extname } from 'path';
-import { readFile } from 'fs/promises';
+import { createServer } from 'node:http';
+import { join, extname } from 'node:path';
+import { readFile } from 'node:fs/promises';
 import type { Logger, StatiConfig } from '../types/index.js';
 import { loadConfig } from '../config/loader.js';
 import {

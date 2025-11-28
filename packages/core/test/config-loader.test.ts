@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { join } from 'path';
-import { mkdirSync, writeFileSync, rmSync, existsSync } from 'fs';
-import { tmpdir } from 'os';
+import { join } from 'node:path';
+import { mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { getConfigFilePaths, loadConfig } from '../src/config/loader.js';
 
 // Test the actual loader functionality by creating a simpler approach

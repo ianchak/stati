@@ -1,5 +1,5 @@
 import fse from 'fs-extra';
-import type { WriteFileOptions } from 'fs';
+import type { WriteFileOptions } from 'node:fs';
 const {
   readFile: fseReadFile,
   writeFile: fseWriteFile,

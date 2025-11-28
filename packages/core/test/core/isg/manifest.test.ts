@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { join } from 'path';
+import { join } from 'node:path';
 import type { CacheManifest } from '../../../src/types/index.js';
 
 // Mock fs-extra completely inside the factory to avoid hoisting issues

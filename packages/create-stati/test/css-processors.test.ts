@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { tmpdir } from 'os';
-import { join } from 'path';
-import { mkdtemp, rm, writeFile, readFile, mkdir, access } from 'fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { mkdtemp, rm, writeFile, readFile, mkdir, access } from 'node:fs/promises';
 import { CSSProcessor } from '../src/css-processors.js';
 
 describe('CSSProcessor', () => {

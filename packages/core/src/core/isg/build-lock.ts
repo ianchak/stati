@@ -1,6 +1,6 @@
 import { writeFile, readFile, pathExists, remove, ensureDir } from '../utils/index.js';
-import { join, dirname } from 'path';
-import { hostname } from 'os';
+import { join, dirname } from 'node:path';
+import { hostname } from 'node:os';
 
 /**
  * Interface for Node.js file system errors
