@@ -598,9 +598,10 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
     });
 
     if (tsResult?.bundleFilename) {
+      const assetsDir = config.typescript.outDir || '_assets';
       assets = {
         bundleName: tsResult.bundleFilename,
-        bundlePath: `/${config.typescript.outDir || '_assets'}/${tsResult.bundleFilename}`,
+        bundlePath: posix.join('/', assetsDir, tsResult.bundleFilename),
       };
     }
   }
