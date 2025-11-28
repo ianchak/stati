@@ -88,7 +88,7 @@ When TypeScript is enabled, Stati provides the bundle path through `stati.assets
 </head>
 <body>
   <%~ it.content %>
-  
+
   <% if (stati.assets?.bundlePath) { %>
   <script type="module" src="<%= stati.assets.bundlePath %>"></script>
   <% } %>
@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (menuButton && menu) {
     const menuItem: MenuItem = { element: menu, isOpen: false };
-    
+
     menuButton.addEventListener('click', () => {
       menuItem.isOpen = !menuItem.isOpen;
       menuItem.element.classList.toggle('open', menuItem.isOpen);
