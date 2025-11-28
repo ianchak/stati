@@ -16,6 +16,7 @@ export type {
   BuildStats,
   SEOConfig,
   RobotsTxtConfig,
+  TypeScriptConfig,
 } from './config.js';
 
 // Content types
@@ -32,6 +33,7 @@ export type {
   OpenGraphArticle,
   TwitterCardConfig,
   AuthorConfig,
+  StatiAssets,
 } from './content.js';
 
 // SEO types

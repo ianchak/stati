@@ -39,6 +39,7 @@
   },
   "dependencies": {
     "chokidar": "^3.6.0",
+    "esbuild": "^0.27.0",
     "eta": "^3.5.0",
     "fast-glob": "^3.3.3",
     "fs-extra": "^11.2.0",

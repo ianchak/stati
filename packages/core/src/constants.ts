@@ -122,3 +122,17 @@ export const DEFAULT_SITE_TITLE = 'My Stati Site';
 
 /** Default locale for internationalization */
 export const DEFAULT_LOCALE = 'en-US';
+
+// === TypeScript Constants ===
+
+/** Default TypeScript source directory */
+export const DEFAULT_TS_SRC_DIR = 'src';
+
+/** Default TypeScript output directory (relative to build output) */
+export const DEFAULT_TS_OUT_DIR = '_assets';
+
+/** Default TypeScript entry point filename */
+export const DEFAULT_TS_ENTRY_POINT = 'main.ts';
+
+/** Default TypeScript bundle name */
+export const DEFAULT_TS_BUNDLE_NAME = 'bundle';
