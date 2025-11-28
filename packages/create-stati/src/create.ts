@@ -254,10 +254,28 @@ async function updateLayoutWithScript(projectDir: string): Promise<void> {
   try {
     let content = await readFile(layoutPath, 'utf-8');
 
+    // Count occurrences of </body> to ensure we have exactly one
+    const bodyTagMatches = content.match(/<\/body>/gi);
+    const bodyTagCount = bodyTagMatches?.length ?? 0;
+
+    if (bodyTagCount === 0) {
+      logger.warn(
+        'Warning: No </body> tag found in layout.eta. Skipping TypeScript script injection.',
+      );
+      return;
+    }
+
+    if (bodyTagCount > 1) {
+      logger.warn(
+        'Warning: Multiple </body> tags found in layout.eta. Skipping TypeScript script injection to avoid malformed output.',
+      );
+      return;
+    }
+
     // Add script tag before closing </body>
     // Uses stati.assets.bundlePath for the full asset URL
     content = content.replace(
-      '</body>',
+      /<\/body>/i,
       `<% if (stati.assets?.bundlePath) { %>
   <script type="module" src="<%= stati.assets.bundlePath %>"></script>
 <% } %>
