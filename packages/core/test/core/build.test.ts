@@ -343,6 +343,7 @@ describe('build.ts', () => {
         mockEta,
         expect.any(Array), // navigation parameter
         expect.any(Array), // allPages parameter
+        undefined, // assets parameter
       );
     });
 

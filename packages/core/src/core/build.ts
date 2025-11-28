@@ -16,7 +16,9 @@ import {
   getInventorySize,
   isTailwindUsed,
   loadPreviousInventory,
+  compileTypeScript,
 } from './utils/index.js';
+import type { CompileResult } from './utils/index.js';
 import { join, dirname, relative } from 'path';
 import { posix } from 'path';
 import { loadConfig } from '../config/loader.js';
@@ -49,6 +51,7 @@ import type {
   CacheManifest,
   PageModel,
   NavNode,
+  StatiAssets,
 } from '../types/index.js';
 
 /**
@@ -310,6 +313,7 @@ async function processPagesWithCache(
   buildTime: Date,
   options: BuildOptions,
   logger: Logger,
+  assets?: StatiAssets,
 ): Promise<{ cacheHits: number; cacheMisses: number }> {
   let cacheHits = 0;
   let cacheMisses = 0;
@@ -402,7 +406,7 @@ async function processPagesWithCache(
     }
 
     // Render with template
-    let finalHtml = await renderPage(page, htmlContent, config, eta, navigation, pages);
+    let finalHtml = await renderPage(page, htmlContent, config, eta, navigation, pages, assets);
 
     // Auto-inject SEO tags if enabled
     if (config.seo?.autoInject !== false) {
@@ -580,6 +584,27 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
   // Store navigation hash in manifest for change detection in dev server
   manifest.navigationHash = navigationHash;
 
+  // Compile TypeScript if enabled
+  let tsResult: CompileResult | undefined;
+  let assets: StatiAssets | undefined;
+
+  if (config.typescript?.enabled) {
+    tsResult = await compileTypeScript({
+      projectRoot: process.cwd(),
+      config: config.typescript,
+      outDir: config.outDir || 'dist',
+      mode: 'production',
+      logger,
+    });
+
+    if (tsResult?.bundleFilename) {
+      assets = {
+        bundleName: tsResult.bundleFilename,
+        bundlePath: `/${config.typescript.outDir || '_assets'}/${tsResult.bundleFilename}`,
+      };
+    }
+  }
+
   // Process pages with ISG caching logic
   if (logger.step) {
     console.log(); // Add spacing before page processing
@@ -596,6 +621,7 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
     buildTime,
     options,
     logger,
+    assets,
   );
   cacheHits = pageProcessingResult.cacheHits;
   cacheMisses = pageProcessingResult.cacheMisses;
