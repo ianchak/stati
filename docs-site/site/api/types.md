@@ -36,6 +36,9 @@ interface StatiConfig {
   /** ISG (Incremental Static Generation) settings */
   isg?: ISGConfig;
 
+  /** TypeScript compilation settings */
+  typescript?: TypeScriptConfig;
+
   /** Custom configuration extensions */
   [key: string]: any;
 }
@@ -438,7 +441,60 @@ interface CacheEntry {
   /** Maximum age cap for this page in days */
   maxAgeCapDays?: number;
 }
+```
 
+### TypeScript Configuration
+
+```typescript
+interface TypeScriptConfig {
+  /** Enable TypeScript compilation */
+  enabled: boolean;
+
+  /** Source directory containing TypeScript files (default: 'src') */
+  srcDir?: string;
+
+  /** Output directory within dist (default: '_assets') */
+  outDir?: string;
+
+  /** Entry point file relative to srcDir (default: 'main.ts') */
+  entryPoint?: string;
+
+  /** Base name for output bundle (default: 'bundle') */
+  bundleName?: string;
+
+  /** Add content hash to filename (default: true in production) */
+  hash?: boolean;
+
+  /** Minify JavaScript output (default: true in production) */
+  minify?: boolean;
+
+  /** Generate source maps (default: true in development) */
+  sourceMaps?: boolean;
+}
+```
+
+### StatiAssets Interface
+
+Available in templates when TypeScript is enabled:
+
+```typescript
+interface StatiAssets {
+  /** Path to the compiled JavaScript bundle (e.g., '/_assets/bundle-a1b2c3d4.js') */
+  bundlePath: string;
+}
+```
+
+Access in Eta templates via `stati.assets`:
+
+```eta
+<% if (stati.assets?.bundlePath) { %>
+<script type="module" src="<%= stati.assets.bundlePath %>"></script>
+<% } %>
+```
+
+### ISG Cache
+
+```typescript
 interface ISGCache {
   /** Cache directory */
   directory: string;
