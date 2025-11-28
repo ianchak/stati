@@ -4,7 +4,8 @@ import { posix } from 'path';
 import { readFile } from 'fs/promises';
 import { WebSocketServer } from 'ws';
 import chokidar from 'chokidar';
-import type { StatiConfig, Logger } from '../types/index.js';
+import type { BuildContext } from 'esbuild';
+import type { StatiConfig, Logger, StatiAssets } from '../types/index.js';
 import type { FSWatcher } from 'chokidar';
 import { build } from './build.js';
 import { invalidate } from './invalidate.js';
@@ -21,6 +22,8 @@ import {
   TemplateError,
   createFallbackLogger,
   mergeServerOptions,
+  compileTypeScript,
+  createTypeScriptWatcher,
 } from './utils/index.js';
 import { setEnv, getEnv } from '../env.js';
 import { DEFAULT_DEV_PORT, DEFAULT_DEV_HOST, TEMPLATE_EXTENSION } from '../constants.js';
@@ -369,6 +372,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
     lastBuildError = error;
   };
   let watcher: FSWatcher | null = null;
+  let tsWatcher: BuildContext | null = null;
   const isBuildingRef = { value: false };
   let isStopping = false;
 
@@ -630,6 +634,59 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
         });
       });
 
+      // TypeScript compilation and watcher setup
+      if (config.typescript?.enabled) {
+        try {
+          // Initial TypeScript compilation for development
+          const tsResult = await compileTypeScript({
+            projectRoot: process.cwd(),
+            config: config.typescript,
+            outDir: config.outDir || 'dist',
+            mode: 'development',
+            logger,
+          });
+
+          // Create assets object for templates (not actively used in dev, but available)
+          if (tsResult?.bundleFilename) {
+            const assets: StatiAssets = {
+              bundleName: tsResult.bundleFilename,
+              bundlePath: `/${config.typescript.outDir || '_assets'}/${tsResult.bundleFilename}`,
+            };
+            // Assets are passed through the build pipeline, no need to store separately
+            void assets; // Satisfy unused variable check
+          }
+
+          // Start TypeScript watcher for hot reload
+          tsWatcher = await createTypeScriptWatcher({
+            projectRoot: process.cwd(),
+            config: config.typescript,
+            outDir: config.outDir || 'dist',
+            mode: 'development',
+            logger,
+            onRebuild: () => {
+              logger.info?.('TypeScript recompiled, triggering reload...');
+              // Broadcast reload to WebSocket clients
+              if (wsServer) {
+                wsServer.clients.forEach((client: unknown) => {
+                  const ws = client as { readyState: number; send: (data: string) => void };
+                  if (ws.readyState === 1) {
+                    // WebSocket.OPEN
+                    ws.send(JSON.stringify({ type: 'reload' }));
+                  }
+                });
+              }
+            },
+          });
+        } catch (error) {
+          const tsError = error instanceof Error ? error : new Error(String(error));
+          logger.error?.(`TypeScript setup failed: ${tsError.message}`);
+          // Don't throw - allow dev server to continue without TypeScript
+          logger.warning?.(
+            'Dev server will continue without TypeScript hot reload. Check your TypeScript configuration.',
+          );
+        }
+      }
+
       // Set up file watching
       const watchPaths = [srcDir, staticDir].filter(Boolean);
       watcher = chokidar.watch(watchPaths, {
@@ -695,6 +752,12 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
       if (watcher) {
         await watcher.close();
         watcher = null;
+      }
+
+      // Clean up TypeScript watcher
+      if (tsWatcher) {
+        await tsWatcher.dispose();
+        tsWatcher = null;
       }
 
       if (wsServer) {
