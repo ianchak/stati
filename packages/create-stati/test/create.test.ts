@@ -66,7 +66,7 @@ describe('create-stati scaffolding', () => {
       const result = await createSite(options);
 
       // Verify Sass-specific files and configuration
-      await expect(access(join(result.targetDir, 'styles', 'main.scss'))).resolves.not.toThrow();
+      await expect(access(join(result.targetDir, 'src', 'styles.scss'))).resolves.not.toThrow();
 
       // Verify package.json has Sass dependencies
       const packageJson = JSON.parse(
@@ -79,7 +79,7 @@ describe('create-stati scaffolding', () => {
       expect(packageJson.scripts).toHaveProperty('watch:css');
 
       // Verify Sass content
-      const scssContent = await readFile(join(result.targetDir, 'styles', 'main.scss'), 'utf-8');
+      const scssContent = await readFile(join(result.targetDir, 'src', 'styles.scss'), 'utf-8');
       expect(scssContent).toContain('$primary-color');
       expect(scssContent).toContain('$font-stack');
       expect(scssContent).toContain('@mixin responsive');
@@ -225,8 +225,6 @@ describe('create-stati scaffolding', () => {
       expect(gitignoreContent).toContain('node_modules/');
       expect(gitignoreContent).toContain('dist/');
       expect(gitignoreContent).toContain('.stati/');
-      expect(gitignoreContent).toContain('public/styles.css');
-      expect(gitignoreContent).toContain('# Generated CSS files');
 
       consoleSpy.mockRestore();
     });

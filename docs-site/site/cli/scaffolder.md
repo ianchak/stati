@@ -86,7 +86,7 @@ Choose your preferred styling approach:
 
 ### Sass
 
-- Creates `styles/main.scss` from the base CSS file
+- Creates `src/styles.scss` for SCSS source
 - SCSS support with build scripts
 - Automatic compilation during development and build
 - Scripts added: `build:css`, `watch:css`
@@ -132,17 +132,48 @@ All created projects include these base scripts:
 
 ## Generated Project Structure
 
+### Plain CSS (Default)
+
 ```text
 my-site/
 ├── site/
 │   ├── index.md          # Homepage content
 │   └── layout.eta        # Main layout template
 ├── public/
-│   ├── styles.css        # Stylesheet (varies by styling choice)
+│   ├── styles.css        # Stylesheet
 │   └── favicon.svg       # Site icon
 ├── stati.config.js       # Stati configuration
 ├── package.json          # Node.js project file
 └── README.md            # Getting started guide
+```
+
+### With Sass
+
+```text
+my-site/
+├── site/
+│   └── ...
+├── src/
+│   └── styles.scss       # Sass source file
+├── public/
+│   └── favicon.svg       # Site icon
+├── stati.config.js
+└── package.json          # Includes sass scripts
+```
+
+### With Tailwind CSS
+
+```text
+my-site/
+├── site/
+│   └── ...
+├── src/
+│   └── styles.css        # Tailwind source file
+├── public/
+│   └── favicon.svg       # Site icon
+├── tailwind.config.js    # Tailwind configuration
+├── stati.config.js
+└── package.json          # Includes Tailwind scripts
 ```
 
 ### With TypeScript Enabled

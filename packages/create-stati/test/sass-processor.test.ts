@@ -24,15 +24,15 @@ describe('sass-processor', () => {
       expect(Array.isArray(result.filesToDelete)).toBe(true);
     });
 
-    it('should include styles/main.scss in files', () => {
+    it('should include src/styles.scss in files', () => {
       const result = setupSass(sampleCSS);
 
-      expect(result.files.has('styles/main.scss')).toBe(true);
+      expect(result.files.has('src/styles.scss')).toBe(true);
     });
 
     it('should convert CSS to SCSS with variables', () => {
       const result = setupSass(sampleCSS);
-      const scssContent = result.files.get('styles/main.scss');
+      const scssContent = result.files.get('src/styles.scss');
 
       // Should have variable declarations
       expect(scssContent).toContain('$primary-color: #007bff;');
@@ -62,9 +62,9 @@ describe('sass-processor', () => {
       const result = setupSass(sampleCSS);
 
       expect(result.scripts['build:css']).toBe(
-        'sass styles/main.scss dist/styles.css --style=compressed',
+        'sass src/styles.scss dist/styles.css --style=compressed',
       );
-      expect(result.scripts['watch:css']).toBe('sass styles/main.scss dist/styles.css --watch');
+      expect(result.scripts['watch:css']).toBe('sass src/styles.scss dist/styles.css --watch');
       expect(result.scripts.build).toBe('stati build && npm run build:css');
       expect(result.scripts.dev).toBe('concurrently --prefix none "npm run watch:css" "stati dev"');
     });
@@ -79,7 +79,7 @@ describe('sass-processor', () => {
     it('should handle CSS without replaceable patterns', () => {
       const simpleCSS = 'body { margin: 0; padding: 10px; }';
       const result = setupSass(simpleCSS);
-      const scssContent = result.files.get('styles/main.scss');
+      const scssContent = result.files.get('src/styles.scss');
 
       // Should still have variable declarations
       expect(scssContent).toContain('$primary-color: #007bff;');
@@ -91,7 +91,7 @@ describe('sass-processor', () => {
 
     it('should handle empty CSS', () => {
       const result = setupSass('');
-      const scssContent = result.files.get('styles/main.scss');
+      const scssContent = result.files.get('src/styles.scss');
 
       // Should still have variable declarations and mixins
       expect(scssContent).toContain('$primary-color: #007bff;');
@@ -105,7 +105,7 @@ describe('sass-processor', () => {
 .highlight { background: #007bff; border-color: #007bff; }
 `;
       const result = setupSass(cssWithMultipleColors);
-      const scssContent = result.files.get('styles/main.scss');
+      const scssContent = result.files.get('src/styles.scss');
 
       // Count occurrences of the variable (should replace all #007bff occurrences)
       const matches = scssContent?.match(/\$primary-color/g) || [];

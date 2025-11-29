@@ -74,10 +74,10 @@ describe('CSSProcessor', () => {
     it('should setup Sass with enhanced SCSS file', async () => {
       await cssProcessor.processStyling(tempDir, 'sass');
 
-      // Verify styles directory and SCSS file were created
-      await expect(access(join(tempDir, 'styles', 'main.scss'))).resolves.not.toThrow();
+      // Verify src directory and SCSS file were created
+      await expect(access(join(tempDir, 'src', 'styles.scss'))).resolves.not.toThrow();
 
-      const scssContent = await readFile(join(tempDir, 'styles', 'main.scss'), 'utf-8');
+      const scssContent = await readFile(join(tempDir, 'src', 'styles.scss'), 'utf-8');
 
       // Verify SCSS has variables and enhanced features
       expect(scssContent).toContain('$primary-color: #007bff;');
@@ -106,9 +106,9 @@ describe('CSSProcessor', () => {
 
       expect(packageJson.scripts).toHaveProperty('build:css');
       expect(packageJson.scripts).toHaveProperty('watch:css');
-      expect(packageJson.scripts['build:css']).toContain('sass styles/main.scss dist/styles.css');
+      expect(packageJson.scripts['build:css']).toContain('sass src/styles.scss dist/styles.css');
       expect(packageJson.scripts['watch:css']).toContain(
-        'sass styles/main.scss dist/styles.css --watch',
+        'sass src/styles.scss dist/styles.css --watch',
       );
 
       // Scripts should be modified to integrate CSS processing

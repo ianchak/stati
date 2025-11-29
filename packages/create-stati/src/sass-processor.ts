@@ -20,7 +20,7 @@ import type { ProcessorResultWithDeletions } from './types.js';
  * ```typescript
  * const existingCSS = await readFile('public/styles.css', 'utf-8');
  * const sassSetup = setupSass(existingCSS);
- * // sassSetup.files contains: styles/main.scss
+ * // sassSetup.files contains: src/styles.scss
  * // sassSetup.devDependencies contains: { sass: '^1.77.0', ... }
  * // sassSetup.scripts contains: { 'build:css': '...', 'watch:css': '...', ... }
  * // sassSetup.filesToDelete contains: ['public/styles.css']
@@ -28,14 +28,14 @@ import type { ProcessorResultWithDeletions } from './types.js';
  */
 export function setupSass(existingCSS: string): ProcessorResultWithDeletions {
   return {
-    files: new Map([['styles/main.scss', generateScssContent(existingCSS)]]),
+    files: new Map([['src/styles.scss', generateScssContent(existingCSS)]]),
     devDependencies: {
       sass: DEPENDENCY_VERSIONS.sass,
       concurrently: DEPENDENCY_VERSIONS.concurrently,
     },
     scripts: {
-      'build:css': 'sass styles/main.scss dist/styles.css --style=compressed',
-      'watch:css': 'sass styles/main.scss dist/styles.css --watch',
+      'build:css': 'sass src/styles.scss dist/styles.css --style=compressed',
+      'watch:css': 'sass src/styles.scss dist/styles.css --watch',
       build: 'stati build && npm run build:css',
       dev: 'concurrently --prefix none "npm run watch:css" "stati dev"',
     },

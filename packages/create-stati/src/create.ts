@@ -349,12 +349,6 @@ yarn.lock
 dist/
 .stati/
 
-# Generated CSS files (Tailwind, Sass, etc.)
-public/styles.css
-public/style.css
-src/styles.min.css
-css/styles.css
-
 # Environment files
 .env
 .env.local

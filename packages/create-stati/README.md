@@ -137,7 +137,7 @@ A minimal, flexible starting point for any type of Stati site.
 - Extensible architecture for any project type
 - Just the essentials - build on your own terms
 
-**File Structure:**
+**File Structure (Plain CSS):**
 
 ```text
 my-site/
@@ -151,11 +151,40 @@ my-site/
 └── package.json          # Project dependencies
 ```
 
+**File Structure (Sass):**
+
+```text
+my-site/
+├── site/
+│   └── ...
+├── src/
+│   └── styles.scss       # Sass source file
+├── public/
+│   └── favicon.svg       # Site icon
+├── stati.config.js
+└── package.json          # Includes sass scripts
+```
+
+**File Structure (Tailwind CSS):**
+
+```text
+my-site/
+├── site/
+│   └── ...
+├── src/
+│   └── styles.css        # Tailwind source file
+├── public/
+│   └── favicon.svg       # Site icon
+├── tailwind.config.js    # Tailwind configuration
+├── stati.config.js
+└── package.json          # Includes Tailwind scripts
+```
+
 **What's Included:**
 
 - **Homepage (`site/index.md`)** - Welcome page with getting started instructions
 - **Layout (`site/layout.eta`)** - HTML5 boilerplate with responsive meta tags
-- **Styles (`public/styles.css`)** - Minimal CSS with typography and layout helpers
+- **Styles** - CSS in `public/` (plain CSS) or `src/` (Sass/Tailwind)
 - **Configuration (`stati.config.js`)** - Pre-configured with sensible defaults
 - **Favicon (`public/favicon.svg`)** - Simple SVG favicon ready to customize
 
@@ -171,7 +200,7 @@ my-site/
 1. The homepage provides clear next steps
 2. Edit `site/index.md` to add your content
 3. Customize `site/layout.eta` for your HTML structure
-4. Update `public/styles.css` with your styling
+4. Update your styles (in `public/` for plain CSS, `src/` for Sass/Tailwind)
 5. Configure site metadata in `stati.config.js`
 
 ---
@@ -186,14 +215,14 @@ Choose the styling approach that fits your workflow.
 - No build step required
 - Full control over every style
 - Great for learning
-- Included: Basic CSS with typography and layout helpers
+- Styles location: `public/styles.css`
 
 ### Sass/SCSS
 
 - CSS with superpowers (variables, nesting, mixins)
 - Compiles to standard CSS
 - Popular and well-supported
-- Included: Sass compiler and build scripts
+- Styles location: `src/styles.scss` → compiles to `dist/styles.css`
 
 ### Tailwind CSS
 
@@ -201,7 +230,7 @@ Choose the styling approach that fits your workflow.
 - Rapid prototyping
 - Built-in design system
 - Automatic purging for production
-- Included: Tailwind + PostCSS + config files
+- Styles location: `src/styles.css` → compiles to `dist/styles.css`
 
 ---
 
