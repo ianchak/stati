@@ -17,6 +17,7 @@ import {
   isTailwindUsed,
   loadPreviousInventory,
   compileTypeScript,
+  autoInjectBundle,
 } from './utils/index.js';
 import type { CompileResult } from './utils/index.js';
 import { join, dirname, relative, posix } from 'node:path';
@@ -422,6 +423,11 @@ async function processPagesWithCache(
       }
 
       finalHtml = autoInjectSEO(finalHtml, injectOptions);
+    }
+
+    // Auto-inject TypeScript bundle script tag if available
+    if (assets?.bundlePath) {
+      finalHtml = autoInjectBundle(finalHtml, assets.bundlePath);
     }
 
     const renderTime = Date.now() - startTime;

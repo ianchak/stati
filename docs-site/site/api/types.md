@@ -471,7 +471,7 @@ interface TypeScriptConfig {
 
 ### StatiAssets Interface
 
-Available in templates when TypeScript is enabled:
+Available in templates when TypeScript is enabled. The script tag is **automatically injected** into your HTML during build - no template changes required!
 
 ```typescript
 interface StatiAssets {
@@ -482,11 +482,11 @@ interface StatiAssets {
 }
 ```
 
-Access in Eta templates via `stati.assets`:
+For advanced use cases like preloading, access via `stati.assets`:
 
 ```eta
 <% if (stati.assets?.bundlePath) { %>
-<script type="module" src="<%= stati.assets.bundlePath %>"></script>
+<link rel="modulepreload" href="<%= stati.assets.bundlePath %>">
 <% } %>
 ```
 

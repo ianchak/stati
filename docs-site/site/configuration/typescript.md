@@ -75,33 +75,38 @@ Stati automatically adjusts TypeScript settings based on the build mode:
 
 The `hash` and `minify` options only take effect in production builds. Set them to `false` if you need to debug production output.
 
-## Accessing the Bundle in Templates
+## Automatic Bundle Injection
 
-When TypeScript is enabled, Stati provides the bundle path through `stati.assets`:
+When TypeScript is enabled, Stati **automatically injects** the script tag into your HTML output before the closing `</body>` tag during both `stati dev` and `stati build`. No template modifications required!
 
-```eta
-<!DOCTYPE html>
-<html>
-<head>
-  <title><%= it.title %></title>
-</head>
-<body>
-  <%~ it.content %>
+Your compiled bundle is seamlessly added to every page:
 
-  <% if (stati.assets?.bundlePath) { %>
-  <script type="module" src="<%= stati.assets.bundlePath %>"></script>
-  <% } %>
+```html
+<!-- Automatically injected by Stati -->
+<script type="module" src="/_assets/bundle-a1b2c3d4.js"></script>
 </body>
-</html>
 ```
 
-### StatiAssets Object
+### Accessing Bundle Info in Templates
+
+If you need to access the bundle path in your templates (for example, to preload or customize placement), Stati provides it via `stati.assets`:
 
 | Property | Type | Description |
 |----------|------|-------------|
 | `bundlePath` | `string` | Path to the compiled JS bundle (e.g., `/_assets/bundle-a1b2c3d4.js`) |
+| `bundleName` | `string` | Bundle filename only (e.g., `bundle-a1b2c3d4.js`) |
 
-The conditional check `stati.assets?.bundlePath` ensures the script tag is only rendered when a bundle exists.
+Example for preloading:
+
+```eta
+<head>
+  <% if (stati.assets?.bundlePath) { %>
+  <link rel="modulepreload" href="<%= stati.assets.bundlePath %>">
+  <% } %>
+</head>
+```
+
+> **Note:** The script tag is auto-injected, so you don't need to add it manually. Stati also prevents duplicate injection if the bundle path already exists in your HTML.
 
 ## Project Structure
 

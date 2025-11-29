@@ -27,7 +27,8 @@ Stati is built with TypeScript from the ground up, providing:
 - Full type safety for configuration with `stati.config.ts`
 - IntelliSense in your editor for all configuration options
 - Built-in esbuild compilation for your client-side TypeScript code
-- Automatic bundle injection via `stati.assets.bundlePath` in templates
+- Automatic script tag injection during dev and build (no template changes needed)
+- Bundle path available via `stati.assets` for preloading or custom use
 - Development mode with source maps; production mode with minification and hashing
 
 ### Performance by Default

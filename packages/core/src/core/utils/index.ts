@@ -93,5 +93,6 @@ export {
   createTypeScriptWatcher,
   compileStatiConfig,
   cleanupCompiledConfig,
+  autoInjectBundle,
 } from './typescript.utils.js';
 export type { CompileOptions, CompileResult, WatchOptions } from './typescript.utils.js';

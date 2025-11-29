@@ -203,26 +203,6 @@ describe('create-stati scaffolding', () => {
       expect(statiConfig).not.toContain('typescript:');
     });
 
-    it('should update layout.eta with script tag when TypeScript enabled', async () => {
-      const projectDir = join(tempDir, 'test-ts-layout');
-      const options: CreateOptions = {
-        projectName: 'test-ts-layout',
-        template: 'blank',
-        styling: 'css',
-        gitInit: false,
-        typescript: true,
-        dir: projectDir,
-      };
-
-      const result = await createSite(options);
-
-      // Verify layout.eta was updated with script tag
-      const layoutContent = await readFile(join(result.targetDir, 'site', 'layout.eta'), 'utf-8');
-      expect(layoutContent).toContain('stati.assets?.bundlePath');
-      expect(layoutContent).toContain('<script type="module"');
-      expect(layoutContent).toContain('stati.assets.bundlePath');
-    });
-
     it('should initialize git repository when requested', async () => {
       const projectDir = join(tempDir, 'test-git');
       const options: CreateOptions = {

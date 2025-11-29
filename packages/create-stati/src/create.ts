@@ -1,4 +1,4 @@
-import { mkdir, rm, access, stat, writeFile, readFile } from 'node:fs/promises';
+import { mkdir, rm, access, stat, writeFile } from 'node:fs/promises';
 import { join, resolve, dirname } from 'node:path';
 import { ExampleManager } from './examples.js';
 import { PackageJsonModifier } from './package-json.js';
@@ -239,54 +239,6 @@ export default defineConfig({
 `;
 }
 
-/**
- * Update layout.eta to include TypeScript bundle script tag.
- * Adds a conditional script tag before the closing </body> tag.
- */
-async function updateLayoutWithScript(projectDir: string): Promise<void> {
-  const layoutPath = join(projectDir, 'site', 'layout.eta');
-
-  try {
-    let content = await readFile(layoutPath, 'utf-8');
-
-    // Count occurrences of </body> to ensure we have exactly one
-    const bodyTagMatches = content.match(/<\/body>/gi);
-    const bodyTagCount = bodyTagMatches?.length ?? 0;
-
-    if (bodyTagCount === 0) {
-      logger.warn(
-        'Warning: No </body> tag found in layout.eta. Skipping TypeScript script injection.',
-      );
-      return;
-    }
-
-    if (bodyTagCount > 1) {
-      logger.warn(
-        'Warning: Multiple </body> tags found in layout.eta. Skipping TypeScript script injection to avoid malformed output.',
-      );
-      return;
-    }
-
-    // Add script tag before closing </body>
-    // Uses stati.assets.bundlePath for the full asset URL
-    content = content.replace(
-      /<\/body>/i,
-      `<% if (stati.assets?.bundlePath) { %>
-  <script type="module" src="<%= stati.assets.bundlePath %>"></script>
-<% } %>
-</body>`,
-    );
-
-    await writeFile(layoutPath, content);
-  } catch (error) {
-    // Layout file might not exist in all templates, log warning
-    logger.warn(
-      'Warning: Could not update layout.eta with TypeScript script: ' +
-        (error instanceof Error ? error.message : 'Unknown error'),
-    );
-  }
-}
-
 export class ProjectScaffolder {
   constructor(
     private options: CreateOptions,
@@ -327,9 +279,6 @@ export class ProjectScaffolder {
           await mkdir(dirname(filePath), { recursive: true });
           await writeFile(filePath, content);
         }
-
-        // Update layout.eta with script tag
-        await updateLayoutWithScript(targetDir);
       }
 
       // 5. Modify package.json with project name and TypeScript deps if needed

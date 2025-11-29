@@ -8,6 +8,7 @@ import {
   compileStatiConfig,
   cleanupCompiledConfig,
   createTypeScriptWatcher,
+  autoInjectBundle,
 } from '../src/core/utils/typescript.utils.js';
 import type { TypeScriptConfig } from '../src/types/config.js';
 import type { Logger } from '../src/types/logging.js';
@@ -501,6 +502,74 @@ describe('typescript.utils', () => {
 
       // Cleanup
       await context.dispose();
+    });
+  });
+
+  describe('autoInjectBundle', () => {
+    it('should inject script tag before </body>', () => {
+      const html = '<html><head></head><body><p>Content</p></body></html>';
+      const result = autoInjectBundle(html, '/_assets/bundle.js');
+
+      expect(result).toContain('<script type="module" src="/_assets/bundle.js"></script>');
+      expect(result).toContain('</body>');
+      // Script should be before </body>
+      expect(result.indexOf('<script')).toBeLessThan(result.indexOf('</body>'));
+    });
+
+    it('should handle hashed bundle filenames', () => {
+      const html = '<html><body>Content</body></html>';
+      const result = autoInjectBundle(html, '/_assets/bundle-a1b2c3d4.js');
+
+      expect(result).toContain('src="/_assets/bundle-a1b2c3d4.js"');
+    });
+
+    it('should return original HTML if bundlePath is empty', () => {
+      const html = '<html><body>Content</body></html>';
+      const result = autoInjectBundle(html, '');
+
+      expect(result).toBe(html);
+    });
+
+    it('should return original HTML if no </body> tag found', () => {
+      const html = '<html><head></head>Content';
+      const result = autoInjectBundle(html, '/_assets/bundle.js');
+
+      expect(result).toBe(html);
+    });
+
+    it('should not duplicate script tag if already present', () => {
+      const html =
+        '<html><body><script type="module" src="/_assets/bundle.js"></script></body></html>';
+      const result = autoInjectBundle(html, '/_assets/bundle.js');
+
+      // Should return original HTML, not add duplicate
+      expect(result).toBe(html);
+      // Count occurrences of the script tag
+      const matches = result.match(/bundle\.js/g);
+      expect(matches?.length).toBe(1);
+    });
+
+    it('should handle case-insensitive </BODY> tag', () => {
+      const html = '<html><BODY>Content</BODY></html>';
+      const result = autoInjectBundle(html, '/_assets/bundle.js');
+
+      expect(result).toContain('<script type="module" src="/_assets/bundle.js"></script>');
+    });
+
+    it('should preserve HTML structure', () => {
+      const html = `<!DOCTYPE html>
+<html>
+<head><title>Test</title></head>
+<body>
+  <main>Content</main>
+</body>
+</html>`;
+      const result = autoInjectBundle(html, '/_assets/bundle.js');
+
+      expect(result).toContain('<!DOCTYPE html>');
+      expect(result).toContain('<title>Test</title>');
+      expect(result).toContain('<main>Content</main>');
+      expect(result).toContain('</html>');
     });
   });
 });

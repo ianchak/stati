@@ -264,3 +264,44 @@ export async function cleanupCompiledConfig(compiledPath: string): Promise<void>
     // Ignore if file doesn't exist
   }
 }
+
+/**
+ * Auto-inject TypeScript bundle script tag into HTML before </body>.
+ * Similar to SEO auto-injection, this adds the script tag automatically
+ * so users don't need to modify their templates.
+ *
+ * @param html - Rendered HTML content
+ * @param bundlePath - Path to the compiled bundle (e.g., '/_assets/bundle-a1b2c3d4.js')
+ * @returns HTML with injected script tag
+ *
+ * @example
+ * ```typescript
+ * const html = '<html><body>Content</body></html>';
+ * const enhanced = autoInjectBundle(html, '/_assets/bundle.js');
+ * // Returns: '<html><body>Content\n  <script type="module" src="/_assets/bundle.js"></script>\n</body></html>'
+ * ```
+ */
+export function autoInjectBundle(html: string, bundlePath: string): string {
+  if (!bundlePath) {
+    return html;
+  }
+
+  // Check if the bundle is already included (avoid duplicate injection)
+  if (html.includes(bundlePath)) {
+    return html;
+  }
+
+  // Find </body> tag (case-insensitive)
+  const bodyCloseMatch = html.match(/<\/body>/i);
+  if (!bodyCloseMatch || bodyCloseMatch.index === undefined) {
+    return html;
+  }
+
+  const bodyClosePos = bodyCloseMatch.index;
+  const before = html.substring(0, bodyClosePos);
+  const after = html.substring(bodyClosePos);
+
+  // Inject script tag before </body> with proper indentation
+  const scriptTag = `  <script type="module" src="${bundlePath}"></script>\n`;
+  return `${before}${scriptTag}${after}`;
+}

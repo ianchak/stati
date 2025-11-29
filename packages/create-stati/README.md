@@ -109,23 +109,16 @@ Stati uses [esbuild](https://esbuild.github.io/) for lightning-fast TypeScript c
 - **Development mode** (`stati dev`): Stable filenames, source maps enabled, no minification
 - **Production mode** (`stati build`): Hashed filenames for cache busting, minified output
 
-Your compiled JavaScript bundle is automatically injected into your pages. Access it in templates via `stati.assets.bundlePath`.
+Your compiled JavaScript bundle is **automatically injected** into your HTML output before the closing `</body>` tag. No template modifications needed!
 
-### Example Layout
+The bundle path is also available via `stati.assets.bundlePath` for advanced use cases like preloading:
 
 ```eta
-<!DOCTYPE html>
-<html>
 <head>
-  <title>My Site</title>
-</head>
-<body>
-  <%~ stati.content %>
   <% if (stati.assets?.bundlePath) { %>
-  <script type="module" src="<%= stati.assets.bundlePath %>"></script>
+  <link rel="modulepreload" href="<%= stati.assets.bundlePath %>">
   <% } %>
-</body>
-</html>
+</head>
 ```
 
 ---
