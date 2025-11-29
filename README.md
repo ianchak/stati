@@ -48,7 +48,8 @@ my-site/
 │   ├── index.md    # Homepage
 │   └── about.md    # About page → /about/
 ├── public/         # Static assets (CSS, images, fonts)
-└── stati.config.js # Optional configuration
+├── src/            # TypeScript source (optional, with --typescript)
+└── stati.config.js # Optional configuration (or .ts for TypeScript)
 ```
 
 **Write content:**
@@ -172,7 +173,7 @@ npx stati invalidate "age:6months"
 
 ## Configuration
 
-Stati works with zero configuration, but you can customize it by creating `stati.config.js`:
+Stati works with zero configuration, but you can customize it by creating `stati.config.js` (or `stati.config.ts` for TypeScript projects):
 
 ### Minimal Configuration
 
@@ -276,6 +277,14 @@ export default defineConfig({
     port: 3000,
     host: 'localhost',
     open: true,               // Auto-open browser
+  },
+
+  // TypeScript compilation (opt-in)
+  typescript: {
+    enabled: true,            // Enable TypeScript compilation
+    srcDir: 'src',            // Source directory (default: 'src')
+    entryPoint: 'main.ts',    // Entry file (default: 'main.ts')
+    // hash and minify are automatic based on build mode
   },
 
   // Build lifecycle hooks

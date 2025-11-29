@@ -69,6 +69,7 @@ stati dev [options]
 
 - Starts a local development server (default: `http://localhost:3000`)
 - Watches your files for changes and rebuilds automatically
+- Compiles TypeScript with source maps (when `typescript.enabled` is true)
 - Live reloads your browser when content or templates change
 - Shows build errors in an overlay for quick debugging
 

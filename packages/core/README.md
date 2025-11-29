@@ -93,7 +93,8 @@ That's it! Your site is ready.
 ### For Advanced Users
 
 - **Programmatic API** — Full control over the build process
-- **TypeScript-First** — Complete type safety throughout
+- **TypeScript-First** — Complete type safety for configuration
+- **TypeScript Compilation** — Built-in esbuild for client-side TypeScript
 - **Extensible Hooks** — Customize every stage of the build
 - **Smart Caching** — Incremental builds with intelligent invalidation
 

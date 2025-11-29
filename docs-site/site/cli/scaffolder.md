@@ -16,6 +16,9 @@ npm create stati my-site
 
 # Non-interactive with options
 npm create stati my-site --template=blank --styling=tailwind
+
+# With TypeScript support
+npm create stati my-site --typescript
 ```
 
 Running the scaffolder will:
@@ -37,9 +40,10 @@ The scaffolder will prompt you for:
 
 1. **Project name** - Name for your new Stati site
 2. **Styling solution** - Choose between CSS, Sass, or Tailwind CSS
-3. **Git initialization** - Whether to initialize a Git repository
-4. **Dependency installation** - Whether to install dependencies automatically
-5. **Package manager** - Which package manager to use (if multiple are detected)
+3. **TypeScript support** - Whether to enable TypeScript compilation
+4. **Git initialization** - Whether to initialize a Git repository
+5. **Dependency installation** - Whether to install dependencies automatically
+6. **Package manager** - Which package manager to use (if multiple are detected)
 
 ## Command Line Options
 
@@ -49,6 +53,7 @@ npx create-stati <project-name> [options]
 Options:
   --template <name>        Template to use (currently: blank)
   --styling <type>         CSS solution (css|sass|tailwind)
+  --typescript, --ts       Enable TypeScript support
   --no-git                 Skip git initialization (default: initializes Git)
   --no-install             Skip dependency installation (default: installs dependencies)
   --package-manager <pm>   Package manager to use (npm|yarn|pnpm|bun)
@@ -140,6 +145,23 @@ my-site/
 └── README.md            # Getting started guide
 ```
 
+### With TypeScript Enabled
+
+When using `--typescript`, additional files are created:
+
+```text
+my-site/
+├── src/
+│   └── main.ts           # TypeScript entry point
+├── site/
+│   └── ...
+├── stati.config.ts       # TypeScript configuration (replaces .js)
+├── tsconfig.json         # TypeScript compiler configuration
+└── ...
+```
+
+The `typecheck` script is added to `package.json` for validating your TypeScript code.
+
 ## Requirements
 
 - Node.js 22+
@@ -150,4 +172,5 @@ my-site/
 - Start the development server: `npm run dev`
 - Add content to the `site/` directory
 - Customize the layout in `site/layout.eta`
-- Configure your site in `stati.config.js`
+- Configure your site in `stati.config.js` (or `stati.config.ts` for TypeScript projects)
+- Learn more about [TypeScript support](/configuration/typescript/)
