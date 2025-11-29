@@ -1,20 +1,18 @@
 ---
 title: 'Static Assets'
-description: 'Learn how to manage static files, CSS, JavaScript, images, and integrate with Tailwind CSS.'
+description: 'Learn how to manage static files, images, and integrate TypeScript and Tailwind CSS.'
 order: 6
 ---
 
-# Static Assets & Bundling
+## Overview
 
-Stati provides powerful asset processing capabilities to handle CSS, JavaScript, images, and other static files. This provides modern development features like hot module replacement, optimized builds, and support for the latest web technologies.
+Stati handles static assets and provides built-in TypeScript compilation. CSS processing (Sass, PostCSS, Tailwind) is configured at the project level using standard tooling, with optional CLI integration for Tailwind during development.
 
-## Asset Types
-
-### Static Assets (`public/`)
+## Static Assets (`public/`)
 
 Files in the `public/` directory are copied directly to the output without processing:
 
-```
+```text
 public/
 ├── favicon.svg          → /favicon.svg
 ├── robots.txt           → /robots.txt
@@ -25,172 +23,67 @@ public/
     └── guide.pdf        → /downloads/guide.pdf
 ```
 
-Use these for:
+Use the `public/` directory for:
 
 - Favicons and meta images
 - Document downloads
 - Third-party scripts
-- Assets that shouldn't be processed
+- Pre-built CSS stylesheets
+- Any assets that don't need processing
 
-### Processed Assets (`src/`)
+## TypeScript Compilation (`src/`)
 
-Files in `src/` are processed by Stati's build pipeline:
+When TypeScript compilation is enabled, Stati uses esbuild to compile TypeScript from the `src/` directory:
 
-```
+```text
 src/
-├── styles.css           # Main stylesheet
-├── main.js              # JavaScript entry point
-├── components/
-│   ├── header.css       # Component styles
-│   └── nav.js           # Component logic
-└── assets/
-    ├── fonts/           # Web fonts
-    ├── icons/           # SVG icons
-    └── images/          # Optimized images
+├── main.ts              # TypeScript entry point
+└── components/
+    └── nav.ts           # Component modules
 ```
+
+Your compiled bundle is automatically injected into pages before the closing `</body>` tag. For full TypeScript configuration options, see the [TypeScript Configuration Guide](/configuration/typescript/).
 
 ## CSS Processing
 
+Stati does not include a built-in CSS preprocessor. Instead, CSS processing is configured at the project level using standard tools like Sass, PostCSS, or Tailwind CSS.
+
+The `create-stati` scaffolder can set up these tools for you. See the [Styling Solutions](/cli/scaffolder/#styling-solutions) section for available options.
+
 ### Basic CSS
 
-Create `src/styles.css` as your main stylesheet:
+For simple projects, place your CSS file in `public/` and link to it in your layout template:
 
 ```css
-/* src/styles.css */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
+/* public/styles.css */
 :root {
   --color-primary: #0066cc;
-  --color-secondary: #6c757d;
-  --color-success: #28a745;
-  --color-warning: #ffc107;
-  --color-danger: #dc3545;
-
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --line-height: 1.6;
 }
 
 body {
   font-family: var(--font-family);
-  line-height: var(--line-height);
   color: #333;
-  background: #fff;
-}
-
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 1rem;
 }
 ```
-
-### PostCSS Support
-
-Stati automatically supports PostCSS with common plugins:
-
-```javascript
-// stati.config.js
-export default defineConfig({
-  css: {
-    postcss: {
-      plugins: [
-        require('autoprefixer'),
-        require('cssnano')({
-          preset: 'default',
-        }),
-      ],
-    },
-  },
-});
-```
-
-Create `postcss.config.js` for more control:
-
-```javascript
-// postcss.config.js
-export default {
-  plugins: [
-    require('postcss-import'),
-    require('tailwindcss/nesting'),
-    require('tailwindcss'),
-    require('autoprefixer'),
-    process.env.NODE_ENV === 'production' && require('cssnano'),
-  ].filter(Boolean),
-};
-```
-
-### Sass/SCSS Support
-
-Install Sass and use `.scss` files:
-
-```bash
-npm install -D sass
-```
-
-```scss
-// src/styles.scss
-$primary-color: #0066cc;
-$secondary-color: #6c757d;
-
-@mixin button-style($bg-color) {
-  background: $bg-color;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 0.25rem;
-  cursor: pointer;
-
-  &:hover {
-    background: darken($bg-color, 10%);
-  }
-}
-
-.btn-primary {
-  @include button-style($primary-color);
-  color: white;
-}
-
-.btn-secondary {
-  @include button-style($secondary-color);
-  color: white;
-}
-```
-
-### CSS Modules
-
-Use CSS Modules for component-scoped styles:
-
-```css
-/* src/components/card.module.css */
-.card {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  padding: 1.5rem;
-}
-
-.title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-}
-
-.content {
-  color: #6c757d;
-  line-height: 1.6;
-}
-```
-
-Use in templates:
 
 ```eta
-<% const styles = stati.cssModules['card'] %>
-<div class="<%= styles.card %>">
-  <h3 class="<%= styles.title %>"><%= stati.page.title %></h3>
-  <div class="<%= styles.content %>">
-    <%~ stati.content %>
-  </div>
-</div>
+<head>
+  <link rel="stylesheet" href="/styles.css">
+</head>
 ```
+
+### Sass/SCSS Projects
+
+When you select Sass during project scaffolding, `create-stati` configures npm scripts to compile SCSS:
+
+```bash
+# Created by the scaffolder
+npm run sass:watch   # Watch and compile during development
+npm run sass:build   # Compile for production
+```
+
+The scaffolder creates a `styles/` directory with your SCSS source files and sets up the build pipeline.
 
 ## Tailwind CSS Integration
 
@@ -258,10 +151,10 @@ const color = 'primary'; // Could come from frontMatter or config
 
 The `propValue()` function:
 
-- Automatically tracks dynamic Tailwind classes for the inventory
-- Filters out falsy values
-- Works with strings, arrays, and objects (like classnames library)
-- Only tracks classes that match dynamic patterns (color utilities, variants, etc.)
+- Tracks all classes passed to it for the Tailwind inventory
+- Filters out falsy values (null, undefined, false, empty strings)
+- Works with strings, arrays, and objects (like the classnames library)
+- Splits space-separated strings and tracks each class individually
 
 ### Usage in Templates
 
@@ -272,7 +165,7 @@ The `propValue()` function:
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= stati.page.title %></title>
-  <link rel="stylesheet" href="/src/styles.css">
+  <link rel="stylesheet" href="/styles.css">
 </head>
 <body class="bg-gray-50 text-gray-900">
   <header class="bg-white shadow-sm border-b">
@@ -388,13 +281,15 @@ See the [Development Server](/cli/development/) documentation for more details o
 
 ### Self-hosted Fonts
 
+Place font files in your `public/` directory and reference them in your CSS:
+
 ```css
-/* src/styles.css */
+/* public/styles.css */
 @font-face {
   font-family: 'CustomFont';
   src:
-    url('./assets/fonts/custom-font.woff2') format('woff2'),
-    url('./assets/fonts/custom-font.woff') format('woff');
+    url('/fonts/custom-font.woff2') format('woff2'),
+    url('/fonts/custom-font.woff') format('woff');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -405,4 +300,14 @@ body {
 }
 ```
 
-Static assets are automatically copied to your output directory during builds. Use appropriate file organization and web standards for optimal performance.
+With a directory structure like:
+
+```text
+public/
+├── fonts/
+│   ├── custom-font.woff2
+│   └── custom-font.woff
+└── styles.css
+```
+
+Static assets are automatically copied to your output directory during builds.
