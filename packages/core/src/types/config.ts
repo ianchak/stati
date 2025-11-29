@@ -120,6 +120,8 @@ export interface SEOConfig {
  * TypeScript compilation configuration.
  * Controls how Stati compiles TypeScript files using esbuild.
  *
+ * Source maps are automatically enabled in development and disabled in production.
+ *
  * @example
  * ```typescript
  * const config: StatiConfig = {
@@ -129,9 +131,8 @@ export interface SEOConfig {
  *     outDir: '_assets',
  *     entryPoint: 'main.ts',
  *     bundleName: 'bundle',
- *     hash: true,
- *     minify: true,
- *     sourceMaps: false,
+ *     hash: true,   // default: true in production, false in development
+ *     minify: true, // default: true in production, false in development
  *   }
  * };
  * ```
@@ -182,12 +183,6 @@ export interface TypeScriptConfig {
    * @default true (production), false (development)
    */
   minify?: boolean;
-
-  /**
-   * Generate source maps.
-   * @default false (production), true (development)
-   */
-  sourceMaps?: boolean;
 }
 
 /**

@@ -39,7 +39,6 @@ export default defineConfig({
     bundleName: 'bundle',    // Output bundle name (default: 'bundle')
     hash: true,              // Add content hash for cache busting (default: true in production)
     minify: true,            // Minify output (default: true in production)
-    sourceMaps: false,       // Generate source maps (default: true in development)
   },
 });
 ```
@@ -55,7 +54,8 @@ export default defineConfig({
 | `bundleName` | `string` | `'bundle'` | Base name for output bundle |
 | `hash` | `boolean` | `true` (prod) | Add content hash to filename |
 | `minify` | `boolean` | `true` (prod) | Minify JavaScript output |
-| `sourceMaps` | `boolean` | `true` (dev) | Generate source maps |
+
+> **Note:** Source maps are automatically enabled in development mode and disabled in production.
 
 ## Development vs Production
 
@@ -64,17 +64,17 @@ Stati automatically adjusts TypeScript settings based on the build mode:
 ### Development (`stati dev`)
 
 - **Stable filenames** - No hash, easier debugging
-- **Source maps enabled** - Full debugging support
+- **Source maps enabled** - Full debugging support (automatic)
 - **No minification** - Readable output
 - **Watch mode** - Automatic recompilation on changes
 
 ### Production (`stati build`)
 
 - **Hashed filenames** - `bundle-a1b2c3d4.js` for cache busting
-- **No source maps** - Smaller bundle size
+- **No source maps** - Smaller bundle size, no source code exposure (automatic)
 - **Minified** - Optimized for production
 
-You can override these defaults in your configuration.
+You can override `hash` and `minify` defaults in your configuration.
 
 ## Accessing the Bundle in Templates
 
@@ -202,15 +202,6 @@ Ensure your entry file exists at the configured location (`srcDir/entryPoint`).
 
 Stati uses esbuild for fast compilation, which doesn't perform type checking. Always run `npm run typecheck` to validate your types before deploying.
 
-### Source maps not working in browser
+### Source maps in production
 
-In production mode, source maps are disabled by default. To enable them:
-
-```typescript
-export default defineConfig({
-  typescript: {
-    enabled: true,
-    sourceMaps: true,  // Enable even in production
-  },
-});
-```
+Source maps are automatically disabled in production builds for security (to avoid exposing source code) and performance (smaller bundle size). They are always enabled in development mode for debugging.

@@ -141,9 +141,6 @@ interface BuildConfig {
   /** Asset optimization settings */
   assets?: AssetConfig;
 
-  /** Source map generation */
-  sourceMaps?: boolean;
-
   /** Build parallelization */
   parallel?: boolean | ParallelConfig;
 }
@@ -467,11 +464,10 @@ interface TypeScriptConfig {
 
   /** Minify JavaScript output (default: true in production) */
   minify?: boolean;
-
-  /** Generate source maps (default: true in development) */
-  sourceMaps?: boolean;
 }
 ```
+
+> **Note:** Source maps are automatically enabled in development and disabled in production.
 
 ### StatiAssets Interface
 

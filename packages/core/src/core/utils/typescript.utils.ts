@@ -53,10 +53,17 @@ export interface WatchOptions extends CompileOptions {
  * Resolves TypeScript config with defaults based on mode.
  * @internal
  */
+/**
+ * Resolved TypeScript config with all defaults applied.
+ */
+interface ResolvedTypeScriptConfig extends Required<TypeScriptConfig> {
+  sourceMaps: boolean;
+}
+
 function resolveConfig(
   config: TypeScriptConfig,
   mode: 'development' | 'production',
-): Required<TypeScriptConfig> {
+): ResolvedTypeScriptConfig {
   return {
     enabled: config.enabled,
     srcDir: config.srcDir ?? DEFAULT_TS_SRC_DIR,
@@ -65,7 +72,8 @@ function resolveConfig(
     bundleName: config.bundleName ?? DEFAULT_TS_BUNDLE_NAME,
     hash: config.hash ?? mode === 'production', // No hash in dev for stable filenames
     minify: config.minify ?? mode === 'production',
-    sourceMaps: config.sourceMaps ?? mode === 'development',
+    // Source maps: always enabled in dev for debugging, always disabled in prod for security/size
+    sourceMaps: mode === 'development',
   };
 }
 
