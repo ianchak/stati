@@ -3,10 +3,10 @@
  * These tests exercise actual code paths with minimal mocking
  */
 import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
-import { mkdtemp, writeFile, mkdir, rm, readFile } from 'fs/promises';
-import { join } from 'path';
-import { tmpdir } from 'os';
-import { get } from 'http';
+import { mkdtemp, writeFile, mkdir, rm, readFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import { get } from 'node:http';
 
 // We need to test the internal functions, so we'll import the module and access them
 // Since they're not exported, we'll test them through the public API's behavior

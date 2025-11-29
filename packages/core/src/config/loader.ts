@@ -1,8 +1,9 @@
-import { existsSync } from 'fs';
-import { join, resolve } from 'path';
-import { pathToFileURL } from 'url';
+import { existsSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import type { StatiConfig } from '../types/index.js';
 import { validateISGConfig, ISGConfigurationError } from '../core/isg/validation.js';
+import { compileStatiConfig, cleanupCompiledConfig } from '../core/utils/index.js';
 import {
   DEFAULT_SRC_DIR,
   DEFAULT_OUT_DIR,
@@ -78,9 +79,28 @@ export async function loadConfig(cwd: string = process.cwd()): Promise<StatiConf
   }
 
   try {
-    const configUrl = pathToFileURL(resolve(configPath)).href;
-    const module = await import(configUrl);
-    const userConfig = module.default || module;
+    let configModule;
+    let compiledPath: string | undefined;
+
+    // If it's a .ts file, compile it first
+    if (configPath.endsWith('.ts')) {
+      try {
+        compiledPath = await compileStatiConfig(resolve(configPath));
+        const configUrl = pathToFileURL(compiledPath).href;
+        configModule = await import(configUrl);
+      } finally {
+        // Clean up compiled file
+        if (compiledPath) {
+          await cleanupCompiledConfig(compiledPath);
+        }
+      }
+    } else {
+      // Existing logic for .js/.mjs
+      const configUrl = pathToFileURL(resolve(configPath)).href;
+      configModule = await import(configUrl);
+    }
+
+    const userConfig = configModule.default || configModule;
 
     const mergedConfig: StatiConfig = {
       ...DEFAULT_CONFIG,

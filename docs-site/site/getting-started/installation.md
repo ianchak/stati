@@ -47,10 +47,27 @@ Here are the available options:
 | --- | --- |
 | `[project-name]` | Sets the project directory name. |
 | `--styling` | Sets the styling solution (`css`, `sass`, or `tailwind`). |
+| `--typescript`, `--ts` | Enables TypeScript support with esbuild compilation. |
 | `--no-git` | Skips Git initialization (default: initializes Git). |
 | `--no-install` | Skips dependency installation (default: installs dependencies). |
 | `--package-manager` | Specifies the package manager to use (`npm`, `yarn`, `pnpm`, or `bun`). |
 | `--template` | Specifies a project template to use (currently only `blank` is available). |
+
+### TypeScript Quick Start
+
+Create a Stati project with TypeScript enabled:
+
+```bash
+npx create-stati my-ts-site --typescript
+```
+
+This creates a project with:
+
+- `stati.config.ts` - Type-safe configuration file
+- `tsconfig.json` - TypeScript compiler configuration
+- `src/main.ts` - Entry point for your TypeScript code
+
+Run `npm run typecheck` to validate your TypeScript code. Learn more in the [TypeScript configuration guide](/configuration/typescript/).
 
 > **Tip:** If you choose Tailwind CSS, the scaffolder sets up Stati's built-in Tailwind integration in the dev script. This runs both the dev server and Tailwind watcher in a single process—no need for separate build scripts or process managers!
 

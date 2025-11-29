@@ -3,6 +3,23 @@
  */
 
 /**
+ * TypeScript bundle asset information.
+ * Available when TypeScript compilation is enabled.
+ *
+ * @example
+ * ```typescript
+ * // In Eta templates, access via stati.assets
+ * <script type="module" src="<%= stati.assets.bundlePath %>"></script>
+ * ```
+ */
+export interface StatiAssets {
+  /** Bundle filename only (e.g., 'bundle-a1b2c3d4.js') */
+  bundleName?: string;
+  /** Full path to bundle (e.g., '/_assets/bundle-a1b2c3d4.js') */
+  bundlePath?: string;
+}
+
+/**
  * Front matter metadata extracted from content files.
  * Contains page-specific configuration and metadata in YAML format.
  *
@@ -332,6 +349,8 @@ export interface TemplateContext {
   partials: Record<string, string>;
   /** Collection data (available on index pages and child pages showing parent collection) */
   collection?: CollectionData;
+  /** TypeScript bundle assets (available when typescript.enabled is true) */
+  assets?: StatiAssets;
   /** Additional properties that may be added dynamically (e.g., custom filters, helpers) */
   [key: string]: unknown;
 }

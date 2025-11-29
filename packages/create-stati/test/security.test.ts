@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { tmpdir } from 'os';
-import { join } from 'path';
-import { mkdtemp, rm, access } from 'fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { mkdtemp, rm, access } from 'node:fs/promises';
 import { createSite, detectAvailablePackageManagers } from '../src/create.js';
 import type { CreateOptions } from '../src/create.js';
 

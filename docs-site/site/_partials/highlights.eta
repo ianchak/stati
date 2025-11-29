@@ -60,32 +60,32 @@
                     <div class="grid lg:grid-cols-2 gap-8 items-center h-full">
                         <div>
                             <h3 class="text-3xl font-bold mb-4 text-gray-900 dark:text-gray-100">
-                                TypeScript-First Configuration
+                                Full TypeScript Support
                             </h3>
                             <p class="text-lg text-gray-600 dark:text-gray-300 mb-6">
-                                Built with TypeScript from the ground up. Get full type safety, IntelliSense autocomplete, and better debugging in your configuration files.
+                                Built with TypeScript from the ground up. Type-safe configuration with IntelliSense, plus built-in esbuild compilation for your client-side TypeScript code.
                             </p>
                             <ul class="space-y-3">
                                 <li class="flex items-start gap-3">
                                     <svg class="w-6 h-6 text-primary-600 dark:text-primary-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                                     </svg>
-                                    <span class="text-gray-700 dark:text-gray-300">Full type inference with <code class="text-sm bg-gray-100 dark:bg-dark-700 px-2 py-1 rounded">defineConfig()</code></span>
+                                    <span class="text-gray-700 dark:text-gray-300">Full type inference with <code class="text-sm bg-gray-100 dark:bg-dark-700 px-2 py-1 rounded">defineConfig()</code> in <code class="text-sm bg-gray-100 dark:bg-dark-700 px-2 py-1 rounded">stati.config.ts</code></span>
                                 </li>
                                 <li class="flex items-start gap-3">
                                     <svg class="w-6 h-6 text-primary-600 dark:text-primary-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                                     </svg>
-                                    <span class="text-gray-700 dark:text-gray-300">IntelliSense autocomplete in VS Code</span>
+                                    <span class="text-gray-700 dark:text-gray-300">Built-in esbuild compilation with automatic script injection</span>
                                 </li>
                                 <li class="flex items-start gap-3">
                                     <svg class="w-6 h-6 text-primary-600 dark:text-primary-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                                     </svg>
-                                    <span class="text-gray-700 dark:text-gray-300">Catch configuration errors before build</span>
+                                    <span class="text-gray-700 dark:text-gray-300">Dev mode: source maps & hot reload. Prod mode: minification & hashing</span>
                                 </li>
                             </ul>
-                            <a href="/configuration/file/" class="inline-flex items-center gap-2 mt-6 px-6 py-3 bg-gradient-to-r from-primary-500 to-blue-700 hover:from-primary-600 hover:to-blue-800 text-white font-semibold rounded-lg transition-all duration-200 shadow-md shadow-gray-900/10 dark:shadow-black/20 hover:shadow-lg hover:shadow-gray-900/15 dark:hover:shadow-black/30">
+                            <a href="/configuration/typescript/" class="inline-flex items-center gap-2 mt-6 px-6 py-3 bg-gradient-to-r from-primary-500 to-blue-700 hover:from-primary-600 hover:to-blue-800 text-white font-semibold rounded-lg transition-all duration-200 shadow-md shadow-gray-900/10 dark:shadow-black/20 hover:shadow-lg hover:shadow-gray-900/15 dark:hover:shadow-black/30">
                                 Learn More
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -99,20 +99,20 @@ export default defineConfig({
   site: {
     title: 'My Stati Site',
     baseUrl: 'https://example.com',
-    defaultLocale: 'en-US',
   },
 
-  markdown: {
-    options: {
-      html: true,
-      linkify: true,
-      typographer: true,
-    },
-  },
-
-  isg: {
+  // Enable built-in TypeScript compilation
+  typescript: {
     enabled: true,
-    ttlSeconds: 3600,
+    srcDir: 'src',      // Your TS source
+    entryPoint: 'main.ts',
+
+    // Production optimizations (auto-enabled)
+    minify: true,       // Minify output
+    hash: true,         // Cache-busting hashes
+
+    // Dev mode features (automatic)
+    // sourceMaps, hot reload, no minification
   },
 });</code></pre>
                         </div>

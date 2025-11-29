@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { mkdir, writeFile, rm } from 'fs/promises';
-import { join } from 'path';
+import { mkdir, writeFile, rm } from 'node:fs/promises';
+import { join } from 'node:path';
 import { resolvePrettyUrl } from '../../src/core/utils/server.utils.js';
 
 describe('resolvePrettyUrl', () => {

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { spawnProcess, isCommandAvailable } from '../../src/utils/process.utils.js';
-import { spawn } from 'child_process';
-import type { ChildProcess } from 'child_process';
+import { spawn } from 'node:child_process';
+import type { ChildProcess } from 'node:child_process';
 
 vi.mock('child_process');
 

@@ -86,3 +86,13 @@ export { globToRegex, matchesGlob } from './glob-patterns.utils.js';
 
 // Logger utilities
 export { createFallbackLogger } from './logger.utils.js';
+
+// TypeScript compilation utilities
+export {
+  compileTypeScript,
+  createTypeScriptWatcher,
+  compileStatiConfig,
+  cleanupCompiledConfig,
+  autoInjectBundle,
+} from './typescript.utils.js';
+export type { CompileOptions, CompileResult, WatchOptions } from './typescript.utils.js';

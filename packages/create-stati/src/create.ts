@@ -1,9 +1,11 @@
-import { mkdir, rm, access, stat } from 'fs/promises';
-import { join, resolve } from 'path';
+import { mkdir, rm, access, stat, writeFile } from 'node:fs/promises';
+import { join, resolve } from 'node:path';
 import { ExampleManager } from './examples.js';
 import { PackageJsonModifier } from './package-json.js';
-import { CSSProcessor } from './css-processors.js';
+import { processStyling } from './css-processors.js';
+import { writeProcessorFiles } from './utils/index.js';
 import type { StylingOption } from './css-processors.js';
+import { setupTypeScript } from './typescript-processor.js';
 import { isCommandAvailable, spawnProcess, logger } from './utils/index.js';
 
 /**
@@ -178,10 +180,64 @@ export interface CreateOptions {
   projectName: string;
   template: 'blank';
   styling: StylingOption;
+  typescript?: boolean;
   gitInit?: boolean;
   install?: boolean;
   packageManager?: PackageManager;
   dir?: string;
+}
+
+/**
+ * Generate the appropriate config file based on options.
+ * Returns TypeScript config when typescript is enabled, JavaScript otherwise.
+ */
+function generateConfigFile(options: CreateOptions): { filename: string; content: string } {
+  if (options.typescript) {
+    return {
+      filename: 'stati.config.ts',
+      content: generateTypeScriptConfig(options),
+    };
+  }
+
+  return {
+    filename: 'stati.config.js',
+    content: generateJavaScriptConfig(options),
+  };
+}
+
+/**
+ * Generate TypeScript configuration file content.
+ * Includes full TypeScript config with all settings.
+ */
+function generateTypeScriptConfig(options: CreateOptions): string {
+  return `import { defineConfig } from '@stati/core';
+
+export default defineConfig({
+  site: {
+    title: '${options.projectName}',
+    description: 'A Stati site',
+  },
+  typescript: {
+    enabled: true,
+  },
+});
+`;
+}
+
+/**
+ * Generate JavaScript configuration file content.
+ * Minimal config without TypeScript settings.
+ */
+function generateJavaScriptConfig(options: CreateOptions): string {
+  return `import { defineConfig } from '@stati/core';
+
+export default defineConfig({
+  site: {
+    title: '${options.projectName}',
+    description: 'A Stati site',
+  },
+});
+`;
 }
 
 export class ProjectScaffolder {
@@ -201,20 +257,41 @@ export class ProjectScaffolder {
       // 2. Copy example files directly
       await this.examplesManager.copyExample(this.options.template, targetDir);
 
-      // 3. Modify package.json with project name
-      const packageModifier = new PackageJsonModifier({ projectName: this.options.projectName });
+      // 3. Generate and write config file (stati.config.ts or stati.config.js)
+      const configFile = generateConfigFile(this.options);
+      // Remove template config file if we're writing a different one (e.g., TS replacing JS)
+      const templateConfigPath = join(targetDir, 'stati.config.js');
+      if (configFile.filename !== 'stati.config.js') {
+        try {
+          await rm(templateConfigPath);
+        } catch {
+          // Ignore if file doesn't exist
+        }
+      }
+      await writeFile(join(targetDir, configFile.filename), configFile.content);
+
+      // 4. Setup TypeScript if enabled
+      if (this.options.typescript) {
+        const tsSetup = setupTypeScript();
+        await writeProcessorFiles(targetDir, tsSetup.files);
+      }
+
+      // 5. Modify package.json with project name and TypeScript deps if needed
+      const packageModifier = new PackageJsonModifier({
+        projectName: this.options.projectName,
+        typescript: this.options.typescript,
+      });
       await packageModifier.modifyPackageJson(targetDir);
 
-      // 4. Setup CSS preprocessing if requested
-      const cssProcessor = new CSSProcessor();
-      await cssProcessor.processStyling(targetDir, this.options.styling);
+      // 6. Setup CSS preprocessing if requested
+      await processStyling(targetDir, this.options.styling);
 
-      // 5. Initialize git (optional)
+      // 7. Initialize git (optional)
       if (this.options.gitInit) {
         await this.initializeGit(targetDir);
       }
 
-      // 6. Install dependencies (optional)
+      // 8. Install dependencies (optional)
       if (this.options.install) {
         await this.installDependencies(targetDir);
       }
@@ -271,12 +348,6 @@ yarn.lock
 # Build outputs
 dist/
 .stati/
-
-# Generated CSS files (Tailwind, Sass, etc.)
-public/styles.css
-public/style.css
-src/styles.min.css
-css/styles.css
 
 # Environment files
 .env

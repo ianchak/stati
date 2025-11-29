@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { join } from 'path';
+import { join } from 'node:path';
 import type { PageModel, StatiConfig } from '../../../src/types/index.js';
 
 // Mock fs-extra and fast-glob - use factory functions to avoid hoisting issues

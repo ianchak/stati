@@ -1,7 +1,7 @@
 import MarkdownIt from 'markdown-it';
-import { createRequire } from 'module';
-import { pathToFileURL } from 'url';
-import path from 'path';
+import { createRequire } from 'node:module';
+import { pathToFileURL } from 'node:url';
+import path from 'node:path';
 import type { StatiConfig } from '../types/index.js';
 
 /**

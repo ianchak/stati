@@ -1,4 +1,4 @@
-import { join, dirname, relative, posix } from 'path';
+import { join, dirname, relative, posix } from 'node:path';
 import {
   pathExists,
   readFile,

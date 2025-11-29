@@ -1,9 +1,9 @@
-import { createServer } from 'http';
-import { join, extname } from 'path';
-import { posix } from 'path';
-import { readFile } from 'fs/promises';
+import { createServer } from 'node:http';
+import { join, extname, posix } from 'node:path';
+import { readFile } from 'node:fs/promises';
 import { WebSocketServer } from 'ws';
 import chokidar from 'chokidar';
+import type { BuildContext } from 'esbuild';
 import type { StatiConfig, Logger } from '../types/index.js';
 import type { FSWatcher } from 'chokidar';
 import { build } from './build.js';
@@ -21,6 +21,7 @@ import {
   TemplateError,
   createFallbackLogger,
   mergeServerOptions,
+  createTypeScriptWatcher,
 } from './utils/index.js';
 import { setEnv, getEnv } from '../env.js';
 import { DEFAULT_DEV_PORT, DEFAULT_DEV_HOST, TEMPLATE_EXTENSION } from '../constants.js';
@@ -369,6 +370,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
     lastBuildError = error;
   };
   let watcher: FSWatcher | null = null;
+  let tsWatcher: BuildContext | null = null;
   const isBuildingRef = { value: false };
   let isStopping = false;
 
@@ -630,6 +632,46 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
         });
       });
 
+      // TypeScript watcher setup (initial compilation is handled by performInitialBuild)
+      if (config.typescript?.enabled) {
+        try {
+          // Start TypeScript watcher for hot reload
+          tsWatcher = await createTypeScriptWatcher({
+            projectRoot: process.cwd(),
+            config: config.typescript,
+            outDir: config.outDir || 'dist',
+            mode: 'development',
+            logger,
+            onRebuild: () => {
+              logger.info?.('TypeScript recompiled, triggering reload...');
+              // Broadcast reload to WebSocket clients
+              if (wsServer) {
+                wsServer.clients.forEach((client: unknown) => {
+                  const ws = client as { readyState: number; send: (data: string) => void };
+                  if (ws.readyState === 1) {
+                    // WebSocket.OPEN
+                    ws.send(JSON.stringify({ type: 'reload' }));
+                  }
+                });
+              }
+            },
+          });
+        } catch (error) {
+          const tsError = error instanceof Error ? error : new Error(String(error));
+          // Prominent notification for TypeScript setup failure
+          console.log();
+          logger.error?.(`TypeScript setup failed: ${tsError.message}`);
+          logger.warning?.('──────────────────────────────────────────────────────────────');
+          logger.warning?.('⚠️  TypeScript hot reload is DISABLED for this session.');
+          logger.warning?.(
+            "    Dev server will continue, but TypeScript changes won't auto-reload.",
+          );
+          logger.warning?.('    Fix your TypeScript configuration and restart the dev server.');
+          logger.warning?.('──────────────────────────────────────────────────────────────');
+          console.log();
+        }
+      }
+
       // Set up file watching
       const watchPaths = [srcDir, staticDir].filter(Boolean);
       watcher = chokidar.watch(watchPaths, {
@@ -695,6 +737,12 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
       if (watcher) {
         await watcher.close();
         watcher = null;
+      }
+
+      // Clean up TypeScript watcher
+      if (tsWatcher) {
+        await tsWatcher.dispose();
+        tsWatcher = null;
       }
 
       if (wsServer) {

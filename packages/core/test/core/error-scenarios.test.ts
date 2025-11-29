@@ -276,6 +276,7 @@ describe('Error Scenario Tests', () => {
         expect.anything(),
         expect.any(Array), // navigation parameter
         expect.any(Array), // allPages parameter
+        undefined, // assets parameter
       );
     });
   });
@@ -625,6 +626,7 @@ describe('Error Scenario Tests', () => {
         expect.anything(),
         expect.any(Array), // navigation parameter
         expect.any(Array), // allPages parameter
+        undefined, // assets parameter
       );
     });
 

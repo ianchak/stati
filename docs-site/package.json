@@ -5,17 +5,16 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "stati dev --tailwind-input src/styles.css --tailwind-output public/styles.css",
-    "dev:local": "node ../packages/cli/dist/cli.js dev --tailwind-input src/styles.css --tailwind-output public/styles.css",
-    "build": "stati build && npm run build:css && npm run copy:css",
-    "build:local": "node ../packages/cli/dist/cli.js build --clean && npm run build:css && npm run copy:css",
+    "dev": "stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css",
+    "dev:local": "node ../packages/cli/dist/cli.js dev --tailwind-input src/styles.css --tailwind-output dist/styles.css",
+    "build": "stati build && npm run build:css",
+    "build:local": "node ../packages/cli/dist/cli.js build --clean && npm run build:css",
     "preview": "stati preview",
     "preview:local": "node ../packages/cli/dist/cli.js preview",
     "clean:dist": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "clean:cache": "node -e \"require('node:fs').rmSync('.stati',{recursive:true,force:true})\"",
     "clean": "npm run clean:dist && npm run clean:cache",
-    "build:css": "tailwindcss -i src/styles.css -o public/styles.css --minify",
-    "copy:css": "node -e \"require('node:fs').copyFileSync('public/styles.css','dist/styles.css')\""
+    "build:css": "tailwindcss -i src/styles.css -o dist/styles.css --minify"
   },
   "keywords": [
     "static-site",

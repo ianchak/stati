@@ -37,6 +37,7 @@ npx create-stati my-site --template=blank --styling=tailwind --git
 
 - `--template <name>` - Template to use (currently: `blank`)
 - `--styling <type>` - CSS solution (`css` | `sass` | `tailwind`)
+- `--typescript`, `--ts` - Enable TypeScript support
 - `--no-git` - Skip git initialization (default: initializes Git)
 - `--no-install` - Skip dependency installation (default: installs dependencies)
 - `--package-manager <pm>` - Package manager to use (`npm` | `yarn` | `pnpm` | `bun`)
@@ -48,6 +49,9 @@ npx create-stati my-site --template=blank --styling=tailwind --git
 # Plain CSS (Git initialized by default)
 npx create-stati my-blog --styling=css
 
+# TypeScript with Tailwind
+npx create-stati my-app --typescript --styling=tailwind
+
 # Tailwind without Git and skip install
 npx create-stati my-portfolio --styling=tailwind --no-git --no-install
 
@@ -55,7 +59,7 @@ npx create-stati my-portfolio --styling=tailwind --no-git --no-install
 npx create-stati my-docs --styling=sass --package-manager=pnpm
 
 # Full control with all options
-npx create-stati my-site --styling=tailwind --no-git --no-install --package-manager=yarn
+npx create-stati my-site --typescript --styling=tailwind --no-git --no-install --package-manager=yarn
 ```
 
 > **Note:** In non-interactive mode (when using CLI flags), dependencies are installed by default using `npm`. Use `--package-manager` to specify a different package manager (yarn, pnpm, or bun).
@@ -73,6 +77,7 @@ When you run `npx create-stati`, you'll see a friendly wizard:
   > Plain CSS (recommended for beginners)
     Sass/SCSS
     Tailwind CSS
+? Enable TypeScript support? (y/N)
 ? Initialize a git repository? (Y/n)
 ? Install dependencies? (Y/n)
 ? Which package manager would you like to use? (Use arrow keys)
@@ -85,6 +90,36 @@ When you run `npx create-stati`, you'll see a friendly wizard:
 Each choice is explained, so you can make the right decision for your project.
 
 > **Note:** The package manager prompt only appears if you choose to install dependencies and multiple package managers are detected on your system.
+
+---
+
+## TypeScript Support
+
+When TypeScript is enabled (via `--typescript` flag or interactive prompt), your project will include:
+
+- **`stati.config.ts`** - TypeScript configuration file with full type safety
+- **`tsconfig.json`** - TypeScript compiler configuration optimized for browser targets
+- **`src/main.ts`** - Entry point for your TypeScript code
+- **`typecheck` script** - Run `npm run typecheck` to validate your TypeScript
+
+### How It Works
+
+Stati uses [esbuild](https://esbuild.github.io/) for lightning-fast TypeScript compilation:
+
+- **Development mode** (`stati dev`): Stable filenames, source maps enabled, no minification
+- **Production mode** (`stati build`): Hashed filenames for cache busting, minified output
+
+Your compiled JavaScript bundle is **automatically injected** into your HTML output before the closing `</body>` tag. No template modifications needed!
+
+The bundle path is also available via `stati.assets.bundlePath` for advanced use cases like preloading:
+
+```eta
+<head>
+  <% if (stati.assets?.bundlePath) { %>
+  <link rel="modulepreload" href="<%= stati.assets.bundlePath %>">
+  <% } %>
+</head>
+```
 
 ---
 
@@ -102,7 +137,7 @@ A minimal, flexible starting point for any type of Stati site.
 - Extensible architecture for any project type
 - Just the essentials - build on your own terms
 
-**File Structure:**
+**File Structure (Plain CSS):**
 
 ```text
 my-site/
@@ -116,11 +151,40 @@ my-site/
 └── package.json          # Project dependencies
 ```
 
+**File Structure (Sass):**
+
+```text
+my-site/
+├── site/
+│   └── ...
+├── src/
+│   └── styles.scss       # Sass source file
+├── public/
+│   └── favicon.svg       # Site icon
+├── stati.config.js
+└── package.json          # Includes sass scripts
+```
+
+**File Structure (Tailwind CSS):**
+
+```text
+my-site/
+├── site/
+│   └── ...
+├── src/
+│   └── styles.css        # Tailwind source file
+├── public/
+│   └── favicon.svg       # Site icon
+├── tailwind.config.js    # Tailwind configuration
+├── stati.config.js
+└── package.json          # Includes Tailwind scripts
+```
+
 **What's Included:**
 
 - **Homepage (`site/index.md`)** - Welcome page with getting started instructions
 - **Layout (`site/layout.eta`)** - HTML5 boilerplate with responsive meta tags
-- **Styles (`public/styles.css`)** - Minimal CSS with typography and layout helpers
+- **Styles** - CSS in `public/` (plain CSS) or `src/` (Sass/Tailwind)
 - **Configuration (`stati.config.js`)** - Pre-configured with sensible defaults
 - **Favicon (`public/favicon.svg`)** - Simple SVG favicon ready to customize
 
@@ -136,7 +200,7 @@ my-site/
 1. The homepage provides clear next steps
 2. Edit `site/index.md` to add your content
 3. Customize `site/layout.eta` for your HTML structure
-4. Update `public/styles.css` with your styling
+4. Update your styles (in `public/` for plain CSS, `src/` for Sass/Tailwind)
 5. Configure site metadata in `stati.config.js`
 
 ---
@@ -151,14 +215,14 @@ Choose the styling approach that fits your workflow.
 - No build step required
 - Full control over every style
 - Great for learning
-- Included: Basic CSS with typography and layout helpers
+- Styles location: `public/styles.css`
 
 ### Sass/SCSS
 
 - CSS with superpowers (variables, nesting, mixins)
 - Compiles to standard CSS
 - Popular and well-supported
-- Included: Sass compiler and build scripts
+- Styles location: `src/styles.scss` → compiles to `dist/styles.css`
 
 ### Tailwind CSS
 
@@ -166,7 +230,7 @@ Choose the styling approach that fits your workflow.
 - Rapid prototyping
 - Built-in design system
 - Automatic purging for production
-- Included: Tailwind + PostCSS + config files
+- Styles location: `src/styles.css` → compiles to `dist/styles.css`
 
 ---
 

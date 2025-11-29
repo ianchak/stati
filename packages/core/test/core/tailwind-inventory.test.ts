@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { join } from 'path';
+import { join } from 'node:path';
 import {
   readFile,
   pathExists,
@@ -21,8 +21,8 @@ import {
   resetTailwindDetection,
 } from '../../src/core/utils/tailwind-inventory.utils.js';
 import { propValue } from '../../src/core/utils/template.utils.js';
-import { mkdtemp } from 'fs/promises';
-import { tmpdir } from 'os';
+import { mkdtemp } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 
 describe('Tailwind Inventory - Tracking State', () => {
   beforeEach(() => {

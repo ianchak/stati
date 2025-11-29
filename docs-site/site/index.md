@@ -17,7 +17,7 @@ features:
   subtitle: 'Modern web development made simple with essential features that just work.'
   items:
     - title: 'TypeScript First'
-      description: 'Built with TypeScript from the ground up with defineConfig() helper.'
+      description: 'Type-safe config and built-in esbuild compilation for your client-side code.'
       icon: 'code-bracket'
     - title: 'Fast Development'
       description: 'Development server with live reload and incremental rebuilding.'
@@ -29,7 +29,7 @@ features:
       description: 'Powerful Markdown processing with Eta templating and hierarchical layouts.'
       icon: 'document-text'
     - title: 'Simple Configuration'
-      description: 'Minimal configuration with sensible defaults and TypeScript IntelliSense.'
+      description: 'Minimal configuration with sensible defaults.'
       icon: 'cog-6-tooth'
     - title: 'Modern Tooling'
       description: 'CLI tools, project scaffolding, and development workflows built for efficiency.'

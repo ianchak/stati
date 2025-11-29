@@ -1,6 +1,6 @@
-import { spawn } from 'child_process';
-import { existsSync } from 'fs';
-import { resolve, join } from 'path';
+import { spawn } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { resolve, join } from 'node:path';
 import type { createLogger } from './logger.js';
 
 export interface TailwindOptions {

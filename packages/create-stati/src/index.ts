@@ -24,6 +24,7 @@ Usage:
 Options:
   --template <name>        Template to use (blank)
   --styling <type>         CSS solution (css|sass|tailwind)
+  --typescript, --ts       Enable TypeScript support
   --no-git                 Skip git initialization (default: initializes Git)
   --no-install             Skip dependency installation (default: installs dependencies)
   --package-manager <pm>   Package manager to use (npm|yarn|pnpm|bun)
@@ -32,6 +33,7 @@ Options:
 Examples:
   create-stati my-site
   create-stati my-blog --styling=sass
+  create-stati my-app --typescript
   create-stati my-app --template=blank --styling=tailwind --package-manager=pnpm
   create-stati my-app --no-install --no-git
 `);
@@ -55,6 +57,10 @@ Examples:
           break;
         case 'styling':
           options.styling = (value || args[++i]) as 'css' | 'sass' | 'tailwind';
+          break;
+        case 'typescript':
+        case 'ts':
+          options.typescript = true;
           break;
         case 'no-git':
           options.gitInit = false;
@@ -158,6 +164,21 @@ export async function runCLI(cliOptions?: Partial<CreateOptions> | null): Promis
     });
   }
 
+  // Track if we need any prompts before adding optional prompts
+  // This helps us determine if we're in interactive or non-interactive mode
+  const hasRequiredPrompts = prompts.length > 0;
+
+  // TypeScript prompt (only if not specified via flag AND we're in interactive mode)
+  // In non-interactive mode (all required options provided), default to false for backward compatibility
+  if (options.typescript === undefined && hasRequiredPrompts) {
+    prompts.push({
+      name: 'typescript',
+      type: 'confirm',
+      message: 'Enable TypeScript support?',
+      default: false,
+    });
+  }
+
   if (options.gitInit === undefined) {
     prompts.push({
       name: 'gitInit',
@@ -218,6 +239,7 @@ export async function runCLI(cliOptions?: Partial<CreateOptions> | null): Promis
     projectName: options.projectName || answers.name?.trim() || 'my-stati-site',
     template: options.template || answers.template || 'blank',
     styling: options.styling || answers.styling || 'css',
+    typescript: options.typescript ?? answers.typescript ?? false,
     gitInit:
       options.gitInit !== undefined
         ? options.gitInit

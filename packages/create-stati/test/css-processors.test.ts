@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { tmpdir } from 'os';
-import { join } from 'path';
-import { mkdtemp, rm, writeFile, readFile, mkdir, access } from 'fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { mkdtemp, rm, writeFile, readFile, mkdir, access } from 'node:fs/promises';
 import { CSSProcessor } from '../src/css-processors.js';
 
 describe('CSSProcessor', () => {
@@ -74,10 +74,10 @@ describe('CSSProcessor', () => {
     it('should setup Sass with enhanced SCSS file', async () => {
       await cssProcessor.processStyling(tempDir, 'sass');
 
-      // Verify styles directory and SCSS file were created
-      await expect(access(join(tempDir, 'styles', 'main.scss'))).resolves.not.toThrow();
+      // Verify src directory and SCSS file were created
+      await expect(access(join(tempDir, 'src', 'styles.scss'))).resolves.not.toThrow();
 
-      const scssContent = await readFile(join(tempDir, 'styles', 'main.scss'), 'utf-8');
+      const scssContent = await readFile(join(tempDir, 'src', 'styles.scss'), 'utf-8');
 
       // Verify SCSS has variables and enhanced features
       expect(scssContent).toContain('$primary-color: #007bff;');
@@ -106,16 +106,16 @@ describe('CSSProcessor', () => {
 
       expect(packageJson.scripts).toHaveProperty('build:css');
       expect(packageJson.scripts).toHaveProperty('watch:css');
-      expect(packageJson.scripts['build:css']).toContain('sass styles/main.scss public/styles.css');
+      expect(packageJson.scripts['build:css']).toContain('sass src/styles.scss dist/styles.css');
       expect(packageJson.scripts['watch:css']).toContain(
-        'sass styles/main.scss public/styles.css --watch',
+        'sass src/styles.scss dist/styles.css --watch',
       );
 
       // Scripts should be modified to integrate CSS processing
       expect(packageJson.scripts.dev).toBe(
         'concurrently --prefix none "npm run watch:css" "stati dev"',
       );
-      expect(packageJson.scripts.build).toBe('npm run build:css && stati build');
+      expect(packageJson.scripts.build).toBe('stati build && npm run build:css');
     });
 
     it('should remove original CSS file after creating SCSS', async () => {
@@ -191,17 +191,15 @@ describe('CSSProcessor', () => {
 
       expect(packageJson.scripts).toHaveProperty('build:css');
       expect(packageJson.scripts['build:css']).toBe(
-        'tailwindcss -i src/styles.css -o public/styles.css --minify',
+        'tailwindcss -i src/styles.css -o dist/styles.css --minify',
       );
 
       // Dev script should use integrated Tailwind support
       expect(packageJson.scripts.dev).toBe(
-        'stati dev --tailwind-input src/styles.css --tailwind-output public/styles.css',
+        'stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css',
       );
-      expect(packageJson.scripts.build).toBe(
-        'stati build && npm run build:css && npm run copy:css',
-      );
-      expect(packageJson.scripts['copy:css']).toContain('copyFileSync');
+      expect(packageJson.scripts.build).toBe('stati build && npm run build:css');
+      expect(packageJson.scripts).not.toHaveProperty('copy:css');
     });
   });
 
@@ -232,7 +230,7 @@ describe('CSSProcessor', () => {
 
         try {
           await expect(cssProcessor.processStyling(tempDir, 'tailwind')).rejects.toThrow(
-            /Failed to setup Tailwind/,
+            /Failed to setup tailwind/i,
           );
         } finally {
           // Restore permissions for cleanup

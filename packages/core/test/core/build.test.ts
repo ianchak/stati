@@ -28,6 +28,8 @@ const {
   mockUpdateCacheEntry,
   mockWithBuildLock,
   mockBuildNavigation,
+  mockCompileTypeScript,
+  mockAutoInjectBundle,
 } = vi.hoisted(() => ({
   // fs-extra mocks
   mockEnsureDir: vi.fn(),
@@ -46,6 +48,9 @@ const {
   mockCreateTemplateEngine: vi.fn(),
   mockRenderPage: vi.fn(),
   mockBuildNavigation: vi.fn(),
+  // TypeScript mocks
+  mockCompileTypeScript: vi.fn(),
+  mockAutoInjectBundle: vi.fn(),
   // ISG mocks
   mockLoadCacheManifest: vi.fn(),
   mockSaveCacheManifest: vi.fn(),
@@ -104,6 +109,11 @@ vi.mock('../../src/core/isg/builder.js', () => ({
 
 vi.mock('../../src/core/isg/build-lock.js', () => ({
   withBuildLock: mockWithBuildLock,
+}));
+
+vi.mock('../../src/core/utils/typescript.utils.js', () => ({
+  compileTypeScript: mockCompileTypeScript,
+  autoInjectBundle: mockAutoInjectBundle,
 }));
 
 describe('build.ts', () => {
@@ -343,6 +353,7 @@ describe('build.ts', () => {
         mockEta,
         expect.any(Array), // navigation parameter
         expect.any(Array), // allPages parameter
+        undefined, // assets parameter
       );
     });
 
@@ -864,6 +875,131 @@ describe('build.ts', () => {
       // Should not write RSS file in development mode
       const rssCall = mockWriteFile.mock.calls.find((call) => call[0].includes('feed.xml'));
       expect(rssCall).toBeUndefined();
+    });
+  });
+
+  describe('TypeScript compilation', () => {
+    beforeEach(() => {
+      mockCompileTypeScript.mockResolvedValue({ bundleFilename: 'bundle.js' });
+      mockAutoInjectBundle.mockImplementation((html) => html);
+    });
+
+    it('should compile TypeScript when enabled in config', async () => {
+      const configWithTypeScript: StatiConfig = {
+        ...mockConfig,
+        typescript: {
+          enabled: true,
+        },
+      };
+
+      mockLoadConfig.mockResolvedValue(configWithTypeScript);
+
+      await build();
+
+      expect(mockCompileTypeScript).toHaveBeenCalledWith(
+        expect.objectContaining({
+          config: { enabled: true },
+          mode: 'development',
+        }),
+      );
+    });
+
+    it('should not compile TypeScript when disabled', async () => {
+      mockLoadConfig.mockResolvedValue(mockConfig);
+
+      await build();
+
+      expect(mockCompileTypeScript).not.toHaveBeenCalled();
+    });
+
+    it('should inject bundle path into rendered HTML', async () => {
+      const configWithTypeScript: StatiConfig = {
+        ...mockConfig,
+        typescript: {
+          enabled: true,
+        },
+      };
+
+      mockCompileTypeScript.mockResolvedValue({ bundleFilename: 'bundle-abc123.js' });
+      mockLoadConfig.mockResolvedValue(configWithTypeScript);
+
+      await build();
+
+      expect(mockAutoInjectBundle).toHaveBeenCalled();
+    });
+
+    it('should pass correct mode based on environment', async () => {
+      const configWithTypeScript: StatiConfig = {
+        ...mockConfig,
+        typescript: {
+          enabled: true,
+        },
+      };
+
+      mockLoadConfig.mockResolvedValue(configWithTypeScript);
+
+      // Test production mode
+      setEnv('production');
+      await build();
+
+      expect(mockCompileTypeScript).toHaveBeenCalledWith(
+        expect.objectContaining({
+          mode: 'production',
+        }),
+      );
+    });
+
+    it('should pass assets to renderPage when bundle is generated', async () => {
+      const configWithTypeScript: StatiConfig = {
+        ...mockConfig,
+        typescript: {
+          enabled: true,
+          outDir: '_assets',
+        },
+      };
+
+      mockCompileTypeScript.mockResolvedValue({ bundleFilename: 'bundle-hash.js' });
+      mockLoadConfig.mockResolvedValue(configWithTypeScript);
+
+      await build();
+
+      expect(mockRenderPage).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        expect.objectContaining({
+          bundleName: 'bundle-hash.js',
+          bundlePath: '/_assets/bundle-hash.js',
+        }),
+      );
+    });
+
+    it('should handle TypeScript compilation returning no bundle', async () => {
+      const configWithTypeScript: StatiConfig = {
+        ...mockConfig,
+        typescript: {
+          enabled: true,
+        },
+      };
+
+      mockCompileTypeScript.mockResolvedValue({}); // No bundleFilename
+      mockLoadConfig.mockResolvedValue(configWithTypeScript);
+
+      await build();
+
+      // Should pass undefined assets to renderPage
+      expect(mockRenderPage).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        undefined,
+      );
     });
   });
 });

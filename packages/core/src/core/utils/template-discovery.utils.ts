@@ -1,5 +1,4 @@
-import { join, dirname } from 'path';
-import { posix } from 'path';
+import { join, dirname, posix } from 'node:path';
 import { pathExists } from './fs.utils.js';
 import type { StatiConfig, PageModel } from '../../types/index.js';
 import { LAYOUT_TEMPLATE } from '../../constants.js';

@@ -16,6 +16,9 @@ npm create stati my-site
 
 # Non-interactive with options
 npm create stati my-site --template=blank --styling=tailwind
+
+# With TypeScript support
+npm create stati my-site --typescript
 ```
 
 Running the scaffolder will:
@@ -37,9 +40,10 @@ The scaffolder will prompt you for:
 
 1. **Project name** - Name for your new Stati site
 2. **Styling solution** - Choose between CSS, Sass, or Tailwind CSS
-3. **Git initialization** - Whether to initialize a Git repository
-4. **Dependency installation** - Whether to install dependencies automatically
-5. **Package manager** - Which package manager to use (if multiple are detected)
+3. **TypeScript support** - Whether to enable TypeScript compilation
+4. **Git initialization** - Whether to initialize a Git repository
+5. **Dependency installation** - Whether to install dependencies automatically
+6. **Package manager** - Which package manager to use (if multiple are detected)
 
 ## Command Line Options
 
@@ -49,6 +53,7 @@ npx create-stati <project-name> [options]
 Options:
   --template <name>        Template to use (currently: blank)
   --styling <type>         CSS solution (css|sass|tailwind)
+  --typescript, --ts       Enable TypeScript support
   --no-git                 Skip git initialization (default: initializes Git)
   --no-install             Skip dependency installation (default: installs dependencies)
   --package-manager <pm>   Package manager to use (npm|yarn|pnpm|bun)
@@ -81,7 +86,7 @@ Choose your preferred styling approach:
 
 ### Sass
 
-- Creates `styles/main.scss` from the base CSS file
+- Creates `src/styles.scss` for SCSS source
 - SCSS support with build scripts
 - Automatic compilation during development and build
 - Scripts added: `build:css`, `watch:css`
@@ -90,11 +95,11 @@ Choose your preferred styling approach:
 ### Tailwind CSS
 
 - Generates `tailwind.config.js` with content paths for `site/**/*.{md,eta,html}` and `.stati/tailwind-classes.html`
-- Creates source stylesheet at `src/styles.css` compiled to `public/styles.css`
-- Scripts added: `build:css`, `copy:css`
+- Creates source stylesheet at `src/styles.css` compiled directly to `dist/styles.css`
+- Scripts added: `build:css`
 - Modified scripts:
   - `dev`: Uses Stati's built-in Tailwind integration (single process)
-  - `build`: Runs Stati build, then CSS compilation, then copy to dist
+  - `build`: Runs Stati build, then CSS compilation
 
 ## Post-Creation Setup
 
@@ -127,18 +132,66 @@ All created projects include these base scripts:
 
 ## Generated Project Structure
 
+### Plain CSS (Default)
+
 ```text
 my-site/
 ├── site/
 │   ├── index.md          # Homepage content
 │   └── layout.eta        # Main layout template
 ├── public/
-│   ├── styles.css        # Stylesheet (varies by styling choice)
+│   ├── styles.css        # Stylesheet
 │   └── favicon.svg       # Site icon
 ├── stati.config.js       # Stati configuration
 ├── package.json          # Node.js project file
 └── README.md            # Getting started guide
 ```
+
+### With Sass
+
+```text
+my-site/
+├── site/
+│   └── ...
+├── src/
+│   └── styles.scss       # Sass source file
+├── public/
+│   └── favicon.svg       # Site icon
+├── stati.config.js
+└── package.json          # Includes sass scripts
+```
+
+### With Tailwind CSS
+
+```text
+my-site/
+├── site/
+│   └── ...
+├── src/
+│   └── styles.css        # Tailwind source file
+├── public/
+│   └── favicon.svg       # Site icon
+├── tailwind.config.js    # Tailwind configuration
+├── stati.config.js
+└── package.json          # Includes Tailwind scripts
+```
+
+### With TypeScript Enabled
+
+When using `--typescript`, additional files are created:
+
+```text
+my-site/
+├── src/
+│   └── main.ts           # TypeScript entry point
+├── site/
+│   └── ...
+├── stati.config.ts       # TypeScript configuration (replaces .js)
+├── tsconfig.json         # TypeScript compiler configuration
+└── ...
+```
+
+The `typecheck` script is added to `package.json` for validating your TypeScript code.
 
 ## Requirements
 
@@ -150,4 +203,5 @@ my-site/
 - Start the development server: `npm run dev`
 - Add content to the `site/` directory
 - Customize the layout in `site/layout.eta`
-- Configure your site in `stati.config.js`
+- Configure your site in `stati.config.js` (or `stati.config.ts` for TypeScript projects)
+- Learn more about [TypeScript support](/configuration/typescript/)

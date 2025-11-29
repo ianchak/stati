@@ -1,12 +1,12 @@
 ---
 title: 'Configuration File'
-description: 'Learn how to configure Stati with the stati.config.js file and available options.'
+description: 'Learn how to configure Stati with the stati.config.js (or stati.config.ts) file and available options.'
 order: 1
 ---
 
 # Configuration
 
-Stati is designed to work great out of the box, but it's also highly configurable. The `stati.config.js` file is where you customize every aspect of your site's behavior, from basic metadata to advanced build optimizations.
+Stati is designed to work great out of the box, but it's also highly configurable. The `stati.config.js` file (or `stati.config.ts` for TypeScript projects) is where you customize every aspect of your site's behavior, from basic metadata to advanced build optimizations.
 
 ## Configuration File
 
@@ -464,5 +464,6 @@ For detailed information about specific configuration options, see:
 - **[ISG Options](/configuration/isg/)** - Incremental static generation and caching
 - **[SEO Configuration](/configuration/seo/)** - SEO metadata and optimization
 - **[RSS Configuration](/configuration/rss/)** - RSS feed generation
+- **[TypeScript](/configuration/typescript/)** - Built-in TypeScript compilation with esbuild
 
 The configuration system is designed to grow with your needs while maintaining simplicity for basic use cases. Start with minimal configuration and add complexity as your site evolves.

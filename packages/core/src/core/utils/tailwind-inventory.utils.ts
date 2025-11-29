@@ -8,7 +8,7 @@
  */
 
 import { writeFile, ensureDir, pathExists, readFile } from './fs.utils.js';
-import { join } from 'path';
+import { join } from 'node:path';
 
 /**
  * Module-level Set to track Tailwind classes across template renders.

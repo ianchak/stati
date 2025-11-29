@@ -79,6 +79,8 @@ export interface StatiConfig {
   robots?: RobotsTxtConfig;
   /** RSS feed generation configuration */
   rss?: import('./rss.js').RSSConfig;
+  /** TypeScript compilation settings */
+  typescript?: TypeScriptConfig;
   /** Development server configuration */
   dev?: {
     /** Port for development server (default: 3000) */
@@ -112,6 +114,78 @@ export interface SEOConfig {
   autoInject?: boolean;
   /** Enable debug logging for SEO generation (default: false) */
   debug?: boolean;
+}
+
+/**
+ * TypeScript compilation configuration.
+ * Controls how Stati compiles TypeScript files using esbuild.
+ *
+ * In development mode, source maps are always enabled and hash/minify are always disabled.
+ * In production mode, source maps are always disabled and hash/minify default to true.
+ *
+ * @example
+ * ```typescript
+ * const config: StatiConfig = {
+ *   typescript: {
+ *     enabled: true,
+ *     srcDir: 'src',
+ *     outDir: '_assets',
+ *     entryPoint: 'main.ts',
+ *     bundleName: 'bundle',
+ *     // hash and minify default to true in production
+ *     // set to false only if you need to debug production builds
+ *   }
+ * };
+ * ```
+ */
+export interface TypeScriptConfig {
+  /**
+   * Enable TypeScript compilation.
+   * @default false
+   */
+  enabled: boolean;
+
+  /**
+   * Source directory containing TypeScript files.
+   * Relative to site root.
+   * @default 'src'
+   */
+  srcDir?: string;
+
+  /**
+   * Output directory for compiled JavaScript.
+   * Relative to build output directory (dist/).
+   * @default '_assets'
+   */
+  outDir?: string;
+
+  /**
+   * Entry point file name (without path).
+   * @default 'main.ts'
+   */
+  entryPoint?: string;
+
+  /**
+   * Output bundle file name (without extension).
+   * The final filename will include a content hash: `[bundleName]-[hash].js`
+   * @default 'bundle'
+   */
+  bundleName?: string;
+
+  /**
+   * Include content hash in bundle filename for cache busting in production.
+   * When true, outputs `bundle-a1b2c3d4.js`. When false, outputs `bundle.js`.
+   * This option only applies to production builds; development always uses stable filenames.
+   * @default true
+   */
+  hash?: boolean;
+
+  /**
+   * Minify JavaScript output in production builds.
+   * This option only applies to production builds; development output is never minified.
+   * @default true
+   */
+  minify?: boolean;
 }
 
 /**

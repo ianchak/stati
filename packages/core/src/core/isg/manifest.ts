@@ -1,5 +1,5 @@
 import { readFile, writeFile, pathExists, ensureDir } from '../utils/index.js';
-import { join } from 'path';
+import { join } from 'node:path';
 import type { CacheManifest, CacheEntry } from '../../types/index.js';
 import { MANIFEST_FILENAME } from '../../constants.js';
 

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { tmpdir } from 'os';
-import { join } from 'path';
-import { mkdtemp, rm, access, readFile, writeFile, mkdir } from 'fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { mkdtemp, rm, access, readFile, writeFile, mkdir } from 'node:fs/promises';
 import { createSite, ProjectScaffolder, detectAvailablePackageManagers } from '../src/create.js';
 import type { CreateOptions } from '../src/create.js';
 import { ExampleManager } from '../src/examples.js';
@@ -66,7 +66,7 @@ describe('create-stati scaffolding', () => {
       const result = await createSite(options);
 
       // Verify Sass-specific files and configuration
-      await expect(access(join(result.targetDir, 'styles', 'main.scss'))).resolves.not.toThrow();
+      await expect(access(join(result.targetDir, 'src', 'styles.scss'))).resolves.not.toThrow();
 
       // Verify package.json has Sass dependencies
       const packageJson = JSON.parse(
@@ -79,7 +79,7 @@ describe('create-stati scaffolding', () => {
       expect(packageJson.scripts).toHaveProperty('watch:css');
 
       // Verify Sass content
-      const scssContent = await readFile(join(result.targetDir, 'styles', 'main.scss'), 'utf-8');
+      const scssContent = await readFile(join(result.targetDir, 'src', 'styles.scss'), 'utf-8');
       expect(scssContent).toContain('$primary-color');
       expect(scssContent).toContain('$font-stack');
       expect(scssContent).toContain('@mixin responsive');
@@ -123,6 +123,86 @@ describe('create-stati scaffolding', () => {
       expect(configContent).toContain('./.stati/tailwind-classes.html');
     });
 
+    it('should create a project with TypeScript enabled', async () => {
+      const projectDir = join(tempDir, 'test-typescript');
+      const options: CreateOptions = {
+        projectName: 'test-typescript',
+        template: 'blank',
+        styling: 'css',
+        gitInit: false,
+        typescript: true,
+        dir: projectDir,
+      };
+
+      const result = await createSite(options);
+
+      // Verify TypeScript-specific files exist
+      await expect(access(join(result.targetDir, 'stati.config.ts'))).resolves.not.toThrow();
+      await expect(access(join(result.targetDir, 'tsconfig.json'))).resolves.not.toThrow();
+      await expect(access(join(result.targetDir, 'src', 'main.ts'))).resolves.not.toThrow();
+
+      // Verify JavaScript config was NOT created
+      await expect(access(join(result.targetDir, 'stati.config.js'))).rejects.toThrow();
+
+      // Verify package.json has TypeScript dependencies
+      const packageJson = JSON.parse(
+        await readFile(join(result.targetDir, 'package.json'), 'utf-8'),
+      );
+      expect(packageJson.name).toBe('test-typescript');
+      expect(packageJson.devDependencies).toHaveProperty('typescript');
+      expect(packageJson.scripts).toHaveProperty('typecheck');
+
+      // Verify stati.config.ts content
+      const statiConfig = await readFile(join(result.targetDir, 'stati.config.ts'), 'utf-8');
+      expect(statiConfig).toContain("import { defineConfig } from '@stati/core'");
+      expect(statiConfig).toContain('typescript:');
+      expect(statiConfig).toContain('enabled: true');
+
+      // Verify tsconfig.json content
+      const tsconfigContent = await readFile(join(result.targetDir, 'tsconfig.json'), 'utf-8');
+      const tsconfig = JSON.parse(tsconfigContent);
+      expect(tsconfig.compilerOptions.strict).toBe(true);
+      expect(tsconfig.compilerOptions.noEmit).toBe(true);
+
+      // Verify main.ts content
+      const mainTs = await readFile(join(result.targetDir, 'src', 'main.ts'), 'utf-8');
+      expect(mainTs).toContain('console.log');
+    });
+
+    it('should create a project with TypeScript disabled (JavaScript config)', async () => {
+      const projectDir = join(tempDir, 'test-javascript');
+      const options: CreateOptions = {
+        projectName: 'test-javascript',
+        template: 'blank',
+        styling: 'css',
+        gitInit: false,
+        typescript: false,
+        dir: projectDir,
+      };
+
+      const result = await createSite(options);
+
+      // Verify JavaScript config exists
+      await expect(access(join(result.targetDir, 'stati.config.js'))).resolves.not.toThrow();
+
+      // Verify TypeScript files do NOT exist
+      await expect(access(join(result.targetDir, 'stati.config.ts'))).rejects.toThrow();
+      await expect(access(join(result.targetDir, 'tsconfig.json'))).rejects.toThrow();
+      await expect(access(join(result.targetDir, 'src', 'main.ts'))).rejects.toThrow();
+
+      // Verify package.json does NOT have TypeScript dependencies
+      const packageJson = JSON.parse(
+        await readFile(join(result.targetDir, 'package.json'), 'utf-8'),
+      );
+      expect(packageJson.devDependencies).not.toHaveProperty('typescript');
+      expect(packageJson.scripts).not.toHaveProperty('typecheck');
+
+      // Verify stati.config.js content
+      const statiConfig = await readFile(join(result.targetDir, 'stati.config.js'), 'utf-8');
+      expect(statiConfig).toContain("import { defineConfig } from '@stati/core'");
+      expect(statiConfig).not.toContain('typescript:');
+    });
+
     it('should initialize git repository when requested', async () => {
       const projectDir = join(tempDir, 'test-git');
       const options: CreateOptions = {
@@ -145,8 +225,6 @@ describe('create-stati scaffolding', () => {
       expect(gitignoreContent).toContain('node_modules/');
       expect(gitignoreContent).toContain('dist/');
       expect(gitignoreContent).toContain('.stati/');
-      expect(gitignoreContent).toContain('public/styles.css');
-      expect(gitignoreContent).toContain('# Generated CSS files');
 
       consoleSpy.mockRestore();
     });

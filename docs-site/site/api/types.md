@@ -36,6 +36,9 @@ interface StatiConfig {
   /** ISG (Incremental Static Generation) settings */
   isg?: ISGConfig;
 
+  /** TypeScript compilation settings */
+  typescript?: TypeScriptConfig;
+
   /** Custom configuration extensions */
   [key: string]: any;
 }
@@ -137,9 +140,6 @@ interface BuildConfig {
 
   /** Asset optimization settings */
   assets?: AssetConfig;
-
-  /** Source map generation */
-  sourceMaps?: boolean;
 
   /** Build parallelization */
   parallel?: boolean | ParallelConfig;
@@ -438,7 +438,61 @@ interface CacheEntry {
   /** Maximum age cap for this page in days */
   maxAgeCapDays?: number;
 }
+```
 
+### TypeScript Configuration
+
+```typescript
+interface TypeScriptConfig {
+  /** Enable TypeScript compilation */
+  enabled: boolean;
+
+  /** Source directory containing TypeScript files (default: 'src') */
+  srcDir?: string;
+
+  /** Output directory within dist (default: '_assets') */
+  outDir?: string;
+
+  /** Entry point file relative to srcDir (default: 'main.ts') */
+  entryPoint?: string;
+
+  /** Base name for output bundle (default: 'bundle') */
+  bundleName?: string;
+
+  /** Add content hash to filename in production (default: true, ignored in development) */
+  hash?: boolean;
+
+  /** Minify JavaScript output in production (default: true, ignored in development) */
+  minify?: boolean;
+}
+```
+
+> **Note:** Source maps, hashing, and minification are automatic based on build mode. In development, source maps are enabled and hash/minify are disabled. In production, source maps are disabled and hash/minify default to true but can be set to false for debugging.
+
+### StatiAssets Interface
+
+Available in templates when TypeScript is enabled. The script tag is **automatically injected** into your HTML during build - no template changes required!
+
+```typescript
+interface StatiAssets {
+  /** Bundle filename only (e.g., 'bundle-a1b2c3d4.js') */
+  bundleName?: string;
+  /** Full path to bundle (e.g., '/_assets/bundle-a1b2c3d4.js') */
+  bundlePath?: string;
+}
+```
+
+For advanced use cases like preloading, access via `stati.assets`:
+
+```eta
+<% if (stati.assets?.bundlePath) { %>
+<link rel="modulepreload" href="<%= stati.assets.bundlePath %>">
+<% } %>
+```
+
+### ISG Cache
+
+```typescript
 interface ISGCache {
   /** Cache directory */
   directory: string;

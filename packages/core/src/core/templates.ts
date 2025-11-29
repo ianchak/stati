@@ -1,5 +1,5 @@
 import { Eta } from 'eta';
-import { join, dirname, relative, basename, posix } from 'path';
+import { join, dirname, relative, basename, posix } from 'node:path';
 import glob from 'fast-glob';
 import type { StatiConfig, PageModel, NavNode, CollectionData } from '../types/index.js';
 import { TEMPLATE_EXTENSION } from '../constants.js';
@@ -232,6 +232,7 @@ export async function renderPage(
   eta: Eta,
   navigation?: NavNode[],
   allPages?: PageModel[],
+  assets?: import('../types/index.js').StatiAssets,
 ): Promise<string> {
   // Discover partials for this page's directory hierarchy
   const srcDir = resolveSrcDir(config);
@@ -287,6 +288,7 @@ export async function renderPage(
     // Stati utilities object with helper functions
     generateSEO: (tags?: string[]) => generateSEO({ page, config, site: config.site }, tags),
     propValue,
+    assets, // TypeScript bundle assets (available when typescript.enabled is true)
   };
 
   // Render partials and store their content
