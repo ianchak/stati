@@ -2,10 +2,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { join } from 'node:path';
 import { mkdirSync, writeFileSync, rmSync, existsSync, readFileSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { setTimeout } from 'node:timers/promises';
 import {
   compileTypeScript,
   compileStatiConfig,
   cleanupCompiledConfig,
+  createTypeScriptWatcher,
 } from '../src/core/utils/typescript.utils.js';
 import type { TypeScriptConfig } from '../src/types/config.js';
 import type { Logger } from '../src/types/logging.js';
@@ -276,6 +278,229 @@ describe('typescript.utils', () => {
 
       // Act & Assert - should not throw
       await expect(cleanupCompiledConfig(nonexistentPath)).resolves.not.toThrow();
+    });
+  });
+
+  describe('createTypeScriptWatcher', () => {
+    it('should create watcher and initialize successfully', async () => {
+      // Arrange - create a test TypeScript file
+      const srcDir = join(testDir, 'src');
+      mkdirSync(srcDir, { recursive: true });
+      writeFileSync(join(srcDir, 'main.ts'), 'console.log("Hello from TypeScript");');
+
+      const onRebuild = vi.fn();
+
+      // Act
+      const context = await createTypeScriptWatcher({
+        projectRoot: testDir,
+        config: { enabled: true },
+        mode: 'development',
+        logger: mockLogger,
+        onRebuild,
+        outDir: 'dist',
+      });
+
+      // Assert
+      expect(context).toBeDefined();
+      expect(context.dispose).toBeDefined();
+      expect(mockLogger.info).toHaveBeenCalledWith('Watching TypeScript files in src/');
+
+      // Cleanup
+      await context.dispose();
+    });
+
+    it('should throw error when entry point does not exist', async () => {
+      // Arrange - no TypeScript file created
+      const onRebuild = vi.fn();
+
+      // Act & Assert
+      await expect(
+        createTypeScriptWatcher({
+          projectRoot: testDir,
+          config: { enabled: true },
+          mode: 'development',
+          logger: mockLogger,
+          onRebuild,
+          outDir: 'dist',
+        }),
+      ).rejects.toThrow('Entry point not found');
+
+      expect(mockLogger.warning).toHaveBeenCalledWith(
+        expect.stringContaining('TypeScript entry point not found'),
+      );
+    });
+
+    it('should respect custom srcDir and entryPoint configuration', async () => {
+      // Arrange
+      const customSrcDir = join(testDir, 'scripts');
+      mkdirSync(customSrcDir, { recursive: true });
+      writeFileSync(join(customSrcDir, 'app.ts'), 'console.log("Custom entry");');
+
+      const onRebuild = vi.fn();
+
+      // Act
+      const context = await createTypeScriptWatcher({
+        projectRoot: testDir,
+        config: {
+          enabled: true,
+          srcDir: 'scripts',
+          entryPoint: 'app.ts',
+        },
+        mode: 'development',
+        logger: mockLogger,
+        onRebuild,
+        outDir: 'dist',
+      });
+
+      // Assert
+      expect(context).toBeDefined();
+      expect(mockLogger.info).toHaveBeenCalledWith('Watching TypeScript files in scripts/');
+
+      // Cleanup
+      await context.dispose();
+    });
+
+    it('should properly cleanup via dispose()', async () => {
+      // Arrange
+      const srcDir = join(testDir, 'src');
+      mkdirSync(srcDir, { recursive: true });
+      writeFileSync(join(srcDir, 'main.ts'), 'export const x = 1;');
+
+      const onRebuild = vi.fn();
+
+      const context = await createTypeScriptWatcher({
+        projectRoot: testDir,
+        config: { enabled: true },
+        mode: 'development',
+        logger: mockLogger,
+        onRebuild,
+        outDir: 'dist',
+      });
+
+      // Act - dispose should complete without error
+      await expect(context.dispose()).resolves.not.toThrow();
+    });
+
+    it('should output to correct directory with custom outDir', async () => {
+      // Arrange
+      const srcDir = join(testDir, 'src');
+      mkdirSync(srcDir, { recursive: true });
+      writeFileSync(join(srcDir, 'main.ts'), 'export const y = 2;');
+
+      const onRebuild = vi.fn();
+
+      // Act
+      const context = await createTypeScriptWatcher({
+        projectRoot: testDir,
+        config: {
+          enabled: true,
+          outDir: 'js',
+        },
+        mode: 'development',
+        logger: mockLogger,
+        onRebuild,
+        outDir: 'dist',
+      });
+
+      // Wait briefly for initial build
+      await setTimeout(100);
+
+      // Assert - output should be in dist/js
+      const outputPath = join(testDir, 'dist', 'js', 'bundle.js');
+      expect(existsSync(outputPath)).toBe(true);
+
+      // Cleanup
+      await context.dispose();
+    });
+
+    it('should use stable filename without hash in development mode', async () => {
+      // Arrange
+      const srcDir = join(testDir, 'src');
+      mkdirSync(srcDir, { recursive: true });
+      writeFileSync(join(srcDir, 'main.ts'), 'export const z = 3;');
+
+      const onRebuild = vi.fn();
+
+      // Act
+      const context = await createTypeScriptWatcher({
+        projectRoot: testDir,
+        config: {
+          enabled: true,
+          bundleName: 'app',
+        },
+        mode: 'development',
+        logger: mockLogger,
+        onRebuild,
+        outDir: 'dist',
+      });
+
+      // Wait briefly for initial build
+      await setTimeout(100);
+
+      // Assert - should use stable filename without hash
+      const outputPath = join(testDir, 'dist', '_assets', 'app.js');
+      expect(existsSync(outputPath)).toBe(true);
+
+      // Cleanup
+      await context.dispose();
+    });
+
+    it('should invoke onRebuild callback after successful compilation', async () => {
+      // Arrange
+      const srcDir = join(testDir, 'src');
+      mkdirSync(srcDir, { recursive: true });
+      writeFileSync(join(srcDir, 'main.ts'), 'export const initial = true;');
+
+      const onRebuild = vi.fn();
+
+      // Act
+      const context = await createTypeScriptWatcher({
+        projectRoot: testDir,
+        config: { enabled: true },
+        mode: 'development',
+        logger: mockLogger,
+        onRebuild,
+        outDir: 'dist',
+      });
+
+      // Wait for initial build to complete
+      await setTimeout(150);
+
+      // Assert - onRebuild should have been called after initial build
+      expect(onRebuild).toHaveBeenCalled();
+      expect(mockLogger.info).toHaveBeenCalledWith('TypeScript recompiled.');
+
+      // Cleanup
+      await context.dispose();
+    });
+
+    it('should generate source maps in development mode', async () => {
+      // Arrange
+      const srcDir = join(testDir, 'src');
+      mkdirSync(srcDir, { recursive: true });
+      writeFileSync(join(srcDir, 'main.ts'), 'export const debug = true;');
+
+      const onRebuild = vi.fn();
+
+      // Act
+      const context = await createTypeScriptWatcher({
+        projectRoot: testDir,
+        config: { enabled: true },
+        mode: 'development',
+        logger: mockLogger,
+        onRebuild,
+        outDir: 'dist',
+      });
+
+      // Wait for initial build
+      await setTimeout(100);
+
+      // Assert - source map should exist
+      const sourcemapPath = join(testDir, 'dist', '_assets', 'bundle.js.map');
+      expect(existsSync(sourcemapPath)).toBe(true);
+
+      // Cleanup
+      await context.dispose();
     });
   });
 });
