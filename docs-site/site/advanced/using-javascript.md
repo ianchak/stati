@@ -1,20 +1,21 @@
 ---
 title: 'Using JavaScript in Stati'
-description: 'Learn three powerful ways to add JavaScript functionality to your Stati site: inline scripts, external files, and build hooks.'
+description: 'Learn four powerful ways to add JavaScript functionality to your Stati site: inline scripts, external files, built-in TypeScript compilation, and build hooks.'
 layout: layout.eta
 order: 4
 ---
 
 # Using JavaScript in Stati
 
-Stati is a static site generator, but that doesn't mean your sites have to be purely static. You can add interactivity and dynamic behavior using JavaScript in three main ways: inline scripts in templates, external JavaScript files, and build-time JavaScript via hooks.
+Stati is a static site generator, but that doesn't mean your sites have to be purely static. You can add interactivity and dynamic behavior using JavaScript in four main ways: inline scripts in templates, external JavaScript files, built-in TypeScript compilation (recommended for substantial client-side code), and build-time JavaScript via hooks.
 
 ## Table of Contents
 
 - [Method 1: Inline Scripts in Templates](#method-1-inline-scripts-in-templates)
 - [Method 2: External JavaScript Files](#method-2-external-javascript-files)
-- [Method 3: Build Hooks (Build-Time JavaScript)](#method-3-build-hooks-build-time-javascript)
-- [Comparison & Best Practices](#comparison-best-practices)
+- [Method 3: Built-in TypeScript Compilation](#method-3-built-in-typescript-compilation)
+- [Method 4: Build Hooks (Build-Time JavaScript)](#method-4-build-hooks-build-time-javascript)
+- [Comparison & Best Practices](#comparison--best-practices)
 
 ---
 
@@ -450,7 +451,158 @@ Include in your template with module type:
 
 ---
 
-## Method 3: Build Hooks (Build-Time JavaScript)
+## Method 3: Built-in TypeScript Compilation
+
+For modern, type-safe client-side code, Stati provides built-in TypeScript compilation powered by [esbuild](https://esbuild.github.io/). This is the **recommended approach** for any substantial client-side functionality.
+
+### When to Use Built-in TypeScript
+
+- **Type safety**: Catch errors at build time, not runtime
+- **Modern development**: Full IDE support with IntelliSense
+- **Production optimization**: Automatic minification and cache-busting hashes
+- **Hot reload**: Instant updates during development
+- **Bundle management**: Automatic script injection into HTML
+
+### Quick Setup
+
+Create a new project with TypeScript:
+
+```bash
+npx create-stati my-site --typescript
+```
+
+Or enable TypeScript in an existing project by adding to your `stati.config.ts`:
+
+```typescript
+import { defineConfig } from '@stati/core';
+
+export default defineConfig({
+  site: {
+    title: 'My Site',
+  },
+  typescript: {
+    enabled: true,
+    srcDir: 'src',         // Source directory
+    entryPoint: 'main.ts', // Entry file
+  },
+});
+```
+
+### Project Structure
+
+```text
+my-site/
+├── src/
+│   └── main.ts           # Your TypeScript entry point
+├── site/
+│   ├── layout.eta
+│   └── index.md
+├── stati.config.ts
+└── tsconfig.json
+```
+
+### Example: Interactive Navigation
+
+Create `src/main.ts`:
+
+```typescript
+interface NavState {
+  isOpen: boolean;
+  activeItem: string | null;
+}
+
+class Navigation {
+  private state: NavState = { isOpen: false, activeItem: null };
+  private menuBtn: HTMLButtonElement | null;
+  private menu: HTMLElement | null;
+
+  constructor() {
+    this.menuBtn = document.querySelector('.menu-toggle');
+    this.menu = document.querySelector('.nav-menu');
+    this.init();
+  }
+
+  private init(): void {
+    if (!this.menuBtn || !this.menu) return;
+
+    this.menuBtn.addEventListener('click', () => this.toggle());
+    this.highlightCurrentPage();
+  }
+
+  private toggle(): void {
+    this.state.isOpen = !this.state.isOpen;
+    this.menu?.classList.toggle('open', this.state.isOpen);
+    this.menuBtn?.setAttribute('aria-expanded', String(this.state.isOpen));
+  }
+
+  private highlightCurrentPage(): void {
+    const currentPath = window.location.pathname;
+    this.menu?.querySelectorAll('a').forEach(link => {
+      if (link.getAttribute('href') === currentPath) {
+        link.classList.add('active');
+        this.state.activeItem = currentPath;
+      }
+    });
+  }
+}
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  new Navigation();
+});
+```
+
+### Automatic Bundle Injection
+
+Stati **automatically injects** your compiled bundle into every page before `</body>`. No template changes needed:
+
+```html
+<!-- Automatically added by Stati -->
+<script type="module" src="/_assets/bundle-a1b2c3d4.js"></script>
+</body>
+```
+
+For advanced use cases like preloading, access the bundle path in templates:
+
+```eta
+<head>
+  <% if (stati.assets?.bundlePath) { %>
+  <link rel="modulepreload" href="<%= stati.assets.bundlePath %>">
+  <% } %>
+</head>
+```
+
+### Development vs Production
+
+Stati automatically adjusts behavior based on build mode:
+
+| Feature | Development (`stati dev`) | Production (`stati build`) |
+|---------|---------------------------|----------------------------|
+| Filenames | Stable (`bundle.js`) | Hashed (`bundle-a1b2c3d4.js`) |
+| Source maps | ✅ Enabled | ❌ Disabled |
+| Minification | ❌ Disabled | ✅ Enabled |
+| Watch mode | ✅ Hot reload | N/A |
+
+### TypeScript Advantages
+
+- ✅ Type safety with full IDE support
+- ✅ Automatic bundling and optimization
+- ✅ Hot reload in development
+- ✅ Production-ready output (minified, hashed)
+- ✅ No manual script tag management
+- ✅ Modern ES module output
+
+### TypeScript Considerations
+
+- ⚠️ Requires initial setup (`--typescript` flag or config)
+- ⚠️ Single entry point (use imports for multiple files)
+- ⚠️ Run `npm run typecheck` to catch type errors (esbuild doesn't type-check)
+
+> For full configuration options, see the [TypeScript Configuration Guide](/configuration/typescript/).
+
+---
+
+## Method 4: Build Hooks (Build-Time JavaScript)
 
 The most powerful way to use JavaScript in Stati is through build hooks in your `stati.config.js`. These hooks run during the build process and can modify content, fetch data, generate files, and more.
 
@@ -696,7 +848,8 @@ async function fetchFromCMS() {
 | Method | Best For | Performance | Complexity | Runs At |
 |--------|----------|-------------|------------|---------|
 | **Inline Scripts** | Small UI enhancements, page-specific logic | Good (inline) | Low | Runtime (browser) |
-| **External Files** | Reusable functionality, large scripts | Good (cached) | Medium | Runtime (browser) |
+| **External Files** | Simple reusable scripts, no bundling needed | Good (cached) | Low | Runtime (browser) |
+| **TypeScript** | Type-safe code, modern development, production apps | Excellent (bundled, minified) | Medium | Runtime (browser) |
 | **Build Hooks** | Data fetching, content generation, SEO | Excellent (build-time) | High | Build time (Node.js) |
 
 ### When to Use Each Method
@@ -710,11 +863,17 @@ async function fetchFromCMS() {
 
 **Use External Files when:**
 
-- Building reusable components
-- Working with larger scripts
-- Want to use ES modules
-- Need better code organization
-- Want to leverage browser caching
+- Simple reusable scripts without bundling needs
+- Quick prototyping
+- Legacy JavaScript that doesn't need TypeScript
+
+**Use Built-in TypeScript when:**
+
+- Building any substantial client-side functionality
+- Want type safety and IDE support
+- Need automatic bundling and optimization
+- Want hot reload during development
+- Building production-ready applications
 
 **Use Build Hooks when:**
 
@@ -837,14 +996,19 @@ async function fetchFromCMS() {
 
 ### Combining Methods
 
-You can (and should) use multiple methods together:
+You can (and should) use multiple methods together. Here's an example that combines TypeScript for client-side code with build hooks for data fetching:
 
-```javascript
-// stati.config.js - Build hooks for data
+```typescript
+// stati.config.ts - Build hooks for data + TypeScript enabled
+import { defineConfig } from '@stati/core';
+
 export default defineConfig({
+    typescript: {
+        enabled: true, // Your TypeScript bundle is auto-injected
+    },
     hooks: {
         beforeAll: async (ctx) => {
-            // Fetch blog posts
+            // Fetch blog posts at build time
             ctx.globalData = await fetchBlogPosts();
         },
         beforeRender: async (ctx) => {
@@ -856,16 +1020,26 @@ export default defineConfig({
 });
 ```
 
+```typescript
+// src/main.ts - Your TypeScript client-side code
+import { initTheme } from './theme';
+import { initSearch } from './search';
+
+document.addEventListener('DOMContentLoaded', () => {
+    initTheme();    // Theme switching logic
+    initSearch();   // Client-side search
+});
+```
+
 ```eta
-<!-- layout.eta - Mix of inline and external -->
+<!-- layout.eta - Build hook data + auto-injected TypeScript bundle -->
 <!DOCTYPE html>
 <html>
 <head>
     <title><%= stati.page.title %></title>
-
-    <!-- External reusable code -->
-    <script src="/js/theme-switcher.js" defer></script>
-    <script src="/js/analytics.js" async></script>
+    <% if (stati.assets?.bundlePath) { %>
+    <link rel="modulepreload" href="<%= stati.assets.bundlePath %>">
+    <% } %>
 </head>
 <body>
     <!-- Use data from build hooks -->
@@ -875,15 +1049,14 @@ export default defineConfig({
         <% }); %>
     </nav>
 
-    <!-- Inline script for page-specific behavior -->
+    <main><%~ stati.content %></main>
+
+    <!-- TypeScript bundle auto-injected here by Stati -->
+    <!-- Small inline script for truly page-specific behavior -->
     <script>
-        // Highlight current nav item
-        const currentPath = window.location.pathname;
-        document.querySelectorAll('nav a').forEach(link => {
-            if (link.getAttribute('href') === currentPath) {
-                link.classList.add('active');
-            }
-        });
+        // Quick highlight - too small for TypeScript
+        document.querySelector(`nav a[href="${location.pathname}"]`)
+            ?.classList.add('active');
     </script>
 </body>
 </html>
@@ -893,16 +1066,20 @@ export default defineConfig({
 
 ## Summary
 
-Stati gives you three powerful ways to use JavaScript:
+Stati gives you four powerful ways to use JavaScript:
 
-1. **Inline Scripts** - Perfect for small, page-specific enhancements
-2. **External Files** - Best for reusable, well-organized code
-3. **Build Hooks** - Ideal for data fetching and build-time processing
+1. **Inline Scripts** - Perfect for small, page-specific enhancements (< 30 lines)
+2. **External Files** - Good for simple reusable scripts without bundling
+3. **Built-in TypeScript** - Recommended for any substantial client-side code
+4. **Build Hooks** - Ideal for data fetching and build-time processing
 
-Choose the method that best fits your needs, and don't hesitate to combine them for maximum effectiveness. The key is to use build hooks for anything that can be computed at build time, external files for reusable functionality, and inline scripts for small page-specific features.
+**For most projects**, we recommend using **TypeScript** for client-side code and **Build Hooks** for data processing, with inline scripts reserved for tiny page-specific enhancements.
+
+The key is to use build hooks for anything that can be computed at build time, TypeScript for type-safe client-side functionality, and inline scripts only for trivial page-specific behavior.
 
 For more information:
 
+- [TypeScript Configuration](/configuration/typescript/)
 - [Build Hooks API](/api/hooks/)
 - [Template Configuration](/configuration/templates/)
 - [Eta Template Documentation](https://eta.js.org/)
