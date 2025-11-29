@@ -42,6 +42,7 @@ import {
 } from '../seo/index.js';
 import { generateRSSFeeds, validateRSSConfig } from '../rss/index.js';
 import { getEnv } from '../env.js';
+import { DEFAULT_TS_OUT_DIR } from '../constants.js';
 import type {
   BuildContext,
   BuildStats,
@@ -597,7 +598,7 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
     });
 
     if (tsResult?.bundleFilename) {
-      const assetsDir = config.typescript.outDir || '_assets';
+      const assetsDir = config.typescript.outDir || DEFAULT_TS_OUT_DIR;
       assets = {
         bundleName: tsResult.bundleFilename,
         bundlePath: posix.join('/', assetsDir, tsResult.bundleFilename),

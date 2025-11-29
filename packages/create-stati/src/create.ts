@@ -218,11 +218,6 @@ export default defineConfig({
   },
   typescript: {
     enabled: true,
-    srcDir: 'src',
-    outDir: '_assets',
-    entryPoint: 'main.ts',
-    bundleName: 'bundle',
-    hash: true,
   },
 });
 `;
