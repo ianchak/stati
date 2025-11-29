@@ -92,8 +92,9 @@ This is my first page built with Stati, a TypeScript-first static site generator
 
 ## Features I Love
 
-- ⚡️ Lightning-fast development
-- 🔧 TypeScript-first configuration
+- ⚡️ Lightning-fast development with esbuild
+- 🔧 TypeScript-first configuration with IntelliSense
+- 📦 Built-in TypeScript compilation for client-side code
 - 📝 Markdown-based content
 - 🎨 Flexible templating with Eta
 - 🚀 Incremental Static Generation
@@ -121,8 +122,8 @@ Welcome to my personal website! I'm excited to be using Stati for this project.
 
 I chose Stati because:
 
-1. **TypeScript Support** - Full type safety out of the box
-2. **Modern Tooling** - Excellent developer experience
+1. **TypeScript Support** - Full type safety for config plus built-in esbuild compilation for client-side code
+2. **Modern Tooling** - Lightning-fast builds with esbuild, hot reload, and automatic bundle injection
 3. **Flexible** - Powerful but not overwhelming
 4. **Fast** - Incremental builds and smart caching
 

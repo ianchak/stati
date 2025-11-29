@@ -10,8 +10,8 @@ Stati is a modern static site generator built with TypeScript. It's designed to 
 
 ## What makes Stati different?
 
-- **TypeScript-first**: Full type safety for configuration and templates
-- **Fast builds**: Lightning-fast development and optimized builds
+- **TypeScript-first**: Full type safety for configuration, plus built-in esbuild compilation for your client-side TypeScript
+- **Fast builds**: Lightning-fast development with esbuild-powered bundling and optimized production builds
 - **ISG support**: Incremental Static Generation with intelligent caching
 - **Minimal dependencies**: Focused and lightweight
 - **Developer experience**: Hot reload, fast builds, and great tooling
