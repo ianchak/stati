@@ -4,17 +4,8 @@
  * @module create-stati/typescript-processor
  */
 
-/**
- * Result of TypeScript setup containing files and dependencies to add.
- */
-export interface TypeScriptSetupResult {
-  /** Map of relative file path to file content */
-  files: Map<string, string>;
-  /** Dev dependencies to add to package.json */
-  devDependencies: Record<string, string>;
-  /** Scripts to add to package.json */
-  scripts: Record<string, string>;
-}
+import { DEPENDENCY_VERSIONS } from './constants.js';
+import type { ProcessorResult } from './types.js';
 
 /**
  * Generate TypeScript setup files and dependencies.
@@ -30,14 +21,14 @@ export interface TypeScriptSetupResult {
  * // tsSetup.scripts contains: { typecheck: 'tsc --noEmit' }
  * ```
  */
-export function setupTypeScript(): TypeScriptSetupResult {
+export function setupTypeScript(): ProcessorResult {
   return {
     files: new Map([
       ['tsconfig.json', generateTsConfig()],
       ['src/main.ts', generateMainTs()],
     ]),
     devDependencies: {
-      typescript: '^5.6.0',
+      typescript: DEPENDENCY_VERSIONS.typescript,
     },
     scripts: {
       typecheck: 'tsc --noEmit',

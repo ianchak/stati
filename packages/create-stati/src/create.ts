@@ -1,8 +1,9 @@
 import { mkdir, rm, access, stat, writeFile } from 'node:fs/promises';
-import { join, resolve, dirname } from 'node:path';
+import { join, resolve } from 'node:path';
 import { ExampleManager } from './examples.js';
 import { PackageJsonModifier } from './package-json.js';
-import { CSSProcessor } from './css-processors.js';
+import { processStyling } from './css-processors.js';
+import { writeProcessorFiles } from './utils/index.js';
 import type { StylingOption } from './css-processors.js';
 import { setupTypeScript } from './typescript-processor.js';
 import { isCommandAvailable, spawnProcess, logger } from './utils/index.js';
@@ -272,13 +273,7 @@ export class ProjectScaffolder {
       // 4. Setup TypeScript if enabled
       if (this.options.typescript) {
         const tsSetup = setupTypeScript();
-
-        // Write TypeScript files (tsconfig.json, src/main.ts)
-        for (const [relativePath, content] of tsSetup.files) {
-          const filePath = join(targetDir, relativePath);
-          await mkdir(dirname(filePath), { recursive: true });
-          await writeFile(filePath, content);
-        }
+        await writeProcessorFiles(targetDir, tsSetup.files);
       }
 
       // 5. Modify package.json with project name and TypeScript deps if needed
@@ -289,8 +284,7 @@ export class ProjectScaffolder {
       await packageModifier.modifyPackageJson(targetDir);
 
       // 6. Setup CSS preprocessing if requested
-      const cssProcessor = new CSSProcessor();
-      await cssProcessor.processStyling(targetDir, this.options.styling);
+      await processStyling(targetDir, this.options.styling);
 
       // 7. Initialize git (optional)
       if (this.options.gitInit) {

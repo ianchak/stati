@@ -1,136 +1,78 @@
-import { readFile, writeFile, mkdir, unlink } from 'node:fs/promises';
+/**
+ * CSS processor orchestration for the Stati scaffolder.
+ * Coordinates the setup of different CSS solutions (Sass, Tailwind).
+ * @module create-stati/css-processors
+ */
+
+import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { updatePackageJson, formatErrorMessage } from './utils/index.js';
-import { SASS_CONFIG, TAILWIND_CONFIG } from './constants.js';
-import type { CSSProcessorConfig } from './constants.js';
+import { formatErrorMessage, applyProcessorResult } from './utils/index.js';
+import { setupTailwind } from './tailwind-processor.js';
+import { setupSass } from './sass-processor.js';
+import type { ProcessorResult, ProcessorResultWithDeletions } from './types.js';
+
+// Re-export processor utilities for backward compatibility
+export { applyProcessorResult, writeProcessorFiles } from './utils/index.js';
 
 export type StylingOption = 'css' | 'sass' | 'tailwind';
 
+/**
+ * Get the processor result for a given styling option.
+ * For Sass, requires reading the existing CSS file first.
+ *
+ * @param styling - The styling option selected
+ * @param projectDir - The project directory (needed for Sass to read existing CSS)
+ * @returns The processor result, or null for plain CSS
+ */
+export async function getStylingProcessor(
+  styling: StylingOption,
+  projectDir: string,
+): Promise<ProcessorResult | ProcessorResultWithDeletions | null> {
+  switch (styling) {
+    case 'tailwind':
+      return setupTailwind();
+
+    case 'sass': {
+      // Read existing CSS to convert to SCSS
+      const cssPath = join(projectDir, 'public', 'styles.css');
+      const existingCSS = await readFile(cssPath, 'utf-8');
+      return setupSass(existingCSS);
+    }
+
+    case 'css':
+      // Plain CSS, no processing needed
+      return null;
+
+    default:
+      throw new Error(`Unsupported styling option: ${styling}`);
+  }
+}
+
+/**
+ * Process styling for a project.
+ * High-level function that orchestrates the complete styling setup.
+ *
+ * @param projectDir - The project directory
+ * @param styling - The styling option selected
+ */
+export async function processStyling(projectDir: string, styling: StylingOption): Promise<void> {
+  try {
+    const result = await getStylingProcessor(styling, projectDir);
+
+    if (result) {
+      await applyProcessorResult(projectDir, result);
+    }
+  } catch (error) {
+    throw new Error(`Failed to setup ${styling}: ${formatErrorMessage(error)}`);
+  }
+}
+
+/**
+ * @deprecated Use processStyling function instead.
+ * Kept for backward compatibility.
+ */
 export class CSSProcessor {
   async processStyling(projectDir: string, styling: StylingOption): Promise<void> {
-    switch (styling) {
-      case 'sass':
-        await this.setupSass(projectDir);
-        break;
-      case 'tailwind':
-        await this.setupTailwind(projectDir);
-        break;
-      case 'css':
-        // Default CSS, no processing needed
-        break;
-      default:
-        throw new Error(`Unsupported styling option: ${styling}`);
-    }
-  }
-
-  private async setupSass(projectDir: string): Promise<void> {
-    try {
-      // 1. Move CSS to SCSS with basic enhancements
-      const cssPath = join(projectDir, 'public', 'styles.css');
-      const scssPath = join(projectDir, 'styles', 'main.scss');
-
-      await mkdir(join(projectDir, 'styles'), { recursive: true });
-
-      // 2. Read existing CSS and enhance with Sass features
-      const existingCSS = await readFile(cssPath, 'utf-8');
-
-      const scssContent = `// Variables
-$primary-color: #007bff;
-$secondary-color: #6c757d;
-$font-stack: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-$breakpoint-tablet: 768px;
-
-// Mixins
-@mixin responsive($breakpoint) {
-  @if $breakpoint == tablet {
-    @media (min-width: $breakpoint-tablet) { @content; }
-  }
-}
-
-// Enhanced styles with Sass variables
-${existingCSS
-  .replace(/#007bff/g, '$primary-color')
-  .replace(/#6c757d/g, '$secondary-color')
-  .replace(/768px/g, '$breakpoint-tablet')
-  .replace(/-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif/g, '$font-stack')}
-`;
-
-      await writeFile(scssPath, scssContent);
-      await unlink(cssPath);
-
-      // 3. Update package.json
-      await this.updatePackageForCssProcessor(projectDir, SASS_CONFIG);
-    } catch (error) {
-      throw new Error(`Failed to setup Sass: ${formatErrorMessage(error)}`);
-    }
-  }
-
-  private async setupTailwind(projectDir: string): Promise<void> {
-    try {
-      // 1. Create src directory for CSS input files
-      await mkdir(join(projectDir, 'src'), { recursive: true });
-
-      // 2. Create Tailwind CSS source file (input)
-      const tailwindCSS = `@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-@layer components {
-  .logo {
-    @apply text-xl font-bold text-blue-600 no-underline;
-  }
-
-  .skip-link {
-    @apply absolute -top-10 left-1 bg-black text-white p-2 no-underline z-50;
-  }
-
-  .skip-link:focus {
-    @apply top-1;
-  }
-}
-`;
-
-      await writeFile(join(projectDir, 'src', 'styles.css'), tailwindCSS);
-
-      // 2. Create configs
-      await this.createTailwindConfig(projectDir);
-      await this.updatePackageForCssProcessor(projectDir, TAILWIND_CONFIG);
-    } catch (error) {
-      throw new Error(`Failed to setup Tailwind: ${formatErrorMessage(error)}`);
-    }
-  }
-
-  /**
-   * Update package.json with CSS processor configuration.
-   * Unified method for all CSS processors (Sass, Tailwind, etc.)
-   *
-   * @param projectDir - The project directory
-   * @param config - CSS processor configuration object
-   */
-  private async updatePackageForCssProcessor(
-    projectDir: string,
-    config: CSSProcessorConfig,
-  ): Promise<void> {
-    await updatePackageJson(projectDir, {
-      devDependencies: config.devDependencies,
-      scripts: config.scripts,
-    });
-  }
-
-  private async createTailwindConfig(projectDir: string): Promise<void> {
-    const config = `/** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: [
-    './site/**/*.{md,eta,html}',
-    './.stati/tailwind-classes.html', // Auto-generated by Stati for dynamic classes
-  ],
-  theme: {
-    extend: {},
-  },
-  plugins: [],
-};
-`;
-
-    await writeFile(join(projectDir, 'tailwind.config.js'), config);
+    return processStyling(projectDir, styling);
   }
 }
