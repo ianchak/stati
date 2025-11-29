@@ -79,8 +79,8 @@ When you select Sass during project scaffolding, `create-stati` configures npm s
 
 ```bash
 # Created by the scaffolder
-npm run sass:watch   # Watch and compile during development
-npm run sass:build   # Compile for production
+npm run watch:css   # Watch and compile during development
+npm run build:css   # Compile for production
 ```
 
 The scaffolder creates a `styles/` directory with your SCSS source files and sets up the build pipeline.
