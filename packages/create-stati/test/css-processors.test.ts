@@ -230,7 +230,7 @@ describe('CSSProcessor', () => {
 
         try {
           await expect(cssProcessor.processStyling(tempDir, 'tailwind')).rejects.toThrow(
-            /Failed to setup Tailwind/,
+            /Failed to setup tailwind/i,
           );
         } finally {
           // Restore permissions for cleanup
