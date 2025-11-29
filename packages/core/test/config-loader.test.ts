@@ -332,5 +332,88 @@ export default config;`;
       expect(loadedConfig.srcDir).toBe('named-export-src');
       expect(loadedConfig.site.title).toBe('Named Export Site');
     });
+
+    it('should compile and load TypeScript config file', async () => {
+      // Arrange - create a TypeScript config file
+      const configPath = join(testDir, 'stati.config.ts');
+      const configContent = `interface SiteConfig {
+  title: string;
+  baseUrl: string;
+}
+
+interface Config {
+  srcDir: string;
+  site: SiteConfig;
+}
+
+const config: Config = {
+  srcDir: 'ts-source',
+  site: {
+    title: 'TypeScript Site',
+    baseUrl: 'https://ts.example.com'
+  }
+};
+
+export default config;`;
+      writeFileSync(configPath, configContent, 'utf-8');
+
+      // Act
+      const config = await loadConfig(testDir);
+
+      // Assert - config should be loaded with TypeScript stripped
+      expect(config.srcDir).toBe('ts-source');
+      expect(config.site.title).toBe('TypeScript Site');
+      expect(config.site.baseUrl).toBe('https://ts.example.com');
+    });
+
+    it('should clean up compiled TypeScript config file after loading', async () => {
+      // Arrange - create a TypeScript config file
+      const configPath = join(testDir, 'stati.config.ts');
+      const configContent = `export default {
+  srcDir: 'cleanup-test',
+  site: {
+    title: 'Cleanup Test'
+  }
+};`;
+      writeFileSync(configPath, configContent, 'utf-8');
+
+      // Act
+      await loadConfig(testDir);
+
+      // Assert - compiled file should be cleaned up
+      const compiledPath = join(testDir, 'stati.config.compiled.mjs');
+      expect(existsSync(compiledPath)).toBe(false);
+    });
+
+    it('should prefer TypeScript config over JavaScript when both exist', async () => {
+      // Arrange - create both TS and JS config files
+      const tsConfigPath = join(testDir, 'stati.config.ts');
+      const jsConfigPath = join(testDir, 'stati.config.js');
+
+      writeFileSync(
+        tsConfigPath,
+        `export default {
+  srcDir: 'from-ts',
+  site: { title: 'TypeScript Config' }
+};`,
+        'utf-8',
+      );
+
+      writeFileSync(
+        jsConfigPath,
+        `export default {
+  srcDir: 'from-js',
+  site: { title: 'JavaScript Config' }
+};`,
+        'utf-8',
+      );
+
+      // Act
+      const config = await loadConfig(testDir);
+
+      // Assert - TypeScript config should be used (it comes first in search order)
+      expect(config.srcDir).toBe('from-ts');
+      expect(config.site.title).toBe('TypeScript Config');
+    });
   });
 });

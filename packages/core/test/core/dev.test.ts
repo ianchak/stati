@@ -93,6 +93,14 @@ vi.mock('fs/promises', () => ({
   stat: vi.fn().mockResolvedValue({ isDirectory: () => false }),
 }));
 
+// Mock TypeScript watcher - use inline object
+vi.mock('../../src/core/utils/typescript.utils.js', () => ({
+  createTypeScriptWatcher: vi.fn().mockResolvedValue({
+    dispose: vi.fn().mockResolvedValue(undefined),
+    watch: vi.fn().mockResolvedValue(undefined),
+  }),
+}));
+
 describe('Development Server', () => {
   let consoleSpy: ReturnType<typeof vi.spyOn>;
 
@@ -419,5 +427,149 @@ describe('Development Server', () => {
 
     expect(devServer).toBeDefined();
     expect(devServer.url).toBe('http://localhost:3000'); // DEFAULT_DEV_HOST:DEFAULT_DEV_PORT
+  });
+
+  describe('TypeScript integration', () => {
+    it('should start TypeScript watcher when typescript is enabled', async () => {
+      const { createTypeScriptWatcher } = await import('../../src/core/utils/typescript.utils.js');
+      const mockCreateTsWatcher = vi.mocked(createTypeScriptWatcher);
+
+      mockLoadConfig.mockResolvedValueOnce({
+        srcDir: 'site',
+        outDir: 'dist',
+        staticDir: 'public',
+        site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
+        typescript: {
+          enabled: true,
+        },
+      });
+
+      const mockLogger = {
+        info: vi.fn(),
+        error: vi.fn(),
+        success: vi.fn(),
+        warning: vi.fn(),
+        building: vi.fn(),
+        processing: vi.fn(),
+        stats: vi.fn(),
+      };
+
+      const devServer = await createDevServer({
+        port: 8100,
+        logger: mockLogger,
+      });
+
+      await devServer.start();
+
+      expect(mockCreateTsWatcher).toHaveBeenCalledWith(
+        expect.objectContaining({
+          config: { enabled: true },
+          mode: 'development',
+        }),
+      );
+
+      await devServer.stop();
+    });
+
+    it('should handle TypeScript watcher setup failure gracefully', async () => {
+      const { createTypeScriptWatcher } = await import('../../src/core/utils/typescript.utils.js');
+      const mockCreateTsWatcher = vi.mocked(createTypeScriptWatcher);
+      mockCreateTsWatcher.mockRejectedValueOnce(new Error('Entry point not found'));
+
+      mockLoadConfig.mockResolvedValueOnce({
+        srcDir: 'site',
+        outDir: 'dist',
+        staticDir: 'public',
+        site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
+        typescript: {
+          enabled: true,
+        },
+      });
+
+      const mockLogger = {
+        info: vi.fn(),
+        error: vi.fn(),
+        success: vi.fn(),
+        warning: vi.fn(),
+        building: vi.fn(),
+        processing: vi.fn(),
+        stats: vi.fn(),
+      };
+
+      const devServer = await createDevServer({
+        port: 8101,
+        logger: mockLogger,
+      });
+
+      // Should not throw - should continue without TypeScript watcher
+      await devServer.start();
+
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.stringContaining('TypeScript setup failed'),
+      );
+      expect(mockLogger.warning).toHaveBeenCalledWith(
+        expect.stringContaining('TypeScript hot reload is DISABLED'),
+      );
+
+      await devServer.stop();
+    });
+
+    it('should not start TypeScript watcher when typescript is disabled', async () => {
+      const { createTypeScriptWatcher } = await import('../../src/core/utils/typescript.utils.js');
+      const mockCreateTsWatcher = vi.mocked(createTypeScriptWatcher);
+      mockCreateTsWatcher.mockClear();
+
+      mockLoadConfig.mockResolvedValueOnce({
+        srcDir: 'site',
+        outDir: 'dist',
+        staticDir: 'public',
+        site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
+        // No typescript config
+      });
+
+      const devServer = await createDevServer({
+        port: 8102,
+      });
+
+      await devServer.start();
+
+      expect(mockCreateTsWatcher).not.toHaveBeenCalled();
+
+      await devServer.stop();
+    });
+
+    it('should dispose TypeScript watcher on stop', async () => {
+      const { createTypeScriptWatcher } = await import('../../src/core/utils/typescript.utils.js');
+      const mockCreateTsWatcher = vi.mocked(createTypeScriptWatcher);
+      const mockDispose = vi.fn().mockResolvedValue(undefined);
+      mockCreateTsWatcher.mockReturnValueOnce(
+        Promise.resolve({
+          dispose: mockDispose,
+          watch: vi.fn(),
+          rebuild: vi.fn(),
+          serve: vi.fn(),
+          cancel: vi.fn(),
+        }) as ReturnType<typeof createTypeScriptWatcher>,
+      );
+
+      mockLoadConfig.mockResolvedValueOnce({
+        srcDir: 'site',
+        outDir: 'dist',
+        staticDir: 'public',
+        site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
+        typescript: {
+          enabled: true,
+        },
+      });
+
+      const devServer = await createDevServer({
+        port: 8103,
+      });
+
+      await devServer.start();
+      await devServer.stop();
+
+      expect(mockDispose).toHaveBeenCalled();
+    });
   });
 });

@@ -206,6 +206,41 @@ describe('typescript.utils', () => {
       const outputPath = join(testDir, 'dist', 'js', 'bundle.js');
       expect(existsSync(outputPath)).toBe(true);
     });
+
+    it('should throw and log error on compilation failure', async () => {
+      // Arrange - create an invalid TypeScript file
+      const srcDir = join(testDir, 'src');
+      mkdirSync(srcDir, { recursive: true });
+      // Invalid TypeScript syntax that will cause compilation error
+      writeFileSync(
+        join(srcDir, 'main.ts'),
+        `
+const x: number = "this is not a number"; // Type error
+export const broken = {
+  unclosed: [
+}; // Syntax error
+`,
+      );
+
+      const config: TypeScriptConfig = {
+        enabled: true,
+      };
+
+      // Act & Assert
+      await expect(
+        compileTypeScript({
+          projectRoot: testDir,
+          config,
+          mode: 'development',
+          logger: mockLogger,
+          outDir: 'dist',
+        }),
+      ).rejects.toThrow();
+
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.stringContaining('TypeScript compilation failed'),
+      );
+    });
   });
 
   describe('compileStatiConfig', () => {

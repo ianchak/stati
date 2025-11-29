@@ -132,6 +132,28 @@ describe('create-stati CLI', () => {
       });
     });
 
+    it('should parse --typescript flag', async () => {
+      const result = await parseArgs(['test-project', '--typescript']);
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          projectName: 'test-project',
+          typescript: true,
+        }),
+      );
+    });
+
+    it('should parse --ts flag as typescript', async () => {
+      const result = await parseArgs(['test-project', '--ts']);
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          projectName: 'test-project',
+          typescript: true,
+        }),
+      );
+    });
+
     it('should return empty object for no arguments', async () => {
       const result = await parseArgs([]);
 
