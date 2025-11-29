@@ -659,7 +659,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
         } catch (error) {
           const tsError = error instanceof Error ? error : new Error(String(error));
           // Prominent notification for TypeScript setup failure
-          console.log(); // Add visual separation
+          console.log();
           logger.error?.(`TypeScript setup failed: ${tsError.message}`);
           logger.warning?.('──────────────────────────────────────────────────────────────');
           logger.warning?.('⚠️  TypeScript hot reload is DISABLED for this session.');
@@ -668,7 +668,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
           );
           logger.warning?.('    Fix your TypeScript configuration and restart the dev server.');
           logger.warning?.('──────────────────────────────────────────────────────────────');
-          console.log(); // Add visual separation
+          console.log();
         }
       }
 

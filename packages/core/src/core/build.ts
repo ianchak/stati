@@ -599,7 +599,7 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
       projectRoot: process.cwd(),
       config: config.typescript,
       outDir: config.outDir || 'dist',
-      mode: getEnv() === 'development' ? 'development' : 'production',
+      mode: getEnv() === 'production' ? 'production' : 'development',
       logger,
     });
 

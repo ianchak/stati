@@ -3,6 +3,6 @@
 "create-stati": patch
 ---
 
-add TypeScript support tests (TS Phase 10)
+add TypeScript support tests
 
 - Added typescript.utils.test.ts with tests for compileTypeScript, compileStatiConfig, cleanupCompiledConfig

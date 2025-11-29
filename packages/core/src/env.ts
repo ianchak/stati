@@ -1,9 +1,11 @@
-let currentEnv = process.env.NODE_ENV || 'development';
+type Env = 'development' | 'production' | 'test';
 
-export function setEnv(env: 'development' | 'production' | 'test') {
+let currentEnv: Env = (process.env.NODE_ENV as Env) || 'development';
+
+export function setEnv(env: Env) {
   currentEnv = env;
 }
 
-export function getEnv() {
+export function getEnv(): Env {
   return currentEnv;
 }

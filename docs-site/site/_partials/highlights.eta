@@ -106,12 +106,13 @@ export default defineConfig({
     enabled: true,
     srcDir: 'src',      // Your TS source
     entryPoint: 'main.ts',
-    // hash & minify auto-enabled in prod
-  },
 
-  isg: {
-    enabled: true,
-    ttlSeconds: 3600,
+    // Production optimizations (auto-enabled)
+    minify: true,       // Minify output
+    hash: true,         // Cache-busting hashes
+
+    // Dev mode features (automatic)
+    // sourceMaps, hot reload, no minification
   },
 });</code></pre>
                         </div>

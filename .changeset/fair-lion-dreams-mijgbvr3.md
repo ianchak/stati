@@ -2,4 +2,4 @@
 "@stati/core": minor
 ---
 
-implement typescript.utils.ts compiler (TS Phase 2)
+implement typescript.utils.ts compiler

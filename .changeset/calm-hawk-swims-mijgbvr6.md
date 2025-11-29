@@ -4,4 +4,4 @@
 "create-stati": minor
 ---
 
-add TypeScript support types and esbuild dependency (TS Phase 1)
+add TypeScript support types and esbuild dependency

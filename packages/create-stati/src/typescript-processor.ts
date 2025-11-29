@@ -60,8 +60,10 @@ function generateTsConfig(): string {
       strict: true,
       esModuleInterop: true,
       skipLibCheck: true,
-      noEmit: true, // esbuild handles emit
+      noEmit: true,
+      isolatedModules: true,
       lib: ['ES2022', 'DOM', 'DOM.Iterable'],
+      rootDir: 'src',
     },
     include: ['src/**/*.ts'],
   };
