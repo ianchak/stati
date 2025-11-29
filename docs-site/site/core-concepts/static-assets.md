@@ -78,9 +78,15 @@ body {
 When you select Sass during project scaffolding, `create-stati` configures npm scripts to compile SCSS:
 
 ```bash
-# Created by the scaffolder
-npm run watch:css   # Watch and compile during development
-npm run build:css   # Compile for production
+# Development (watches and compiles SCSS alongside Stati dev server)
+npm run dev
+
+# Production build (compiles Stati site, then SCSS)
+npm run build
+
+# Standalone scripts (also available)
+npm run watch:css   # Watch and compile SCSS only
+npm run build:css   # Compile SCSS only
 ```
 
 The scaffolder creates a `styles/` directory with your SCSS source files and sets up the build pipeline.
@@ -103,7 +109,7 @@ npx tailwindcss init
 ```javascript
 // tailwind.config.js
 /** @type {import('tailwindcss').Config} */
-export default {
+module.exports = {
   content: [
     './site/**/*.{md,eta,html}',
     './src/**/*.{js,ts}',
