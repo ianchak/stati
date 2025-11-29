@@ -571,5 +571,52 @@ describe('typescript.utils', () => {
       expect(result).toContain('<main>Content</main>');
       expect(result).toContain('</html>');
     });
+
+    describe('XSS prevention', () => {
+      it('should reject paths with script injection attempts', () => {
+        const html = '<html><body>Content</body></html>';
+        const maliciousPath = '/_assets/bundle.js" onload="alert(1)" data-x="';
+        const result = autoInjectBundle(html, maliciousPath);
+
+        // Should return original HTML without injection
+        expect(result).toBe(html);
+      });
+
+      it('should reject paths with HTML tags', () => {
+        const html = '<html><body>Content</body></html>';
+        const maliciousPath = '/_assets/<script>alert(1)</script>.js';
+        const result = autoInjectBundle(html, maliciousPath);
+
+        expect(result).toBe(html);
+      });
+
+      it('should reject paths without leading slash', () => {
+        const html = '<html><body>Content</body></html>';
+        const result = autoInjectBundle(html, '_assets/bundle.js');
+
+        expect(result).toBe(html);
+      });
+
+      it('should reject paths not ending in .js', () => {
+        const html = '<html><body>Content</body></html>';
+        const result = autoInjectBundle(html, '/_assets/bundle.ts');
+
+        expect(result).toBe(html);
+      });
+
+      it('should allow valid nested paths', () => {
+        const html = '<html><body>Content</body></html>';
+        const result = autoInjectBundle(html, '/_assets/js/vendor/bundle-abc123.js');
+
+        expect(result).toContain('src="/_assets/js/vendor/bundle-abc123.js"');
+      });
+
+      it('should allow paths with underscores and hyphens', () => {
+        const html = '<html><body>Content</body></html>';
+        const result = autoInjectBundle(html, '/_assets/my_bundle-file.js');
+
+        expect(result).toContain('src="/_assets/my_bundle-file.js"');
+      });
+    });
   });
 });

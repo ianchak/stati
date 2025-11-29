@@ -286,6 +286,15 @@ export function autoInjectBundle(html: string, bundlePath: string): string {
     return html;
   }
 
+  // Sanitize bundlePath to prevent XSS attacks
+  // Only allow safe characters: alphanumeric, hyphens, underscores, dots, and forward slashes
+  // Must start with / and end with .js
+  const safePathPattern = /^\/[\w\-./]+\.js$/;
+  if (!safePathPattern.test(bundlePath)) {
+    // Invalid path format, skip injection to prevent potential XSS
+    return html;
+  }
+
   // Check if the bundle is already included (avoid duplicate injection)
   if (html.includes(bundlePath)) {
     return html;
