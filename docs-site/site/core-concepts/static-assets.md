@@ -203,7 +203,7 @@ The `propValue()` function:
 Stati's development server includes integrated Tailwind CSS support. Simply pass the input and output file paths:
 
 ```bash
-stati dev --tailwind-input src/styles.css --tailwind-output public/styles.css
+stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css
 ```
 
 This starts both the Stati dev server and Tailwind watcher in a single process. When you stop the dev server (`Ctrl+C`), the Tailwind watcher stops automatically.

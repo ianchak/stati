@@ -66,7 +66,7 @@ Static files inside `public/` are part of the watch list. When assets change the
 Stati includes built-in Tailwind CSS support for the development server. When you provide `--tailwind-input` and `--tailwind-output` flags, Stati automatically starts a Tailwind CSS watcher alongside the dev server:
 
 ```bash
-stati dev --tailwind-input src/styles.css --tailwind-output public/styles.css
+stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css
 ```
 
 **How it works:**
@@ -84,7 +84,7 @@ stati dev --tailwind-input src/styles.css --tailwind-output public/styles.css
 **Example with verbose output:**
 
 ```bash
-stati dev --tailwind-input src/styles.css --tailwind-output public/styles.css --tailwind-verbose
+stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css --tailwind-verbose
 ```
 
 ## Browser feedback

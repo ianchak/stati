@@ -95,11 +95,11 @@ Choose your preferred styling approach:
 ### Tailwind CSS
 
 - Generates `tailwind.config.js` with content paths for `site/**/*.{md,eta,html}` and `.stati/tailwind-classes.html`
-- Creates source stylesheet at `src/styles.css` compiled to `public/styles.css`
-- Scripts added: `build:css`, `copy:css`
+- Creates source stylesheet at `src/styles.css` compiled directly to `dist/styles.css`
+- Scripts added: `build:css`
 - Modified scripts:
   - `dev`: Uses Stati's built-in Tailwind integration (single process)
-  - `build`: Runs Stati build, then CSS compilation, then copy to dist
+  - `build`: Runs Stati build, then CSS compilation
 
 ## Post-Creation Setup
 

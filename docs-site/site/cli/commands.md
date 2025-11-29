@@ -51,10 +51,10 @@ stati dev --open
 stati dev --config stati.staging.js
 
 # With Tailwind CSS integration
-stati dev --tailwind-input src/styles.css --tailwind-output public/styles.css
+stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css
 
 # Tailwind with verbose output
-stati dev --tailwind-input src/styles.css --tailwind-output public/styles.css --tailwind-verbose
+stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css --tailwind-verbose
 ```
 
 ### `stati preview`
