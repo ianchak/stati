@@ -459,15 +459,15 @@ interface TypeScriptConfig {
   /** Base name for output bundle (default: 'bundle') */
   bundleName?: string;
 
-  /** Add content hash to filename (default: true in production) */
+  /** Add content hash to filename in production (default: true, ignored in development) */
   hash?: boolean;
 
-  /** Minify JavaScript output (default: true in production) */
+  /** Minify JavaScript output in production (default: true, ignored in development) */
   minify?: boolean;
 }
 ```
 
-> **Note:** Source maps are automatically enabled in development and disabled in production.
+> **Note:** Source maps, hashing, and minification are automatic based on build mode. In development, source maps are enabled and hash/minify are disabled. In production, source maps are disabled and hash/minify default to true but can be set to false for debugging.
 
 ### StatiAssets Interface
 

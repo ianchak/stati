@@ -120,7 +120,8 @@ export interface SEOConfig {
  * TypeScript compilation configuration.
  * Controls how Stati compiles TypeScript files using esbuild.
  *
- * Source maps are automatically enabled in development and disabled in production.
+ * In development mode, source maps are always enabled and hash/minify are always disabled.
+ * In production mode, source maps are always disabled and hash/minify default to true.
  *
  * @example
  * ```typescript
@@ -131,8 +132,8 @@ export interface SEOConfig {
  *     outDir: '_assets',
  *     entryPoint: 'main.ts',
  *     bundleName: 'bundle',
- *     hash: true,   // default: true in production, false in development
- *     minify: true, // default: true in production, false in development
+ *     // hash and minify default to true in production
+ *     // set to false only if you need to debug production builds
  *   }
  * };
  * ```
@@ -172,15 +173,17 @@ export interface TypeScriptConfig {
   bundleName?: string;
 
   /**
-   * Include content hash in bundle filename for cache busting.
+   * Include content hash in bundle filename for cache busting in production.
    * When true, outputs `bundle-a1b2c3d4.js`. When false, outputs `bundle.js`.
-   * @default true (production), false (development)
+   * This option only applies to production builds; development always uses stable filenames.
+   * @default true
    */
   hash?: boolean;
 
   /**
-   * Minify output in production builds.
-   * @default true (production), false (development)
+   * Minify JavaScript output in production builds.
+   * This option only applies to production builds; development output is never minified.
+   * @default true
    */
   minify?: boolean;
 }

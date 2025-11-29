@@ -37,8 +37,7 @@ export default defineConfig({
     outDir: '_assets',       // Output directory within dist (default: '_assets')
     entryPoint: 'main.ts',   // Entry file (default: 'main.ts')
     bundleName: 'bundle',    // Output bundle name (default: 'bundle')
-    hash: true,              // Add content hash for cache busting (default: true in production)
-    minify: true,            // Minify output (default: true in production)
+    // hash and minify are automatic - true in production, false in development
   },
 });
 ```
@@ -52,10 +51,10 @@ export default defineConfig({
 | `outDir` | `string` | `'_assets'` | Output subdirectory within `dist/` |
 | `entryPoint` | `string` | `'main.ts'` | Main entry file relative to `srcDir` |
 | `bundleName` | `string` | `'bundle'` | Base name for output bundle |
-| `hash` | `boolean` | `true` (prod) | Add content hash to filename |
-| `minify` | `boolean` | `true` (prod) | Minify JavaScript output |
+| `hash` | `boolean` | `true` | Add content hash to filename (production only) |
+| `minify` | `boolean` | `true` | Minify JavaScript output (production only) |
 
-> **Note:** Source maps are automatically enabled in development mode and disabled in production.
+> **Note:** Source maps, hashing, and minification are automatic based on build mode. The `hash` and `minify` options only apply to production builds - development mode always uses stable filenames and unminified output for easier debugging.
 
 ## Development vs Production
 
@@ -63,18 +62,18 @@ Stati automatically adjusts TypeScript settings based on the build mode:
 
 ### Development (`stati dev`)
 
-- **Stable filenames** - No hash, easier debugging
-- **Source maps enabled** - Full debugging support (automatic)
+- **Stable filenames** - No hash
+- **Source maps enabled** - Full debugging support
 - **No minification** - Readable output
 - **Watch mode** - Automatic recompilation on changes
 
 ### Production (`stati build`)
 
 - **Hashed filenames** - `bundle-a1b2c3d4.js` for cache busting
-- **No source maps** - Smaller bundle size, no source code exposure (automatic)
+- **No source maps** - Smaller bundle size, no source code exposure
 - **Minified** - Optimized for production
 
-You can override `hash` and `minify` defaults in your configuration.
+The `hash` and `minify` options only take effect in production builds. Set them to `false` if you need to debug production output.
 
 ## Accessing the Bundle in Templates
 

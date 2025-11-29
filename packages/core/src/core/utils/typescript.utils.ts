@@ -64,16 +64,19 @@ function resolveConfig(
   config: TypeScriptConfig,
   mode: 'development' | 'production',
 ): ResolvedTypeScriptConfig {
+  const isProduction = mode === 'production';
+
   return {
     enabled: config.enabled,
     srcDir: config.srcDir ?? DEFAULT_TS_SRC_DIR,
     outDir: config.outDir ?? DEFAULT_TS_OUT_DIR,
     entryPoint: config.entryPoint ?? DEFAULT_TS_ENTRY_POINT,
     bundleName: config.bundleName ?? DEFAULT_TS_BUNDLE_NAME,
-    hash: config.hash ?? mode === 'production', // No hash in dev for stable filenames
-    minify: config.minify ?? mode === 'production',
+    // hash/minify: always false in dev (config ignored), configurable in prod (default true)
+    hash: isProduction && (config.hash ?? true),
+    minify: isProduction && (config.minify ?? true),
     // Source maps: always enabled in dev for debugging, always disabled in prod for security/size
-    sourceMaps: mode === 'development',
+    sourceMaps: !isProduction,
   };
 }
 
