@@ -25,6 +25,23 @@ my-stati-site/
         └── footer.eta
 ```
 
+### With TypeScript Enabled
+
+When you create a project with `--typescript`, you get additional files:
+
+```
+my-stati-site/
+├── package.json
+├── stati.config.ts         # TypeScript configuration
+├── tsconfig.json           # TypeScript compiler config
+├── src/
+│   └── main.ts             # TypeScript entry point
+├── public/
+│   └── ...
+└── site/
+    └── ...
+```
+
 ## Key Directories
 
 ### `site/`
@@ -56,9 +73,9 @@ Directories starting with `_` are excluded from routing. So you can organize the
 
 ## Configuration Files
 
-### `stati.config.js`
+### `stati.config.js` (or `stati.config.ts`)
 
-The main configuration file where you define site metadata, template settings, markdown configuration, and more.
+The main configuration file where you define site metadata, template settings, markdown configuration, and more. Use `.ts` for TypeScript projects with full type safety.
 
 ```javascript
 import { defineConfig } from '@stati/core';
@@ -71,6 +88,21 @@ export default defineConfig({
   // Additional configuration...
 });
 ```
+
+For TypeScript projects, you can also configure the built-in TypeScript compilation:
+
+```typescript
+export default defineConfig({
+  site: { ... },
+  typescript: {
+    enabled: true,
+    srcDir: 'src',
+    entryPoint: 'main.ts',
+  },
+});
+```
+
+See the [TypeScript Configuration](/configuration/typescript/) guide for more details.
 
 ### `package.json`
 
@@ -171,3 +203,4 @@ dist/
 - Understand [Filesystem-based Routing](/core-concepts/routing/)
 - Explore [Static Assets](/core-concepts/static-assets/)
 - Configure your [Site Metadata](/configuration/site-metadata/)
+- Enable [TypeScript Compilation](/configuration/typescript/)

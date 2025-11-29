@@ -26,7 +26,9 @@ npm --version   # Should be 11.5.1 or higher
 1. Edit the homepage: `site/index.md`
 2. Customize the layout: `site/layout.eta`
 3. Add your styles: `public/styles.css`
-4. Configure your site: `stati.config.js`
+4. Configure your site: `stati.config.js` (or `stati.config.ts` for TypeScript projects)
+
+> **Tip:** Create a TypeScript-enabled project with `npx create-stati my-site --typescript`
 
 ## Available Scripts
 
@@ -54,5 +56,6 @@ npm --version   # Should be 11.5.1 or higher
 - Create additional layouts in `site/` for different page types
 - Add collections for blog posts or documentation
 - Customize the CSS or switch to Sass/Tailwind
+- Enable [TypeScript compilation](https://stati.build/configuration/typescript/) for client-side code
 
 Happy building with Stati!

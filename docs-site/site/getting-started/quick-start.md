@@ -215,7 +215,7 @@ footer {
 
 ## Step 8: Configure Your Site
 
-Edit `stati.config.js` to customize your site settings:
+Edit `stati.config.js` (or `stati.config.ts` for TypeScript projects) to customize your site settings:
 
 ```javascript
 import { defineConfig } from '@stati/core';
