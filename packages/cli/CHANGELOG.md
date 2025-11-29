@@ -1,5 +1,23 @@
 # @stati/cli
 
+## 1.8.0
+
+### Minor Changes
+
+- 38da83e: add TypeScript support types and esbuild dependency
+
+### Patch Changes
+
+- Updated dependencies [38da83e]
+- Updated dependencies [38da83e]
+- Updated dependencies [38da83e]
+- Updated dependencies [38da83e]
+- Updated dependencies [38da83e]
+- Updated dependencies [38da83e]
+- Updated dependencies [38da83e]
+- Updated dependencies [38da83e]
+  - @stati/core@1.13.0
+
 ## 1.7.3
 
 ### Patch Changes

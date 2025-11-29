@@ -1,5 +1,22 @@
 # create-stati
 
+## 1.10.0
+
+### Minor Changes
+
+- 38da83e: add TypeScript support types and esbuild dependency
+- 38da83e: add validation for single </body> tag in layout
+- 38da83e: add TypeScript processor and CLI support
+  - Created typescript-processor.ts with setupTypeScript, generateTsConfig, generateMainTs
+
+### Patch Changes
+
+- 38da83e: add TypeScript support tests
+  - Added typescript.utils.test.ts with tests for compileTypeScript, compileStatiConfig, cleanupCompiledConfig
+
+- 38da83e: add TypeScript documentation
+  - Updated create-stati README with --typescript flag and TypeScript section
+
 ## 1.9.5
 
 ### Patch Changes

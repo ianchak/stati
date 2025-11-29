@@ -1,5 +1,23 @@
 # @stati/core
 
+## 1.13.0
+
+### Minor Changes
+
+- 38da83e: add TypeScript watcher to dev server
+- 38da83e: add TypeScript support types and esbuild dependency
+- 38da83e: implement typescript.utils.ts compiler
+- 38da83e: integrate TypeScript compilation into build pipeline
+- 38da83e: enhance config loader for .ts files
+
+### Patch Changes
+
+- 38da83e: remove TypeScript compilation from dev server setup
+- 38da83e: add TypeScript support tests
+  - Added typescript.utils.test.ts with tests for compileTypeScript, compileStatiConfig, cleanupCompiledConfig
+
+- 38da83e: handle undefined bundleFilename when compilation is skipped
+
 ## 1.12.5
 
 ### Patch Changes
