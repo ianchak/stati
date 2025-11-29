@@ -479,8 +479,10 @@ Available in templates when TypeScript is enabled:
 
 ```typescript
 interface StatiAssets {
-  /** Path to the compiled JavaScript bundle (e.g., '/_assets/bundle-a1b2c3d4.js') */
-  bundlePath: string;
+  /** Bundle filename only (e.g., 'bundle-a1b2c3d4.js') */
+  bundleName?: string;
+  /** Full path to bundle (e.g., '/_assets/bundle-a1b2c3d4.js') */
+  bundlePath?: string;
 }
 ```
 
