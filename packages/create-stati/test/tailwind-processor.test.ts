@@ -53,19 +53,19 @@ describe('tailwind-processor', () => {
       const result = setupTailwind();
 
       expect(result.scripts['build:css']).toBe(
-        'tailwindcss -i src/styles.css -o public/styles.css --minify',
+        'tailwindcss -i src/styles.css -o dist/styles.css --minify',
       );
-      expect(result.scripts['copy:css']).toContain('copyFileSync');
-      expect(result.scripts.build).toBe('stati build && npm run build:css && npm run copy:css');
+      expect(result.scripts.build).toBe('stati build && npm run build:css');
       expect(result.scripts.dev).toBe(
-        'stati dev --tailwind-input src/styles.css --tailwind-output public/styles.css',
+        'stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css',
       );
     });
 
-    it('should not include watch:css script (uses Stati built-in Tailwind support)', () => {
+    it('should not include watch:css or copy:css script (uses Stati built-in Tailwind support)', () => {
       const result = setupTailwind();
 
       expect(result.scripts).not.toHaveProperty('watch:css');
+      expect(result.scripts).not.toHaveProperty('copy:css');
     });
 
     it('should return the same result when called multiple times', () => {

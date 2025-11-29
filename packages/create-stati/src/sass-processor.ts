@@ -34,9 +34,9 @@ export function setupSass(existingCSS: string): ProcessorResultWithDeletions {
       concurrently: DEPENDENCY_VERSIONS.concurrently,
     },
     scripts: {
-      'build:css': 'sass styles/main.scss public/styles.css --style=compressed',
-      'watch:css': 'sass styles/main.scss public/styles.css --watch',
-      build: 'npm run build:css && stati build',
+      'build:css': 'sass styles/main.scss dist/styles.css --style=compressed',
+      'watch:css': 'sass styles/main.scss dist/styles.css --watch',
+      build: 'stati build && npm run build:css',
       dev: 'concurrently --prefix none "npm run watch:css" "stati dev"',
     },
     filesToDelete: ['public/styles.css'],

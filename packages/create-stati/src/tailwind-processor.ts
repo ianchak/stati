@@ -33,11 +33,9 @@ export function setupTailwind(): ProcessorResult {
       postcss: DEPENDENCY_VERSIONS.postcss,
     },
     scripts: {
-      'build:css': 'tailwindcss -i src/styles.css -o public/styles.css --minify',
-      'copy:css':
-        "node -e \"require('node:fs').copyFileSync('public/styles.css','dist/styles.css')\"",
-      build: 'stati build && npm run build:css && npm run copy:css',
-      dev: 'stati dev --tailwind-input src/styles.css --tailwind-output public/styles.css',
+      'build:css': 'tailwindcss -i src/styles.css -o dist/styles.css --minify',
+      build: 'stati build && npm run build:css',
+      dev: 'stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css',
     },
   };
 }

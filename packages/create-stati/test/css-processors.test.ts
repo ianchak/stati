@@ -106,16 +106,16 @@ describe('CSSProcessor', () => {
 
       expect(packageJson.scripts).toHaveProperty('build:css');
       expect(packageJson.scripts).toHaveProperty('watch:css');
-      expect(packageJson.scripts['build:css']).toContain('sass styles/main.scss public/styles.css');
+      expect(packageJson.scripts['build:css']).toContain('sass styles/main.scss dist/styles.css');
       expect(packageJson.scripts['watch:css']).toContain(
-        'sass styles/main.scss public/styles.css --watch',
+        'sass styles/main.scss dist/styles.css --watch',
       );
 
       // Scripts should be modified to integrate CSS processing
       expect(packageJson.scripts.dev).toBe(
         'concurrently --prefix none "npm run watch:css" "stati dev"',
       );
-      expect(packageJson.scripts.build).toBe('npm run build:css && stati build');
+      expect(packageJson.scripts.build).toBe('stati build && npm run build:css');
     });
 
     it('should remove original CSS file after creating SCSS', async () => {
@@ -191,17 +191,15 @@ describe('CSSProcessor', () => {
 
       expect(packageJson.scripts).toHaveProperty('build:css');
       expect(packageJson.scripts['build:css']).toBe(
-        'tailwindcss -i src/styles.css -o public/styles.css --minify',
+        'tailwindcss -i src/styles.css -o dist/styles.css --minify',
       );
 
       // Dev script should use integrated Tailwind support
       expect(packageJson.scripts.dev).toBe(
-        'stati dev --tailwind-input src/styles.css --tailwind-output public/styles.css',
+        'stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css',
       );
-      expect(packageJson.scripts.build).toBe(
-        'stati build && npm run build:css && npm run copy:css',
-      );
-      expect(packageJson.scripts['copy:css']).toContain('copyFileSync');
+      expect(packageJson.scripts.build).toBe('stati build && npm run build:css');
+      expect(packageJson.scripts).not.toHaveProperty('copy:css');
     });
   });
 
