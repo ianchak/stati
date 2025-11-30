@@ -1,5 +1,17 @@
 # @stati/cli
 
+## 1.9.0
+
+### Minor Changes
+
+- a178a68: add browser globals for TypeScript files in eslint config
+
+### Patch Changes
+
+- Updated dependencies [a178a68]
+- Updated dependencies [a178a68]
+  - @stati/core@1.14.0
+
 ## 1.8.0
 
 ### Minor Changes
