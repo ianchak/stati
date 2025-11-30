@@ -340,6 +340,38 @@ export const broken = {
       // Assert - config should be preserved
       expect(results[0]!.config).toEqual(bundleConfig);
     });
+
+    it('should return empty array and log error for duplicate bundleNames', async () => {
+      // Arrange - create test TypeScript files
+      const srcDir = join(testDir, 'src');
+      mkdirSync(srcDir, { recursive: true });
+      writeFileSync(join(srcDir, 'main.ts'), 'console.log("main");');
+      writeFileSync(join(srcDir, 'other.ts'), 'console.log("other");');
+
+      const config: TypeScriptConfig = {
+        enabled: true,
+        bundles: [
+          { entryPoint: 'main.ts', bundleName: 'core' },
+          { entryPoint: 'other.ts', bundleName: 'core' }, // Duplicate bundleName
+        ],
+      };
+
+      // Act
+      const results = await compileTypeScript({
+        projectRoot: testDir,
+        config,
+        mode: 'development',
+        logger: mockLogger,
+        outDir: 'dist',
+      });
+
+      // Assert - should return empty array and log error gracefully
+      expect(results).toEqual([]);
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.stringContaining('Duplicate bundleName'),
+      );
+      expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('core'));
+    });
   });
 
   describe('compileStatiConfig', () => {

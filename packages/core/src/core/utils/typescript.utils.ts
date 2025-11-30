@@ -9,6 +9,7 @@ import * as esbuild from 'esbuild';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 import { pathExists } from './fs.utils.js';
+import { DuplicateBundleNameError, validateUniqueBundleNames } from './bundle-matching.utils.js';
 import type { TypeScriptConfig, BundleConfig } from '../../types/config.js';
 import type { Logger } from '../../types/logging.js';
 import { DEFAULT_TS_SRC_DIR, DEFAULT_TS_OUT_DIR, DEFAULT_BUNDLES } from '../../constants.js';
@@ -181,6 +182,17 @@ export async function compileTypeScript(options: CompileOptions): Promise<Bundle
       'TypeScript is enabled but no bundles are configured. Add bundles to your stati.config.ts or disable TypeScript.',
     );
     return [];
+  }
+
+  // Validate unique bundle names early to provide clear error messages
+  try {
+    validateUniqueBundleNames(resolved.bundles);
+  } catch (error) {
+    if (error instanceof DuplicateBundleNameError) {
+      logger.error(error.message);
+      return [];
+    }
+    throw error;
   }
 
   logger.info(
@@ -359,6 +371,69 @@ export async function cleanupCompiledConfig(compiledPath: string): Promise<void>
 }
 
 /**
+ * Validates a bundle path for safety against XSS attacks.
+ * Only allows safe ASCII characters: alphanumeric, hyphens, underscores, dots, and forward slashes.
+ * Must start with / and end with .js, no encoded characters or unicode allowed.
+ *
+ * @param bundlePath - The bundle path to validate
+ * @returns true if the path is safe, false otherwise
+ *
+ * @internal
+ */
+export function isValidBundlePath(bundlePath: string): boolean {
+  // Reject non-string or empty paths
+  if (typeof bundlePath !== 'string' || bundlePath.length === 0) {
+    return false;
+  }
+
+  // Reject paths with null bytes (can bypass security checks)
+  if (bundlePath.includes('\0')) {
+    return false;
+  }
+
+  // Reject paths with control characters or non-ASCII characters
+  // Check that all characters are in printable ASCII range (32-126)
+  for (let i = 0; i < bundlePath.length; i++) {
+    const charCode = bundlePath.charCodeAt(i);
+    if (charCode < 32 || charCode > 126) {
+      return false;
+    }
+  }
+
+  // Reject paths with encoded characters (%, unicode escape sequences, HTML entities)
+  if (/%[0-9a-fA-F]{2}/.test(bundlePath) || /\\u[0-9a-fA-F]{4}/.test(bundlePath)) {
+    return false;
+  }
+  if (/&#?[a-zA-Z0-9]+;/.test(bundlePath)) {
+    return false;
+  }
+
+  // Reject path traversal attempts
+  if (bundlePath.includes('..') || bundlePath.includes('//')) {
+    return false;
+  }
+
+  // Validate against strict safe pattern
+  const safePathPattern = /^\/[a-zA-Z0-9_\-./]+\.js$/;
+  return safePathPattern.test(bundlePath);
+}
+
+/**
+ * Checks if a bundle script tag is already present in the HTML.
+ *
+ * @param html - The HTML content to check
+ * @param bundlePath - The bundle path to look for
+ * @returns true if the bundle is already included, false otherwise
+ *
+ * @internal
+ */
+function isBundleAlreadyIncluded(html: string, bundlePath: string): boolean {
+  const escapedPath = bundlePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const scriptTagPattern = new RegExp(`<script[^>]*\\ssrc=["']${escapedPath}["'][^>]*>`, 'i');
+  return scriptTagPattern.test(html);
+}
+
+/**
  * Auto-inject TypeScript bundle script tags into HTML before </body>.
  * Similar to SEO auto-injection, this adds script tags automatically
  * so users don't need to modify their templates.
@@ -380,67 +455,10 @@ export function autoInjectBundles(html: string, bundlePaths: string[]): string {
     return html;
   }
 
-  // Sanitize bundle paths to prevent XSS attacks
-  // Only allow safe ASCII characters: alphanumeric, hyphens, underscores, dots, and forward slashes
-  // Must start with / and end with .js, no encoded characters or unicode allowed
-  const safePathPattern = /^\/[a-zA-Z0-9_\-./]+\.js$/;
-  const validPaths = bundlePaths.filter((bundlePath) => {
-    // Reject non-string or empty paths
-    if (typeof bundlePath !== 'string' || bundlePath.length === 0) {
-      return false;
-    }
-
-    // Reject paths with null bytes (can bypass security checks)
-    if (bundlePath.includes('\0')) {
-      return false;
-    }
-
-    // Reject paths with control characters (ASCII 0-31)
-    // Using charCodeAt check instead of regex to avoid eslint no-control-regex
-    for (let i = 0; i < bundlePath.length; i++) {
-      const charCode = bundlePath.charCodeAt(i);
-      if (charCode < 32) {
-        return false;
-      }
-    }
-
-    // Reject paths with non-ASCII characters (unicode, extended ASCII)
-    // This prevents unicode homograph attacks and encoding tricks
-    // Check that all characters are in printable ASCII range (32-126)
-    for (let i = 0; i < bundlePath.length; i++) {
-      const charCode = bundlePath.charCodeAt(i);
-      if (charCode < 32 || charCode > 126) {
-        return false;
-      }
-    }
-
-    // Reject paths with encoded characters (%, unicode escape sequences, HTML entities)
-    if (/%[0-9a-fA-F]{2}/.test(bundlePath) || /\\u[0-9a-fA-F]{4}/.test(bundlePath)) {
-      return false;
-    }
-    if (/&#?[a-zA-Z0-9]+;/.test(bundlePath)) {
-      return false;
-    }
-
-    // Reject path traversal attempts
-    if (bundlePath.includes('..') || bundlePath.includes('//')) {
-      return false;
-    }
-
-    // Reject paths that don't match the strict safe pattern
-    if (!safePathPattern.test(bundlePath)) {
-      // Invalid path format, skip to prevent potential XSS
-      return false;
-    }
-    // Check if the bundle is already included (avoid duplicate injection)
-    // Use a precise regex to match exact script src attribute
-    const escapedPath = bundlePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const scriptTagPattern = new RegExp(`<script[^>]*\\ssrc=["']${escapedPath}["'][^>]*>`, 'i');
-    if (scriptTagPattern.test(html)) {
-      return false;
-    }
-    return true;
-  });
+  // Filter paths: must be valid and not already included in HTML
+  const validPaths = bundlePaths.filter(
+    (bundlePath) => isValidBundlePath(bundlePath) && !isBundleAlreadyIncluded(html, bundlePath),
+  );
 
   if (validPaths.length === 0) {
     return html;
