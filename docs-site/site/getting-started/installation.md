@@ -23,6 +23,7 @@ This command will launch an interactive setup wizard that guides you through cre
 
 - **Project name**: The directory for your new site.
 - **Styling solution**: Choose between plain CSS, Sass, or Tailwind CSS.
+- **TypeScript**: Optionally enable TypeScript support with esbuild compilation.
 - **Git initialization**: Optionally initialize a new Git repository.
 - **Dependency installation**: Choose whether to install dependencies automatically.
 - **Package manager**: Select your preferred package manager (npm, yarn, pnpm, or bun) if multiple are available.
