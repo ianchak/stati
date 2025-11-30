@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
   matchBundlesForPage,
   getBundlePathsForPage,
+  validateUniqueBundleNames,
+  DuplicateBundleNameError,
   type CompiledBundleInfo,
 } from '../../src/core/utils/bundle-matching.utils.js';
 import type { BundleConfig } from '../../src/types/config.js';
@@ -253,5 +255,85 @@ describe('getBundlePathsForPage', () => {
 
     const paths = getBundlePathsForPage('/any/page.html', compiled);
     expect(paths).toEqual(['/_assets/first.js', '/_assets/second.js', '/_assets/third.js']);
+  });
+});
+
+describe('validateUniqueBundleNames', () => {
+  it('should not throw for unique bundleNames', () => {
+    const bundles: BundleConfig[] = [
+      { entryPoint: 'core.ts', bundleName: 'core' },
+      { entryPoint: 'docs.ts', bundleName: 'docs' },
+      { entryPoint: 'blog.ts', bundleName: 'blog' },
+    ];
+
+    expect(() => validateUniqueBundleNames(bundles)).not.toThrow();
+  });
+
+  it('should throw DuplicateBundleNameError for duplicate bundleNames', () => {
+    const bundles: BundleConfig[] = [
+      { entryPoint: 'core.ts', bundleName: 'main' },
+      { entryPoint: 'docs.ts', bundleName: 'docs' },
+      { entryPoint: 'other.ts', bundleName: 'main' },
+    ];
+
+    expect(() => validateUniqueBundleNames(bundles)).toThrow(DuplicateBundleNameError);
+    expect(() => validateUniqueBundleNames(bundles)).toThrow(/main/);
+  });
+
+  it('should report all duplicate bundleNames in error message', () => {
+    const bundles: BundleConfig[] = [
+      { entryPoint: 'a.ts', bundleName: 'main' },
+      { entryPoint: 'b.ts', bundleName: 'main' },
+      { entryPoint: 'c.ts', bundleName: 'utils' },
+      { entryPoint: 'd.ts', bundleName: 'utils' },
+    ];
+
+    expect(() => validateUniqueBundleNames(bundles)).toThrow(/main.*utils|utils.*main/);
+  });
+
+  it('should not throw for empty bundles array', () => {
+    expect(() => validateUniqueBundleNames([])).not.toThrow();
+  });
+
+  it('should not throw for undefined bundles', () => {
+    expect(() => validateUniqueBundleNames(undefined as unknown as BundleConfig[])).not.toThrow();
+  });
+
+  it('should not throw for single bundle', () => {
+    const bundles: BundleConfig[] = [{ entryPoint: 'main.ts', bundleName: 'main' }];
+
+    expect(() => validateUniqueBundleNames(bundles)).not.toThrow();
+  });
+});
+
+describe('matchBundlesForPage duplicate bundleName handling', () => {
+  it('should throw when bundles have duplicate bundleNames', () => {
+    const bundles: BundleConfig[] = [
+      { entryPoint: 'a.ts', bundleName: 'shared' },
+      { entryPoint: 'b.ts', bundleName: 'shared' },
+    ];
+
+    expect(() => matchBundlesForPage('/any/page.html', bundles)).toThrow(DuplicateBundleNameError);
+  });
+});
+
+describe('getBundlePathsForPage duplicate bundleName handling', () => {
+  it('should throw when compiled bundles have duplicate bundleNames', () => {
+    const compiled: CompiledBundleInfo[] = [
+      {
+        config: { entryPoint: 'a.ts', bundleName: 'shared' },
+        filename: 'shared-abc.js',
+        path: '/_assets/shared-abc.js',
+      },
+      {
+        config: { entryPoint: 'b.ts', bundleName: 'shared' },
+        filename: 'shared-def.js',
+        path: '/_assets/shared-def.js',
+      },
+    ];
+
+    expect(() => getBundlePathsForPage('/any/page.html', compiled)).toThrow(
+      DuplicateBundleNameError,
+    );
   });
 });

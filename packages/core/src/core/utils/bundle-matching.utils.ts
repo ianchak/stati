@@ -8,6 +8,62 @@ import type { BundleConfig } from '../../types/config.js';
 import { matchesGlob } from './glob-patterns.utils.js';
 
 /**
+ * Error thrown when bundle configuration contains duplicate bundleNames.
+ */
+export class DuplicateBundleNameError extends Error {
+  constructor(duplicates: string[]) {
+    super(
+      `Duplicate bundleName(s) found in configuration: ${duplicates.join(', ')}. ` +
+        'Each bundle must have a unique bundleName.',
+    );
+    this.name = 'DuplicateBundleNameError';
+  }
+}
+
+/**
+ * Validates that all bundles have unique bundleNames.
+ * Throws DuplicateBundleNameError if duplicates are found.
+ *
+ * @param bundles - Array of bundle configurations to validate
+ * @throws {DuplicateBundleNameError} When duplicate bundleNames are detected
+ *
+ * @example
+ * ```typescript
+ * validateUniqueBundleNames([
+ *   { entryPoint: 'core.ts', bundleName: 'core' },
+ *   { entryPoint: 'docs.ts', bundleName: 'docs' }
+ * ]); // OK
+ *
+ * validateUniqueBundleNames([
+ *   { entryPoint: 'a.ts', bundleName: 'main' },
+ *   { entryPoint: 'b.ts', bundleName: 'main' }
+ * ]); // Throws DuplicateBundleNameError
+ * ```
+ */
+export function validateUniqueBundleNames(bundles: BundleConfig[]): void {
+  if (!bundles || bundles.length === 0) {
+    return;
+  }
+
+  const seen = new Set<string>();
+  const duplicates: string[] = [];
+
+  for (const bundle of bundles) {
+    if (seen.has(bundle.bundleName)) {
+      if (!duplicates.includes(bundle.bundleName)) {
+        duplicates.push(bundle.bundleName);
+      }
+    } else {
+      seen.add(bundle.bundleName);
+    }
+  }
+
+  if (duplicates.length > 0) {
+    throw new DuplicateBundleNameError(duplicates);
+  }
+}
+
+/**
  * Compiled bundle info with resolved paths for matched bundles.
  * Used to track bundle metadata after compilation.
  */
@@ -59,6 +115,9 @@ export function matchBundlesForPage(
   if (!bundles || bundles.length === 0) {
     return [];
   }
+
+  // Validate unique bundleNames to prevent incorrect bundle mapping
+  validateUniqueBundleNames(bundles);
 
   // Normalize path to use forward slashes
   const normalizedPath = pageOutputPath.replace(/\\/g, '/');

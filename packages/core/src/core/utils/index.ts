@@ -85,7 +85,12 @@ export { getStatiVersion } from './version.utils.js';
 export { globToRegex, matchesGlob } from './glob-patterns.utils.js';
 
 // Bundle matching utilities
-export { matchBundlesForPage, getBundlePathsForPage } from './bundle-matching.utils.js';
+export {
+  matchBundlesForPage,
+  getBundlePathsForPage,
+  validateUniqueBundleNames,
+  DuplicateBundleNameError,
+} from './bundle-matching.utils.js';
 export type { CompiledBundleInfo } from './bundle-matching.utils.js';
 
 // Logger utilities

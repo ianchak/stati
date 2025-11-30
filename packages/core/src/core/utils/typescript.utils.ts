@@ -381,14 +381,53 @@ export function autoInjectBundles(html: string, bundlePaths: string[]): string {
   }
 
   // Sanitize bundle paths to prevent XSS attacks
-  // Only allow safe characters: alphanumeric, hyphens, underscores, dots, and forward slashes
+  // Only allow safe ASCII characters: alphanumeric, hyphens, underscores, dots, and forward slashes
   // Must start with / and end with .js, no encoded characters or unicode allowed
   const safePathPattern = /^\/[a-zA-Z0-9_\-./]+\.js$/;
   const validPaths = bundlePaths.filter((bundlePath) => {
-    // Reject paths with encoded characters (%, unicode escape sequences)
+    // Reject non-string or empty paths
+    if (typeof bundlePath !== 'string' || bundlePath.length === 0) {
+      return false;
+    }
+
+    // Reject paths with null bytes (can bypass security checks)
+    if (bundlePath.includes('\0')) {
+      return false;
+    }
+
+    // Reject paths with control characters (ASCII 0-31)
+    // Using charCodeAt check instead of regex to avoid eslint no-control-regex
+    for (let i = 0; i < bundlePath.length; i++) {
+      const charCode = bundlePath.charCodeAt(i);
+      if (charCode < 32) {
+        return false;
+      }
+    }
+
+    // Reject paths with non-ASCII characters (unicode, extended ASCII)
+    // This prevents unicode homograph attacks and encoding tricks
+    // Check that all characters are in printable ASCII range (32-126)
+    for (let i = 0; i < bundlePath.length; i++) {
+      const charCode = bundlePath.charCodeAt(i);
+      if (charCode < 32 || charCode > 126) {
+        return false;
+      }
+    }
+
+    // Reject paths with encoded characters (%, unicode escape sequences, HTML entities)
     if (/%[0-9a-fA-F]{2}/.test(bundlePath) || /\\u[0-9a-fA-F]{4}/.test(bundlePath)) {
       return false;
     }
+    if (/&#?[a-zA-Z0-9]+;/.test(bundlePath)) {
+      return false;
+    }
+
+    // Reject path traversal attempts
+    if (bundlePath.includes('..') || bundlePath.includes('//')) {
+      return false;
+    }
+
+    // Reject paths that don't match the strict safe pattern
     if (!safePathPattern.test(bundlePath)) {
       // Invalid path format, skip to prevent potential XSS
       return false;
