@@ -66,6 +66,32 @@ export default [
       'no-console': 'off',
     },
   },
+  // Browser globals for docs-site client-side TypeScript files
+  {
+    files: ['docs-site/src/**/*.{ts,tsx,js}'],
+    languageOptions: {
+      globals: {
+        // Browser globals
+        document: 'readonly',
+        window: 'readonly',
+        navigator: 'readonly',
+        localStorage: 'readonly',
+        history: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        // DOM types
+        HTMLElement: 'readonly',
+        HTMLButtonElement: 'readonly',
+        HTMLAnchorElement: 'readonly',
+        HTMLPreElement: 'readonly',
+        HTMLHeadingElement: 'readonly',
+        Node: 'readonly',
+        NodeListOf: 'readonly',
+        IntersectionObserver: 'readonly',
+        IntersectionObserverEntry: 'readonly',
+      },
+    },
+  },
   // More restrictive for tests - only error/warn allowed
   {
     files: ['**/*.test.{ts,tsx,js}', '**/__tests__/**/*.{ts,tsx,js}'],

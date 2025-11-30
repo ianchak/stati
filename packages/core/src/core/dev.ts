@@ -24,7 +24,12 @@ import {
   createTypeScriptWatcher,
 } from './utils/index.js';
 import { setEnv, getEnv } from '../env.js';
-import { DEFAULT_DEV_PORT, DEFAULT_DEV_HOST, TEMPLATE_EXTENSION } from '../constants.js';
+import {
+  DEFAULT_DEV_PORT,
+  DEFAULT_DEV_HOST,
+  TEMPLATE_EXTENSION,
+  DEFAULT_OUT_DIR,
+} from '../constants.js';
 
 export interface DevServerOptions {
   port?: number;
@@ -639,11 +644,11 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
           tsWatcher = await createTypeScriptWatcher({
             projectRoot: process.cwd(),
             config: config.typescript,
-            outDir: config.outDir || 'dist',
+            outDir: config.outDir || DEFAULT_OUT_DIR,
             mode: 'development',
             logger,
-            onRebuild: () => {
-              logger.info?.('TypeScript recompiled, triggering reload...');
+            onRebuild: (bundlePath: string, compileTimeMs: number) => {
+              logger.info?.(`⚡ ${bundlePath} recompiled in ${compileTimeMs}ms`);
               // Broadcast reload to WebSocket clients
               if (wsServer) {
                 wsServer.clients.forEach((client: unknown) => {

@@ -502,9 +502,8 @@ export const broken = {
       // Wait for initial build to complete
       await setTimeout(150);
 
-      // Assert - onRebuild should have been called after initial build
-      expect(onRebuild).toHaveBeenCalled();
-      expect(mockLogger.info).toHaveBeenCalledWith('TypeScript recompiled.');
+      // Assert - onRebuild should have been called after initial build with bundle path and compile time
+      expect(onRebuild).toHaveBeenCalledWith('dist/_assets/bundle.js', expect.any(Number));
 
       // Cleanup
       await context.dispose();
@@ -582,6 +581,17 @@ export const broken = {
       // Count occurrences of the script tag
       const matches = result.match(/bundle\.js/g);
       expect(matches?.length).toBe(1);
+    });
+
+    it('should still inject script when only modulepreload link is present', () => {
+      const html =
+        '<html><head><link rel="modulepreload" href="/_assets/bundle.js"></head><body>Content</body></html>';
+      const result = autoInjectBundle(html, '/_assets/bundle.js');
+
+      // Should inject the script tag even though modulepreload exists
+      expect(result).toContain('<script type="module" src="/_assets/bundle.js"></script>');
+      // Should still have the modulepreload link
+      expect(result).toContain('<link rel="modulepreload" href="/_assets/bundle.js">');
     });
 
     it('should handle case-insensitive </BODY> tag', () => {

@@ -14,6 +14,9 @@
 
     <link rel="stylesheet" href="/styles.css">
     <link rel="stylesheet" href="/prism-stati.css">
+    <% if (stati.assets?.bundlePath) { %>
+    <link rel="modulepreload" href="<%= stati.assets.bundlePath %>">
+    <% } %>
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
 </head>
 <body class="bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-dark-950 dark:via-dark-900 dark:to-dark-900/80 text-gray-900 dark:text-gray-100 font-sans antialiased transition-colors duration-300">
@@ -59,48 +62,5 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
         </svg>
     </button>
-
-    <script>
-        // Scroll to top functionality
-        (function() {
-            const scrollToTopBtn = document.getElementById('scroll-to-top');
-            let scrollHandler, clickHandler;
-
-            function initializeScrollToTop() {
-                if (!scrollToTopBtn) return;
-
-                scrollHandler = () => {
-                    if (window.pageYOffset > 300) {
-                        scrollToTopBtn.classList.remove('opacity-0', 'pointer-events-none');
-                        scrollToTopBtn.classList.add('opacity-100');
-                    } else {
-                        scrollToTopBtn.classList.add('opacity-0', 'pointer-events-none');
-                        scrollToTopBtn.classList.remove('opacity-100');
-                    }
-                };
-                window.addEventListener('scroll', scrollHandler);
-
-                clickHandler = () => {
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                };
-                scrollToTopBtn.addEventListener('click', clickHandler);
-            }
-
-            function cleanupScrollToTop() {
-                if (scrollHandler) {
-                    window.removeEventListener('scroll', scrollHandler);
-                }
-                if (scrollToTopBtn && clickHandler) {
-                    scrollToTopBtn.removeEventListener('click', clickHandler);
-                }
-            }
-
-            // Initialize on load
-            document.addEventListener('DOMContentLoaded', initializeScrollToTop);
-
-            // Cleanup on unload to prevent memory leaks
-            window.addEventListener('beforeunload', cleanupScrollToTop);
-        })();
-    </script>
 </body>
 </html>

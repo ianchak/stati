@@ -14,7 +14,8 @@
     "clean:dist": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "clean:cache": "node -e \"require('node:fs').rmSync('.stati',{recursive:true,force:true})\"",
     "clean": "npm run clean:dist && npm run clean:cache",
-    "build:css": "tailwindcss -i src/styles.css -o dist/styles.css --minify"
+    "build:css": "tailwindcss -i src/styles.css -o dist/styles.css --minify",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [
     "static-site",
@@ -23,13 +24,13 @@
   ],
   "stati": {
     "engine": "stati",
-    "version": "^1.10.0"
+    "version": "^1.13.0"
   },
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@stati/cli": "^1.7.0",
-    "@stati/core": "^1.12.2",
+    "@stati/cli": "^1.8.0",
+    "@stati/core": "^1.13.0",
     "autoprefixer": "^10.4.0",
     "markdown-it-anchor": "^9.2.0",
     "markdown-it-external-links": "^0.0.6",
@@ -38,7 +39,8 @@
     "postcss": "^8.4.0",
     "prismjs": "^1.30.0",
     "tailwindcss": "^3.4.0",
-    "@tailwindcss/typography": "^0.5.16"
+    "@tailwindcss/typography": "^0.5.16",
+    "typescript": "^5.6.0"
   },
   "engines": {
     "node": ">=22.0.0"
