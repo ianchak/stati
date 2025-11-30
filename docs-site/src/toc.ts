@@ -7,8 +7,15 @@
 /** Selector for headings to include in TOC */
 const HEADING_SELECTOR = 'h2[id], h3[id], h4[id], h5[id], h6[id]';
 
-/** Root margin for IntersectionObserver */
-const OBSERVER_ROOT_MARGIN = '-100px 0px -80% 0px';
+/**
+ * Root margin for IntersectionObserver.
+ * Values: top, right, bottom, left
+ * - Top: -80px accounts for fixed header height
+ * - Bottom: -66% creates an activation zone in the upper third of viewport
+ * This ensures headings are highlighted when they're in the readable area,
+ * not when they're at the very edge of the viewport.
+ */
+const OBSERVER_ROOT_MARGIN = '-80px 0px -66% 0px';
 
 interface HeadingEntry {
   id: string;

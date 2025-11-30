@@ -10,6 +10,21 @@ type Theme = 'light' | 'dark';
 
 const STORAGE_KEY = 'theme';
 
+/** Stored reference to the system theme change handler for cleanup */
+let systemThemeHandler: ((e: { matches: boolean }) => void) | null = null;
+
+/**
+ * Removes the system theme change listener if it exists.
+ */
+function removeSystemThemeListener(): void {
+  if (systemThemeHandler) {
+    window
+      .matchMedia('(prefers-color-scheme: dark)')
+      .removeEventListener('change', systemThemeHandler);
+    systemThemeHandler = null;
+  }
+}
+
 /**
  * Gets the system's preferred color scheme.
  */
@@ -38,6 +53,7 @@ function applyTheme(theme: Theme): void {
 
 /**
  * Toggles the current theme and persists the preference.
+ * Also removes the system theme listener since user now has an explicit preference.
  */
 function toggleTheme(): Theme {
   const currentTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
@@ -45,6 +61,9 @@ function toggleTheme(): Theme {
 
   applyTheme(newTheme);
   localStorage.setItem(STORAGE_KEY, newTheme);
+
+  // Remove system theme listener since user has set a preference
+  removeSystemThemeListener();
 
   return newTheme;
 }
@@ -70,12 +89,13 @@ export function initTheme(): void {
 
     // Listen for system theme changes when no preference is saved
     const systemMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    systemMediaQuery.addEventListener('change', (e) => {
+    systemThemeHandler = (e: { matches: boolean }) => {
       // Only apply system theme if user hasn't set a preference
       if (!getStoredTheme()) {
         applyTheme(e.matches ? 'dark' : 'light');
       }
-    });
+    };
+    systemMediaQuery.addEventListener('change', systemThemeHandler);
   }
 
   // Bind click handlers
