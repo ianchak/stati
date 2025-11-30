@@ -304,6 +304,66 @@ const postsByTag = stati.groupBy(posts, 'category');
 %>
 ```
 
+## TypeScript Bundle Access
+
+When TypeScript is enabled, Stati provides access to compiled bundle paths via `stati.assets.bundlePaths`. This is useful for preloading, custom script placement, or conditional rendering.
+
+### Auto-Injection (Default Behavior)
+
+By default, Stati **automatically injects** all matched bundle scripts before the closing `</body>` tag. You don't need to add script tags manually—they're handled for you during both development and production builds.
+
+### Accessing Bundle Paths
+
+If you need to access bundle paths in your templates (for example, to preload modules or customize their placement), use `stati.assets.bundlePaths`:
+
+```eta
+<head>
+  <!-- Preload all matched bundles for this page -->
+  <% if (stati.assets?.bundlePaths) { %>
+    <% for (const path of stati.assets.bundlePaths) { %>
+    <link rel="modulepreload" href="<%= path %>">
+    <% } %>
+  <% } %>
+</head>
+```
+
+### Conditional Rendering
+
+Check if any bundles are available before rendering:
+
+```eta
+<% if (stati.assets?.bundlePaths && stati.assets.bundlePaths.length > 0) { %>
+  <!-- Page has TypeScript bundles -->
+  <div class="interactive-content">
+    <!-- Your interactive content here -->
+  </div>
+<% } else { %>
+  <!-- Static fallback content -->
+  <div class="static-content">
+    <!-- Fallback for pages without JavaScript -->
+  </div>
+<% } %>
+```
+
+### Bundle Paths Array
+
+The `bundlePaths` array contains paths to all bundles matched for the current page based on your TypeScript configuration:
+
+- Global bundles (no `include` pattern) appear on all pages
+- Targeted bundles appear only on pages matching their `include` patterns
+- Bundles are listed in the order defined in your config
+
+```eta
+<!-- Debug: Show which bundles are loaded on this page -->
+<% if (stati.assets?.bundlePaths) { %>
+<script>
+  console.log('Bundles for this page:', <%= JSON.stringify(stati.assets.bundlePaths) %>);
+</script>
+<% } %>
+```
+
+For more details on configuring multiple bundles, see [TypeScript Support](/configuration/typescript/).
+
 ## Best Practices
 
 1. **Keep filters simple**: Each filter should do one thing well

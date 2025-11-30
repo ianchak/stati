@@ -453,17 +453,36 @@ interface TypeScriptConfig {
   /** Output directory within dist (default: '_assets') */
   outDir?: string;
 
-  /** Entry point file relative to srcDir (default: 'main.ts') */
-  entryPoint?: string;
-
-  /** Base name for output bundle (default: 'bundle') */
-  bundleName?: string;
-
   /** Add content hash to filename in production (default: true, ignored in development) */
   hash?: boolean;
 
   /** Minify JavaScript output in production (default: true, ignored in development) */
   minify?: boolean;
+
+  /**
+   * Array of bundle configurations for multiple entry points.
+   * Each bundle can target specific pages using include/exclude patterns.
+   * Defaults to [{ entryPoint: 'main.ts', bundleName: 'main' }]
+   */
+  bundles?: BundleConfig[];
+}
+
+interface BundleConfig {
+  /** Entry point file name relative to srcDir (e.g., 'main.ts', 'features/playground.ts') */
+  entryPoint: string;
+
+  /** Output bundle file name (without extension). Final filename includes hash in production. */
+  bundleName: string;
+
+  /**
+   * Glob patterns for pages that should include this bundle.
+   * Matches against page output path (e.g., '/docs/api/hooks.html').
+   * If omitted, bundle is included on ALL pages (global bundle).
+   */
+  include?: string[];
+
+  /** Glob patterns for pages to exclude from this bundle. Takes precedence over include. */
+  exclude?: string[];
 }
 ```
 
@@ -471,22 +490,26 @@ interface TypeScriptConfig {
 
 ### StatiAssets Interface
 
-Available in templates when TypeScript is enabled. The script tag is **automatically injected** into your HTML during build - no template changes required!
+Available in templates when TypeScript is enabled. Script tags are **automatically injected** into your HTML during build - no template changes required!
 
 ```typescript
 interface StatiAssets {
-  /** Bundle filename only (e.g., 'bundle-a1b2c3d4.js') */
-  bundleName?: string;
-  /** Full path to bundle (e.g., '/_assets/bundle-a1b2c3d4.js') */
-  bundlePath?: string;
+  /**
+   * Array of all bundle paths matched for this page.
+   * Paths are in config order: ['/_assets/core-abc.js', '/_assets/docs-def.js']
+   * Always an array, empty [] if no TypeScript enabled or no bundles match.
+   */
+  bundlePaths: string[];
 }
 ```
 
 For advanced use cases like preloading, access via `stati.assets`:
 
 ```eta
-<% if (stati.assets?.bundlePath) { %>
-<link rel="modulepreload" href="<%= stati.assets.bundlePath %>">
+<% if (stati.assets?.bundlePaths?.length) { %>
+  <% for (const path of stati.assets.bundlePaths) { %>
+  <link rel="modulepreload" href="<%= path %>">
+  <% } %>
 <% } %>
 ```
 

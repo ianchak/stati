@@ -96,13 +96,12 @@ export default defineConfig({
   site: { ... },
   typescript: {
     enabled: true,
-    srcDir: 'src',
-    entryPoint: 'main.ts',
+    // bundles defaults to [{ entryPoint: 'main.ts', bundleName: 'main' }]
   },
 });
 ```
 
-See the [TypeScript Configuration](/configuration/typescript/) guide for more details.
+See the [TypeScript Configuration](/configuration/typescript/) guide for more details on multiple bundles and per-page targeting.
 
 ### `package.json`
 
