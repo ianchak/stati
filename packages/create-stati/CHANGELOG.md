@@ -1,5 +1,11 @@
 # create-stati
 
+## 1.11.0
+
+### Minor Changes
+
+- a178a68: add browser globals for TypeScript files in eslint config
+
 ## 1.10.0
 
 ### Minor Changes
