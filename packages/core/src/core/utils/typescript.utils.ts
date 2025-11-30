@@ -15,6 +15,7 @@ import {
   DEFAULT_TS_OUT_DIR,
   DEFAULT_TS_ENTRY_POINT,
   DEFAULT_TS_BUNDLE_NAME,
+  DEFAULT_OUT_DIR,
 } from '../../constants.js';
 
 /**
@@ -44,9 +45,19 @@ export interface CompileResult {
 /**
  * Options for TypeScript file watcher.
  */
-export interface WatchOptions extends CompileOptions {
-  /** Callback invoked when files are recompiled */
-  onRebuild: () => void;
+export interface WatchOptions {
+  /** Project root directory */
+  projectRoot: string;
+  /** TypeScript configuration */
+  config: TypeScriptConfig;
+  /** Output directory for the build */
+  outDir?: string;
+  /** Build mode */
+  mode: 'development' | 'production';
+  /** Logger instance */
+  logger: Logger;
+  /** Callback when rebuild completes, receives bundle path and compile time in ms */
+  onRebuild: (bundlePath: string, compileTimeMs: number) => void;
 }
 
 /**
@@ -104,7 +115,7 @@ export async function compileTypeScript(options: CompileOptions): Promise<Compil
 
   const entryPath = path.join(projectRoot, resolved.srcDir, resolved.entryPoint);
   // Output to configured build output directory (default: dist)
-  const outDir = path.join(projectRoot, globalOutDir || 'dist', resolved.outDir);
+  const outDir = path.join(projectRoot, globalOutDir || DEFAULT_OUT_DIR, resolved.outDir);
 
   // Validate entry point exists
   if (!(await pathExists(entryPath))) {
@@ -113,6 +124,7 @@ export async function compileTypeScript(options: CompileOptions): Promise<Compil
     return {};
   }
 
+  logger.info(''); // Add empty line before TypeScript compilation
   logger.info('Compiling TypeScript...');
 
   try {
@@ -175,7 +187,7 @@ export async function createTypeScriptWatcher(
 
   const entryPath = path.join(projectRoot, resolved.srcDir, resolved.entryPoint);
   // Output to configured build output directory (default: dist)
-  const outDir = path.join(projectRoot, globalOutDir || 'dist', resolved.outDir);
+  const outDir = path.join(projectRoot, globalOutDir || DEFAULT_OUT_DIR, resolved.outDir);
 
   // Validate entry point exists
   if (!(await pathExists(entryPath))) {
@@ -198,14 +210,19 @@ export async function createTypeScriptWatcher(
       {
         name: 'stati-rebuild-notify',
         setup(build) {
+          let startTime: number;
+          build.onStart(() => {
+            startTime = Date.now();
+          });
           build.onEnd((result) => {
+            const compileTime = Date.now() - startTime;
             if (result.errors.length > 0) {
               result.errors.forEach((err) => {
                 logger.error(`TypeScript error: ${err.text}`);
               });
             } else {
-              logger.info('TypeScript recompiled.');
-              onRebuild();
+              const bundlePath = `${globalOutDir || DEFAULT_OUT_DIR}/${resolved.outDir}/${resolved.bundleName}.js`;
+              onRebuild(bundlePath, compileTime);
             }
           });
         },
@@ -295,8 +312,14 @@ export function autoInjectBundle(html: string, bundlePath: string): string {
     return html;
   }
 
-  // Check if the bundle is already included (avoid duplicate injection)
-  if (html.includes(bundlePath)) {
+  // Check if the bundle script tag is already included (avoid duplicate injection)
+  // Must check for actual script tag, not just any occurrence of the path
+  // (e.g., modulepreload links should not prevent script injection)
+  const scriptTagPattern = new RegExp(
+    `<script[^>]*\\ssrc=["']${bundlePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}["'][^>]*>`,
+    'i',
+  );
+  if (scriptTagPattern.test(html)) {
     return html;
   }
 
