@@ -17,6 +17,7 @@ export type {
   SEOConfig,
   RobotsTxtConfig,
   TypeScriptConfig,
+  BundleConfig,
 } from './config.js';
 
 // Content types

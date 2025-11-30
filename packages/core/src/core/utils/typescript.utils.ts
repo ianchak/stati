@@ -1,6 +1,7 @@
 /**
  * TypeScript compilation utilities using esbuild.
  * Provides functions for compiling TypeScript files and watching for changes.
+ * Supports multiple bundles with per-page targeting.
  * @module core/utils/typescript
  */
 
@@ -8,14 +9,9 @@ import * as esbuild from 'esbuild';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 import { pathExists } from './fs.utils.js';
-import type { TypeScriptConfig } from '../../types/config.js';
+import type { TypeScriptConfig, BundleConfig } from '../../types/config.js';
 import type { Logger } from '../../types/logging.js';
-import {
-  DEFAULT_TS_SRC_DIR,
-  DEFAULT_TS_OUT_DIR,
-  DEFAULT_TS_ENTRY_POINT,
-  DEFAULT_TS_BUNDLE_NAME,
-} from '../../constants.js';
+import { DEFAULT_TS_SRC_DIR, DEFAULT_TS_OUT_DIR, DEFAULT_BUNDLES } from '../../constants.js';
 
 /**
  * Options for TypeScript compilation.
@@ -34,11 +30,15 @@ export interface CompileOptions {
 }
 
 /**
- * Result of TypeScript compilation.
+ * Result of compiling a single bundle.
  */
-export interface CompileResult {
-  /** The generated bundle filename (e.g., 'bundle-a1b2c3d4.js'), or undefined if compilation was skipped */
-  bundleFilename?: string;
+export interface BundleCompileResult {
+  /** The original bundle configuration */
+  config: BundleConfig;
+  /** The generated bundle filename (e.g., 'core-a1b2c3d4.js') */
+  bundleFilename: string;
+  /** Full path to bundle relative to site root (e.g., '/_assets/core-a1b2c3d4.js') */
+  bundlePath: string;
 }
 
 /**
@@ -46,20 +46,27 @@ export interface CompileResult {
  */
 export interface WatchOptions extends CompileOptions {
   /** Callback invoked when files are recompiled */
-  onRebuild: () => void;
+  onRebuild: (results: BundleCompileResult[]) => void;
+}
+
+/**
+ * Resolved TypeScript config with all defaults applied.
+ * @internal
+ */
+interface ResolvedTypeScriptConfig {
+  enabled: boolean;
+  srcDir: string;
+  outDir: string;
+  bundles: BundleConfig[];
+  hash: boolean;
+  minify: boolean;
+  sourceMaps: boolean;
 }
 
 /**
  * Resolves TypeScript config with defaults based on mode.
  * @internal
  */
-/**
- * Resolved TypeScript config with all defaults applied.
- */
-interface ResolvedTypeScriptConfig extends Required<TypeScriptConfig> {
-  sourceMaps: boolean;
-}
-
 function resolveConfig(
   config: TypeScriptConfig,
   mode: 'development' | 'production',
@@ -70,8 +77,7 @@ function resolveConfig(
     enabled: config.enabled,
     srcDir: config.srcDir ?? DEFAULT_TS_SRC_DIR,
     outDir: config.outDir ?? DEFAULT_TS_OUT_DIR,
-    entryPoint: config.entryPoint ?? DEFAULT_TS_ENTRY_POINT,
-    bundleName: config.bundleName ?? DEFAULT_TS_BUNDLE_NAME,
+    bundles: config.bundles ?? [...DEFAULT_BUNDLES],
     // hash/minify: always false in dev (config ignored), configurable in prod (default true)
     hash: isProduction && (config.hash ?? true),
     minify: isProduction && (config.minify ?? true),
@@ -81,48 +87,37 @@ function resolveConfig(
 }
 
 /**
- * Compile TypeScript files using esbuild.
- * Returns the generated bundle filename for template injection.
- *
- * @param options - Compilation options
- * @returns The compilation result with bundle filename
- *
- * @example
- * ```typescript
- * const result = await compileTypeScript({
- *   projectRoot: process.cwd(),
- *   config: { enabled: true },
- *   mode: 'production',
- *   logger: console,
- * });
- * console.log(result.bundleFilename); // 'bundle-a1b2c3d4.js'
- * ```
+ * Compile a single bundle using esbuild.
+ * @internal
  */
-export async function compileTypeScript(options: CompileOptions): Promise<CompileResult> {
-  const { projectRoot, config, mode, logger, outDir: globalOutDir } = options;
-  const resolved = resolveConfig(config, mode);
-
-  const entryPath = path.join(projectRoot, resolved.srcDir, resolved.entryPoint);
-  // Output to configured build output directory (default: dist)
-  const outDir = path.join(projectRoot, globalOutDir || 'dist', resolved.outDir);
+async function compileSingleBundle(
+  bundleConfig: BundleConfig,
+  resolvedConfig: ResolvedTypeScriptConfig,
+  projectRoot: string,
+  globalOutDir: string,
+  logger: Logger,
+): Promise<BundleCompileResult | null> {
+  const entryPath = path.join(projectRoot, resolvedConfig.srcDir, bundleConfig.entryPoint);
+  const outDir = path.join(projectRoot, globalOutDir, resolvedConfig.outDir);
 
   // Validate entry point exists
   if (!(await pathExists(entryPath))) {
-    logger.warning(`TypeScript entry point not found: ${entryPath}`);
-    logger.warning('Skipping TypeScript compilation.');
-    return {};
+    logger.warning(
+      `TypeScript entry point not found: ${entryPath} (bundle: ${bundleConfig.bundleName})`,
+    );
+    return null;
   }
-
-  logger.info('Compiling TypeScript...');
 
   try {
     const result = await esbuild.build({
       entryPoints: [entryPath],
       bundle: true,
       outdir: outDir,
-      entryNames: resolved.hash ? `${resolved.bundleName}-[hash]` : resolved.bundleName,
-      minify: resolved.minify,
-      sourcemap: resolved.sourceMaps,
+      entryNames: resolvedConfig.hash
+        ? `${bundleConfig.bundleName}-[hash]`
+        : bundleConfig.bundleName,
+      minify: resolvedConfig.minify,
+      sourcemap: resolvedConfig.sourceMaps,
       target: 'es2022',
       format: 'esm',
       platform: 'browser',
@@ -130,94 +125,192 @@ export async function compileTypeScript(options: CompileOptions): Promise<Compil
       metafile: true,
     });
 
-    // Extract the generated filename for template injection
+    // Extract the generated filename for this bundle
     const outputs = Object.keys(result.metafile?.outputs ?? {});
     const bundleFile = outputs.find((f) => f.endsWith('.js'));
-    const bundleFilename = bundleFile ? path.basename(bundleFile) : `${resolved.bundleName}.js`;
+    const bundleFilename = bundleFile ? path.basename(bundleFile) : `${bundleConfig.bundleName}.js`;
 
-    logger.success(`TypeScript compiled: ${bundleFilename}`);
+    // Construct the path relative to site root
+    const bundlePath = path.posix.join('/', resolvedConfig.outDir, bundleFilename);
 
-    return { bundleFilename };
+    return {
+      config: bundleConfig,
+      bundleFilename,
+      bundlePath,
+    };
   } catch (error) {
     if (error instanceof Error) {
-      logger.error(`TypeScript compilation failed: ${error.message}`);
+      logger.error(`Bundle '${bundleConfig.bundleName}' compilation failed: ${error.message}`);
     }
     throw error;
   }
 }
 
 /**
- * Create an esbuild watch context for development.
- * Watches for TypeScript file changes and recompiles automatically.
+ * Compile TypeScript files using esbuild.
+ * Supports multiple bundles with parallel compilation.
  *
- * @param options - Watch options including rebuild callback
- * @returns The esbuild build context for cleanup
+ * @param options - Compilation options
+ * @returns Array of compilation results for each bundle
  *
  * @example
  * ```typescript
- * const watcher = await createTypeScriptWatcher({
+ * const results = await compileTypeScript({
+ *   projectRoot: process.cwd(),
+ *   config: {
+ *     enabled: true,
+ *     bundles: [
+ *       { entryPoint: 'core.ts', bundleName: 'core' },
+ *       { entryPoint: 'docs.ts', bundleName: 'docs', include: ['/docs/**'] }
+ *     ]
+ *   },
+ *   mode: 'production',
+ *   logger: console,
+ * });
+ * console.log(results[0].bundlePath); // '/_assets/core-a1b2c3d4.js'
+ * ```
+ */
+export async function compileTypeScript(options: CompileOptions): Promise<BundleCompileResult[]> {
+  const { projectRoot, config, mode, logger, outDir: globalOutDir } = options;
+  const resolved = resolveConfig(config, mode);
+  const outputDir = globalOutDir || 'dist';
+
+  // Handle empty bundles array
+  if (resolved.bundles.length === 0) {
+    logger.warning(
+      'TypeScript is enabled but no bundles are configured. Add bundles to your stati.config.ts or disable TypeScript.',
+    );
+    return [];
+  }
+
+  logger.info(
+    `Compiling TypeScript (${resolved.bundles.length} bundle${resolved.bundles.length > 1 ? 's' : ''})...`,
+  );
+
+  // Compile all bundles in parallel
+  const compilationPromises = resolved.bundles.map((bundleConfig) =>
+    compileSingleBundle(bundleConfig, resolved, projectRoot, outputDir, logger),
+  );
+
+  const results = await Promise.all(compilationPromises);
+
+  // Filter out null results (skipped bundles) and collect successful ones
+  const successfulResults = results.filter((r): r is BundleCompileResult => r !== null);
+
+  if (successfulResults.length > 0) {
+    const bundleNames = successfulResults.map((r) => r.bundleFilename).join(', ');
+    logger.success(`TypeScript compiled: ${bundleNames}`);
+  } else if (resolved.bundles.length > 0) {
+    logger.warning('No TypeScript bundles were compiled (all entry points missing).');
+  }
+
+  return successfulResults;
+}
+
+/**
+ * Create an esbuild watch context for development.
+ * Watches for TypeScript file changes and recompiles automatically.
+ * Supports multiple bundles with selective recompilation.
+ *
+ * @param options - Watch options including rebuild callback
+ * @returns Array of esbuild build contexts for cleanup
+ *
+ * @example
+ * ```typescript
+ * const watchers = await createTypeScriptWatcher({
  *   projectRoot: process.cwd(),
  *   config: { enabled: true },
  *   mode: 'development',
  *   logger: console,
- *   onRebuild: () => console.log('Rebuilt!'),
+ *   onRebuild: (results) => console.log(`Rebuilt ${results.length} bundles`),
  * });
  *
  * // Later, cleanup:
- * await watcher.dispose();
+ * await Promise.all(watchers.map(w => w.dispose()));
  * ```
  */
 export async function createTypeScriptWatcher(
   options: WatchOptions,
-): Promise<esbuild.BuildContext> {
+): Promise<esbuild.BuildContext[]> {
   const { projectRoot, config, mode, logger, onRebuild, outDir: globalOutDir } = options;
   const resolved = resolveConfig(config, mode);
+  const outputDir = globalOutDir || 'dist';
+  const outDir = path.join(projectRoot, outputDir, resolved.outDir);
 
-  const entryPath = path.join(projectRoot, resolved.srcDir, resolved.entryPoint);
-  // Output to configured build output directory (default: dist)
-  const outDir = path.join(projectRoot, globalOutDir || 'dist', resolved.outDir);
+  const contexts: esbuild.BuildContext[] = [];
+  const latestResults: Map<string, BundleCompileResult> = new Map();
 
-  // Validate entry point exists
-  if (!(await pathExists(entryPath))) {
-    logger.warning(`TypeScript entry point not found: ${entryPath}`);
-    throw new Error(`Entry point not found: ${entryPath}`);
+  for (const bundleConfig of resolved.bundles) {
+    const entryPath = path.join(projectRoot, resolved.srcDir, bundleConfig.entryPoint);
+
+    // Validate entry point exists
+    if (!(await pathExists(entryPath))) {
+      logger.warning(
+        `TypeScript entry point not found: ${entryPath} (bundle: ${bundleConfig.bundleName})`,
+      );
+      continue;
+    }
+
+    const context = await esbuild.context({
+      entryPoints: [entryPath],
+      bundle: true,
+      outdir: outDir,
+      entryNames: bundleConfig.bundleName, // Stable filename in dev mode (no hash)
+      minify: resolved.minify,
+      sourcemap: resolved.sourceMaps,
+      target: 'es2022',
+      format: 'esm',
+      platform: 'browser',
+      logLevel: 'silent',
+      metafile: true,
+      plugins: [
+        {
+          name: 'stati-rebuild-notify',
+          setup(build) {
+            build.onEnd((result) => {
+              if (result.errors.length > 0) {
+                result.errors.forEach((err) => {
+                  logger.error(`TypeScript error in '${bundleConfig.bundleName}': ${err.text}`);
+                });
+              } else {
+                // Extract the generated filename
+                const outputs = Object.keys(result.metafile?.outputs ?? {});
+                const bundleFile = outputs.find((f) => f.endsWith('.js'));
+                const bundleFilename = bundleFile
+                  ? path.basename(bundleFile)
+                  : `${bundleConfig.bundleName}.js`;
+                const bundlePath = path.posix.join('/', resolved.outDir, bundleFilename);
+
+                const bundleResult: BundleCompileResult = {
+                  config: bundleConfig,
+                  bundleFilename,
+                  bundlePath,
+                };
+
+                latestResults.set(bundleConfig.bundleName, bundleResult);
+                logger.info(`TypeScript '${bundleConfig.bundleName}' recompiled.`);
+
+                // Notify with all current results
+                onRebuild(Array.from(latestResults.values()));
+              }
+            });
+          },
+        },
+      ],
+    });
+
+    // Start watching
+    await context.watch();
+    contexts.push(context);
   }
 
-  const context = await esbuild.context({
-    entryPoints: [entryPath],
-    bundle: true,
-    outdir: outDir,
-    entryNames: resolved.bundleName, // Stable filename in dev mode (no hash)
-    minify: resolved.minify,
-    sourcemap: resolved.sourceMaps,
-    target: 'es2022',
-    format: 'esm',
-    platform: 'browser',
-    logLevel: 'silent',
-    plugins: [
-      {
-        name: 'stati-rebuild-notify',
-        setup(build) {
-          build.onEnd((result) => {
-            if (result.errors.length > 0) {
-              result.errors.forEach((err) => {
-                logger.error(`TypeScript error: ${err.text}`);
-              });
-            } else {
-              logger.info('TypeScript recompiled.');
-              onRebuild();
-            }
-          });
-        },
-      },
-    ],
-  });
+  if (contexts.length > 0) {
+    logger.info(
+      `Watching TypeScript files in ${resolved.srcDir}/ (${contexts.length} bundle${contexts.length > 1 ? 's' : ''})`,
+    );
+  }
 
-  // Start watching
-  await context.watch();
-  logger.info(`Watching TypeScript files in ${resolved.srcDir}/`);
-
-  return context;
+  return contexts;
 }
 
 /**
@@ -266,37 +359,51 @@ export async function cleanupCompiledConfig(compiledPath: string): Promise<void>
 }
 
 /**
- * Auto-inject TypeScript bundle script tag into HTML before </body>.
- * Similar to SEO auto-injection, this adds the script tag automatically
+ * Auto-inject TypeScript bundle script tags into HTML before </body>.
+ * Similar to SEO auto-injection, this adds script tags automatically
  * so users don't need to modify their templates.
+ * Supports multiple bundles - injects all matched bundles in order.
  *
  * @param html - Rendered HTML content
- * @param bundlePath - Path to the compiled bundle (e.g., '/_assets/bundle-a1b2c3d4.js')
- * @returns HTML with injected script tag
+ * @param bundlePaths - Array of paths to compiled bundles (e.g., ['/_assets/core.js', '/_assets/docs.js'])
+ * @returns HTML with injected script tags
  *
  * @example
  * ```typescript
  * const html = '<html><body>Content</body></html>';
- * const enhanced = autoInjectBundle(html, '/_assets/bundle.js');
- * // Returns: '<html><body>Content\n  <script type="module" src="/_assets/bundle.js"></script>\n</body></html>'
+ * const enhanced = autoInjectBundles(html, ['/_assets/core.js', '/_assets/docs.js']);
+ * // Returns HTML with both script tags injected before </body>
  * ```
  */
-export function autoInjectBundle(html: string, bundlePath: string): string {
-  if (!bundlePath) {
+export function autoInjectBundles(html: string, bundlePaths: string[]): string {
+  if (!bundlePaths || bundlePaths.length === 0) {
     return html;
   }
 
-  // Sanitize bundlePath to prevent XSS attacks
+  // Sanitize bundle paths to prevent XSS attacks
   // Only allow safe characters: alphanumeric, hyphens, underscores, dots, and forward slashes
-  // Must start with / and end with .js
-  const safePathPattern = /^\/[\w\-./]+\.js$/;
-  if (!safePathPattern.test(bundlePath)) {
-    // Invalid path format, skip injection to prevent potential XSS
-    return html;
-  }
+  // Must start with / and end with .js, no encoded characters or unicode allowed
+  const safePathPattern = /^\/[a-zA-Z0-9_\-./]+\.js$/;
+  const validPaths = bundlePaths.filter((bundlePath) => {
+    // Reject paths with encoded characters (%, unicode escape sequences)
+    if (/%[0-9a-fA-F]{2}/.test(bundlePath) || /\\u[0-9a-fA-F]{4}/.test(bundlePath)) {
+      return false;
+    }
+    if (!safePathPattern.test(bundlePath)) {
+      // Invalid path format, skip to prevent potential XSS
+      return false;
+    }
+    // Check if the bundle is already included (avoid duplicate injection)
+    // Use a precise regex to match exact script src attribute
+    const escapedPath = bundlePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const scriptTagPattern = new RegExp(`<script[^>]*\\ssrc=["']${escapedPath}["'][^>]*>`, 'i');
+    if (scriptTagPattern.test(html)) {
+      return false;
+    }
+    return true;
+  });
 
-  // Check if the bundle is already included (avoid duplicate injection)
-  if (html.includes(bundlePath)) {
+  if (validPaths.length === 0) {
     return html;
   }
 
@@ -310,7 +417,10 @@ export function autoInjectBundle(html: string, bundlePath: string): string {
   const before = html.substring(0, bodyClosePos);
   const after = html.substring(bodyClosePos);
 
-  // Inject script tag before </body> with proper indentation
-  const scriptTag = `  <script type="module" src="${bundlePath}"></script>\n`;
-  return `${before}${scriptTag}${after}`;
+  // Inject all script tags before </body> with proper indentation
+  const scriptTags = validPaths
+    .map((bundlePath) => `  <script type="module" src="${bundlePath}"></script>`)
+    .join('\n');
+
+  return `${before}${scriptTags}\n${after}`;
 }

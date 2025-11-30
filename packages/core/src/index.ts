@@ -31,6 +31,7 @@ export type {
   ISGConfig,
   AgingRule,
   BuildStats,
+  BundleConfig,
 } from './types/index.js';
 
 // SEO and Sitemap types

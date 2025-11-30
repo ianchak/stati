@@ -29,7 +29,7 @@ const {
   mockWithBuildLock,
   mockBuildNavigation,
   mockCompileTypeScript,
-  mockAutoInjectBundle,
+  mockAutoInjectBundles,
 } = vi.hoisted(() => ({
   // fs-extra mocks
   mockEnsureDir: vi.fn(),
@@ -50,7 +50,7 @@ const {
   mockBuildNavigation: vi.fn(),
   // TypeScript mocks
   mockCompileTypeScript: vi.fn(),
-  mockAutoInjectBundle: vi.fn(),
+  mockAutoInjectBundles: vi.fn(),
   // ISG mocks
   mockLoadCacheManifest: vi.fn(),
   mockSaveCacheManifest: vi.fn(),
@@ -113,7 +113,7 @@ vi.mock('../../src/core/isg/build-lock.js', () => ({
 
 vi.mock('../../src/core/utils/typescript.utils.js', () => ({
   compileTypeScript: mockCompileTypeScript,
-  autoInjectBundle: mockAutoInjectBundle,
+  autoInjectBundles: mockAutoInjectBundles,
 }));
 
 describe('build.ts', () => {
@@ -880,8 +880,15 @@ describe('build.ts', () => {
 
   describe('TypeScript compilation', () => {
     beforeEach(() => {
-      mockCompileTypeScript.mockResolvedValue({ bundleFilename: 'bundle.js' });
-      mockAutoInjectBundle.mockImplementation((html) => html);
+      // Return array of bundle results with new multi-bundle API
+      mockCompileTypeScript.mockResolvedValue([
+        {
+          bundleFilename: 'main.js',
+          bundlePath: '/_assets/main.js',
+          config: { entryPoint: 'main.ts', bundleName: 'main' },
+        },
+      ]);
+      mockAutoInjectBundles.mockImplementation((html) => html);
     });
 
     it('should compile TypeScript when enabled in config', async () => {
@@ -920,12 +927,18 @@ describe('build.ts', () => {
         },
       };
 
-      mockCompileTypeScript.mockResolvedValue({ bundleFilename: 'bundle-abc123.js' });
+      mockCompileTypeScript.mockResolvedValue([
+        {
+          bundleFilename: 'main-abc123.js',
+          bundlePath: '/_assets/main-abc123.js',
+          config: { entryPoint: 'main.ts', bundleName: 'main' },
+        },
+      ]);
       mockLoadConfig.mockResolvedValue(configWithTypeScript);
 
       await build();
 
-      expect(mockAutoInjectBundle).toHaveBeenCalled();
+      expect(mockAutoInjectBundles).toHaveBeenCalled();
     });
 
     it('should pass correct mode based on environment', async () => {
@@ -958,7 +971,13 @@ describe('build.ts', () => {
         },
       };
 
-      mockCompileTypeScript.mockResolvedValue({ bundleFilename: 'bundle-hash.js' });
+      mockCompileTypeScript.mockResolvedValue([
+        {
+          bundleFilename: 'main-hash.js',
+          bundlePath: '/_assets/main-hash.js',
+          config: { entryPoint: 'main.ts', bundleName: 'main' },
+        },
+      ]);
       mockLoadConfig.mockResolvedValue(configWithTypeScript);
 
       await build();
@@ -971,8 +990,7 @@ describe('build.ts', () => {
         expect.anything(),
         expect.anything(),
         expect.objectContaining({
-          bundleName: 'bundle-hash.js',
-          bundlePath: '/_assets/bundle-hash.js',
+          bundlePaths: ['/_assets/main-hash.js'],
         }),
       );
     });
@@ -985,12 +1003,12 @@ describe('build.ts', () => {
         },
       };
 
-      mockCompileTypeScript.mockResolvedValue({}); // No bundleFilename
+      mockCompileTypeScript.mockResolvedValue([]); // Empty array - no bundles
       mockLoadConfig.mockResolvedValue(configWithTypeScript);
 
       await build();
 
-      // Should pass undefined assets to renderPage
+      // Should pass undefined assets to renderPage when no bundles exist
       expect(mockRenderPage).toHaveBeenCalledWith(
         expect.anything(),
         expect.anything(),

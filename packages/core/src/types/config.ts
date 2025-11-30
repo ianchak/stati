@@ -117,6 +117,60 @@ export interface SEOConfig {
 }
 
 /**
+ * Configuration for a single TypeScript bundle.
+ * Defines how a bundle is compiled and which pages should include it.
+ *
+ * @example
+ * ```typescript
+ * // Global bundle (included on all pages)
+ * const coreBundle: BundleConfig = {
+ *   entryPoint: 'core.ts',
+ *   bundleName: 'core'
+ * };
+ *
+ * // Targeted bundle (only on specific pages)
+ * const docsBundle: BundleConfig = {
+ *   entryPoint: 'docs.ts',
+ *   bundleName: 'docs',
+ *   include: ['/docs/**', '/api/**'],
+ *   exclude: ['/docs/legacy/**']
+ * };
+ * ```
+ */
+export interface BundleConfig {
+  /**
+   * Entry point file name relative to srcDir.
+   * @example 'main.ts', 'features/playground.ts'
+   */
+  entryPoint: string;
+
+  /**
+   * Output bundle file name (without extension).
+   * Final filename includes hash in production: `[bundleName]-[hash].js`
+   */
+  bundleName: string;
+
+  /**
+   * Glob patterns for pages that should include this bundle.
+   * Matches against page output path (e.g., '/docs/api/hooks.html').
+   * If omitted, bundle is included on ALL pages (global bundle).
+   *
+   * Supports glob syntax: `*`, `**`, `?`, `[abc]`, `{a,b}`
+   *
+   * @example ['/docs/**', '/api/**']
+   */
+  include?: string[];
+
+  /**
+   * Glob patterns for pages to exclude from this bundle.
+   * Takes precedence over include patterns.
+   *
+   * @example ['/docs/legacy/**']
+   */
+  exclude?: string[];
+}
+
+/**
  * TypeScript compilation configuration.
  * Controls how Stati compiles TypeScript files using esbuild.
  *
@@ -125,15 +179,23 @@ export interface SEOConfig {
  *
  * @example
  * ```typescript
- * const config: StatiConfig = {
+ * // Simple configuration (defaults to single global bundle)
+ * const simpleConfig: StatiConfig = {
+ *   typescript: {
+ *     enabled: true
+ *     // Defaults to: bundles: [{ entryPoint: 'main.ts', bundleName: 'main' }]
+ *   }
+ * };
+ *
+ * // Multiple bundles with per-page targeting
+ * const multiConfig: StatiConfig = {
  *   typescript: {
  *     enabled: true,
  *     srcDir: 'src',
- *     outDir: '_assets',
- *     entryPoint: 'main.ts',
- *     bundleName: 'bundle',
- *     // hash and minify default to true in production
- *     // set to false only if you need to debug production builds
+ *     bundles: [
+ *       { entryPoint: 'core.ts', bundleName: 'core' },
+ *       { entryPoint: 'docs.ts', bundleName: 'docs', include: ['/docs/**'] }
+ *     ]
  *   }
  * };
  * ```
@@ -160,19 +222,6 @@ export interface TypeScriptConfig {
   outDir?: string;
 
   /**
-   * Entry point file name (without path).
-   * @default 'main.ts'
-   */
-  entryPoint?: string;
-
-  /**
-   * Output bundle file name (without extension).
-   * The final filename will include a content hash: `[bundleName]-[hash].js`
-   * @default 'bundle'
-   */
-  bundleName?: string;
-
-  /**
    * Include content hash in bundle filename for cache busting in production.
    * When true, outputs `bundle-a1b2c3d4.js`. When false, outputs `bundle.js`.
    * This option only applies to production builds; development always uses stable filenames.
@@ -186,6 +235,16 @@ export interface TypeScriptConfig {
    * @default true
    */
   minify?: boolean;
+
+  /**
+   * Array of bundle configurations.
+   * Each bundle can target specific pages using include/exclude patterns.
+   * If omitted, defaults to a single global bundle:
+   * `[{ entryPoint: 'main.ts', bundleName: 'main' }]`
+   *
+   * When defined, completely overrides the default.
+   */
+  bundles?: BundleConfig[];
 }
 
 /**

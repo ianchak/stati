@@ -93,12 +93,14 @@ vi.mock('fs/promises', () => ({
   stat: vi.fn().mockResolvedValue({ isDirectory: () => false }),
 }));
 
-// Mock TypeScript watcher - use inline object
+// Mock TypeScript watcher - returns array of contexts
 vi.mock('../../src/core/utils/typescript.utils.js', () => ({
-  createTypeScriptWatcher: vi.fn().mockResolvedValue({
-    dispose: vi.fn().mockResolvedValue(undefined),
-    watch: vi.fn().mockResolvedValue(undefined),
-  }),
+  createTypeScriptWatcher: vi.fn().mockResolvedValue([
+    {
+      dispose: vi.fn().mockResolvedValue(undefined),
+      watch: vi.fn().mockResolvedValue(undefined),
+    },
+  ]),
 }));
 
 describe('Development Server', () => {
@@ -433,6 +435,16 @@ describe('Development Server', () => {
     it('should start TypeScript watcher when typescript is enabled', async () => {
       const { createTypeScriptWatcher } = await import('../../src/core/utils/typescript.utils.js');
       const mockCreateTsWatcher = vi.mocked(createTypeScriptWatcher);
+      // Re-setup mock return value after vi.clearAllMocks()
+      mockCreateTsWatcher.mockResolvedValue([
+        {
+          dispose: vi.fn().mockResolvedValue(undefined),
+          watch: vi.fn().mockResolvedValue(undefined),
+          rebuild: vi.fn(),
+          serve: vi.fn(),
+          cancel: vi.fn(),
+        },
+      ]);
 
       mockLoadConfig.mockResolvedValueOnce({
         srcDir: 'site',
@@ -542,14 +554,17 @@ describe('Development Server', () => {
       const { createTypeScriptWatcher } = await import('../../src/core/utils/typescript.utils.js');
       const mockCreateTsWatcher = vi.mocked(createTypeScriptWatcher);
       const mockDispose = vi.fn().mockResolvedValue(undefined);
+      // Return array of contexts (new multi-bundle API)
       mockCreateTsWatcher.mockReturnValueOnce(
-        Promise.resolve({
-          dispose: mockDispose,
-          watch: vi.fn(),
-          rebuild: vi.fn(),
-          serve: vi.fn(),
-          cancel: vi.fn(),
-        }) as ReturnType<typeof createTypeScriptWatcher>,
+        Promise.resolve([
+          {
+            dispose: mockDispose,
+            watch: vi.fn(),
+            rebuild: vi.fn(),
+            serve: vi.fn(),
+            cancel: vi.fn(),
+          },
+        ]) as ReturnType<typeof createTypeScriptWatcher>,
       );
 
       mockLoadConfig.mockResolvedValueOnce({

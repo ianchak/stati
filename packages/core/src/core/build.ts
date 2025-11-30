@@ -17,9 +17,10 @@ import {
   isTailwindUsed,
   loadPreviousInventory,
   compileTypeScript,
-  autoInjectBundle,
+  autoInjectBundles,
+  getBundlePathsForPage,
 } from './utils/index.js';
-import type { CompileResult } from './utils/index.js';
+import type { CompiledBundleInfo } from './utils/index.js';
 import { join, dirname, relative, posix } from 'node:path';
 import { loadConfig } from '../config/loader.js';
 import { loadContent } from './content.js';
@@ -43,7 +44,6 @@ import {
 } from '../seo/index.js';
 import { generateRSSFeeds, validateRSSConfig } from '../rss/index.js';
 import { getEnv } from '../env.js';
-import { DEFAULT_TS_OUT_DIR } from '../constants.js';
 import type {
   BuildContext,
   BuildStats,
@@ -314,7 +314,7 @@ async function processPagesWithCache(
   buildTime: Date,
   options: BuildOptions,
   logger: Logger,
-  assets?: StatiAssets,
+  compiledBundles: CompiledBundleInfo[],
 ): Promise<{ cacheHits: number; cacheMisses: number }> {
   let cacheHits = 0;
   let cacheMisses = 0;
@@ -406,6 +406,10 @@ async function processPagesWithCache(
       logger.updateTreeNode(templateId, 'running');
     }
 
+    // Compute matched bundle paths for this page
+    const bundlePaths = getBundlePathsForPage(page.url, compiledBundles);
+    const assets: StatiAssets | undefined = bundlePaths.length > 0 ? { bundlePaths } : undefined;
+
     // Render with template
     let finalHtml = await renderPage(page, htmlContent, config, eta, navigation, pages, assets);
 
@@ -425,9 +429,9 @@ async function processPagesWithCache(
       finalHtml = autoInjectSEO(finalHtml, injectOptions);
     }
 
-    // Auto-inject TypeScript bundle script tag if available
-    if (assets?.bundlePath) {
-      finalHtml = autoInjectBundle(finalHtml, assets.bundlePath);
+    // Auto-inject TypeScript bundle script tags if available
+    if (assets && assets.bundlePaths.length > 0) {
+      finalHtml = autoInjectBundles(finalHtml, assets.bundlePaths);
     }
 
     const renderTime = Date.now() - startTime;
@@ -591,11 +595,10 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
   manifest.navigationHash = navigationHash;
 
   // Compile TypeScript if enabled
-  let tsResult: CompileResult | undefined;
-  let assets: StatiAssets | undefined;
+  let compiledBundles: CompiledBundleInfo[] = [];
 
   if (config.typescript?.enabled) {
-    tsResult = await compileTypeScript({
+    const tsResults = await compileTypeScript({
       projectRoot: process.cwd(),
       config: config.typescript,
       outDir: config.outDir || 'dist',
@@ -603,13 +606,12 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
       logger,
     });
 
-    if (tsResult?.bundleFilename) {
-      const assetsDir = config.typescript.outDir || DEFAULT_TS_OUT_DIR;
-      assets = {
-        bundleName: tsResult.bundleFilename,
-        bundlePath: posix.join('/', assetsDir, tsResult.bundleFilename),
-      };
-    }
+    // Convert BundleCompileResult[] to CompiledBundleInfo[]
+    compiledBundles = tsResults.map((result) => ({
+      config: result.config,
+      filename: result.bundleFilename,
+      path: result.bundlePath,
+    }));
   }
 
   // Process pages with ISG caching logic
@@ -628,7 +630,7 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
     buildTime,
     options,
     logger,
-    assets,
+    compiledBundles,
   );
   cacheHits = pageProcessingResult.cacheHits;
   cacheMisses = pageProcessingResult.cacheMisses;

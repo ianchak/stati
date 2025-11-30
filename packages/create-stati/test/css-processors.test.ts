@@ -2,15 +2,25 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { mkdtemp, rm, writeFile, readFile, mkdir, access } from 'node:fs/promises';
-import { CSSProcessor } from '../src/css-processors.js';
+import { getStylingProcessor, applyProcessorResult } from '../src/css-processors.js';
+import type { StylingOption } from '../src/css-processors.js';
+
+/**
+ * Helper function to process styling by getting the processor result and applying it.
+ * This mimics the behavior of the old CSSProcessor.processStyling method.
+ */
+async function processStyling(projectDir: string, styling: StylingOption): Promise<void> {
+  const result = await getStylingProcessor(styling, projectDir);
+  if (result) {
+    await applyProcessorResult(projectDir, result);
+  }
+}
 
 describe('CSSProcessor', () => {
   let tempDir: string;
-  let cssProcessor: CSSProcessor;
 
   beforeEach(async () => {
     tempDir = await mkdtemp(join(tmpdir(), 'stati-css-test-'));
-    cssProcessor = new CSSProcessor();
   });
 
   afterEach(async () => {
@@ -31,7 +41,7 @@ describe('CSSProcessor', () => {
       await mkdir(join(tempDir, 'public'), { recursive: true });
       await writeFile(join(tempDir, 'public', 'styles.css'), 'body { margin: 0; }');
 
-      await cssProcessor.processStyling(tempDir, 'css');
+      await processStyling(tempDir, 'css');
 
       // Verify no changes were made
       const finalPackageJson = JSON.parse(await readFile(join(tempDir, 'package.json'), 'utf-8'));
@@ -42,7 +52,7 @@ describe('CSSProcessor', () => {
     });
 
     it('should throw error for unsupported styling option', async () => {
-      await expect(cssProcessor.processStyling(tempDir, 'unknown' as 'css')).rejects.toThrow(
+      await expect(processStyling(tempDir, 'unknown' as StylingOption)).rejects.toThrow(
         'Unsupported styling option: unknown',
       );
     });
@@ -72,7 +82,7 @@ describe('CSSProcessor', () => {
     });
 
     it('should setup Sass with enhanced SCSS file', async () => {
-      await cssProcessor.processStyling(tempDir, 'sass');
+      await processStyling(tempDir, 'sass');
 
       // Verify src directory and SCSS file were created
       await expect(access(join(tempDir, 'src', 'styles.scss'))).resolves.not.toThrow();
@@ -89,7 +99,7 @@ describe('CSSProcessor', () => {
     });
 
     it('should add Sass dependencies to package.json', async () => {
-      await cssProcessor.processStyling(tempDir, 'sass');
+      await processStyling(tempDir, 'sass');
 
       const packageJson = JSON.parse(await readFile(join(tempDir, 'package.json'), 'utf-8'));
 
@@ -100,7 +110,7 @@ describe('CSSProcessor', () => {
     });
 
     it('should add Sass build scripts to package.json', async () => {
-      await cssProcessor.processStyling(tempDir, 'sass');
+      await processStyling(tempDir, 'sass');
 
       const packageJson = JSON.parse(await readFile(join(tempDir, 'package.json'), 'utf-8'));
 
@@ -119,7 +129,7 @@ describe('CSSProcessor', () => {
     });
 
     it('should remove original CSS file after creating SCSS', async () => {
-      await cssProcessor.processStyling(tempDir, 'sass');
+      await processStyling(tempDir, 'sass');
 
       // Original CSS file should be removed
       await expect(access(join(tempDir, 'public', 'styles.css'))).rejects.toThrow();
@@ -147,7 +157,7 @@ describe('CSSProcessor', () => {
     });
 
     it('should create Tailwind CSS file with directives', async () => {
-      await cssProcessor.processStyling(tempDir, 'tailwind');
+      await processStyling(tempDir, 'tailwind');
 
       const cssContent = await readFile(join(tempDir, 'src', 'styles.css'), 'utf-8');
 
@@ -158,7 +168,7 @@ describe('CSSProcessor', () => {
     });
 
     it('should create tailwind.config.js file', async () => {
-      await cssProcessor.processStyling(tempDir, 'tailwind');
+      await processStyling(tempDir, 'tailwind');
 
       await expect(access(join(tempDir, 'tailwind.config.js'))).resolves.not.toThrow();
 
@@ -170,7 +180,7 @@ describe('CSSProcessor', () => {
     });
 
     it('should add Tailwind dependencies to package.json', async () => {
-      await cssProcessor.processStyling(tempDir, 'tailwind');
+      await processStyling(tempDir, 'tailwind');
 
       const packageJson = JSON.parse(await readFile(join(tempDir, 'package.json'), 'utf-8'));
 
@@ -185,7 +195,7 @@ describe('CSSProcessor', () => {
     });
 
     it('should add Tailwind build scripts to package.json', async () => {
-      await cssProcessor.processStyling(tempDir, 'tailwind');
+      await processStyling(tempDir, 'tailwind');
 
       const packageJson = JSON.parse(await readFile(join(tempDir, 'package.json'), 'utf-8'));
 
@@ -206,7 +216,7 @@ describe('CSSProcessor', () => {
   describe('error handling', () => {
     it('should handle missing package.json gracefully', async () => {
       // No package.json file created
-      await expect(cssProcessor.processStyling(tempDir, 'sass')).rejects.toThrow();
+      await expect(processStyling(tempDir, 'sass')).rejects.toThrow();
     });
 
     it('should handle missing CSS file for Sass setup', async () => {
@@ -214,7 +224,7 @@ describe('CSSProcessor', () => {
       await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson, null, 2));
 
       // No public/styles.css file created
-      await expect(cssProcessor.processStyling(tempDir, 'sass')).rejects.toThrow();
+      await expect(processStyling(tempDir, 'sass')).rejects.toThrow();
     });
 
     it('should throw descriptive error when Tailwind setup fails', async () => {
@@ -229,7 +239,7 @@ describe('CSSProcessor', () => {
         await chmod(join(tempDir, 'src'), 0o444); // read-only
 
         try {
-          await expect(cssProcessor.processStyling(tempDir, 'tailwind')).rejects.toThrow(
+          await expect(processStyling(tempDir, 'tailwind')).rejects.toThrow(
             /Failed to setup tailwind/i,
           );
         } finally {

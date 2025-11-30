@@ -66,13 +66,3 @@ export async function processStyling(projectDir: string, styling: StylingOption)
     throw new Error(`Failed to setup ${styling}: ${formatErrorMessage(error)}`);
   }
 }
-
-/**
- * @deprecated Use processStyling function instead.
- * Kept for backward compatibility.
- */
-export class CSSProcessor {
-  async processStyling(projectDir: string, styling: StylingOption): Promise<void> {
-    return processStyling(projectDir, styling);
-  }
-}

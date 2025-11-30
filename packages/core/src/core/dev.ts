@@ -370,7 +370,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
     lastBuildError = error;
   };
   let watcher: FSWatcher | null = null;
-  let tsWatcher: BuildContext | null = null;
+  let tsWatchers: BuildContext[] = [];
   const isBuildingRef = { value: false };
   let isStopping = false;
 
@@ -635,8 +635,8 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
       // TypeScript watcher setup (initial compilation is handled by performInitialBuild)
       if (config.typescript?.enabled) {
         try {
-          // Start TypeScript watcher for hot reload
-          tsWatcher = await createTypeScriptWatcher({
+          // Start TypeScript watchers for hot reload (one per bundle)
+          tsWatchers = await createTypeScriptWatcher({
             projectRoot: process.cwd(),
             config: config.typescript,
             outDir: config.outDir || 'dist',
@@ -739,10 +739,18 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
         watcher = null;
       }
 
-      // Clean up TypeScript watcher
-      if (tsWatcher) {
-        await tsWatcher.dispose();
-        tsWatcher = null;
+      // Clean up TypeScript watchers
+      if (tsWatchers.length > 0) {
+        await Promise.all(
+          tsWatchers.map(async (w) => {
+            try {
+              await w.dispose();
+            } catch (error) {
+              logger.warning(`Failed to dispose TypeScript watcher: ${error}`);
+            }
+          }),
+        );
+        tsWatchers = [];
       }
 
       if (wsServer) {

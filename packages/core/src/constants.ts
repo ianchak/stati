@@ -131,8 +131,8 @@ export const DEFAULT_TS_SRC_DIR = 'src';
 /** Default TypeScript output directory (relative to build output) */
 export const DEFAULT_TS_OUT_DIR = '_assets';
 
-/** Default TypeScript entry point filename */
-export const DEFAULT_TS_ENTRY_POINT = 'main.ts';
-
-/** Default TypeScript bundle name */
-export const DEFAULT_TS_BUNDLE_NAME = 'bundle';
+/**
+ * Default bundle configuration when `bundles` is not specified.
+ * Creates a single global bundle from 'main.ts' entry point.
+ */
+export const DEFAULT_BUNDLES = [{ entryPoint: 'main.ts', bundleName: 'main' }] as const;
