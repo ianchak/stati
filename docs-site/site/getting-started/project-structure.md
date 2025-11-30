@@ -10,7 +10,7 @@ Stati organizes your files in a clean and structured way, designed for simplicit
 
 ## Example Structure
 
-```
+```text
 my-stati-site/
 ├── package.json
 ├── stati.config.js
@@ -29,7 +29,7 @@ my-stati-site/
 
 When you create a project with `--typescript`, you get additional files:
 
-```
+```text
 my-stati-site/
 ├── package.json
 ├── stati.config.ts         # TypeScript configuration
@@ -135,7 +135,7 @@ You can also use page specific layouts if you want, by referring to the layouts 
 
 For larger sites, you might organize content like this:
 
-```
+```text
 site/
 ├── index.md
 ├── layout.eta
@@ -186,7 +186,7 @@ Layouts and partials cascade down the directory tree:
 
 When you run `stati build`, the output structure mirrors your site structure:
 
-```
+```text
 dist/
 ├── index.html
 ├── about.html
