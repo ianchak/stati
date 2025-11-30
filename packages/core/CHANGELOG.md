@@ -1,5 +1,12 @@
 # @stati/core
 
+## 1.14.0
+
+### Minor Changes
+
+- a178a68: add browser globals for TypeScript files in eslint config
+- a178a68: add code block copy button functionality and theme toggle
+
 ## 1.13.0
 
 ### Minor Changes

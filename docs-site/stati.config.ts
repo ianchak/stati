@@ -14,7 +14,7 @@ export default defineConfig({
       [
         'anchor',
         {
-          slugify: (s) =>
+          slugify: (s: string) =>
             s
               .toLowerCase()
               .trim()
@@ -38,13 +38,20 @@ export default defineConfig({
   eta: {
     filters: {
       // Custom filters for documentation
-      formatDate: (date) => new Date(date).toLocaleDateString('en-US'),
-      slugify: (text) =>
-        text
+      formatDate: (date: unknown) =>
+        new Date(date as string | number | Date).toLocaleDateString('en-US'),
+      slugify: (text: unknown) =>
+        String(text)
           .toLowerCase()
           .replace(/\s+/g, '-')
           .replace(/[^\w-]/g, ''),
     },
+  },
+  typescript: {
+    enabled: true,
+    srcDir: 'src',
+    entryPoint: 'main.ts',
+    bundleName: 'bundle',
   },
   isg: {
     enabled: true,

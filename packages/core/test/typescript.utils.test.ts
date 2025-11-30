@@ -664,10 +664,11 @@ export const broken = {
       // Wait for rebuild
       await setTimeout(300);
 
-      // Assert - onRebuild should have been called with results array
+      // Assert - onRebuild should have been called with results array and compile time
       expect(onRebuild).toHaveBeenCalled();
       const lastCall = onRebuild.mock.calls[onRebuild.mock.calls.length - 1];
       expect(Array.isArray(lastCall![0])).toBe(true);
+      expect(typeof lastCall![1]).toBe('number'); // compileTimeMs
       expect(mockLogger.info).toHaveBeenCalledWith("TypeScript 'main' recompiled.");
 
       // Cleanup

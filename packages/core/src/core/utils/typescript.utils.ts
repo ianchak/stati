@@ -46,8 +46,8 @@ export interface BundleCompileResult {
  * Options for TypeScript file watcher.
  */
 export interface WatchOptions extends CompileOptions {
-  /** Callback invoked when files are recompiled */
-  onRebuild: (results: BundleCompileResult[]) => void;
+  /** Callback invoked when files are recompiled, receives results and compile time in ms */
+  onRebuild: (results: BundleCompileResult[], compileTimeMs: number) => void;
 }
 
 /**
@@ -279,7 +279,12 @@ export async function createTypeScriptWatcher(
         {
           name: 'stati-rebuild-notify',
           setup(build) {
+            let startTime: number;
+            build.onStart(() => {
+              startTime = Date.now();
+            });
             build.onEnd((result) => {
+              const compileTime = Date.now() - startTime;
               if (result.errors.length > 0) {
                 result.errors.forEach((err) => {
                   logger.error(`TypeScript error in '${bundleConfig.bundleName}': ${err.text}`);
@@ -302,8 +307,8 @@ export async function createTypeScriptWatcher(
                 latestResults.set(bundleConfig.bundleName, bundleResult);
                 logger.info(`TypeScript '${bundleConfig.bundleName}' recompiled.`);
 
-                // Notify with all current results
-                onRebuild(Array.from(latestResults.values()));
+                // Notify with all current results and compile time
+                onRebuild(Array.from(latestResults.values()), compileTime);
               }
             });
           },

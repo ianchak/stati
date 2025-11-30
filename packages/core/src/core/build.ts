@@ -44,6 +44,7 @@ import {
 } from '../seo/index.js';
 import { generateRSSFeeds, validateRSSConfig } from '../rss/index.js';
 import { getEnv } from '../env.js';
+import { DEFAULT_OUT_DIR } from '../constants.js';
 import type {
   BuildContext,
   BuildStats,
@@ -384,15 +385,6 @@ async function processPagesWithCache(
     cacheMisses++;
     const startTime = Date.now();
 
-    // Add rendering substeps to tree
-    const markdownId = `${pageId}-markdown`;
-    const templateId = `${pageId}-template`;
-
-    if (logger.addTreeNode) {
-      logger.addTreeNode(pageId, markdownId, 'Processing Markdown', 'running');
-      logger.addTreeNode(pageId, templateId, 'Applying Template', 'pending');
-    }
-
     // Run beforeRender hook
     if (config.hooks?.beforeRender) {
       await config.hooks.beforeRender({ page, config });
@@ -400,11 +392,6 @@ async function processPagesWithCache(
 
     // Render markdown to HTML
     const htmlContent = renderMarkdown(page.content, md);
-
-    if (logger.updateTreeNode) {
-      logger.updateTreeNode(markdownId, 'completed');
-      logger.updateTreeNode(templateId, 'running');
-    }
 
     // Compute matched bundle paths for this page
     const bundlePaths = getBundlePathsForPage(page.url, compiledBundles);
@@ -437,7 +424,6 @@ async function processPagesWithCache(
     const renderTime = Date.now() - startTime;
 
     if (logger.updateTreeNode) {
-      logger.updateTreeNode(templateId, 'completed');
       logger.updateTreeNode(pageId, 'completed', {
         timing: renderTime,
         url: page.url,
@@ -601,7 +587,7 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
     const tsResults = await compileTypeScript({
       projectRoot: process.cwd(),
       config: config.typescript,
-      outDir: config.outDir || 'dist',
+      outDir: config.outDir || DEFAULT_OUT_DIR,
       mode: getEnv() === 'production' ? 'production' : 'development',
       logger,
     });
@@ -640,6 +626,7 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
     const inventorySize = getInventorySize();
     if (inventorySize > 0) {
       await writeTailwindClassInventory(cacheDir);
+      logger.info('');
       logger.info(`📝 Generated Tailwind class inventory (${inventorySize} classes tracked)`);
     }
 
