@@ -37,12 +37,13 @@ When TypeScript compilation is enabled, Stati uses esbuild to compile TypeScript
 
 ```text
 src/
-├── main.ts              # TypeScript entry point
+├── main.ts              # Default entry point (global bundle)
+├── docs.ts              # Optional: targeted bundle for /docs/**
 └── components/
     └── nav.ts           # Component modules
 ```
 
-Your compiled bundle is automatically injected into pages before the closing `</body>` tag. For full TypeScript configuration options, see the [TypeScript Configuration Guide](/configuration/typescript/).
+Your compiled bundles are automatically injected into pages before the closing `</body>` tag. Stati supports multiple bundles with per-page targeting via include/exclude patterns, so you can ship only the JavaScript each page needs. For full TypeScript configuration options, see the [TypeScript Configuration Guide](/configuration/typescript/).
 
 ## CSS Processing
 
