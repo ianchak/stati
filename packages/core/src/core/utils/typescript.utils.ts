@@ -9,11 +9,7 @@ import * as esbuild from 'esbuild';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 import { pathExists } from './fs.utils.js';
-import {
-  DuplicateBundleNameError,
-  validateUniqueBundleNames,
-  type CompiledBundleInfo,
-} from './bundle-matching.utils.js';
+import { validateUniqueBundleNames, type CompiledBundleInfo } from './bundle-matching.utils.js';
 import type { TypeScriptConfig, BundleConfig } from '../../types/config.js';
 import type { Logger } from '../../types/logging.js';
 import {
@@ -190,16 +186,8 @@ export async function compileTypeScript(options: CompileOptions): Promise<Compil
     return [];
   }
 
-  // Validate unique bundle names early to provide clear error messages
-  try {
-    validateUniqueBundleNames(resolved.bundles);
-  } catch (error) {
-    if (error instanceof DuplicateBundleNameError) {
-      logger.error(error.message);
-      return [];
-    }
-    throw error;
-  }
+  // Validate unique bundle names early - fail fast with clear error message
+  validateUniqueBundleNames(resolved.bundles);
 
   logger.info('');
   logger.info(

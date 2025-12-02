@@ -342,7 +342,7 @@ export const broken = {
       expect(results[0]!.config).toEqual(bundleConfig);
     });
 
-    it('should return empty array and log error for duplicate bundleNames', async () => {
+    it('should throw DuplicateBundleNameError for duplicate bundleNames', async () => {
       // Arrange - create test TypeScript files
       const srcDir = join(testDir, 'src');
       mkdirSync(srcDir, { recursive: true });
@@ -357,21 +357,16 @@ export const broken = {
         ],
       };
 
-      // Act
-      const results = await compileTypeScript({
-        projectRoot: testDir,
-        config,
-        mode: 'development',
-        logger: mockLogger,
-        outDir: 'dist',
-      });
-
-      // Assert - should return empty array and log error gracefully
-      expect(results).toEqual([]);
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        expect.stringContaining('Duplicate bundleName'),
-      );
-      expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('core'));
+      // Act & Assert - should throw to fail the build
+      await expect(
+        compileTypeScript({
+          projectRoot: testDir,
+          config,
+          mode: 'development',
+          logger: mockLogger,
+          outDir: 'dist',
+        }),
+      ).rejects.toThrow('Duplicate bundleName');
     });
   });
 
