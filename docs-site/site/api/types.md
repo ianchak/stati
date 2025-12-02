@@ -465,6 +465,13 @@ interface TypeScriptConfig {
    * Defaults to [{ entryPoint: 'main.ts', bundleName: 'main' }]
    */
   bundles?: BundleConfig[];
+
+  /**
+   * Automatically inject bundle script tags before </body>.
+   * When disabled, use stati.assets.bundlePaths in templates for manual control.
+   * @default true
+   */
+  autoInject?: boolean;
 }
 
 interface BundleConfig {
