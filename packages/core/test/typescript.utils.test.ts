@@ -9,6 +9,7 @@ import {
   cleanupCompiledConfig,
   createTypeScriptWatcher,
   autoInjectBundles,
+  isValidBundlePath,
 } from '../src/core/utils/typescript.utils.js';
 import type { TypeScriptConfig, BundleConfig } from '../src/types/config.js';
 import type { Logger } from '../src/types/logging.js';
@@ -692,6 +693,39 @@ export const broken = {
       // Cleanup
       await Promise.all(contexts.map((c) => c.dispose()));
     });
+
+    it('should log errors when TypeScript compilation fails during watch', async () => {
+      // Arrange - create a valid TypeScript file first
+      const srcDir = join(testDir, 'src');
+      mkdirSync(srcDir, { recursive: true });
+      writeFileSync(join(srcDir, 'main.ts'), 'console.log("Valid code");');
+
+      const onRebuild = vi.fn();
+      const contexts = await createTypeScriptWatcher({
+        projectRoot: testDir,
+        config: { enabled: true },
+        logger: mockLogger,
+        onRebuild,
+        outDir: 'dist',
+      });
+
+      // Wait for initial build to complete
+      await setTimeout(200);
+
+      // Trigger an error by writing invalid TypeScript (syntax error)
+      writeFileSync(join(srcDir, 'main.ts'), 'const x: number = {;');
+
+      // Wait for rebuild attempt
+      await setTimeout(300);
+
+      // Assert - error should have been logged
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.stringContaining("TypeScript error in 'main'"),
+      );
+
+      // Cleanup
+      await Promise.all(contexts.map((c) => c.dispose()));
+    });
   });
 
   describe('autoInjectBundles', () => {
@@ -773,6 +807,99 @@ export const broken = {
         const html = '<html><body>Content</body></html>';
         const result = autoInjectBundles(html, ['/_assets/my_bundle-file.js']);
         expect(result).toContain('src="/_assets/my_bundle-file.js"');
+      });
+    });
+  });
+
+  describe('isValidBundlePath', () => {
+    describe('valid paths', () => {
+      it('should accept simple valid paths', () => {
+        expect(isValidBundlePath('/_assets/bundle.js')).toBe(true);
+        expect(isValidBundlePath('/js/main.js')).toBe(true);
+        expect(isValidBundlePath('/scripts/app-v1.2.3.js')).toBe(true);
+      });
+
+      it('should accept paths with hyphens and underscores', () => {
+        expect(isValidBundlePath('/_assets/my-bundle_file.js')).toBe(true);
+      });
+
+      it('should accept nested paths', () => {
+        expect(isValidBundlePath('/_assets/vendor/lib/bundle.js')).toBe(true);
+      });
+    });
+
+    describe('invalid paths - type and emptiness', () => {
+      it('should reject non-string values', () => {
+        expect(isValidBundlePath(null as unknown as string)).toBe(false);
+        expect(isValidBundlePath(undefined as unknown as string)).toBe(false);
+        expect(isValidBundlePath(123 as unknown as string)).toBe(false);
+      });
+
+      it('should reject empty strings', () => {
+        expect(isValidBundlePath('')).toBe(false);
+      });
+    });
+
+    describe('invalid paths - null bytes', () => {
+      it('should reject paths with null bytes', () => {
+        expect(isValidBundlePath('/_assets/bundle\0.js')).toBe(false);
+        expect(isValidBundlePath('/_assets\0/bundle.js')).toBe(false);
+      });
+    });
+
+    describe('invalid paths - control and non-ASCII characters', () => {
+      it('should reject paths with control characters', () => {
+        expect(isValidBundlePath('/_assets/bundle\x01.js')).toBe(false);
+        expect(isValidBundlePath('/_assets/bundle\x1F.js')).toBe(false);
+      });
+
+      it('should reject paths with non-ASCII characters', () => {
+        expect(isValidBundlePath('/_assets/bündlé.js')).toBe(false);
+        expect(isValidBundlePath('/_assets/スクリプト.js')).toBe(false);
+        expect(isValidBundlePath('/_assets/bundle\x7F.js')).toBe(false);
+      });
+    });
+
+    describe('invalid paths - URL encoding and escapes', () => {
+      it('should reject URL-encoded characters', () => {
+        expect(isValidBundlePath('/_assets/bundle%20name.js')).toBe(false);
+        expect(isValidBundlePath('/_assets/%3Cscript%3E.js')).toBe(false);
+      });
+
+      it('should reject unicode escape sequences', () => {
+        expect(isValidBundlePath('/_assets/bundle\\u003C.js')).toBe(false);
+        expect(isValidBundlePath('/_assets/\\u0041.js')).toBe(false);
+      });
+
+      it('should reject HTML entities', () => {
+        expect(isValidBundlePath('/_assets/bundle&lt;.js')).toBe(false);
+        expect(isValidBundlePath('/_assets/&#60;script.js')).toBe(false);
+        expect(isValidBundlePath('/_assets/&#x3C;.js')).toBe(false);
+      });
+    });
+
+    describe('invalid paths - path traversal', () => {
+      it('should reject path traversal attempts with ..', () => {
+        expect(isValidBundlePath('/_assets/../etc/passwd.js')).toBe(false);
+        expect(isValidBundlePath('/..\\..\\windows\\system32.js')).toBe(false);
+      });
+
+      it('should reject double slashes', () => {
+        expect(isValidBundlePath('/_assets//bundle.js')).toBe(false);
+        expect(isValidBundlePath('//assets/bundle.js')).toBe(false);
+      });
+    });
+
+    describe('invalid paths - format', () => {
+      it('should reject paths not starting with /', () => {
+        expect(isValidBundlePath('_assets/bundle.js')).toBe(false);
+        expect(isValidBundlePath('bundle.js')).toBe(false);
+      });
+
+      it('should reject paths not ending with .js', () => {
+        expect(isValidBundlePath('/_assets/bundle.ts')).toBe(false);
+        expect(isValidBundlePath('/_assets/bundle')).toBe(false);
+        expect(isValidBundlePath('/_assets/bundle.jsx')).toBe(false);
       });
     });
   });
