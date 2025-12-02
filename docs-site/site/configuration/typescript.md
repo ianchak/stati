@@ -51,6 +51,7 @@ export default defineConfig({
 | `bundles` | `BundleConfig[]` | `[{ entryPoint: 'main.ts', bundleName: 'main' }]` | Array of bundle configurations (see [Multiple Bundles](#multiple-bundles)) |
 | `hash` | `boolean` | `true` | Add content hash to filename (production only) |
 | `minify` | `boolean` | `true` | Minify JavaScript output (production only) |
+| `autoInject` | `boolean` | `true` | Automatically inject bundle script tags before `</body>` |
 
 > **Note:** Source maps, hashing, and minification are automatic based on build mode. The `hash` and `minify` options only apply to production builds - development mode always uses stable filenames and unminified output for easier debugging.
 
@@ -84,6 +85,41 @@ Your compiled bundles are seamlessly added to every page (or specific pages if u
 <script type="module" src="/_assets/main-a1b2c3d4.js"></script>
 </body>
 ```
+
+### Disabling Auto-Injection
+
+If you need manual control over script placement, disable auto-injection:
+
+```typescript
+import { defineConfig } from '@stati/core';
+
+export default defineConfig({
+  typescript: {
+    enabled: true,
+    autoInject: false, // Disable automatic script injection
+  },
+});
+```
+
+When `autoInject: false`, you must manually add script tags in your templates using `stati.assets.bundlePaths`:
+
+```eta
+<body>
+  <!-- Your content -->
+
+  <% if (stati.assets?.bundlePaths) { %>
+    <% for (const path of stati.assets.bundlePaths) { %>
+    <script type="module" src="<%= path %>"></script>
+    <% } %>
+  <% } %>
+</body>
+```
+
+This is useful when you need to:
+
+- Place scripts in a specific location (e.g., before other scripts)
+- Add custom attributes to script tags (e.g., `defer`, `async`)
+- Conditionally include scripts based on template logic
 
 ### Accessing Bundle Info in Templates
 
