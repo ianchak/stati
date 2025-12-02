@@ -111,7 +111,7 @@ export default defineConfig({
   typescript: {
     enabled: true,
     srcDir: 'src',      // Your TS source
-    // bundles if not defined defaults to [{ entryPoint: 'main.ts', bundleName: 'main' }]
+    // bundles defaults to [{ entryPoint: 'main.ts', bundleName: 'main' }] if not defined
 
     // Production optimizations (auto-enabled)
     minify: true,       // Minify output
