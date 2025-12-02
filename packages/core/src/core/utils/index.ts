@@ -104,4 +104,4 @@ export {
   cleanupCompiledConfig,
   autoInjectBundles,
 } from './typescript.utils.js';
-export type { CompileOptions, BundleCompileResult, WatchOptions } from './typescript.utils.js';
+export type { CompileOptions, WatchOptions } from './typescript.utils.js';

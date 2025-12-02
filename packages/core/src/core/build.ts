@@ -585,20 +585,13 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
   let compiledBundles: CompiledBundleInfo[] = [];
 
   if (config.typescript?.enabled) {
-    const tsResults = await compileTypeScript({
+    compiledBundles = await compileTypeScript({
       projectRoot: process.cwd(),
       config: config.typescript,
       outDir: config.outDir || DEFAULT_OUT_DIR,
       mode: getEnv() === 'production' ? 'production' : 'development',
       logger,
     });
-
-    // Convert BundleCompileResult[] to CompiledBundleInfo[]
-    compiledBundles = tsResults.map((result) => ({
-      config: result.config,
-      filename: result.bundleFilename,
-      path: result.bundlePath,
-    }));
   }
 
   // Process pages with ISG caching logic

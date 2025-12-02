@@ -63,8 +63,8 @@ describe('typescript.utils', () => {
 
       // Assert
       expect(results).toHaveLength(1);
-      expect(results[0]!.bundleFilename).toBe('main.js'); // Default bundleName is 'main', no hash in dev
-      expect(results[0]!.bundlePath).toBe('/_assets/main.js');
+      expect(results[0]!.filename).toBe('main.js'); // Default bundleName is 'main', no hash in dev
+      expect(results[0]!.path).toBe('/_assets/main.js');
       expect(results[0]!.config.bundleName).toBe('main');
       expect(mockLogger.info).toHaveBeenCalledWith('Compiling TypeScript (1 bundle)...');
       expect(mockLogger.success).toHaveBeenCalled();
@@ -99,7 +99,7 @@ describe('typescript.utils', () => {
 
       // Assert - production mode includes hash by default
       expect(results).toHaveLength(1);
-      expect(results[0]!.bundleFilename).toMatch(/^main-[a-zA-Z0-9]+\.js$/);
+      expect(results[0]!.filename).toMatch(/^main-[a-zA-Z0-9]+\.js$/);
       expect(mockLogger.success).toHaveBeenCalled();
 
       // Verify output file exists (find it with hash)
@@ -163,7 +163,7 @@ describe('typescript.utils', () => {
 
       // Assert
       expect(results).toHaveLength(2);
-      expect(results.map((r) => r.bundleFilename).sort()).toEqual(['core.js', 'docs.js']);
+      expect(results.map((r) => r.filename).sort()).toEqual(['core.js', 'docs.js']);
       expect(mockLogger.info).toHaveBeenCalledWith('Compiling TypeScript (2 bundles)...');
 
       // Verify both output files exist
@@ -197,7 +197,7 @@ describe('typescript.utils', () => {
 
       // Assert - only core bundle should be compiled
       expect(results).toHaveLength(1);
-      expect(results[0]!.bundleFilename).toBe('core.js');
+      expect(results[0]!.filename).toBe('core.js');
       expect(mockLogger.warning).toHaveBeenCalledWith(expect.stringContaining('bundle: docs'));
     });
 
@@ -247,7 +247,7 @@ describe('typescript.utils', () => {
 
       // Assert
       expect(results).toHaveLength(1);
-      expect(results[0]!.bundleFilename).toBe('app.js');
+      expect(results[0]!.filename).toBe('app.js');
     });
 
     it('should respect custom outDir', async () => {
@@ -271,7 +271,7 @@ describe('typescript.utils', () => {
       });
 
       // Assert - output should be in dist/js not dist/_assets
-      expect(results[0]!.bundlePath).toBe('/js/main.js');
+      expect(results[0]!.path).toBe('/js/main.js');
       const outputPath = join(testDir, 'dist', 'js', 'main.js');
       expect(existsSync(outputPath)).toBe(true);
     });

@@ -883,8 +883,8 @@ describe('build.ts', () => {
       // Return array of bundle results
       mockCompileTypeScript.mockResolvedValue([
         {
-          bundleFilename: 'main.js',
-          bundlePath: '/_assets/main.js',
+          filename: 'main.js',
+          path: '/_assets/main.js',
           config: { entryPoint: 'main.ts', bundleName: 'main' },
         },
       ]);
@@ -929,8 +929,8 @@ describe('build.ts', () => {
 
       mockCompileTypeScript.mockResolvedValue([
         {
-          bundleFilename: 'main-abc123.js',
-          bundlePath: '/_assets/main-abc123.js',
+          filename: 'main-abc123.js',
+          path: '/_assets/main-abc123.js',
           config: { entryPoint: 'main.ts', bundleName: 'main' },
         },
       ]);
@@ -973,8 +973,8 @@ describe('build.ts', () => {
 
       mockCompileTypeScript.mockResolvedValue([
         {
-          bundleFilename: 'main-hash.js',
-          bundlePath: '/_assets/main-hash.js',
+          filename: 'main-hash.js',
+          path: '/_assets/main-hash.js',
           config: { entryPoint: 'main.ts', bundleName: 'main' },
         },
       ]);

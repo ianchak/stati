@@ -9,7 +9,11 @@ import * as esbuild from 'esbuild';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 import { pathExists } from './fs.utils.js';
-import { DuplicateBundleNameError, validateUniqueBundleNames } from './bundle-matching.utils.js';
+import {
+  DuplicateBundleNameError,
+  validateUniqueBundleNames,
+  type CompiledBundleInfo,
+} from './bundle-matching.utils.js';
 import type { TypeScriptConfig, BundleConfig } from '../../types/config.js';
 import type { Logger } from '../../types/logging.js';
 import {
@@ -36,18 +40,6 @@ export interface CompileOptions {
 }
 
 /**
- * Result of compiling a single bundle.
- */
-export interface BundleCompileResult {
-  /** The original bundle configuration */
-  config: BundleConfig;
-  /** The generated bundle filename (e.g., 'core-a1b2c3d4.js') */
-  bundleFilename: string;
-  /** Full path to bundle relative to site root (e.g., '/_assets/core-a1b2c3d4.js') */
-  bundlePath: string;
-}
-
-/**
  * Options for TypeScript file watcher.
  * Note: Watcher is always in development mode (no hash, no minify, with sourcemaps).
  */
@@ -61,7 +53,7 @@ export interface WatchOptions {
   /** Logger instance for output */
   logger: Logger;
   /** Callback invoked when files are recompiled, receives results and compile time in ms */
-  onRebuild: (results: BundleCompileResult[], compileTimeMs: number) => void;
+  onRebuild: (results: CompiledBundleInfo[], compileTimeMs: number) => void;
 }
 
 /**
@@ -111,7 +103,7 @@ async function compileSingleBundle(
   projectRoot: string,
   globalOutDir: string,
   logger: Logger,
-): Promise<BundleCompileResult | null> {
+): Promise<CompiledBundleInfo | null> {
   const entryPath = path.join(projectRoot, resolvedConfig.srcDir, bundleConfig.entryPoint);
   const outDir = path.join(projectRoot, globalOutDir, resolvedConfig.outDir);
 
@@ -150,8 +142,8 @@ async function compileSingleBundle(
 
     return {
       config: bundleConfig,
-      bundleFilename,
-      bundlePath,
+      filename: bundleFilename,
+      path: bundlePath,
     };
   } catch (error) {
     if (error instanceof Error) {
@@ -185,7 +177,7 @@ async function compileSingleBundle(
  * console.log(results[0].bundlePath); // '/_assets/core-a1b2c3d4.js'
  * ```
  */
-export async function compileTypeScript(options: CompileOptions): Promise<BundleCompileResult[]> {
+export async function compileTypeScript(options: CompileOptions): Promise<CompiledBundleInfo[]> {
   const { projectRoot, config, mode, logger, outDir: globalOutDir } = options;
   const resolved = resolveConfig(config, mode);
   const outputDir = globalOutDir || DEFAULT_OUT_DIR;
@@ -209,6 +201,7 @@ export async function compileTypeScript(options: CompileOptions): Promise<Bundle
     throw error;
   }
 
+  logger.info('');
   logger.info(
     `Compiling TypeScript (${resolved.bundles.length} bundle${resolved.bundles.length > 1 ? 's' : ''})...`,
   );
@@ -221,10 +214,10 @@ export async function compileTypeScript(options: CompileOptions): Promise<Bundle
   const results = await Promise.all(compilationPromises);
 
   // Filter out null results (skipped bundles) and collect successful ones
-  const successfulResults = results.filter((r): r is BundleCompileResult => r !== null);
+  const successfulResults = results.filter((r): r is CompiledBundleInfo => r !== null);
 
   if (successfulResults.length > 0) {
-    const bundleNames = successfulResults.map((r) => r.bundleFilename).join(', ');
+    const bundleNames = successfulResults.map((r) => r.filename).join(', ');
     logger.success(`TypeScript compiled: ${bundleNames}`);
   } else if (resolved.bundles.length > 0) {
     logger.warning('No TypeScript bundles were compiled (all entry points missing).');
@@ -263,7 +256,7 @@ export async function createTypeScriptWatcher(
   const outDir = path.join(projectRoot, outputDir, resolved.outDir);
 
   const contexts: esbuild.BuildContext[] = [];
-  const latestResults: Map<string, BundleCompileResult> = new Map();
+  const latestResults: Map<string, CompiledBundleInfo> = new Map();
 
   for (const bundleConfig of resolved.bundles) {
     const entryPath = path.join(projectRoot, resolved.srcDir, bundleConfig.entryPoint);
@@ -311,10 +304,10 @@ export async function createTypeScriptWatcher(
                   : `${bundleConfig.bundleName}.js`;
                 const bundlePath = path.posix.join('/', resolved.outDir, bundleFilename);
 
-                const bundleResult: BundleCompileResult = {
+                const bundleResult: CompiledBundleInfo = {
                   config: bundleConfig,
-                  bundleFilename,
-                  bundlePath,
+                  filename: bundleFilename,
+                  path: bundlePath,
                 };
 
                 latestResults.set(bundleConfig.bundleName, bundleResult);
