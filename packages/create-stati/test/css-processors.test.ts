@@ -2,19 +2,8 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { mkdtemp, rm, writeFile, readFile, mkdir, access } from 'node:fs/promises';
-import { getStylingProcessor, applyProcessorResult } from '../src/css-processors.js';
+import { processStyling } from '../src/css-processors.js';
 import type { StylingOption } from '../src/css-processors.js';
-
-/**
- * Helper function to process styling by getting the processor result and applying it.
- * This mimics the behavior of the old CSSProcessor.processStyling method.
- */
-async function processStyling(projectDir: string, styling: StylingOption): Promise<void> {
-  const result = await getStylingProcessor(styling, projectDir);
-  if (result) {
-    await applyProcessorResult(projectDir, result);
-  }
-}
 
 describe('CSSProcessor', () => {
   let tempDir: string;
