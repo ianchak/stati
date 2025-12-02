@@ -880,7 +880,7 @@ describe('build.ts', () => {
 
   describe('TypeScript compilation', () => {
     beforeEach(() => {
-      // Return array of bundle results with new multi-bundle API
+      // Return array of bundle results
       mockCompileTypeScript.mockResolvedValue([
         {
           bundleFilename: 'main.js',

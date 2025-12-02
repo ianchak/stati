@@ -553,7 +553,7 @@ describe('Development Server', () => {
       const { createTypeScriptWatcher } = await import('../../src/core/utils/typescript.utils.js');
       const mockCreateTsWatcher = vi.mocked(createTypeScriptWatcher);
       const mockDispose = vi.fn().mockResolvedValue(undefined);
-      // Return array of contexts (new multi-bundle API)
+      // Return array of contexts
       mockCreateTsWatcher.mockReturnValueOnce(
         Promise.resolve([
           {
