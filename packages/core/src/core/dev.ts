@@ -645,7 +645,6 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
             projectRoot: process.cwd(),
             config: config.typescript,
             outDir: config.outDir || DEFAULT_OUT_DIR,
-            mode: 'development',
             logger,
             onRebuild: (_results, compileTimeMs) => {
               logger.info?.(`⚡ TypeScript recompiled in ${compileTimeMs}ms`);

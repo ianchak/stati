@@ -461,7 +461,6 @@ export const broken = {
       const contexts = await createTypeScriptWatcher({
         projectRoot: testDir,
         config: { enabled: true },
-        mode: 'development',
         logger: mockLogger,
         onRebuild,
         outDir: 'dist',
@@ -484,7 +483,6 @@ export const broken = {
       const contexts = await createTypeScriptWatcher({
         projectRoot: testDir,
         config: { enabled: true },
-        mode: 'development',
         logger: mockLogger,
         onRebuild,
         outDir: 'dist',
@@ -516,7 +514,6 @@ export const broken = {
             { entryPoint: 'docs.ts', bundleName: 'docs' },
           ],
         },
-        mode: 'development',
         logger: mockLogger,
         onRebuild,
         outDir: 'dist',
@@ -546,7 +543,6 @@ export const broken = {
           srcDir: 'scripts',
           bundles: [{ entryPoint: 'app.ts', bundleName: 'app' }],
         },
-        mode: 'development',
         logger: mockLogger,
         onRebuild,
         outDir: 'dist',
@@ -572,7 +568,6 @@ export const broken = {
       const contexts = await createTypeScriptWatcher({
         projectRoot: testDir,
         config: { enabled: true },
-        mode: 'development',
         logger: mockLogger,
         onRebuild,
         outDir: 'dist',
@@ -595,7 +590,6 @@ export const broken = {
           enabled: true,
           outDir: 'js',
         },
-        mode: 'development',
         logger: mockLogger,
         onRebuild,
         outDir: 'dist',
@@ -622,7 +616,6 @@ export const broken = {
       const contexts = await createTypeScriptWatcher({
         projectRoot: testDir,
         config: { enabled: true },
-        mode: 'development',
         logger: mockLogger,
         onRebuild,
         outDir: 'dist',
@@ -649,7 +642,6 @@ export const broken = {
       const contexts = await createTypeScriptWatcher({
         projectRoot: testDir,
         config: { enabled: true },
-        mode: 'development',
         logger: mockLogger,
         onRebuild,
         outDir: 'dist',
@@ -685,7 +677,6 @@ export const broken = {
       const contexts = await createTypeScriptWatcher({
         projectRoot: testDir,
         config: { enabled: true },
-        mode: 'development',
         logger: mockLogger,
         onRebuild,
         outDir: 'dist',

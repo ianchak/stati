@@ -416,8 +416,9 @@ async function processPagesWithCache(
       finalHtml = autoInjectSEO(finalHtml, injectOptions);
     }
 
-    // Auto-inject TypeScript bundle script tags if available
-    if (assets && assets.bundlePaths.length > 0) {
+    // Auto-inject TypeScript bundle script tags if available and autoInject is enabled (default: true)
+    const shouldAutoInject = config.typescript?.autoInject !== false;
+    if (shouldAutoInject && assets && assets.bundlePaths.length > 0) {
       finalHtml = autoInjectBundles(finalHtml, assets.bundlePaths);
     }
 

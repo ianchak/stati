@@ -476,7 +476,6 @@ describe('Development Server', () => {
       expect(mockCreateTsWatcher).toHaveBeenCalledWith(
         expect.objectContaining({
           config: { enabled: true },
-          mode: 'development',
         }),
       );
 

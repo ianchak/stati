@@ -116,9 +116,6 @@ export function matchBundlesForPage(
     return [];
   }
 
-  // Validate unique bundleNames to prevent incorrect bundle mapping
-  validateUniqueBundleNames(bundles);
-
   // Normalize path to use forward slashes
   const normalizedPath = pageOutputPath.replace(/\\/g, '/');
 

@@ -12,7 +12,12 @@ import { pathExists } from './fs.utils.js';
 import { DuplicateBundleNameError, validateUniqueBundleNames } from './bundle-matching.utils.js';
 import type { TypeScriptConfig, BundleConfig } from '../../types/config.js';
 import type { Logger } from '../../types/logging.js';
-import { DEFAULT_TS_SRC_DIR, DEFAULT_TS_OUT_DIR, DEFAULT_BUNDLES } from '../../constants.js';
+import {
+  DEFAULT_TS_SRC_DIR,
+  DEFAULT_TS_OUT_DIR,
+  DEFAULT_BUNDLES,
+  DEFAULT_OUT_DIR,
+} from '../../constants.js';
 
 /**
  * Options for TypeScript compilation.
@@ -44,8 +49,17 @@ export interface BundleCompileResult {
 
 /**
  * Options for TypeScript file watcher.
+ * Note: Watcher is always in development mode (no hash, no minify, with sourcemaps).
  */
-export interface WatchOptions extends CompileOptions {
+export interface WatchOptions {
+  /** Root directory of the project */
+  projectRoot: string;
+  /** TypeScript configuration */
+  config: TypeScriptConfig;
+  /** Output directory (defaults to 'dist') */
+  outDir?: string;
+  /** Logger instance for output */
+  logger: Logger;
   /** Callback invoked when files are recompiled, receives results and compile time in ms */
   onRebuild: (results: BundleCompileResult[], compileTimeMs: number) => void;
 }
@@ -174,7 +188,7 @@ async function compileSingleBundle(
 export async function compileTypeScript(options: CompileOptions): Promise<BundleCompileResult[]> {
   const { projectRoot, config, mode, logger, outDir: globalOutDir } = options;
   const resolved = resolveConfig(config, mode);
-  const outputDir = globalOutDir || 'dist';
+  const outputDir = globalOutDir || DEFAULT_OUT_DIR;
 
   // Handle empty bundles array
   if (resolved.bundles.length === 0) {
@@ -232,9 +246,8 @@ export async function compileTypeScript(options: CompileOptions): Promise<Bundle
  * const watchers = await createTypeScriptWatcher({
  *   projectRoot: process.cwd(),
  *   config: { enabled: true },
- *   mode: 'development',
  *   logger: console,
- *   onRebuild: (results) => console.log(`Rebuilt ${results.length} bundles`),
+ *   onRebuild: (results, compileTimeMs) => console.log(`Rebuilt ${results.length} bundles in ${compileTimeMs}ms`),
  * });
  *
  * // Later, cleanup:
@@ -244,9 +257,9 @@ export async function compileTypeScript(options: CompileOptions): Promise<Bundle
 export async function createTypeScriptWatcher(
   options: WatchOptions,
 ): Promise<esbuild.BuildContext[]> {
-  const { projectRoot, config, mode, logger, onRebuild, outDir: globalOutDir } = options;
-  const resolved = resolveConfig(config, mode);
-  const outputDir = globalOutDir || 'dist';
+  const { projectRoot, config, logger, onRebuild, outDir: globalOutDir } = options;
+  const resolved = resolveConfig(config, 'development');
+  const outputDir = globalOutDir || DEFAULT_OUT_DIR;
   const outDir = path.join(projectRoot, outputDir, resolved.outDir);
 
   const contexts: esbuild.BuildContext[] = [];
@@ -268,8 +281,8 @@ export async function createTypeScriptWatcher(
       bundle: true,
       outdir: outDir,
       entryNames: bundleConfig.bundleName, // Stable filename in dev mode (no hash)
-      minify: resolved.minify,
-      sourcemap: resolved.sourceMaps,
+      minify: false, // Dev mode: never minify for fast rebuilds
+      sourcemap: true, // Dev mode: always enable for debugging
       target: 'es2022',
       format: 'esm',
       platform: 'browser',
@@ -405,10 +418,11 @@ export function isValidBundlePath(bundlePath: string): boolean {
     }
   }
 
-  // Reject paths with encoded characters (%, unicode escape sequences, HTML entities)
+  // Reject URL-encoded characters (e.g., %20, %3C) and unicode escapes (e.g., \u003C)
   if (/%[0-9a-fA-F]{2}/.test(bundlePath) || /\\u[0-9a-fA-F]{4}/.test(bundlePath)) {
     return false;
   }
+  // Reject HTML entities (e.g., &lt; &#60; &#x3C;)
   if (/&#?[a-zA-Z0-9]+;/.test(bundlePath)) {
     return false;
   }
@@ -479,9 +493,9 @@ export function autoInjectBundles(html: string, bundlePaths: string[]): string {
   const before = html.substring(0, bodyClosePos);
   const after = html.substring(bodyClosePos);
 
-  // Inject all script tags before </body> with proper indentation
+  // Inject all script tags before </body>
   const scriptTags = validPaths
-    .map((bundlePath) => `  <script type="module" src="${bundlePath}"></script>`)
+    .map((bundlePath) => `<script type="module" src="${bundlePath}"></script>`)
     .join('\n');
 
   return `${before}${scriptTags}\n${after}`;

@@ -307,18 +307,18 @@ describe('validateUniqueBundleNames', () => {
 });
 
 describe('matchBundlesForPage duplicate bundleName handling', () => {
-  it('should throw when bundles have duplicate bundleNames', () => {
+  it('should not throw on duplicates (validation happens at compile time)', () => {
     const bundles: BundleConfig[] = [
       { entryPoint: 'a.ts', bundleName: 'shared' },
       { entryPoint: 'b.ts', bundleName: 'shared' },
     ];
 
-    expect(() => matchBundlesForPage('/any/page.html', bundles)).toThrow(DuplicateBundleNameError);
+    expect(() => matchBundlesForPage('/any/page.html', bundles)).not.toThrow();
   });
 });
 
 describe('getBundlePathsForPage duplicate bundleName handling', () => {
-  it('should throw when compiled bundles have duplicate bundleNames', () => {
+  it('should not throw on duplicates (validation happens at compile time)', () => {
     const compiled: CompiledBundleInfo[] = [
       {
         config: { entryPoint: 'a.ts', bundleName: 'shared' },
@@ -332,8 +332,6 @@ describe('getBundlePathsForPage duplicate bundleName handling', () => {
       },
     ];
 
-    expect(() => getBundlePathsForPage('/any/page.html', compiled)).toThrow(
-      DuplicateBundleNameError,
-    );
+    expect(() => getBundlePathsForPage('/any/page.html', compiled)).not.toThrow();
   });
 });

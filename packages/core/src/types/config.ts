@@ -245,6 +245,17 @@ export interface TypeScriptConfig {
    * When defined, completely overrides the default.
    */
   bundles?: BundleConfig[];
+
+  /**
+   * Automatically inject bundle script tags before </body>.
+   * When enabled (default), Stati automatically adds script tags for matched bundles.
+   * Disable if you want manual control over script placement in templates.
+   *
+   * When disabled, use `stati.assets.bundlePaths` in templates to access bundle paths.
+   *
+   * @default true
+   */
+  autoInject?: boolean;
 }
 
 /**
