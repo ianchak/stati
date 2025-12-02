@@ -481,7 +481,7 @@ export default defineConfig({
     title: 'My Site',
   },
   typescript: {
-    enabled: true,      // Source directory
+    enabled: true, // Enable TypeScript compilation
     // bundles defaults to [{ entryPoint: 'main.ts', bundleName: 'main' }]
   },
 });
