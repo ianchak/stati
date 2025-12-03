@@ -24,13 +24,13 @@
   ],
   "stati": {
     "engine": "stati",
-    "version": "^1.14.0"
+    "version": "^1.15.0"
   },
   "author": "",
   "license": "MIT",
   "devDependencies": {
     "@stati/cli": "^1.9.0",
-    "@stati/core": "^1.14.0",
+    "@stati/core": "^1.15.0",
     "autoprefixer": "^10.4.0",
     "markdown-it-anchor": "^9.2.0",
     "markdown-it-external-links": "^0.0.6",

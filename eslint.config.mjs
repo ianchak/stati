@@ -89,6 +89,7 @@ export default [
         NodeListOf: 'readonly',
         IntersectionObserver: 'readonly',
         IntersectionObserverEntry: 'readonly',
+        MutationObserver: 'readonly',
       },
     },
   },

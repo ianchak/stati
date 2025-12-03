@@ -50,8 +50,22 @@ export default defineConfig({
   typescript: {
     enabled: true,
     srcDir: 'src',
-    entryPoint: 'main.ts',
-    bundleName: 'bundle',
+    bundles: [
+      {
+        entryPoint: 'core.ts',
+        bundleName: 'core',
+      },
+      {
+        entryPoint: 'home.ts',
+        bundleName: 'home',
+        include: ['/index.html', '/'],
+      },
+      {
+        entryPoint: 'docs.ts',
+        bundleName: 'docs',
+        exclude: ['/index.html', '/'],
+      },
+    ],
   },
   isg: {
     enabled: true,
