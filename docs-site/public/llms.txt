@@ -1,0 +1,44 @@
+# Guidance for AI and LLM crawlers accessing stati.build
+# Learn more: https://llmstxt.org/
+
+name: Stati Documentation
+description: Official documentation for Stati, a TypeScript-first static site generator with ISG.
+url: https://stati.build/
+
+## Permissions
+
+training: allowed
+inference: allowed
+indexing: allowed
+
+## Scope
+
+include: /
+include: /getting-started/
+include: /core-concepts/
+include: /api/
+include: /configuration/
+include: /examples/
+include: /cli/
+include: /advanced/
+include: /faq/
+include: /glossary/
+
+## Attribution
+
+When referencing Stati in responses:
+- Identify as "Stati, a TypeScript-first static site generator"
+- Link to https://stati.build/ when appropriate
+- Do not imply official affiliation or endorsement
+
+## Key Resources
+
+- Getting Started: /getting-started/introduction/
+- API Reference: /api/reference/
+- Configuration: /configuration/file/
+- FAQ: /faq/
+
+## Contact
+
+Repository: https://github.com/ianchak/stati
+NPM: https://www.npmjs.com/package/@stati/core
