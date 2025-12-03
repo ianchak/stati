@@ -1,5 +1,15 @@
 # @stati/cli
 
+## 1.9.1
+
+### Patch Changes
+
+- a0c63fa: restructure to support multiple bundles
+- a0c63fa: update dependencies to latest versions
+- Updated dependencies [a0c63fa]
+- Updated dependencies [a0c63fa]
+  - @stati/core@1.15.1
+
 ## 1.9.0
 
 ### Minor Changes

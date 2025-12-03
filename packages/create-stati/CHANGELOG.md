@@ -1,5 +1,12 @@
 # create-stati
 
+## 1.11.2
+
+### Patch Changes
+
+- a0c63fa: restructure to support multiple bundles
+- a0c63fa: update dependencies to latest versions
+
 ## 1.11.0
 
 ### Minor Changes

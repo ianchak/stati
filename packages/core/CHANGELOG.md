@@ -1,5 +1,12 @@
 # @stati/core
 
+## 1.15.1
+
+### Patch Changes
+
+- a0c63fa: restructure to support multiple bundles
+- a0c63fa: update dependencies to latest versions
+
 ## 1.14.0
 
 ### Minor Changes
