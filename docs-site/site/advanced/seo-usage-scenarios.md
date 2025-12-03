@@ -3,6 +3,17 @@ title: SEO Usage Scenarios
 description: Learn different strategies for using SEO features in your Stati project, from automatic to fully custom control
 layout: layout.eta
 order: 2
+seo:
+  structuredData:
+    "@context": "https://schema.org"
+    "@type": "TechArticle"
+    "headline": "SEO Usage Scenarios in Stati"
+    "description": "Learn different strategies for using SEO features in your Stati project, from automatic to fully custom control."
+    "about":
+      - "SEO"
+      - "Open Graph"
+      - "sitemaps"
+    "proficiencyLevel": "Intermediate"
 ---
 
 # SEO Usage Scenarios

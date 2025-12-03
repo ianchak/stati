@@ -2,11 +2,23 @@
 title: 'Introduction'
 description: 'Learn how to get started with Stati, the TypeScript-first static site generator.'
 order: 1
+seo:
+  structuredData:
+    "@context": "https://schema.org"
+    "@type": "TechArticle"
+    "headline": "Getting Started with Stati"
+    "description": "Learn how to install and set up Stati, the TypeScript-first static site generator."
+    "about":
+      - "static site generator"
+      - "TypeScript"
+      - "esbuild"
+      - "file-based routing"
+    "proficiencyLevel": "Beginner"
 ---
 
 # Getting Started with Stati
 
-Stati is a modern static site generator built with TypeScript. It's designed to be fast, minimal, and developer-friendly while providing powerful features like Incremental Static Generation (ISG).
+**Stati** is an open-source, TypeScript-first static site generator for documentation, blogs, and content-heavy websites. It features zero-config setup, fast esbuild bundling, file-based routing, and a developer-first workflow.
 
 ## What makes Stati different?
 
@@ -32,3 +44,10 @@ Stati follows these core principles:
 - **Modern standards** - Built with modern web technologies
 
 Ready to get started? Head over to the [Installation guide](/getting-started/installation/).
+
+## Related Topics
+
+- [Installation](/getting-started/installation/) – Install Stati and set up your environment
+- [Project Structure](/getting-started/project-structure/) – Understanding how Stati organizes files
+- [Quick Start Guide](/getting-started/quick-start/) – Build your first site step by step
+- [Core Concepts](/core-concepts/overview/) – Deep dive into Stati's architecture
