@@ -84,6 +84,15 @@ export { getStatiVersion } from './version.utils.js';
 // Glob pattern utilities
 export { globToRegex, matchesGlob } from './glob-patterns.utils.js';
 
+// Bundle matching utilities
+export {
+  matchBundlesForPage,
+  getBundlePathsForPage,
+  validateUniqueBundleNames,
+  DuplicateBundleNameError,
+} from './bundle-matching.utils.js';
+export type { CompiledBundleInfo } from './bundle-matching.utils.js';
+
 // Logger utilities
 export { createFallbackLogger } from './logger.utils.js';
 
@@ -93,6 +102,6 @@ export {
   createTypeScriptWatcher,
   compileStatiConfig,
   cleanupCompiledConfig,
-  autoInjectBundle,
+  autoInjectBundles,
 } from './typescript.utils.js';
-export type { CompileOptions, CompileResult, WatchOptions } from './typescript.utils.js';
+export type { CompileOptions, WatchOptions } from './typescript.utils.js';

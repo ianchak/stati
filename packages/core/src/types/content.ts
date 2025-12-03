@@ -5,18 +5,24 @@
 /**
  * TypeScript bundle asset information.
  * Available when TypeScript compilation is enabled.
+ * Contains paths to all bundles matched for the current page.
  *
  * @example
  * ```typescript
  * // In Eta templates, access via stati.assets
- * <script type="module" src="<%= stati.assets.bundlePath %>"></script>
+ * // Auto-injection handles most cases, but manual control is available:
+ * <% for (const path of stati.assets.bundlePaths) { %>
+ * <script type="module" src="<%= path %>"></script>
+ * <% } %>
  * ```
  */
 export interface StatiAssets {
-  /** Bundle filename only (e.g., 'bundle-a1b2c3d4.js') */
-  bundleName?: string;
-  /** Full path to bundle (e.g., '/_assets/bundle-a1b2c3d4.js') */
-  bundlePath?: string;
+  /**
+   * Array of all bundle paths matched for this page.
+   * Paths are in config order: ['/_assets/core-abc.js', '/_assets/docs-def.js']
+   * Always an array, empty [] if no TypeScript enabled or no bundles match.
+   */
+  bundlePaths: string[];
 }
 
 /**

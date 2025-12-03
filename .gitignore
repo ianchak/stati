@@ -58,6 +58,7 @@ tsconfig.tsbuildinfo
 !.env.*.example
 
 ### Local development files
+docs/
 *checklist*.md
 *prompt*.md
 *milestone*.md

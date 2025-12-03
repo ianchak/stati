@@ -481,9 +481,8 @@ export default defineConfig({
     title: 'My Site',
   },
   typescript: {
-    enabled: true,
-    srcDir: 'src',         // Source directory
-    entryPoint: 'main.ts', // Entry file
+    enabled: true, // Enable TypeScript compilation
+    // bundles defaults to [{ entryPoint: 'main.ts', bundleName: 'main' }]
   },
 });
 ```
@@ -558,16 +557,18 @@ Stati **automatically injects** your compiled bundle into every page before `</b
 
 ```html
 <!-- Automatically added by Stati -->
-<script type="module" src="/_assets/bundle-a1b2c3d4.js"></script>
+<script type="module" src="/_assets/main-a1b2c3d4.js"></script>
 </body>
 ```
 
-For advanced use cases like preloading, access the bundle path in templates:
+For advanced use cases like preloading, access the bundle paths in templates:
 
 ```eta
 <head>
-  <% if (stati.assets?.bundlePath) { %>
-  <link rel="modulepreload" href="<%= stati.assets.bundlePath %>">
+  <% if (stati.assets?.bundlePaths?.length) { %>
+    <% for (const path of stati.assets.bundlePaths) { %>
+    <link rel="modulepreload" href="<%= path %>">
+    <% } %>
   <% } %>
 </head>
 ```
@@ -595,10 +596,9 @@ Stati automatically adjusts behavior based on build mode:
 ### TypeScript Considerations
 
 - ⚠️ Requires initial setup (`--typescript` flag or config)
-- ⚠️ Single entry point (use imports for multiple files)
 - ⚠️ Run `npm run typecheck` to catch type errors (esbuild doesn't type-check)
 
-> For full configuration options, see the [TypeScript Configuration Guide](/configuration/typescript/).
+> Stati supports [multiple bundles](/configuration/typescript/#multiple-bundles) with per-page targeting for advanced use cases. For full configuration options, see the [TypeScript Configuration Guide](/configuration/typescript/).
 
 ---
 
@@ -1037,8 +1037,10 @@ document.addEventListener('DOMContentLoaded', () => {
 <html>
 <head>
     <title><%= stati.page.title %></title>
-    <% if (stati.assets?.bundlePath) { %>
-    <link rel="modulepreload" href="<%= stati.assets.bundlePath %>">
+    <% if (stati.assets?.bundlePaths?.length) { %>
+      <% for (const path of stati.assets.bundlePaths) { %>
+      <link rel="modulepreload" href="<%= path %>">
+      <% } %>
     <% } %>
 </head>
 <body>
