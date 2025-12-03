@@ -1,10 +1,10 @@
 ---
-title: 'Template API'
+title: 'Template API Reference'
 description: 'Complete API reference for Stati template helpers, configuration options, and programmatic interface.'
 order: 1
 ---
 
-# API Reference
+# Stati Template API Reference
 
 Stati provides a comprehensive API for templates, configuration, and programmatic usage. This reference documents all available interfaces, functions, and options.
 

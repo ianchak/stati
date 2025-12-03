@@ -3,6 +3,17 @@ title: 'SEO & Sitemap'
 description: Complete guide to SEO metadata generation, sitemap, and robots.txt configuration in Stati
 layout: layout.eta
 order: 6
+seo:
+  structuredData:
+    "@context": "https://schema.org"
+    "@type": "TechArticle"
+    "headline": "SEO Configuration in Stati"
+    "description": "Complete guide to SEO metadata generation, sitemap, and robots.txt configuration in Stati."
+    "about":
+      - "SEO"
+      - "meta tags"
+      - "sitemap"
+    "proficiencyLevel": "Intermediate"
 ---
 
 # SEO Configuration

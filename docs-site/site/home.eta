@@ -12,6 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/styles.css">
     <link rel="stylesheet" href="/prism-stati.css">
+    <link rel="alternate" type="application/rss+xml" title="Stati Documentation Updates" href="/feed.xml">
     <% if (stati.assets?.bundlePaths && stati.assets.bundlePaths.length > 0) { %>
     <% for (const bundlePath of stati.assets.bundlePaths) { %>
     <link rel="modulepreload" href="<%= bundlePath %>">

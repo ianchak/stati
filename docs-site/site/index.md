@@ -1,16 +1,38 @@
 ---
 title: 'Stati Documentation'
-description: 'Fast, minimal, and developer-friendly static site generator.'
+description: 'TypeScript-first static site generator with zero-config setup, fast esbuild bundling, and file-based routing.'
 layout: home
+seo:
+  structuredData:
+    "@context": "https://schema.org"
+    "@type": "SoftwareApplication"
+    "name": "Stati"
+    "alternateName": "Stati Static Site Generator"
+    "applicationCategory": "DeveloperApplication"
+    "applicationSubCategory": "Static Site Generator"
+    "description": "Stati is a TypeScript-first static site generator with zero-config setup, fast esbuild bundling, and file-based routing."
+    "operatingSystem": "Cross-platform (Node.js 22+)"
+    "programmingLanguage": "TypeScript"
+    "url": "https://stati.build/"
+    "sameAs":
+      - "https://github.com/ianchak/stati"
+      - "https://www.npmjs.com/package/@stati/core"
+      - "https://www.npmjs.com/package/@stati/cli"
+      - "https://www.npmjs.com/package/create-stati"
+    "offers":
+      "@type": "Offer"
+      "price": "0"
+      "priceCurrency": "USD"
+    "license": "https://opensource.org/licenses/MIT"
 hero:
   title: 'Stati'
-  subtitle: 'Fast, minimal, and developer-friendly static site generator.'
+  subtitle: 'TypeScript-first static site generator with zero-config setup, fast esbuild bundling, and file-based routing.'
   buttons:
     - text: 'Get Started'
       url: '/getting-started/introduction/'
       primary: true
-    - text: 'View Examples'
-      url: '/examples/list/'
+    - text: 'Core Concepts'
+      url: '/core-concepts/overview/'
       primary: false
 features:
   title: 'Why Choose Stati?'
@@ -29,7 +51,7 @@ features:
       description: 'Powerful Markdown processing with Eta templating and hierarchical layouts.'
       icon: 'document-text'
     - title: 'Simple Configuration'
-      description: 'Minimal configuration with sensible defaults.'
+      description: 'Sensible defaults that work out of the box, with powerful customization when you need it.'
       icon: 'cog-6-tooth'
     - title: 'Modern Tooling'
       description: 'CLI tools, project scaffolding, and development workflows built for efficiency.'

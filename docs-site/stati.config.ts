@@ -81,6 +81,12 @@ export default defineConfig({
       { pattern: '/getting-started/**', priority: 0.9 },
       { pattern: '/core-concepts/**', priority: 0.9 },
       { pattern: '/api/**', priority: 0.8 },
+      { pattern: '/faq/', priority: 0.85 },
+      { pattern: '/glossary/', priority: 0.75 },
+      { pattern: '/configuration/**', priority: 0.8 },
+      { pattern: '/cli/**', priority: 0.7 },
+      { pattern: '/advanced/**', priority: 0.6 },
+      { pattern: '/examples/**', priority: 0.7 },
     ],
   },
   robots: {

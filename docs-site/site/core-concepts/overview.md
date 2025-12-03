@@ -1,10 +1,22 @@
 ---
-title: 'Overview'
+title: 'Core Concepts Overview'
 description: 'Understand the fundamental concepts that power Stati.'
 order: 1
+seo:
+  structuredData:
+    "@context": "https://schema.org"
+    "@type": "TechArticle"
+    "headline": "Core Concepts in Stati"
+    "description": "Understand the fundamental concepts that power Stati, including routing, templates, Markdown, and ISG."
+    "about":
+      - "routing"
+      - "templates"
+      - "Markdown"
+      - "ISG"
+    "proficiencyLevel": "Beginner"
 ---
 
-# Core Concepts
+# Core Concepts in Stati
 
 Stati is built on several key concepts that work together to create a powerful yet simple static site generation experience. Understanding these concepts will help you make the most of Stati's features.
 
@@ -135,3 +147,12 @@ Start with [Filesystem-based Routing](/core-concepts/routing/) to understand how
 - Fast loading and minimal JavaScript
 
 Ready to dive in? Start with [Filesystem-based Routing](/core-concepts/routing/) to understand how Stati organizes your content.
+
+## Related Topics
+
+- [Filesystem-based Routing](/core-concepts/routing/) – How URLs map to your content
+- [Templates & Layouts](/core-concepts/templates/) – Eta templates and layout inheritance
+- [Markdown Pipeline](/core-concepts/markdown/) – Markdown processing and plugins
+- [Incremental Static Generation](/core-concepts/isg/) – Smart caching and rebuilds
+- [Static Assets](/core-concepts/static-assets/) – Asset handling and bundling
+- [Glossary](/glossary/) – Definitions of key terms and concepts

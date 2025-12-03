@@ -1,5 +1,5 @@
 ---
-title: 'ISG'
+title: 'Incremental Static Generation'
 description: 'Learn about Incremental Static Generation and build caching.'
 order: 5
 ---

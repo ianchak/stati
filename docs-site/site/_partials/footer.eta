@@ -50,12 +50,6 @@
                 </div>
                 <ul class="space-y-3 text-sm">
                     <li>
-                        <a href="/getting-started/introduction/" class="flex items-center text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 transition-colors duration-200 group">
-                            <span class="w-1.5 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-primary-500 transition-colors duration-200"></span>
-                            Getting Started
-                        </a>
-                    </li>
-                    <li>
                         <a href="/core-concepts/overview/" class="flex items-center text-gray-600 hover:text-emerald-600 dark:text-gray-300 dark:hover:text-emerald-400 transition-colors duration-200 group">
                             <span class="w-1.5 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-emerald-500 transition-colors duration-200"></span>
                             Core Concepts
@@ -74,9 +68,9 @@
                         </a>
                     </li>
                     <li>
-                        <a href="/examples/list/" class="flex items-center text-gray-600 hover:text-cyan-600 dark:text-gray-300 dark:hover:text-cyan-400 transition-colors duration-200 group">
-                            <span class="w-1.5 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-cyan-500 transition-colors duration-200"></span>
-                            Examples
+                        <a href="/faq/" class="flex items-center text-gray-600 hover:text-pink-600 dark:text-gray-300 dark:hover:text-pink-400 transition-colors duration-200 group">
+                            <span class="w-1.5 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-pink-500 transition-colors duration-200"></span>
+                            FAQ
                         </a>
                     </li>
                 </ul>
@@ -148,15 +142,15 @@
                         </a>
                     </li>
                     <li>
-                        <a href="https://github.com/ianchak/stati/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer" class="flex items-center text-gray-600 hover:text-purple-600 dark:text-gray-300 dark:hover:text-purple-400 transition-colors duration-200 group">
+                        <a href="/glossary/" class="flex items-center text-gray-600 hover:text-purple-600 dark:text-gray-300 dark:hover:text-purple-400 transition-colors duration-200 group">
                             <span class="w-1.5 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-purple-500 transition-colors duration-200"></span>
-                            Changelog
+                            Glossary
                         </a>
                     </li>
                     <li>
-                        <a href="https://github.com/ianchak/stati/blob/main/LICENSE" target="_blank" rel="noopener noreferrer" class="flex items-center text-gray-600 hover:text-purple-600 dark:text-gray-300 dark:hover:text-purple-400 transition-colors duration-200 group">
+                        <a href="/information/ai-policy/" class="flex items-center text-gray-600 hover:text-purple-600 dark:text-gray-300 dark:hover:text-purple-400 transition-colors duration-200 group">
                             <span class="w-1.5 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 group-hover:bg-purple-500 transition-colors duration-200"></span>
-                            MIT License
+                            AI Policy
                         </a>
                     </li>
                 </ul>
