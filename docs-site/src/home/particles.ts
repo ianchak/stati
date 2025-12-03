@@ -30,6 +30,9 @@ function getParticlesConfig(isDark: boolean): ISourceOptions {
   const linkOpacity = isDark ? 0.2 : 0.25;
 
   return {
+    fullScreen: {
+      enable: false,
+    },
     particles: {
       number: {
         value: 60,

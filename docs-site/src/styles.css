@@ -3,12 +3,6 @@
 @tailwind utilities;
 
 @layer base {
-  /* Particles canvas should not block pointer events */
-  #particles-js,
-  #particles-js canvas {
-    pointer-events: none !important;
-  }
-
   /* Fallback font adjustments to minimize layout shift */
   @font-face {
     font-family: 'Inter Fallback';
