@@ -1,8 +1,10 @@
 ---
 "@stati/core": minor
-"create-stati": minor
 ---
 
-add utilities for bundle matching per page
+add bundle matching utilities for per-page targeting
 
-- Introduced `matchBundlesForPage` to determine which bundles to include for each page during the build process.
+- Added `matchBundlesForPage` to filter bundles based on include/exclude glob patterns
+- Added `getBundlePathsForPage` to get bundle paths for compiled bundles
+- Bundle order from config is preserved
+- Exclude patterns take precedence over include patterns

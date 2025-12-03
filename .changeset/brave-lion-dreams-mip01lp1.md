@@ -2,6 +2,7 @@
 "@stati/core": minor
 ---
 
-add autoInject option for bundle script tag injection
+add autoInject option to control script tag injection
 
-- Introduced `autoInject` option in TypeScriptConfig to control whether bundle script tags are automatically injected into the output HTML.
+- Added `autoInject` option in TypeScriptConfig (default: true)
+- When disabled, users can manually place script tags using `stati.assets.bundlePaths` in templates

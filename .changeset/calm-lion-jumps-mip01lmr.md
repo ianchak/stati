@@ -1,5 +1,9 @@
 ---
-"@stati/core": patch
+"@stati/core": minor
 ---
 
-unify bundle result types in TypeScript compilation
+change StatiAssets to support multiple bundles
+
+- Replaced `bundleName` and `bundlePath` with `bundlePaths` array
+- `bundlePaths` contains all matched bundle paths for each page
+- Updated build pipeline to compute per-page bundle matching
