@@ -86,3 +86,9 @@ Yes. Stati is TypeScript-first:
 - Configuration via `stati.config.ts` with full type safety
 - Client-side TypeScript compiled with esbuild
 - Multiple bundle targets with include/exclude patterns
+
+## Related Resources
+
+- [Glossary](/glossary/) – Definitions of key terms used in Stati
+- [Core Concepts](/core-concepts/overview/) – Deep dive into Stati's architecture
+- [Configuration](/configuration/file/) – Full configuration reference
