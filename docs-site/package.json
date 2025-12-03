@@ -24,25 +24,28 @@
   ],
   "stati": {
     "engine": "stati",
-    "version": "^1.14.0"
+    "version": "1.15.0"
   },
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@stati/cli": "^1.9.0",
-    "@stati/core": "^1.14.0",
-    "autoprefixer": "^10.4.0",
-    "markdown-it-anchor": "^9.2.0",
-    "markdown-it-external-links": "^0.0.6",
-    "markdown-it-prism": "^3.0.0",
-    "markdown-it-toc-done-right": "^4.2.0",
-    "postcss": "^8.4.0",
-    "prismjs": "^1.30.0",
-    "tailwindcss": "^3.4.0",
-    "@tailwindcss/typography": "^0.5.16",
-    "typescript": "^5.6.0"
+    "@stati/cli": "1.9.0",
+    "@stati/core": "1.15.0",
+    "@tailwindcss/typography": "0.5.19",
+    "autoprefixer": "10.4.21",
+    "markdown-it-anchor": "9.2.0",
+    "markdown-it-external-links": "0.0.6",
+    "markdown-it-prism": "3.0.0",
+    "markdown-it-toc-done-right": "4.2.0",
+    "postcss": "8.5.6",
+    "prismjs": "1.30.0",
+    "tailwindcss": "3.4.17",
+    "typescript": "5.9.3"
   },
   "engines": {
     "node": ">=22.0.0"
+  },
+  "dependencies": {
+    "@tsparticles/slim": "3.9.1"
   }
 }
