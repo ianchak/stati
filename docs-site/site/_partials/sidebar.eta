@@ -80,9 +80,9 @@ const sections = [
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                     </svg>
                 </button>
-                <div class="section-content mt-2 space-y-1 pl-4" data-section="<%= sectionSlug %>">
+                <div class="section-content mt-2 space-y-1" data-section="<%= sectionSlug %>">
                     <% sectionChildren.forEach(page => { %>
-                    <a href="<%= page.url %>" class="<%= stati.propValue('sidebar-link flex items-center px-4 py-2.5 text-sm text-gray-600 dark:text-gray-300 rounded-lg transition-all duration-200 font-medium group', `hover:text-${color}-600 dark:hover:text-${color}-400`, `hover:bg-${color}-50/60 dark:hover:bg-${color}-900/20`) %>">
+                    <a href="<%= page.url %>" class="<%= stati.propValue('sidebar-link flex items-center pl-4 pr-4 py-2.5 text-sm text-gray-600 dark:text-gray-300 rounded-lg transition-all duration-200 font-medium group', `hover:text-${color}-600 dark:hover:text-${color}-400`, `hover:bg-${color}-50/60 dark:hover:bg-${color}-900/20`) %>">
                         <span class="<%= stati.propValue('w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 transition-colors duration-200', `group-hover:bg-${color}-500`) %>"></span>
                         <%= page.title %>
                     </a>
