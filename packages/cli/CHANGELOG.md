@@ -1,5 +1,18 @@
 # @stati/cli
 
+## 1.9.2
+
+### Patch Changes
+
+- exclude docs-site from compilation
+- Releasing 3 package(s)
+
+  Releases:
+
+- Updated dependencies
+- Updated dependencies
+  - @stati/core@1.15.2
+
 ## 1.9.1
 
 ### Patch Changes

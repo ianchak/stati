@@ -1,5 +1,14 @@
 # @stati/core
 
+## 1.15.2
+
+### Patch Changes
+
+- exclude docs-site from compilation
+- Releasing 3 package(s)
+
+  Releases:
+
 ## 1.15.1
 
 ### Patch Changes
