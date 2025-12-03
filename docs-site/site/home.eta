@@ -17,7 +17,6 @@
     <link rel="modulepreload" href="<%= bundlePath %>">
     <% } %>
     <% } %>
-    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
 </head>
 <body class="bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-dark-950 dark:via-dark-900 dark:to-dark-900/80 text-gray-900 dark:text-gray-100 font-sans antialiased transition-colors duration-300 overflow-x-hidden">
     <!-- Skip to content link for accessibility -->
