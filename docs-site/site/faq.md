@@ -11,7 +11,7 @@ seo:
         "name": "What is Stati?"
         "acceptedAnswer":
           "@type": "Answer"
-          "text": "Stati is a TypeScript-first static site generator for documentation, blogs, and content-heavy sites, with built-in Incremental Static Generation (ISG) and automatic SEO support."
+          "text": "Stati is a TypeScript-first static site generator for documentation, blogs, and content-heavy sites, with zero-config setup, fast esbuild bundling, and file-based routing."
       - "@type": "Question"
         "name": "Does Stati support Incremental Static Generation (ISG)?"
         "acceptedAnswer":
@@ -40,7 +40,7 @@ Frequently asked questions about Stati, the TypeScript-first static site generat
 
 ## What is Stati?
 
-Stati is a TypeScript-first static site generator for documentation, blogs, and content-heavy sites, with built-in Incremental Static Generation (ISG) and automatic SEO support.
+Stati is a TypeScript-first static site generator for documentation, blogs, and content-heavy sites, with zero-config setup, fast esbuild bundling, and file-based routing.
 
 ## When should I choose Stati over other static site generators?
 
@@ -49,7 +49,7 @@ Choose Stati if you want:
 - **Type safety** – TypeScript config, client-side bundling with esbuild, and full IntelliSense
 - **Minimal footprint** – No heavy frameworks or unnecessary abstractions
 - **Incremental builds** – ISG support for faster rebuilds on large sites
-- **Zero-config SEO** – Automatic metadata, sitemap, and robots.txt generation
+- **Built-in SEO** – Automatic metadata injection, with opt-in sitemap and robots.txt generation
 
 ## Does Stati support Incremental Static Generation (ISG)?
 
