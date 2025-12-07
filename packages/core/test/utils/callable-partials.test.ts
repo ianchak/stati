@@ -331,4 +331,257 @@ describe('Callable Partials', () => {
       expect(result).toBe('<div class="custom-container"><p>Nested content</p></div>');
     });
   });
+
+  describe('Nested callable partials', () => {
+    it('should allow a callable partial to call another callable partial', () => {
+      // Set up two partials: 'icon' and 'button' where button uses icon
+      const partials = {
+        icon: '<svg class="icon">default</svg>',
+        button: '<button>Default Button</button>',
+      };
+
+      const partialPaths = {
+        icon: '/test/_partials/icon.eta',
+        button: '/test/_partials/button.eta',
+      };
+
+      // Icon template renders based on props
+      const iconTemplate =
+        '<svg class="icon <%= stati.props.size || "md" %>"><%= stati.props.name %></svg>';
+
+      // Button template calls the icon partial
+      const buttonTemplate =
+        '<%~ stati.partials.icon({ name: stati.props.iconName, size: "sm" }) %><span><%= stati.props.label %></span>';
+
+      // Mock readFile to return different templates based on path
+      vi.spyOn(mockEta, 'readFile').mockImplementation((path: string) => {
+        if (path.includes('icon')) return iconTemplate;
+        if (path.includes('button')) return buttonTemplate;
+        return '';
+      });
+
+      const wrapped = wrapPartialsAsCallable(mockEta, partials, partialPaths, baseContext);
+
+      // Call button with props - it should internally call icon
+      const result = wrapped.button?.({ iconName: 'star', label: 'Click Me' });
+
+      expect(result).toContain('<svg class="icon sm">star</svg>');
+      expect(result).toContain('<span>Click Me</span>');
+    });
+
+    it('should provide dynamic access to callable partials via getter', () => {
+      const partials = {
+        wrapper: '<div>wrapper</div>',
+        inner: '<span>inner</span>',
+      };
+
+      const partialPaths = {
+        wrapper: '/test/_partials/wrapper.eta',
+        inner: '/test/_partials/inner.eta',
+      };
+
+      // Wrapper calls inner partial
+      const wrapperTemplate =
+        '<div class="wrapper"><%~ stati.partials.inner({ text: stati.props.innerText }) %></div>';
+      const innerTemplate = '<span class="inner"><%= stati.props.text %></span>';
+
+      vi.spyOn(mockEta, 'readFile').mockImplementation((path: string) => {
+        if (path.includes('wrapper')) return wrapperTemplate;
+        if (path.includes('inner')) return innerTemplate;
+        return '';
+      });
+
+      const wrapped = wrapPartialsAsCallable(mockEta, partials, partialPaths, baseContext);
+
+      const result = wrapped.wrapper?.({ innerText: 'Hello World' });
+
+      expect(result).toBe('<div class="wrapper"><span class="inner">Hello World</span></div>');
+    });
+
+    it('should handle three levels of nested callable partials', () => {
+      const partials = {
+        card: '<div class="card">card</div>',
+        cardHeader: '<header>header</header>',
+        icon: '<svg>icon</svg>',
+      };
+
+      const partialPaths = {
+        card: '/test/_partials/card.eta',
+        cardHeader: '/test/_partials/cardHeader.eta',
+        icon: '/test/_partials/icon.eta',
+      };
+
+      // Card -> CardHeader -> Icon (three levels deep)
+      const cardTemplate =
+        '<div class="card"><%~ stati.partials.cardHeader({ title: stati.props.title, showIcon: stati.props.showIcon }) %></div>';
+      const cardHeaderTemplate =
+        '<header><% if (stati.props.showIcon) { %><%~ stati.partials.icon({ name: "check" }) %><% } %><%= stati.props.title %></header>';
+      const iconTemplate = '<svg class="icon-<%= stati.props.name %>"></svg>';
+
+      vi.spyOn(mockEta, 'readFile').mockImplementation((path: string) => {
+        if (path.includes('cardHeader')) return cardHeaderTemplate;
+        if (path.includes('card')) return cardTemplate;
+        if (path.includes('icon')) return iconTemplate;
+        return '';
+      });
+
+      const wrapped = wrapPartialsAsCallable(mockEta, partials, partialPaths, baseContext);
+
+      const result = wrapped.card?.({ title: 'My Card', showIcon: true });
+
+      expect(result).toContain('<div class="card">');
+      expect(result).toContain('<header>');
+      expect(result).toContain('<svg class="icon-check"></svg>');
+      expect(result).toContain('My Card');
+      expect(result).toContain('</header>');
+      expect(result).toContain('</div>');
+    });
+
+    it('should handle nested callable with conditional rendering', () => {
+      const partials = {
+        alert: '<div class="alert">alert</div>',
+        icon: '<svg>icon</svg>',
+      };
+
+      const partialPaths = {
+        alert: '/test/_partials/alert.eta',
+        icon: '/test/_partials/icon.eta',
+      };
+
+      // Alert conditionally includes icon
+      const alertTemplate = `<div class="alert alert-<%= stati.props.type || 'info' %>">
+<% if (stati.props.showIcon !== false) { %><%~ stati.partials.icon({ name: stati.props.type || 'info' }) %><% } %>
+<span><%= stati.props.message %></span>
+</div>`;
+      const iconTemplate = '<svg class="icon-<%= stati.props.name %>"></svg>';
+
+      vi.spyOn(mockEta, 'readFile').mockImplementation((path: string) => {
+        if (path.includes('alert')) return alertTemplate;
+        if (path.includes('icon')) return iconTemplate;
+        return '';
+      });
+
+      const wrapped = wrapPartialsAsCallable(mockEta, partials, partialPaths, baseContext);
+
+      // With icon
+      const withIcon = wrapped.alert?.({ type: 'success', message: 'Done!' });
+      expect(withIcon).toContain('<svg class="icon-success"></svg>');
+      expect(withIcon).toContain('<span>Done!</span>');
+
+      // Without icon
+      const withoutIcon = wrapped.alert?.({ type: 'error', message: 'Failed!', showIcon: false });
+      expect(withoutIcon).not.toContain('<svg');
+      expect(withoutIcon).toContain('<span>Failed!</span>');
+    });
+
+    it('should allow a partial to call multiple other partials', () => {
+      const partials = {
+        section: '<section>section</section>',
+        heading: '<h2>heading</h2>',
+        button: '<button>button</button>',
+      };
+
+      const partialPaths = {
+        section: '/test/_partials/section.eta',
+        heading: '/test/_partials/heading.eta',
+        button: '/test/_partials/button.eta',
+      };
+
+      // Section uses both heading and button
+      const sectionTemplate = `<section>
+<%~ stati.partials.heading({ text: stati.props.title }) %>
+<p><%= stati.props.content %></p>
+<%~ stati.partials.button({ label: stati.props.buttonText }) %>
+</section>`;
+      const headingTemplate = '<h2><%= stati.props.text %></h2>';
+      const buttonTemplate = '<button class="btn"><%= stati.props.label %></button>';
+
+      vi.spyOn(mockEta, 'readFile').mockImplementation((path: string) => {
+        if (path.includes('section')) return sectionTemplate;
+        if (path.includes('heading')) return headingTemplate;
+        if (path.includes('button')) return buttonTemplate;
+        return '';
+      });
+
+      const wrapped = wrapPartialsAsCallable(mockEta, partials, partialPaths, baseContext);
+
+      const result = wrapped.section?.({
+        title: 'Features',
+        content: 'Here are some features',
+        buttonText: 'Learn More',
+      });
+
+      expect(result).toContain('<h2>Features</h2>');
+      expect(result).toContain('<p>Here are some features</p>');
+      expect(result).toContain('<button class="btn">Learn More</button>');
+    });
+
+    it('should maintain separate props contexts for nested calls', () => {
+      const partials = {
+        outer: '<div>outer</div>',
+        inner: '<span>inner</span>',
+      };
+
+      const partialPaths = {
+        outer: '/test/_partials/outer.eta',
+        inner: '/test/_partials/inner.eta',
+      };
+
+      // Outer passes different props to inner than what it received
+      const outerTemplate =
+        '<div data-outer="<%= stati.props.outerValue %>"><%~ stati.partials.inner({ innerValue: "inner-specific" }) %></div>';
+      const innerTemplate =
+        '<span data-inner="<%= stati.props.innerValue %>" data-outer="<%= stati.props.outerValue || "undefined" %>"></span>';
+
+      vi.spyOn(mockEta, 'readFile').mockImplementation((path: string) => {
+        if (path.includes('outer')) return outerTemplate;
+        if (path.includes('inner')) return innerTemplate;
+        return '';
+      });
+
+      const wrapped = wrapPartialsAsCallable(mockEta, partials, partialPaths, baseContext);
+
+      const result = wrapped.outer?.({ outerValue: 'outer-specific' });
+
+      // Outer should have its props
+      expect(result).toContain('data-outer="outer-specific"');
+      // Inner should have its own props, not outer's props
+      expect(result).toContain('data-inner="inner-specific"');
+      // Inner should NOT have access to outer's props
+      expect(result).toContain('data-outer="undefined"');
+    });
+
+    it('should handle error gracefully when nested partial fails', () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const partials = {
+        parent: '<div>parent</div>',
+        child: '<span>child</span>',
+      };
+
+      const partialPaths = {
+        parent: '/test/_partials/parent.eta',
+        child: '/test/_partials/child.eta',
+      };
+
+      // Parent calls child, but child template has an error
+      const parentTemplate = '<div><%~ stati.partials.child({ value: stati.props.value }) %></div>';
+      const childTemplate = '<span><%= stati.props.nonExistent.deep.property %></span>'; // This will throw
+
+      vi.spyOn(mockEta, 'readFile').mockImplementation((path: string) => {
+        if (path.includes('parent')) return parentTemplate;
+        if (path.includes('child')) return childTemplate;
+        return '';
+      });
+
+      const wrapped = wrapPartialsAsCallable(mockEta, partials, partialPaths, baseContext);
+
+      const result = wrapped.parent?.({ value: 'test' });
+
+      // Should contain error comment instead of crashing
+      expect(result).toContain('<!-- Error rendering partial');
+
+      consoleErrorSpy.mockRestore();
+    });
+  });
 });

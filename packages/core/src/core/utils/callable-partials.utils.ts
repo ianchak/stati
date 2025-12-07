@@ -125,6 +125,16 @@ export function wrapPartialsAsCallable(
 ): Record<string, CallablePartial> {
   const callablePartials: Record<string, CallablePartial> = {};
 
+  // Create a context that will have partials updated to the callable versions
+  // This enables nested callable partial calls
+  const contextWithCallablePartials: Record<string, unknown> = {
+    ...baseContext,
+    // The partials property will be updated after all callables are created
+    get partials() {
+      return callablePartials;
+    },
+  };
+
   for (const [name, renderedContent] of Object.entries(partials)) {
     const partialPath = partialPaths[name];
     if (!partialPath) {
@@ -132,7 +142,13 @@ export function wrapPartialsAsCallable(
       continue;
     }
 
-    callablePartials[name] = makeCallablePartial(eta, partialPath, baseContext, renderedContent);
+    // Pass the context that has dynamic access to all callable partials
+    callablePartials[name] = makeCallablePartial(
+      eta,
+      partialPath,
+      contextWithCallablePartials,
+      renderedContent,
+    );
   }
 
   return callablePartials;
