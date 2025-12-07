@@ -26,7 +26,34 @@ A reusable template wrapper that provides consistent structure (header, footer, 
 
 ## Partials
 
-Reusable template fragments stored in `_partials/`. Include them via `stati.partials.header` or `<%~ include('./partial.eta') %>`.
+Reusable template fragments stored in underscore-prefixed directories (e.g., `_partials/`, `_components/`). Include them via `stati.partials.header`. Stati uses a **flat namespace** for partials — the file name becomes the partial name regardless of subdirectory.
+
+## Callable Partials
+
+An advanced partial usage pattern that allows passing data to partials like function arguments. Instead of just `<%~ stati.partials.header %>`, you can call:
+
+```eta
+<%~ stati.partials.card({ title: 'Hello', featured: true }) %>
+```
+
+Data is accessed inside the partial via `stati.props`. Callable partials enable component-like reusability where the same partial renders different content based on props.
+
+**Examples:**
+
+- Simple: `<%~ stati.partials.header %>`
+- With props: `<%~ stati.partials.card({ title: 'My Card', url: '/page' }) %>`
+- In loops: `<% posts.forEach(post => { %> <%~ stati.partials.card({ title: post.title }) %> <% }) %>`
+
+**Inside the partial:**
+
+```eta
+<div class="card">
+  <h2><%= stati.props.title %></h2>
+  <% if (stati.props.featured) { %>
+    <span class="badge">Featured</span>
+  <% } %>
+</div>
+```
 
 ## Frontmatter
 
