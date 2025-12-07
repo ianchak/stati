@@ -1,0 +1,61 @@
+<%
+/**
+ * ISG Tab Content
+ *
+ * Content for the Incremental Static Generation feature tab.
+ *
+ * Props:
+ *   - active (optional): Boolean, is this tab active (default: false)
+ */
+
+// Guard for standalone rendering - this partial is only used as a callable
+if (!stati.props) { %><% return; } %>
+<%
+const active = stati.props.active || false;
+%>
+<div class="<%= stati.propValue('feature-content h-full p-8 lg:p-12', active ? 'active' : 'hidden') %>" data-content="isg" role="tabpanel">
+    <div class="grid lg:grid-cols-2 gap-8 items-center h-full">
+        <div>
+            <h3 class="text-3xl font-bold mb-4 text-gray-900 dark:text-gray-100">
+                Incremental Static Generation
+            </h3>
+            <p class="text-lg text-gray-600 dark:text-gray-300 mb-6">
+                Smart caching and dependency tracking means Stati only rebuilds what actually changed. Perfect for large sites with hundreds or thousands of pages.
+            </p>
+            <ul class="space-y-3">
+                <%~ stati.partials.highlightItem({ text: 'Automatic dependency tracking' }) %>
+                <%~ stati.partials.highlightItem({ text: 'Selective rebuilds save time and resources' }) %>
+                <%~ stati.partials.highlightItem({ text: 'Flexible cache invalidation by path, tag, or age' }) %>
+            </ul>
+            <%~ stati.partials.button({
+                href: '/configuration/isg/',
+                text: 'Learn More',
+                variant: 'primary',
+                icon: 'chevron-right'
+            }) %>
+        </div>
+        <div class="relative">
+            <pre class="language-bash rounded-xl overflow-hidden shadow-md shadow-gray-900/5 dark:shadow-black/10"><code class="language-bash"># Only rebuilds changed files
+npm run build
+
+# Invalidate specific paths
+stati invalidate path:/blog/
+
+# Invalidate by tag
+stati invalidate tag:navigation
+
+# Invalidate recent content (last 7 days)
+stati invalidate age:7days
+
+# Force full rebuild
+stati build --clean</code></pre>
+            <div class="mt-4">
+                <pre class="language-javascript rounded-xl overflow-hidden shadow-md shadow-gray-900/5 dark:shadow-black/10"><code class="language-javascript">// Programmatic invalidation
+import { invalidate } from '@stati/core';
+
+await invalidate('tag:blog');
+await invalidate('path:/about/ age:30days');</code></pre>
+            </div>
+        </div>
+    </div>
+</div>

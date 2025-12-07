@@ -1,0 +1,53 @@
+<%
+/**
+ * Hero Section (Homepage)
+ *
+ * Large title, subtitle, and CTA buttons for the homepage.
+ * Uses the button component for CTA buttons.
+ */
+%>
+<!-- Hero Section -->
+<section class="relative bg-gradient-to-b from-white via-white to-gray-50/30 dark:from-dark-950 dark:via-dark-950 dark:to-dark-900/30 overflow-hidden">
+    <!-- Decorative background elements -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+        <!-- Animated gradient orbs -->
+        <div class="absolute -top-20 left-1/4 w-96 h-96 bg-primary-400/8 dark:bg-primary-500/12 rounded-full blur-3xl animate-pulse"></div>
+        <div class="absolute -bottom-20 right-1/4 w-96 h-96 bg-blue-400/8 dark:bg-blue-500/12 rounded-full blur-3xl animate-pulse" style="animation-delay: 2s"></div>
+    </div>
+
+    <!-- Particles container -->
+    <div id="particles-js" class="absolute inset-0 opacity-40 dark:opacity-30"></div>
+
+    <!-- Content -->
+    <div class="relative z-10 max-w-7xl mx-auto px-6 lg:px-12 py-32 lg:py-48">
+        <div class="text-center">
+            <!-- Main Title -->
+            <div class="mb-8">
+                <h1 class="text-9xl sm:text-[10rem] md:text-[12rem] lg:text-[14rem] xl:text-[16rem] font-black leading-none tracking-tighter">
+                    <span class="inline-block bg-gradient-to-br from-primary-600 via-primary-500 to-blue-600 dark:from-primary-400 dark:via-primary-300 dark:to-blue-400 bg-clip-text text-transparent"
+                          style="letter-spacing: -0.05em;">
+                        <%= stati.page.hero?.title || stati.site.title %>
+                    </span>
+                </h1>
+            </div>
+
+            <!-- Subtitle -->
+            <p class="text-xl sm:text-2xl md:text-3xl text-gray-600 dark:text-gray-300 mb-16 max-w-3xl mx-auto leading-relaxed font-light">
+                <%~ stati.page.hero?.subtitle || stati.page.description %>
+            </p>
+
+            <!-- CTA Buttons -->
+            <div class="flex flex-col sm:flex-row gap-5 justify-center items-center">
+                <% for (let button of (stati.page.hero?.buttons || [])) { %>
+                    <%~ stati.partials.button({
+                        href: button.url,
+                        text: button.text,
+                        variant: button.primary ? 'primary' : 'secondary',
+                        size: 'lg',
+                        icon: button.primary ? 'arrow-right' : 'chevron-right'
+                    }) %>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</section>

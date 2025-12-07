@@ -1,0 +1,21 @@
+<%
+/**
+ * Theme Initialization Script
+ *
+ * Prevents FOUC (Flash of Unstyled Content) by applying the theme
+ * synchronously before the first paint.
+ *
+ * This script should be included in the <head> of the document.
+ *
+ * Usage in layout.eta:
+ *   <%~ stati.partials.themeInit %>
+ */
+%>
+<script>
+  // Prevent FOUC - must run synchronously before first paint
+  (function() {
+    const theme = localStorage.getItem('theme') ||
+        (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+  })();
+</script>

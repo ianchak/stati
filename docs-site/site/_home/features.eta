@@ -1,0 +1,66 @@
+<%
+/**
+ * Features Section (Homepage)
+ *
+ * Feature cards grid showcasing main features.
+ * Uses sectionHeader and icon components.
+ */
+
+// Define icon mappings for feature icons
+const iconMap = {
+  'code-bracket': 'code-bracket',
+  'bolt': 'bolt',
+  'arrow-path': 'refresh',
+  'document-text': 'document',
+  'cog-6-tooth': 'cog',
+  'wrench-screwdriver': 'cog',
+};
+
+// Color palette for feature cards
+const colors = ['primary', 'emerald', 'amber', 'purple', 'red', 'cyan'];
+%>
+<!-- Features Section -->
+<section class="py-20 lg:py-24 bg-gradient-to-b from-gray-50/30 via-white to-white dark:from-dark-900/30 dark:via-dark-950 dark:to-dark-950 relative overflow-hidden">
+    <!-- Decorative background elements -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute top-1/4 -right-20 w-80 h-80 bg-primary-200/15 dark:bg-primary-800/10 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-1/4 -left-20 w-96 h-96 bg-blue-200/12 dark:bg-blue-800/8 rounded-full blur-3xl"></div>
+    </div>
+
+    <div class="relative max-w-7xl mx-auto px-6 lg:px-8">
+        <%~ stati.partials.sectionHeader({
+            title: stati.page.features?.title || 'Features',
+            subtitle: stati.page.features?.subtitle,
+            class: 'mb-20'
+        }) %>
+
+        <div class="grid lg:grid-cols-3 gap-8 lg:gap-12">
+            <% for (let i = 0; i < (stati.page.features?.items || []).length; i++) { %>
+            <% let feature = (stati.page.features?.items || [])[i]; %>
+            <% const color = colors[i % colors.length]; %>
+            <% const mappedIcon = iconMap[feature.icon] || 'sparkles'; %>
+            <div class="relative bg-white/70 dark:bg-dark-800/60 backdrop-blur-sm p-8 rounded-2xl border border-gray-200/70 dark:border-dark-600/50 shadow-lg shadow-gray-900/5">
+                <!-- Icon background with gradient -->
+                <div class="<%= stati.propValue(
+                    'relative w-20 h-20 flex items-center justify-center mx-auto mb-6 bg-gradient-to-br rounded-2xl border shadow-sm',
+                    `from-${color}-50 to-${color}-100/50 dark:from-${color}-900/20 dark:to-${color}-800/20`,
+                    `border-${color}-200/70 dark:border-${color}-800/50`
+                ) %>">
+                    <%~ stati.partials.icon({ name: mappedIcon, size: 'xl', class: `text-${color}-600 dark:text-${color}-400`, strokeWidth: 1.5 }) %>
+                    <!-- Decorative ring -->
+                    <div class="<%= stati.propValue('absolute inset-0 rounded-2xl bg-gradient-to-br', `from-${color}-500/5 to-${color}-600/5 dark:from-${color}-400/5 dark:to-${color}-500/5`) %>"></div>
+                </div>
+
+                <div class="text-center">
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+                        <%= feature.title %>
+                    </h3>
+                    <p class="text-gray-600 dark:text-gray-300 leading-relaxed text-lg">
+                        <%= feature.description %>
+                    </p>
+                </div>
+            </div>
+            <% } %>
+        </div>
+    </div>
+</section>

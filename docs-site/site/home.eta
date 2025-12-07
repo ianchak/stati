@@ -39,7 +39,7 @@
             <%~ stati.partials.hero %>
             <%~ stati.partials.features %>
             <%~ stati.partials.highlights %>
-            <%~ stati.partials['quick-start'] %>
+            <%~ stati.partials.quickStart %>
         </div>
     </main>
 

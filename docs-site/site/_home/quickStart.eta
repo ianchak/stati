@@ -1,3 +1,11 @@
+<%
+/**
+ * Quick Start Section (Homepage)
+ *
+ * Terminal-style quick start commands.
+ * Uses sectionHeader and button components.
+ */
+%>
 <!-- Quick Start Section -->
 <section class="py-20 lg:py-24 bg-gradient-to-b from-gray-50 to-white dark:from-dark-900 dark:to-dark-950 relative overflow-hidden">
     <!-- Decorative background elements -->
@@ -6,15 +14,11 @@
         <div class="absolute bottom-1/4 -right-16 w-64 h-64 bg-cyan-300/12 dark:bg-cyan-800/8 rounded-full blur-3xl"></div>
     </div>
 
-    <div class="relative max-w-6xl mx-auto">
-        <div class="text-center mb-16">
-            <h2 class="text-4xl lg:text-5xl font-bold mb-4 bg-gradient-to-r from-gray-900 via-primary-700 to-gray-900 dark:from-gray-100 dark:via-primary-400 dark:to-gray-100 bg-clip-text text-transparent">
-                <%= stati.page.quickStart?.title || 'Get Started' %>
-            </h2>
-            <p class="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
-                <%= stati.page.quickStart?.subtitle %>
-            </p>
-        </div>
+    <div class="relative max-w-6xl mx-auto px-6 lg:px-8">
+        <%~ stati.partials.sectionHeader({
+            title: stati.page.quickStart?.title || 'Get Started',
+            subtitle: stati.page.quickStart?.subtitle
+        }) %>
 
         <!-- Terminal Window -->
         <div class="relative bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-dark-950 dark:via-dark-900 dark:to-dark-950 rounded-2xl shadow-2xl shadow-gray-900/10 dark:shadow-black/50 border border-gray-200/70 dark:border-dark-600/50 overflow-hidden backdrop-blur-sm">
@@ -63,13 +67,12 @@
         <!-- Bottom CTA -->
         <% if (stati.page.quickStart?.link) { %>
         <div class="text-center mt-12">
-            <a href="<%= stati.page.quickStart.link.url %>"
-               class="group inline-flex items-center px-6 py-3 bg-white/90 dark:bg-dark-800/80 backdrop-blur-sm border border-gray-300 dark:border-dark-600 hover:border-primary-400 dark:hover:border-primary-600 text-gray-700 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-400 rounded-xl font-semibold transition-all duration-300 hover:shadow-lg hover:shadow-gray-900/10 dark:hover:shadow-black/20 hover:-translate-y-0.5">
-                <%= stati.page.quickStart.link.text %>
-                <svg class="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-            </a>
+            <%~ stati.partials.button({
+                href: stati.page.quickStart.link.url,
+                text: stati.page.quickStart.link.text,
+                variant: 'secondary',
+                icon: 'arrow-right'
+            }) %>
         </div>
         <% } %>
     </div>

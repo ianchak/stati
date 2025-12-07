@@ -1,0 +1,61 @@
+<%
+/**
+ * Markdown Tab Content
+ *
+ * Content for the Enhanced Markdown Pipeline feature tab.
+ *
+ * Props:
+ *   - active (optional): Boolean, is this tab active (default: false)
+ */
+
+// Guard for standalone rendering - this partial is only used as a callable
+if (!stati.props) { %><% return; } %>
+<%
+const active = stati.props.active || false;
+%>
+<div class="<%= stati.propValue('feature-content h-full p-8 lg:p-12', active ? 'active' : 'hidden') %>" data-content="markdown" role="tabpanel">
+    <div class="grid lg:grid-cols-2 gap-8 items-center h-full">
+        <div>
+            <h3 class="text-3xl font-bold mb-4 text-gray-900 dark:text-gray-100">
+                Enhanced Markdown Pipeline
+            </h3>
+            <p class="text-lg text-gray-600 dark:text-gray-300 mb-6">
+                Powered by Markdown-It with tables, task lists, auto-linking, and smart typography. Extend with any markdown-it plugin for additional features like syntax highlighting.
+            </p>
+            <ul class="space-y-3">
+                <%~ stati.partials.highlightItem({ text: 'Built-in tables, task lists, and auto-linking' }) %>
+                <%~ stati.partials.highlightItem({ text: 'Smart typography with quotes, em-dashes, and ellipses' }) %>
+                <%~ stati.partials.highlightItem({ text: 'Extensible with any markdown-it plugin' }) %>
+            </ul>
+            <%~ stati.partials.button({
+                href: '/core-concepts/markdown/',
+                text: 'Learn More',
+                variant: 'primary',
+                icon: 'chevron-right'
+            }) %>
+        </div>
+        <div class="relative">
+            <pre class="language-markdown rounded-xl overflow-hidden shadow-md shadow-gray-900/5 dark:shadow-black/10"><code class="language-markdown">---
+title: 'My Blog Post'
+date: '2024-01-15'
+tags: ['stati', 'markdown']
+---
+
+# Enhanced Markdown
+
+Write **bold**, *italic*, and `inline code`
+
+```typescript
+interface Config {
+  title: string;
+  baseUrl: string;
+}
+```
+
+- [x] Completed task
+- [ ] Pending task
+
+Auto-link: https://stati.build</code></pre>
+        </div>
+    </div>
+</div>

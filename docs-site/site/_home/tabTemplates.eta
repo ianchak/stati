@@ -1,0 +1,63 @@
+<%
+/**
+ * Templates Tab Content
+ *
+ * Content for the Eta Templates feature tab.
+ *
+ * Props:
+ *   - active (optional): Boolean, is this tab active (default: false)
+ */
+
+// Guard for standalone rendering - this partial is only used as a callable
+if (!stati.props) { %><% return; } %>
+<%
+const active = stati.props.active || false;
+%>
+<div class="<%= stati.propValue('feature-content h-full p-8 lg:p-12', active ? 'active' : 'hidden') %>" data-content="templates" role="tabpanel">
+    <div class="grid lg:grid-cols-2 gap-8 items-center h-full">
+        <div>
+            <h3 class="text-3xl font-bold mb-4 text-gray-900 dark:text-gray-100">
+                Powerful Eta Templates
+            </h3>
+            <p class="text-lg text-gray-600 dark:text-gray-300 mb-6">
+                Fast, lightweight templating with EJS-like syntax. Supports hierarchical layout nesting, reusable partials, and callable partials that accept custom data like components.
+            </p>
+            <ul class="space-y-3">
+                <%~ stati.partials.highlightItem({ text: 'Hierarchical layout inheritance from parent directories' }) %>
+                <%~ stati.partials.highlightItem({ text: 'Reusable partials from any underscore-prefixed folder' }) %>
+                <%~ stati.partials.highlightItem({ text: 'Callable partials with <code class="text-sm bg-gray-100 dark:bg-dark-700 px-2 py-1 rounded">stati.props</code> for custom data' }) %>
+            </ul>
+            <%~ stati.partials.button({
+                href: '/core-concepts/templates/',
+                text: 'Learn More',
+                variant: 'primary',
+                icon: 'chevron-right'
+            }) %>
+        </div>
+        <div class="relative">
+            <pre class="language-html rounded-xl overflow-hidden shadow-md shadow-gray-900/5 dark:shadow-black/10"><code class="language-html">&lt;!-- Layout nesting: site/blog/layout.eta --&gt;
+&lt;div class="blog-container"&gt;
+  &lt;aside&gt;
+    &lt;%~ stati.partials.sidebar %&gt;
+  &lt;/aside&gt;
+  &lt;main&gt;
+    &lt;%~ stati.content %&gt;
+  &lt;/main&gt;
+&lt;/div&gt;
+
+&lt;!-- Callable partials with custom data --&gt;
+&lt;%~ stati.partials.card({
+  title: 'My Post',
+  description: 'A great article',
+  url: '/blog/my-post'
+}) %&gt;
+
+&lt;!-- Inside _partials/card.eta --&gt;
+&lt;article&gt;
+  &lt;h3&gt;&lt;%= stati.props.title %&gt;&lt;/h3&gt;
+  &lt;p&gt;&lt;%= stati.props.description %&gt;&lt;/p&gt;
+  &lt;a href="&lt;%= stati.props.url %&gt;"&gt;Read&lt;/a&gt;
+&lt;/article&gt;</code></pre>
+        </div>
+    </div>
+</div>

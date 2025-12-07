@@ -1,0 +1,63 @@
+<%
+/**
+ * TypeScript Tab Content
+ *
+ * Content for the TypeScript-First feature tab.
+ *
+ * Props:
+ *   - active (optional): Boolean, is this tab active (default: false)
+ */
+
+// Guard for standalone rendering - this partial is only used as a callable
+if (!stati.props) { %><% return; } %>
+<%
+const active = stati.props.active || false;
+%>
+<div class="<%= stati.propValue('feature-content h-full p-8 lg:p-12', active ? 'active' : 'hidden') %>" data-content="typescript" role="tabpanel">
+    <div class="grid lg:grid-cols-2 gap-8 items-center h-full">
+        <div>
+            <h3 class="text-3xl font-bold mb-4 text-gray-900 dark:text-gray-100">
+                Full TypeScript Support
+            </h3>
+            <p class="text-lg text-gray-600 dark:text-gray-300 mb-6">
+                Built with TypeScript from the ground up. Type-safe configuration with IntelliSense, plus built-in esbuild compilation for your client-side TypeScript code.
+            </p>
+            <ul class="space-y-3">
+                <%~ stati.partials.highlightItem({ text: 'Full type inference with <code class="text-sm bg-gray-100 dark:bg-dark-700 px-2 py-1 rounded">defineConfig()</code> in <code class="text-sm bg-gray-100 dark:bg-dark-700 px-2 py-1 rounded">stati.config.ts</code>' }) %>
+                <%~ stati.partials.highlightItem({ text: 'Built-in esbuild compilation with automatic script injection' }) %>
+                <%~ stati.partials.highlightItem({ text: 'Dev mode: source maps & hot reload. Prod mode: minification & hashing' }) %>
+                <%~ stati.partials.highlightItem({ text: 'Multiple bundles with per-page targeting via include/exclude patterns' }) %>
+            </ul>
+            <%~ stati.partials.button({
+                href: '/configuration/typescript/',
+                text: 'Learn More',
+                variant: 'primary',
+                icon: 'chevron-right'
+            }) %>
+        </div>
+        <div class="relative">
+            <pre class="language-typescript rounded-xl overflow-hidden shadow-md shadow-gray-900/5 dark:shadow-black/10"><code class="language-typescript">import { defineConfig } from '@stati/core';
+
+export default defineConfig({
+  site: {
+    title: 'My Stati Site',
+    baseUrl: 'https://example.com',
+  },
+
+  // Enable built-in TypeScript compilation
+  typescript: {
+    enabled: true,
+    srcDir: 'src',      // Your TS source
+    // bundles defaults to [{ entryPoint: 'main.ts', bundleName: 'main' }] if not defined
+
+    // Production optimizations (auto-enabled)
+    minify: true,       // Minify output
+    hash: true,         // Cache-busting hashes
+
+    // Dev mode features (automatic)
+    // sourceMaps, hot reload, no minification
+  },
+});</code></pre>
+        </div>
+    </div>
+</div>
