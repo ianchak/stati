@@ -66,7 +66,7 @@ The object passed to every Eta template containing:
 - `stati.site` – Site configuration
 - `stati.page` – Current page data and frontmatter
 - `stati.content` – Rendered HTML content
-- `stati.navigation` – Site navigation tree
+- `stati.nav` – Navigation helpers and tree
 - `stati.partials` – Rendered partial markup
 
 ## SEO Metadata
@@ -115,11 +115,20 @@ Custom functions registered in `stati.config.ts` under `eta.filters` that transf
 
 ## `stati.nav`
 
-The navigation helper object available in templates with methods like `getTree()`, `findNode()`, `getChildren()`, and `getParent()`.
+The navigation helper object available in templates with methods:
+
+- `getTree()` – Returns the full navigation tree
+- `findNode(path)` – Finds a navigation node by path or URL
+- `getChildren(path)` – Gets child nodes of a path
+- `getParent(path?)` – Gets the parent node (defaults to current page)
+- `getSiblings(path?, includeSelf?)` – Gets sibling nodes
+- `getSubtree(path)` – Gets a subtree starting from a path
+- `getBreadcrumbs(path?)` – Gets the breadcrumb trail
+- `getCurrentNode()` – Gets the current page's navigation node
 
 ## NavNode
 
-A navigation tree node containing `title`, `url`, `path`, `order`, `children`, and `isCollection` properties.
+A navigation tree node containing `title`, `url`, `path`, `order`, `publishedAt`, `children`, and `isCollection` properties.
 
 ## Sitemap
 
