@@ -19,12 +19,12 @@
     <div id="particles-js" class="absolute inset-0 opacity-40 dark:opacity-30"></div>
 
     <!-- Content -->
-    <div class="relative z-10 max-w-7xl mx-auto px-6 lg:px-12 py-32 lg:py-48">
+    <div class="relative z-10 max-w-7xl mx-auto px-6 lg:px-12 py-32 lg:py-48 overflow-visible">
         <div class="text-center">
             <!-- Main Title -->
-            <div class="mb-8">
-                <h1 class="text-9xl sm:text-[10rem] md:text-[12rem] lg:text-[14rem] xl:text-[16rem] font-black leading-none tracking-tighter">
-                    <span class="inline-block bg-gradient-to-br from-primary-600 via-primary-500 to-blue-600 dark:from-primary-400 dark:via-primary-300 dark:to-blue-400 bg-clip-text text-transparent"
+            <div class="mb-8 overflow-visible">
+                <h1 class="text-9xl sm:text-[10rem] md:text-[12rem] lg:text-[14rem] xl:text-[16rem] font-black leading-none tracking-tighter overflow-visible">
+                    <span class="inline-block bg-gradient-to-br from-primary-600 via-primary-500 to-blue-600 dark:from-primary-400 dark:via-primary-300 dark:to-blue-400 bg-clip-text text-transparent pr-2"
                           style="letter-spacing: -0.05em;">
                         <%= stati.page.hero?.title || stati.site.title %>
                     </span>
