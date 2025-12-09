@@ -27,7 +27,7 @@ Stati combines modern web development tools with proven static site generation p
 - **[Filesystem-based Routing](/core-concepts/routing/)** - Your directory structure becomes your site structure
 - **[Templates & Layouts](/core-concepts/templates/)** - Flexible templating with Eta and layout inheritance
 - **[Markdown Pipeline](/core-concepts/markdown/)** - Enhanced Markdown processing with extensible plugins
-- **[Incremental Static Generation (ISG)](/core-concepts/isg/)** - Smart caching and rebuilding for optimal performance
+- **[Incremental Static Generation (ISG)](/core-concepts/isg/)** - Smart caching and selective rebuilds
 - **[Static Assets & Bundling](/core-concepts/static-assets/)** - Modern asset processing
 
 ## The Stati Philosophy
@@ -44,11 +44,11 @@ Stati is built with TypeScript from the ground up, providing:
 - Bundle paths available via `stati.assets` for preloading or custom use
 - Development mode with source maps; production mode with minification and hashing
 
-### Performance by Default
+### Smart Defaults
 
-Every feature in Stati is designed with performance in mind:
+Every feature in Stati is designed with developer experience in mind:
 
-- Fast development server with automatic full-page reloads
+- Development server with automatic full-page reloads
 - Incremental builds that only process changed files
 - Smart caching that adapts to your content
 
@@ -105,7 +105,7 @@ ISG tracks dependencies and only rebuilds what's necessary:
 
 The final result is a fully static site optimized for:
 
-- Fast loading times
+- Static delivery (no server-side rendering needed)
 - SEO-friendly URLs
 - Modern web standards
 - Easy deployment anywhere
@@ -136,15 +136,15 @@ Start with [Filesystem-based Routing](/core-concepts/routing/) to understand how
 
 - Mixed content types (markdown + templates)
 - Custom layouts for different sections
-- Optimized image and asset handling
-- Performance-focused builds
+- Static image and asset handling
+- Flexible build configuration
 
 ### Landing Pages
 
 - Custom templates with dynamic content
 - Integration with external APIs (build-time)
-- Optimized for conversion and SEO
-- Fast loading and minimal JavaScript
+- Built-in SEO features
+- Static output with minimal JavaScript
 
 Ready to dive in? Start with [Filesystem-based Routing](/core-concepts/routing/) to understand how Stati organizes your content.
 

@@ -145,7 +145,7 @@ async function copyStaticAssetsWithLogging(
     if (item.isDirectory()) {
       // Recursively copy directories
       await ensureDir(destPath);
-      filesCopied += await copyStaticAssetsWithLogging(sourcePath, destPath, logger, relativePath);
+      filesCopied += await copyStaticAssetsWithLogging(sourcePath, destPath, logger);
     } else {
       // Copy individual files
       await ensureDir(dirname(destPath));

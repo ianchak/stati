@@ -292,7 +292,7 @@ Partials can accept custom data, making them reusable like components. This is p
 <!-- With custom data -->
 <%~ stati.partials.hero({
   title: 'Welcome to Stati',
-  subtitle: 'Build fast static sites'
+  subtitle: 'Build modern static sites'
 }) %>
 
 <!-- In loops: render a card for each post -->

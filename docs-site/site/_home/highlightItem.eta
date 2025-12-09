@@ -1,0 +1,19 @@
+<%
+/**
+ * Highlight Feature Item Component
+ *
+ * A single feature list item with check icon.
+ *
+ * Props:
+ *   - text (required): The feature text (can include HTML)
+ *
+ * Usage:
+ *   <%~ stati.partials.highlightItem({ text: 'Full type inference with <code>defineConfig()</code>' }) %>
+ */
+
+// Guard for standalone rendering - this partial is only used as a callable
+if (!stati.props) { %><% return; } %>
+<li class="flex items-start gap-3">
+    <%~ stati.partials.icon({ name: 'check', size: 'lg', class: 'text-primary-600 dark:text-primary-400 flex-shrink-0 mt-0.5' }) %>
+    <span class="text-gray-700 dark:text-gray-300"><%~ stati.props.text %></span>
+</li>

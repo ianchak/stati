@@ -1,47 +1,54 @@
 <%
-// Hardcoded section definitions with their routes, colors, icons, and display names
+/**
+ * Sidebar Section
+ *
+ * Documentation sidebar with collapsible sections and search.
+ * Uses the icon component for SVG icons.
+ */
+
+// Section definitions with their routes, colors, icons, and display names
 const sections = [
   {
     path: '/getting-started',
     displayName: 'Getting Started',
     color: 'primary',
-    icon: 'M13 10V3L4 14h7v7l9-11h-7z',
+    iconName: 'bolt',
   },
   {
     path: '/core-concepts',
     displayName: 'Core Concepts',
     color: 'emerald',
-    icon: 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z',
+    iconName: 'lightbulb',
   },
   {
     path: '/configuration',
     displayName: 'Configuration',
     color: 'amber',
-    icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z',
+    iconName: 'cog',
   },
   {
     path: '/cli',
     displayName: 'CLI & Tooling',
     color: 'purple',
-    icon: 'M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
+    iconName: 'terminal',
   },
   {
     path: '/api',
     displayName: 'API Reference',
     color: 'red',
-    icon: 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4',
+    iconName: 'code',
   },
   {
     path: '/examples',
     displayName: 'Examples',
     color: 'cyan',
-    icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10',
+    iconName: 'cube',
   },
   {
     path: '/advanced',
     displayName: 'Advanced',
     color: 'gray',
-    icon: 'M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1',
+    iconName: 'link',
   },
 ];
 %>
@@ -50,15 +57,15 @@ const sections = [
         <!-- Search Bar -->
         <div class="mb-8">
             <div class="relative">
-                <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+                <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                    <%~ stati.partials.icon({ name: 'search', size: 'sm' }) %>
+                </span>
                 <input type="search" placeholder="Search documentation..." class="w-full pl-10 pr-4 py-2.5 text-sm bg-gray-50/80 dark:bg-dark-800/80 border border-gray-200/60 dark:border-dark-700/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-200 placeholder-gray-400">
             </div>
         </div>
 
         <div class="space-y-6">
-            <% // Iterate over hardcoded sections and list their child pages dynamically
+            <% // Iterate over sections and list their child pages dynamically
             sections.forEach(section => {
               // Get child pages for this section using nav helper
               const sectionChildren = stati.nav.getChildren(section.path);
@@ -70,15 +77,11 @@ const sections = [
                 <button class="<%= stati.propValue('section-toggle flex items-center justify-between w-full px-4 py-3 text-left rounded-xl transition-all duration-200 group', `bg-gradient-to-r from-${color}-50 to-${color}-100/50 dark:from-${color}-900/20 dark:to-${color}-800/20`, `border border-${color}-200/50 dark:border-${color}-800/50`, `hover:shadow-md hover:shadow-${color}-500/10`) %>" data-section="<%= sectionSlug %>">
                     <div class="flex items-center space-x-3">
                         <div class="<%= stati.propValue('flex items-center justify-center w-8 h-8 rounded-lg', `bg-${color}-500/10 dark:bg-${color}-400/20`) %>">
-                            <svg class="<%= stati.propValue('w-4 h-4', `text-${color}-600 dark:text-${color}-400`) %>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="<%= section.icon %>" />
-                            </svg>
+                            <%~ stati.partials.icon({ name: section.iconName, size: 'sm', class: `text-${color}-600 dark:text-${color}-400` }) %>
                         </div>
                         <span class="font-semibold text-gray-900 dark:text-white text-sm"><%= section.displayName %></span>
                     </div>
-                    <svg class="w-4 h-4 text-gray-500 transform transition-transform duration-200 group-data-[expanded=true]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
+                    <%~ stati.partials.icon({ name: 'chevron-down', size: 'sm', class: 'text-gray-500 transform transition-transform duration-200 group-data-[expanded=true]:rotate-180' }) %>
                 </button>
                 <div class="section-content mt-2 space-y-1" data-section="<%= sectionSlug %>">
                     <% sectionChildren.forEach(page => { %>

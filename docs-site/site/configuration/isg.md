@@ -1,12 +1,12 @@
 ---
 title: 'ISG Options'
-description: 'Configure Incremental Static Generation (ISG) for intelligent caching and performance optimization.'
+description: 'Configure Incremental Static Generation (ISG) for intelligent caching and selective rebuilds.'
 order: 5
 ---
 
 # ISG Configuration
 
-Incremental Static Generation (ISG) is Stati's intelligent caching system that provides blazing-fast rebuilds by only regenerating content that has actually changed. Configure ISG to optimize your site's build performance and deployment strategy.
+Incremental Static Generation (ISG) is Stati's intelligent caching system that provides selective rebuilds by only regenerating content that has actually changed. Configure ISG to optimize your site's build workflow and deployment strategy.
 
 ## Configuration Options
 
@@ -290,14 +290,14 @@ Both `tags` arrays and individual properties like `category` become searchable t
 
 ### Production Deployment
 
-1. **Persistent Cache**: Keep `.stati/cache/` in CI/CD between builds for faster rebuilds
+1. **Persistent Cache**: Keep `.stati/cache/` in CI/CD between builds for efficient rebuilds
 2. **Invalidation Strategy**: Define clear invalidation patterns for content updates
 3. **Monitoring**: Track build times to measure ISG effectiveness
 4. **Cache Cleanup**: Periodically clear stale cache entries with `age:` invalidation
 
-### Performance Tips
+### Build Tips
 
-1. **Enable ISG**: ISG can reduce build times by 50-90% for incremental updates
+1. **Enable ISG**: ISG can reduce build times for incremental updates
 2. **Template Organization**: Keep partials small and focused to minimize invalidation scope
 3. **Tag Granularity**: Balance between too many tags (complex management) and too few (broad invalidation)
 4. **TTL Tuning**: Start with conservative TTL values and adjust based on content update patterns
@@ -325,4 +325,4 @@ Both `tags` arrays and individual properties like `category` become searchable t
 - Review manifest to confirm tags are being extracted
 - Try full cache clear with `stati invalidate` (no arguments)
 
-ISG is a powerful feature that can significantly improve your build performance. Configure it appropriately for your content patterns and deployment strategy to get the maximum benefit.
+ISG is a powerful feature that can help with build workflows. Configure it appropriately for your content patterns and deployment strategy.

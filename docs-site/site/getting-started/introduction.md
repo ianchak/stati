@@ -23,10 +23,10 @@ seo:
 ## What makes Stati different?
 
 - **TypeScript-first**: Full type safety for configuration, plus built-in esbuild compilation for your client-side TypeScript
-- **Fast builds**: Lightning-fast development with esbuild-powered bundling and optimized production builds
+- **Modern tooling**: esbuild-powered bundling for development and production builds
 - **ISG support**: Incremental Static Generation with intelligent caching
 - **Minimal dependencies**: Focused and lightweight
-- **Developer experience**: Hot reload, fast builds, and great tooling
+- **Developer experience**: Hot reload, smart tooling, and great debugging
 
 ## Quick Overview
 
@@ -39,7 +39,7 @@ seo:
 Stati follows these core principles:
 
 - **Simplicity over complexity** - Keep things simple and focused
-- **Performance by default** - Fast builds and runtime performance
+- **Sensible defaults** - Works out of the box with minimal configuration
 - **Developer experience first** - Great tooling and debugging experience
 - **Modern standards** - Built with modern web technologies
 

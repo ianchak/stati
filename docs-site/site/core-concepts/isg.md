@@ -6,7 +6,7 @@ order: 5
 
 # Incremental Static Generation (ISG)
 
-Incremental Static Generation is one of Stati's most powerful features. It intelligently tracks dependencies, caches build outputs, and only regenerates what has actually changed. This makes builds incredibly fast, especially for large sites.
+Incremental Static Generation is one of Stati's most powerful features. It intelligently tracks dependencies, caches build outputs, and only regenerates what has actually changed. This reduces build times, especially for large sites.
 
 ## What is ISG?
 
@@ -15,7 +15,7 @@ ISG is a build optimization strategy that:
 - **Tracks dependencies** between files and content
 - **Caches build outputs** with intelligent invalidation
 - **Ages content** to optimize cache retention
-- **Enables partial rebuilds** for faster development
+- **Enables partial rebuilds** for efficient development
 
 Unlike traditional static site generators that rebuild everything, Stati only rebuilds what needs to be updated.
 
@@ -202,21 +202,19 @@ stati invalidate age:1year
 
 This means `age:3months` goes back exactly 3 calendar months (e.g., from Oct 1st to Jul 1st), not approximately 90 days.
 
-## Performance Benefits
+## Build Efficiency
 
-### Build Time Comparison
+### How ISG Helps
 
 ```text
 Traditional SSG (full rebuild):
-├── 1000 pages: ~60 seconds
-├── 5000 pages: ~300 seconds
-└── 10000 pages: ~600+ seconds
+├── Every change: Rebuilds all pages
+└── Large sites: Can be slow
 
 Stati with ISG (incremental):
-├── First build: ~60 seconds
-├── 1 file changed: ~0.5 seconds
-├── 10 files changed: ~2 seconds
-└── Layout change: ~10 seconds (only affected pages)
+├── First build: Full build
+├── Content change: Only affected pages
+└── Layout change: Only pages using that layout
 ```
 
 ### Development Experience
@@ -267,4 +265,4 @@ $ stati build
 💾 Cache: 156 MB, 1,247 entries
 ```
 
-ISG is what makes Stati uniquely fast and efficient. Understanding how to configure and optimize it will dramatically improve your development experience and build times. Next, learn about [Static Assets & Bundling](/core-concepts/static-assets/) to understand how Stati handles CSS, JavaScript, and other assets.
+ISG is central to Stati's build workflow. Understanding how to configure and optimize it will improve your development experience and build times. Next, learn about [Static Assets & Bundling](/core-concepts/static-assets/) to understand how Stati handles CSS, JavaScript, and other assets.

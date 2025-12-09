@@ -4,6 +4,8 @@ description: 'Configure TypeScript compilation for your Stati site with esbuild-
 order: 8
 ---
 
+# TypeScript Support
+
 Stati provides first-class TypeScript support for your site's client-side code. Using [esbuild](https://esbuild.github.io/) under the hood, Stati compiles your TypeScript to optimized JavaScript bundles with near-instant build times.
 
 ## Quick Start
@@ -375,7 +377,7 @@ Ensure your entry file exists at the configured location (`srcDir/entryPoint`). 
 
 ### Type errors not caught during build
 
-Stati uses esbuild for fast compilation, which doesn't perform type checking. Always run `npm run typecheck` to validate your types before deploying.
+Stati uses esbuild for compilation, which doesn't perform type checking. Always run `npm run typecheck` to validate your types before deploying.
 
 ### Source maps in production
 

@@ -1,0 +1,28 @@
+<%
+/**
+ * Highlight Tab Button Component
+ *
+ * A single tab button for the highlights section.
+ *
+ * Props:
+ *   - id (required): Tab identifier (e.g., 'typescript', 'isg')
+ *   - label (required): Display label for the tab
+ *   - active (optional): Boolean, is this tab active (default: false)
+ *
+ * Usage:
+ *   <%~ stati.partials.highlightTab({ id: 'typescript', label: 'TypeScript-First', active: true }) %>
+ */
+
+// Guard for standalone rendering - this partial is only used as a callable
+if (!stati.props) { %><% return; } %>
+<%
+const { id, label, active } = stati.props;
+const activeClass = 'bg-gradient-to-r from-primary-500 to-blue-600 text-white shadow-md shadow-gray-900/10 dark:shadow-black/20';
+const inactiveClass = 'bg-white/90 dark:bg-dark-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700 hover:shadow-sm hover:shadow-gray-900/5 dark:hover:shadow-black/10 border border-gray-300/60 dark:border-dark-600';
+%>
+<button class="<%= stati.propValue('feature-tab px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300', active ? activeClass : inactiveClass) %>"
+        data-tab="<%= id %>"
+        role="tab"
+        aria-selected="<%= active ? 'true' : 'false' %>">
+    <%= label %>
+</button>

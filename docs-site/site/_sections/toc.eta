@@ -1,3 +1,11 @@
+<%
+/**
+ * Table of Contents Section
+ *
+ * Sticky sidebar showing page headings for on-page navigation.
+ * Populated dynamically via JavaScript.
+ */
+%>
 <div id="toc" class="sticky top-24 h-fit max-h-[calc(100vh-12rem)] pt-12 mb-24" style="content-visibility: auto;">
     <div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 ml-4 overflow-hidden flex flex-col max-h-[calc(100vh-12rem)]">
         <h4 class="text-sm font-semibold text-gray-900 dark:text-white px-4 py-3 border-b border-gray-200 dark:border-gray-600 flex-shrink-0">On This Page</h4>

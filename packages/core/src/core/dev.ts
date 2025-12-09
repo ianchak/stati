@@ -108,23 +108,45 @@ async function performInitialBuild(
 }
 
 /**
- * Performs incremental rebuild when files change, using ISG logic for smart rebuilds
+ * Performs incremental rebuild when files change, using ISG logic for smart rebuilds.
+ * Uses a pending changes queue to ensure no file changes are lost when builds are in progress.
+ *
+ * @param changedPath - The path of the file that changed
+ * @param eventType - The type of change: 'add', 'change', or 'unlink'
+ * @param configPath - Optional path to the stati config file
+ * @param staticDir - The static assets directory path
+ * @param logger - Logger instance for output
+ * @param wsServer - WebSocket server for live reload notifications
+ * @param isBuildingRef - Mutable reference tracking whether a build is currently in progress
+ * @param pendingChangesRef - Mutable reference holding queued file changes that occurred during an
+ *   active build. The `changes` Map stores file paths as keys and their event types as values,
+ *   ensuring each file is only processed once with its most recent event type.
+ * @param onError - Optional callback invoked when build errors occur
+ * @param batchedChanges - Array of changes to process in a single batch (used for pending queue processing)
  */
 async function performIncrementalRebuild(
   changedPath: string,
+  eventType: 'add' | 'change' | 'unlink',
   configPath: string | undefined,
+  staticDir: string,
   logger: Logger,
   wsServer: WebSocketServer | null,
   isBuildingRef: { value: boolean },
+  pendingChangesRef: { changes: Map<string, 'add' | 'change' | 'unlink'> },
   onError?: (error: Error | null) => void,
+  batchedChanges: Array<{ path: string; eventType: 'add' | 'change' | 'unlink' }> = [],
 ): Promise<void> {
+  // If a build is in progress, queue this change for processing after the current build
   if (isBuildingRef.value) {
-    logger.info?.('Build in progress, skipping...');
+    pendingChangesRef.changes.set(changedPath, eventType);
     return;
   }
 
   isBuildingRef.value = true;
   const startTime = Date.now();
+
+  // All changes being processed in this build (primary + batched)
+  const allChanges = [{ path: changedPath, eventType }, ...batchedChanges];
 
   // Create a quiet logger for dev builds that suppresses verbose output
   const devLogger: Logger = {
@@ -137,12 +159,18 @@ async function performIncrementalRebuild(
     stats: () => {}, // Suppress stats messages
   };
 
-  try {
-    const relativePath = changedPath
-      .replace(process.cwd(), '')
-      .replace(/\\/g, '/')
-      .replace(/^\//, '');
+  // Helper to check if a path is a static asset
+  const normalizedStaticDir = staticDir.replace(/\\/g, '/');
+  const isStaticAsset = (path: string) => {
+    const normalizedPath = path.replace(/\\/g, '/');
+    return normalizedPath.startsWith(normalizedStaticDir);
+  };
 
+  // Helper to get relative path
+  const getRelativePath = (path: string) =>
+    path.replace(process.cwd(), '').replace(/\\/g, '/').replace(/^\//, '');
+
+  try {
     // Check if the changed file is a template/partial
     if (changedPath.endsWith(TEMPLATE_EXTENSION) || changedPath.includes('_partials')) {
       await handleTemplateChange(changedPath, configPath, devLogger);
@@ -175,7 +203,21 @@ async function performIncrementalRebuild(
     }
 
     const duration = Date.now() - startTime;
-    logger.info?.(`⚡ ${relativePath} rebuilt in ${duration}ms`);
+
+    // Log all files that were processed in this batch
+    for (const change of allChanges) {
+      const relativePath = getRelativePath(change.path);
+      let action: string;
+      if (change.eventType === 'unlink') {
+        action = 'deleted';
+      } else if (isStaticAsset(change.path)) {
+        action = 'copied';
+      } else {
+        action = 'rebuilt';
+      }
+      logger.info?.(`⚡ ${relativePath} ${action}`);
+    }
+    logger.info?.(`   Done in ${duration}ms`);
   } catch (error) {
     const buildError = error instanceof Error ? error : new Error(String(error));
     const duration = Date.now() - startTime;
@@ -187,6 +229,33 @@ async function performIncrementalRebuild(
     }
   } finally {
     isBuildingRef.value = false;
+
+    // Check if there are pending changes that occurred during this build
+    if (pendingChangesRef.changes.size > 0) {
+      // Get all pending changes - the build will process all of them at once
+      const pendingChanges = Array.from(pendingChangesRef.changes.entries()).map(
+        ([path, evtType]) => ({ path, eventType: evtType }),
+      );
+      pendingChangesRef.changes.clear();
+
+      // Trigger another rebuild with all batched changes
+      // The build() call will copy all static assets and rebuild all affected pages
+      const [first, ...remaining] = pendingChanges;
+      if (first) {
+        void performIncrementalRebuild(
+          first.path,
+          first.eventType,
+          configPath,
+          staticDir,
+          logger,
+          wsServer,
+          isBuildingRef,
+          pendingChangesRef,
+          onError,
+          remaining, // Pass remaining changes as batched
+        );
+      }
+    }
   }
 }
 
@@ -375,8 +444,10 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
     lastBuildError = error;
   };
   let watcher: FSWatcher | null = null;
+  let cssWatcher: FSWatcher | null = null;
   let tsWatchers: BuildContext[] = [];
   const isBuildingRef = { value: false };
+  const pendingChangesRef = { changes: new Map<string, 'add' | 'change' | 'unlink'>() };
   let isStopping = false;
 
   /**
@@ -684,13 +755,39 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
         ignoreInitial: true,
       });
 
+      // Set up separate watcher for CSS files in output directory
+      // This enables live reload when external tools (like Tailwind CLI) update CSS
+      cssWatcher = chokidar.watch([join(outDir, '**/*.css')], {
+        ignored: /(^|[/\\])\../, // ignore dotfiles
+        persistent: true,
+        ignoreInitial: true,
+      });
+
+      cssWatcher.on('change', (path: string) => {
+        const relativePath = path.replace(process.cwd(), '').replace(/\\/g, '/').replace(/^\//, '');
+        logger.info?.(`⚡ ${relativePath} updated`);
+
+        // Just notify clients to reload - no rebuild needed since CSS was already compiled
+        if (wsServer) {
+          wsServer.clients.forEach((client: unknown) => {
+            const ws = client as { readyState: number; send: (data: string) => void };
+            if (ws.readyState === 1) {
+              ws.send(JSON.stringify({ type: 'reload' }));
+            }
+          });
+        }
+      });
+
       watcher.on('change', (path: string) => {
         void performIncrementalRebuild(
           path,
+          'change',
           configPath,
+          staticDir,
           logger,
           wsServer,
           isBuildingRef,
+          pendingChangesRef,
           setLastBuildError,
         );
       });
@@ -698,10 +795,13 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
       watcher.on('add', (path: string) => {
         void performIncrementalRebuild(
           path,
+          'add',
           configPath,
+          staticDir,
           logger,
           wsServer,
           isBuildingRef,
+          pendingChangesRef,
           setLastBuildError,
         );
       });
@@ -709,10 +809,13 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
       watcher.on('unlink', (path: string) => {
         void performIncrementalRebuild(
           path,
+          'unlink',
           configPath,
+          staticDir,
           logger,
           wsServer,
           isBuildingRef,
+          pendingChangesRef,
           setLastBuildError,
         );
       });
@@ -741,6 +844,12 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
       if (watcher) {
         await watcher.close();
         watcher = null;
+      }
+
+      // Clean up CSS watcher
+      if (cssWatcher) {
+        await cssWatcher.close();
+        cssWatcher = null;
       }
 
       // Clean up TypeScript watchers

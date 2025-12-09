@@ -125,7 +125,7 @@ I chose Stati because:
 1. **TypeScript Support** - Full type safety for config plus built-in esbuild compilation for client-side code
 2. **Modern Tooling** - Lightning-fast builds with esbuild, hot reload, and automatic bundle injection
 3. **Flexible** - Powerful but not overwhelming
-4. **Fast** - Incremental builds and smart caching
+4. **Smart Caching** - Incremental builds with intelligent caching
 
 ## Contact
 

@@ -1,0 +1,59 @@
+<%
+/**
+ * Button Component
+ *
+ * Consistent button/link component with multiple variants.
+ *
+ * Props:
+ *   - href (required): Link destination
+ *   - text (required): Button text
+ *   - variant (optional): 'primary' | 'secondary' | 'ghost' (default: 'secondary')
+ *   - size (optional): 'sm' | 'md' | 'lg' (default: 'md')
+ *   - icon (optional): Icon name to show after text (uses icon.eta)
+ *   - iconPosition (optional): 'left' | 'right' (default: 'right')
+ *   - external (optional): Boolean, adds target="_blank" rel="noopener noreferrer"
+ *   - class (optional): Additional CSS classes
+ *
+ * Usage:
+ *   <%~ stati.partials.button({
+ *     href: '/getting-started/introduction/',
+ *     text: 'Get Started',
+ *     variant: 'primary',
+ *     icon: 'arrow-right'
+ *   }) %>
+ */
+
+// Guard for standalone rendering - this partial is only used as a callable
+if (!stati.props) { %><% return; } %>
+<%
+const variants = {
+  primary: 'bg-gradient-to-r from-primary-500 to-blue-600 hover:from-primary-600 hover:to-blue-700 text-white shadow-lg shadow-gray-900/10 dark:shadow-black/30 hover:shadow-xl hover:shadow-gray-900/15 dark:hover:shadow-black/40',
+  secondary: 'bg-white/90 dark:bg-dark-800/80 backdrop-blur-sm border border-gray-300 dark:border-dark-600 hover:border-primary-400 dark:hover:border-primary-500 text-gray-900 dark:text-gray-100 shadow-lg shadow-gray-900/10 dark:shadow-black/20 hover:shadow-xl hover:shadow-gray-900/15 dark:hover:shadow-black/30',
+  ghost: 'text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20'
+};
+
+const sizes = {
+  sm: 'px-4 py-2 text-sm',
+  md: 'px-6 py-3 text-base',
+  lg: 'px-10 py-4 text-lg'
+};
+
+const baseClass = 'group relative inline-flex items-center gap-2 rounded-xl font-semibold transition-all duration-300 hover:-translate-y-0.5';
+const variantClass = variants[stati.props.variant || 'secondary'];
+const sizeClass = sizes[stati.props.size || 'md'];
+const iconPosition = stati.props.iconPosition || 'right';
+const iconAnimationClass = iconPosition === 'right' ? 'group-hover:translate-x-1' : 'group-hover:-translate-x-1';
+%>
+<a href="<%= stati.props.href %>"
+   class="<%= stati.propValue(baseClass, variantClass, sizeClass, stati.props.class) %>"
+   <% if (stati.props.external) { %>target="_blank" rel="noopener noreferrer"<% } %>>
+  <span class="relative flex items-center gap-2">
+    <% if (stati.props.icon && iconPosition === 'left') { %>
+      <%~ stati.partials.icon({ name: stati.props.icon, size: 'sm', class: `transition-transform duration-300 ${iconAnimationClass}` }) %>
+    <% } %>
+    <%= stati.props.text %>
+    <% if (stati.props.icon && iconPosition === 'right') { %>
+      <%~ stati.partials.icon({ name: stati.props.icon, size: 'sm', class: `transition-transform duration-300 ${iconAnimationClass}` }) %>
+    <% } %>
+  </span>
+</a>

@@ -1,0 +1,52 @@
+<%
+/**
+ * Link Component
+ *
+ * Navigation link with optional dot indicator (used in sidebar/footer).
+ *
+ * Props:
+ *   - href (required): Link destination
+ *   - text (required): Link text
+ *   - color (optional): Tailwind color name for hover state (default: 'primary')
+ *   - showDot (optional): Boolean, shows dot indicator (default: false)
+ *   - external (optional): Boolean, opens in new tab
+ *   - class (optional): Additional CSS classes
+ *   - active (optional): Boolean, indicates current page
+ *
+ * Usage:
+ *   <%~ stati.partials.link({
+ *     href: '/api/reference/',
+ *     text: 'API Reference',
+ *     color: 'red',
+ *     showDot: true
+ *   }) %>
+ */
+
+// Guard for standalone rendering - this partial is only used as a callable
+if (!stati.props) { %><% return; } %>
+<%
+const color = stati.props.color || 'primary';
+const showDot = stati.props.showDot || false;
+const isActive = stati.props.active || false;
+%>
+<a href="<%= stati.props.href %>"
+   class="<%= stati.propValue(
+     'flex items-center transition-colors duration-200 group',
+     `text-gray-600 dark:text-gray-300`,
+     `hover:text-${color}-600 dark:hover:text-${color}-400`,
+     isActive && `text-${color}-600 dark:text-${color}-400 font-medium`,
+     stati.props.class
+   ) %>"
+   <% if (stati.props.external) { %>target="_blank" rel="noopener noreferrer"<% } %>>
+  <% if (showDot) { %>
+  <span class="<%= stati.propValue(
+    'w-1.5 h-1.5 rounded-full mr-3 transition-colors duration-200',
+    isActive ? `bg-${color}-500` : 'bg-gray-300 dark:bg-gray-600',
+    `group-hover:bg-${color}-500`
+  ) %>"></span>
+  <% } %>
+  <%= stati.props.text %>
+  <% if (stati.props.external) { %>
+    <%~ stati.partials.icon({ name: 'external', size: 'xs', class: 'ml-1 opacity-50' }) %>
+  <% } %>
+</a>

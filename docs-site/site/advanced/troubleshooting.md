@@ -265,7 +265,7 @@ Eta templates don't support mixing static and dynamic text within attribute valu
 
 ---
 
-## README.md appearing as a page
+## `README.md` appearing as a page
 
 **Cause:**
 Stati routes all `.md` files inside the `site/` directory, including `README.md` files placed there.

@@ -8,11 +8,11 @@ order: 1
 
 This section covers advanced Stati features and patterns for building high-performance, production-ready static sites. These topics are designed for users who want to push Stati to its limits and implement sophisticated site architectures.
 
-## Performance Optimization
+## Build Optimization
 
-### Build Performance with ISG
+### Build Caching with ISG
 
-Stati uses **Incremental Static Generation (ISG)** for smart caching and faster rebuilds. For comprehensive ISG configuration, see the [ISG documentation](/core-concepts/isg/).
+Stati uses **Incremental Static Generation (ISG)** for smart caching and selective rebuilds. For comprehensive ISG configuration, see the [ISG documentation](/core-concepts/isg/).
 
 #### Build Options for Performance
 
@@ -163,7 +163,7 @@ For comprehensive template configuration including Eta filters, see the [Templat
 
 These advanced topics showcase Stati's core capabilities for building sophisticated static sites. The framework emphasizes:
 
-- **Smart Caching** with ISG for optimal build performance
+- **Smart Caching** with ISG for efficient builds
 - **Flexible Build Hooks** for custom build pipeline integration
 - **Template-First SEO** with rich context and metadata support
 - **Developer-Friendly** error handling and development workflow
