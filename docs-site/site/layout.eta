@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="<%= stati.site.defaultLocale || 'en-US' %>" class="scroll-smooth">
 <head>
+    <%~ stati.partials.themeInit %>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
