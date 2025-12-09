@@ -110,6 +110,19 @@ async function performInitialBuild(
 /**
  * Performs incremental rebuild when files change, using ISG logic for smart rebuilds.
  * Uses a pending changes queue to ensure no file changes are lost when builds are in progress.
+ *
+ * @param changedPath - The path of the file that changed
+ * @param eventType - The type of change: 'add', 'change', or 'unlink'
+ * @param configPath - Optional path to the stati config file
+ * @param staticDir - The static assets directory path
+ * @param logger - Logger instance for output
+ * @param wsServer - WebSocket server for live reload notifications
+ * @param isBuildingRef - Mutable reference tracking whether a build is currently in progress
+ * @param pendingChangesRef - Mutable reference holding queued file changes that occurred during an
+ *   active build. The `changes` Map stores file paths as keys and their event types as values,
+ *   ensuring each file is only processed once with its most recent event type.
+ * @param onError - Optional callback invoked when build errors occur
+ * @param batchedChanges - Array of changes to process in a single batch (used for pending queue processing)
  */
 async function performIncrementalRebuild(
   changedPath: string,
