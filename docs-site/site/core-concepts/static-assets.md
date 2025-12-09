@@ -4,6 +4,8 @@ description: 'Learn how to manage static files, images, and integrate TypeScript
 order: 6
 ---
 
+# Static Assets
+
 ## Overview
 
 Stati handles static assets and provides built-in TypeScript compilation. CSS processing (Sass, PostCSS, Tailwind) is configured at the project level using standard tooling, with optional CLI integration for Tailwind during development.
