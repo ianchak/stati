@@ -13,7 +13,7 @@
  * Usage:
  *   <%~ stati.partials.sectionHeader({
  *     title: 'Powerful Features',
- *     subtitle: 'Modern static site generation with features that make development fast',
+ *     subtitle: 'Modern static site generation with features that make development intuitive',
  *     align: 'center'
  *   }) %>
  */

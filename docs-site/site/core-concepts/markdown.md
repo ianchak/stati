@@ -6,7 +6,7 @@ order: 4
 
 # Markdown Pipeline
 
-Stati uses Markdown-It as its core markdown processor, enhanced with carefully selected plugins and customization options. The pipeline is designed to be fast, extensible, and developer-friendly while supporting modern markdown features.
+Stati uses Markdown-It as its core markdown processor, enhanced with carefully selected plugins and customization options. The pipeline is designed to be extensible and developer-friendly while supporting modern markdown features.
 
 ## Core Features
 
@@ -100,22 +100,22 @@ npm run build
 Create tables using standard markdown table syntax:
 
 ```markdown
-| Feature     | Stati          | Other SSGs  |
-| ----------- | -------------- | ----------- |
-| TypeScript  | ✅ First-class | ⚠️ Add-on   |
-| ISG         | ✅ Built-in    | ❌ Manual   |
-| Fast Builds | ✅ Integrated  | ⚠️ Optional |
-| Performance | ⚡ Fast        | 🐌 Varies   |
+| Feature        | Stati          | Other SSGs  |
+| -------------- | -------------- | ----------- |
+| TypeScript     | ✅ First-class | ⚠️ Add-on   |
+| ISG            | ✅ Built-in    | ❌ Manual   |
+| esbuild        | ✅ Integrated  | ⚠️ Optional |
+| Simplicity     | ✅ Minimal     | 📦 Varies   |
 ```
 
 Renders as:
 
-| Feature     | Stati          | Other SSGs  |
-| ----------- | -------------- | ----------- |
-| TypeScript  | ✅ First-class | ⚠️ Add-on   |
-| ISG         | ✅ Built-in    | ❌ Manual   |
-| Fast Builds | ✅ Integrated  | ⚠️ Optional |
-| Performance | ⚡ Fast        | 🐌 Varies   |
+| Feature        | Stati          | Other SSGs  |
+| -------------- | -------------- | ----------- |
+| TypeScript     | ✅ First-class | ⚠️ Add-on   |
+| ISG            | ✅ Built-in    | ❌ Manual   |
+| esbuild        | ✅ Integrated  | ⚠️ Optional |
+| Simplicity     | ✅ Minimal     | 📦 Varies   |
 
 ### Task Lists
 
@@ -531,4 +531,4 @@ export default defineConfig({
 });
 ```
 
-The markdown pipeline is one of Stati's core strengths, providing powerful content processing while maintaining excellent performance. Next, learn about [Incremental Static Generation](/core-concepts/isg/) to understand how Stati optimizes builds and caching.
+The markdown pipeline is one of Stati's core features, providing powerful content processing with extensible plugins. Next, learn about [Incremental Static Generation](/core-concepts/isg/) to understand how Stati handles caching and rebuilds.

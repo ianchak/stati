@@ -375,7 +375,7 @@ Ensure your entry file exists at the configured location (`srcDir/entryPoint`). 
 
 ### Type errors not caught during build
 
-Stati uses esbuild for fast compilation, which doesn't perform type checking. Always run `npm run typecheck` to validate your types before deploying.
+Stati uses esbuild for compilation, which doesn't perform type checking. Always run `npm run typecheck` to validate your types before deploying.
 
 ### Source maps in production
 

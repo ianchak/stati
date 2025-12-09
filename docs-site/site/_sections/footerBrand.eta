@@ -19,7 +19,7 @@
         </div>
     </div>
     <p class="text-gray-600 dark:text-gray-300 text-sm leading-relaxed max-w-xs">
-        Fast, minimal, and developer-friendly TypeScript-first static site generator with modern tooling.
+        Minimal and developer-friendly TypeScript-first static site generator with modern tooling.
     </p>
     <div class="flex items-center space-x-3 mt-6">
         <a href="https://github.com/ianchak/stati"

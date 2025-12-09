@@ -6,7 +6,7 @@ order: 3
 
 # Template Configuration
 
-Stati uses the [Eta template engine](https://eta.js.org/) to process templates and layouts. Most Eta settings are hardcoded for optimal performance, but you can define custom filters to extend template functionality.
+Stati uses the [Eta template engine](https://eta.js.org/) to process templates and layouts. Most Eta settings are hardcoded for reliability, but you can define custom filters to extend template functionality.
 
 ## Configuration Options
 

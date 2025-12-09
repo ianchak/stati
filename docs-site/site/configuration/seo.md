@@ -593,7 +593,7 @@ Stati validates SEO configuration at build time. Common errors:
 
 For large sites (10,000+ pages):
 
-- Sitemap generation is optimized and handles large sites efficiently
+- Sitemap generation handles large sites well
 - Auto-injection adds minimal overhead (~1-2ms per page)
 - Consider using `sitemap.filter` to exclude unnecessary pages
 - Use `generateIndex: true` for sites with more than 50,000 URLs to split into multiple sitemaps

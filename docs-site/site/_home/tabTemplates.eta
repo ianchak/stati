@@ -17,7 +17,7 @@ const active = stati.props?.active || false;
                 Powerful Eta Templates
             </h3>
             <p class="text-lg text-gray-600 dark:text-gray-300 mb-6">
-                Fast, lightweight templating with EJS-like syntax. Supports hierarchical layout nesting, reusable partials, and callable partials that accept custom data like components.
+                Lightweight templating with EJS-like syntax. Supports hierarchical layout nesting, reusable partials, and callable partials that accept custom data like components.
             </p>
             <ul class="space-y-3">
                 <%~ stati.partials.highlightItem({ text: 'Hierarchical layout inheritance from parent directories' }) %>

@@ -48,7 +48,7 @@ Choose Stati if you want:
 
 - **Type safety** – TypeScript config, client-side bundling with esbuild, and full IntelliSense
 - **Minimal footprint** – No heavy frameworks or unnecessary abstractions
-- **Incremental builds** – ISG support for faster rebuilds on large sites
+- **Incremental builds** – ISG support for efficient rebuilds on large sites
 - **Built-in SEO** – Automatic metadata injection, with opt-in sitemap and robots.txt generation
 
 ## Does Stati support Incremental Static Generation (ISG)?
