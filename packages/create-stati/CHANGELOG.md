@@ -1,5 +1,11 @@
 # create-stati
 
+## 1.11.4
+
+### Patch Changes
+
+- update @stati/core to version 1.16.0 across all packages
+
 ## 1.11.3
 
 ### Patch Changes

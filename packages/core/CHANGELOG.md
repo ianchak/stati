@@ -1,5 +1,11 @@
 # @stati/core
 
+## 1.16.1
+
+### Patch Changes
+
+- update @stati/core to version 1.16.0 across all packages
+
 ## 1.16.0
 
 ### Minor Changes

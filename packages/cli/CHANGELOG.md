@@ -1,5 +1,13 @@
 # @stati/cli
 
+## 1.9.3
+
+### Patch Changes
+
+- update @stati/core to version 1.16.0 across all packages
+- Updated dependencies
+  - @stati/core@1.16.1
+
 ## 1.9.2
 
 ### Patch Changes
