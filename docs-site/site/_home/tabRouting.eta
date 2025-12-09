@@ -8,10 +8,7 @@
  *   - active (optional): Boolean, is this tab active (default: false)
  */
 
-// Guard for standalone rendering - this partial is only used as a callable
-if (!stati.props) { %><% return; } %>
-<%
-const active = stati.props.active || false;
+const active = stati.props?.active || false;
 %>
 <div class="<%= stati.propValue('feature-content h-full p-8 lg:p-12', active ? 'active' : 'hidden') %>" data-content="routing" role="tabpanel">
     <div class="grid lg:grid-cols-2 gap-8 items-center h-full">
@@ -31,7 +28,8 @@ const active = stati.props.active || false;
                 href: '/core-concepts/routing/',
                 text: 'Learn More',
                 variant: 'primary',
-                icon: 'chevron-right'
+                icon: 'chevron-right',
+                class: 'mt-8'
             }) %>
         </div>
         <div class="relative space-y-4">
