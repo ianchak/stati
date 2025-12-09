@@ -3,11 +3,29 @@
 @tailwind utilities;
 
 @layer base {
+  /* Self-hosted Inter variable font */
+  @font-face {
+    font-family: 'Inter';
+    src: url('/fonts/inter.woff2') format('woff2');
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  /* Self-hosted Fira Code variable font */
+  @font-face {
+    font-family: 'Fira Code';
+    src: url('/fonts/fira-code.woff2') format('woff2');
+    font-weight: 300 700;
+    font-style: normal;
+    font-display: swap;
+  }
+
   /* Fallback font adjustments to minimize layout shift */
   @font-face {
     font-family: 'Inter Fallback';
     src: local('Arial');
-    size-adjust: 106%;
+    size-adjust: 107%;
     ascent-override: 90%;
     descent-override: 22%;
     line-gap-override: 0%;
@@ -16,7 +34,7 @@
   @font-face {
     font-family: 'Fira Code Fallback';
     src: local('Courier New');
-    size-adjust: 95%;
+    size-adjust: 97%;
     ascent-override: 88%;
     descent-override: 22%;
     line-gap-override: 0%;
