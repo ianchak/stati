@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { setTimeout } from 'node:timers/promises';
 import { createDevServer } from '../../src/core/dev.js';
 import type { DevServerOptions } from '../../src/core/dev.js';
 import { loadConfig } from '../../src/config/loader.js';
@@ -723,6 +724,340 @@ describe('Development Server', () => {
       expect(mockCssWatcherClose).toHaveBeenCalled();
 
       // Reset watcherIndex for next test
+      watcherIndex = 0;
+    });
+  });
+
+  describe('File Change Queue and Event Types', () => {
+    it('should pass event type to watcher handlers', async () => {
+      const chokidar = await import('chokidar');
+      const mockWatch = vi.mocked(chokidar.default.watch);
+
+      const handlers: Record<string, ((path: string) => void) | undefined> = {};
+
+      mockWatch.mockImplementation(() => {
+        return {
+          on: vi.fn((event: string, handler: (path: string) => void) => {
+            handlers[event] = handler;
+            return { on: vi.fn().mockReturnThis(), close: vi.fn(() => Promise.resolve()) };
+          }),
+          close: vi.fn(() => Promise.resolve()),
+        } as unknown as ReturnType<typeof chokidar.default.watch>;
+      });
+
+      mockLoadConfig.mockResolvedValueOnce({
+        srcDir: 'site',
+        outDir: 'dist',
+        staticDir: 'public',
+        site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
+      });
+
+      const mockLogger = {
+        info: vi.fn(),
+        error: vi.fn(),
+        success: vi.fn(),
+        warning: vi.fn(),
+        building: vi.fn(),
+        processing: vi.fn(),
+        stats: vi.fn(),
+      };
+
+      const devServer = await createDevServer({
+        port: 8113,
+        logger: mockLogger,
+      });
+
+      await devServer.start();
+
+      // Verify all three event handlers are registered
+      expect(handlers['add']).toBeDefined();
+      expect(handlers['change']).toBeDefined();
+      expect(handlers['unlink']).toBeDefined();
+
+      await devServer.stop();
+    });
+
+    it('should log correct action for static asset add event', async () => {
+      const chokidar = await import('chokidar');
+      const mockWatch = vi.mocked(chokidar.default.watch);
+
+      let addHandler: ((path: string) => void) | undefined;
+      let watcherIndex = 0;
+
+      mockWatch.mockImplementation(() => {
+        const currentIndex = watcherIndex++;
+        // First watcher is for src/static, second is for CSS
+        if (currentIndex === 0) {
+          return {
+            on: vi.fn((event: string, handler: (path: string) => void) => {
+              if (event === 'add') {
+                addHandler = handler;
+              }
+              return { on: vi.fn().mockReturnThis(), close: vi.fn(() => Promise.resolve()) };
+            }),
+            close: vi.fn(() => Promise.resolve()),
+          } as unknown as ReturnType<typeof chokidar.default.watch>;
+        }
+        return {
+          on: vi.fn().mockReturnThis(),
+          close: vi.fn(() => Promise.resolve()),
+        } as unknown as ReturnType<typeof chokidar.default.watch>;
+      });
+
+      const cwd = process.cwd();
+      mockLoadConfig.mockResolvedValueOnce({
+        srcDir: 'site',
+        outDir: 'dist',
+        staticDir: 'public',
+        site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
+      });
+
+      const mockLogger = {
+        info: vi.fn(),
+        error: vi.fn(),
+        success: vi.fn(),
+        warning: vi.fn(),
+        building: vi.fn(),
+        processing: vi.fn(),
+        stats: vi.fn(),
+      };
+
+      mockBuild.mockClear();
+
+      const devServer = await createDevServer({
+        port: 8114,
+        logger: mockLogger,
+      });
+
+      await devServer.start();
+      mockBuild.mockClear();
+      mockLogger.info.mockClear();
+
+      // Simulate adding a static file in public folder
+      expect(addHandler).toBeDefined();
+      addHandler!(`${cwd}/public/new-image.png`);
+
+      // Wait for async operations
+      await setTimeout(50);
+
+      // Should log with 'copied' action for static assets
+      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('public/new-image.png'));
+      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('copied'));
+
+      await devServer.stop();
+      watcherIndex = 0;
+    });
+
+    it('should log correct action for unlink event', async () => {
+      const chokidar = await import('chokidar');
+      const mockWatch = vi.mocked(chokidar.default.watch);
+
+      let unlinkHandler: ((path: string) => void) | undefined;
+      let watcherIndex = 0;
+
+      mockWatch.mockImplementation(() => {
+        const currentIndex = watcherIndex++;
+        if (currentIndex === 0) {
+          return {
+            on: vi.fn((event: string, handler: (path: string) => void) => {
+              if (event === 'unlink') {
+                unlinkHandler = handler;
+              }
+              return { on: vi.fn().mockReturnThis(), close: vi.fn(() => Promise.resolve()) };
+            }),
+            close: vi.fn(() => Promise.resolve()),
+          } as unknown as ReturnType<typeof chokidar.default.watch>;
+        }
+        return {
+          on: vi.fn().mockReturnThis(),
+          close: vi.fn(() => Promise.resolve()),
+        } as unknown as ReturnType<typeof chokidar.default.watch>;
+      });
+
+      const cwd = process.cwd();
+      mockLoadConfig.mockResolvedValueOnce({
+        srcDir: 'site',
+        outDir: 'dist',
+        staticDir: 'public',
+        site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
+      });
+
+      const mockLogger = {
+        info: vi.fn(),
+        error: vi.fn(),
+        success: vi.fn(),
+        warning: vi.fn(),
+        building: vi.fn(),
+        processing: vi.fn(),
+        stats: vi.fn(),
+      };
+
+      mockBuild.mockClear();
+
+      const devServer = await createDevServer({
+        port: 8115,
+        logger: mockLogger,
+      });
+
+      await devServer.start();
+      mockBuild.mockClear();
+      mockLogger.info.mockClear();
+
+      // Simulate deleting a file
+      expect(unlinkHandler).toBeDefined();
+      unlinkHandler!(`${cwd}/public/deleted-image.png`);
+
+      // Wait for async operations
+      await setTimeout(50);
+
+      // Should log with 'deleted' action for unlink events
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.stringContaining('public/deleted-image.png'),
+      );
+      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('deleted'));
+
+      await devServer.stop();
+      watcherIndex = 0;
+    });
+
+    it('should log correct action for markdown file change', async () => {
+      const chokidar = await import('chokidar');
+      const mockWatch = vi.mocked(chokidar.default.watch);
+
+      let changeHandler: ((path: string) => void) | undefined;
+      let watcherIndex = 0;
+
+      mockWatch.mockImplementation(() => {
+        const currentIndex = watcherIndex++;
+        if (currentIndex === 0) {
+          return {
+            on: vi.fn((event: string, handler: (path: string) => void) => {
+              if (event === 'change') {
+                changeHandler = handler;
+              }
+              return { on: vi.fn().mockReturnThis(), close: vi.fn(() => Promise.resolve()) };
+            }),
+            close: vi.fn(() => Promise.resolve()),
+          } as unknown as ReturnType<typeof chokidar.default.watch>;
+        }
+        return {
+          on: vi.fn().mockReturnThis(),
+          close: vi.fn(() => Promise.resolve()),
+        } as unknown as ReturnType<typeof chokidar.default.watch>;
+      });
+
+      const cwd = process.cwd();
+      mockLoadConfig.mockResolvedValueOnce({
+        srcDir: 'site',
+        outDir: 'dist',
+        staticDir: 'public',
+        site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
+      });
+
+      const mockLogger = {
+        info: vi.fn(),
+        error: vi.fn(),
+        success: vi.fn(),
+        warning: vi.fn(),
+        building: vi.fn(),
+        processing: vi.fn(),
+        stats: vi.fn(),
+      };
+
+      mockBuild.mockClear();
+
+      const devServer = await createDevServer({
+        port: 8116,
+        logger: mockLogger,
+      });
+
+      await devServer.start();
+      mockBuild.mockClear();
+      mockLogger.info.mockClear();
+
+      // Simulate changing a markdown file (not in public folder)
+      expect(changeHandler).toBeDefined();
+      changeHandler!(`${cwd}/site/index.md`);
+
+      // Wait for async operations
+      await setTimeout(50);
+
+      // Should log with 'rebuilt' action for non-static files
+      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('site/index.md'));
+      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('rebuilt'));
+
+      await devServer.stop();
+      watcherIndex = 0;
+    });
+
+    it('should use configured staticDir for asset detection', async () => {
+      const chokidar = await import('chokidar');
+      const mockWatch = vi.mocked(chokidar.default.watch);
+
+      let addHandler: ((path: string) => void) | undefined;
+      let watcherIndex = 0;
+
+      mockWatch.mockImplementation(() => {
+        const currentIndex = watcherIndex++;
+        if (currentIndex === 0) {
+          return {
+            on: vi.fn((event: string, handler: (path: string) => void) => {
+              if (event === 'add') {
+                addHandler = handler;
+              }
+              return { on: vi.fn().mockReturnThis(), close: vi.fn(() => Promise.resolve()) };
+            }),
+            close: vi.fn(() => Promise.resolve()),
+          } as unknown as ReturnType<typeof chokidar.default.watch>;
+        }
+        return {
+          on: vi.fn().mockReturnThis(),
+          close: vi.fn(() => Promise.resolve()),
+        } as unknown as ReturnType<typeof chokidar.default.watch>;
+      });
+
+      const cwd = process.cwd();
+      // Use a custom static directory
+      mockLoadConfig.mockResolvedValueOnce({
+        srcDir: 'site',
+        outDir: 'dist',
+        staticDir: 'assets', // Custom static dir
+        site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
+      });
+
+      const mockLogger = {
+        info: vi.fn(),
+        error: vi.fn(),
+        success: vi.fn(),
+        warning: vi.fn(),
+        building: vi.fn(),
+        processing: vi.fn(),
+        stats: vi.fn(),
+      };
+
+      mockBuild.mockClear();
+
+      const devServer = await createDevServer({
+        port: 8117,
+        logger: mockLogger,
+      });
+
+      await devServer.start();
+      mockBuild.mockClear();
+      mockLogger.info.mockClear();
+
+      // Simulate adding a file in the custom assets folder
+      expect(addHandler).toBeDefined();
+      addHandler!(`${cwd}/assets/new-image.png`);
+
+      // Wait for async operations
+      await setTimeout(50);
+
+      // Should log with 'copied' action since it's in the custom staticDir
+      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('assets/new-image.png'));
+      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('copied'));
+
+      await devServer.stop();
       watcherIndex = 0;
     });
   });
