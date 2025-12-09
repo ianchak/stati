@@ -375,6 +375,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
     lastBuildError = error;
   };
   let watcher: FSWatcher | null = null;
+  let cssWatcher: FSWatcher | null = null;
   let tsWatchers: BuildContext[] = [];
   const isBuildingRef = { value: false };
   let isStopping = false;
@@ -684,6 +685,29 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
         ignoreInitial: true,
       });
 
+      // Set up separate watcher for CSS files in output directory
+      // This enables live reload when external tools (like Tailwind CLI) update CSS
+      cssWatcher = chokidar.watch([join(outDir, '**/*.css')], {
+        ignored: /(^|[/\\])\../, // ignore dotfiles
+        persistent: true,
+        ignoreInitial: true,
+      });
+
+      cssWatcher.on('change', (path: string) => {
+        const relativePath = path.replace(process.cwd(), '').replace(/\\/g, '/').replace(/^\//, '');
+        logger.info?.(`⚡ ${relativePath} updated`);
+
+        // Just notify clients to reload - no rebuild needed since CSS was already compiled
+        if (wsServer) {
+          wsServer.clients.forEach((client: unknown) => {
+            const ws = client as { readyState: number; send: (data: string) => void };
+            if (ws.readyState === 1) {
+              ws.send(JSON.stringify({ type: 'reload' }));
+            }
+          });
+        }
+      });
+
       watcher.on('change', (path: string) => {
         void performIncrementalRebuild(
           path,
@@ -741,6 +765,12 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
       if (watcher) {
         await watcher.close();
         watcher = null;
+      }
+
+      // Clean up CSS watcher
+      if (cssWatcher) {
+        await cssWatcher.close();
+        cssWatcher = null;
       }
 
       // Clean up TypeScript watchers

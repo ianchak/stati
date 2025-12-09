@@ -586,4 +586,144 @@ describe('Development Server', () => {
       expect(mockDispose).toHaveBeenCalled();
     });
   });
+
+  describe('CSS file watcher', () => {
+    it('should set up a watcher for CSS files in output directory', async () => {
+      const chokidar = await import('chokidar');
+      const mockWatch = vi.mocked(chokidar.default.watch);
+      mockWatch.mockClear();
+
+      mockLoadConfig.mockResolvedValueOnce({
+        srcDir: 'site',
+        outDir: 'dist',
+        staticDir: 'public',
+        site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
+      });
+
+      const devServer = await createDevServer({
+        port: 8110,
+      });
+
+      await devServer.start();
+
+      // Should have been called twice: once for srcDir/staticDir, once for CSS files
+      expect(mockWatch).toHaveBeenCalledTimes(2);
+
+      // Second call should be for CSS files in output directory
+      const cssWatchCall = mockWatch.mock.calls[1];
+      expect(cssWatchCall).toBeDefined();
+      expect(cssWatchCall![0]).toEqual(expect.arrayContaining([expect.stringContaining('dist')]));
+      expect(cssWatchCall![0]).toEqual(expect.arrayContaining([expect.stringContaining('.css')]));
+
+      await devServer.stop();
+    });
+
+    it('should trigger reload without rebuild when CSS file changes', async () => {
+      const chokidar = await import('chokidar');
+      const mockWatch = vi.mocked(chokidar.default.watch);
+
+      // Store the change handler for CSS watcher
+      let cssChangeHandler: ((path: string) => void) | undefined;
+
+      // Track which watcher is being created
+      let watcherIndex = 0;
+      mockWatch.mockImplementation(() => {
+        const currentIndex = watcherIndex++;
+        return {
+          on: vi.fn((event: string, handler: (path: string) => void) => {
+            // Capture the change handler from the second watcher (CSS watcher)
+            if (currentIndex === 1 && event === 'change') {
+              cssChangeHandler = handler;
+            }
+            return {
+              on: vi.fn(),
+              close: vi.fn(() => Promise.resolve()),
+            };
+          }),
+          close: vi.fn(() => Promise.resolve()),
+        } as unknown as ReturnType<typeof chokidar.default.watch>;
+      });
+
+      mockLoadConfig.mockResolvedValueOnce({
+        srcDir: 'site',
+        outDir: 'dist',
+        staticDir: 'public',
+        site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
+      });
+
+      const mockLogger = {
+        info: vi.fn(),
+        error: vi.fn(),
+        success: vi.fn(),
+        warning: vi.fn(),
+        building: vi.fn(),
+        processing: vi.fn(),
+        stats: vi.fn(),
+      };
+
+      // Clear build mock to track new calls
+      mockBuild.mockClear();
+
+      const devServer = await createDevServer({
+        port: 8111,
+        logger: mockLogger,
+      });
+
+      await devServer.start();
+
+      // Reset build mock after initial build
+      mockBuild.mockClear();
+
+      // Simulate CSS file change
+      expect(cssChangeHandler).toBeDefined();
+      cssChangeHandler!('dist/styles.css');
+
+      // Should log the update
+      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('styles.css updated'));
+
+      // Should NOT trigger a rebuild
+      expect(mockBuild).not.toHaveBeenCalled();
+
+      await devServer.stop();
+
+      // Reset watcherIndex for next test
+      watcherIndex = 0;
+    });
+
+    it('should close CSS watcher on stop', async () => {
+      const chokidar = await import('chokidar');
+      const mockWatch = vi.mocked(chokidar.default.watch);
+
+      const mockCssWatcherClose = vi.fn(() => Promise.resolve());
+      let watcherIndex = 0;
+
+      mockWatch.mockImplementation(() => {
+        const currentIndex = watcherIndex++;
+        return {
+          on: vi.fn().mockReturnThis(),
+          close: currentIndex === 1 ? mockCssWatcherClose : vi.fn(() => Promise.resolve()),
+        } as unknown as ReturnType<typeof chokidar.default.watch>;
+      });
+
+      mockLoadConfig.mockResolvedValueOnce({
+        srcDir: 'site',
+        outDir: 'dist',
+        staticDir: 'public',
+        site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
+      });
+
+      const devServer = await createDevServer({
+        port: 8112,
+      });
+
+      await devServer.start();
+      await devServer.stop();
+
+      // CSS watcher should be closed
+      expect(mockCssWatcherClose).toHaveBeenCalled();
+
+      // Reset watcherIndex for next test
+      watcherIndex = 0;
+    });
+  });
 });
