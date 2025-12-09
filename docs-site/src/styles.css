@@ -160,6 +160,13 @@
     @apply text-lg lg:text-xl font-semibold mb-3 mt-8 text-gray-900 dark:text-white;
   }
 
+  .prose h1 code,
+  .prose h2 code,
+  .prose h3 code,
+  .prose h4 code {
+    @apply bg-transparent px-0 py-0 text-inherit text-[0.85em] font-mono;
+  }
+
   .prose p {
     @apply mb-6 leading-relaxed text-gray-600 dark:text-gray-300;
   }
