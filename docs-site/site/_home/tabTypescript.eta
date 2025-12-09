@@ -42,18 +42,19 @@ export default defineConfig({
     baseUrl: 'https://example.com',
   },
 
-  // Enable built-in TypeScript compilation
   typescript: {
     enabled: true,
-    srcDir: 'src',      // Your TS source
-    // bundles defaults to [{ entryPoint: 'main.ts', bundleName: 'main' }] if not defined
-
-    // Production optimizations (auto-enabled)
-    minify: true,       // Minify output
-    hash: true,         // Cache-busting hashes
-
-    // Dev mode features (automatic)
-    // sourceMaps, hot reload, no minification
+    bundles: [
+      {
+        // Included on all pages by default
+        entryPoint: 'main.ts',
+      },
+      {
+        // Only included on docs pages
+        entryPoint: 'docs.ts',
+        include: ['/docs/**'],
+      },
+    ],
   },
 });</code></pre>
         </div>
