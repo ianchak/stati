@@ -1,21 +1,43 @@
 <%
 /**
- * Theme Initialization Script
+ * Theme Initialization Script (No-Flash Theme Bootstrap)
  *
- * Prevents FOUC (Flash of Unstyled Content) by applying the theme
- * synchronously before the first paint.
+ * Prevents FOUC/FART (Flash of Unstyled Content / Flash of inAccurate coloR Theme)
+ * by applying the theme synchronously before the browser paints the page.
  *
- * This script should be included in the <head> of the document.
+ * CRITICAL: This script MUST remain in <head> BEFORE any CSS <link> tags.
+ * Moving it will cause theme flicker on page load.
  *
  * Usage in layout.eta:
  *   <%~ stati.partials.themeInit %>
+ *
+ * How it works:
+ * 1. Reads stored theme from localStorage ('stati-theme')
+ * 2. Falls back to system preference via prefers-color-scheme
+ * 3. Sets data-theme attribute and 'dark' class on <html> synchronously
+ * 4. CSS uses [data-theme] selectors and Tailwind's dark: variant
  */
 %>
+<meta name="color-scheme" content="light dark">
 <script>
-  // Prevent FOUC - must run synchronously before first paint
   (function() {
-    const theme = localStorage.getItem('theme') ||
-        (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    document.documentElement.classList.toggle('dark', theme === 'dark');
+    try {
+      var key = 'stati-theme';
+      var stored = localStorage.getItem(key);
+      var theme;
+
+      if (stored === 'dark' || stored === 'light') {
+        theme = stored;
+      } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        theme = 'dark';
+      } else {
+        theme = 'light';
+      }
+
+      document.documentElement.setAttribute('data-theme', theme);
+      document.documentElement.classList.toggle('dark', theme === 'dark');
+    } catch (e) {
+      // Fail silently; default data-theme on <html> will be used
+    }
   })();
 </script>
