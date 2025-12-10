@@ -3,6 +3,16 @@
 @tailwind utilities;
 
 @layer base {
+  /* Base theme colors on html to prevent white flash between page navigations */
+  html {
+    background-color: #f8fafc; /* slate-50 fallback for light mode */
+  }
+
+  html[data-theme='dark'],
+  html.dark {
+    background-color: #020617; /* dark-950 for dark mode */
+  }
+
   /* Self-hosted Inter variable font */
   @font-face {
     font-family: 'Inter';
