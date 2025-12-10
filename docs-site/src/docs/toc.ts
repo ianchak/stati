@@ -105,29 +105,53 @@ function updateActiveLink(activeId: string, links: HTMLAnchorElement[], tocNav: 
 }
 
 /**
+ * Hides the TOC container while preserving layout space.
+ * Uses visibility:hidden to prevent layout shift.
+ */
+function hideToc(tocContainer: HTMLElement): void {
+  tocContainer.style.visibility = 'hidden';
+  tocContainer.setAttribute('aria-hidden', 'true');
+}
+
+/**
+ * Removes the skeleton placeholder from the TOC nav.
+ */
+function removeSkeleton(): void {
+  const skeleton = document.getElementById('toc-skeleton');
+  if (skeleton) {
+    skeleton.remove();
+  }
+}
+
+/**
  * Initializes the Table of Contents functionality.
  * Sets up TOC generation, smooth scrolling, and scroll spy with IntersectionObserver.
  */
 export function initToc(): void {
   const toc = document.getElementById('toc');
+  const tocContainer = document.getElementById('toc-container');
   const tocNav = document.getElementById('toc-nav');
-  if (!toc || !tocNav) return;
+  if (!toc || !tocContainer || !tocNav) return;
 
   // Get all headings with IDs from the content
   const headingEntries = getHeadings();
 
   if (headingEntries.length === 0) {
-    // Hide TOC if no headings found
-    toc.style.display = 'none';
+    // Hide TOC if no headings found (use visibility to preserve layout)
+    removeSkeleton();
+    hideToc(tocContainer);
     return;
   }
+
+  // Remove skeleton before generating links
+  removeSkeleton();
 
   // Generate TOC links
   const links = generateTocLinks(headingEntries, tocNav);
 
   // If we have less than 2 headings, hide the TOC
   if (links.length < 2) {
-    toc.style.display = 'none';
+    hideToc(tocContainer);
     return;
   }
 

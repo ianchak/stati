@@ -2,13 +2,17 @@
  * Theme toggle functionality for dark/light mode.
  * Handles toggling, localStorage persistence, and system preference detection.
  *
- * Note: The FOUC (Flash of Unstyled Content) prevention script remains inline
- * in header.eta to run synchronously before first paint.
+ * Note: The FOUC prevention script remains inline in themeInit.eta and runs
+ * synchronously before first paint. This module handles the toggle button
+ * and system preference changes after the page has loaded.
+ *
+ * Storage key: 'stati-theme' (values: 'light' | 'dark')
+ * DOM: Sets both data-theme attribute and 'dark' class on <html>
  */
 
 type Theme = 'light' | 'dark';
 
-const STORAGE_KEY = 'theme';
+const STORAGE_KEY = 'stati-theme';
 
 /** Stored reference to the system theme change handler for cleanup */
 let systemThemeHandler: ((e: { matches: boolean }) => void) | null = null;
@@ -42,8 +46,10 @@ function getStoredTheme(): Theme | null {
 
 /**
  * Applies the specified theme to the document.
+ * Sets both data-theme attribute (for CSS) and dark class (for Tailwind).
  */
 function applyTheme(theme: Theme): void {
+  document.documentElement.setAttribute('data-theme', theme);
   if (theme === 'dark') {
     document.documentElement.classList.add('dark');
   } else {

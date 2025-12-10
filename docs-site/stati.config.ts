@@ -22,7 +22,6 @@ export default defineConfig({
               .replace(/^-+|-+$/g, ''), // Remove leading/trailing hyphens
         },
       ],
-      'toc-done-right',
       ['external-links', { externalTarget: '_blank' }],
       [
         'prism',
