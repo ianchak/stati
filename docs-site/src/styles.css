@@ -10,7 +10,7 @@
 
   html[data-theme='dark'],
   html.dark {
-    background-color: #020617; /* dark-950 for dark mode */
+    background-color: #020617; /* slate-950 for dark mode */
   }
 
   /* Self-hosted Inter variable font */
