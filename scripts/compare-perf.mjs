@@ -284,9 +284,6 @@ function generateReport(metricsOrSummary, results, comparison, baseline) {
     lines.push(
       `| Warm Build | ${formatDuration(c.actual)} | ${formatDuration(c.baseline)} | ${formatChange(c.change)} | ${getStatusEmoji(c.status)} |`,
     );
-    lines.push(
-      `| └─ Cache Hit Rate | ${(c.cacheHitRate * 100).toFixed(1)}% | ≥${(c.minCacheHitRate * 100).toFixed(0)}% | - | ${getStatusEmoji(c.cacheStatus)} |`,
-    );
   }
 
   if (comparison.incrementalBuild) {
