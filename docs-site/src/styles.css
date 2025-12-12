@@ -360,27 +360,15 @@
   navigation: auto;
 }
 
-/* Simple crossfade for the entire page */
-::view-transition-old(root),
-::view-transition-new(root) {
+/* Set timing on the group so old/new/image-pair stay in sync */
+::view-transition-group(root) {
   animation-duration: 0.15s;
   animation-timing-function: ease-out;
 }
 
-/* Header stays stable during transitions */
-header {
-  view-transition-name: header;
-}
-
-::view-transition-old(header),
-::view-transition-new(header) {
-  animation: none;
-}
-
-/* Reduced motion support */
+/* Reduced motion: actually disable cross-document transitions */
 @media (prefers-reduced-motion: reduce) {
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
-    animation-duration: 0.01ms !important;
+  @view-transition {
+    navigation: none;
   }
 }

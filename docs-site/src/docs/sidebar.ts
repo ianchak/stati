@@ -144,10 +144,12 @@ function setupScrollPersistence(sidebar: HTMLElement): void {
 
 /**
  * Highlights the active page in the sidebar and expands its section.
+ * Returns the active link element if found.
  */
-function highlightActivePage(state: SectionState): void {
+function highlightActivePage(state: SectionState): HTMLAnchorElement | null {
   const currentPath = window.location.pathname;
   const normalizedCurrentPath = normalizePath(currentPath);
+  let activeLink: HTMLAnchorElement | null = null;
 
   document.querySelectorAll<HTMLAnchorElement>('.sidebar-link').forEach((link) => {
     const linkHref = link.getAttribute('href');
@@ -158,6 +160,7 @@ function highlightActivePage(state: SectionState): void {
     if (normalizedLinkHref === normalizedCurrentPath) {
       // Add the active class
       link.classList.add('active');
+      activeLink = link;
 
       // Determine section-specific colors for active state
       const section = link.closest('.nav-section');
@@ -184,6 +187,37 @@ function highlightActivePage(state: SectionState): void {
       }
     }
   });
+
+  return activeLink;
+}
+
+/**
+ * Ensures the active link is visible within the sidebar viewport.
+ * Only scrolls if the active item is outside the visible area.
+ */
+function ensureActiveItemVisible(sidebar: HTMLElement, activeLink: HTMLAnchorElement): void {
+  const sidebarRect = sidebar.getBoundingClientRect();
+  const linkRect = activeLink.getBoundingClientRect();
+
+  // Calculate the link's position relative to the sidebar's scroll container
+  const linkTopRelativeToSidebar = linkRect.top - sidebarRect.top + sidebar.scrollTop;
+  const linkBottomRelativeToSidebar = linkTopRelativeToSidebar + linkRect.height;
+
+  const visibleTop = sidebar.scrollTop;
+  const visibleBottom = sidebar.scrollTop + sidebar.clientHeight;
+
+  // Add some padding for better visibility
+  const padding = 5;
+
+  // Check if the active link is outside the visible area
+  if (linkTopRelativeToSidebar < visibleTop + padding) {
+    // Link is above visible area - scroll up
+    sidebar.scrollTop = linkTopRelativeToSidebar - padding;
+  } else if (linkBottomRelativeToSidebar > visibleBottom - padding) {
+    // Link is below visible area - scroll down
+    sidebar.scrollTop = linkBottomRelativeToSidebar - sidebar.clientHeight + padding;
+  }
+  // If link is already visible, don't change scroll position
 }
 
 /**
@@ -195,19 +229,24 @@ export function initSidebar(): void {
   const elements = getElements();
   const { sidebar, overlay, mobileMenuButton } = elements;
 
+  // Set up section toggles first (needed before highlighting)
+  const state = initSectionToggles();
+
+  // Highlight active page and get the active link
+  const activeLink = highlightActivePage(state);
+
   // Restore scroll position
   restoreScrollPosition(sidebar);
+
+  // Ensure active item is visible (overrides scroll position if needed)
+  if (sidebar && activeLink) {
+    ensureActiveItemVisible(sidebar, activeLink);
+  }
 
   // Save scroll position when user scrolls
   if (sidebar) {
     setupScrollPersistence(sidebar);
   }
-
-  // Set up section toggles
-  const state = initSectionToggles();
-
-  // Highlight active page
-  highlightActivePage(state);
 
   // Mobile sidebar toggle
   if (mobileMenuButton && sidebar && overlay) {
