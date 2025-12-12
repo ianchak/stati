@@ -231,7 +231,7 @@ function getStatusEmoji(status) {
 }
 
 // Generate markdown report
-function generateReport(metricsOrSummary, results, comparison, baseline) {
+function generateReport(metricsOrSummary, comparison, baseline) {
   const lines = [];
 
   // Header
@@ -372,7 +372,7 @@ async function main() {
   const comparison = compareWithBaseline(results, baseline);
 
   // Generate report
-  const report = generateReport(metrics || benchmarkSummary, results, comparison, baseline);
+  const report = generateReport(metrics || benchmarkSummary, comparison, baseline);
 
   // Write report
   const outputPath = join(rootDir, options.output);
