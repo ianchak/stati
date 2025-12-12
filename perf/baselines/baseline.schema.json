@@ -1,0 +1,78 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Stati Performance Baseline",
+  "description": "Schema for performance baseline configuration",
+  "type": "object",
+  "required": ["version", "thresholds"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Schema version"
+    },
+    "description": {
+      "type": "string"
+    },
+    "updated": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When baseline was last updated"
+    },
+    "environment": {
+      "type": "object",
+      "properties": {
+        "nodeVersion": { "type": "string" },
+        "pageCount": { "type": "number" },
+        "note": { "type": "string" }
+      }
+    },
+    "thresholds": {
+      "type": "object",
+      "properties": {
+        "coldBuild": {
+          "$ref": "#/definitions/buildThreshold"
+        },
+        "warmBuild": {
+          "allOf": [
+            { "$ref": "#/definitions/buildThreshold" },
+            {
+              "properties": {
+                "minCacheHitRate": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "description": "Minimum acceptable cache hit rate (0-1)"
+                }
+              }
+            }
+          ]
+        },
+        "incrementalBuild": {
+          "$ref": "#/definitions/buildThreshold"
+        }
+      },
+      "required": ["coldBuild", "warmBuild", "incrementalBuild"]
+    }
+  },
+  "definitions": {
+    "buildThreshold": {
+      "type": "object",
+      "required": ["medianMs", "tolerance"],
+      "properties": {
+        "medianMs": {
+          "type": "number",
+          "description": "Expected median duration in milliseconds"
+        },
+        "p95Ms": {
+          "type": "number",
+          "description": "Expected 95th percentile duration in milliseconds"
+        },
+        "tolerance": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Acceptable variance as decimal (e.g., 0.20 = 20%)"
+        }
+      }
+    }
+  }
+}

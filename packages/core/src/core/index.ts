@@ -5,7 +5,7 @@
 
 // Build functionality
 export { build } from './build.js';
-export type { BuildOptions } from './build.js';
+export type { BuildOptions, MetricsOptions, BuildResult } from './build.js';
 
 // Development server
 export { createDevServer } from './dev.js';
