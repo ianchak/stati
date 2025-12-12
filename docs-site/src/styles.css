@@ -367,16 +367,6 @@
   animation-timing-function: ease-out;
 }
 
-/* Sidebar stays stable during transitions */
-#sidebar {
-  view-transition-name: sidebar;
-}
-
-::view-transition-old(sidebar),
-::view-transition-new(sidebar) {
-  animation: none;
-}
-
 /* Header stays stable during transitions */
 header {
   view-transition-name: header;
