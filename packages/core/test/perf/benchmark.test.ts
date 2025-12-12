@@ -29,7 +29,7 @@ const BENCHMARK_CONFIG = {
   /** Timeout per test in ms */
   timeout: 60000,
   /** Number of test pages to generate */
-  pageCount: 10,
+  pageCount: 100,
 };
 
 /**
