@@ -62,11 +62,36 @@ export type { RSSConfig, RSSFeedConfig, RSSGenerationResult } from './types/inde
 // Re-export core functionality from barrel
 export type {
   BuildOptions,
+  MetricsOptions,
+  BuildResult,
   DevServerOptions,
   PreviewServerOptions,
   InvalidationResult,
 } from './core/index.js';
 export { build, createDevServer, createPreviewServer, invalidate } from './core/index.js';
+
+// Re-export metrics functionality
+export type {
+  BuildMetrics,
+  MetricsMeta,
+  MetricsFlags,
+  MetricsTotals,
+  MetricsPhases,
+  MetricsCounts,
+  MetricsISG,
+  PageTiming,
+  IncrementalMetrics,
+  MetricRecorder,
+  MetricRecorderOptions,
+  PhaseName,
+  CounterName,
+} from './metrics/index.js';
+export {
+  createMetricRecorder,
+  noopMetricRecorder,
+  writeMetrics,
+  formatMetricsSummary,
+} from './metrics/index.js';
 
 // Re-export SEO functionality from barrel
 export type { AutoInjectOptions } from './seo/index.js';
