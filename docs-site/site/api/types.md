@@ -295,8 +295,11 @@ interface TemplateContext {
     url: string;
     /** Rendered HTML content */
     content: string;
-    /** Table of contents extracted from headings */
-    toc?: TocEntry[];
+    /**
+     * Table of contents extracted from headings.
+     * Always an array (empty if no headings are present).
+     */
+    toc: TocEntry[];
     /** Current page's navigation node */
     navNode?: NavNode;
     /** Frontmatter fields spread into page object */
