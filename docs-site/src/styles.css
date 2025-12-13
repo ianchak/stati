@@ -354,3 +354,35 @@
     backdrop-filter: blur(2px);
   }
 }
+
+/* Enable view transitions for cross-document navigation */
+@view-transition {
+  navigation: auto;
+}
+
+/* Hide the old page immediately to prevent flash/pop */
+::view-transition-old(root) {
+  animation: none;
+  opacity: 0;
+}
+
+/* Fade in the new page smoothly */
+::view-transition-new(root) {
+  animation: fade-in 0.15s ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Reduced motion: actually disable cross-document transitions */
+@media (prefers-reduced-motion: reduce) {
+  @view-transition {
+    navigation: none;
+  }
+}
