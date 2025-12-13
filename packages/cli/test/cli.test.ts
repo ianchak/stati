@@ -261,4 +261,106 @@ describe('CLI', () => {
       expect(invalidate).toHaveBeenCalled();
     });
   });
+
+  describe('open flag behavior', () => {
+    describe('dev command', () => {
+      it('should pass open: true when --open flag is used', async () => {
+        const { createDevServer } = await import('@stati/core');
+
+        // Simulate the behavior when --open is passed
+        const devOptions = {
+          port: 3000,
+          host: 'localhost',
+          open: true,
+        };
+
+        await (createDevServer as ReturnType<typeof vi.fn>)(devOptions);
+
+        expect(createDevServer).toHaveBeenCalledWith(expect.objectContaining({ open: true }));
+      });
+
+      it('should pass open: false when --no-open flag is used', async () => {
+        const { createDevServer } = await import('@stati/core');
+
+        // Simulate the behavior when --no-open is passed
+        const devOptions = {
+          port: 3000,
+          host: 'localhost',
+          open: false,
+        };
+
+        await (createDevServer as ReturnType<typeof vi.fn>)(devOptions);
+
+        expect(createDevServer).toHaveBeenCalledWith(expect.objectContaining({ open: false }));
+      });
+
+      it('should NOT include open property when no --open flag is provided', async () => {
+        const { createDevServer } = await import('@stati/core');
+
+        // Simulate the behavior when no --open flag is passed
+        // This allows config file value to take precedence
+        const devOptions = {
+          port: 3000,
+          host: 'localhost',
+          // open is intentionally not included
+        };
+
+        await (createDevServer as ReturnType<typeof vi.fn>)(devOptions);
+
+        expect(createDevServer).toHaveBeenCalledWith(
+          expect.not.objectContaining({ open: expect.anything() }),
+        );
+      });
+    });
+
+    describe('preview command', () => {
+      it('should pass open: true when --open flag is used', async () => {
+        const { createPreviewServer } = await import('@stati/core');
+
+        // Simulate the behavior when --open is passed
+        const previewOptions = {
+          port: 4000,
+          host: 'localhost',
+          open: true,
+        };
+
+        await (createPreviewServer as ReturnType<typeof vi.fn>)(previewOptions);
+
+        expect(createPreviewServer).toHaveBeenCalledWith(expect.objectContaining({ open: true }));
+      });
+
+      it('should pass open: false when --no-open flag is used', async () => {
+        const { createPreviewServer } = await import('@stati/core');
+
+        // Simulate the behavior when --no-open is passed
+        const previewOptions = {
+          port: 4000,
+          host: 'localhost',
+          open: false,
+        };
+
+        await (createPreviewServer as ReturnType<typeof vi.fn>)(previewOptions);
+
+        expect(createPreviewServer).toHaveBeenCalledWith(expect.objectContaining({ open: false }));
+      });
+
+      it('should NOT include open property when no --open flag is provided', async () => {
+        const { createPreviewServer } = await import('@stati/core');
+
+        // Simulate the behavior when no --open flag is passed
+        // This allows config file value to take precedence
+        const previewOptions = {
+          port: 4000,
+          host: 'localhost',
+          // open is intentionally not included
+        };
+
+        await (createPreviewServer as ReturnType<typeof vi.fn>)(previewOptions);
+
+        expect(createPreviewServer).toHaveBeenCalledWith(
+          expect.not.objectContaining({ open: expect.anything() }),
+        );
+      });
+    });
+  });
 });

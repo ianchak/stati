@@ -1,7 +1,141 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { mkdir, writeFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
-import { resolvePrettyUrl } from '../../src/core/utils/server.utils.js';
+import { resolvePrettyUrl, mergeServerOptions } from '../../src/core/utils/server.utils.js';
+
+describe('mergeServerOptions', () => {
+  const defaults = {
+    port: 3000,
+    host: 'localhost',
+    open: false,
+  };
+
+  describe('open option precedence', () => {
+    it('should use CLI option when explicitly set to true', () => {
+      const result = mergeServerOptions({
+        options: { port: 3000, host: 'localhost', open: true },
+        config: { open: false },
+        defaults,
+      });
+
+      expect(result.open).toBe(true);
+    });
+
+    it('should use CLI option when explicitly set to false (--no-open)', () => {
+      const result = mergeServerOptions({
+        options: { port: 3000, host: 'localhost', open: false },
+        config: { open: true },
+        defaults,
+      });
+
+      expect(result.open).toBe(false);
+    });
+
+    it('should use config value when CLI option is undefined', () => {
+      const result = mergeServerOptions({
+        options: { port: 3000, host: 'localhost' }, // open is undefined
+        config: { open: true },
+        defaults,
+      });
+
+      expect(result.open).toBe(true);
+    });
+
+    it('should use config value false when CLI option is undefined', () => {
+      const result = mergeServerOptions({
+        options: { port: 3000, host: 'localhost' }, // open is undefined
+        config: { open: false },
+        defaults,
+      });
+
+      expect(result.open).toBe(false);
+    });
+
+    it('should use default value when both CLI option and config are undefined', () => {
+      const result = mergeServerOptions({
+        options: { port: 3000, host: 'localhost' }, // open is undefined
+        config: undefined,
+        defaults,
+      });
+
+      expect(result.open).toBe(false); // defaults.open is false
+    });
+
+    it('should use default value when config exists but open is not set', () => {
+      const result = mergeServerOptions({
+        options: { port: 3000, host: 'localhost' }, // open is undefined
+        config: { port: 4000 }, // open is undefined in config
+        defaults,
+      });
+
+      expect(result.open).toBe(false); // defaults.open is false
+    });
+  });
+
+  describe('port option precedence', () => {
+    it('should use CLI port over config', () => {
+      const result = mergeServerOptions({
+        options: { port: 8080, host: 'localhost' },
+        config: { port: 9000 },
+        defaults,
+      });
+
+      expect(result.port).toBe(8080);
+    });
+
+    it('should use config port when CLI port is undefined', () => {
+      const result = mergeServerOptions({
+        options: { host: 'localhost' },
+        config: { port: 9000 },
+        defaults,
+      });
+
+      expect(result.port).toBe(9000);
+    });
+
+    it('should use default port when neither CLI nor config specify it', () => {
+      const result = mergeServerOptions({
+        options: { host: 'localhost' },
+        config: {},
+        defaults,
+      });
+
+      expect(result.port).toBe(3000);
+    });
+  });
+
+  describe('host option precedence', () => {
+    it('should use CLI host over config', () => {
+      const result = mergeServerOptions({
+        options: { port: 3000, host: '0.0.0.0' },
+        config: { host: '127.0.0.1' },
+        defaults,
+      });
+
+      expect(result.host).toBe('0.0.0.0');
+    });
+
+    it('should use config host when CLI host is undefined', () => {
+      const result = mergeServerOptions({
+        options: { port: 3000 },
+        config: { host: '127.0.0.1' },
+        defaults,
+      });
+
+      expect(result.host).toBe('127.0.0.1');
+    });
+
+    it('should use default host when neither CLI nor config specify it', () => {
+      const result = mergeServerOptions({
+        options: { port: 3000 },
+        config: {},
+        defaults,
+      });
+
+      expect(result.host).toBe('localhost');
+    });
+  });
+});
 
 describe('resolvePrettyUrl', () => {
   const testDir = join(process.cwd(), 'test-server-utils');
