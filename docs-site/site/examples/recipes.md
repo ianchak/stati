@@ -87,6 +87,69 @@ Common navigation patterns made easy:
 - **Any section's children** - Use `stati.nav.getChildren('/path')`
 - **Current page's siblings** - Use `stati.nav.getSiblings()`
 
+### Table of Contents (In-Page Navigation)
+
+Stati automatically extracts headings (h2-h6) and makes them available via `stati.page.toc`:
+
+```html
+<!-- _partials/toc.eta -->
+<% if (stati.page.toc && stati.page.toc.length > 0) { %>
+  <nav class="table-of-contents">
+    <h2>On this page</h2>
+    <ul>
+      <% stati.page.toc.forEach(entry => { %>
+        <li class="<%= `toc-level-${entry.level}` %>">
+          <a href="#<%= entry.id %>"><%= entry.text %></a>
+        </li>
+      <% }) %>
+    </ul>
+  </nav>
+<% } %>
+```
+
+Each TOC entry contains:
+
+- `id` - Anchor ID for linking (e.g., `getting-started`)
+- `text` - Plain text heading content
+- `level` - Heading level (2-6)
+
+For hierarchical TOC with nesting:
+
+```html
+<!-- _partials/hierarchical-toc.eta -->
+<%
+  // Group TOC entries by level for nested display
+  function renderTocLevel(entries, startIndex, parentLevel) {
+    let result = '<ul>';
+    let i = startIndex;
+    while (i < entries.length) {
+      const entry = entries[i];
+      if (entry.level <= parentLevel && i !== startIndex) break;
+      if (entry.level === parentLevel + 1 || (i === startIndex && entry.level >= parentLevel)) {
+        result += `<li><a href="#${entry.id}">${entry.text}</a>`;
+        // Check for children
+        if (i + 1 < entries.length && entries[i + 1].level > entry.level) {
+          const [childHtml, newIndex] = renderTocLevel(entries, i + 1, entry.level);
+          result += childHtml;
+          i = newIndex - 1;
+        }
+        result += '</li>';
+      }
+      i++;
+    }
+    result += '</ul>';
+    return [result, i];
+  }
+%>
+
+<% if (stati.page.toc && stati.page.toc.length > 0) { %>
+  <nav class="toc-hierarchical">
+    <h2>Contents</h2>
+    <%~ renderTocLevel(stati.page.toc, 0, 1)[0] %>
+  </nav>
+<% } %>
+```
+
 Here are practical examples:
 
 ```html

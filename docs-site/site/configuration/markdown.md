@@ -29,9 +29,37 @@ export default defineConfig({
       // Receive markdown-it instance
       // Customize rendering, add plugins, etc.
     },
+
+    // Enable/disable TOC extraction (default: true)
+    toc: true,
   },
 });
 ```
+
+### `markdown.toc`
+
+Enable or disable automatic Table of Contents (TOC) extraction and heading anchor generation.
+
+- **Type**: `boolean`
+- **Default**: `true`
+
+When enabled, Stati automatically:
+
+1. **Extracts heading data** from markdown content (levels h2-h6)
+2. **Generates unique anchor IDs** for each heading (handles duplicates: `intro`, `intro-1`, `intro-2`)
+3. **Populates `stati.page.toc`** with heading entries for use in templates
+
+```typescript
+export default defineConfig({
+  markdown: {
+    toc: false, // Disable TOC extraction and anchor generation
+  },
+});
+```
+
+When disabled, `stati.page.toc` will be an empty array and headings will not have `id` attributes injected.
+
+See [Table of Contents (TOC)](#table-of-contents-toc) for template usage examples.
 
 ## Default Settings
 
@@ -396,6 +424,60 @@ export default defineConfig({
   },
 });
 ```
+
+## Table of Contents (TOC)
+
+Stati automatically extracts Table of Contents data from markdown headings and makes it available in templates via `stati.page.toc`.
+
+### TOC Entry Structure
+
+Each TOC entry contains:
+
+```typescript
+interface TocEntry {
+  /** Anchor ID for the heading (used in href="#id") */
+  id: string;
+  /** Plain text content of the heading */
+  text: string;
+  /** Heading level (2-6) */
+  level: number;
+}
+```
+
+### Template Usage
+
+Build navigation from extracted headings:
+
+```eta
+<nav class="toc">
+  <h2>On this page</h2>
+  <ul>
+    <% for (const entry of stati.page.toc) { %>
+      <li class="toc-level-<%= entry.level %>">
+        <a href="#<%= entry.id %>"><%= entry.text %></a>
+      </li>
+    <% } %>
+  </ul>
+</nav>
+```
+
+### Generated Anchor IDs
+
+Stati generates URL-friendly anchor IDs from heading text:
+
+| Heading | Generated ID |
+|---------|--------------|
+| `## Getting Started` | `getting-started` |
+| `## API Reference` | `api-reference` |
+| `## What's New?` | `what-s-new` |
+
+**Duplicate Handling**: When headings have the same text, IDs are numbered:
+
+| Heading | Generated ID |
+|---------|--------------|
+| `## Example` | `example` |
+| `## Example` | `example-1` |
+| `## Example` | `example-2` |
 
 ## Next Steps
 
