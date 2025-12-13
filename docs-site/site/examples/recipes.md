@@ -98,7 +98,7 @@ Stati automatically extracts headings (h2-h6) and makes them available via `stat
     <h2>On this page</h2>
     <ul>
       <% stati.page.toc.forEach(entry => { %>
-        <li class="<%= `toc-level-${entry.level}` %>">
+        <li class="<%= stati.propValue(`toc-level-${entry.level}`) %>">
           <a href="#<%= entry.id %>"><%= entry.text %></a>
         </li>
       <% }) %>
