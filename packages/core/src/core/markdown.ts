@@ -123,7 +123,12 @@ function extractAndInjectAnchors(tokens: Token[], tocEnabled: boolean): TocEntry
         const inlineToken = tokens[i + 1];
         if (inlineToken && inlineToken.type === 'inline') {
           const text = extractTextFromToken(inlineToken);
-          const baseId = slugify(text);
+          let baseId = slugify(text);
+
+          // Fallback for empty slugs (e.g., headings with only emojis or special characters)
+          if (!baseId) {
+            baseId = 'heading';
+          }
 
           // Handle duplicate IDs
           let id = baseId;
