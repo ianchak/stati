@@ -453,8 +453,8 @@ Build navigation from extracted headings:
   <h2>On this page</h2>
   <ul>
     <% for (const entry of stati.page.toc) { %>
-      <li class="toc-level-<%= entry.level %>">
-        <a href="#<%= entry.id %>"><%= entry.text %></a>
+      <li class="<%= stati.propValue(`toc-level-${entry.level}`) %>">
+        <a href="<%= `#${entry.id}` %>"><%= entry.text %></a>
       </li>
     <% } %>
   </ul>
