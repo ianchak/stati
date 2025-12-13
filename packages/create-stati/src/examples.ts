@@ -134,15 +134,8 @@ export class ExampleManager {
         // Ensure target directory exists
         await mkdir(dirname(targetPath), { recursive: true });
 
-        // Check if it's a binary file
-        const fileExtension = item.substring(item.lastIndexOf('.'));
-        if (binaryExtensions.has(fileExtension.toLowerCase())) {
-          // Copy binary files as-is
-          await copyFile(sourcePath, targetPath);
-        } else {
-          // Copy text files (we don't do variable substitution, just copy directly)
-          await copyFile(sourcePath, targetPath);
-        }
+        // Copy all files directly (no variable substitution)
+        await copyFile(sourcePath, targetPath);
       }
     }
   }
