@@ -285,7 +285,7 @@ async function handleTemplateChange(
     }
 
     // Find pages that depend on this template
-    const affectedPages: string[] = [];
+    let affectedPagesCount = 0;
     const normalizedTemplatePath = posix.normalize(templatePath.replace(/\\/g, '/'));
 
     for (const [pagePath, entry] of Object.entries(cacheManifest.entries)) {
@@ -299,13 +299,13 @@ async function handleTemplateChange(
           );
         })
       ) {
-        affectedPages.push(pagePath);
+        affectedPagesCount++;
         // Remove from cache to force rebuild
         delete cacheManifest.entries[pagePath];
       }
     }
 
-    if (affectedPages.length > 0) {
+    if (affectedPagesCount > 0) {
       // Save updated cache manifest
       await saveCacheManifest(cacheDir, cacheManifest);
 
