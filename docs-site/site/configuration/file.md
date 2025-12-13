@@ -109,6 +109,7 @@ export default defineConfig({
 **Available Options:**
 - `plugins` (array) - Array of markdown-it plugin names (strings) or [name, options] tuples
 - `configure` (function) - Function that receives the markdown-it instance for custom configuration
+- `toc` (boolean) - Enable/disable TOC extraction and heading anchor generation (default: `true`)
 
 ### Template Configuration
 

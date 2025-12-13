@@ -21,6 +21,8 @@ interface TemplateContext {
     path: string;
     url: string;
     content: string;
+    toc: TocEntry[]; // Table of contents entries
+    navNode?: NavNode; // Current page's navigation node
     title?: string;
     description?: string;
     [key: string]: unknown; // Front matter fields
@@ -29,6 +31,15 @@ interface TemplateContext {
   navigation: NavNode[];
   collection?: CollectionData; // Only for index pages
   partials: Record<string, string>; // Rendered partial markup
+}
+
+interface TocEntry {
+  /** Anchor ID for the heading (used in href="#id") */
+  id: string;
+  /** Plain text content of the heading */
+  text: string;
+  /** Heading level (2-6) */
+  level: number;
 }
 
 interface SiteConfig {
@@ -53,6 +64,7 @@ interface StatiConfig {
   markdown?: {
     plugins?: (string | [string, unknown])[];
     configure?: (md: MarkdownIt) => void;
+    toc?: boolean;
   };
   eta?: {
     filters?: Record<string, (value: unknown) => unknown>;

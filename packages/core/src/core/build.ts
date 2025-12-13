@@ -390,15 +390,26 @@ async function processPagesWithCache(
       await config.hooks.beforeRender({ page, config });
     }
 
-    // Render markdown to HTML
-    const htmlContent = renderMarkdown(page.content, md);
+    // Render markdown to HTML with TOC extraction
+    const tocEnabled = config.markdown?.toc !== false;
+    const { html: htmlContent, toc } = renderMarkdown(page.content, md, tocEnabled);
 
     // Compute matched bundle paths for this page
     const bundlePaths = getBundlePathsForPage(page.url, compiledBundles);
     const assets: StatiAssets | undefined = bundlePaths.length > 0 ? { bundlePaths } : undefined;
 
     // Render with template
-    let finalHtml = await renderPage(page, htmlContent, config, eta, navigation, pages, assets);
+    let finalHtml = await renderPage(
+      page,
+      htmlContent,
+      config,
+      eta,
+      navigation,
+      pages,
+      assets,
+      toc,
+      logger,
+    );
 
     // Auto-inject SEO tags if enabled
     if (config.seo?.autoInject !== false) {

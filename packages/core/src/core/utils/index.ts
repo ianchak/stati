@@ -38,6 +38,9 @@ export {
 // Template utilities
 export { propValue } from './template.utils.js';
 
+// Slugify utilities
+export { slugify } from './slugify.utils.js';
+
 // Tailwind inventory utilities
 export {
   trackTailwindClass,
