@@ -150,7 +150,7 @@ describe('Error Scenario Tests', () => {
     mockCreateTemplateEngine.mockReturnValue(mockEta as unknown as Eta);
     mockCreateMarkdownProcessor.mockResolvedValue({} as MarkdownIt);
     mockLoadContent.mockResolvedValue([validPage]);
-    mockRenderMarkdown.mockReturnValue('<h1>Test Content</h1>');
+    mockRenderMarkdown.mockReturnValue({ html: '<h1>Test Content</h1>', toc: [] });
     mockRenderPage.mockResolvedValue('<html><body><h1>Test Content</h1></body></html>');
 
     // ISG mocks - setup default behaviors
@@ -252,7 +252,7 @@ describe('Error Scenario Tests', () => {
       await expect(build()).resolves.not.toThrow();
 
       // Should still process the page
-      expect(mockRenderMarkdown).toHaveBeenCalledWith('# Invalid Content', expect.anything());
+      expect(mockRenderMarkdown).toHaveBeenCalledWith('# Invalid Content', expect.anything(), true);
     });
 
     it('should handle content files with missing titles', async () => {
@@ -277,6 +277,7 @@ describe('Error Scenario Tests', () => {
         expect.any(Array), // navigation parameter
         expect.any(Array), // allPages parameter
         undefined, // assets parameter
+        expect.any(Array), // toc parameter
       );
     });
   });
@@ -318,6 +319,7 @@ describe('Error Scenario Tests', () => {
       expect(mockRenderMarkdown).toHaveBeenCalledWith(
         '# Unclosed **bold text\n\n```\nUnclosed code block',
         expect.anything(),
+        true,
       );
     });
   });
@@ -476,7 +478,7 @@ describe('Error Scenario Tests', () => {
 
       await expect(build()).resolves.not.toThrow();
 
-      expect(mockRenderMarkdown).toHaveBeenCalledWith(largeContent, expect.anything());
+      expect(mockRenderMarkdown).toHaveBeenCalledWith(largeContent, expect.anything(), true);
     });
 
     it('should handle many pages without memory issues', async () => {
@@ -603,7 +605,7 @@ describe('Error Scenario Tests', () => {
 
       await expect(build()).resolves.not.toThrow();
 
-      expect(mockRenderMarkdown).toHaveBeenCalledWith('', expect.anything());
+      expect(mockRenderMarkdown).toHaveBeenCalledWith('', expect.anything(), true);
     });
 
     it('should handle null/undefined in page data', async () => {
@@ -627,6 +629,7 @@ describe('Error Scenario Tests', () => {
         expect.any(Array), // navigation parameter
         expect.any(Array), // allPages parameter
         undefined, // assets parameter
+        expect.any(Array), // toc parameter
       );
     });
 

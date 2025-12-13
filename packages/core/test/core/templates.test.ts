@@ -204,6 +204,70 @@ describe('templates.ts', () => {
       consoleSpy.mockRestore();
     });
 
+    it('should pass TOC entries to template context', async () => {
+      // Mock path exists for default layout discovery
+      mockPathExists
+        .mockResolvedValueOnce(true) // layout.eta in root exists
+        .mockResolvedValue(false);
+
+      mockEtaInstance.renderAsync.mockResolvedValue('<html>Rendered content</html>');
+
+      const toc = [
+        { id: 'introduction', text: 'Introduction', level: 2 },
+        { id: 'getting-started', text: 'Getting Started', level: 2 },
+        { id: 'installation', text: 'Installation', level: 3 },
+      ];
+
+      await renderPage(
+        mockPage,
+        '<h1>Test content</h1>',
+        mockConfig,
+        mockEtaInstance as Eta,
+        undefined, // navigation
+        undefined, // allPages
+        undefined, // assets
+        toc,
+      );
+
+      expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
+        'layout.eta',
+        expect.objectContaining({
+          page: expect.objectContaining({
+            toc: toc,
+          }),
+        }),
+      );
+    });
+
+    it('should pass empty TOC array when no TOC provided', async () => {
+      // Mock path exists for default layout discovery
+      mockPathExists
+        .mockResolvedValueOnce(true) // layout.eta in root exists
+        .mockResolvedValue(false);
+
+      mockEtaInstance.renderAsync.mockResolvedValue('<html>Rendered content</html>');
+
+      await renderPage(
+        mockPage,
+        '<h1>Test content</h1>',
+        mockConfig,
+        mockEtaInstance as Eta,
+        undefined, // navigation
+        undefined, // allPages
+        undefined, // assets
+        undefined, // toc - not provided
+      );
+
+      expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
+        'layout.eta',
+        expect.objectContaining({
+          page: expect.objectContaining({
+            toc: [], // Should default to empty array
+          }),
+        }),
+      );
+    });
+
     describe('hierarchical layout discovery (layout.eta convention)', () => {
       it('should use explicit layout when specified in front matter', async () => {
         const pageWithLayout = {

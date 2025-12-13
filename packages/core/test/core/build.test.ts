@@ -171,7 +171,7 @@ describe('build.ts', () => {
 
     mockCreateMarkdownProcessor.mockReturnValue(mockMd);
     mockCreateTemplateEngine.mockReturnValue(mockEta);
-    mockRenderMarkdown.mockReturnValue('<h1>Rendered markdown</h1>');
+    mockRenderMarkdown.mockReturnValue({ html: '<h1>Rendered markdown</h1>', toc: [] });
     mockRenderPage.mockResolvedValue('<html><body>Full page</body></html>');
 
     mockPathExists.mockResolvedValue(true);
@@ -337,9 +337,9 @@ describe('build.ts', () => {
       await build();
 
       expect(mockRenderMarkdown).toHaveBeenCalledTimes(3);
-      expect(mockRenderMarkdown).toHaveBeenCalledWith('# Welcome to our site', mockMd);
-      expect(mockRenderMarkdown).toHaveBeenCalledWith('# About us', mockMd);
-      expect(mockRenderMarkdown).toHaveBeenCalledWith('# My first post', mockMd);
+      expect(mockRenderMarkdown).toHaveBeenCalledWith('# Welcome to our site', mockMd, true);
+      expect(mockRenderMarkdown).toHaveBeenCalledWith('# About us', mockMd, true);
+      expect(mockRenderMarkdown).toHaveBeenCalledWith('# My first post', mockMd, true);
     });
 
     it('should render each page with template', async () => {
@@ -354,6 +354,7 @@ describe('build.ts', () => {
         expect.any(Array), // navigation parameter
         expect.any(Array), // allPages parameter
         undefined, // assets parameter
+        expect.any(Array), // toc parameter
       );
     });
 
@@ -992,6 +993,7 @@ describe('build.ts', () => {
         expect.objectContaining({
           bundlePaths: ['/_assets/main-hash.js'],
         }),
+        expect.any(Array), // toc parameter
       );
     });
 
@@ -1017,6 +1019,7 @@ describe('build.ts', () => {
         expect.anything(),
         expect.anything(),
         undefined,
+        expect.any(Array), // toc parameter
       );
     });
   });
