@@ -35,6 +35,7 @@ export type {
   TwitterCardConfig,
   AuthorConfig,
   StatiAssets,
+  TocEntry,
 } from './content.js';
 
 // SEO types

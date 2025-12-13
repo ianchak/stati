@@ -1,7 +1,15 @@
 import { Eta } from 'eta';
 import { join, dirname, relative, basename, posix } from 'node:path';
 import glob from 'fast-glob';
-import type { StatiConfig, PageModel, NavNode, CollectionData } from '../types/index.js';
+import type {
+  StatiConfig,
+  PageModel,
+  NavNode,
+  CollectionData,
+  TocEntry,
+  Logger,
+} from '../types/index.js';
+import { createFallbackLogger } from './utils/index.js';
 import { TEMPLATE_EXTENSION } from '../constants.js';
 import {
   getStatiVersion,
@@ -233,7 +241,11 @@ export async function renderPage(
   navigation?: NavNode[],
   allPages?: PageModel[],
   assets?: import('../types/index.js').StatiAssets,
+  toc?: TocEntry[],
+  logger?: Logger,
 ): Promise<string> {
+  const log = logger || createFallbackLogger();
+
   // Discover partials for this page's directory hierarchy
   const srcDir = resolveSrcDir(config);
   const relativePath = relative(srcDir, page.sourcePath);
@@ -267,15 +279,29 @@ export async function renderPage(
   const navHelpers = createNavigationHelpers(navTree, page);
   const currentNavNode = navHelpers.getCurrentNode();
 
+  // Define page-specific properties that override frontmatter
+  const pageOverrides = {
+    path: page.url,
+    url: page.url, // Add url property for compatibility
+    content: body,
+    navNode: currentNavNode, // Add current page's navigation node
+    toc: toc || [], // Table of contents entries extracted from markdown headings
+  };
+
+  // Check for frontmatter keys that conflict with reserved page properties
+  const conflictingKeys = Object.keys(pageOverrides).filter((key) => key in page.frontMatter);
+  if (conflictingKeys.length > 0) {
+    log.warning(
+      `Frontmatter in "${page.sourcePath}" contains reserved keys that will be overwritten: ${conflictingKeys.join(', ')}`,
+    );
+  }
+
   // Create base context for partial rendering
   const baseContext = {
     site: config.site,
     page: {
       ...page.frontMatter,
-      path: page.url,
-      url: page.url, // Add url property for compatibility
-      content: body,
-      navNode: currentNavNode, // Add current page's navigation node
+      ...pageOverrides,
     },
     content: body,
     nav: navHelpers, // Replace navigation with nav helpers
@@ -340,9 +366,8 @@ export async function renderPage(
       } catch (error) {
         // If this is the last pass, log the error and create placeholder
         if (pass === maxPasses - 1) {
-          console.warn(
-            `Warning: Failed to render partial ${partialName} at ${partialPath}:`,
-            error,
+          log.warning(
+            `Failed to render partial ${partialName} at ${partialPath}: ${error instanceof Error ? error.message : String(error)}`,
           );
 
           // In development mode, throw enhanced template error for partials too
@@ -397,13 +422,15 @@ export async function renderPage(
 
   try {
     if (!layoutPath) {
-      console.warn('No layout template found, using fallback');
+      log.warning('No layout template found, using fallback');
       return createFallbackHtml(page, body);
     }
 
     return await eta.renderAsync(layoutPath, context);
   } catch (error) {
-    console.error(`Error rendering layout ${layoutPath || 'unknown'}:`, error);
+    log.error(
+      `Error rendering layout ${layoutPath || 'unknown'}: ${error instanceof Error ? error.message : String(error)}`,
+    );
 
     // In development mode, throw enhanced template error for better debugging
     if (getEnv() === 'development') {

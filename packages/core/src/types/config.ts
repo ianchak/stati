@@ -63,6 +63,8 @@ export interface StatiConfig {
     plugins?: (string | [string, unknown])[];
     /** Function to configure the MarkdownIt instance */
     configure?: (md: MarkdownIt) => void;
+    /** Enable TOC extraction and heading anchor generation (default: true) */
+    toc?: boolean;
   };
   /** Eta template engine configuration */
   eta?: {
