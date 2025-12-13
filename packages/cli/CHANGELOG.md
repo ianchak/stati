@@ -1,5 +1,17 @@
 # @stati/cli
 
+## 1.10.0
+
+### Minor Changes
+
+- 897459e: update open option handling for server configuration
+
+### Patch Changes
+
+- 897459e: add tests for open flag behavior in dev and preview commands
+- Updated dependencies [897459e]
+  - @stati/core@1.16.2
+
 ## 1.9.3
 
 ### Patch Changes

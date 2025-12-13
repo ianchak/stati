@@ -1,5 +1,11 @@
 # @stati/core
 
+## 1.16.2
+
+### Patch Changes
+
+- 897459e: add tests for open flag behavior in dev and preview commands
+
 ## 1.16.1
 
 ### Patch Changes
