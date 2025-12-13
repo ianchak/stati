@@ -118,34 +118,47 @@ For hierarchical TOC with nesting:
 ```html
 <!-- _partials/hierarchical-toc.eta -->
 <%
-  // Group TOC entries by level for nested display
-  function renderTocLevel(entries, startIndex, parentLevel) {
-    let result = '<ul>';
-    let i = startIndex;
-    while (i < entries.length) {
-      const entry = entries[i];
-      if (entry.level <= parentLevel && i !== startIndex) break;
-      if (entry.level === parentLevel + 1 || (i === startIndex && entry.level >= parentLevel)) {
-        result += `<li><a href="#${entry.id}">${entry.text}</a>`;
-        // Check for children
-        if (i + 1 < entries.length && entries[i + 1].level > entry.level) {
-          const [childHtml, newIndex] = renderTocLevel(entries, i + 1, entry.level);
-          result += childHtml;
-          i = newIndex - 1;
-        }
-        result += '</li>';
+  // Build a nested tree structure from flat TOC entries
+  function buildTocTree(entries) {
+    const root = { children: [] };
+    const stack = [{ node: root, level: 1 }];
+
+    entries.forEach(entry => {
+      const newNode = { ...entry, children: [] };
+
+      // Pop stack until we find the parent level
+      while (stack.length > 1 && stack[stack.length - 1].level >= entry.level) {
+        stack.pop();
       }
-      i++;
-    }
-    result += '</ul>';
-    return [result, i];
+
+      // Add as child of current parent
+      stack[stack.length - 1].node.children.push(newNode);
+      stack.push({ node: newNode, level: entry.level });
+    });
+
+    return root.children;
   }
+
+  // Recursive template function for rendering TOC tree
+  function renderTocTree(items) { %>
+    <ul>
+      <% items.forEach(item => { %>
+        <li>
+          <a href="#<%= item.id %>"><%= item.text %></a>
+          <% if (item.children && item.children.length > 0) { %>
+            <%~ renderTocTree(item.children) %>
+          <% } %>
+        </li>
+      <% }) %>
+    </ul>
+  <% }
 %>
 
 <% if (stati.page.toc && stati.page.toc.length > 0) { %>
   <nav class="toc-hierarchical">
     <h2>Contents</h2>
-    <%~ renderTocLevel(stati.page.toc, 0, 1)[0] %>
+    <% const tocTree = buildTocTree(stati.page.toc) %>
+    <%~ renderTocTree(tocTree) %>
   </nav>
 <% } %>
 ```
