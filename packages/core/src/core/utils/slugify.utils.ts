@@ -56,8 +56,6 @@ const TRANSLITERATION_MAP: Record<string, string> = {
   ż: 'z',
   // Additional common characters
   þ: 'th',
-  // Punctuation that should become specific characters
-  '&': 'and',
 };
 
 /**
