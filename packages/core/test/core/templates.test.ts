@@ -196,7 +196,7 @@ describe('templates.ts', () => {
         mockEtaInstance as Eta,
       );
 
-      expect(consoleSpy).toHaveBeenCalledWith('Error rendering layout layout.eta:', error);
+      expect(consoleSpy).toHaveBeenCalledWith('Error rendering layout layout.eta: Template error');
       expect(result).toContain('<h1>Test content</h1>');
       expect(result).toContain('<!DOCTYPE html>');
       expect(result).toContain('<title>Test Page</title>');
@@ -611,8 +611,7 @@ describe('templates.ts', () => {
 
         // Verify error was logged - check for the path in the warning message
         expect(consoleSpy).toHaveBeenCalledWith(
-          expect.stringMatching(/Warning: Failed to render partial broken at/),
-          expect.any(Error),
+          expect.stringMatching(/Failed to render partial broken at/),
         );
 
         // Verify the partial was attempted to be rendered with the correct pattern

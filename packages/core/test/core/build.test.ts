@@ -355,6 +355,7 @@ describe('build.ts', () => {
         expect.any(Array), // allPages parameter
         undefined, // assets parameter
         expect.any(Array), // toc parameter
+        expect.objectContaining({ error: expect.any(Function) }), // logger parameter
       );
     });
 
@@ -994,6 +995,7 @@ describe('build.ts', () => {
           bundlePaths: ['/_assets/main-hash.js'],
         }),
         expect.any(Array), // toc parameter
+        expect.objectContaining({ error: expect.any(Function) }), // logger parameter
       );
     });
 
@@ -1020,6 +1022,7 @@ describe('build.ts', () => {
         expect.anything(),
         undefined,
         expect.any(Array), // toc parameter
+        expect.objectContaining({ error: expect.any(Function) }), // logger parameter
       );
     });
   });
