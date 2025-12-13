@@ -360,10 +360,24 @@
   navigation: auto;
 }
 
-/* Set timing on the group so old/new/image-pair stay in sync */
-::view-transition-group(root) {
-  animation-duration: 0.15s;
-  animation-timing-function: ease-out;
+/* Hide the old page immediately to prevent flash/pop */
+::view-transition-old(root) {
+  animation: none;
+  opacity: 0;
+}
+
+/* Fade in the new page smoothly */
+::view-transition-new(root) {
+  animation: fade-in 0.15s ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* Reduced motion: actually disable cross-document transitions */
