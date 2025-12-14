@@ -113,7 +113,7 @@ The full metrics are saved to `.stati/metrics/build-<timestamp>.json`:
     "renderedPages": 5,
     "cachedPages": 15,
     "assetsCopied": 10,
-    "templatesLoaded": 3,
+    "templatesLoaded": 18,
     "markdownFilesProcessed": 20
   },
   "isg": {
@@ -163,6 +163,37 @@ The `phases` object shows how long each build phase took:
 | `hookAfterRenderTotalMs` | Total time spent in `afterRender` hooks across all pages |
 
 > **Note:** Hook timings are only recorded when the corresponding hooks are defined in your `stati.config.ts`. This helps identify if custom hooks are impacting build performance.
+
+### Counts
+
+The `counts` object tracks quantities processed during the build:
+
+| Counter | Description |
+|---------|-------------|
+| `totalPages` | Total number of pages discovered |
+| `renderedPages` | Pages that were rendered (cache misses) |
+| `cachedPages` | Pages served from cache (cache hits) |
+| `assetsCopied` | Number of static assets copied |
+| `templatesLoaded` | Total templates loaded across all rendered pages |
+| `markdownFilesProcessed` | Number of markdown files processed |
+
+#### Templates Loaded
+
+The `templatesLoaded` counter tracks the total number of Eta templates (layouts and partials) loaded during the build. This is an **accumulated total** across all rendered pages—if 5 pages each load 4 templates, `templatesLoaded` will be 20.
+
+When using `--metrics-detailed`, per-page template counts are also available in `pageTimings`:
+
+```json
+{
+  "pageTimings": [
+    { "url": "/docs/intro", "durationMs": 75, "cached": false, "templatesLoaded": 4 },
+    { "url": "/docs/guide", "durationMs": 60, "cached": false, "templatesLoaded": 4 },
+    { "url": "/about", "durationMs": 0, "cached": true }
+  ]
+}
+```
+
+Note that cached pages don't have a `templatesLoaded` property since no templates are rendered for them.
 
 ### Memory Usage
 
@@ -230,7 +261,12 @@ if (result.buildMetrics) {
   // Per-page timings (when detailed: true)
   if (metrics.pageTimings) {
     for (const page of metrics.pageTimings) {
-      console.log(`${page.url}: ${page.durationMs}ms (cached: ${page.cached})`);
+      if (page.cached) {
+        console.log(`${page.url}: cached`);
+      } else {
+        // templatesLoaded shows partials + layout loaded for this page
+        console.log(`${page.url}: ${page.durationMs}ms, ${page.templatesLoaded} templates`);
+      }
     }
   }
 }
