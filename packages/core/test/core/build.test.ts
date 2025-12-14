@@ -467,7 +467,7 @@ describe('build.ts', () => {
     });
 
     it('should include version in build message when provided', async () => {
-      await build({ version: '1.2.3' });
+      await build({ cliVersion: '1.2.3' });
 
       expect(consoleSpy).toHaveBeenCalledWith('Building your site...');
     });

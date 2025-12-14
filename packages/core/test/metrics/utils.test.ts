@@ -14,7 +14,6 @@ import {
   getNodeVersion,
   getMemoryUsage,
   writeMetrics,
-  formatMetricsSummary,
   generateMetricsFilename,
   DEFAULT_METRICS_DIR,
 } from '../../src/metrics/utils/index.js';
@@ -199,7 +198,8 @@ describe('writer.utils', () => {
         platform: 'linux',
         arch: 'x64',
         cpuCount: 4,
-        statiVersion: '1.0.0',
+        cliVersion: '1.0.0',
+        coreVersion: '1.0.0',
         command: 'build',
         flags: {},
       },
@@ -314,104 +314,6 @@ describe('writer.utils', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('string error');
-    });
-  });
-
-  describe('formatMetricsSummary', () => {
-    const mockMetrics: BuildMetrics = {
-      schemaVersion: '1',
-      meta: {
-        timestamp: '2024-01-15T10:30:00.000Z',
-        ci: false,
-        nodeVersion: '22.0.0',
-        platform: 'linux',
-        arch: 'x64',
-        cpuCount: 4,
-        statiVersion: '1.0.0',
-        command: 'build',
-        flags: {},
-      },
-      totals: {
-        durationMs: 1250,
-        peakRssBytes: 100 * 1024 * 1024,
-        heapUsedBytes: 50 * 1024 * 1024,
-      },
-      phases: {
-        configLoadMs: 50,
-        pageRenderingMs: 800,
-        assetCopyMs: 200,
-      },
-      counts: {
-        totalPages: 20,
-        renderedPages: 5,
-        cachedPages: 15,
-        assetsCopied: 10,
-        templatesLoaded: 3,
-        markdownFilesProcessed: 20,
-      },
-      isg: {
-        enabled: true,
-        cacheHitRate: 0.75,
-        manifestEntries: 20,
-        invalidatedEntries: 5,
-      },
-    };
-
-    it('should include header', () => {
-      const lines = formatMetricsSummary(mockMetrics);
-      const output = lines.join('\n');
-      expect(output).toContain('Build Metrics Summary');
-    });
-
-    it('should include total build time', () => {
-      const lines = formatMetricsSummary(mockMetrics);
-      const output = lines.join('\n');
-      expect(output).toContain('1.25s');
-    });
-
-    it('should include page stats', () => {
-      const lines = formatMetricsSummary(mockMetrics);
-      const output = lines.join('\n');
-      expect(output).toContain('20 total');
-      expect(output).toContain('5 rendered');
-      expect(output).toContain('15 cached');
-    });
-
-    it('should include cache hit rate', () => {
-      const lines = formatMetricsSummary(mockMetrics);
-      const output = lines.join('\n');
-      expect(output).toContain('75.0%');
-    });
-
-    it('should include peak memory', () => {
-      const lines = formatMetricsSummary(mockMetrics);
-      const output = lines.join('\n');
-      expect(output).toContain('100.0 MB');
-    });
-
-    it('should include top phases sorted by duration', () => {
-      const lines = formatMetricsSummary(mockMetrics);
-      const output = lines.join('\n');
-      expect(output).toContain('Page Rendering');
-      expect(output).toContain('800ms');
-    });
-
-    it('should handle metrics with no phases', () => {
-      const noPhases = { ...mockMetrics, phases: {} };
-      const lines = formatMetricsSummary(noPhases);
-      const output = lines.join('\n');
-      expect(output).toContain('Build Metrics Summary');
-      expect(output).not.toContain('Top phases');
-    });
-
-    it('should handle metrics with zero-duration phases', () => {
-      const zeroPhases = {
-        ...mockMetrics,
-        phases: { configLoadMs: 0, pageRenderingMs: 0 },
-      };
-      const lines = formatMetricsSummary(zeroPhases);
-      const output = lines.join('\n');
-      expect(output).not.toContain('Top phases');
     });
   });
 });
