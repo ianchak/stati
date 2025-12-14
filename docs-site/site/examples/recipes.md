@@ -99,7 +99,7 @@ Stati automatically extracts headings (h2-h6) and makes them available via `stat
     <ul>
       <% stati.page.toc.forEach(entry => { %>
         <li class="<%= stati.propValue(`toc-level-${entry.level}`) %>">
-          <a href="#<%= entry.id %>"><%= entry.text %></a>
+          <a href="<%= `#${entry.id}` %>"><%= entry.text %></a>
         </li>
       <% }) %>
     </ul>
@@ -144,7 +144,7 @@ For hierarchical TOC with nesting:
     <ul>
       <% items.forEach(item => { %>
         <li>
-          <a href="#<%= item.id %>"><%= item.text %></a>
+          <a href="<%= `#${item.id}` %>"><%= item.text %></a>
           <% if (item.children && item.children.length > 0) { %>
             <%~ renderTocTree(item.children) %>
           <% } %>
