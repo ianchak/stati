@@ -43,10 +43,7 @@ jobs:
           STATI_METRICS: '1'
 
       - name: Compare performance against baseline
-        id: perf-compare
-        if: always()
-        run: |
-          node scripts/compare-perf.mjs --output=perf-report.md || echo "perf_failed=true" >> $GITHUB_OUTPUT
+        run: node scripts/compare-perf.mjs --output=perf-report.md
 
       - name: Upload metrics artifacts
         uses: actions/upload-artifact@v4
