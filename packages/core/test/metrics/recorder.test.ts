@@ -3,6 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { setTimeout } from 'node:timers/promises';
 import {
   createMetricRecorder,
   noopMetricRecorder,
@@ -86,16 +87,13 @@ describe('MetricRecorder', () => {
       }
     });
 
-    it('should record phase timings via startSpan', () => {
+    it('should record phase timings via startSpan', async () => {
       vi.useRealTimers(); // Need real timers for performance.now()
       const recorder = createMetricRecorder({ enabled: true });
 
       const endSpan = recorder.startSpan('configLoadMs');
       // Simulate some work
-      const start = Date.now();
-      while (Date.now() - start < 5) {
-        // Busy wait for at least 5ms
-      }
+      await setTimeout(5);
       endSpan();
 
       const metrics = recorder.finalize();
@@ -309,15 +307,12 @@ describe('MetricRecorder', () => {
       expect(metrics.meta.command).toBe('dev');
     });
 
-    it('should capture total duration from start to finalize', () => {
+    it('should capture total duration from start to finalize', async () => {
       vi.useRealTimers();
       const recorder = createMetricRecorder({ enabled: true });
 
       // Simulate some work
-      const start = Date.now();
-      while (Date.now() - start < 10) {
-        // Busy wait for at least 10ms
-      }
+      await setTimeout(10);
 
       const metrics = recorder.finalize();
       expect(metrics.totals.durationMs).toBeGreaterThan(0);
