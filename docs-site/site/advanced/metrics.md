@@ -69,9 +69,9 @@ Cache hit rate: 75.0%
 Peak memory: 100.5 MB
 
 Top phases:
-  pageRendering: 800ms
-  assetCopy: 200ms
-  configLoad: 50ms
+  Page Rendering: 800ms
+  Asset Copy: 200ms
+  Config Load: 50ms
 ────────────────────────────────────────
 ```
 
