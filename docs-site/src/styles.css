@@ -360,6 +360,13 @@
   navigation: auto;
 }
 
+/* Exclude TOC and sidebar from view transitions to prevent flash during navigation.
+   These elements are server-rendered at build time and should remain visible. */
+#toc,
+#sidebar {
+  view-transition-name: none;
+}
+
 /* Hide the old page immediately to prevent flash/pop */
 ::view-transition-old(root) {
   animation: none;
