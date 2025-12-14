@@ -172,7 +172,10 @@ describe('build.ts', () => {
     mockCreateMarkdownProcessor.mockReturnValue(mockMd);
     mockCreateTemplateEngine.mockReturnValue(mockEta);
     mockRenderMarkdown.mockReturnValue('<h1>Rendered markdown</h1>');
-    mockRenderPage.mockResolvedValue('<html><body>Full page</body></html>');
+    mockRenderPage.mockResolvedValue({
+      html: '<html><body>Full page</body></html>',
+      templatesLoaded: 1,
+    });
 
     mockPathExists.mockResolvedValue(true);
     mockEnsureDir.mockResolvedValue(undefined);

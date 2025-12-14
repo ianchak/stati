@@ -19,6 +19,16 @@ import { getEnv } from '../env.js';
 import { generateSEO } from '../seo/index.js';
 
 /**
+ * Result of rendering a page template.
+ */
+export interface RenderResult {
+  /** The rendered HTML content */
+  html: string;
+  /** Number of templates loaded (layout + partials) */
+  templatesLoaded: number;
+}
+
+/**
  * Groups pages by their tags for aggregation purposes.
  *
  * @param pages - Pages to group
@@ -233,11 +243,14 @@ export async function renderPage(
   navigation?: NavNode[],
   allPages?: PageModel[],
   assets?: import('../types/index.js').StatiAssets,
-): Promise<string> {
+): Promise<RenderResult> {
   // Discover partials for this page's directory hierarchy
   const srcDir = resolveSrcDir(config);
   const relativePath = relative(srcDir, page.sourcePath);
   const partialPaths = await discoverPartials(relativePath, config);
+
+  // Count templates: partials + layout (if found)
+  const partialsCount = Object.keys(partialPaths).length;
 
   // Build collection data based on page type
   let collectionData: CollectionData | undefined;
@@ -261,6 +274,9 @@ export async function renderPage(
     page.frontMatter.layout,
     isIndexPage,
   );
+
+  // Calculate total templates loaded (partials + layout if present)
+  const templatesLoaded = partialsCount + (layoutPath ? 1 : 0);
 
   // Create navigation helpers
   const navTree = navigation || [];
@@ -390,10 +406,11 @@ export async function renderPage(
   try {
     if (!layoutPath) {
       console.warn('No layout template found, using fallback');
-      return createFallbackHtml(page, body);
+      return { html: createFallbackHtml(page, body), templatesLoaded };
     }
 
-    return await eta.renderAsync(layoutPath, context);
+    const html = await eta.renderAsync(layoutPath, context);
+    return { html, templatesLoaded };
   } catch (error) {
     console.error(`Error rendering layout ${layoutPath || 'unknown'}:`, error);
 
@@ -406,7 +423,7 @@ export async function renderPage(
       throw templateError;
     }
 
-    return createFallbackHtml(page, body);
+    return { html: createFallbackHtml(page, body), templatesLoaded };
   }
 }
 

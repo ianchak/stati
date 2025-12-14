@@ -151,7 +151,10 @@ describe('Error Scenario Tests', () => {
     mockCreateMarkdownProcessor.mockResolvedValue({} as MarkdownIt);
     mockLoadContent.mockResolvedValue([validPage]);
     mockRenderMarkdown.mockReturnValue('<h1>Test Content</h1>');
-    mockRenderPage.mockResolvedValue('<html><body><h1>Test Content</h1></body></html>');
+    mockRenderPage.mockResolvedValue({
+      html: '<html><body><h1>Test Content</h1></body></html>',
+      templatesLoaded: 1,
+    });
 
     // ISG mocks - setup default behaviors
     mockLoadCacheManifest.mockResolvedValue(null); // No existing cache by default

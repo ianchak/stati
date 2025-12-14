@@ -22,6 +22,7 @@ import {
 } from './utils/index.js';
 import type { CompiledBundleInfo } from './utils/index.js';
 import { join, dirname, relative, posix } from 'node:path';
+import { performance } from 'node:perf_hooks';
 import { loadConfig } from '../config/loader.js';
 import { loadContent } from './content.js';
 import { createMarkdownProcessor, renderMarkdown } from './markdown.js';
@@ -55,9 +56,26 @@ import type {
   NavNode,
   StatiAssets,
 } from '../types/index.js';
+import type { MetricRecorder, BuildMetrics } from '../metrics/index.js';
+import { createMetricRecorder, noopMetricRecorder } from '../metrics/index.js';
+
+/**
+ * Options for metrics collection during builds.
+ */
+export interface MetricsOptions {
+  /** Enable metrics collection */
+  enabled?: boolean;
+  /** Include per-page timing details */
+  detailed?: boolean;
+}
 
 /**
  * Options for customizing the build process.
+ *
+ * @remarks
+ * The `| undefined` on optional properties is intentional due to
+ * `exactOptionalPropertyTypes: true` in tsconfig.json, allowing callers
+ * to explicitly pass `undefined` values.
  *
  * @example
  * ```typescript
@@ -66,23 +84,34 @@ import type {
  *   clean: true,        // Clean output directory before build
  *   configPath: './custom.config.js',  // Custom config file path
  *   includeDrafts: true, // Include draft pages in build
- *   version: '1.0.0'    // Version to display in build messages
+ *   version: '1.0.0',   // Version to display in build messages
+ *   metrics: { enabled: true, detailed: true }  // Enable metrics collection
  * };
  * ```
  */
 export interface BuildOptions {
   /** Force rebuild of all pages, ignoring cache */
-  force?: boolean;
+  force?: boolean | undefined;
   /** Clean the output directory before building */
-  clean?: boolean;
+  clean?: boolean | undefined;
   /** Path to a custom configuration file */
-  configPath?: string;
+  configPath?: string | undefined;
   /** Include draft pages in the build */
-  includeDrafts?: boolean;
+  includeDrafts?: boolean | undefined;
   /** Custom logger for build output */
-  logger?: Logger;
+  logger?: Logger | undefined;
   /** Version information to display in build messages */
-  version?: string;
+  version?: string | undefined;
+  /** Metrics collection options */
+  metrics?: MetricsOptions | undefined;
+}
+
+/**
+ * Extended build result including optional metrics.
+ */
+export interface BuildResult extends BuildStats {
+  /** Build metrics (only present when metrics enabled) */
+  buildMetrics?: BuildMetrics;
 }
 
 /**
@@ -191,22 +220,26 @@ const defaultLogger: Logger = {
  * 5. Update cache manifest
  *
  * @param options - Build configuration options
- * @returns Promise resolving to build statistics
+ * @returns Promise resolving to build result with statistics and optional metrics
  * @throws {Error} When configuration is invalid
  * @throws {Error} When template rendering fails
  * @throws {Error} When build lock cannot be acquired
  *
  * @example
  * ```typescript
- * const stats = await build({
+ * const result = await build({
  *   force: true,
  *   clean: true,
- *   includeDrafts: false
+ *   includeDrafts: false,
+ *   metrics: { enabled: true }
  * });
- * console.log(`Built ${stats.pageCount} pages in ${stats.buildTime}ms`);
+ * console.log(`Built ${result.totalPages} pages in ${result.buildTimeMs}ms`);
+ * if (result.buildMetrics) {
+ *   console.log(`Cache hit rate: ${result.buildMetrics.isg.cacheHitRate}`);
+ * }
  * ```
  */
-export async function build(options: BuildOptions = {}): Promise<BuildStats> {
+export async function build(options: BuildOptions = {}): Promise<BuildResult> {
   const cacheDir = resolveCacheDir();
 
   // Ensure cache directory exists before acquiring build lock
@@ -316,6 +349,7 @@ async function processPagesWithCache(
   options: BuildOptions,
   logger: Logger,
   compiledBundles: CompiledBundleInfo[],
+  recorder: MetricRecorder = noopMetricRecorder,
 ): Promise<{ cacheHits: number; cacheMisses: number }> {
   let cacheHits = 0;
   let cacheMisses = 0;
@@ -325,7 +359,9 @@ async function processPagesWithCache(
 
   // Run beforeAll hook
   if (config.hooks?.beforeAll) {
+    const endHookBeforeAll = recorder.startSpan('hookBeforeAllMs');
     await config.hooks.beforeAll(buildContext);
+    endHookBeforeAll();
   }
 
   // Render each page with tree-based progress tracking and ISG
@@ -378,16 +414,20 @@ async function processPagesWithCache(
       } else {
         logger.processing(`📋 Cached ${page.url}`);
       }
+      // Record page timing for cached pages (0ms render time)
+      recorder.recordPageTiming(page.url, 0, true);
       continue;
     }
 
     // Cache miss - need to rebuild
     cacheMisses++;
-    const startTime = Date.now();
+    const startTime = performance.now();
 
     // Run beforeRender hook
     if (config.hooks?.beforeRender) {
+      const hookStart = performance.now();
       await config.hooks.beforeRender({ page, config });
+      recorder.addToPhase('hookBeforeRenderTotalMs', performance.now() - hookStart);
     }
 
     // Render markdown to HTML
@@ -398,7 +438,19 @@ async function processPagesWithCache(
     const assets: StatiAssets | undefined = bundlePaths.length > 0 ? { bundlePaths } : undefined;
 
     // Render with template
-    let finalHtml = await renderPage(page, htmlContent, config, eta, navigation, pages, assets);
+    const renderResult = await renderPage(
+      page,
+      htmlContent,
+      config,
+      eta,
+      navigation,
+      pages,
+      assets,
+    );
+    let finalHtml = renderResult.html;
+
+    // Record templates loaded for this page
+    recorder.increment('templatesLoaded', renderResult.templatesLoaded);
 
     // Auto-inject SEO tags if enabled
     if (config.seo?.autoInject !== false) {
@@ -422,7 +474,10 @@ async function processPagesWithCache(
       finalHtml = autoInjectBundles(finalHtml, assets.bundlePaths);
     }
 
-    const renderTime = Date.now() - startTime;
+    const renderTime = Math.round(performance.now() - startTime);
+
+    // Record page timing for rendered pages (includes template count)
+    recorder.recordPageTiming(page.url, renderTime, false, renderResult.templatesLoaded);
 
     if (logger.updateTreeNode) {
       logger.updateTreeNode(pageId, 'completed', {
@@ -444,7 +499,9 @@ async function processPagesWithCache(
 
     // Run afterRender hook
     if (config.hooks?.afterRender) {
+      const hookStart = performance.now();
       await config.hooks.afterRender({ page, config });
+      recorder.addToPhase('hookAfterRenderTotalMs', performance.now() - hookStart);
     }
   }
 
@@ -519,14 +576,33 @@ async function generateBuildStats(
  * Internal build implementation without locking.
  * Separated for cleaner error handling and testing.
  */
-async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
+async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
+  // Date.now() is used for user-facing build duration display (wall-clock time, in milliseconds).
+  // Note: Date.now() can be affected by system clock changes and is not monotonic.
+  // Internal metrics use performance.now() via the MetricRecorder for higher precision and monotonic timing,
+  // which is not affected by system clock adjustments.
   const buildStartTime = Date.now();
   const logger = options.logger || defaultLogger;
 
+  // Create metric recorder (noop if disabled)
+  const recorder = createMetricRecorder({
+    enabled: options.metrics?.enabled,
+    detailed: options.metrics?.detailed,
+    command: 'build',
+    flags: {
+      force: options.force,
+      clean: options.clean,
+      includeDrafts: options.includeDrafts,
+    },
+    statiVersion: options.version,
+  });
+
   logger.building('Building your site...');
 
-  // Load configuration
+  // Load configuration (instrumented)
+  const endConfigSpan = recorder.startSpan('configLoadMs');
   const { config, outDir, cacheDir } = await loadAndValidateConfig(options);
+  endConfigSpan();
 
   // Initialize cache stats
   let cacheHits = 0;
@@ -566,17 +642,27 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
   }
 
   // Load cache manifest for ISG (after potential clean operation)
+  const endManifestLoadSpan = recorder.startSpan('cacheManifestLoadMs');
   const { manifest } = await setupCacheAndManifest(cacheDir);
+  endManifestLoadSpan();
 
   // Load content and build navigation
   if (logger.step) {
     console.log(); // Add spacing before content loading
   }
+  const endContentSpan = recorder.startSpan('contentDiscoveryMs');
   const { pages, navigation, md, eta, navigationHash } = await loadContentAndBuildNavigation(
     config,
     options,
     logger,
   );
+  endContentSpan();
+
+  // Record content discovery counts.
+  // Both totalPages and markdownFilesProcessed are incremented by pages.length
+  // because loadContent() only processes *.md files, so all pages are markdown files.
+  recorder.increment('totalPages', pages.length);
+  recorder.increment('markdownFilesProcessed', pages.length);
 
   // Store navigation hash in manifest for change detection in dev server
   manifest.navigationHash = navigationHash;
@@ -585,6 +671,7 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
   let compiledBundles: CompiledBundleInfo[] = [];
 
   if (config.typescript?.enabled) {
+    const endTsSpan = recorder.startSpan('typescriptCompileMs');
     compiledBundles = await compileTypeScript({
       projectRoot: process.cwd(),
       config: config.typescript,
@@ -592,12 +679,14 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
       mode: getEnv() === 'production' ? 'production' : 'development',
       logger,
     });
+    endTsSpan();
   }
 
   // Process pages with ISG caching logic
   if (logger.step) {
     console.log(); // Add spacing before page processing
   }
+  const endPageRenderSpan = recorder.startSpan('pageRenderingMs');
   const buildTime = new Date();
   const pageProcessingResult = await processPagesWithCache(
     pages,
@@ -611,9 +700,15 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
     options,
     logger,
     compiledBundles,
+    recorder,
   );
+  endPageRenderSpan();
   cacheHits = pageProcessingResult.cacheHits;
   cacheMisses = pageProcessingResult.cacheMisses;
+
+  // Record page rendering counts
+  recorder.increment('renderedPages', cacheMisses);
+  recorder.increment('cachedPages', cacheHits);
 
   // Write Tailwind class inventory after all templates have been rendered (if Tailwind is used)
   if (hasTailwind) {
@@ -629,11 +724,16 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
   }
 
   // Save updated cache manifest
+  const endManifestSaveSpan = recorder.startSpan('cacheManifestSaveMs');
   await saveCacheManifest(cacheDir, manifest);
+  endManifestSaveSpan();
 
   // Copy static assets and count them
+  const endAssetSpan = recorder.startSpan('assetCopyMs');
   let assetsCount = 0;
   assetsCount = await copyStaticAssets(config, outDir, logger);
+  endAssetSpan();
+  recorder.increment('assetsCopied', assetsCount);
 
   // Get current environment
   const currentEnv = getEnv();
@@ -645,8 +745,10 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
     }
     logger.info('Generating sitemap...');
 
+    const endSitemapSpan = recorder.startSpan('sitemapGenerationMs');
     const sitemapResult = generateSitemap(pages, config, config.sitemap);
     await writeFile(join(outDir, 'sitemap.xml'), sitemapResult.xml);
+    endSitemapSpan();
 
     // Write additional sitemap files if split
     if (sitemapResult.sitemaps) {
@@ -728,7 +830,9 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
 
   // Run afterAll hook
   if (config.hooks?.afterAll) {
+    const endHookAfterAll = recorder.startSpan('hookAfterAllMs');
     await config.hooks.afterAll({ config, pages });
+    endHookAfterAll();
   }
 
   // Calculate build statistics
@@ -742,5 +846,28 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildStats> {
     logger,
   );
 
-  return buildStats;
+  // Set ISG metrics
+  const totalPages = pages.length;
+  const cacheHitRate = totalPages > 0 ? cacheHits / totalPages : 0;
+  recorder.setISGMetrics({
+    enabled: config.isg?.enabled !== false,
+    cacheHitRate,
+    manifestEntries: Object.keys(manifest.entries).length,
+    invalidatedEntries: cacheMisses,
+  });
+
+  // Take final memory snapshot
+  recorder.snapshotMemory();
+
+  // Build result with optional metrics
+  const result: BuildResult = {
+    ...buildStats,
+  };
+
+  // Add metrics if enabled
+  if (recorder.enabled) {
+    result.buildMetrics = recorder.finalize();
+  }
+
+  return result;
 }

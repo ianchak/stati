@@ -1,0 +1,109 @@
+name: Performance
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+# Prevent multiple perf runs for the same commit
+concurrency:
+  group: perf-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    # Skip on version commits made by the publish workflow
+    if: ${{ github.event_name == 'pull_request' || (!contains(github.event.head_commit.message, '[skip ci]') && github.actor != 'github-actions[bot]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build packages
+        run: npm run build
+
+      - name: Run performance benchmarks
+        run: |
+          set -e
+          npx vitest run packages/core/test/perf --reporter=verbose || {
+            echo "Performance tests failed!"
+            exit 1
+          }
+        env:
+          STATI_METRICS: '1'
+
+      - name: Compare performance against baseline
+        run: node scripts/compare-perf.mjs --output=perf-report.md
+
+      - name: Upload metrics artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: perf-metrics
+          path: |
+            .stati/metrics/
+            perf-report.md
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Comment PR with performance results
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            // Read the performance report
+            let report = '## 📊 Performance Report\n\nNo performance data available.';
+            const reportPath = 'perf-report.md';
+
+            if (fs.existsSync(reportPath)) {
+              report = fs.readFileSync(reportPath, 'utf-8');
+            }
+
+            // Unique marker for this workflow's comment
+            const COMMENT_MARKER = '<!-- stati-perf-report -->';
+
+            // Find existing comment by marker
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existingComment = comments.find(comment =>
+              comment.body.includes(COMMENT_MARKER)
+            );
+
+            const timestamp = new Date().toISOString();
+            const commentBody = `${COMMENT_MARKER}\n${report}\n\n---\n*Last updated: ${timestamp}*`;
+
+            if (existingComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body: commentBody,
+              });
+              console.log(`Updated existing comment #${existingComment.id}`);
+            } else {
+              // Create new comment
+              const { data: newComment } = await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: commentBody,
+              });
+              console.log(`Created new comment #${newComment.id}`);
+            }

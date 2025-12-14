@@ -53,13 +53,14 @@ jobs:
             exit 1
           }
 
-      - name: Run tests with coverage
+      - name: Run tests with coverage (excluding perf tests)
         run: |
           set -e
-          npx vitest run --coverage || {
+          npx vitest run --coverage --exclude='**/test/perf/**' || {
             echo "Tests failed!"
             exit 1
           }
+
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:
