@@ -9,6 +9,7 @@ import type {
   BuildMetrics,
   PhaseName,
   CounterName,
+  GaugeName,
   MetricsISG,
   IncrementalMetrics,
 } from './types.js';
@@ -44,7 +45,7 @@ class NoopMetricRecorder implements MetricRecorder {
     /* noop */
   }
 
-  setGauge(_name: string, _value: number): void {
+  setGauge(_name: GaugeName, _value: number): void {
     /* noop */
   }
 

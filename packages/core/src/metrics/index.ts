@@ -46,6 +46,7 @@ export type {
   MetricRecorderOptions,
   PhaseName,
   CounterName,
+  GaugeName,
 } from './types.js';
 
 // Recorder factory

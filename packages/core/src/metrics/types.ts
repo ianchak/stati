@@ -131,6 +131,12 @@ export interface MetricsCounts {
 export type CounterName = keyof MetricsCounts;
 
 /**
+ * Known gauge names as a union type for type safety.
+ * Gauges are point-in-time values that can go up or down (unlike counters).
+ */
+export type GaugeName = 'peakRss';
+
+/**
  * ISG cache metrics.
  */
 export interface MetricsISG {
@@ -216,9 +222,10 @@ export interface MetricRecorder {
   increment(name: CounterName, amount?: number): void;
 
   /**
-   * Set a gauge value (for non-counter metrics).
+   * Set a gauge value (for point-in-time metrics like peak memory).
+   * Gauges track the maximum value observed for a given name.
    */
-  setGauge(name: string, value: number): void;
+  setGauge(name: GaugeName, value: number): void;
 
   /**
    * Record page timing (only when detailed mode enabled).

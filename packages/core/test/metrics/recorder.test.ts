@@ -231,7 +231,7 @@ describe('MetricRecorder', () => {
       expect(metrics.phases.hookBeforeRenderTotalMs).toBe(100);
     });
 
-    it('should set peakRss gauge', () => {
+    it('should set peakRss gauge with max-value semantics', () => {
       const recorder = createMetricRecorder({ enabled: true });
 
       recorder.setGauge('peakRss', 100000000);
@@ -243,14 +243,39 @@ describe('MetricRecorder', () => {
       expect(metrics.totals.peakRssBytes).toBeGreaterThanOrEqual(150000000);
     });
 
-    it('should ignore unknown gauge names', () => {
+    it('should initialize gauge from zero when first set', () => {
       const recorder = createMetricRecorder({ enabled: true });
 
-      // Should not throw for unknown gauge
-      recorder.setGauge('unknownGauge', 100);
+      // First call should compare against 0
+      recorder.setGauge('peakRss', 50000);
 
       const metrics = recorder.finalize();
-      expect(metrics).toBeDefined();
+      expect(metrics.totals.peakRssBytes).toBeGreaterThanOrEqual(50000);
+    });
+
+    it('should use setGauge internally when snapshotMemory is called', () => {
+      const recorder = createMetricRecorder({ enabled: true });
+
+      // snapshotMemory should update the peakRss gauge
+      recorder.snapshotMemory();
+
+      const metrics = recorder.finalize();
+      // Peak RSS should be non-zero after memory snapshot
+      expect(metrics.totals.peakRssBytes).toBeGreaterThan(0);
+    });
+
+    it('should preserve gauge max across snapshotMemory and setGauge calls', () => {
+      const recorder = createMetricRecorder({ enabled: true });
+
+      // Set a high value manually
+      recorder.setGauge('peakRss', 999999999999);
+
+      // snapshotMemory should not decrease it
+      recorder.snapshotMemory();
+
+      const metrics = recorder.finalize();
+      // Should preserve the manually set high value
+      expect(metrics.totals.peakRssBytes).toBe(999999999999);
     });
 
     it('should set incremental metrics', () => {

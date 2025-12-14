@@ -13,6 +13,7 @@ import type {
   PageTiming,
   PhaseName,
   CounterName,
+  GaugeName,
 } from './types.js';
 import {
   isCI,
@@ -87,7 +88,7 @@ class ActiveMetricRecorder implements MetricRecorder {
   };
   private incrementalMetrics?: IncrementalMetrics;
   private pageTimings: PageTiming[] = [];
-  private peakRss = 0;
+  private readonly gauges = new Map<GaugeName, number>();
 
   constructor(options: MetricRecorderOptions = {}) {
     this.startTime = performance.now();
@@ -124,12 +125,10 @@ class ActiveMetricRecorder implements MetricRecorder {
     this.counts[name] = current + amount;
   }
 
-  setGauge(name: string, value: number): void {
-    // For now, we handle specific known gauges
-    // This can be extended for custom gauges
-    if (name === 'peakRss') {
-      this.peakRss = Math.max(this.peakRss, value);
-    }
+  setGauge(name: GaugeName, value: number): void {
+    // Gauges track the maximum value observed for a given name
+    const current = this.gauges.get(name) ?? 0;
+    this.gauges.set(name, Math.max(current, value));
   }
 
   recordPageTiming(url: string, durationMs: number, cached: boolean): void {
@@ -140,7 +139,7 @@ class ActiveMetricRecorder implements MetricRecorder {
 
   snapshotMemory(): void {
     const usage = getMemoryUsage();
-    this.peakRss = Math.max(this.peakRss, usage.rss);
+    this.setGauge('peakRss', usage.rss);
   }
 
   setISGMetrics(metrics: Partial<MetricsISG>): void {
@@ -204,6 +203,13 @@ class ActiveMetricRecorder implements MetricRecorder {
     }
 
     return { ...baseMetrics, ...optionalFields } as BuildMetrics;
+  }
+
+  /**
+   * Get the peak RSS value from gauges.
+   */
+  private get peakRss(): number {
+    return this.gauges.get('peakRss') ?? 0;
   }
 }
 
