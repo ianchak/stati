@@ -36,10 +36,14 @@ STATI_METRICS=1 stati build
 
 ### `--metrics-file <path>`
 
-Specify a custom output path for the metrics JSON file:
+Specify a custom output path for the metrics JSON file. The path is relative to `.stati/metrics/`:
 
 ```bash
-stati build --metrics --metrics-file ./my-metrics.json
+# Writes to .stati/metrics/my-metrics.json
+stati build --metrics --metrics-file my-metrics.json
+
+# Writes to .stati/metrics/reports/build.json
+stati build --metrics --metrics-file reports/build.json
 ```
 
 ### `--metrics-detailed`
