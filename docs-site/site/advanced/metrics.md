@@ -163,7 +163,7 @@ The `phases` object shows how long each build phase took:
 ### Memory Usage
 
 - `peakRssBytes`: Maximum resident set size during build
-- `heapUsedBytes`: V8 heap usage at build end
+- `heapUsedBytes`: V8 heap usage at the end of the build
 
 High memory usage might indicate:
 
