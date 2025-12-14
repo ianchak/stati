@@ -2,4 +2,6 @@
 "@stati/cli": minor
 ---
 
-add build metrics collection and output options
+# Add CLI flags to collect and write build metrics
+
+Adds `--metrics`, `--metrics-detailed`, and `--metrics-file` to `stati build`.
