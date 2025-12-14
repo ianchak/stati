@@ -365,7 +365,9 @@ async function main() {
       warmBuild: null,
       incrementalBuild: null,
     };
-    console.warn('No metrics found - generating placeholder report');
+    console.warn(
+      'No benchmark summary or build metrics found. This is expected if performance tests have not been run yet. Generating placeholder report.',
+    );
   }
 
   // Compare
