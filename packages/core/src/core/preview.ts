@@ -161,7 +161,7 @@ export async function createPreviewServer(
           res.writeHead(statusCode, {
             'Content-Type': mimeType,
             'Access-Control-Allow-Origin': '*',
-            'Cache-Control': 'public, max-age=31536000', // Better caching for production preview
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
           });
 
           res.end(content);
