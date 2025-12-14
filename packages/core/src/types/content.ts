@@ -340,8 +340,6 @@ export interface CollectionData {
 export interface TemplateContext {
   /** Site configuration and metadata */
   site: import('./config.js').SiteConfig;
-  /** Full Stati configuration (includes site, markdown, eta, etc.) */
-  config: import('./config.js').StatiConfig;
   /** Current page data including frontmatter and content */
   page: {
     path: string;

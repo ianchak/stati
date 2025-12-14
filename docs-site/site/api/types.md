@@ -284,9 +284,6 @@ interface TemplateContext {
   /** Site configuration (title, baseUrl, defaultLocale) */
   site: SiteConfig;
 
-  /** Full Stati configuration */
-  config: StatiConfig;
-
   /** Current page data */
   page: {
     /** Output path for the page */
