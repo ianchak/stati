@@ -1,5 +1,13 @@
 # @stati/core
 
+## 1.17.0
+
+### Minor Changes
+
+- 05e1648: # Add build performance metrics recording and reporting
+
+  Introduces optional build metrics collection (totals, phases, ISG cache stats, optional per-page timing) plus JSON writing and summary helpers.
+
 ## 1.16.3
 
 ### Patch Changes
