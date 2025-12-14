@@ -3,26 +3,41 @@
  * Table of Contents Section
  *
  * Sticky sidebar showing page headings for on-page navigation.
- * Populated dynamically via JavaScript.
+ * Server-rendered using stati.page.toc for zero layout shift.
  *
  * Layout stability notes:
  * - Uses min-h-[200px] to reserve space and prevent CLS on navigation
  * - Uses visibility:hidden (not display:none) when empty to preserve layout
- * - Skeleton placeholder shown until JS populates or hides content
+ * - TOC is rendered at build time from stati.page.toc
  */
+
+// Helper to get indent class based on heading level
+function getIndentClass(level) {
+    const indents = { 2: 'pl-3', 3: 'pl-6', 4: 'pl-9', 5: 'pl-12', 6: 'pl-16' };
+    return indents[level] || 'pl-3';
+}
 %>
+<% if (stati.page.toc && stati.page.toc.length >= 2) { %>
 <div id="toc" class="sticky top-24 min-h-[200px] max-h-[calc(100vh-12rem)] pt-12 mb-24">
     <div id="toc-container" class="bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 ml-4 overflow-hidden flex flex-col max-h-[calc(100vh-12rem)]">
         <h4 class="text-sm font-semibold text-gray-900 dark:text-white px-4 py-3 border-b border-gray-200 dark:border-gray-600 flex-shrink-0">On This Page</h4>
         <nav class="space-y-1 overflow-y-auto flex-1 min-h-[120px] px-4 py-3" id="toc-nav">
-            <!-- Skeleton placeholder - hidden once JS populates TOC -->
-            <div id="toc-skeleton" class="space-y-2 animate-pulse">
-                <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-                <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6 ml-3"></div>
-                <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3 ml-3"></div>
-                <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-4/5"></div>
-                <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/5 ml-3"></div>
-            </div>
+            <% for (const entry of stati.page.toc) { %>
+            <a href="<%= `#${entry.id}` %>"
+               class="<%= stati.propValue('block text-sm text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 transition-colors duration-200 py-1 border-l-2 border-transparent hover:border-blue-600 dark:hover:border-blue-400 rounded-r no-underline', getIndentClass(entry.level)) %>"
+               data-target="<%= entry.id %>">
+                <%= entry.text %>
+            </a>
+            <% } %>
         </nav>
     </div>
 </div>
+<% } else { %>
+<!-- TOC hidden: less than 2 headings -->
+<div id="toc" class="sticky top-24 min-h-[200px] max-h-[calc(100vh-12rem)] pt-12 mb-24" style="visibility: hidden;" aria-hidden="true">
+    <div id="toc-container" class="bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 ml-4 overflow-hidden flex flex-col max-h-[calc(100vh-12rem)]">
+        <h4 class="text-sm font-semibold text-gray-900 dark:text-white px-4 py-3 border-b border-gray-200 dark:border-gray-600 flex-shrink-0">On This Page</h4>
+        <nav class="space-y-1 overflow-y-auto flex-1 min-h-[120px] px-4 py-3" id="toc-nav"></nav>
+    </div>
+</div>
+<% } %>

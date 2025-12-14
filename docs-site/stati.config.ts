@@ -11,17 +11,6 @@ export default defineConfig({
   },
   markdown: {
     plugins: [
-      [
-        'anchor',
-        {
-          slugify: (s: string) =>
-            s
-              .toLowerCase()
-              .trim()
-              .replace(/[\s\W-]+/g, '-') // Replace spaces and non-word chars with hyphens
-              .replace(/^-+|-+$/g, ''), // Remove leading/trailing hyphens
-        },
-      ],
       ['external-links', { externalTarget: '_blank' }],
       [
         'prism',
