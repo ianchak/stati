@@ -100,8 +100,9 @@ export function slugify(text: string): string {
         if (/[\u0300-\u036f]/.test(char)) {
           return '';
         }
-        // Remove other non-ASCII characters (emojis, symbols, CJK, etc.)
-        return '-';
+        // Replace other non-ASCII characters (emojis, symbols, CJK, etc.) with space
+        // to avoid creating consecutive dashes
+        return ' ';
       })
       // Replace & with 'and' (handle case where it wasn't caught by transliteration)
       .replace(/&/g, '-and-')

@@ -118,6 +118,26 @@ describe('slugify.utils.ts', () => {
       expect(slugify('🚀🚀🚀')).toBe('');
     });
 
+    it('should prevent consecutive dashes from emojis', () => {
+      // Emojis are replaced with spaces (not dashes) to prevent consecutive dashes
+      expect(slugify('Hello👋👋World')).toBe('hello-world');
+      expect(slugify('Test🎉🎊Done')).toBe('test-done');
+      expect(slugify('A🔥B🔥C')).toBe('a-b-c');
+    });
+
+    it('should prevent consecutive dashes from CJK characters', () => {
+      // CJK characters become spaces to avoid consecutive dashes
+      expect(slugify('Hello世界World')).toBe('hello-world');
+      expect(slugify('Test日本語Done')).toBe('test-done');
+      expect(slugify('Korean한국어Text')).toBe('korean-text');
+    });
+
+    it('should handle mixed emojis and regular text without extra dashes', () => {
+      expect(slugify('🎉Hello🎊World🚀')).toBe('hello-world');
+      expect(slugify('A👋B👋C👋D')).toBe('a-b-c-d');
+      expect(slugify('Start🔥Middle🔥End')).toBe('start-middle-end');
+    });
+
     it('should handle null and undefined defensively', () => {
       // @ts-expect-error - testing runtime behavior with null
       expect(slugify(null)).toBe('');
