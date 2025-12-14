@@ -346,6 +346,81 @@ More text.
       expect(result.toc[0]!.text).toBe('Using console.log');
       expect(result.toc[0]!.id).toBe('using-console-log');
     });
+
+    it('should extract text from headings with links', async () => {
+      const md = await createMarkdownProcessor(baseConfig);
+      const content = '## Read the [documentation](https://example.com) here';
+
+      const result = renderMarkdown(content, md);
+
+      // Should extract text from both plain text and link text
+      expect(result.toc[0]!.text).toBe('Read the documentation here');
+      expect(result.toc[0]!.id).toBe('read-the-documentation-here');
+    });
+
+    it('should extract text from headings with multiple inline elements', async () => {
+      const md = await createMarkdownProcessor(baseConfig);
+      const content = '## Using `fetch` with [Promises](https://example.com) and **async**';
+
+      const result = renderMarkdown(content, md);
+
+      // Should extract all text: code, link text, and bold text
+      expect(result.toc[0]!.text).toBe('Using fetch with Promises and async');
+      expect(result.toc[0]!.id).toBe('using-fetch-with-promises-and-async');
+    });
+
+    it('should extract text from headings with nested formatting', async () => {
+      const md = await createMarkdownProcessor(baseConfig);
+      const content = '## The [**bold link**](https://example.com) example';
+
+      const result = renderMarkdown(content, md);
+
+      // Should recursively extract text from nested inline elements
+      expect(result.toc[0]!.text).toBe('The bold link example');
+      expect(result.toc[0]!.id).toBe('the-bold-link-example');
+    });
+
+    it('should handle headings with image alt text', async () => {
+      const md = await createMarkdownProcessor(baseConfig);
+      const content = '## Icon ![star](star.png) rating system';
+
+      const result = renderMarkdown(content, md);
+
+      // Should extract image alt text along with other text
+      expect(result.toc[0]!.text).toBe('Icon star rating system');
+      expect(result.toc[0]!.id).toBe('icon-star-rating-system');
+    });
+
+    it('should handle complex headings with multiple link types', async () => {
+      const md = await createMarkdownProcessor(baseConfig);
+      const content = '## Compare [Option A](a.html) vs [Option B](b.html)';
+
+      const result = renderMarkdown(content, md);
+
+      // Should extract text from all links
+      expect(result.toc[0]!.text).toBe('Compare Option A vs Option B');
+      expect(result.toc[0]!.id).toBe('compare-option-a-vs-option-b');
+    });
+
+    it('should handle headings with only inline code', async () => {
+      const md = await createMarkdownProcessor(baseConfig);
+      const content = '## `Array.prototype.map()`';
+
+      const result = renderMarkdown(content, md);
+
+      expect(result.toc[0]!.text).toBe('Array.prototype.map()');
+      expect(result.toc[0]!.id).toBe('array-prototype-map');
+    });
+
+    it('should handle headings with only a link', async () => {
+      const md = await createMarkdownProcessor(baseConfig);
+      const content = '## [Installation Guide](https://example.com/install)';
+
+      const result = renderMarkdown(content, md);
+
+      expect(result.toc[0]!.text).toBe('Installation Guide');
+      expect(result.toc[0]!.id).toBe('installation-guide');
+    });
   });
 
   describe('plugin array configuration', () => {
