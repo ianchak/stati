@@ -565,8 +565,10 @@ async function generateBuildStats(
  * Separated for cleaner error handling and testing.
  */
 async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
-  // Date.now() is used for user-facing build duration display (wall-clock time)
-  // Internal metrics use performance.now() via the MetricRecorder for higher precision
+  // Date.now() is used for user-facing build duration display (wall-clock time, in milliseconds).
+  // Note: Date.now() can be affected by system clock changes and is not monotonic.
+  // Internal metrics use performance.now() via the MetricRecorder for higher precision and monotonic timing,
+  // which is not affected by system clock adjustments.
   const buildStartTime = Date.now();
   const logger = options.logger || defaultLogger;
 
