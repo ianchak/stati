@@ -2,9 +2,17 @@
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import { readFileSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { join, dirname, resolve, isAbsolute, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { build, invalidate, createDevServer, createPreviewServer, setEnv } from '@stati/core';
+import {
+  build,
+  invalidate,
+  createDevServer,
+  createPreviewServer,
+  setEnv,
+  writeMetrics,
+  formatMetricsSummary,
+} from '@stati/core';
 import type { BuildOptions, DevServerOptions, PreviewServerOptions } from '@stati/core';
 import { log } from './colors.js';
 import { createLogger } from './logger.js';
@@ -46,13 +54,35 @@ const cli = yargs(hideBin(process.argv))
         .option('include-drafts', {
           type: 'boolean',
           description: 'Include draft pages in the build',
+        })
+        .option('metrics', {
+          type: 'boolean',
+          description: 'Enable build metrics collection',
+        })
+        .option('metrics-file', {
+          type: 'string',
+          description: 'Output path for metrics JSON (default: .stati/metrics/)',
+        })
+        .option('metrics-detailed', {
+          type: 'boolean',
+          description: 'Include per-page timing in metrics',
         }),
     async (argv) => {
+      // Check for metrics enabled via environment or flag
+      const metricsEnabled =
+        !!argv.metrics || process.env.STATI_METRICS === '1' || process.env.STATI_METRICS === 'true';
+
       const buildOptions: BuildOptions = {
         force: !!argv.force,
         clean: !!argv.clean,
         includeDrafts: !!argv['include-drafts'],
         version: getVersion(),
+        metrics: metricsEnabled
+          ? {
+              enabled: true,
+              detailed: !!argv['metrics-detailed'],
+            }
+          : undefined,
       };
 
       if (argv.config) {
@@ -72,16 +102,68 @@ const cli = yargs(hideBin(process.argv))
         if (buildOptions.clean) log.info('Clean build enabled');
         if (buildOptions.includeDrafts) log.info('Including draft pages');
         if (buildOptions.configPath) log.info(`Using config: ${buildOptions.configPath}`);
+        if (metricsEnabled) log.info('Build metrics enabled');
 
         setEnv('production');
         buildOptions.logger = coloredLogger;
         const startTime = Date.now();
 
-        await build(buildOptions);
+        const result = await build(buildOptions);
         const buildTime = Date.now() - startTime;
 
         log.timing('Total build', buildTime);
         log.success('Site built successfully!');
+
+        // Handle metrics output
+        if (result.buildMetrics) {
+          // Print metrics summary to CLI
+          const summaryLines = formatMetricsSummary(result.buildMetrics);
+          for (const line of summaryLines) {
+            console.log(line);
+          }
+
+          // Write metrics to file
+          const projectRoot = process.cwd();
+          const cacheDir = join(projectRoot, '.stati');
+
+          const metricsSafeDir = join(cacheDir, 'metrics');
+
+          // Validate and sanitize custom metrics output path
+          let metricsOutputPath: string | undefined;
+          const rawMetricsFile = argv['metrics-file'] as string | undefined;
+          if (rawMetricsFile) {
+            // Only allow writing metrics files within .stati/metrics/
+            const resolvedPath = isAbsolute(rawMetricsFile)
+              ? resolve(rawMetricsFile)
+              : resolve(metricsSafeDir, rawMetricsFile);
+
+            // Security check: ensure resolvedPath is within metricsSafeDir
+            const normalizedSafeDir = resolve(metricsSafeDir) + sep;
+            const normalizedTarget = resolve(resolvedPath);
+
+            if (!normalizedTarget.startsWith(normalizedSafeDir)) {
+              log.error(
+                `Invalid metrics-file path: "${rawMetricsFile}" must be within ".stati/metrics/". Metrics will not be written to file.`,
+              );
+            } else {
+              metricsOutputPath = normalizedTarget;
+            }
+          }
+
+          const writeResult = await writeMetrics(result.buildMetrics, {
+            cacheDir,
+            outputPath: metricsOutputPath,
+          });
+
+          if (writeResult.success && writeResult.path) {
+            log.info(`📈 Metrics written to ${writeResult.path}`);
+          } else if (!writeResult.success) {
+            const targetPath = metricsOutputPath || `${cacheDir}/metrics/`;
+            log.error(
+              writeResult.error || `Failed to write metrics to ${targetPath} (unknown error)`,
+            );
+          }
+        }
       } catch (error) {
         log.error(`Build failed: ${error instanceof Error ? error.message : String(error)}`);
         process.exit(1);
@@ -106,7 +188,6 @@ const cli = yargs(hideBin(process.argv))
         .option('open', {
           type: 'boolean',
           description: 'Open browser after starting server',
-          default: false,
         })
         .option('config', {
           type: 'string',
@@ -129,7 +210,7 @@ const cli = yargs(hideBin(process.argv))
       const devOptions: DevServerOptions = {
         port: argv.port as number,
         host: argv.host as string,
-        open: !!argv.open,
+        ...(argv.open !== undefined && { open: argv.open }),
         ...(argv.config && { configPath: argv.config as string }),
       };
 
@@ -229,7 +310,6 @@ const cli = yargs(hideBin(process.argv))
         .option('open', {
           type: 'boolean',
           description: 'Open browser after starting server',
-          default: false,
         })
         .option('config', {
           type: 'string',
@@ -239,7 +319,7 @@ const cli = yargs(hideBin(process.argv))
       const previewOptions: PreviewServerOptions = {
         port: argv.port as number,
         host: argv.host as string,
-        open: !!argv.open,
+        ...(argv.open !== undefined && { open: argv.open }),
         ...(argv.config && { configPath: argv.config as string }),
       };
 

@@ -332,31 +332,28 @@ In templates, you can access routing information:
 
 ### Breadcrumbs
 
-Generate breadcrumbs from the URL structure:
+Use the built-in `stati.nav.getBreadcrumbs()` helper to generate breadcrumb navigation:
 
 ```eta
-<nav class="breadcrumbs">
-  <a href="/">Home</a>
-  <%
-  const parts = stati.page.url.split('/').filter(Boolean);
-  let currentPath = '';
-  %>
-  <% parts.forEach((part, index) => { %>
-    <% currentPath += '/' + part; %>
-    <% if (index < parts.length - 1) { %>
-      <span class="separator">›</span>
-      <a href="<%= currentPath %>/" class="breadcrumb-link">
-        <%= part.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) %>
-      </a>
-    <% } else { %>
-      <span class="separator">›</span>
-      <span class="current">
-        <%= part.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) %>
-      </span>
-    <% } %>
-  <% }); %>
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  <ol>
+    <li><a href="/">Home</a></li>
+    <% stati.nav.getBreadcrumbs().forEach((crumb, index, array) => { %>
+      <li>
+        <% if (index === array.length - 1) { %>
+          <span aria-current="page"><%= crumb.title %></span>
+        <% } else { %>
+          <a href="<%= crumb.url %>"><%= crumb.title %></a>
+        <% } %>
+      </li>
+    <% }) %>
+  </ol>
 </nav>
 ```
+
+The `getBreadcrumbs()` method returns an array of `NavNode` objects from the root to the current page, each with `title` and `url` properties. This is more reliable than manually parsing URL segments because it uses the actual navigation tree and page titles from front matter.
+
+See the [Navigation API](/api/navigation/) for more details on breadcrumb customization.
 
 ## Best Practices
 

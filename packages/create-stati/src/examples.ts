@@ -81,39 +81,13 @@ export class ExampleManager {
       'yarn-error.log*',
     ]);
 
-    // Binary file extensions to copy without processing
-    const binaryExtensions = new Set([
-      '.png',
-      '.jpg',
-      '.jpeg',
-      '.gif',
-      '.svg',
-      '.ico',
-      '.woff',
-      '.woff2',
-      '.ttf',
-      '.otf',
-      '.eot',
-      '.mp4',
-      '.mp3',
-      '.wav',
-      '.avi',
-      '.mov',
-      '.pdf',
-      '.zip',
-      '.tar',
-      '.gz',
-      '.bz2',
-    ]);
-
-    await this.copyDirectory(sourceDir, targetDir, filesToExclude, binaryExtensions);
+    await this.copyDirectory(sourceDir, targetDir, filesToExclude);
   }
 
   private async copyDirectory(
     sourceDir: string,
     targetDir: string,
     filesToExclude: Set<string>,
-    binaryExtensions: Set<string>,
   ): Promise<void> {
     const items = await readdir(sourceDir);
 
@@ -129,20 +103,13 @@ export class ExampleManager {
 
       if (itemStat.isDirectory()) {
         await mkdir(targetPath, { recursive: true });
-        await this.copyDirectory(sourcePath, targetPath, filesToExclude, binaryExtensions);
+        await this.copyDirectory(sourcePath, targetPath, filesToExclude);
       } else {
         // Ensure target directory exists
         await mkdir(dirname(targetPath), { recursive: true });
 
-        // Check if it's a binary file
-        const fileExtension = item.substring(item.lastIndexOf('.'));
-        if (binaryExtensions.has(fileExtension.toLowerCase())) {
-          // Copy binary files as-is
-          await copyFile(sourcePath, targetPath);
-        } else {
-          // Copy text files (we don't do variable substitution, just copy directly)
-          await copyFile(sourcePath, targetPath);
-        }
+        // Copy all files directly (no variable substitution)
+        await copyFile(sourcePath, targetPath);
       }
     }
   }

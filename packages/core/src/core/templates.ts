@@ -27,6 +27,16 @@ import { getEnv } from '../env.js';
 import { generateSEO } from '../seo/index.js';
 
 /**
+ * Result of rendering a page template.
+ */
+export interface RenderResult {
+  /** The rendered HTML content */
+  html: string;
+  /** Number of templates loaded (layout + partials) */
+  templatesLoaded: number;
+}
+
+/**
  * Groups pages by their tags for aggregation purposes.
  *
  * @param pages - Pages to group
@@ -243,13 +253,16 @@ export async function renderPage(
   assets?: import('../types/index.js').StatiAssets,
   toc?: TocEntry[],
   logger?: Logger,
-): Promise<string> {
+): Promise<RenderResult> {
   const log = logger || createFallbackLogger();
 
   // Discover partials for this page's directory hierarchy
   const srcDir = resolveSrcDir(config);
   const relativePath = relative(srcDir, page.sourcePath);
   const partialPaths = await discoverPartials(relativePath, config);
+
+  // Count templates: partials + layout (if found)
+  const partialsCount = Object.keys(partialPaths).length;
 
   // Build collection data based on page type
   let collectionData: CollectionData | undefined;
@@ -273,6 +286,9 @@ export async function renderPage(
     page.frontMatter.layout,
     isIndexPage,
   );
+
+  // Calculate total templates loaded (partials + layout if present)
+  const templatesLoaded = partialsCount + (layoutPath ? 1 : 0);
 
   // Create navigation helpers
   const navTree = navigation || [];
@@ -323,17 +339,9 @@ export async function renderPage(
   const maxPasses = 3; // Prevent infinite loops
 
   for (let pass = 0; pass < maxPasses; pass++) {
-    let partialsToRender: Record<string, string>;
-
-    if (pass === 0) {
-      // First pass: render all partials
-      partialsToRender = { ...partialPaths };
-    } else {
-      // Subsequent passes: re-render partials that might need updated dependencies
-      // For simplicity, re-render all partials to ensure they have access to all previously rendered ones
-      // TODO: Optimize by tracking which partials changed or have dependencies
-      partialsToRender = { ...partialPaths };
-    }
+    // Each pass renders all partials to ensure they have access to all previously rendered ones
+    // TODO: Optimize by tracking which partials changed or have dependencies
+    const partialsToRender: Record<string, string> = { ...partialPaths };
 
     if (Object.keys(partialsToRender).length === 0) {
       break;
@@ -423,10 +431,11 @@ export async function renderPage(
   try {
     if (!layoutPath) {
       log.warning('No layout template found, using fallback');
-      return createFallbackHtml(page, body);
+      return { html: createFallbackHtml(page, body), templatesLoaded };
     }
 
-    return await eta.renderAsync(layoutPath, context);
+    const html = await eta.renderAsync(layoutPath, context);
+    return { html, templatesLoaded };
   } catch (error) {
     log.error(
       `Error rendering layout ${layoutPath || 'unknown'}: ${error instanceof Error ? error.message : String(error)}`,
@@ -441,7 +450,7 @@ export async function renderPage(
       throw templateError;
     }
 
-    return createFallbackHtml(page, body);
+    return { html: createFallbackHtml(page, body), templatesLoaded };
   }
 }
 

@@ -115,7 +115,8 @@ describe('templates.ts', () => {
           },
         }),
       );
-      expect(result).toBe('<html>Rendered content</html>');
+      expect(result.html).toBe('<html>Rendered content</html>');
+      expect(result.templatesLoaded).toBe(1); // 1 layout
     });
 
     it('should render page with specified layout', async () => {
@@ -156,7 +157,8 @@ describe('templates.ts', () => {
           },
         }),
       );
-      expect(result).toBe('<html>Custom layout</html>');
+      expect(result.html).toBe('<html>Custom layout</html>');
+      expect(result.templatesLoaded).toBe(1); // 1 layout
     });
 
     it('should use fallback when template not found', async () => {
@@ -172,9 +174,10 @@ describe('templates.ts', () => {
       );
 
       expect(consoleSpy).toHaveBeenCalledWith('No layout template found, using fallback');
-      expect(result).toContain('<h1>Test content</h1>');
-      expect(result).toContain('<!DOCTYPE html>');
-      expect(result).toContain('<title>Test Page</title>');
+      expect(result.html).toContain('<h1>Test content</h1>');
+      expect(result.html).toContain('<!DOCTYPE html>');
+      expect(result.html).toContain('<title>Test Page</title>');
+      expect(result.templatesLoaded).toBe(0); // no layout found
 
       consoleSpy.mockRestore();
     });
@@ -197,9 +200,10 @@ describe('templates.ts', () => {
       );
 
       expect(consoleSpy).toHaveBeenCalledWith('Error rendering layout layout.eta: Template error');
-      expect(result).toContain('<h1>Test content</h1>');
-      expect(result).toContain('<!DOCTYPE html>');
-      expect(result).toContain('<title>Test Page</title>');
+      expect(result.html).toContain('<h1>Test content</h1>');
+      expect(result.html).toContain('<!DOCTYPE html>');
+      expect(result.html).toContain('<title>Test Page</title>');
+      expect(result.templatesLoaded).toBe(1); // layout was found even though it errored
 
       consoleSpy.mockRestore();
     });
@@ -298,7 +302,8 @@ describe('templates.ts', () => {
             }),
           }),
         );
-        expect(result).toBe('<html>Custom layout</html>');
+        expect(result.html).toBe('<html>Custom layout</html>');
+        expect(result.templatesLoaded).toBe(1); // 1 layout
       });
 
       it('should discover layout.eta in current directory', async () => {
@@ -332,7 +337,8 @@ describe('templates.ts', () => {
             }),
           }),
         );
-        expect(result).toBe('<html>Blog layout</html>');
+        expect(result.html).toBe('<html>Blog layout</html>');
+        expect(result.templatesLoaded).toBe(1); // 1 layout
       });
 
       it('should cascade up directory hierarchy for layout.eta', async () => {
@@ -368,7 +374,8 @@ describe('templates.ts', () => {
             }),
           }),
         );
-        expect(result).toBe('<html>Blog layout from parent</html>');
+        expect(result.html).toBe('<html>Blog layout from parent</html>');
+        expect(result.templatesLoaded).toBe(1); // 1 layout
       });
 
       it('should fall back to root layout.eta', async () => {
@@ -402,7 +409,8 @@ describe('templates.ts', () => {
             }),
           }),
         );
-        expect(result).toBe('<html>Root layout</html>');
+        expect(result.html).toBe('<html>Root layout</html>');
+        expect(result.templatesLoaded).toBe(1); // 1 layout
       });
 
       it('should use fallback HTML when no layout.eta found', async () => {
@@ -427,9 +435,10 @@ describe('templates.ts', () => {
         );
 
         expect(consoleSpy).toHaveBeenCalledWith('No layout template found, using fallback');
-        expect(result).toContain('<!DOCTYPE html>');
-        expect(result).toContain('<title>Test Page</title>');
-        expect(result).toContain('<h1>About page</h1>');
+        expect(result.html).toContain('<!DOCTYPE html>');
+        expect(result.html).toContain('<title>Test Page</title>');
+        expect(result.html).toContain('<h1>About page</h1>');
+        expect(result.templatesLoaded).toBe(0); // no layout found
 
         consoleSpy.mockRestore();
       });
@@ -455,9 +464,10 @@ describe('templates.ts', () => {
         );
 
         expect(consoleSpy).toHaveBeenCalledWith('No layout template found, using fallback');
-        expect(result).toContain('<h1>About page</h1>');
-        expect(result).toContain('<!DOCTYPE html>');
-        expect(result).toContain('<title>Test Page</title>');
+        expect(result.html).toContain('<h1>About page</h1>');
+        expect(result.html).toContain('<!DOCTYPE html>');
+        expect(result.html).toContain('<title>Test Page</title>');
+        expect(result.templatesLoaded).toBe(0); // no layout found
 
         consoleSpy.mockRestore();
       });
@@ -491,7 +501,8 @@ describe('templates.ts', () => {
             }),
           }),
         );
-        expect(result).toBe('<html>Article layout</html>');
+        expect(result.html).toBe('<html>Article layout</html>');
+        expect(result.templatesLoaded).toBe(1); // 1 layout
       });
 
       it('should discover and render partials', async () => {
@@ -572,7 +583,8 @@ describe('templates.ts', () => {
         expect(layoutCall![1].partials.header.toString()).toBe(mockHeaderContent);
         expect(layoutCall![1].partials.footer.toString()).toBe(mockFooterContent);
 
-        expect(result).toBe(mockLayoutContent);
+        expect(result.html).toBe(mockLayoutContent);
+        expect(result.templatesLoaded).toBe(3); // 2 partials + 1 layout
       });
 
       it('should handle partial rendering errors gracefully', async () => {
@@ -638,7 +650,8 @@ describe('templates.ts', () => {
           '<!-- Error rendering partial: broken -->',
         );
 
-        expect(result).toBe(mockLayoutContent);
+        expect(result.html).toBe(mockLayoutContent);
+        expect(result.templatesLoaded).toBe(2); // 1 partial (broken) + 1 layout
 
         consoleSpy.mockRestore();
       });
@@ -686,7 +699,8 @@ describe('templates.ts', () => {
         expect(layoutCall![1].partials.test).toBeInstanceOf(Function);
         expect(layoutCall![1].partials.test.toString()).toBe(mockContent);
 
-        expect(result).toBe(mockLayoutContent);
+        expect(result.html).toBe(mockLayoutContent);
+        expect(result.templatesLoaded).toBe(2); // 1 partial + 1 layout
       });
 
       describe('hierarchical partial discovery', () => {
@@ -901,8 +915,196 @@ describe('templates.ts', () => {
             }),
           );
 
-          expect(result).toBe(mockLayoutContent);
+          expect(result.html).toBe(mockLayoutContent);
+          expect(result.templatesLoaded).toBe(2); // 1 partial + 1 layout
         });
+      });
+    });
+
+    describe('RenderResult type and templatesLoaded counter', () => {
+      it('should return RenderResult with html and templatesLoaded properties', async () => {
+        mockPathExists.mockResolvedValueOnce(true).mockResolvedValue(false);
+        mockEtaInstance.renderAsync.mockResolvedValue('<html>Test</html>');
+
+        const result = await renderPage(
+          mockPage,
+          '<h1>Test</h1>',
+          mockConfig,
+          mockEtaInstance as Eta,
+        );
+
+        // Verify RenderResult structure
+        expect(result).toHaveProperty('html');
+        expect(result).toHaveProperty('templatesLoaded');
+        expect(typeof result.html).toBe('string');
+        expect(typeof result.templatesLoaded).toBe('number');
+      });
+
+      it('should count zero templates when no layout and no partials found', async () => {
+        // Mock all path exists to return false (no layout found)
+        mockPathExists.mockResolvedValue(false);
+        mockGlob.mockResolvedValue([]); // No partials
+
+        vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+        const result = await renderPage(
+          mockPage,
+          '<h1>Test</h1>',
+          mockConfig,
+          mockEtaInstance as Eta,
+        );
+
+        expect(result.templatesLoaded).toBe(0);
+        expect(result.html).toContain('<!DOCTYPE html>'); // Fallback HTML
+      });
+
+      it('should count only layout when no partials exist', async () => {
+        mockPathExists.mockResolvedValueOnce(true).mockResolvedValue(false);
+        mockGlob.mockResolvedValue([]); // No underscore folders
+        mockEtaInstance.renderAsync.mockResolvedValue('<html>Layout only</html>');
+
+        const result = await renderPage(
+          mockPage,
+          '<h1>Test</h1>',
+          mockConfig,
+          mockEtaInstance as Eta,
+        );
+
+        expect(result.templatesLoaded).toBe(1); // Just the layout
+      });
+
+      it('should count partials from multiple underscore folders', async () => {
+        const rootPartialsDir = join(mockProjectRoot, 'src', '_components');
+        const secondPartialsDir = join(mockProjectRoot, 'src', '_partials');
+
+        mockGlob
+          .mockResolvedValueOnce([rootPartialsDir, secondPartialsDir]) // Two underscore folders found
+          .mockResolvedValueOnce(['header.eta', 'footer.eta']) // 2 files in _components
+          .mockResolvedValueOnce(['sidebar.eta']) // 1 file in _partials
+          .mockResolvedValue([]);
+
+        mockPathExists.mockResolvedValueOnce(true).mockResolvedValue(false);
+
+        mockEtaInstance.renderAsync.mockImplementation((template: string) => {
+          if (template.includes('header.eta')) return Promise.resolve('<header/>');
+          if (template.includes('footer.eta')) return Promise.resolve('<footer/>');
+          if (template.includes('sidebar.eta')) return Promise.resolve('<aside/>');
+          if (template.includes('layout.eta')) return Promise.resolve('<html>Layout</html>');
+          return Promise.resolve('');
+        });
+
+        const result = await renderPage(
+          mockPage,
+          '<h1>Test</h1>',
+          mockConfig,
+          mockEtaInstance as Eta,
+        );
+
+        // 3 partials (header, footer, sidebar) + 1 layout = 4
+        expect(result.templatesLoaded).toBe(4);
+      });
+
+      it('should count correctly when explicit layout is specified in frontmatter', async () => {
+        const pageWithLayout = {
+          ...mockPage,
+          frontMatter: { ...mockPage.frontMatter, layout: 'custom-layout' },
+        };
+
+        mockPathExists.mockResolvedValueOnce(true).mockResolvedValue(false); // custom-layout.eta exists
+        mockGlob.mockResolvedValue([]); // No partials
+        mockEtaInstance.renderAsync.mockResolvedValue('<html>Custom Layout</html>');
+
+        const result = await renderPage(
+          pageWithLayout,
+          '<h1>Test</h1>',
+          mockConfig,
+          mockEtaInstance as Eta,
+        );
+
+        expect(result.templatesLoaded).toBe(1); // Custom layout counts as 1
+      });
+
+      it('should still count layout even when rendering throws error', async () => {
+        mockPathExists.mockResolvedValueOnce(true).mockResolvedValue(false);
+        mockGlob.mockResolvedValue([]);
+        mockEtaInstance.renderAsync.mockRejectedValue(new Error('Render error'));
+
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        const result = await renderPage(
+          mockPage,
+          '<h1>Test</h1>',
+          mockConfig,
+          mockEtaInstance as Eta,
+        );
+
+        // Layout was found, so count is 1 even though rendering failed
+        expect(result.templatesLoaded).toBe(1);
+        expect(result.html).toContain('<!DOCTYPE html>'); // Fallback HTML
+      });
+
+      it('should count partials correctly when some partials fail to render', async () => {
+        const partialsDir = join(mockProjectRoot, 'src', '_partials');
+
+        mockGlob
+          .mockResolvedValueOnce([partialsDir])
+          .mockResolvedValueOnce(['good.eta', 'bad.eta']) // 2 partials
+          .mockResolvedValue([]);
+
+        mockPathExists.mockResolvedValueOnce(true).mockResolvedValue(false);
+
+        mockEtaInstance.renderAsync.mockImplementation((template: string) => {
+          if (template.includes('good.eta')) return Promise.resolve('<div>Good</div>');
+          if (template.includes('bad.eta')) return Promise.reject(new Error('Bad template'));
+          if (template.includes('layout.eta')) return Promise.resolve('<html>Layout</html>');
+          return Promise.resolve('');
+        });
+
+        vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+        const result = await renderPage(
+          mockPage,
+          '<h1>Test</h1>',
+          mockConfig,
+          mockEtaInstance as Eta,
+        );
+
+        // 2 partials + 1 layout = 3 (partials count even if they fail)
+        expect(result.templatesLoaded).toBe(3);
+      });
+
+      it('should count templates correctly for deeply nested pages', async () => {
+        // Simpler test: just verify that we count partials + layout correctly
+        // when glob returns partials from multiple locations
+        const partialsDir1 = join(mockProjectRoot, 'src', '_components');
+        const partialsDir2 = join(mockProjectRoot, 'src', '_partials');
+
+        // Return two underscore folders and their contents
+        mockGlob
+          .mockResolvedValueOnce([partialsDir1, partialsDir2]) // Two underscore folders
+          .mockResolvedValueOnce(['header.eta', 'footer.eta']) // Files in _components
+          .mockResolvedValueOnce(['sidebar.eta']) // Files in _partials
+          .mockResolvedValue([]);
+
+        mockPathExists.mockResolvedValueOnce(true).mockResolvedValue(false);
+
+        mockEtaInstance.renderAsync.mockImplementation((template: string) => {
+          if (template.includes('header.eta')) return Promise.resolve('<header/>');
+          if (template.includes('footer.eta')) return Promise.resolve('<footer/>');
+          if (template.includes('sidebar.eta')) return Promise.resolve('<aside/>');
+          if (template.includes('layout.eta')) return Promise.resolve('<html>Layout</html>');
+          return Promise.resolve('');
+        });
+
+        const result = await renderPage(
+          mockPage,
+          '<h1>Test</h1>',
+          mockConfig,
+          mockEtaInstance as Eta,
+        );
+
+        // 3 partials (header, footer, sidebar) + 1 layout = 4
+        expect(result.templatesLoaded).toBe(4);
       });
     });
   });
