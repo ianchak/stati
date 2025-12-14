@@ -86,12 +86,7 @@ export type {
   PhaseName,
   CounterName,
 } from './metrics/index.js';
-export {
-  createMetricRecorder,
-  noopMetricRecorder,
-  writeMetrics,
-  formatMetricsSummary,
-} from './metrics/index.js';
+export { createMetricRecorder, noopMetricRecorder, writeMetrics } from './metrics/index.js';
 
 // Re-export SEO functionality from barrel
 export type { AutoInjectOptions } from './seo/index.js';
@@ -129,6 +124,9 @@ export {
 // Re-export config and env utilities
 export { loadConfig } from './config/loader.js';
 export { setEnv, getEnv } from './env.js';
+
+// Re-export version utility
+export { getStatiVersion } from './core/utils/index.js';
 
 // Import for implementation use
 import type { StatiConfig } from './types/index.js';

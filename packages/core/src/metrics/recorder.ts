@@ -69,7 +69,8 @@ class ActiveMetricRecorder implements MetricRecorder {
   private readonly startTime: number;
   private readonly command: 'build' | 'dev';
   private readonly flags: BuildMetrics['meta']['flags'];
-  private readonly statiVersion: string;
+  private readonly cliVersion: string;
+  private readonly coreVersion: string;
 
   private readonly phases: MutablePhases = {};
   private readonly counts: MutableCounts = {
@@ -95,7 +96,8 @@ class ActiveMetricRecorder implements MetricRecorder {
     this.detailed = options.detailed ?? false;
     this.command = options.command ?? 'build';
     this.flags = options.flags ?? {};
-    this.statiVersion = options.statiVersion ?? 'unknown';
+    this.cliVersion = options.cliVersion ?? 'unknown';
+    this.coreVersion = options.coreVersion ?? 'unknown';
 
     // Take initial memory snapshot
     this.snapshotMemory();
@@ -177,7 +179,8 @@ class ActiveMetricRecorder implements MetricRecorder {
       platform: getPlatform() as BuildMetrics['meta']['platform'],
       arch: getArch(),
       cpuCount: getCpuCount(),
-      statiVersion: this.statiVersion,
+      cliVersion: this.cliVersion,
+      coreVersion: this.coreVersion,
       command: this.command,
       flags: this.flags,
       ...(gitCommit !== undefined && { gitCommit }),

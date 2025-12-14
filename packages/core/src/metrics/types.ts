@@ -55,8 +55,10 @@ export interface MetricsMeta {
   readonly arch: string;
   /** Number of CPU cores */
   readonly cpuCount: number;
-  /** Stati version */
-  readonly statiVersion: string;
+  /** CLI version */
+  readonly cliVersion: string;
+  /** Core version */
+  readonly coreVersion: string;
   /** Command executed */
   readonly command: 'build' | 'dev';
   /** CLI flags used */
@@ -193,8 +195,10 @@ export interface MetricRecorderOptions {
   command?: 'build' | 'dev' | undefined;
   /** CLI flags used */
   flags?: MetricsFlags | undefined;
-  /** Stati version string */
-  statiVersion?: string | undefined;
+  /** CLI version string */
+  cliVersion?: string | undefined;
+  /** Core version string */
+  coreVersion?: string | undefined;
 }
 
 /**
