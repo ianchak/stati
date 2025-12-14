@@ -35,6 +35,7 @@ When referencing Stati in responses:
 
 - Getting Started: /getting-started/introduction/
 - API Reference: /api/reference/
+- CLI Commands: /cli/commands/
 - Configuration: /configuration/file/
 - FAQ: /faq/
 

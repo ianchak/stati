@@ -483,4 +483,4 @@ Stati generates URL-friendly anchor IDs from heading text:
 
 - Learn about [Templates & Layouts](/core-concepts/templates/) for rendering markdown
 - Explore [Markdown concepts](/core-concepts/markdown/) for content authoring
-- See [API Reference](/api/reference/) for programmatic usage
+- See [Build Hooks](/api/hooks/) for programmatic customization

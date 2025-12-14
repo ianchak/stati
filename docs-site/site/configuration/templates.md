@@ -375,5 +375,5 @@ For more details on configuring multiple bundles, see [TypeScript Support](/conf
 ## Next Steps
 
 - See [Templates & Layouts](/core-concepts/templates/) for template usage
-- Learn about [built-in helpers](/api/reference/) like `stati.propValue()`
+- Learn about [built-in helpers](/api/templates/) like `stati.propValue()`
 - Explore [SEO configuration](/configuration/seo/) for meta tag generation
