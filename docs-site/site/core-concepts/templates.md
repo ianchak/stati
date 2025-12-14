@@ -83,7 +83,7 @@ In your templates, you have access to:
 <%= stati.page.url %>       <!-- Current page URL -->
 <%= stati.page.date %>      <!-- Page date (if specified) -->
 <% stati.page.toc.forEach(entry => { %>  <!-- TOC entries (h2-h6) -->
-  <a href="#<%= entry.id %>"><%= entry.text %></a>
+  <a href="<%= `#${entry.id}` %>"><%= entry.text %></a>
 <% }) %>
 
 <!-- Site data -->
