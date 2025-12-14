@@ -42,12 +42,8 @@ export function globToRegex(pattern: string): RegExp {
             // **/ pattern - matches zero or more directories
             regexStr += '(?:.*/)?';
             i += 3;
-          } else if (i + 2 === normalizedPattern.length) {
-            // ** at end - matches everything
-            regexStr += '.*';
-            i += 2;
           } else {
-            // ** in middle not followed by / - match everything remaining
+            // ** at end or in middle not followed by / - match everything remaining
             regexStr += '.*';
             i += 2;
           }

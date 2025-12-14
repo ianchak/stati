@@ -188,7 +188,6 @@ const cli = yargs(hideBin(process.argv))
         .option('open', {
           type: 'boolean',
           description: 'Open browser after starting server',
-          default: false,
         })
         .option('config', {
           type: 'string',
@@ -211,7 +210,7 @@ const cli = yargs(hideBin(process.argv))
       const devOptions: DevServerOptions = {
         port: argv.port as number,
         host: argv.host as string,
-        open: !!argv.open,
+        ...(argv.open !== undefined && { open: argv.open }),
         ...(argv.config && { configPath: argv.config as string }),
       };
 
@@ -311,7 +310,6 @@ const cli = yargs(hideBin(process.argv))
         .option('open', {
           type: 'boolean',
           description: 'Open browser after starting server',
-          default: false,
         })
         .option('config', {
           type: 'string',
@@ -321,7 +319,7 @@ const cli = yargs(hideBin(process.argv))
       const previewOptions: PreviewServerOptions = {
         port: argv.port as number,
         host: argv.host as string,
-        open: !!argv.open,
+        ...(argv.open !== undefined && { open: argv.open }),
         ...(argv.config && { configPath: argv.config as string }),
       };
 

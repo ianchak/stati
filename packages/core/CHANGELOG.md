@@ -1,5 +1,20 @@
 # @stati/core
 
+## 1.16.3
+
+### Patch Changes
+
+- 6c2e4ec: simplify partials rendering logic in renderPage function
+- 6c2e4ec: replace affectedPages array with count for efficiency
+- 6c2e4ec: simplify date validation in getPublishedDate function
+- 6c2e4ec: improve handling of '\*\*' pattern in globToRegex function
+
+## 1.16.2
+
+### Patch Changes
+
+- 897459e: add tests for open flag behavior in dev and preview commands
+
 ## 1.16.1
 
 ### Patch Changes

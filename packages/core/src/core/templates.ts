@@ -313,17 +313,9 @@ export async function renderPage(
   const maxPasses = 3; // Prevent infinite loops
 
   for (let pass = 0; pass < maxPasses; pass++) {
-    let partialsToRender: Record<string, string>;
-
-    if (pass === 0) {
-      // First pass: render all partials
-      partialsToRender = { ...partialPaths };
-    } else {
-      // Subsequent passes: re-render partials that might need updated dependencies
-      // For simplicity, re-render all partials to ensure they have access to all previously rendered ones
-      // TODO: Optimize by tracking which partials changed or have dependencies
-      partialsToRender = { ...partialPaths };
-    }
+    // Each pass renders all partials to ensure they have access to all previously rendered ones
+    // TODO: Optimize by tracking which partials changed or have dependencies
+    const partialsToRender: Record<string, string> = { ...partialPaths };
 
     if (Object.keys(partialsToRender).length === 0) {
       break;

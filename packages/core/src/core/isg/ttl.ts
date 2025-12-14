@@ -260,7 +260,7 @@ function getPublishedDate(page: PageModel): Date | null {
       // Handle Date objects
       if (value instanceof Date) {
         const safeDate = getSafeCurrentTime(value);
-        if (safeDate && !isNaN(safeDate.getTime())) {
+        if (!isNaN(safeDate.getTime())) {
           return safeDate;
         }
       }

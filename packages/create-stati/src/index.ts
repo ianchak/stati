@@ -91,7 +91,7 @@ Examples:
           break;
         }
       }
-    } else if (!projectName && arg) {
+    } else if (!projectName) {
       projectName = arg;
     }
   }

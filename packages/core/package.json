@@ -1,6 +1,6 @@
 {
   "name": "@stati/core",
-  "version": "1.16.1",
+  "version": "1.16.3",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

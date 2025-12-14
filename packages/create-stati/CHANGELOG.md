@@ -1,5 +1,12 @@
 # create-stati
 
+## 1.11.5
+
+### Patch Changes
+
+- 6c2e4ec: simplify file copying logic in copyDirectory method
+- 6c2e4ec: simplify project name assignment logic in parseArgs
+
 ## 1.11.4
 
 ### Patch Changes
