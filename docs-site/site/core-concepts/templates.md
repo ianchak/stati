@@ -82,6 +82,9 @@ In your templates, you have access to:
 <%= stati.content %>        <!-- Rendered markdown content -->
 <%= stati.page.url %>       <!-- Current page URL -->
 <%= stati.page.date %>      <!-- Page date (if specified) -->
+<% stati.page.toc.forEach(entry => { %>  <!-- TOC entries (h2-h6) -->
+  <a href="<%= `#${entry.id}` %>"><%= entry.text %></a>
+<% }) %>
 
 <!-- Site data -->
 <%= stati.site.title %>     <!-- Site title from config -->

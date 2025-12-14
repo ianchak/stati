@@ -26,6 +26,28 @@ export interface StatiAssets {
 }
 
 /**
+ * Table of contents entry extracted from page headings.
+ * Used for building navigation within a page.
+ *
+ * @example
+ * ```typescript
+ * const tocEntry: TocEntry = {
+ *   id: 'getting-started',
+ *   text: 'Getting Started',
+ *   level: 2
+ * };
+ * ```
+ */
+export interface TocEntry {
+  /** Anchor ID for the heading (used in href="#id") */
+  id: string;
+  /** Plain text content of the heading */
+  text: string;
+  /** Heading level (2-6) */
+  level: number;
+}
+
+/**
  * Front matter metadata extracted from content files.
  * Contains page-specific configuration and metadata in YAML format.
  *
@@ -265,7 +287,7 @@ export interface AuthorConfig {
  *     title: 'My First Post',
  *     tags: ['intro', 'blog']
  *   },
- *   content: '<p>Hello world!</p>',
+ *   content: '# Hello world!\n\nThis is my first post.',
  *   publishedAt: new Date('2024-01-01')
  * };
  * ```
@@ -279,7 +301,7 @@ export interface PageModel {
   sourcePath: string;
   /** Parsed front matter metadata */
   frontMatter: FrontMatter;
-  /** Rendered HTML content */
+  /** Raw markdown content (before rendering) */
   content: string;
   /** Publication date (parsed from front matter or file stats) */
   publishedAt?: Date;
@@ -318,8 +340,6 @@ export interface CollectionData {
 export interface TemplateContext {
   /** Site configuration and metadata */
   site: import('./config.js').SiteConfig;
-  /** Full Stati configuration (includes site, markdown, eta, etc.) */
-  config: import('./config.js').StatiConfig;
   /** Current page data including frontmatter and content */
   page: {
     path: string;

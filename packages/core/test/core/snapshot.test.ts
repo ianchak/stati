@@ -188,7 +188,7 @@ describe('HTML Output Snapshots', () => {
 </html>`;
 
     mockLoadContent.mockResolvedValue([blogPage]);
-    mockRenderMarkdown.mockReturnValue(renderedMarkdown);
+    mockRenderMarkdown.mockReturnValue({ html: renderedMarkdown, toc: [] });
     mockRenderPage.mockResolvedValue({ html: renderedHtml, templatesLoaded: 1 });
 
     await build();
@@ -262,7 +262,7 @@ describe('HTML Output Snapshots', () => {
 </html>`;
 
     mockLoadContent.mockResolvedValue([homePage]);
-    mockRenderMarkdown.mockReturnValue(renderedMarkdown);
+    mockRenderMarkdown.mockReturnValue({ html: renderedMarkdown, toc: [] });
     mockRenderPage.mockResolvedValue({ html: renderedHtml, templatesLoaded: 1 });
 
     await build();
@@ -387,7 +387,7 @@ await build({
 </html>`;
 
     mockLoadContent.mockResolvedValue([apiPage]);
-    mockRenderMarkdown.mockReturnValue(renderedMarkdown);
+    mockRenderMarkdown.mockReturnValue({ html: renderedMarkdown, toc: [] });
     mockRenderPage.mockResolvedValue({ html: renderedHtml, templatesLoaded: 1 });
 
     await build();
@@ -429,7 +429,7 @@ await build({
 </html>`;
 
     mockLoadContent.mockResolvedValue([minimalPage]);
-    mockRenderMarkdown.mockReturnValue(renderedMarkdown);
+    mockRenderMarkdown.mockReturnValue({ html: renderedMarkdown, toc: [] });
     mockRenderPage.mockResolvedValue({ html: fallbackHtml, templatesLoaded: 0 });
 
     await build();
@@ -490,7 +490,7 @@ await build({
 </html>`;
 
     mockLoadContent.mockResolvedValue([listPage]);
-    mockRenderMarkdown.mockReturnValue(renderedMarkdown);
+    mockRenderMarkdown.mockReturnValue({ html: renderedMarkdown, toc: [] });
     mockRenderPage.mockResolvedValue({ html: renderedHtml, templatesLoaded: 1 });
 
     await build();
@@ -584,7 +584,7 @@ console.log(\`Message: \${message}\`);
 </html>`;
 
     mockLoadContent.mockResolvedValue([unicodePage]);
-    mockRenderMarkdown.mockReturnValue(renderedMarkdown);
+    mockRenderMarkdown.mockReturnValue({ html: renderedMarkdown, toc: [] });
     mockRenderPage.mockResolvedValue({ html: renderedHtml, templatesLoaded: 1 });
 
     await build();

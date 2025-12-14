@@ -430,8 +430,9 @@ async function processPagesWithCache(
       recorder.addToPhase('hookBeforeRenderTotalMs', performance.now() - hookStart);
     }
 
-    // Render markdown to HTML
-    const htmlContent = renderMarkdown(page.content, md);
+    // Render markdown to HTML with TOC extraction
+    const tocEnabled = config.markdown?.toc !== false;
+    const { html: htmlContent, toc } = renderMarkdown(page.content, md, tocEnabled);
 
     // Compute matched bundle paths for this page
     const bundlePaths = getBundlePathsForPage(page.url, compiledBundles);
@@ -446,6 +447,8 @@ async function processPagesWithCache(
       navigation,
       pages,
       assets,
+      toc,
+      logger,
     );
     let finalHtml = renderResult.html;
 

@@ -87,6 +87,82 @@ Common navigation patterns made easy:
 - **Any section's children** - Use `stati.nav.getChildren('/path')`
 - **Current page's siblings** - Use `stati.nav.getSiblings()`
 
+### Table of Contents (In-Page Navigation)
+
+Stati automatically extracts headings (h2-h6) and makes them available via `stati.page.toc`:
+
+```html
+<!-- _partials/toc.eta -->
+<% if (stati.page.toc && stati.page.toc.length > 0) { %>
+  <nav class="table-of-contents">
+    <h2>On this page</h2>
+    <ul>
+      <% stati.page.toc.forEach(entry => { %>
+        <li class="<%= stati.propValue(`toc-level-${entry.level}`) %>">
+          <a href="<%= `#${entry.id}` %>"><%= entry.text %></a>
+        </li>
+      <% }) %>
+    </ul>
+  </nav>
+<% } %>
+```
+
+Each TOC entry contains:
+
+- `id` - Anchor ID for linking (e.g., `getting-started`)
+- `text` - Plain text heading content
+- `level` - Heading level (2-6)
+
+For hierarchical TOC with nesting:
+
+```html
+<!-- _partials/hierarchical-toc.eta -->
+<%
+  // Build a nested tree structure from flat TOC entries
+  function buildTocTree(entries) {
+    const root = { children: [] };
+    const stack = [{ node: root, level: 1 }];
+
+    entries.forEach(entry => {
+      const newNode = { ...entry, children: [] };
+
+      // Pop stack until we find the parent level
+      while (stack.length > 1 && stack[stack.length - 1].level >= entry.level) {
+        stack.pop();
+      }
+
+      // Add as child of current parent
+      stack[stack.length - 1].node.children.push(newNode);
+      stack.push({ node: newNode, level: entry.level });
+    });
+
+    return root.children;
+  }
+
+  // Recursive template function for rendering TOC tree
+  function renderTocTree(items) { %>
+    <ul>
+      <% items.forEach(item => { %>
+        <li>
+          <a href="<%= `#${item.id}` %>"><%= item.text %></a>
+          <% if (item.children && item.children.length > 0) { %>
+            <%~ renderTocTree(item.children) %>
+          <% } %>
+        </li>
+      <% }) %>
+    </ul>
+  <% }
+%>
+
+<% if (stati.page.toc && stati.page.toc.length > 0) { %>
+  <nav class="toc-hierarchical">
+    <h2>Contents</h2>
+    <% const tocTree = buildTocTree(stati.page.toc) %>
+    <%~ renderTocTree(tocTree) %>
+  </nav>
+<% } %>
+```
+
 Here are practical examples:
 
 ```html

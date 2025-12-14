@@ -1,5 +1,5 @@
 ---
-title: Navigation API Reference
+title: Navigation API
 description: Complete guide to Stati's navigation system and helper methods
 order: 4
 ---

@@ -18,29 +18,64 @@ Main configuration interface for Stati:
 import type { StatiConfig } from '@stati/core';
 
 interface StatiConfig {
-  /** Site metadata and settings */
+  /** Source directory for content files (default: 'site') */
+  srcDir?: string;
+
+  /** Output directory for generated site (default: 'dist') */
+  outDir?: string;
+
+  /** Directory for static assets (default: 'public') */
+  staticDir?: string;
+
+  /** Site-wide configuration (required) */
   site: SiteConfig;
 
-  /** Build configuration */
-  build?: BuildConfig;
-
-  /** Development server settings */
-  dev?: DevConfig;
-
-  /** Template engine configuration */
-  templates?: TemplateConfig;
-
   /** Markdown processing configuration */
-  markdown?: MarkdownConfig;
+  markdown?: {
+    plugins?: (string | [string, unknown])[];
+    configure?: (md: MarkdownIt) => void;
+    toc?: boolean;
+  };
 
-  /** ISG (Incremental Static Generation) settings */
+  /** Eta template engine configuration */
+  eta?: {
+    filters?: Record<string, (x: unknown) => unknown>;
+  };
+
+  /** Incremental Static Generation configuration */
   isg?: ISGConfig;
+
+  /** SEO configuration */
+  seo?: SEOConfig;
+
+  /** Sitemap generation configuration */
+  sitemap?: SitemapConfig;
+
+  /** Robots.txt generation configuration */
+  robots?: RobotsTxtConfig;
+
+  /** RSS feed generation configuration */
+  rss?: RSSConfig;
 
   /** TypeScript compilation settings */
   typescript?: TypeScriptConfig;
 
-  /** Custom configuration extensions */
-  [key: string]: any;
+  /** Development server configuration */
+  dev?: {
+    port?: number;
+    host?: string;
+    open?: boolean;
+  };
+
+  /** Preview server configuration */
+  preview?: {
+    port?: number;
+    host?: string;
+    open?: boolean;
+  };
+
+  /** Build lifecycle hooks */
+  hooks?: BuildHooks;
 }
 ```
 
@@ -48,244 +83,80 @@ interface StatiConfig {
 
 ```typescript
 interface SiteConfig {
-  /** Site title */
+  /** The site's title, used in templates and metadata (required) */
   title: string;
 
-  /** Site description */
-  description: string;
+  /** Base URL for the site, used for absolute URL generation (required) */
+  baseUrl: string;
 
-  /** Site URL (required for sitemaps and social cards) */
-  url: string;
+  /** Default locale for internationalization (optional) */
+  defaultLocale?: string;
+}
+```
 
-  /** Site language */
-  language?: string;
+### SEO Configuration
 
-  /** Site timezone */
-  timezone?: string;
+```typescript
+interface SEOConfig {
+  /** Default author for all pages (can be overridden per-page) */
+  defaultAuthor?: AuthorConfig;
 
-  /** Author information */
-  author?: AuthorConfig;
+  /** Automatically inject SEO tags into <head> if not present (default: true) */
+  autoInject?: boolean;
 
-  /** SEO and meta tag configuration */
-  meta?: MetaConfig;
-
-  /** Open Graph configuration */
-  openGraph?: OpenGraphConfig;
-
-  /** Twitter card configuration */
-  twitter?: TwitterConfig;
-
-  /** Analytics configuration */
-  analytics?: AnalyticsConfig;
-
-  /** RSS feed configuration */
-  feeds?: FeedConfig;
-
-  /** Internationalization settings */
-  i18n?: I18nConfig;
+  /** Enable debug logging for SEO generation (default: false) */
+  debug?: boolean;
 }
 
 interface AuthorConfig {
+  /** Author's full name */
   name: string;
+
+  /** Author's email address */
   email?: string;
+
+  /** Author's website or profile URL */
   url?: string;
-  avatar?: string;
-  bio?: string;
-  social?: Record<string, string>;
-}
-
-interface MetaConfig {
-  viewport?: string;
-  themeColor?: string;
-  keywords?: string[];
-  robots?: string;
-  locale?: string;
-}
-
-interface OpenGraphConfig {
-  type?: 'website' | 'article' | 'book' | 'profile';
-  image?: string;
-  imageWidth?: number;
-  imageHeight?: number;
-  siteName?: string;
-  locale?: string;
-}
-
-interface TwitterConfig {
-  card?: 'summary' | 'summary_large_image' | 'app' | 'player';
-  site?: string;
-  creator?: string;
-  image?: string;
 }
 ```
 
-### Build Configuration
+### Build Hooks
 
 ```typescript
-interface BuildConfig {
-  /** Input directory for content */
-  contentDir?: string;
+interface BuildHooks {
+  /** Called before starting the build process */
+  beforeAll?: (ctx: BuildContext) => Promise<void> | void;
 
-  /** Output directory for generated site */
-  outputDir?: string;
+  /** Called after completing the build process */
+  afterAll?: (ctx: BuildContext) => Promise<void> | void;
 
-  /** Public assets directory */
-  publicDir?: string;
+  /** Called before rendering each individual page */
+  beforeRender?: (ctx: PageContext) => Promise<void> | void;
 
-  /** Clean output directory before build */
-  clean?: boolean;
-
-  /** Enable minification */
-  minify?: boolean | MinifyConfig;
-
-  /** Asset optimization settings */
-  assets?: AssetConfig;
-
-  /** Build parallelization */
-  parallel?: boolean | ParallelConfig;
-}
-
-interface MinifyConfig {
-  html?: boolean | HtmlMinifyOptions;
-  css?: boolean | CssMinifyOptions;
-  js?: boolean | JsMinifyOptions;
-}
-
-interface AssetConfig {
-  /** Image optimization */
-  images?: ImageOptimization;
-
-  /** CSS processing */
-  css?: CssProcessing;
-
-  /** JavaScript processing */
-  js?: JsProcessing;
-}
-
-interface ParallelConfig {
-  enabled: boolean;
-  maxWorkers?: number;
-}
-```
-
-## Content Types
-
-### Page Interface
-
-Core page object structure:
-
-```typescript
-interface Page {
-  /** Page path (URL) */
-  path: string;
-
-  /** Page title */
-  title: string;
-
-  /** Page description */
-  description?: string;
-
-  /** Page content (HTML) */
-  content: string;
-
-  /** Raw markdown content */
-  raw?: string;
-
-  /** Front matter data */
-  frontMatter: Record<string, any>;
-
-  /** Page metadata */
-  meta: PageMeta;
-
-  /** Page type */
-  type?: string;
-
-  /** Page tags */
-  tags?: string[];
-
-  /** Page categories */
-  categories?: string[];
-
-  /** Page author */
-  author?: string;
-
-  /** Publication date */
-  publishedAt?: string;
-
-  /** Last modified date */
-  modifiedAt?: string;
-
-  /** Draft status */
-  draft?: boolean;
-
-  /** Template to use */
-  template?: string;
-
-  /** Custom page data */
-  [key: string]: any;
-}
-
-interface PageMeta {
-  /** Source file path */
-  sourcePath: string;
-
-  /** Output file path */
-  outputPath: string;
-
-  /** File size */
-  size: number;
-
-  /** Content hash */
-  hash: string;
-
-  /** Build timestamp */
-  builtAt: string;
-
-  /** Page dependencies */
-  dependencies: string[];
-
-  /** ISG cache tags */
-  cacheTags: string[];
-}
-```
-
-### Content Processing
-
-```typescript
-interface ContentProcessor {
-  /** Processor name */
-  name: string;
-
-  /** File pattern to match */
-  test: RegExp | ((filePath: string) => boolean);
-
-  /** Process function */
-  process: (filePath: string, context: BuildContext) => Promise<Page | Page[] | null>;
-
-  /** Processor options */
-  options?: Record<string, any>;
+  /** Called after rendering each individual page */
+  afterRender?: (ctx: PageContext) => Promise<void> | void;
 }
 
 interface BuildContext {
-  /** Build configuration */
+  /** The resolved Stati configuration */
   config: StatiConfig;
 
-  /** All pages */
-  pages: Page[];
-
-  /** Global data */
-  globalData: Record<string, any>;
-
-  /** Build statistics */
-  stats: BuildStats;
-
-  /** Logger instance */
-  logger: Logger;
-
-  /** Utility functions */
-  utils: BuildUtils;
+  /** Array of all loaded page models */
+  pages: PageModel[];
 }
 
+interface PageContext {
+  /** The page model being processed */
+  page: PageModel;
+
+  /** The resolved Stati configuration */
+  config: StatiConfig;
+}
+```
+
+### Build Statistics
+
+```typescript
 interface BuildStats {
   /** Total number of pages processed */
   totalPages: number;
@@ -307,80 +178,164 @@ interface BuildStats {
 }
 ```
 
-## Template Types
+## Content Types
 
-### Template Configuration
+### PageModel Interface
+
+Core page object representing a content file during build:
 
 ```typescript
-interface TemplateConfig {
-  /** Template engine */
-  engine?: 'eta' | 'ejs' | 'handlebars';
+interface PageModel {
+  /** URL-friendly identifier for the page */
+  slug: string;
 
-  /** Templates directory */
-  templatesDir?: string;
+  /** Full URL path for the page (e.g., '/blog/my-post') */
+  url: string;
 
-  /** Layouts directory */
-  layoutsDir?: string;
+  /** Absolute path to the source content file */
+  sourcePath: string;
 
-  /** Partials directory */
-  partialsDir?: string;
+  /** Parsed front matter metadata */
+  frontMatter: FrontMatter;
 
-  /** Template file extensions */
-  extensions?: string[];
+  /** Raw markdown content (before rendering) */
+  content: string;
 
-  /** Default layout */
-  defaultLayout?: string;
-
-  /** Eta-specific configuration */
-  eta?: EtaConfig;
-
-  /** Custom filters */
-  filters?: Record<string, TemplateFilter>;
-
-  /** Global template data */
-  data?: Record<string, any>;
+  /** Publication date (parsed from front matter or file stats) */
+  publishedAt?: Date;
 }
+```
 
-interface EtaConfig {
-  /** Template delimiters */
-  tags?: [string, string];
+### FrontMatter Interface
 
-  /** Auto-escape HTML */
-  autoEscape?: boolean;
+Front matter metadata extracted from content files:
 
-  /** Auto-trim whitespace */
-  autoTrim?: boolean;
+```typescript
+interface FrontMatter {
+  /** Page title for SEO and display */
+  title?: string;
 
-  /** Debug mode */
-  debug?: boolean;
+  /** Page description for SEO and meta tags */
+  description?: string;
 
-  /** Cache compiled templates */
-  cache?: boolean;
+  /** Array of tags for categorization */
+  tags?: readonly string[];
 
-  /** Custom filters */
-  filters?: Record<string, TemplateFilter>;
+  /** Template layout to use for rendering */
+  layout?: string;
 
-  /** Global data */
-  data?: Record<string, any>;
+  /** Numeric order for sorting (useful for navigation) */
+  order?: number;
+
+  /** Publication date as ISO string */
+  publishedAt?: string;
+
+  /** Publication date (alias for publishedAt) */
+  date?: string;
+
+  /** Last updated date as ISO string */
+  updated?: string;
+
+  /** Custom cache TTL in seconds (overrides global ISG settings) */
+  ttlSeconds?: number;
+
+  /** Custom max age cap in days (overrides global ISG settings) */
+  maxAgeCapDays?: number;
+
+  /** Whether the page is a draft (excludes from build) */
+  draft?: boolean;
+
+  /** SEO configuration for the page */
+  seo?: SEOMetadata;
+
+  /** Sitemap configuration for the page */
+  sitemap?: SitemapMetadata;
+
+  /** Additional custom properties */
+  [key: string]: unknown;
 }
+```
 
-type TemplateFilter = (value: any, ...args: any[]) => any | Promise<any>;
+### TocEntry Interface
 
+Table of contents entry extracted from page headings (available in template context via `stati.page.toc`):
+
+```typescript
+interface TocEntry {
+  /** Anchor ID for the heading (used in href="#id") */
+  id: string;
+
+  /** Plain text content of the heading */
+  text: string;
+
+  /** Heading level (2-6) */
+  level: number;
+}
+```
+
+## Template Types
+
+### TemplateContext Interface
+
+The context object passed to Eta templates during rendering:
+
+```typescript
 interface TemplateContext {
-  /** Current page data */
-  page: Page;
-
-  /** Site configuration */
+  /** Site configuration (title, baseUrl, defaultLocale) */
   site: SiteConfig;
 
-  /** All pages */
-  pages: Page[];
+  /** Current page data */
+  page: {
+    /** Output path for the page */
+    path: string;
+    /** URL for the page */
+    url: string;
+    /** Rendered HTML content */
+    content: string;
+    /**
+     * Table of contents extracted from headings.
+     * Always an array (empty if no headings are present).
+     */
+    toc: TocEntry[];
+    /** Current page's navigation node */
+    navNode?: NavNode;
+    /** Frontmatter fields spread into page object */
+    [key: string]: unknown;
+  };
 
-  /** Global data */
-  data: Record<string, any>;
+  /** Rendered markdown content (same as page.content) */
+  content: string;
 
-  /** Utility functions */
-  utils: TemplateUtils;
+  /** Navigation helpers and tree */
+  nav: {
+    /** The full navigation tree */
+    tree: NavNode[];
+    /** Gets the full navigation tree */
+    getTree: () => NavNode[];
+    /** Finds a navigation node by path or URL */
+    findNode: (path: string) => NavNode | undefined;
+    /** Gets the children of a navigation node */
+    getChildren: (path: string) => NavNode[];
+    /** Gets the parent of a navigation node */
+    getParent: (path?: string) => NavNode | undefined;
+    /** Gets the siblings of a navigation node */
+    getSiblings: (path?: string, includeSelf?: boolean) => NavNode[];
+    /** Gets a subtree starting from a specific path */
+    getSubtree: (path: string) => NavNode[];
+    /** Gets the breadcrumb trail for a path */
+    getBreadcrumbs: (path?: string) => NavNode[];
+    /** Gets the current page's navigation node */
+    getCurrentNode: () => NavNode | undefined;
+  };
+
+  /** Discovered partials from underscore folders in hierarchy */
+  partials: Record<string, string>;
+
+  /** Collection data (available on index pages and collection children) */
+  collection?: CollectionData;
+
+  /** TypeScript bundle assets (when typescript.enabled is true) */
+  assets?: StatiAssets;
 }
 ```
 
@@ -520,204 +475,111 @@ For advanced use cases like preloading, access via `stati.assets`:
 <% } %>
 ```
 
-### ISG Cache
 
-```typescript
-interface ISGCache {
-  /** Cache directory */
-  directory: string;
-
-  /** Maximum cache size */
-  maxSize: string | number;
-
-  /** Cache cleanup */
-  cleanup?: ISGCacheCleanup;
-
-  /** Cache compression */
-  compression?: ISGCacheCompression;
-}
-
-interface CacheEntry {
-  /** Entry key */
-  key: string;
-
-  /** Entry value */
-  value: any;
-
-  /** Creation timestamp */
-  createdAt: number;
-
-  /** Last accessed timestamp */
-  accessedAt: number;
-
-  /** TTL in milliseconds */
-  ttl: number;
-
-  /** Cache tags */
-  tags: string[];
-
-  /** Dependencies */
-  dependencies: string[];
-
-  /** Content hash */
-  hash: string;
-}
-```
 
 ## Utility Types
 
-### Helper Types
-
-```typescript
-/** Make all properties optional recursively */
-type DeepPartial<T> = {
-  [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
-};
-
-/** Make specific properties required */
-type RequiredKeys<T, K extends keyof T> = T & Required<Pick<T, K>>;
-
-/** Extract specific properties */
-type PickRequired<T, K extends keyof T> = Required<Pick<T, K>>;
-
-/** Omit and make optional */
-type OmitOptional<T, K extends keyof T> = Partial<Omit<T, K>>;
-
-/** Function type for configuration */
-type ConfigFunction<T> = (config: DeepPartial<T>) => T;
-
-/** Event handler type */
-type EventHandler<T = any> = (event: T) => void | Promise<void>;
-
-/** Async function type */
-type AsyncFunction<T = void, U = any> = (...args: U[]) => Promise<T>;
-```
-
-### Configuration Helpers
+### Configuration Helper
 
 ```typescript
 /** Helper function for type-safe configuration */
 declare function defineConfig(config: StatiConfig): StatiConfig;
-
-/** Plugin factory type */
-type PluginFactory<T = Record<string, any>> = (options?: T) => Plugin;
-
-/** Template filter factory */
-type FilterFactory<T = any, U = any> = (options?: T) => TemplateFilter<U>;
-
-/** Processor factory */
-type ProcessorFactory<T = Record<string, any>> = (options?: T) => ContentProcessor;
 ```
 
-## Module Declarations
+## Module Exports
 
-### Core Modules
+### Core Package
+
+The `@stati/core` package exports the following types and functions:
 
 ```typescript
-declare module '@stati/core' {
-  export { defineConfig } from './config';
-  export type * from './types';
-  export { build, dev, createContext } from './core';
-}
+// Functions
+export { defineConfig, loadConfig, setEnv, getEnv } from '@stati/core';
+export { build, createDevServer, createPreviewServer, invalidate } from '@stati/core';
 
-declare module '@stati/cli' {
-  export { cli } from './cli';
-  export type { CLIOptions, CLIContext } from './types';
-}
+// Configuration types
+export type {
+  StatiConfig,
+  PageModel,
+  FrontMatter,
+  BuildContext,
+  PageContext,
+  BuildHooks,
+  NavNode,
+  ISGConfig,
+  AgingRule,
+  BuildStats,
+  BundleConfig,
+} from '@stati/core';
 
-declare module 'create-stati' {
-  export interface ScaffoldOptions {
-    projectName: string;
-    template: 'blank';
-    styling: 'css' | 'sass' | 'tailwind';
-    git: boolean;
-    directory?: string;
-  }
+// SEO types
+export type {
+  SEOMetadata,
+  SEOConfig,
+  RobotsConfig,
+  OpenGraphConfig,
+  OpenGraphImage,
+  OpenGraphArticle,
+  TwitterCardConfig,
+  AuthorConfig,
+} from '@stati/core';
 
-  export function scaffold(options: ScaffoldOptions): Promise<void>;
-}
+// Sitemap types
+export type {
+  SitemapConfig,
+  SitemapEntry,
+  SitemapGenerationResult,
+  ChangeFrequency,
+} from '@stati/core';
+
+// RSS types
+export type {
+  RSSConfig,
+  RSSFeedConfig,
+  RSSGenerationResult,
+} from '@stati/core';
 ```
 
-### Plugin Modules
+Additional types like `TemplateContext`, `CollectionData`, `StatiAssets`, `TocEntry`, and `CacheEntry` are available from the internal types barrel but are primarily used by the framework internally.
+
+### CLI Package
 
 ```typescript
-declare module '@stati/plugin-*' {
-  const plugin: PluginFactory;
-  export default plugin;
-}
-
-declare module 'stati-plugin-*' {
-  const plugin: PluginFactory;
-  export default plugin;
-}
+// From @stati/cli
+export { cli } from '@stati/cli';
 ```
 
-## Type Guards
-
-### Runtime Type Checking
+### Create-Stati Package
 
 ```typescript
-/** Check if value is a valid page */
-function isPage(value: any): value is Page {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    typeof value.path === 'string' &&
-    typeof value.title === 'string' &&
-    typeof value.content === 'string'
-  );
+// From create-stati
+export interface CreateOptions {
+  /** Name of the project to create */
+  projectName: string;
+
+  /** Template to use (currently only 'blank' is supported) */
+  template: 'blank';
+
+  /** CSS solution to use */
+  styling: 'css' | 'sass' | 'tailwind';
+
+  /** Enable TypeScript configuration */
+  typescript?: boolean;
+
+  /** Initialize a git repository */
+  gitInit?: boolean;
+
+  /** Install dependencies after scaffolding */
+  install?: boolean;
+
+  /** Package manager to use for installation */
+  packageManager?: 'npm' | 'yarn' | 'pnpm' | 'bun';
+
+  /** Target directory (defaults to projectName) */
+  dir?: string;
 }
 
-/** Check if value is a valid plugin */
-function isPlugin(value: any): value is Plugin {
-  return typeof value === 'object' && value !== null && typeof value.name === 'string';
-}
-
-/** Check if value is a content processor */
-function isContentProcessor(value: any): value is ContentProcessor {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    typeof value.name === 'string' &&
-    (value.test instanceof RegExp || typeof value.test === 'function') &&
-    typeof value.process === 'function'
-  );
-}
-
-/** Check if value is a template filter */
-function isTemplateFilter(value: any): value is TemplateFilter {
-  return typeof value === 'function';
-}
-```
-
-## Generic Types
-
-### Extensible Types
-
-```typescript
-/** Extensible page type */
-interface ExtensiblePage<T = Record<string, any>> extends Page {
-  /** Custom properties */
-  custom: T;
-}
-
-/** Extensible config type */
-interface ExtensibleConfig<T = Record<string, any>> extends StatiConfig {
-  /** Custom configuration */
-  custom: T;
-}
-
-/** Plugin with typed options */
-interface TypedPlugin<T = Record<string, any>> extends Plugin {
-  /** Typed configuration */
-  config: T;
-}
-
-/** Content processor with typed options */
-interface TypedProcessor<T = Record<string, any>> extends ContentProcessor {
-  /** Typed options */
-  options: T;
-}
+export function createSite(options: CreateOptions): Promise<void>;
 ```
 
 ## Usage Examples
@@ -730,97 +592,56 @@ import { defineConfig, type StatiConfig } from '@stati/core';
 const config: StatiConfig = defineConfig({
   site: {
     title: 'My Site',
-    description: 'A Stati-powered site',
-    url: 'https://example.com',
+    baseUrl: 'https://example.com',
   },
 
-  build: {
-    outputDir: 'dist',
-    minify: true,
+  srcDir: 'site',
+  outDir: 'dist',
+  staticDir: 'public',
+
+  markdown: {
+    toc: true, // Enable automatic TOC extraction
   },
 
-  plugins: [
-    // Type-safe plugin usage
-    myPlugin({
-      option1: 'value',
-      option2: true,
-    }),
-  ],
+  hooks: {
+    beforeAll: async ({ config, pages }) => {
+      console.log(`Building ${pages.length} pages`);
+    },
+  },
 });
 
 export default config;
 ```
 
-### Type-Safe Plugin Development
+### Using Build Hooks
 
 ```typescript
-import type { Plugin, PluginFactory } from '@stati/core';
+import { defineConfig } from '@stati/core';
 
-interface MyPluginOptions {
-  enabled: boolean;
-  apiKey: string;
-  debug?: boolean;
-}
-
-const createMyPlugin: PluginFactory<MyPluginOptions> = (options = {}) => {
-  const config: MyPluginOptions = {
-    enabled: true,
-    apiKey: '',
-    debug: false,
-    ...options,
-  };
-
-  const plugin: Plugin = {
-    name: 'my-plugin',
-    config,
-
-    hooks: {
-      'build:start': async (context) => {
-        if (config.debug) {
-          console.log('Plugin started');
-        }
-      },
-    },
-  };
-
-  return plugin;
-};
-
-export default createMyPlugin;
-```
-
-### Custom Type Extensions
-
-```typescript
-// Extend the Page interface
-declare module '@stati/core' {
-  interface Page {
-    /** Reading time in minutes */
-    readingTime?: number;
-
-    /** Word count */
-    wordCount?: number;
-
-    /** Custom metadata */
-    seo?: {
-      keywords: string[];
-      noindex: boolean;
-    };
-  }
-}
-
-// Use extended types
-const page: Page = {
-  path: '/example',
-  title: 'Example',
-  content: '<p>Content</p>',
-  readingTime: 5,
-  wordCount: 1000,
-  seo: {
-    keywords: ['example', 'stati'],
-    noindex: false,
+export default defineConfig({
+  site: {
+    title: 'My Site',
+    baseUrl: 'https://example.com',
   },
-};
+
+  hooks: {
+    beforeAll: async (ctx) => {
+      console.log(`Starting build with ${ctx.pages.length} pages`);
+    },
+    beforeRender: async (ctx) => {
+      // Modify page data before rendering
+      if (ctx.page.frontMatter.draft) {
+        console.log(`Skipping draft: ${ctx.page.slug}`);
+      }
+    },
+    afterRender: async (ctx) => {
+      console.log(`Rendered: ${ctx.page.url}`);
+    },
+    afterAll: async (ctx) => {
+      console.log('Build complete!');
+    },
+  },
+});
 ```
 
 Stati's comprehensive TypeScript support ensures type safety throughout your development process, providing excellent IntelliSense and catching errors at compile time. Use these types to build robust, maintainable static sites with confidence.
