@@ -6,7 +6,7 @@
  *
  * @example Basic Usage
  * ```typescript
- * import { createMetricRecorder, writeMetrics, formatMetricsSummary } from '@stati/core/metrics';
+ * import { createMetricRecorder, writeMetrics, formatMetricsSummary } from '@stati/core';
  *
  * // Create recorder (noop when disabled)
  * const recorder = createMetricRecorder({ enabled: true });
