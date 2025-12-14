@@ -13,6 +13,27 @@ import type { BuildMetrics } from '../types.js';
 export const DEFAULT_METRICS_DIR = 'metrics';
 
 /**
+ * Display names for build phases.
+ * Maps raw phase keys (e.g., 'configLoadMs') to human-readable labels.
+ */
+const PHASE_DISPLAY_NAMES: Record<string, string> = {
+  configLoadMs: 'Config Load',
+  contentDiscoveryMs: 'Content Discovery',
+  navigationBuildMs: 'Navigation Build',
+  cacheManifestLoadMs: 'Cache Manifest Load',
+  typescriptCompileMs: 'TypeScript Compile',
+  pageRenderingMs: 'Page Rendering',
+  assetCopyMs: 'Asset Copy',
+  cacheManifestSaveMs: 'Cache Manifest Save',
+  sitemapGenerationMs: 'Sitemap Generation',
+  rssGenerationMs: 'RSS Generation',
+  hookBeforeAllMs: 'Hook: Before All',
+  hookAfterAllMs: 'Hook: After All',
+  hookBeforeRenderTotalMs: 'Hook: Before Render (Total)',
+  hookAfterRenderTotalMs: 'Hook: After Render (Total)',
+};
+
+/**
  * Generate a timestamped filename for metrics output.
  *
  * @param command - The command that was run (build, dev)
@@ -154,7 +175,8 @@ export function formatMetricsSummary(metrics: BuildMetrics): string[] {
     lines.push('');
     lines.push('Top phases:');
     for (const phase of phases) {
-      const phaseName = phase.name.replace(/Ms$/, '');
+      // Use mapped display name if available, otherwise fall back to raw name
+      const phaseName = PHASE_DISPLAY_NAMES[phase.name] || phase.name;
       const phaseMs = phase.duration.toFixed(0);
       lines.push(`  ${phaseName}: ${phaseMs}ms`);
     }

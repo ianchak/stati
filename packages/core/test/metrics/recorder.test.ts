@@ -430,6 +430,6 @@ describe('formatMetricsSummary', () => {
     expect(output).toContain('1.25s'); // Total time
     expect(output).toContain('75.0%'); // Cache hit rate
     expect(output).toContain('100.0 MB'); // Peak memory
-    expect(output).toContain('pageRendering'); // Top phase
+    expect(output).toContain('Page Rendering'); // Top phase
   });
 });

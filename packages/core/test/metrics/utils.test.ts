@@ -392,7 +392,7 @@ describe('writer.utils', () => {
     it('should include top phases sorted by duration', () => {
       const lines = formatMetricsSummary(mockMetrics);
       const output = lines.join('\n');
-      expect(output).toContain('pageRendering');
+      expect(output).toContain('Page Rendering');
       expect(output).toContain('800ms');
     });
 
