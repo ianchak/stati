@@ -80,18 +80,21 @@ export async function createMarkdownProcessor(config: StatiConfig): Promise<Mark
 
 /**
  * Extracts text content from an inline token, handling nested children.
+ * Recursively processes all token types to capture text from links, images,
+ * code, and other inline elements.
  *
  * @param token - The inline token to extract text from
  * @returns Plain text content
  */
 function extractTextFromToken(token: Token): string {
+  // Handle tokens with children by recursively extracting from all children
   if (token.children && token.children.length > 0) {
-    return token.children
-      .filter((child) => child.type === 'text' || child.type === 'code_inline')
-      .map((child) => child.content)
-      .join('');
+    return token.children.map((child) => extractTextFromToken(child)).join('');
   }
-  return token.content;
+
+  // For leaf tokens, return their content
+  // This handles 'text', 'code_inline', and other inline token types
+  return token.content || '';
 }
 
 /**
