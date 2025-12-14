@@ -189,7 +189,7 @@ describe('HTML Output Snapshots', () => {
 
     mockLoadContent.mockResolvedValue([blogPage]);
     mockRenderMarkdown.mockReturnValue(renderedMarkdown);
-    mockRenderPage.mockResolvedValue(renderedHtml);
+    mockRenderPage.mockResolvedValue({ html: renderedHtml, templatesLoaded: 1 });
 
     await build();
 
@@ -263,7 +263,7 @@ describe('HTML Output Snapshots', () => {
 
     mockLoadContent.mockResolvedValue([homePage]);
     mockRenderMarkdown.mockReturnValue(renderedMarkdown);
-    mockRenderPage.mockResolvedValue(renderedHtml);
+    mockRenderPage.mockResolvedValue({ html: renderedHtml, templatesLoaded: 1 });
 
     await build();
 
@@ -388,7 +388,7 @@ await build({
 
     mockLoadContent.mockResolvedValue([apiPage]);
     mockRenderMarkdown.mockReturnValue(renderedMarkdown);
-    mockRenderPage.mockResolvedValue(renderedHtml);
+    mockRenderPage.mockResolvedValue({ html: renderedHtml, templatesLoaded: 1 });
 
     await build();
 
@@ -430,7 +430,7 @@ await build({
 
     mockLoadContent.mockResolvedValue([minimalPage]);
     mockRenderMarkdown.mockReturnValue(renderedMarkdown);
-    mockRenderPage.mockResolvedValue(fallbackHtml);
+    mockRenderPage.mockResolvedValue({ html: fallbackHtml, templatesLoaded: 0 });
 
     await build();
 
@@ -491,7 +491,7 @@ await build({
 
     mockLoadContent.mockResolvedValue([listPage]);
     mockRenderMarkdown.mockReturnValue(renderedMarkdown);
-    mockRenderPage.mockResolvedValue(renderedHtml);
+    mockRenderPage.mockResolvedValue({ html: renderedHtml, templatesLoaded: 1 });
 
     await build();
 
@@ -585,7 +585,7 @@ console.log(\`Message: \${message}\`);
 
     mockLoadContent.mockResolvedValue([unicodePage]);
     mockRenderMarkdown.mockReturnValue(renderedMarkdown);
-    mockRenderPage.mockResolvedValue(renderedHtml);
+    mockRenderPage.mockResolvedValue({ html: renderedHtml, templatesLoaded: 1 });
 
     await build();
 

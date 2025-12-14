@@ -112,6 +112,46 @@ describe('MetricRecorder', () => {
       expect(metrics.counts.cachedPages).toBe(5);
     });
 
+    it('should increment templatesLoaded counter', () => {
+      const recorder = createMetricRecorder({ enabled: true });
+
+      // Simulate template loading during page rendering
+      recorder.increment('templatesLoaded', 3); // Page 1: 2 partials + 1 layout
+      recorder.increment('templatesLoaded', 2); // Page 2: 1 partial + 1 layout
+      recorder.increment('templatesLoaded', 1); // Page 3: just layout
+
+      const metrics = recorder.finalize();
+      expect(metrics.counts.templatesLoaded).toBe(6); // Total templates loaded across all pages
+    });
+
+    it('should track templatesLoaded alongside other content counts', () => {
+      const recorder = createMetricRecorder({ enabled: true });
+
+      // Simulate a typical build scenario
+      recorder.increment('totalPages', 10);
+      recorder.increment('markdownFilesProcessed', 10);
+      recorder.increment('renderedPages', 3);
+      recorder.increment('cachedPages', 7);
+      recorder.increment('templatesLoaded', 4); // 3 partials + 1 layout used across rendered pages
+      recorder.increment('assetsCopied', 5);
+
+      const metrics = recorder.finalize();
+      expect(metrics.counts.totalPages).toBe(10);
+      expect(metrics.counts.markdownFilesProcessed).toBe(10);
+      expect(metrics.counts.renderedPages).toBe(3);
+      expect(metrics.counts.cachedPages).toBe(7);
+      expect(metrics.counts.templatesLoaded).toBe(4);
+      expect(metrics.counts.assetsCopied).toBe(5);
+    });
+
+    it('should handle zero templatesLoaded correctly', () => {
+      const recorder = createMetricRecorder({ enabled: true });
+
+      // No templates incremented (e.g., all pages cached)
+      const metrics = recorder.finalize();
+      expect(metrics.counts.templatesLoaded).toBe(0);
+    });
+
     it('should record ISG metrics', () => {
       const recorder = createMetricRecorder({ enabled: true });
 

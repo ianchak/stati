@@ -438,7 +438,19 @@ async function processPagesWithCache(
     const assets: StatiAssets | undefined = bundlePaths.length > 0 ? { bundlePaths } : undefined;
 
     // Render with template
-    let finalHtml = await renderPage(page, htmlContent, config, eta, navigation, pages, assets);
+    const renderResult = await renderPage(
+      page,
+      htmlContent,
+      config,
+      eta,
+      navigation,
+      pages,
+      assets,
+    );
+    let finalHtml = renderResult.html;
+
+    // Record templates loaded for this page
+    recorder.increment('templatesLoaded', renderResult.templatesLoaded);
 
     // Auto-inject SEO tags if enabled
     if (config.seo?.autoInject !== false) {
