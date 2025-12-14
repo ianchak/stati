@@ -122,7 +122,7 @@ function extractPerfResults(benchmarkSummary, metrics) {
       results.coldBuild = {
         medianMs: metrics.totals.durationMs,
       };
-    } else if (metrics.isg?.cacheHitRate >= 0.9) {
+    } else if (typeof metrics.isg?.cacheHitRate === 'number' && metrics.isg.cacheHitRate >= 0.9) {
       results.warmBuild = {
         medianMs: metrics.totals.durationMs,
         cacheHitRate: metrics.isg.cacheHitRate,
