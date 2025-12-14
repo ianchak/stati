@@ -2,7 +2,7 @@
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import { readFileSync } from 'node:fs';
-import { join, dirname, resolve, isAbsolute, relative } from 'node:path';
+import { join, dirname, resolve, isAbsolute, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   build,
@@ -126,27 +126,27 @@ const cli = yargs(hideBin(process.argv))
           const projectRoot = process.cwd();
           const cacheDir = join(projectRoot, '.stati');
 
+          const metricsSafeDir = join(cacheDir, 'metrics');
+
           // Validate and sanitize custom metrics output path
           let metricsOutputPath: string | undefined;
           const rawMetricsFile = argv['metrics-file'] as string | undefined;
           if (rawMetricsFile) {
-            // Resolve to absolute path relative to project root
+            // Only allow writing metrics files within .stati/metrics/
             const resolvedPath = isAbsolute(rawMetricsFile)
-              ? rawMetricsFile
-              : resolve(projectRoot, rawMetricsFile);
+              ? resolve(rawMetricsFile)
+              : resolve(metricsSafeDir, rawMetricsFile);
 
-            // Security check: validate path before creating any directories
-            // Use path.relative() which handles cross-platform path normalization
-            // If the relative path starts with '..' it means it escapes the project root
-            const relativePath = relative(projectRoot, resolvedPath);
-            const escapesRoot = relativePath.startsWith('..') || isAbsolute(relativePath);
+            // Security check: ensure resolvedPath is within metricsSafeDir
+            const normalizedSafeDir = resolve(metricsSafeDir) + sep;
+            const normalizedTarget = resolve(resolvedPath);
 
-            if (escapesRoot) {
+            if (!normalizedTarget.startsWith(normalizedSafeDir)) {
               log.error(
-                `Invalid metrics-file path: "${rawMetricsFile}" resolves outside the project root. Metrics will not be written to file.`,
+                `Invalid metrics-file path: "${rawMetricsFile}" must be within ".stati/metrics/". Metrics will not be written to file.`,
               );
             } else {
-              metricsOutputPath = resolvedPath;
+              metricsOutputPath = normalizedTarget;
             }
           }
 
