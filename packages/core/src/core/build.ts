@@ -646,8 +646,9 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
   );
   endContentSpan();
 
-  // Record content discovery counts
-  // Note: All pages are markdown files since loadContent() only processes *.md files
+  // Record content discovery counts.
+  // Both totalPages and markdownFilesProcessed are incremented by pages.length
+  // because loadContent() only processes *.md files, so all pages are markdown files.
   recorder.increment('totalPages', pages.length);
   recorder.increment('markdownFilesProcessed', pages.length);
 
