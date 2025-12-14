@@ -49,7 +49,12 @@ class NoopMetricRecorder implements MetricRecorder {
     /* noop */
   }
 
-  recordPageTiming(_url: string, _durationMs: number, _cached: boolean): void {
+  recordPageTiming(
+    _url: string,
+    _durationMs: number,
+    _cached: boolean,
+    _templatesLoaded?: number,
+  ): void {
     /* noop */
   }
 

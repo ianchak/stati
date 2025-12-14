@@ -476,8 +476,8 @@ async function processPagesWithCache(
 
     const renderTime = Math.round(performance.now() - startTime);
 
-    // Record page timing for rendered pages
-    recorder.recordPageTiming(page.url, renderTime, false);
+    // Record page timing for rendered pages (includes template count)
+    recorder.recordPageTiming(page.url, renderTime, false, renderResult.templatesLoaded);
 
     if (logger.updateTreeNode) {
       logger.updateTreeNode(pageId, 'completed', {

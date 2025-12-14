@@ -131,9 +131,19 @@ class ActiveMetricRecorder implements MetricRecorder {
     this.gauges.set(name, Math.max(current, value));
   }
 
-  recordPageTiming(url: string, durationMs: number, cached: boolean): void {
+  recordPageTiming(
+    url: string,
+    durationMs: number,
+    cached: boolean,
+    templatesLoaded?: number,
+  ): void {
     if (this.detailed) {
-      this.pageTimings.push({ url, durationMs, cached });
+      const timing: PageTiming = { url, durationMs, cached };
+      if (templatesLoaded !== undefined) {
+        this.pageTimings.push({ ...timing, templatesLoaded });
+      } else {
+        this.pageTimings.push(timing);
+      }
     }
   }
 

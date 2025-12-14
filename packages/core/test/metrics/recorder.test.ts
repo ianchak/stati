@@ -171,7 +171,7 @@ describe('MetricRecorder', () => {
     it('should record page timings in detailed mode', () => {
       const recorder = createMetricRecorder({ enabled: true, detailed: true });
 
-      recorder.recordPageTiming('/page1', 50, false);
+      recorder.recordPageTiming('/page1', 50, false, 3);
       recorder.recordPageTiming('/page2', 0, true);
 
       const metrics = recorder.finalize();
@@ -181,7 +181,37 @@ describe('MetricRecorder', () => {
         url: '/page1',
         durationMs: 50,
         cached: false,
+        templatesLoaded: 3,
       });
+      // Cached pages should not have templatesLoaded
+      expect(metrics.pageTimings?.[1]).toEqual({
+        url: '/page2',
+        durationMs: 0,
+        cached: true,
+      });
+    });
+
+    it('should include templatesLoaded in page timings when provided', () => {
+      const recorder = createMetricRecorder({ enabled: true, detailed: true });
+
+      // Rendered page with templates
+      recorder.recordPageTiming('/docs/intro', 75, false, 5);
+      // Rendered page with no templates (e.g., no layout)
+      recorder.recordPageTiming('/plain', 30, false, 0);
+      // Cached page (templatesLoaded not applicable)
+      recorder.recordPageTiming('/cached', 0, true);
+
+      const metrics = recorder.finalize();
+      expect(metrics.pageTimings).toHaveLength(3);
+
+      // Page with templates
+      expect(metrics.pageTimings?.[0]?.templatesLoaded).toBe(5);
+
+      // Page with zero templates (should still be included)
+      expect(metrics.pageTimings?.[1]?.templatesLoaded).toBe(0);
+
+      // Cached page should not have templatesLoaded property
+      expect(metrics.pageTimings?.[2]?.templatesLoaded).toBeUndefined();
     });
 
     it('should not record page timings when not in detailed mode', () => {
@@ -406,7 +436,7 @@ describe('noopMetricRecorder additional methods', () => {
   });
 
   it('should have recordPageTiming as a noop', () => {
-    noopMetricRecorder.recordPageTiming('/page', 100, false);
+    noopMetricRecorder.recordPageTiming('/page', 100, false, 3);
     const metrics = noopMetricRecorder.finalize();
     expect(metrics.pageTimings).toBeUndefined();
   });

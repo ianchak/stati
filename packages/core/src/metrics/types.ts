@@ -161,6 +161,8 @@ export interface PageTiming {
   readonly durationMs: number;
   /** Whether page was served from cache */
   readonly cached: boolean;
+  /** Number of templates loaded for this page (undefined for cached pages) */
+  readonly templatesLoaded?: number;
 }
 
 /**
@@ -229,8 +231,14 @@ export interface MetricRecorder {
 
   /**
    * Record page timing (only when detailed mode enabled).
+   * @param templatesLoaded - Number of templates loaded (optional, typically undefined for cached pages)
    */
-  recordPageTiming(url: string, durationMs: number, cached: boolean): void;
+  recordPageTiming(
+    url: string,
+    durationMs: number,
+    cached: boolean,
+    templatesLoaded?: number,
+  ): void;
 
   /**
    * Take memory snapshot to track peak RSS.
