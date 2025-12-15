@@ -125,9 +125,10 @@
 
   /* Sidebar improvements */
   .section-content {
-    @apply transition-[max-height,overflow] duration-200 ease-in-out;
+    @apply transition-[max-height] duration-150 ease-out;
     /* Prevent Safari from collapsing content before JS calculates scrollHeight */
     max-height: none;
+    overflow: hidden;
   }
 
   .sidebar-link {

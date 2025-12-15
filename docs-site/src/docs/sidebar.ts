@@ -69,27 +69,33 @@ function toggleMobileSidebar(elements: SidebarElements, forceClose = false): voi
  * Collapses a section content element with animation.
  */
 function collapseSection(content: HTMLElement): void {
+  // Hide overflow immediately to clip content during animation
+  content.style.overflow = 'hidden';
   // Set explicit height first to enable transition from current height
   content.style.maxHeight = `${content.scrollHeight}px`;
   // Force reflow to ensure the browser registers the explicit height
   void content.offsetHeight;
   // Now animate to 0
   content.style.maxHeight = '0px';
-  content.style.overflow = 'hidden';
 }
 
 /**
  * Expands a section content element with animation.
  */
 function expandSection(content: HTMLElement): void {
-  // Set to scrollHeight for animation
-  content.style.maxHeight = `${content.scrollHeight}px`;
-  content.style.overflow = 'visible';
+  // Start from 0 if not already set
+  if (!content.style.maxHeight || content.style.maxHeight === 'none') {
+    content.style.maxHeight = '0px';
+    void content.offsetHeight;
+  }
 
-  // After transition, remove maxHeight to allow natural sizing
-  // This prevents Safari issues where scrollHeight may be incorrect
+  // Animate to scrollHeight (keep overflow hidden during animation)
+  content.style.maxHeight = `${content.scrollHeight}px`;
+
+  // After transition, allow natural sizing and visible overflow
   const onTransitionEnd = (): void => {
     content.style.maxHeight = 'none';
+    content.style.overflow = 'visible';
     content.removeEventListener('transitionend', onTransitionEnd);
   };
   content.addEventListener('transitionend', onTransitionEnd);
