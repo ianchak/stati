@@ -136,6 +136,7 @@ The `phases` object shows how long each build phase took:
 | `cacheManifestLoadMs` | Loading ISG cache manifest |
 | `typescriptCompileMs` | Compiling TypeScript bundles |
 | `pageRenderingMs` | Rendering pages (markdown + templates) |
+| `searchIndexGenerationMs` | Generating search index JSON |
 | `assetCopyMs` | Copying static assets |
 | `cacheManifestSaveMs` | Saving updated cache manifest |
 | `sitemapGenerationMs` | Generating sitemap.xml |
