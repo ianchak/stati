@@ -100,8 +100,10 @@ export interface BuildOptions {
   includeDrafts?: boolean | undefined;
   /** Custom logger for build output */
   logger?: Logger | undefined;
-  /** Version information to display in build messages */
-  version?: string | undefined;
+  /** CLI version for metrics */
+  cliVersion?: string | undefined;
+  /** Core version for metrics */
+  coreVersion?: string | undefined;
   /** Metrics collection options */
   metrics?: MetricsOptions | undefined;
 }
@@ -597,7 +599,8 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
       clean: options.clean,
       includeDrafts: options.includeDrafts,
     },
-    statiVersion: options.version,
+    cliVersion: options.cliVersion,
+    coreVersion: options.coreVersion,
   });
 
   logger.building('Building your site...');

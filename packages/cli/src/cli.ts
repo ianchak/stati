@@ -11,7 +11,7 @@ import {
   createPreviewServer,
   setEnv,
   writeMetrics,
-  formatMetricsSummary,
+  getStatiVersion,
 } from '@stati/core';
 import type { BuildOptions, DevServerOptions, PreviewServerOptions } from '@stati/core';
 import { log } from './colors.js';
@@ -21,7 +21,7 @@ import { watchTailwindCSS } from './tailwind.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-function getVersion(): string {
+function getCliVersion(): string {
   try {
     const packageJsonPath = join(__dirname, '../package.json');
     const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
@@ -33,7 +33,7 @@ function getVersion(): string {
 
 const cli = yargs(hideBin(process.argv))
   .scriptName('stati')
-  .version(getVersion())
+  .version(getCliVersion())
   .command(
     'build',
     'Build site',
@@ -76,7 +76,8 @@ const cli = yargs(hideBin(process.argv))
         force: !!argv.force,
         clean: !!argv.clean,
         includeDrafts: !!argv['include-drafts'],
-        version: getVersion(),
+        cliVersion: getCliVersion(),
+        coreVersion: getStatiVersion(),
         metrics: metricsEnabled
           ? {
               enabled: true,
@@ -93,9 +94,8 @@ const cli = yargs(hideBin(process.argv))
         // Enhanced logger via factory (centralized)
         const coloredLogger = createLogger();
 
-        // Show a nice header
-        const versionInfo = buildOptions.version ? ` v${buildOptions.version}` : '';
-        log.header(`Stati${versionInfo} - Static Site Generator`);
+        // Show decorative startup banner
+        log.startupBanner('Build', getCliVersion(), getStatiVersion());
 
         // Show build options summary
         if (buildOptions.force) log.info('Force rebuild enabled');
@@ -116,12 +116,6 @@ const cli = yargs(hideBin(process.argv))
 
         // Handle metrics output
         if (result.buildMetrics) {
-          // Print metrics summary to CLI
-          const summaryLines = formatMetricsSummary(result.buildMetrics);
-          for (const line of summaryLines) {
-            console.log(line);
-          }
-
           // Write metrics to file
           const projectRoot = process.cwd();
           const cacheDir = join(projectRoot, '.stati');
@@ -220,9 +214,8 @@ const cli = yargs(hideBin(process.argv))
 
         devOptions.logger = coloredLogger;
 
-        // Show a nice header
-        const versionInfo = getVersion() ? ` v${getVersion()}` : '';
-        log.header(`Stati${versionInfo} - Development Server`);
+        // Show decorative startup banner
+        log.startupBanner('Development Server', getCliVersion(), getStatiVersion());
 
         // Show dev server options
         log.info(`Server will run at http://${argv.host}:${argv.port}`);
@@ -329,9 +322,8 @@ const cli = yargs(hideBin(process.argv))
 
         previewOptions.logger = coloredLogger;
 
-        // Show a nice header
-        const versionInfo = getVersion() ? ` v${getVersion()}` : '';
-        log.header(`Stati${versionInfo} - Preview Server`);
+        // Show decorative startup banner
+        log.startupBanner('Preview Server', getCliVersion(), getStatiVersion());
 
         // Show preview server options
         log.info(`Server will run at http://${argv.host}:${argv.port}`);

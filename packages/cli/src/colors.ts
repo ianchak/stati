@@ -85,6 +85,45 @@ function createBox(message: string, color: (text: string) => string): string {
 }
 
 /**
+ * Gradient color helpers for decorative banners
+ */
+const gradient = {
+  // Indigo to purple gradient
+  primary: (text: string) => `\x1b[38;2;99;102;241m${text}\x1b[0m`, // #6366f1
+  secondary: (text: string) => `\x1b[38;2;139;92;246m${text}\x1b[0m`, // #8b5cf6
+  accent: (text: string) => `\x1b[38;2;168;85;247m${text}\x1b[0m`, // #a855f7
+};
+
+/**
+ * Creates a decorative startup banner with gradient colors
+ */
+function createStartupBanner(mode: string, cliVersion: string, coreVersion: string): string {
+  const dim = (text: string) => `\x1b[2m${text}\x1b[0m`;
+  const bold = (text: string) => `\x1b[1m${text}\x1b[0m`;
+  const cyan = (text: string) => `\x1b[38;2;34;211;238m${text}\x1b[0m`; // #22d3ee
+  const green = (text: string) => `\x1b[38;2;34;197;94m${text}\x1b[0m`; // #22c55e
+
+  // Styled name with gradient effect
+  const statiName =
+    bold(gradient.primary('S')) +
+    bold(gradient.secondary('T')) +
+    bold(gradient.accent('A')) +
+    bold(gradient.primary('T')) +
+    bold(gradient.secondary('I'));
+
+  // Build the banner lines
+  const lines = [
+    '',
+    `${green('⚡')} ${statiName} ${dim(mode)}`,
+    '',
+    `${dim('CLI')} ${cyan(`v${cliVersion}`)}  ${dim('│')}  ${dim('Core')} ${cyan(`v${coreVersion}`)}`,
+    '',
+  ];
+
+  return lines.join('\n');
+}
+
+/**
  * Rendering tree node for visualizing build steps
  */
 interface RenderingTreeNode {
@@ -345,6 +384,17 @@ export const log = {
    */
   header: (message: string) => {
     console.log('\n' + createBox(message, colors.brand) + '\n');
+  },
+
+  /**
+   * Decorative startup banner for CLI commands
+   */
+  startupBanner: (
+    mode: 'Development Server' | 'Preview Server' | 'Build',
+    cliVersion: string,
+    coreVersion: string,
+  ) => {
+    console.log('\n' + createStartupBanner(mode, cliVersion, coreVersion) + '\n');
   },
 
   /**

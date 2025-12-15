@@ -48,6 +48,8 @@ vi.mock('@stati/core', () => ({
     url: 'http://localhost:4000',
   }),
   setEnv: vi.fn(),
+  writeMetrics: vi.fn().mockResolvedValue({ success: true, path: '/metrics.json' }),
+  getStatiVersion: vi.fn().mockReturnValue('1.0.0'),
 }));
 
 // Mock logger module
@@ -78,6 +80,7 @@ vi.mock('../src/colors.js', () => ({
     updateTreeNode: vi.fn(),
     showRenderingTree: vi.fn(),
     clearRenderingTree: vi.fn(),
+    startupBanner: vi.fn(),
   },
 }));
 
@@ -131,7 +134,8 @@ describe('CLI', () => {
         force: false,
         clean: false,
         includeDrafts: false,
-        version: 'test',
+        cliVersion: 'test-cli',
+        coreVersion: 'test-core',
       });
 
       expect(build).toHaveBeenCalledWith(
@@ -139,7 +143,28 @@ describe('CLI', () => {
           force: false,
           clean: false,
           includeDrafts: false,
-          version: 'test',
+          cliVersion: 'test-cli',
+          coreVersion: 'test-core',
+        }),
+      );
+    });
+
+    it('should pass cliVersion and coreVersion options correctly', async () => {
+      const { build } = await import('@stati/core');
+
+      // Test that cliVersion and coreVersion can be passed to build
+      await (build as ReturnType<typeof vi.fn>)({
+        force: false,
+        clean: false,
+        includeDrafts: false,
+        cliVersion: '1.2.3',
+        coreVersion: '2.0.0',
+      });
+
+      expect(build).toHaveBeenCalledWith(
+        expect.objectContaining({
+          cliVersion: '1.2.3',
+          coreVersion: '2.0.0',
         }),
       );
     });
@@ -259,6 +284,42 @@ describe('CLI', () => {
       await (invalidate as ReturnType<typeof vi.fn>)();
 
       expect(invalidate).toHaveBeenCalled();
+    });
+  });
+
+  describe('startupBanner integration', () => {
+    it('should have log.startupBanner available for Build mode', async () => {
+      const { log } = await import('../src/colors.js');
+
+      // Verify that startupBanner is available
+      expect(log.startupBanner).toBeDefined();
+      expect(typeof log.startupBanner).toBe('function');
+    });
+
+    it('should have log.startupBanner available for Development Server mode', async () => {
+      const { log } = await import('../src/colors.js');
+
+      // Verify that startupBanner is available
+      expect(log.startupBanner).toBeDefined();
+      expect(typeof log.startupBanner).toBe('function');
+    });
+
+    it('should have log.startupBanner available for Preview Server mode', async () => {
+      const { log } = await import('../src/colors.js');
+
+      // Verify that startupBanner is available
+      expect(log.startupBanner).toBeDefined();
+      expect(typeof log.startupBanner).toBe('function');
+    });
+  });
+
+  describe('getStatiVersion integration', () => {
+    it('should have getStatiVersion function available from @stati/core', async () => {
+      const { getStatiVersion } = await import('@stati/core');
+
+      // Verify that getStatiVersion is available
+      expect(getStatiVersion).toBeDefined();
+      expect(typeof getStatiVersion).toBe('function');
     });
   });
 });

@@ -4,12 +4,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { setTimeout } from 'node:timers/promises';
-import {
-  createMetricRecorder,
-  noopMetricRecorder,
-  formatMetricsSummary,
-} from '../../src/metrics/index.js';
-import type { BuildMetrics } from '../../src/metrics/index.js';
+import { createMetricRecorder, noopMetricRecorder } from '../../src/metrics/index.js';
 
 describe('MetricRecorder', () => {
   describe('noopMetricRecorder', () => {
@@ -227,13 +222,15 @@ describe('MetricRecorder', () => {
       const recorder = createMetricRecorder({
         enabled: true,
         command: 'build',
-        statiVersion: '1.0.0',
+        cliVersion: '1.0.0',
+        coreVersion: '2.0.0',
         flags: { force: true, clean: false },
       });
 
       const metrics = recorder.finalize();
       expect(metrics.meta.command).toBe('build');
-      expect(metrics.meta.statiVersion).toBe('1.0.0');
+      expect(metrics.meta.cliVersion).toBe('1.0.0');
+      expect(metrics.meta.coreVersion).toBe('2.0.0');
       expect(metrics.meta.flags.force).toBe(true);
       expect(metrics.meta.nodeVersion).toBeDefined();
       expect(metrics.meta.platform).toBeDefined();
@@ -468,58 +465,5 @@ describe('noopMetricRecorder additional methods', () => {
 
   it('should have detailed=false', () => {
     expect(noopMetricRecorder.detailed).toBe(false);
-  });
-});
-
-describe('formatMetricsSummary', () => {
-  it('should format metrics summary lines', () => {
-    const metrics: BuildMetrics = {
-      schemaVersion: '1',
-      meta: {
-        timestamp: '2024-01-15T10:30:00.000Z',
-        ci: false,
-        nodeVersion: '22.0.0',
-        platform: 'linux',
-        arch: 'x64',
-        cpuCount: 4,
-        statiVersion: '1.0.0',
-        command: 'build',
-        flags: {},
-      },
-      totals: {
-        durationMs: 1250,
-        peakRssBytes: 100 * 1024 * 1024, // 100 MB
-        heapUsedBytes: 50 * 1024 * 1024, // 50 MB
-      },
-      phases: {
-        configLoadMs: 50,
-        pageRenderingMs: 800,
-        assetCopyMs: 200,
-      },
-      counts: {
-        totalPages: 20,
-        renderedPages: 5,
-        cachedPages: 15,
-        assetsCopied: 10,
-        templatesLoaded: 3,
-        markdownFilesProcessed: 20,
-      },
-      isg: {
-        enabled: true,
-        cacheHitRate: 0.75,
-        manifestEntries: 20,
-        invalidatedEntries: 5,
-      },
-    };
-
-    const lines = formatMetricsSummary(metrics);
-
-    // Should include key information
-    const output = lines.join('\n');
-    expect(output).toContain('Build Metrics Summary');
-    expect(output).toContain('1.25s'); // Total time
-    expect(output).toContain('75.0%'); // Cache hit rate
-    expect(output).toContain('100.0 MB'); // Peak memory
-    expect(output).toContain('Page Rendering'); // Top phase
   });
 });

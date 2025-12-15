@@ -66,6 +66,42 @@ function toggleMobileSidebar(elements: SidebarElements, forceClose = false): voi
 }
 
 /**
+ * Collapses a section content element with animation.
+ */
+function collapseSection(content: HTMLElement): void {
+  // Hide overflow immediately to clip content during animation
+  content.style.overflow = 'hidden';
+  // Set explicit height first to enable transition from current height
+  content.style.maxHeight = `${content.scrollHeight}px`;
+  // Force reflow to ensure the browser registers the explicit height
+  void content.offsetHeight;
+  // Now animate to 0
+  content.style.maxHeight = '0px';
+}
+
+/**
+ * Expands a section content element with animation.
+ */
+function expandSection(content: HTMLElement): void {
+  // Start from 0 if not already set
+  if (!content.style.maxHeight || content.style.maxHeight === 'none') {
+    content.style.maxHeight = '0px';
+    void content.offsetHeight;
+  }
+
+  // Animate to scrollHeight (keep overflow hidden during animation)
+  content.style.maxHeight = `${content.scrollHeight}px`;
+
+  // After transition, allow natural sizing and visible overflow
+  const onTransitionEnd = (): void => {
+    content.style.maxHeight = 'none';
+    content.style.overflow = 'visible';
+    content.removeEventListener('transitionend', onTransitionEnd);
+  };
+  content.addEventListener('transitionend', onTransitionEnd);
+}
+
+/**
  * Initializes section toggles with localStorage persistence.
  */
 function initSectionToggles(): SectionState {
@@ -78,11 +114,12 @@ function initSectionToggles(): SectionState {
     const content = toggle.nextElementSibling as HTMLElement | null;
     const isExpanded = state[sectionName] !== false; // Default to expanded
 
-    // Set initial state
+    // Set initial state without animation
     if (content) {
       if (isExpanded) {
         toggle.setAttribute('data-expanded', 'true');
-        content.style.maxHeight = `${content.scrollHeight}px`;
+        // Use 'none' for expanded state to avoid Safari scrollHeight issues
+        content.style.maxHeight = 'none';
         content.style.overflow = 'visible';
       } else {
         toggle.removeAttribute('data-expanded');
@@ -98,15 +135,13 @@ function initSectionToggles(): SectionState {
       if (isCurrentlyExpanded) {
         toggle.removeAttribute('data-expanded');
         if (content) {
-          content.style.maxHeight = '0px';
-          content.style.overflow = 'hidden';
+          collapseSection(content);
         }
         state[sectionName] = false;
       } else {
         toggle.setAttribute('data-expanded', 'true');
         if (content) {
-          content.style.maxHeight = `${content.scrollHeight}px`;
-          content.style.overflow = 'visible';
+          expandSection(content);
         }
         state[sectionName] = true;
       }

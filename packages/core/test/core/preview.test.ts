@@ -2,18 +2,25 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createPreviewServer } from '../../src/core/preview.js';
 import type { PreviewServerOptions } from '../../src/core/preview.js';
 import { loadConfig } from '../../src/config/loader.js';
+import type { IncomingMessage, ServerResponse } from 'node:http';
+
+// Store the request handler for testing
+let capturedRequestHandler: ((req: IncomingMessage, res: ServerResponse) => void) | null = null;
 
 // Mock dependencies
 vi.mock('http', () => ({
-  createServer: vi.fn(() => ({
-    listen: vi.fn((port: number, host: string, callback?: () => void) => {
-      if (callback) callback();
-    }),
-    close: vi.fn((callback?: () => void) => {
-      if (callback) callback();
-    }),
-    on: vi.fn(),
-  })),
+  createServer: vi.fn((handler: (req: IncomingMessage, res: ServerResponse) => void) => {
+    capturedRequestHandler = handler;
+    return {
+      listen: vi.fn((port: number, host: string, callback?: () => void) => {
+        if (callback) callback();
+      }),
+      close: vi.fn((callback?: () => void) => {
+        if (callback) callback();
+      }),
+      on: vi.fn(),
+    };
+  }),
 }));
 
 vi.mock('open', () => ({
@@ -42,6 +49,7 @@ describe('Preview Server', () => {
   beforeEach(() => {
     consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.clearAllMocks();
+    capturedRequestHandler = null;
 
     // Ensure mocks return valid data
     mockLoadConfig.mockResolvedValue({
@@ -161,5 +169,97 @@ describe('Preview Server', () => {
 
     expect(previewServer).toBeDefined();
     expect(previewServer.url).toBe('http://localhost:4000'); // DEFAULT_DEV_HOST:DEFAULT_PREVIEW_PORT
+  });
+
+  describe('request handling', () => {
+    it('should set no-cache Cache-Control header on responses', async () => {
+      const previewServer = await createPreviewServer();
+      await previewServer.start();
+
+      // Create mock request and response objects
+      const mockReq = {
+        url: '/index.html',
+        method: 'GET',
+      } as IncomingMessage;
+
+      const writeHeadMock = vi.fn();
+      const endMock = vi.fn();
+      const mockRes = {
+        writeHead: writeHeadMock,
+        end: endMock,
+      } as unknown as ServerResponse;
+
+      // Execute the captured request handler
+      expect(capturedRequestHandler).not.toBeNull();
+      if (capturedRequestHandler) {
+        await capturedRequestHandler(mockReq, mockRes);
+
+        // Verify Cache-Control header is set to no-cache
+        expect(writeHeadMock).toHaveBeenCalledWith(
+          expect.any(Number),
+          expect.objectContaining({
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+          }),
+        );
+      }
+    });
+
+    it('should set Access-Control-Allow-Origin header', async () => {
+      const previewServer = await createPreviewServer();
+      await previewServer.start();
+
+      const mockReq = {
+        url: '/',
+        method: 'GET',
+      } as IncomingMessage;
+
+      const writeHeadMock = vi.fn();
+      const endMock = vi.fn();
+      const mockRes = {
+        writeHead: writeHeadMock,
+        end: endMock,
+      } as unknown as ServerResponse;
+
+      expect(capturedRequestHandler).not.toBeNull();
+      if (capturedRequestHandler) {
+        await capturedRequestHandler(mockReq, mockRes);
+
+        expect(writeHeadMock).toHaveBeenCalledWith(
+          expect.any(Number),
+          expect.objectContaining({
+            'Access-Control-Allow-Origin': '*',
+          }),
+        );
+      }
+    });
+
+    it('should return 404 for non-existent files', async () => {
+      // Mock readFile to throw an error for non-existent files
+      const { readFile } = await import('fs/promises');
+      vi.mocked(readFile).mockRejectedValueOnce(new Error('ENOENT'));
+
+      const previewServer = await createPreviewServer();
+      await previewServer.start();
+
+      const mockReq = {
+        url: '/non-existent.html',
+        method: 'GET',
+      } as IncomingMessage;
+
+      const writeHeadMock = vi.fn();
+      const endMock = vi.fn();
+      const mockRes = {
+        writeHead: writeHeadMock,
+        end: endMock,
+      } as unknown as ServerResponse;
+
+      expect(capturedRequestHandler).not.toBeNull();
+      if (capturedRequestHandler) {
+        await capturedRequestHandler(mockReq, mockRes);
+
+        // Should return 404 status code
+        expect(writeHeadMock).toHaveBeenCalledWith(404, expect.any(Object));
+      }
+    });
   });
 });

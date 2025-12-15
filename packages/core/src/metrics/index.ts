@@ -59,7 +59,6 @@ export { noopMetricRecorder } from './noop.js';
 export {
   // Writer utilities
   writeMetrics,
-  formatMetricsSummary,
   generateMetricsFilename,
   DEFAULT_METRICS_DIR,
   // System utilities

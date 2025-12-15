@@ -44,14 +44,6 @@ Stati is built with TypeScript from the ground up, providing:
 - Bundle paths available via `stati.assets` for preloading or custom use
 - Development mode with source maps; production mode with minification and hashing
 
-### Smart Defaults
-
-Every feature in Stati is designed with developer experience in mind:
-
-- Development server with automatic full-page reloads
-- Incremental builds that only process changed files
-- Smart caching that adapts to your content
-
 ### Minimal Dependencies
 
 Stati keeps its dependency footprint small by:
@@ -116,41 +108,8 @@ Each core concept builds on the others to create Stati's unique approach to stat
 
 Start with [Filesystem-based Routing](/core-concepts/routing/) to understand how Stati maps your content to URLs, then explore the other concepts to master the full Stati workflow.
 
-## Common Patterns
-
-### Blog Sites
-
-- Content in `site/blog/` directory
-- Date-based organization with front matter
-- Layout inheritance for consistent design
-- ISG for efficient rebuilds of large archives
-
-### Documentation Sites
-
-- Hierarchical content structure
-- Shared navigation and layout components
-- Cross-references and internal linking
-- Search-friendly URL structure
-
-### Portfolio Sites
-
-- Mixed content types (markdown + templates)
-- Custom layouts for different sections
-- Static image and asset handling
-- Flexible build configuration
-
-### Landing Pages
-
-- Custom templates with dynamic content
-- Integration with external APIs (build-time)
-- Built-in SEO features
-- Static output with minimal JavaScript
-
-Ready to dive in? Start with [Filesystem-based Routing](/core-concepts/routing/) to understand how Stati organizes your content.
-
 ## Related Topics
 
-- [Filesystem-based Routing](/core-concepts/routing/) – How URLs map to your content
 - [Templates & Layouts](/core-concepts/templates/) – Eta templates and layout inheritance
 - [Markdown Pipeline](/core-concepts/markdown/) – Markdown processing and plugins
 - [Incremental Static Generation](/core-concepts/isg/) – Smart caching and rebuilds

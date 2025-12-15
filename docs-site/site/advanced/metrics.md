@@ -3,6 +3,8 @@ title: Build Performance Metrics
 description: Measure and analyze Stati build performance with the metrics system
 ---
 
+# Build Performance Metrics
+
 Stati includes a built-in performance metrics system that helps you understand and optimize your site's build performance. This guide explains how to use it.
 
 ## Quick Start
@@ -17,8 +19,7 @@ This will:
 
 1. Collect timing data for all build phases
 2. Track cache hit/miss rates
-3. Print a summary to the console
-4. Save a detailed JSON file to `.stati/metrics/`
+3. Save a detailed JSON file to `.stati/metrics/`
 
 ## CLI Options
 
@@ -56,28 +57,9 @@ stati build --metrics --metrics-detailed
 
 ## Understanding the Output
 
-### Console Summary
-
-When metrics are enabled, you'll see a summary after the build:
-
-```text
-📊 Build Metrics Summary
-────────────────────────────────────────
-Total build time: 1.25s
-Pages: 20 total, 5 rendered, 15 cached
-Cache hit rate: 75.0%
-Peak memory: 100.5 MB
-
-Top phases:
-  Page Rendering: 800ms
-  Asset Copy: 200ms
-  Config Load: 50ms
-────────────────────────────────────────
-```
-
 ### JSON Output
 
-The full metrics are saved to `.stati/metrics/build-<timestamp>.json`:
+Metrics are saved to `.stati/metrics/build-<timestamp>.json`:
 
 ```json
 {
@@ -87,7 +69,8 @@ The full metrics are saved to `.stati/metrics/build-<timestamp>.json`:
     "ci": false,
     "nodeVersion": "22.0.0",
     "platform": "darwin",
-    "statiVersion": "1.16.0",
+    "cliVersion": "1.11.0",
+    "coreVersion": "1.18.0",
     "command": "build",
     "flags": {
       "force": false,
