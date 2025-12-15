@@ -22,8 +22,13 @@ import { SEARCH_INDEX_META_NAME } from './constants.js';
  * ```
  */
 export function autoInjectSearchMeta(html: string, searchIndexPath: string): string {
-  // Check if meta tag already exists
-  if (html.includes(`name="${SEARCH_INDEX_META_NAME}"`)) {
+  // Check if meta tag already exists using regex to handle attribute order variations
+  // Matches: <meta name="stati:search-index" ...> or <meta content="..." name="stati:search-index" ...>
+  const existingMetaPattern = new RegExp(
+    `<meta[^>]*name=["']${SEARCH_INDEX_META_NAME}["'][^>]*>`,
+    'i',
+  );
+  if (existingMetaPattern.test(html)) {
     return html;
   }
 

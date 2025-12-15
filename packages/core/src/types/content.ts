@@ -25,15 +25,11 @@ export interface StatiAssets {
   bundlePaths: string[];
 
   /**
-   * Search index metadata for the site.
+   * Path to the search index file (e.g., '/search-index-a1b2c3d4.json').
    * Available when search index generation is enabled.
+   * Use this path in client-side JavaScript to fetch the search index.
    */
-  search?: {
-    /** Full path to the search index file (e.g., '/search-index-a1b2c3d4.json') */
-    indexPath: string;
-    /** Total number of documents in the search index */
-    documentCount: number;
-  };
+  searchIndexPath?: string;
 }
 
 /**

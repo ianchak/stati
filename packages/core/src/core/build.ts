@@ -469,15 +469,12 @@ async function processPagesWithCache(
     // Compute matched bundle paths for this page
     const bundlePaths = getBundlePathsForPage(page.url, compiledBundles);
 
-    // Build assets object with bundle paths and search index metadata
+    // Build assets object with bundle paths and search index path
     const assets: StatiAssets = {
       bundlePaths,
       ...(config.search?.enabled === true &&
         searchIndexFilename && {
-          search: {
-            indexPath: `/${searchIndexFilename}`,
-            documentCount: 0, // Will be populated after search index generation
-          },
+          searchIndexPath: `/${searchIndexFilename}`,
         }),
     };
 
