@@ -356,7 +356,7 @@ describe('build.ts', () => {
         mockEta,
         expect.any(Array), // navigation parameter
         expect.any(Array), // allPages parameter
-        undefined, // assets parameter
+        expect.objectContaining({ bundlePaths: [] }), // assets parameter
         expect.any(Array), // toc parameter
         expect.objectContaining({ error: expect.any(Function) }), // logger parameter
       );
@@ -1015,7 +1015,7 @@ describe('build.ts', () => {
 
       await build();
 
-      // Should pass undefined assets to renderPage when no bundles exist
+      // Should pass assets with empty bundlePaths when no bundles exist
       expect(mockRenderPage).toHaveBeenCalledWith(
         expect.anything(),
         expect.anything(),
@@ -1023,7 +1023,7 @@ describe('build.ts', () => {
         expect.anything(),
         expect.anything(),
         expect.anything(),
-        undefined,
+        expect.objectContaining({ bundlePaths: [] }),
         expect.any(Array), // toc parameter
         expect.objectContaining({ error: expect.any(Function) }), // logger parameter
       );

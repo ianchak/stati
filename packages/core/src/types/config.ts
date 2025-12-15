@@ -1,6 +1,7 @@
 import type MarkdownIt from 'markdown-it';
 import type { SitemapConfig } from './sitemap.js';
 import type { AuthorConfig } from './content.js';
+import type { SearchConfig } from './search.js';
 
 /**
  * Configuration related type definitions
@@ -81,6 +82,8 @@ export interface StatiConfig {
   robots?: RobotsTxtConfig;
   /** RSS feed generation configuration */
   rss?: import('./rss.js').RSSConfig;
+  /** Search index generation configuration */
+  search?: SearchConfig;
   /** TypeScript compilation settings */
   typescript?: TypeScriptConfig;
   /** Development server configuration */

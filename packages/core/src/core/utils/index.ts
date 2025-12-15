@@ -108,3 +108,6 @@ export {
   autoInjectBundles,
 } from './typescript.utils.js';
 export type { CompileOptions, WatchOptions } from './typescript.utils.js';
+
+// HTML manipulation utilities
+export { findHeadClosePosition, injectBeforeHeadClose } from './html.utils.js';

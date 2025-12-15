@@ -23,6 +23,17 @@ export interface StatiAssets {
    * Always an array, empty [] if no TypeScript enabled or no bundles match.
    */
   bundlePaths: string[];
+
+  /**
+   * Search index metadata for the site.
+   * Available when search index generation is enabled.
+   */
+  search?: {
+    /** Full path to the search index file (e.g., '/search-index-a1b2c3d4.json') */
+    indexPath: string;
+    /** Total number of documents in the search index */
+    documentCount: number;
+  };
 }
 
 /**

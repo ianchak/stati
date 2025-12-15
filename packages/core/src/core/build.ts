@@ -44,6 +44,12 @@ import {
   type AutoInjectOptions,
 } from '../seo/index.js';
 import { generateRSSFeeds, validateRSSConfig } from '../rss/index.js';
+import {
+  computeSearchIndexFilename,
+  generateSearchIndex,
+  writeSearchIndex,
+  autoInjectSearchMeta,
+} from '../search/index.js';
 import { getEnv } from '../env.js';
 import { DEFAULT_OUT_DIR } from '../constants.js';
 import type {
@@ -55,7 +61,10 @@ import type {
   PageModel,
   NavNode,
   StatiAssets,
+  TocEntry,
+  SearchIndexMetadata,
 } from '../types/index.js';
+import type MarkdownIt from 'markdown-it';
 import type { MetricRecorder, BuildMetrics } from '../metrics/index.js';
 import { createMetricRecorder, noopMetricRecorder } from '../metrics/index.js';
 
@@ -305,7 +314,7 @@ async function loadContentAndBuildNavigation(
 ): Promise<{
   pages: PageModel[];
   navigation: NavNode[];
-  md: import('markdown-it').default;
+  md: MarkdownIt;
   eta: ReturnType<typeof createTemplateEngine>;
   navigationHash: string;
 }> {
@@ -337,6 +346,25 @@ async function loadContentAndBuildNavigation(
 }
 
 /**
+ * Searchable page data collected during build for search index generation.
+ */
+interface SearchablePageData {
+  page: PageModel;
+  toc: TocEntry[];
+  markdownContent: string;
+}
+
+/**
+ * Result from processing pages with caching.
+ */
+interface ProcessPagesResult {
+  cacheHits: number;
+  cacheMisses: number;
+  /** Searchable page data for search indexing (only populated when search is enabled) */
+  searchablePages: SearchablePageData[];
+}
+
+/**
  * Processes pages with ISG caching logic.
  */
 async function processPagesWithCache(
@@ -344,7 +372,7 @@ async function processPagesWithCache(
   manifest: CacheManifest,
   config: StatiConfig,
   outDir: string,
-  md: import('markdown-it').default,
+  md: MarkdownIt,
   eta: ReturnType<typeof createTemplateEngine>,
   navigation: NavNode[],
   buildTime: Date,
@@ -352,9 +380,11 @@ async function processPagesWithCache(
   logger: Logger,
   compiledBundles: CompiledBundleInfo[],
   recorder: MetricRecorder = noopMetricRecorder,
-): Promise<{ cacheHits: number; cacheMisses: number }> {
+  searchIndexFilename?: string,
+): Promise<ProcessPagesResult> {
   let cacheHits = 0;
   let cacheMisses = 0;
+  const searchablePages: SearchablePageData[] = [];
 
   // Build context
   const buildContext: BuildContext = { config, pages };
@@ -438,7 +468,18 @@ async function processPagesWithCache(
 
     // Compute matched bundle paths for this page
     const bundlePaths = getBundlePathsForPage(page.url, compiledBundles);
-    const assets: StatiAssets | undefined = bundlePaths.length > 0 ? { bundlePaths } : undefined;
+
+    // Build assets object with bundle paths and search index metadata
+    const assets: StatiAssets = {
+      bundlePaths,
+      ...(config.search?.enabled === true &&
+        searchIndexFilename && {
+          search: {
+            indexPath: `/${searchIndexFilename}`,
+            documentCount: 0, // Will be populated after search index generation
+          },
+        }),
+    };
 
     // Render with template
     const renderResult = await renderPage(
@@ -473,9 +514,17 @@ async function processPagesWithCache(
       finalHtml = autoInjectSEO(finalHtml, injectOptions);
     }
 
+    // Auto-inject search index meta tag if enabled (default: true)
+    if (
+      config.search?.enabled === true &&
+      searchIndexFilename &&
+      config.search?.autoInjectMetaTag !== false
+    ) {
+      finalHtml = autoInjectSearchMeta(finalHtml, `/${searchIndexFilename}`);
+    }
+
     // Auto-inject TypeScript bundle script tags if available and autoInject is enabled (default: true)
-    const shouldAutoInject = config.typescript?.autoInject !== false;
-    if (shouldAutoInject && assets && assets.bundlePaths.length > 0) {
+    if (config.typescript?.autoInject !== false && assets && assets.bundlePaths.length > 0) {
       finalHtml = autoInjectBundles(finalHtml, assets.bundlePaths);
     }
 
@@ -502,6 +551,12 @@ async function processPagesWithCache(
       manifest.entries[cacheKey] = await createCacheEntry(page, config, buildTime);
     }
 
+    // Collect searchable page data if search is enabled
+    // Uses TOC entries and markdown content instead of parsing rendered HTML
+    if (config.search?.enabled === true) {
+      searchablePages.push({ page, toc, markdownContent: page.content });
+    }
+
     // Run afterRender hook
     if (config.hooks?.afterRender) {
       const hookStart = performance.now();
@@ -518,7 +573,7 @@ async function processPagesWithCache(
     }
   }
 
-  return { cacheHits, cacheMisses };
+  return { cacheHits, cacheMisses, searchablePages };
 }
 
 /**
@@ -688,6 +743,12 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     endTsSpan();
   }
 
+  // Pre-compute search index filename if search is enabled
+  let searchIndexFilename: string | undefined;
+  if (config.search?.enabled) {
+    searchIndexFilename = computeSearchIndexFilename(config.search, buildStartTime.toString());
+  }
+
   // Process pages with ISG caching logic
   if (logger.step) {
     console.log(); // Add spacing before page processing
@@ -707,10 +768,27 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     logger,
     compiledBundles,
     recorder,
+    searchIndexFilename,
   );
   endPageRenderSpan();
   cacheHits = pageProcessingResult.cacheHits;
   cacheMisses = pageProcessingResult.cacheMisses;
+  const searchablePages = pageProcessingResult.searchablePages;
+
+  // Generate search index if enabled
+  // Uses markdown content and TOC entries
+  let searchIndexMetadata: SearchIndexMetadata | undefined;
+  if (config.search?.enabled && searchablePages.length > 0 && searchIndexFilename) {
+    logger.info('');
+    logger.info(`Generating search index to ${searchIndexFilename}`);
+
+    const endSearchIndexSpan = recorder.startSpan('searchIndexGenerationMs');
+    const searchIndex = generateSearchIndex(searchablePages, config.search);
+    searchIndexMetadata = await writeSearchIndex(searchIndex, outDir, searchIndexFilename);
+    endSearchIndexSpan();
+
+    logger.success(`Generated search index with ${searchIndexMetadata.documentCount} documents`);
+  }
 
   // Record page rendering counts
   recorder.increment('renderedPages', cacheMisses);
