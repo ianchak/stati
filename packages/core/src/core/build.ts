@@ -521,7 +521,7 @@ async function processPagesWithCache(
     }
 
     // Auto-inject TypeScript bundle script tags if available and autoInject is enabled (default: true)
-    if (config.typescript?.autoInject !== false && assets && assets.bundlePaths.length > 0) {
+    if (config.typescript?.autoInject !== false && assets.bundlePaths.length > 0) {
       finalHtml = autoInjectBundles(finalHtml, assets.bundlePaths);
     }
 
