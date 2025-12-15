@@ -3,6 +3,8 @@ title: Build Performance Metrics
 description: Measure and analyze Stati build performance with the metrics system
 ---
 
+# Build Performance Metrics
+
 Stati includes a built-in performance metrics system that helps you understand and optimize your site's build performance. This guide explains how to use it.
 
 ## Quick Start
