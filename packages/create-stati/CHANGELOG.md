@@ -1,5 +1,12 @@
 # create-stati
 
+## 1.11.6
+
+### Patch Changes
+
+- 5012b1a: ### Updated template dependencies
+  - Updated blank template to use `@stati/cli` ^1.11.0 and `@stati/core` ^1.18.0
+
 ## 1.11.5
 
 ### Patch Changes
