@@ -115,7 +115,7 @@ export function resolveStaticPath(config: StatiConfig, relativePath: string): st
  * ```typescript
  * // Windows absolute path
  * normalizePathForComparison('C:\\project\\site\\layout.eta')
- * // Returns: '/C:/project/site/layout.eta' or normalized form
+ * // Returns: 'C:/project/site/layout.eta'
  *
  * // Relative path
  * normalizePathForComparison('site/layout.eta', '/project')
