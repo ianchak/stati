@@ -99,3 +99,53 @@ export function resolveOutPath(config: StatiConfig, relativePath: string): strin
 export function resolveStaticPath(config: StatiConfig, relativePath: string): string {
   return join(resolveStaticDir(config), relativePath);
 }
+
+/**
+ * Normalizes a file path to absolute POSIX format for consistent comparisons.
+ * Handles Windows paths, relative paths, and already-normalized paths.
+ *
+ * This utility ensures that paths from different sources (file watchers, cache manifest,
+ * glob results) can be reliably compared even when they use different representations.
+ *
+ * @param filePath - Path to normalize (can be relative or absolute, Windows or POSIX)
+ * @param basePath - Optional base path to resolve relative paths against (defaults to cwd)
+ * @returns Normalized absolute path with forward slashes and no trailing slashes
+ *
+ * @example
+ * ```typescript
+ * // Windows absolute path
+ * normalizePathForComparison('C:\\project\\site\\layout.eta')
+ * // Returns: '/C:/project/site/layout.eta' or normalized form
+ *
+ * // Relative path
+ * normalizePathForComparison('site/layout.eta', '/project')
+ * // Returns: '/project/site/layout.eta'
+ *
+ * // Already POSIX path
+ * normalizePathForComparison('/project/site/layout.eta')
+ * // Returns: '/project/site/layout.eta'
+ * ```
+ */
+export function normalizePathForComparison(filePath: string, basePath?: string): string {
+  // Convert backslashes to forward slashes for Windows compatibility
+  let normalized = filePath.replace(/\\/g, '/');
+
+  // Resolve to absolute path if relative
+  // Check if path is already absolute (starts with / or drive letter)
+  const isAbsolute = normalized.startsWith('/') || /^[a-zA-Z]:/.test(normalized);
+
+  if (!isAbsolute) {
+    const base = basePath || process.cwd();
+    normalized = join(base, filePath).replace(/\\/g, '/');
+  }
+
+  // Use posix.normalize to clean up any '..' or '.' segments and remove redundant separators
+  normalized = posix.normalize(normalized);
+
+  // Remove trailing slash (except for root path)
+  if (normalized.length > 1 && normalized.endsWith('/')) {
+    normalized = normalized.slice(0, -1);
+  }
+
+  return normalized;
+}

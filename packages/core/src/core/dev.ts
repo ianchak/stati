@@ -1,5 +1,5 @@
 import { createServer } from 'node:http';
-import { join, extname, posix } from 'node:path';
+import { join, extname } from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { WebSocketServer } from 'ws';
 import chokidar from 'chokidar';
@@ -22,6 +22,7 @@ import {
   createFallbackLogger,
   mergeServerOptions,
   createTypeScriptWatcher,
+  normalizePathForComparison,
 } from './utils/index.js';
 import { setEnv, getEnv } from '../env.js';
 import {
@@ -260,7 +261,9 @@ async function performIncrementalRebuild(
 }
 
 /**
- * Handles template/partial file changes by invalidating affected pages
+ * Handles template/partial file changes by invalidating affected pages.
+ * Uses proper path normalization to ensure reliable matching between
+ * file watcher paths and cached dependency paths.
  */
 async function handleTemplateChange(
   templatePath: string,
@@ -284,21 +287,25 @@ async function handleTemplateChange(
       return;
     }
 
+    // Normalize the changed template path to absolute POSIX format for reliable comparison
+    // This handles cases where the watcher provides relative paths, Windows paths, or different
+    // path representations than what's stored in the cache manifest
+    const normalizedTemplatePath = normalizePathForComparison(templatePath);
+
     // Find pages that depend on this template
     let affectedPagesCount = 0;
-    const normalizedTemplatePath = posix.normalize(templatePath.replace(/\\/g, '/'));
 
     for (const [pagePath, entry] of Object.entries(cacheManifest.entries)) {
-      if (
-        entry.deps.some((dep) => {
-          const normalizedDep = posix.normalize(dep.replace(/\\/g, '/'));
-          // Use endsWith for more precise matching to avoid false positives
-          return (
-            normalizedDep === normalizedTemplatePath ||
-            normalizedDep.endsWith('/' + normalizedTemplatePath)
-          );
-        })
-      ) {
+      // Check if any of the page's dependencies match the changed template
+      const hasMatchingDep = entry.deps.some((dep) => {
+        // Normalize the cached dependency path to the same format
+        const normalizedDep = normalizePathForComparison(dep);
+
+        // Direct path comparison - both paths are now in consistent format
+        return normalizedDep === normalizedTemplatePath;
+      });
+
+      if (hasMatchingDep) {
         affectedPagesCount++;
         // Remove from cache to force rebuild
         delete cacheManifest.entries[pagePath];
