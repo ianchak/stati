@@ -136,7 +136,8 @@ export function normalizePathForComparison(filePath: string, basePath?: string):
 
   if (!isAbsolute) {
     const base = basePath || process.cwd();
-    normalized = join(base, filePath).replace(/\\/g, '/');
+    // Use the already-normalized path to avoid reintroducing backslashes
+    normalized = join(base, normalized).replace(/\\/g, '/');
   }
 
   // Use posix.normalize to clean up any '..' or '.' segments and remove redundant separators
