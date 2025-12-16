@@ -153,7 +153,7 @@ describe('Template Change Detection', () => {
       const storedDep = loadedManifest!.entries['/index.html']!.deps[0];
 
       // Normalize both the stored path and a POSIX version
-      const normalizedStored = normalizePathForComparison(storedDep);
+      const normalizedStored = normalizePathForComparison(storedDep!);
       const posixPath = 'C:/project/site/_partials/header.eta';
       const normalizedPosix = normalizePathForComparison(posixPath);
 

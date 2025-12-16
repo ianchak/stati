@@ -33,8 +33,8 @@ describe('Path Normalization Utilities', () => {
       const relativePath = 'site/layout.eta';
       const normalized = normalizePathForComparison(relativePath);
 
-      // Should be absolute
-      expect(normalized).toMatch(/^\//);
+      // Should be absolute - check for either Unix-style (/) or Windows-style (C:/) paths
+      expect(normalized).toMatch(/^(\/|[a-zA-Z]:\/)/);
       expect(normalized).toContain('site/layout.eta');
     });
 
