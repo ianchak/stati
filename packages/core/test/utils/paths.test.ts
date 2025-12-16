@@ -2,6 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { normalizePathForComparison } from '../../src/core/utils/paths.utils.js';
 import { join } from 'node:path';
 
+/**
+ * Tests for path normalization utilities.
+ * These tests verify cross-platform compatibility (Windows/Unix).
+ */
 describe('Path Normalization Utilities', () => {
   describe('normalizePathForComparison', () => {
     it('should normalize Windows paths to POSIX format', () => {
