@@ -151,16 +151,18 @@ describe('Template Change Detection', () => {
       expect(loadedManifest).not.toBeNull();
 
       const storedDep = loadedManifest!.entries['/index.html']!.deps[0];
-      expect(storedDep).toBe(windowsPath);
 
       // Normalize both the stored path and a POSIX version
-      const normalizedWindows = normalizePathForComparison(windowsPath);
+      const normalizedStored = normalizePathForComparison(storedDep);
       const posixPath = 'C:/project/site/_partials/header.eta';
       const normalizedPosix = normalizePathForComparison(posixPath);
 
       // They should not contain backslashes after normalization
-      expect(normalizedWindows).not.toContain('\\');
+      expect(normalizedStored).not.toContain('\\');
       expect(normalizedPosix).not.toContain('\\');
+
+      // The normalized Windows and POSIX paths should be equal
+      expect(normalizedStored).toBe(normalizedPosix);
     });
 
     it('should handle relative paths with .. segments', async () => {
