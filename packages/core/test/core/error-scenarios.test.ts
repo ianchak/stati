@@ -279,7 +279,7 @@ describe('Error Scenario Tests', () => {
         expect.anything(),
         expect.any(Array), // navigation parameter
         expect.any(Array), // allPages parameter
-        undefined, // assets parameter
+        expect.objectContaining({ bundlePaths: [] }), // assets parameter
         expect.any(Array), // toc parameter
         expect.objectContaining({ error: expect.any(Function) }), // logger parameter
       );
@@ -632,7 +632,7 @@ describe('Error Scenario Tests', () => {
         expect.anything(),
         expect.any(Array), // navigation parameter
         expect.any(Array), // allPages parameter
-        undefined, // assets parameter
+        expect.objectContaining({ bundlePaths: [] }), // assets parameter
         expect.any(Array), // toc parameter
         expect.objectContaining({ error: expect.any(Function) }), // logger parameter
       );

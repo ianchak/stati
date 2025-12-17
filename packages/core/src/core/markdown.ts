@@ -154,6 +154,19 @@ function extractAndInjectAnchors(tokens: Token[], tocEnabled: boolean): TocEntry
 }
 
 /**
+ * Extracts table of contents entries from markdown content without rendering HTML.
+ * This is more efficient than renderMarkdown when only TOC data is needed.
+ *
+ * @param content - The markdown content to extract TOC from
+ * @param md - The configured MarkdownIt instance
+ * @returns Array of TOC entries extracted from headings (levels 2-6)
+ */
+export function extractToc(content: string, md: MarkdownIt): TocEntry[] {
+  const tokens = md.parse(content, {});
+  return extractAndInjectAnchors(tokens, true);
+}
+
+/**
  * Renders markdown content to HTML with optional TOC extraction.
  *
  * @param content - The markdown content to render

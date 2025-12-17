@@ -37,6 +37,7 @@ type MutablePhases = {
   cacheManifestLoadMs?: number;
   typescriptCompileMs?: number;
   pageRenderingMs?: number;
+  searchIndexGenerationMs?: number;
   assetCopyMs?: number;
   cacheManifestSaveMs?: number;
   sitemapGenerationMs?: number;
