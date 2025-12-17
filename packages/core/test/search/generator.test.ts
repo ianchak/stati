@@ -3,7 +3,7 @@
  * @module search/generator.test
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   stripMarkdown,
   generateContentHash,
@@ -11,9 +11,24 @@ import {
   extractSectionsFromMarkdown,
   shouldExcludePage,
   generateSearchIndex,
+  writeSearchIndex,
+  computeSearchIndexFilename,
 } from '../../src/search/generator.js';
-import type { SearchConfig } from '../../src/types/search.js';
+import type { SearchConfig, SearchIndex } from '../../src/types/search.js';
 import type { PageModel, TocEntry } from '../../src/types/content.js';
+
+// Mock fs-extra functions
+const { mockWriteFile, mockEnsureDir } = vi.hoisted(() => ({
+  mockWriteFile: vi.fn(),
+  mockEnsureDir: vi.fn(),
+}));
+
+vi.mock('fs-extra', () => ({
+  default: {
+    writeFile: mockWriteFile,
+    ensureDir: mockEnsureDir,
+  },
+}));
 
 describe('stripMarkdown', () => {
   it('removes code blocks', () => {
@@ -62,6 +77,36 @@ describe('stripMarkdown', () => {
 
   it('handles plain text', () => {
     expect(stripMarkdown('No markdown here')).toBe('No markdown here');
+  });
+
+  it('removes strikethrough text', () => {
+    const markdown = 'This has ~~deleted~~ text';
+    expect(stripMarkdown(markdown)).toBe('This has deleted text');
+  });
+
+  it('removes reference-style link definitions', () => {
+    const markdown = 'Text here\n[id]: https://example.com "Title"\nMore text';
+    expect(stripMarkdown(markdown)).toBe('Text here More text');
+  });
+
+  it('removes HTML tags', () => {
+    const markdown = 'Text with <strong>HTML</strong> and <em>tags</em>';
+    expect(stripMarkdown(markdown)).toBe('Text with HTML and tags');
+  });
+
+  it('removes horizontal rules', () => {
+    const markdown = 'Before\n---\nAfter';
+    expect(stripMarkdown(markdown)).toBe('Before After');
+  });
+
+  it('removes asterisk horizontal rules', () => {
+    const markdown = 'Before\n***\nAfter';
+    expect(stripMarkdown(markdown)).toBe('Before After');
+  });
+
+  it('removes underscore emphasis', () => {
+    const markdown = 'This is __bold__ and _italic_';
+    expect(stripMarkdown(markdown)).toBe('This is bold and italic');
   });
 });
 
@@ -241,6 +286,12 @@ describe('shouldExcludePage', () => {
     expect(shouldExcludePage(page, config)).toBe(true);
   });
 
+  it('excludes empty URL (home page) by default', () => {
+    const page = createPage({ url: '' });
+    const config: SearchConfig = { enabled: true };
+    expect(shouldExcludePage(page, config)).toBe(true);
+  });
+
   it('includes home page when configured', () => {
     const page = createPage({ url: '/' });
     const config: SearchConfig = { enabled: true, includeHomePage: true };
@@ -316,5 +367,258 @@ describe('generateSearchIndex', () => {
     const index = generateSearchIndex(searchablePages, config);
 
     expect(() => new Date(index.generatedAt)).not.toThrow();
+  });
+});
+
+describe('writeSearchIndex', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockWriteFile.mockResolvedValue(undefined);
+    mockEnsureDir.mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('writes search index to output directory', async () => {
+    const searchIndex: SearchIndex = {
+      version: '1.0.0',
+      generatedAt: new Date().toISOString(),
+      documentCount: 2,
+      documents: [
+        {
+          id: '/test#top',
+          url: '/test',
+          anchor: '',
+          title: 'Test',
+          heading: 'Test',
+          level: 1,
+          content: 'Test content',
+          breadcrumb: 'Test',
+        },
+      ],
+    };
+
+    const result = await writeSearchIndex(searchIndex, '/dist', 'search-index-abc123.json');
+
+    expect(mockEnsureDir).toHaveBeenCalledWith('/dist');
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringContaining('search-index-abc123.json'),
+      expect.any(String),
+      'utf-8',
+    );
+    expect(result).toMatchObject({
+      enabled: true,
+      indexPath: '/search-index-abc123.json',
+      documentCount: 2,
+    });
+  });
+
+  it('returns correct metadata with document count', async () => {
+    const searchIndex: SearchIndex = {
+      version: '1.0.0',
+      generatedAt: new Date().toISOString(),
+      documentCount: 5,
+      documents: [],
+    };
+
+    const result = await writeSearchIndex(searchIndex, '/output', 'search.json');
+
+    expect(result.documentCount).toBe(5);
+    expect(result.indexPath).toBe('/search.json');
+    expect(result.enabled).toBe(true);
+  });
+
+  it('serializes index as compact JSON', async () => {
+    const searchIndex: SearchIndex = {
+      version: '1.0.0',
+      generatedAt: '2024-01-01T00:00:00.000Z',
+      documentCount: 1,
+      documents: [],
+    };
+
+    await writeSearchIndex(searchIndex, '/dist', 'index.json');
+
+    const writtenContent = mockWriteFile.mock.calls[0]?.[1] as string;
+    // Compact JSON should not have newlines or indentation
+    expect(writtenContent).not.toContain('\n');
+    expect(JSON.parse(writtenContent)).toEqual(searchIndex);
+  });
+});
+
+describe('computeSearchIndexFilename', () => {
+  it('returns hashed filename by default', () => {
+    const config: SearchConfig = { enabled: true };
+    const filename = computeSearchIndexFilename(config, 'build-123');
+
+    expect(filename).toMatch(/^search-index-[a-f0-9]{8}\.json$/);
+  });
+
+  it('returns non-hashed filename when hashFilename is false', () => {
+    const config: SearchConfig = { enabled: true, hashFilename: false };
+    const filename = computeSearchIndexFilename(config, 'build-123');
+
+    expect(filename).toBe('search-index.json');
+  });
+
+  it('uses custom indexName', () => {
+    const config: SearchConfig = { enabled: true, indexName: 'custom-search', hashFilename: false };
+    const filename = computeSearchIndexFilename(config);
+
+    expect(filename).toBe('custom-search.json');
+  });
+
+  it('generates consistent hash for same build ID', () => {
+    const config: SearchConfig = { enabled: true };
+    const filename1 = computeSearchIndexFilename(config, 'same-build-id');
+    const filename2 = computeSearchIndexFilename(config, 'same-build-id');
+
+    expect(filename1).toBe(filename2);
+  });
+
+  it('generates different hash for different build IDs', () => {
+    const config: SearchConfig = { enabled: true };
+    const filename1 = computeSearchIndexFilename(config, 'build-1');
+    const filename2 = computeSearchIndexFilename(config, 'build-2');
+
+    expect(filename1).not.toBe(filename2);
+  });
+
+  it('generates hash using timestamp when no build ID provided', () => {
+    const config: SearchConfig = { enabled: true };
+    const filename = computeSearchIndexFilename(config);
+
+    expect(filename).toMatch(/^search-index-[a-f0-9]{8}\.json$/);
+  });
+});
+
+describe('buildBreadcrumb edge cases', () => {
+  it('handles URL with only slashes', () => {
+    // After filtering '/' which becomes [], segments.length === 0
+    expect(buildBreadcrumb('///', 'Title')).toBe('Title');
+  });
+
+  it('handles URL that becomes empty after filtering', () => {
+    expect(buildBreadcrumb('/', 'Home')).toBe('Home');
+  });
+});
+
+describe('extractSectionsFromMarkdown edge cases', () => {
+  const defaultConfig: SearchConfig = {
+    enabled: true,
+    headingLevels: [2, 3],
+    maxContentLength: 1000,
+    maxPreviewLength: 500,
+  };
+
+  it('skips empty sections', () => {
+    const toc: TocEntry[] = [
+      { id: 'empty-section', text: 'Empty Section', level: 2 },
+      { id: 'filled-section', text: 'Filled Section', level: 2 },
+    ];
+    // Section with only whitespace should be skipped
+    const markdown = `## Empty Section
+
+
+
+## Filled Section
+
+This has actual content.`;
+
+    const docs = extractSectionsFromMarkdown(
+      toc,
+      markdown,
+      '/test',
+      'Test Page',
+      undefined,
+      defaultConfig,
+    );
+
+    // Should have page-level doc + filled section, but not empty section
+    const emptySection = docs.find((d) => d.anchor === 'empty-section');
+    const filledSection = docs.find((d) => d.anchor === 'filled-section');
+
+    expect(emptySection).toBeUndefined();
+    expect(filledSection).toBeDefined();
+  });
+
+  it('handles heading with markdown formatting in text', () => {
+    const toc: TocEntry[] = [{ id: 'bold-heading', text: 'Bold Heading', level: 2 }];
+    const markdown = `## **Bold Heading**
+
+Content here.`;
+
+    const docs = extractSectionsFromMarkdown(
+      toc,
+      markdown,
+      '/test',
+      'Test',
+      undefined,
+      defaultConfig,
+    );
+
+    // The heading should be matched despite markdown formatting
+    expect(docs.length).toBeGreaterThan(1);
+  });
+
+  it('handles TOC entries with no matching headings in content', () => {
+    const toc: TocEntry[] = [{ id: 'missing-heading', text: 'Missing Heading', level: 2 }];
+    const markdown = `# Page Title
+
+Some content but no h2 headings.`;
+
+    const docs = extractSectionsFromMarkdown(
+      toc,
+      markdown,
+      '/test',
+      'Test',
+      undefined,
+      defaultConfig,
+    );
+
+    // Should only have page-level document
+    expect(docs).toHaveLength(1);
+    expect(docs[0]?.level).toBe(1);
+  });
+
+  it('uses default config values when not specified', () => {
+    const toc: TocEntry[] = [{ id: 'section', text: 'Section', level: 2 }];
+    const markdown = `## Section
+
+Content`;
+    const minimalConfig: SearchConfig = { enabled: true };
+
+    const docs = extractSectionsFromMarkdown(
+      toc,
+      markdown,
+      '/test',
+      'Test',
+      undefined,
+      minimalConfig,
+    );
+
+    // Should work with defaults
+    expect(docs.length).toBeGreaterThan(0);
+  });
+
+  it('omits tags property when no tags provided', () => {
+    const toc: TocEntry[] = [];
+    const markdown = '# Title';
+    const config: SearchConfig = { enabled: true };
+
+    const docs = extractSectionsFromMarkdown(toc, markdown, '/test', 'Test', undefined, config);
+
+    expect(docs[0]?.tags).toBeUndefined();
+  });
+
+  it('omits tags property when empty array provided', () => {
+    const toc: TocEntry[] = [];
+    const markdown = '# Title';
+    const config: SearchConfig = { enabled: true };
+
+    const docs = extractSectionsFromMarkdown(toc, markdown, '/test', 'Test', [] as const, config);
+
+    expect(docs[0]?.tags).toBeUndefined();
   });
 });
