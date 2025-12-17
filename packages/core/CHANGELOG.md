@@ -1,5 +1,11 @@
 # @stati/core
 
+## 1.20.1
+
+### Patch Changes
+
+- 5b9470e: Fix dev server template change detection with path normalization. Template changes now reliably trigger page rebuilds by normalizing file watcher and cached dependency paths to a consistent format before comparison.
+
 ## 1.20.0
 
 ### Minor Changes
