@@ -26,6 +26,7 @@ export {
   resolveSrcPath,
   resolveOutPath,
   resolveStaticPath,
+  normalizePathForComparison,
 } from './paths.utils.js';
 
 // Template discovery utilities
