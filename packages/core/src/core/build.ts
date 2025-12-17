@@ -25,7 +25,7 @@ import { join, dirname, relative, posix } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { loadConfig } from '../config/loader.js';
 import { loadContent } from './content.js';
-import { createMarkdownProcessor, renderMarkdown } from './markdown.js';
+import { createMarkdownProcessor, renderMarkdown, extractToc } from './markdown.js';
 import { createTemplateEngine, renderPage } from './templates.js';
 import { buildNavigation } from './navigation.js';
 import {
@@ -448,6 +448,14 @@ async function processPagesWithCache(
       }
       // Record page timing for cached pages (0ms render time)
       recorder.recordPageTiming(page.url, 0, true);
+
+      // Collect searchable page data for cached pages if search is enabled
+      // Extract TOC without full HTML rendering for efficiency
+      if (config.search?.enabled === true) {
+        const tocEnabled = config.markdown?.toc !== false;
+        const toc = tocEnabled ? extractToc(page.content, md) : [];
+        searchablePages.push({ page, toc, markdownContent: page.content });
+      }
       continue;
     }
 
