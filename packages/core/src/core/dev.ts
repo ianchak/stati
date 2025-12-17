@@ -23,6 +23,7 @@ import {
   mergeServerOptions,
   createTypeScriptWatcher,
   normalizePathForComparison,
+  isPathWithinDirectory,
 } from './utils/index.js';
 import { setEnv, getEnv } from '../env.js';
 import {
@@ -563,6 +564,15 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
     }
 
     const originalFilePath = join(outDir, requestPath === '/' ? 'index.html' : requestPath);
+
+    // Security: Prevent path traversal attacks
+    if (!isPathWithinDirectory(outDir, originalFilePath)) {
+      return {
+        content: '403 - Forbidden',
+        mimeType: 'text/plain',
+        statusCode: 403,
+      };
+    }
 
     // Use the shared pretty URL resolver
     const { filePath, found } = await resolvePrettyUrl(outDir, requestPath, originalFilePath);

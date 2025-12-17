@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { normalizePathForComparison } from '../../src/core/utils/paths.utils.js';
-import { join } from 'node:path';
+import {
+  normalizePathForComparison,
+  isPathWithinDirectory,
+} from '../../src/core/utils/paths.utils.js';
+import { join, resolve, sep } from 'node:path';
 
 /**
  * Tests for path normalization utilities.
@@ -155,6 +158,115 @@ describe('Path Normalization Utilities', () => {
         expect(normalizedCached).toContain('_partials/header.eta');
         expect(normalizedWatcher).toContain('_partials/header.eta');
         expect(normalizedWatcher).not.toContain('\\');
+      });
+    });
+  });
+
+  describe('isPathWithinDirectory', () => {
+    // Use resolved paths for cross-platform compatibility in tests
+    const baseDir = resolve('/app/dist');
+
+    describe('valid paths within directory', () => {
+      it('should allow direct child files', () => {
+        const targetPath = join(baseDir, 'index.html');
+        expect(isPathWithinDirectory(baseDir, targetPath)).toBe(true);
+      });
+
+      it('should allow nested files in subdirectories', () => {
+        const targetPath = join(baseDir, 'pages', 'about', 'index.html');
+        expect(isPathWithinDirectory(baseDir, targetPath)).toBe(true);
+      });
+
+      it('should allow the base directory itself', () => {
+        expect(isPathWithinDirectory(baseDir, baseDir)).toBe(true);
+      });
+
+      it('should handle relative paths that resolve within directory', () => {
+        const targetPath = join(baseDir, 'pages', '..', 'index.html');
+        expect(isPathWithinDirectory(baseDir, targetPath)).toBe(true);
+      });
+    });
+
+    describe('path traversal attempts (must be rejected)', () => {
+      it('should reject simple path traversal with ../', () => {
+        const targetPath = join(baseDir, '..', 'etc', 'passwd');
+        expect(isPathWithinDirectory(baseDir, targetPath)).toBe(false);
+      });
+
+      it('should reject multiple path traversal sequences', () => {
+        const targetPath = join(baseDir, '..', '..', '..', 'etc', 'passwd');
+        expect(isPathWithinDirectory(baseDir, targetPath)).toBe(false);
+      });
+
+      it('should reject path that starts outside and goes back in', () => {
+        // This path goes outside and then tries to come back to a different directory
+        const targetPath = join(baseDir, '..', 'other-project', 'data.txt');
+        expect(isPathWithinDirectory(baseDir, targetPath)).toBe(false);
+      });
+
+      it('should reject absolute paths outside the base directory', () => {
+        const etcPath = resolve('/etc/passwd');
+        expect(isPathWithinDirectory(baseDir, etcPath)).toBe(false);
+      });
+    });
+
+    describe('edge cases', () => {
+      it('should reject paths that are prefix matches but not within directory', () => {
+        // /app/dist-other is not within /app/dist
+        const similarPath = resolve('/app/dist-other/file.txt');
+        expect(isPathWithinDirectory(baseDir, similarPath)).toBe(false);
+      });
+
+      it('should handle trailing slashes in base directory', () => {
+        const baseDirWithSlash = baseDir + sep;
+        const targetPath = join(baseDir, 'index.html');
+        expect(isPathWithinDirectory(baseDirWithSlash, targetPath)).toBe(true);
+      });
+
+      it('should handle Windows-style paths on Windows', () => {
+        // This test uses platform-agnostic approach
+        const windowsLikeBase = resolve('C:', 'app', 'dist');
+        const windowsLikeTarget = resolve('C:', 'app', 'dist', 'index.html');
+        expect(isPathWithinDirectory(windowsLikeBase, windowsLikeTarget)).toBe(true);
+      });
+
+      it('should reject Windows-style path traversal', () => {
+        const windowsLikeBase = resolve('C:', 'app', 'dist');
+        const traversalTarget = resolve('C:', 'app', 'dist', '..', '..', 'etc', 'passwd');
+        expect(isPathWithinDirectory(windowsLikeBase, traversalTarget)).toBe(false);
+      });
+    });
+
+    describe('server request path simulation', () => {
+      it('should protect against HTTP path traversal attack', () => {
+        // Simulate how dev/preview servers construct paths
+        const outDir = resolve('/project/dist');
+        const maliciousRequestPath = '/../../../etc/passwd';
+
+        // This is how the server constructs the file path
+        const originalFilePath = join(outDir, maliciousRequestPath);
+
+        // The security check should catch this
+        expect(isPathWithinDirectory(outDir, originalFilePath)).toBe(false);
+      });
+
+      it('should allow normal HTTP request paths', () => {
+        const outDir = resolve('/project/dist');
+
+        // Test various normal request paths
+        const normalPaths = [
+          '/',
+          '/index.html',
+          '/about',
+          '/blog/post-1',
+          '/assets/styles.css',
+          '/images/logo.png',
+        ];
+
+        for (const requestPath of normalPaths) {
+          const originalFilePath = join(outDir, requestPath === '/' ? 'index.html' : requestPath);
+          expect(isPathWithinDirectory(outDir, originalFilePath)).toBe(true);
+        }
       });
     });
   });

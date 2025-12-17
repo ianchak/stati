@@ -8,6 +8,7 @@ import {
   resolvePrettyUrl,
   createFallbackLogger,
   mergeServerOptions,
+  isPathWithinDirectory,
 } from './utils/index.js';
 import { DEFAULT_PREVIEW_PORT, DEFAULT_DEV_HOST } from '../constants.js';
 
@@ -111,6 +112,15 @@ export async function createPreviewServer(
     requestPath: string,
   ): Promise<{ content: Buffer | string; mimeType: string; statusCode: number }> {
     const originalFilePath = join(outDir, requestPath === '/' ? 'index.html' : requestPath);
+
+    // Security: Prevent path traversal attacks
+    if (!isPathWithinDirectory(outDir, originalFilePath)) {
+      return {
+        content: '403 - Forbidden',
+        mimeType: 'text/plain',
+        statusCode: 403,
+      };
+    }
 
     // Use the shared pretty URL resolver
     const { filePath, found } = await resolvePrettyUrl(outDir, requestPath, originalFilePath);

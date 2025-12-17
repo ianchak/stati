@@ -27,6 +27,7 @@ export {
   resolveOutPath,
   resolveStaticPath,
   normalizePathForComparison,
+  isPathWithinDirectory,
 } from './paths.utils.js';
 
 // Template discovery utilities

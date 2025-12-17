@@ -1,4 +1,4 @@
-import { join, posix } from 'node:path';
+import { join, posix, resolve, sep } from 'node:path';
 import type { StatiConfig } from '../../types/index.js';
 import {
   DEFAULT_SRC_DIR,
@@ -149,4 +149,39 @@ export function normalizePathForComparison(filePath: string, basePath?: string):
   }
 
   return normalized;
+}
+
+/**
+ * Validates that a resolved path is safely within a base directory.
+ * This function prevents path traversal attacks by ensuring that a target path
+ * (which may contain `..` sequences or other traversal patterns) resolves to
+ * a location within the specified base directory.
+ *
+ * @param baseDir - The base directory that the target path must stay within
+ * @param targetPath - The target path to validate (can be relative or contain `..`)
+ * @returns `true` if the resolved target path is within the base directory, `false` otherwise
+ *
+ * @example
+ * ```typescript
+ * // Safe paths
+ * isPathWithinDirectory('/app/dist', '/app/dist/index.html')  // true
+ * isPathWithinDirectory('/app/dist', '/app/dist/pages/about.html')  // true
+ *
+ * // Path traversal attempts (returns false)
+ * isPathWithinDirectory('/app/dist', '/app/dist/../../../etc/passwd')  // false
+ * isPathWithinDirectory('/app/dist', '/../etc/passwd')  // false
+ * ```
+ */
+export function isPathWithinDirectory(baseDir: string, targetPath: string): boolean {
+  // Resolve both paths to absolute paths with all `..` and `.` resolved
+  const resolvedBase = resolve(baseDir);
+  const resolvedTarget = resolve(targetPath);
+
+  // Normalize the base directory to ensure proper prefix matching
+  // Adding sep ensures '/app/dist' doesn't match '/app/dist-other'
+  const normalizedBase = resolvedBase.endsWith(sep) ? resolvedBase : resolvedBase + sep;
+
+  // Check if the resolved target starts with the normalized base
+  // We also allow exact match (resolvedTarget === resolvedBase) for the root
+  return resolvedTarget === resolvedBase || resolvedTarget.startsWith(normalizedBase);
 }
