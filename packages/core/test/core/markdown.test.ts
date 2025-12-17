@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createMarkdownProcessor, renderMarkdown } from '../../src/core/markdown.js';
+import { createMarkdownProcessor, renderMarkdown, extractToc } from '../../src/core/markdown.js';
 import type { StatiConfig } from '../../src/types/index.js';
 
 describe('markdown.ts', () => {
@@ -697,6 +697,142 @@ Some content.
 
       expect(result.toc).toHaveLength(1);
       expect(result.html).toContain('id="default-behavior"');
+    });
+  });
+
+  describe('extractToc', () => {
+    it('should extract TOC entries without rendering HTML', async () => {
+      const md = await createMarkdownProcessor(baseConfig);
+      const content = `# Page Title
+
+## Introduction
+
+Some text.
+
+## Getting Started
+
+More content.
+
+### Installation`;
+
+      const toc = extractToc(content, md);
+
+      expect(toc).toHaveLength(3);
+      expect(toc[0]).toEqual({ id: 'introduction', text: 'Introduction', level: 2 });
+      expect(toc[1]).toEqual({ id: 'getting-started', text: 'Getting Started', level: 2 });
+      expect(toc[2]).toEqual({ id: 'installation', text: 'Installation', level: 3 });
+    });
+
+    it('should return same TOC as renderMarkdown', async () => {
+      const md = await createMarkdownProcessor(baseConfig);
+      const content = `## Section One
+
+### Subsection A
+
+## Section Two`;
+
+      const tocOnly = extractToc(content, md);
+      const renderResult = renderMarkdown(content, md);
+
+      expect(tocOnly).toEqual(renderResult.toc);
+    });
+
+    it('should not include h1 in TOC', async () => {
+      const md = await createMarkdownProcessor(baseConfig);
+      const content = `# Main Title
+
+## Section`;
+
+      const toc = extractToc(content, md);
+
+      expect(toc).toHaveLength(1);
+      expect(toc[0]!.text).toBe('Section');
+    });
+
+    it('should handle duplicate heading IDs', async () => {
+      const md = await createMarkdownProcessor(baseConfig);
+      const content = `## Test
+
+## Test
+
+## Test`;
+
+      const toc = extractToc(content, md);
+
+      expect(toc).toHaveLength(3);
+      expect(toc[0]!.id).toBe('test');
+      expect(toc[1]!.id).toBe('test-1');
+      expect(toc[2]!.id).toBe('test-2');
+    });
+
+    it('should handle empty content', async () => {
+      const md = await createMarkdownProcessor(baseConfig);
+
+      const toc = extractToc('', md);
+
+      expect(toc).toEqual([]);
+    });
+
+    it('should handle content with no headings', async () => {
+      const md = await createMarkdownProcessor(baseConfig);
+      const content = 'Just some paragraph text without any headings.';
+
+      const toc = extractToc(content, md);
+
+      expect(toc).toEqual([]);
+    });
+
+    it('should handle headings with special characters', async () => {
+      const md = await createMarkdownProcessor(baseConfig);
+      const content = `## What's New?
+
+## API: Configuration`;
+
+      const toc = extractToc(content, md);
+
+      expect(toc[0]!.id).toBe('what-s-new');
+      expect(toc[1]!.id).toBe('api-configuration');
+    });
+
+    it('should handle headings with inline code', async () => {
+      const md = await createMarkdownProcessor(baseConfig);
+      const content = '## Using `extractToc`';
+
+      const toc = extractToc(content, md);
+
+      expect(toc[0]!.text).toBe('Using extractToc');
+      expect(toc[0]!.id).toBe('using-extracttoc');
+    });
+
+    it('should handle all heading levels 2-6', async () => {
+      const md = await createMarkdownProcessor(baseConfig);
+      const content = `## Level 2
+### Level 3
+#### Level 4
+##### Level 5
+###### Level 6`;
+
+      const toc = extractToc(content, md);
+
+      expect(toc).toHaveLength(5);
+      expect(toc.map((t) => t.level)).toEqual([2, 3, 4, 5, 6]);
+    });
+
+    it('should be more efficient than renderMarkdown for TOC-only use cases', async () => {
+      const md = await createMarkdownProcessor(baseConfig);
+      const content = `## Section 1
+Some content here.
+## Section 2
+More content.
+## Section 3
+Even more content with **bold** and *italic* text.`;
+
+      // extractToc should work without producing HTML output
+      const toc = extractToc(content, md);
+
+      expect(toc).toHaveLength(3);
+      // Verify we got valid TOC data
+      expect(toc.every((entry) => entry.id && entry.text && entry.level)).toBe(true);
     });
   });
 });

@@ -53,6 +53,9 @@ export type {
 // RSS types
 export type { RSSConfig, RSSFeedConfig, RSSGenerationResult } from './rss.js';
 
+// Search types
+export type { SearchConfig, SearchDocument, SearchIndex, SearchIndexMetadata } from './search.js';
+
 // Navigation types
 export type { NavNode } from './navigation.js';
 

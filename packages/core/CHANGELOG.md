@@ -1,5 +1,17 @@
 # @stati/core
 
+## 1.20.0
+
+### Minor Changes
+
+- 68e4b13: ### Build-time search index generation
+  - Enable with `search: { enabled: true }` in config
+  - Generates JSON index with page sections, headings, breadcrumbs, and tags
+  - Auto-injects `<meta name="stati:search-index">` for client-side discovery
+  - Hash-based filenames for cache busting
+  - Configurable heading levels, content length, and exclusion patterns
+  - Access index path in templates via `stati.assets.searchIndexPath`
+
 ## 1.19.0
 
 ### Minor Changes

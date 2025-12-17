@@ -9,6 +9,7 @@ import type { SEOContext } from '../types/seo.js';
 import type { Logger } from '../types/logging.js';
 import { detectExistingSEOTags } from './utils/index.js';
 import { generateSEOMetadata } from './generator.js';
+import { injectBeforeHeadClose } from '../core/index.js';
 
 /**
  * Options for auto-injection
@@ -41,17 +42,6 @@ function logDebug(
     const logMessage = `[SEO Auto-Inject] ${message}`;
     options.logger.warning(logMessage);
   }
-}
-
-/**
- * Finds the position to inject SEO tags (before </head>)
- * @param html - HTML content
- * @returns Position index or -1 if not found
- */
-function findHeadClosePosition(html: string): number {
-  // Case-insensitive search for </head>
-  const match = html.match(/<\/head>/i);
-  return match ? (match.index ?? -1) : -1;
 }
 
 /**
@@ -113,20 +103,14 @@ export function autoInjectSEO(html: string, options: AutoInjectOptions): string 
     return html;
   }
 
-  // Find position to inject (before </head>)
-  const headClosePos = findHeadClosePosition(html);
+  // Inject SEO metadata before </head>
+  const injected = injectBeforeHeadClose(html, seoMetadata);
 
-  if (headClosePos === -1) {
+  // Check if injection was successful (</head> was found)
+  if (injected === html) {
     logDebug(`No </head> tag found in ${page.url}, skipping injection`, { debug, config, logger });
     return html;
   }
-
-  // Inject SEO metadata before </head>
-  const before = html.substring(0, headClosePos);
-  const after = html.substring(headClosePos);
-
-  // Add proper indentation (4 spaces) and newline
-  const injected = `${before}    ${seoMetadata}\n${after}`;
 
   logDebug(`Injected ${existingTags.size === 0 ? 'all' : 'missing'} SEO tags into ${page.url}`, {
     debug,

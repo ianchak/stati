@@ -97,6 +97,7 @@ export interface MetricsPhases {
   readonly cacheManifestLoadMs?: number;
   readonly typescriptCompileMs?: number;
   readonly pageRenderingMs?: number;
+  readonly searchIndexGenerationMs?: number;
   readonly assetCopyMs?: number;
   readonly cacheManifestSaveMs?: number;
   readonly sitemapGenerationMs?: number;

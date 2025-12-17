@@ -23,6 +23,13 @@ export interface StatiAssets {
    * Always an array, empty [] if no TypeScript enabled or no bundles match.
    */
   bundlePaths: string[];
+
+  /**
+   * Path to the search index file (e.g., '/search-index-a1b2c3d4.json').
+   * Available when search index generation is enabled.
+   * Use this path in client-side JavaScript to fetch the search index.
+   */
+  searchIndexPath?: string;
 }
 
 /**

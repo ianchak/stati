@@ -19,6 +19,7 @@ const {
   mockLoadContent,
   mockCreateMarkdownProcessor,
   mockRenderMarkdown,
+  mockExtractToc,
   mockCreateTemplateEngine,
   mockRenderPage,
   mockLoadCacheManifest,
@@ -30,6 +31,10 @@ const {
   mockBuildNavigation,
   mockCompileTypeScript,
   mockAutoInjectBundles,
+  mockComputeSearchIndexFilename,
+  mockGenerateSearchIndex,
+  mockWriteSearchIndex,
+  mockAutoInjectSearchMeta,
 } = vi.hoisted(() => ({
   // fs-extra mocks
   mockEnsureDir: vi.fn(),
@@ -45,6 +50,7 @@ const {
   mockLoadContent: vi.fn(),
   mockCreateMarkdownProcessor: vi.fn(),
   mockRenderMarkdown: vi.fn(),
+  mockExtractToc: vi.fn(),
   mockCreateTemplateEngine: vi.fn(),
   mockRenderPage: vi.fn(),
   mockBuildNavigation: vi.fn(),
@@ -58,6 +64,11 @@ const {
   mockCreateCacheEntry: vi.fn(),
   mockUpdateCacheEntry: vi.fn(),
   mockWithBuildLock: vi.fn(),
+  // Search mocks
+  mockComputeSearchIndexFilename: vi.fn(),
+  mockGenerateSearchIndex: vi.fn(),
+  mockWriteSearchIndex: vi.fn(),
+  mockAutoInjectSearchMeta: vi.fn(),
 }));
 
 // Mock modules with implementation
@@ -85,6 +96,7 @@ vi.mock('../../src/core/content.js', () => ({
 vi.mock('../../src/core/markdown.js', () => ({
   createMarkdownProcessor: mockCreateMarkdownProcessor,
   renderMarkdown: mockRenderMarkdown,
+  extractToc: mockExtractToc,
 }));
 
 vi.mock('../../src/core/templates.js', () => ({
@@ -114,6 +126,13 @@ vi.mock('../../src/core/isg/build-lock.js', () => ({
 vi.mock('../../src/core/utils/typescript.utils.js', () => ({
   compileTypeScript: mockCompileTypeScript,
   autoInjectBundles: mockAutoInjectBundles,
+}));
+
+vi.mock('../../src/search/index.js', () => ({
+  computeSearchIndexFilename: mockComputeSearchIndexFilename,
+  generateSearchIndex: mockGenerateSearchIndex,
+  writeSearchIndex: mockWriteSearchIndex,
+  autoInjectSearchMeta: mockAutoInjectSearchMeta,
 }));
 
 describe('build.ts', () => {
@@ -212,6 +231,22 @@ describe('build.ts', () => {
       { title: 'About', url: '/about' },
       { title: 'Blog', url: '/blog' },
     ]);
+
+    // Setup search mocks
+    mockComputeSearchIndexFilename.mockReturnValue('search-index-abc123.json');
+    mockGenerateSearchIndex.mockReturnValue({
+      version: '1.0.0',
+      generatedAt: new Date().toISOString(),
+      documentCount: 3,
+      documents: [],
+    });
+    mockWriteSearchIndex.mockResolvedValue({
+      enabled: true,
+      indexPath: '/search-index-abc123.json',
+      documentCount: 3,
+    });
+    mockAutoInjectSearchMeta.mockImplementation((html) => html);
+    mockExtractToc.mockReturnValue([]);
   });
 
   afterEach(() => {
@@ -356,7 +391,7 @@ describe('build.ts', () => {
         mockEta,
         expect.any(Array), // navigation parameter
         expect.any(Array), // allPages parameter
-        undefined, // assets parameter
+        expect.objectContaining({ bundlePaths: [] }), // assets parameter
         expect.any(Array), // toc parameter
         expect.objectContaining({ error: expect.any(Function) }), // logger parameter
       );
@@ -372,6 +407,48 @@ describe('build.ts', () => {
         expect.stringMatching(/[/\\]test[/\\]project[/\\]static[/\\]style\.css$/),
         expect.stringMatching(/[/\\]test[/\\]project[/\\]dist[/\\]style\.css$/),
       );
+    });
+
+    it('should recursively copy nested static assets', async () => {
+      // Mock a directory structure: images/logo.png
+      mockReaddir
+        .mockResolvedValueOnce([{ name: 'images', isDirectory: () => true }])
+        .mockResolvedValueOnce([{ name: 'logo.png', isDirectory: () => false }]);
+
+      await build();
+
+      // Should ensure the images directory exists
+      expect(mockEnsureDir).toHaveBeenCalledWith(
+        expect.stringMatching(/[/\\]test[/\\]project[/\\]dist[/\\]images$/),
+      );
+
+      // Should copy the file inside
+      expect(mockCopyFile).toHaveBeenCalledWith(
+        expect.stringMatching(/[/\\]test[/\\]project[/\\]static[/\\]images[/\\]logo\.png$/),
+        expect.stringMatching(/[/\\]test[/\\]project[/\\]dist[/\\]images[/\\]logo\.png$/),
+      );
+    });
+
+    it('should use logger.file when available for asset copying', async () => {
+      const mockFileLogger = vi.fn();
+      const loggerWithFile = {
+        info: vi.fn(),
+        success: vi.fn(),
+        warning: vi.fn(),
+        error: vi.fn(),
+        building: vi.fn(),
+        processing: vi.fn(),
+        stats: vi.fn(),
+        file: mockFileLogger,
+      };
+
+      // Mock a static file
+      mockReaddir.mockResolvedValueOnce([{ name: 'script.js', isDirectory: () => false }]);
+
+      await build({ logger: loggerWithFile });
+
+      // Should use logger.file instead of logger.processing
+      expect(mockFileLogger).toHaveBeenCalledWith('copy', 'script.js');
     });
 
     it('should not copy static assets when static directory does not exist', async () => {
@@ -1015,7 +1092,7 @@ describe('build.ts', () => {
 
       await build();
 
-      // Should pass undefined assets to renderPage when no bundles exist
+      // Should pass assets with empty bundlePaths when no bundles exist
       expect(mockRenderPage).toHaveBeenCalledWith(
         expect.anything(),
         expect.anything(),
@@ -1023,9 +1100,275 @@ describe('build.ts', () => {
         expect.anything(),
         expect.anything(),
         expect.anything(),
-        undefined,
+        expect.objectContaining({ bundlePaths: [] }),
         expect.any(Array), // toc parameter
         expect.objectContaining({ error: expect.any(Function) }), // logger parameter
+      );
+    });
+  });
+
+  describe('Search Index Generation', () => {
+    it('should generate search index when search is enabled', async () => {
+      const configWithSearch: StatiConfig = {
+        ...mockConfig,
+        search: {
+          enabled: true,
+        },
+      };
+
+      mockLoadConfig.mockResolvedValue(configWithSearch);
+
+      await build();
+
+      // Should compute search index filename
+      expect(mockComputeSearchIndexFilename).toHaveBeenCalledWith(
+        configWithSearch.search,
+        expect.any(String),
+      );
+
+      // Should generate search index
+      expect(mockGenerateSearchIndex).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({
+            page: expect.any(Object),
+            toc: expect.any(Array),
+            markdownContent: expect.any(String),
+          }),
+        ]),
+        configWithSearch.search,
+      );
+
+      // Should write search index
+      expect(mockWriteSearchIndex).toHaveBeenCalledWith(
+        expect.objectContaining({
+          version: '1.0.0',
+          documentCount: expect.any(Number),
+        }),
+        expect.stringContaining('dist'),
+        'search-index-abc123.json',
+      );
+    });
+
+    it('should not generate search index when search is disabled', async () => {
+      const configWithoutSearch: StatiConfig = {
+        ...mockConfig,
+        search: {
+          enabled: false,
+        },
+      };
+
+      mockLoadConfig.mockResolvedValue(configWithoutSearch);
+
+      await build();
+
+      // Should not generate search index
+      expect(mockGenerateSearchIndex).not.toHaveBeenCalled();
+      expect(mockWriteSearchIndex).not.toHaveBeenCalled();
+    });
+
+    it('should not generate search index when search config is undefined', async () => {
+      mockLoadConfig.mockResolvedValue(mockConfig);
+
+      await build();
+
+      // Should not generate search index
+      expect(mockGenerateSearchIndex).not.toHaveBeenCalled();
+      expect(mockWriteSearchIndex).not.toHaveBeenCalled();
+    });
+
+    it('should inject search meta tag when autoInjectMetaTag is not disabled', async () => {
+      const configWithSearch: StatiConfig = {
+        ...mockConfig,
+        search: {
+          enabled: true,
+          autoInjectMetaTag: true,
+        },
+      };
+
+      mockLoadConfig.mockResolvedValue(configWithSearch);
+
+      await build();
+
+      // Should inject search meta tag
+      expect(mockAutoInjectSearchMeta).toHaveBeenCalledWith(
+        expect.any(String),
+        '/search-index-abc123.json',
+      );
+    });
+
+    it('should not inject search meta tag when autoInjectMetaTag is false', async () => {
+      const configWithSearch: StatiConfig = {
+        ...mockConfig,
+        search: {
+          enabled: true,
+          autoInjectMetaTag: false,
+        },
+      };
+
+      mockLoadConfig.mockResolvedValue(configWithSearch);
+
+      await build();
+
+      // Should not inject search meta tag
+      expect(mockAutoInjectSearchMeta).not.toHaveBeenCalled();
+    });
+
+    it('should include searchIndexPath in assets when search is enabled', async () => {
+      const configWithSearch: StatiConfig = {
+        ...mockConfig,
+        search: {
+          enabled: true,
+        },
+      };
+
+      mockLoadConfig.mockResolvedValue(configWithSearch);
+
+      await build();
+
+      // Should pass searchIndexPath in assets to renderPage
+      expect(mockRenderPage).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        expect.objectContaining({
+          searchIndexPath: '/search-index-abc123.json',
+        }),
+        expect.any(Array),
+        expect.any(Object),
+      );
+    });
+
+    it('should collect searchable page data for cached pages when search is enabled', async () => {
+      const configWithSearch: StatiConfig = {
+        ...mockConfig,
+        search: {
+          enabled: true,
+        },
+      };
+
+      // Simulate cache hit - pages don't need rebuild
+      mockShouldRebuildPage.mockResolvedValue(false);
+      mockLoadConfig.mockResolvedValue(configWithSearch);
+
+      await build();
+
+      // Even for cached pages, extractToc should be called for search indexing
+      expect(mockExtractToc).toHaveBeenCalled();
+
+      // Search index should still be generated from cached pages
+      expect(mockGenerateSearchIndex).toHaveBeenCalled();
+    });
+
+    it('should not collect searchable page data when search is disabled', async () => {
+      const configWithoutSearch: StatiConfig = {
+        ...mockConfig,
+        search: {
+          enabled: false,
+        },
+      };
+
+      // Simulate cache hit - pages don't need rebuild
+      mockShouldRebuildPage.mockResolvedValue(false);
+      mockLoadConfig.mockResolvedValue(configWithoutSearch);
+
+      await build();
+
+      // extractToc should not be called for search when search is disabled
+      // (it may still be called during regular rendering)
+      expect(mockGenerateSearchIndex).not.toHaveBeenCalled();
+    });
+
+    it('should handle empty searchable pages gracefully', async () => {
+      const configWithSearch: StatiConfig = {
+        ...mockConfig,
+        search: {
+          enabled: true,
+        },
+      };
+
+      mockLoadContent.mockResolvedValue([]); // No pages
+      mockLoadConfig.mockResolvedValue(configWithSearch);
+
+      await build();
+
+      // Should not call writeSearchIndex when there are no pages
+      expect(mockWriteSearchIndex).not.toHaveBeenCalled();
+    });
+
+    it('should skip TOC extraction when markdown.toc is disabled for cached pages', async () => {
+      const configWithSearchNoToc: StatiConfig = {
+        ...mockConfig,
+        search: {
+          enabled: true,
+        },
+        markdown: {
+          toc: false,
+        },
+      };
+
+      // Simulate cache hit
+      mockShouldRebuildPage.mockResolvedValue(false);
+      mockLoadConfig.mockResolvedValue(configWithSearchNoToc);
+
+      await build();
+
+      // extractToc should not be called when toc is disabled
+      expect(mockExtractToc).not.toHaveBeenCalled();
+
+      // But search index should still be generated with empty TOC
+      expect(mockGenerateSearchIndex).toHaveBeenCalled();
+    });
+
+    it('should extract TOC when markdown.toc is explicitly enabled for cached pages', async () => {
+      const configWithSearchAndToc: StatiConfig = {
+        ...mockConfig,
+        search: {
+          enabled: true,
+        },
+        markdown: {
+          toc: true,
+        },
+      };
+
+      // Simulate cache hit
+      mockShouldRebuildPage.mockResolvedValue(false);
+      mockLoadConfig.mockResolvedValue(configWithSearchAndToc);
+
+      await build();
+
+      // extractToc should be called when toc is enabled
+      expect(mockExtractToc).toHaveBeenCalled();
+    });
+
+    it('should use TOC from rendered markdown for non-cached pages', async () => {
+      const configWithSearch: StatiConfig = {
+        ...mockConfig,
+        search: {
+          enabled: true,
+        },
+      };
+
+      const mockToc = [{ id: 'section-1', text: 'Section 1', level: 2 }];
+      mockRenderMarkdown.mockReturnValue({
+        html: '<h1>Rendered</h1>',
+        toc: mockToc,
+      });
+      mockShouldRebuildPage.mockResolvedValue(true); // Force rebuild
+      mockLoadConfig.mockResolvedValue(configWithSearch);
+
+      await build();
+
+      // Search index should include the TOC from rendering
+      expect(mockGenerateSearchIndex).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({
+            toc: mockToc,
+          }),
+        ]),
+        expect.any(Object),
       );
     });
   });
