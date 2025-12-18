@@ -24,25 +24,23 @@ export class CircularDependencyError extends Error {
 }
 
 /**
- * Tracks all template dependencies for a given page.
- * This includes the layout file and all accessible partials.
- * Includes circular dependency detection.
+ * Tracks template dependencies for a given page by parsing template content.
+ * Only includes templates that are actually referenced (via include, layout, or stati.partials calls).
+ * This provides accurate dependency tracking for ISG cache invalidation.
+ *
+ * The function recursively parses the layout template and all its dependencies to build
+ * the complete dependency tree. This ensures that changes to unused partials don't
+ * trigger unnecessary page rebuilds.
  *
  * @param page - The page model to track dependencies for
  * @param config - Stati configuration
- * @returns Array of absolute paths to dependency files
- * @throws {CircularDependencyError} When circular dependencies are detected
+ * @returns Array of absolute paths to actually-used template files (POSIX format)
  *
  * @example
  * ```typescript
- * try {
- *   const deps = await trackTemplateDependencies(page, config);
- *   console.log(`Page depends on ${deps.length} template files`);
- * } catch (error) {
- *   if (error instanceof CircularDependencyError) {
- *     console.error(`Circular dependency: ${error.dependencyChain.join(' -> ')}`);
- *   }
- * }
+ * const deps = await trackTemplateDependencies(page, config);
+ * console.log(`Page depends on ${deps.length} template files`);
+ * // Only includes: layout + partials actually used by the page
  * ```
  */
 export async function trackTemplateDependencies(
@@ -60,6 +58,7 @@ export async function trackTemplateDependencies(
   const relativePath = relative(srcDir, page.sourcePath);
 
   // Track dependencies with circular detection
+  // The visited set will contain all templates that are actually used (not just accessible)
   const visited = new Set<string>();
   const currentPath = new Set<string>();
 
@@ -72,81 +71,24 @@ export async function trackTemplateDependencies(
   );
 
   if (layoutPath) {
-    const absoluteLayoutPath = join(srcDir, layoutPath);
+    // Normalize to POSIX format for consistent manifest output across platforms
+    const absoluteLayoutPath = posix.join(srcDir.replace(/\\/g, '/'), layoutPath);
     deps.push(absoluteLayoutPath);
 
-    // Check for circular dependencies in layout chain
-    await detectCircularDependencies(absoluteLayoutPath, srcDir, visited, currentPath);
+    // Recursively traverse the template dependency tree
+    // This populates 'visited' with all actually-used templates (not just accessible ones)
+    await collectTemplateDependencies(absoluteLayoutPath, srcDir, visited, currentPath);
   }
 
-  // 2. Find all partials accessible to this page
-  const partialDeps = await findPartialDependencies(relativePath, config);
-  deps.push(...partialDeps);
-
-  return deps;
-}
-
-/**
- * Finds all partial dependencies for a given page path.
- * Searches up the directory hierarchy for _* folders containing .eta files.
- *
- * @param pagePath - Relative path to the page from srcDir
- * @param config - Stati configuration
- * @returns Array of absolute paths to partial files
- *
- * @example
- * ```typescript
- * const partials = await findPartialDependencies('blog/post.md', config);
- * ```
- */
-export async function findPartialDependencies(
-  pagePath: string,
-  config: StatiConfig,
-): Promise<string[]> {
-  // Early return if required config values are missing
-  if (!config.srcDir) {
-    console.warn('Config srcDir is missing, cannot find partial dependencies');
-    return [];
-  }
-
-  const deps: string[] = [];
-  const srcDir = resolveSrcDir(config);
-
-  // Get the directory of the current page
-  const pageDir = dirname(pagePath);
-  const pathSegments = pageDir === '.' ? [] : pageDir.split(/[/\\]/);
-
-  // Build list of directories to search (current dir up to root)
-  const dirsToSearch: string[] = [];
-
-  // Add directories from current up to root
-  if (pathSegments.length > 0) {
-    for (let i = pathSegments.length; i >= 0; i--) {
-      if (i === 0) {
-        dirsToSearch.push(''); // Root directory
-      } else {
-        dirsToSearch.push(pathSegments.slice(0, i).join('/'));
-      }
-    }
-  } else {
-    dirsToSearch.push(''); // Root directory only
-  }
-
-  // Search each directory for _* folders containing .eta files
-  for (const dir of dirsToSearch) {
-    const searchDir = dir ? join(srcDir, dir) : srcDir;
-
-    try {
-      // Find all .eta files in _* subdirectories
-      // Use posix.join to ensure forward slashes for glob patterns
-      const normalizedSearchDir = searchDir.replace(/\\/g, '/');
-      const pattern = posix.join(normalizedSearchDir, '_*/**/*.eta');
-      const partialFiles = await glob(pattern, { absolute: true });
-
-      deps.push(...partialFiles);
-    } catch {
-      // Continue if directory doesn't exist or can't be read
-      continue;
+  // 2. Add all actually-used templates from the visited set
+  // Filter to only include underscore directories (partials/components)
+  // and normalize paths to POSIX format
+  for (const templatePath of visited) {
+    const normalizedPath = templatePath.replace(/\\/g, '/');
+    // Only add partials (files in directories starting with underscore) - layout is already added
+    // Use strict pattern to match /_dirname/ where dirname starts with underscore
+    if (/\/_[^/]+\//.test(normalizedPath)) {
+      deps.push(normalizedPath);
     }
   }
 
@@ -184,69 +126,67 @@ export async function resolveTemplatePath(
 }
 
 /**
- * Detects circular dependencies in template includes/extends.
- * Uses DFS to traverse the dependency graph and detect cycles.
+ * Recursively collects all template dependencies by parsing template content.
+ * Only includes templates that are actually referenced (not just accessible).
+ * Uses DFS to traverse the dependency graph and handles circular references safely.
  *
- * @param templatePath - Absolute path to template file to check
+ * @param templatePath - Absolute path to template file to analyze
  * @param srcDir - Source directory for resolving relative template paths
- * @param visited - Set of all visited template paths (for optimization)
+ * @param visited - Set to track all visited templates (accumulated dependencies)
  * @param currentPath - Set of templates in current DFS path (for cycle detection)
- * @throws {CircularDependencyError} When a circular dependency is detected
  */
-async function detectCircularDependencies(
+async function collectTemplateDependencies(
   templatePath: string,
   srcDir: string,
   visited: Set<string>,
   currentPath: Set<string>,
 ): Promise<void> {
+  // Normalize path for consistent tracking
+  const normalizedPath = templatePath.replace(/\\/g, '/');
+
   // Skip if already processed
-  if (visited.has(templatePath)) {
+  if (visited.has(normalizedPath)) {
     return;
   }
 
-  // Check for circular dependency
-  if (currentPath.has(templatePath)) {
-    const chain = Array.from(currentPath);
-    chain.push(templatePath);
-    throw new CircularDependencyError(
-      chain,
-      `Circular dependency detected in templates: ${chain.join(' -> ')}`,
-    );
+  // Check for circular dependency (safe to continue, just don't recurse)
+  if (currentPath.has(normalizedPath)) {
+    const chain = [...currentPath, normalizedPath];
+    console.error(`Error: Circular template dependency detected: ${chain.join(' -> ')}`);
+    return;
   }
 
   // Check if template file exists
   if (!(await pathExists(templatePath))) {
-    // Don't treat missing files as circular dependencies
-    // They will be handled by the missing file error handling
     return;
   }
 
-  // Add to current path
-  currentPath.add(templatePath);
-  visited.add(templatePath);
+  // Add to tracking sets
+  currentPath.add(normalizedPath);
+  visited.add(normalizedPath);
 
   try {
     // Read template content to find includes/extends
     const content = await readFile(templatePath, 'utf-8');
     if (!content) {
-      return; // Skip if file doesn't exist
+      return;
     }
+
+    // Parse template to find referenced templates
     const dependencies = await parseTemplateDependencies(content, templatePath, srcDir);
 
-    // Recursively check dependencies
+    // Recursively collect dependencies
     for (const depPath of dependencies) {
-      await detectCircularDependencies(depPath, srcDir, visited, currentPath);
+      await collectTemplateDependencies(depPath, srcDir, visited, currentPath);
     }
   } catch (error) {
-    // If we can't read the file, don't treat it as a circular dependency
-    if (error instanceof Error && !error.message.includes('Circular dependency')) {
-      console.warn(`Warning: Could not read template ${templatePath}: ${error.message}`);
-    } else {
-      throw error; // Re-throw circular dependency errors
+    // Log warning but continue - don't fail the entire build for template parsing issues
+    if (error instanceof Error) {
+      console.warn(`Warning: Could not parse template ${templatePath}: ${error.message}`);
     }
   } finally {
     // Remove from current path when backtracking
-    currentPath.delete(templatePath);
+    currentPath.delete(normalizedPath);
   }
 }
 
@@ -305,30 +245,55 @@ async function parseTemplateDependencies(
     }
   }
 
-  // Look for Stati callable partial patterns: stati.partials.name( or stati.partials['name'](
-  // This catches both direct property access and bracket notation with or without arguments
-  // Patterns allow for optional whitespace before the opening parenthesis
-  const callablePartialPatterns = [
-    /stati\.partials\.(\w+)\s*\(/g, // stati.partials.header( or stati.partials.header  (
-    /stati\.partials\[['"`]([^'"`]+)['"`]\]\s*\(/g, // stati.partials['header']( with whitespace
+  // Look for Stati partial patterns - both callable and non-callable
+  // Callable: stati.partials.name() or stati.partials['name']()
+  // Non-callable: stati.partials.name or stati.partials['name'] (used with <%~ %>)
+  const partialPatterns = [
+    // Callable patterns (with parentheses)
+    /stati\.partials\.(\w+)\s*\(/g, // stati.partials.header(
+    /stati\.partials\[['"`]([^'"`]+)['"`]\]\s*\(/g, // stati.partials['header'](
+
+    // Non-callable patterns (without parentheses, used in <%~ stati.partials.name %>)
+    // These patterns use lookaheads to distinguish between:
+    //   - stati.partials.name (partial reference, should match)
+    //   - stati.partials.name() (function call, should NOT match here - handled above)
+    //
+    // Pattern breakdown for dot notation: /stati\.partials\.(\w+)(?=\s*[%}\s]|$)(?!\s*\()/g
+    //   - stati\.partials\.  : Literal "stati.partials."
+    //   - (\w+)              : Capture partial name (letters, digits, underscore)
+    //   - (?=\s*[%}\s]|$)    : Positive lookahead - must be followed by whitespace, %, }, or end of string
+    //   - (?!\s*\()          : Negative lookahead - must NOT be followed by "(" (excludes function calls)
+    /stati\.partials\.(\w+)(?=\s*[%}\s]|$)(?!\s*\()/g,
+
+    // Pattern breakdown for bracket notation: /stati\.partials\[['"`]([^'"`]+)['"`]\](?=\s*[%}\s]|$)(?!\s*\()/g
+    //   - stati\.partials\[  : Literal "stati.partials["
+    //   - ['"`]              : Opening quote (single, double, or backtick)
+    //   - ([^'"`]+)          : Capture partial name (any chars except quotes)
+    //   - ['"`]\]            : Closing quote and bracket
+    //   - (?=\s*[%}\s]|$)    : Positive lookahead - must be followed by whitespace, %, }, or end of string
+    //   - (?!\s*\()          : Negative lookahead - must NOT be followed by "(" (excludes function calls)
+    /stati\.partials\[['"`]([^'"`]+)['"`]\](?=\s*[%}\s]|$)(?!\s*\()/g,
   ];
 
-  for (const pattern of callablePartialPatterns) {
+  // Use a Set to avoid duplicate partial names
+  const foundPartials = new Set<string>();
+
+  for (const pattern of partialPatterns) {
     let match;
     while ((match = pattern.exec(content)) !== null) {
       const partialName = match[1];
       if (partialName) {
-        // Resolve the partial by searching for it in underscore directories
-        const partialFileName = `${partialName}${TEMPLATE_EXTENSION}`;
-        const resolvedPath = await resolveTemplatePathInternal(
-          partialFileName,
-          srcDir,
-          templateDir,
-        );
-        if (resolvedPath) {
-          dependencies.push(resolvedPath);
-        }
+        foundPartials.add(partialName);
       }
+    }
+  }
+
+  // Resolve each unique partial name
+  for (const partialName of foundPartials) {
+    const partialFileName = `${partialName}${TEMPLATE_EXTENSION}`;
+    const resolvedPath = await resolveTemplatePathInternal(partialFileName, srcDir, templateDir);
+    if (resolvedPath) {
+      dependencies.push(resolvedPath);
     }
   }
 
@@ -396,7 +361,8 @@ async function resolveTemplatePathInternal(
       const pattern = posix.join(searchDir.replace(/\\/g, '/'), '_*', templateName);
       const matches = await glob(pattern, { absolute: true });
       if (matches.length > 0) {
-        return matches[0]!; // Return first match
+        // Normalize to POSIX format for consistent cross-platform path handling
+        return matches[0]!.replace(/\\/g, '/');
       }
     } catch {
       // Continue if directory doesn't exist or can't be read
