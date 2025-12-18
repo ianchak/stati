@@ -1,7 +1,5 @@
 ---
-"@stati/core": minor
-"@stati/cli": minor
-"create-stati": minor
+"@stati/core": patch
 ---
 
-add path validation to prevent traversal attacks
+Add `isPathWithinDirectory` utility to prevent path traversal attacks in dev/preview servers

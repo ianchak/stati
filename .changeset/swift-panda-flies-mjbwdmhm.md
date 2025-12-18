@@ -2,4 +2,4 @@
 "@stati/core": patch
 ---
 
-enhance template dependency tracking and path normalization
+Refactor template dependency tracking: extract resolver pattern, improve path normalization, expand test coverage
