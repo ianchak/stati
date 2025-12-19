@@ -5,6 +5,10 @@ import type { DevServerOptions } from '../../src/core/dev.js';
 import { loadConfig } from '../../src/config/loader.js';
 import { build } from '../../src/core/build.js';
 import { invalidate } from '../../src/core/invalidate.js';
+import type { IncomingMessage, ServerResponse } from 'node:http';
+
+// Store the request handler for testing
+let capturedRequestHandler: ((req: IncomingMessage, res: ServerResponse) => void) | null = null;
 
 // Mock dependencies
 vi.mock('ws', () => ({
@@ -18,15 +22,18 @@ vi.mock('ws', () => ({
 }));
 
 vi.mock('http', () => ({
-  createServer: vi.fn(() => ({
-    listen: vi.fn((port: number, host: string, callback?: () => void) => {
-      if (callback) callback();
-    }),
-    close: vi.fn((callback?: () => void) => {
-      if (callback) callback();
-    }),
-    on: vi.fn(),
-  })),
+  createServer: vi.fn((handler: (req: IncomingMessage, res: ServerResponse) => void) => {
+    capturedRequestHandler = handler;
+    return {
+      listen: vi.fn((port: number, host: string, callback?: () => void) => {
+        if (callback) callback();
+      }),
+      close: vi.fn((callback?: () => void) => {
+        if (callback) callback();
+      }),
+      on: vi.fn(),
+    };
+  }),
 }));
 
 vi.mock('chokidar', () => ({
@@ -94,6 +101,15 @@ vi.mock('fs/promises', () => ({
   stat: vi.fn().mockResolvedValue({ isDirectory: () => false }),
 }));
 
+// Mock path validation utility - needs to be defined inside the mock factory to avoid hoisting issues
+vi.mock('../../src/core/utils/paths.utils.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../src/core/utils/paths.utils.js')>();
+  return {
+    ...actual,
+    isPathWithinDirectory: vi.fn().mockReturnValue(true),
+  };
+});
+
 // Mock TypeScript watcher - returns array of contexts
 vi.mock('../../src/core/utils/typescript.utils.js', () => ({
   createTypeScriptWatcher: vi.fn().mockResolvedValue([
@@ -114,6 +130,7 @@ describe('Development Server', () => {
   beforeEach(() => {
     consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.clearAllMocks();
+    capturedRequestHandler = null;
 
     // Ensure mocks return valid data
     mockLoadConfig.mockResolvedValue({
@@ -2004,6 +2021,47 @@ describe('Development Server', () => {
 
       await devServer.stop();
       watcherIndex = 0;
+    });
+  });
+
+  describe('request handling security', () => {
+    it('should return 403 for path traversal attempts', async () => {
+      // Get the mocked isPathWithinDirectory and configure it to reject the path
+      const { isPathWithinDirectory } = await import('../../src/core/utils/paths.utils.js');
+      vi.mocked(isPathWithinDirectory).mockReturnValue(false);
+
+      const devServer = await createDevServer({
+        port: 8200,
+      });
+      await devServer.start();
+
+      const mockReq = {
+        url: '/../../../etc/passwd',
+        method: 'GET',
+      } as IncomingMessage;
+
+      const writeHeadMock = vi.fn();
+      const endMock = vi.fn();
+      const mockRes = {
+        writeHead: writeHeadMock,
+        end: endMock,
+      } as unknown as ServerResponse;
+
+      expect(capturedRequestHandler).not.toBeNull();
+      if (capturedRequestHandler) {
+        await capturedRequestHandler(mockReq, mockRes);
+
+        // Should return 403 status code for path traversal
+        expect(writeHeadMock).toHaveBeenCalledWith(
+          403,
+          expect.objectContaining({
+            'Content-Type': 'text/plain',
+          }),
+        );
+        expect(endMock).toHaveBeenCalledWith('403 - Forbidden');
+      }
+
+      await devServer.stop();
     });
   });
 });

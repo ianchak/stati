@@ -59,12 +59,14 @@ tsconfig.tsbuildinfo
 
 ### Local development files
 /docs/
-*checklist*.md
 *prompt*.md
-*milestone*.md
-*quality_pass*.md
-*refac_log*.md
-*implementation_plan*.md
+/*checklist*.md
+/*milestone*.md
+/*quality_pass*.md
+/*refac_log*.md
+/*implementation_plan*.md
+/*audit*.md
+/*code_quality*.md
 
 ### Package manager artifacts
 *.tgz

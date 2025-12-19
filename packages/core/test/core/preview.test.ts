@@ -41,6 +41,15 @@ vi.mock('fs/promises', () => ({
   stat: vi.fn().mockResolvedValue({ isDirectory: () => false }),
 }));
 
+// Mock path validation utility - needs to be defined inside the mock factory to avoid hoisting issues
+vi.mock('../../src/core/utils/paths.utils.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../src/core/utils/paths.utils.js')>();
+  return {
+    ...actual,
+    isPathWithinDirectory: vi.fn().mockReturnValue(true),
+  };
+});
+
 describe('Preview Server', () => {
   let consoleSpy: ReturnType<typeof vi.spyOn>;
 
@@ -234,6 +243,10 @@ describe('Preview Server', () => {
     });
 
     it('should return 404 for non-existent files', async () => {
+      // Ensure the path validation mock allows the path (reset to default)
+      const { isPathWithinDirectory } = await import('../../src/core/utils/paths.utils.js');
+      vi.mocked(isPathWithinDirectory).mockReturnValue(true);
+
       // Mock readFile to throw an error for non-existent files
       const { readFile } = await import('fs/promises');
       vi.mocked(readFile).mockRejectedValueOnce(new Error('ENOENT'));
@@ -259,6 +272,41 @@ describe('Preview Server', () => {
 
         // Should return 404 status code
         expect(writeHeadMock).toHaveBeenCalledWith(404, expect.any(Object));
+      }
+    });
+
+    it('should return 403 for path traversal attempts', async () => {
+      // Get the mocked isPathWithinDirectory and configure it to reject the path
+      const { isPathWithinDirectory } = await import('../../src/core/utils/paths.utils.js');
+      vi.mocked(isPathWithinDirectory).mockReturnValue(false);
+
+      const previewServer = await createPreviewServer();
+      await previewServer.start();
+
+      const mockReq = {
+        url: '/../../../etc/passwd',
+        method: 'GET',
+      } as IncomingMessage;
+
+      const writeHeadMock = vi.fn();
+      const endMock = vi.fn();
+      const mockRes = {
+        writeHead: writeHeadMock,
+        end: endMock,
+      } as unknown as ServerResponse;
+
+      expect(capturedRequestHandler).not.toBeNull();
+      if (capturedRequestHandler) {
+        await capturedRequestHandler(mockReq, mockRes);
+
+        // Should return 403 status code for path traversal
+        expect(writeHeadMock).toHaveBeenCalledWith(
+          403,
+          expect.objectContaining({
+            'Content-Type': 'text/plain',
+          }),
+        );
+        expect(endMock).toHaveBeenCalledWith('403 - Forbidden');
       }
     });
   });
