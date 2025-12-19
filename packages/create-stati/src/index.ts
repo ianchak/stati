@@ -250,12 +250,16 @@ export async function runCLI(cliOptions?: Partial<CreateOptions> | null): Promis
     ...(options.packageManager && { packageManager: options.packageManager }),
   };
 
-  console.log(logger.highlight('Creating Stati project...'));
+  console.log(logger.brand('Creating Stati project...'));
 
   try {
     const result = await createSite(createOptions);
 
-    console.log(logger.success(`✅ Successfully created Stati project '${result.projectName}'`));
+    console.log(
+      logger.success(
+        `${logger.glyphs.success} Successfully created Stati project '${result.projectName}'`,
+      ),
+    );
 
     // Display next steps
     const pm = createOptions.packageManager || 'npm';
@@ -266,9 +270,9 @@ export async function runCLI(cliOptions?: Partial<CreateOptions> | null): Promis
       console.log('  npm install');
     }
     console.log(`  ${devCommand}`);
-    console.log('\n🌟 Happy building with Stati!');
+    console.log(`\n${logger.glyphs.bullet} Happy building with Stati!`);
   } catch (error) {
-    console.error(logger.error('❌ Failed to create Stati site'));
+    console.error(logger.error(`${logger.glyphs.error} Failed to create Stati site`));
     console.error(logger.error(error instanceof Error ? error.message : 'Unknown error'));
     process.exit(1);
   }

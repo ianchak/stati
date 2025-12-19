@@ -532,8 +532,8 @@ describe('build.ts', () => {
     it('should log build progress messages', async () => {
       await build();
 
-      expect(consoleSpy).toHaveBeenCalledWith('Building your site...');
-      expect(consoleSpy).toHaveBeenCalledWith('📄 Found 3 pages');
+      expect(consoleSpy).toHaveBeenCalledWith('• Started building your site...');
+      expect(consoleSpy).toHaveBeenCalledWith('• Found 3 pages');
       expect(consoleSpy).toHaveBeenCalledWith('Built navigation with 3 top-level items');
       // ISG shows "Checking" for each page
       expect(consoleSpy).toHaveBeenCalledWith('Checking /');
@@ -546,13 +546,13 @@ describe('build.ts', () => {
     it('should include version in build message when provided', async () => {
       await build({ cliVersion: '1.2.3' });
 
-      expect(consoleSpy).toHaveBeenCalledWith('Building your site...');
+      expect(consoleSpy).toHaveBeenCalledWith('• Started building your site...');
     });
 
     it('should log clean message when cleaning', async () => {
       await build({ clean: true });
 
-      expect(consoleSpy).toHaveBeenCalledWith('Cleaning output directory and ISG cache...');
+      expect(consoleSpy).toHaveBeenCalledWith('• Cleaning output directory and ISG cache...');
     });
 
     it('should handle build with no pages', async () => {
@@ -560,7 +560,7 @@ describe('build.ts', () => {
 
       await build();
 
-      expect(consoleSpy).toHaveBeenCalledWith('📄 Found 0 pages');
+      expect(consoleSpy).toHaveBeenCalledWith('• Found 0 pages');
       expect(mockRenderMarkdown).not.toHaveBeenCalled();
       expect(mockRenderPage).not.toHaveBeenCalled();
       // ISG cache manifest should still be saved even with no pages

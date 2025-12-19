@@ -193,7 +193,7 @@ async function copyStaticAssetsWithLogging(
       if (logger.file) {
         logger.file('copy', relativePath);
       } else {
-        logger.processing(`📄 ${relativePath}`);
+        logger.processing(`• ${relativePath}`);
       }
       filesCopied++;
     }
@@ -320,7 +320,7 @@ async function loadContentAndBuildNavigation(
 }> {
   // Load all content
   const pages = await loadContent(config, options.includeDrafts);
-  logger.info(`📄 Found ${pages.length} pages`);
+  logger.info(`• Found ${pages.length} pages`);
 
   // Build navigation from pages
   if (logger.step) {
@@ -663,7 +663,7 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     coreVersion: options.coreVersion,
   });
 
-  logger.building('Building your site...');
+  logger.building('• Started building your site...');
 
   // Load configuration (instrumented)
   const endConfigSpan = recorder.startSpan('configLoadMs');
@@ -676,7 +676,7 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
 
   // Clean output directory and cache if requested
   if (options.clean) {
-    logger.info('Cleaning output directory and ISG cache...');
+    logger.info('• Cleaning output directory and ISG cache...');
     await remove(outDir);
     await remove(cacheDir);
   }
@@ -695,14 +695,14 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
       // Write the initial inventory file immediately so Tailwind can scan it
       // This is critical for dev server where Tailwind starts watching before template rendering
       await writeTailwindClassInventory(cacheDir);
-      logger.info(`📦 Loaded ${loadedCount} classes from previous build for Tailwind scanner`);
+      logger.info(`• Loaded ${loadedCount} classes from previous build for Tailwind scanner`);
     } else {
       // No previous inventory found - write an empty placeholder file
       // This ensures Tailwind has a file to scan even on first build
       // It will be populated with actual classes after template rendering
       await writeTailwindClassInventory(cacheDir);
       logger.info(
-        `📦 Created inventory file for Tailwind scanner (will be populated after rendering)`,
+        `• Created inventory file for Tailwind scanner (will be populated after rendering)`,
       );
     }
   }
@@ -805,7 +805,7 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     if (inventorySize > 0) {
       await writeTailwindClassInventory(cacheDir);
       logger.info('');
-      logger.info(`📝 Generated Tailwind class inventory (${inventorySize} classes tracked)`);
+      logger.info(`• Generated Tailwind class inventory (${inventorySize} classes tracked)`);
     }
 
     // Disable inventory tracking after build

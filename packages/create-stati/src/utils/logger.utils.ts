@@ -1,15 +1,71 @@
 /**
- * Professional color palette for Stati CLI - matching the main CLI colors
+ * Ice Blue Mono-Hue Palette — Single source of truth for CLI colors
+ * Matches the palette in @stati/cli for consistency
+ */
+const palette = {
+  // Brand hue family (Ice Blue)
+  brandStrong: '#bae6fd', // sky-200 — numbers, emphasis, stats
+  brand: '#38bdf8', // sky-400 — headers, step indicators, folders
+  brandDim: '#0ea5e9', // sky-500 — gradient start, subtle brand
+
+  // Neutral ramp
+  muted: '#94a3b8', // slate-400 — labels, file paths
+  dim: '#64748b', // slate-500 — timing, metadata
+
+  // Status glyph colors (glyph/prefix only, not full message)
+  successGlyph: '#22c55e', // green-500
+  warningGlyph: '#f59e0b', // amber-500
+  errorGlyph: '#ef4444', // red-500
+} as const;
+
+/**
+ * Unicode glyphs for terminal-safe output
+ */
+const glyphs = {
+  success: '✓',
+  error: '×',
+  warning: '!',
+  bullet: '•',
+} as const;
+
+/**
+ * Check if color output is enabled
+ */
+function isColorEnabled(): boolean {
+  if (process.env.NO_COLOR !== undefined) return false;
+  if (process.env.FORCE_COLOR !== undefined) return true;
+  if (!process.stdout.isTTY) return false;
+  return true;
+}
+
+/**
+ * Convert hex color to ANSI RGB escape code
+ */
+function hexToAnsi(hex: string): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `\x1b[38;2;${r};${g};${b}m`;
+}
+
+/**
+ * Create a color function that respects NO_COLOR
+ */
+function createColorFn(ansiCode: string): (text: string) => string {
+  return (text: string) => (isColorEnabled() ? `${ansiCode}${text}\x1b[0m` : text);
+}
+
+/**
+ * Professional color palette for create-stati CLI (Ice Blue mono-hue)
  */
 const colors = {
-  brand: (text: string) => `\x1b[38;2;79;70;229m${text}\x1b[0m`, // #4f46e5 - Professional indigo
-  success: (text: string) => `\x1b[38;2;22;163;74m${text}\x1b[0m`, // #16a34a - Muted forest green
-  error: (text: string) => `\x1b[38;2;220;38;38m${text}\x1b[0m`, // #dc2626 - Muted red
-  warning: (text: string) => `\x1b[38;2;217;119;6m${text}\x1b[0m`, // #d97706 - Muted amber
-  info: (text: string) => `\x1b[38;2;37;99;235m${text}\x1b[0m`, // #2563eb - Muted steel blue
-  muted: (text: string) => `\x1b[38;2;107;114;128m${text}\x1b[0m`, // #6b7280 - Warm gray
-  highlight: (text: string) => `\x1b[38;2;8;145;178m${text}\x1b[0m`, // #0891b2 - Muted teal
-  bold: (text: string) => `\x1b[1m${text}\x1b[0m`, // Bold styling
+  brand: createColorFn(hexToAnsi(palette.brand)),
+  brandStrong: createColorFn(hexToAnsi(palette.brandStrong)),
+  success: createColorFn(hexToAnsi(palette.successGlyph)),
+  error: createColorFn(hexToAnsi(palette.errorGlyph)),
+  warning: createColorFn(hexToAnsi(palette.warningGlyph)),
+  muted: createColorFn(hexToAnsi(palette.muted)),
+  bold: (text: string) => (isColorEnabled() ? `\x1b[1m${text}\x1b[0m` : text),
 };
 
 /**
@@ -21,10 +77,11 @@ export const logger = {
   success: colors.success,
   error: colors.error,
   warning: colors.warning,
-  info: colors.info,
   muted: colors.muted,
-  highlight: colors.highlight,
   bold: colors.bold,
+
+  // Glyph access
+  glyphs,
 
   // Logging methods
   log: (message: string) => console.log(message),

@@ -413,7 +413,7 @@ coverage/
     // Validate and sanitize target directory
     const safeTargetDir = validateDirectoryPath(targetDir);
 
-    logger.log(`\n📦 Installing dependencies with ${packageManager}...`);
+    logger.log(`\nInstalling dependencies with ${packageManager}...`);
 
     try {
       await spawnProcess(packageManager, ['install'], {

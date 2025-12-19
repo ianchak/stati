@@ -5,18 +5,23 @@ describe('colors', () => {
   let consoleLogSpy: ReturnType<typeof vi.spyOn>;
   let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+  const originalEnv = process.env;
 
   beforeEach(() => {
     vi.clearAllMocks();
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    // Force color output in tests
+    process.env = { ...originalEnv, FORCE_COLOR: '1' };
+    delete process.env.NO_COLOR;
   });
 
   afterEach(() => {
     consoleLogSpy.mockRestore();
     consoleWarnSpy.mockRestore();
     consoleErrorSpy.mockRestore();
+    process.env = originalEnv;
   });
 
   describe('colors object', () => {
@@ -25,18 +30,22 @@ describe('colors', () => {
       expect(colors).toHaveProperty('error');
       expect(colors).toHaveProperty('warning');
       expect(colors).toHaveProperty('info');
-      expect(colors).toHaveProperty('highlight');
       expect(colors).toHaveProperty('muted');
       expect(colors).toHaveProperty('bold');
       expect(colors).toHaveProperty('number');
       expect(colors).toHaveProperty('brand');
-      expect(colors).toHaveProperty('secondary');
-      expect(colors).toHaveProperty('accent');
+      expect(colors).toHaveProperty('brandStrong');
+      expect(colors).toHaveProperty('brandDim');
+      expect(colors).toHaveProperty('dim');
+      expect(colors).toHaveProperty('faint');
+      expect(colors).toHaveProperty('successGlyph');
+      expect(colors).toHaveProperty('warningGlyph');
+      expect(colors).toHaveProperty('errorGlyph');
       expect(colors).toHaveProperty('file');
       expect(colors).toHaveProperty('folder');
       expect(colors).toHaveProperty('url');
-      expect(colors).toHaveProperty('progress');
       expect(colors).toHaveProperty('timing');
+      expect(colors).toHaveProperty('underline');
     });
 
     it('should apply ANSI escape codes to text', () => {
@@ -196,6 +205,142 @@ describe('colors', () => {
       // Verify multiple log calls for nested items
       expect(consoleLogSpy.mock.calls.length).toBeGreaterThan(1);
     });
+
+    it('should truncate large folder contents and show "...and N more" marker', () => {
+      // Create multiple folders with many children to trigger truncation (need > 100 total lines)
+      const createFolder = (name: string, childCount: number) => ({
+        title: name,
+        url: `/${name.toLowerCase()}`,
+        isCollection: true,
+        children: Array.from({ length: childCount }, (_, i) => ({
+          title: `${name} Item ${i + 1}`,
+          url: `/${name.toLowerCase()}/item-${i + 1}`,
+        })),
+      });
+
+      const largeTree = [
+        createFolder('Folder1', 50),
+        createFolder('Folder2', 50),
+        createFolder('Folder3', 50),
+      ];
+
+      log.navigationTree(largeTree);
+
+      // Get all logged output
+      const allOutput = consoleLogSpy.mock.calls.map((call) => call[0]).join('\n');
+
+      // Should contain truncation marker
+      expect(allOutput).toContain('...and');
+      expect(allOutput).toContain('more item');
+    });
+
+    it('should limit total output to approximately 100 lines', () => {
+      // Create multiple folders with many children
+      const createFolder = (name: string, childCount: number) => ({
+        title: name,
+        url: `/${name.toLowerCase().replace(/\s/g, '-')}`,
+        isCollection: true,
+        children: Array.from({ length: childCount }, (_, i) => ({
+          title: `${name} Item ${i + 1}`,
+          url: `/${name.toLowerCase().replace(/\s/g, '-')}/item-${i + 1}`,
+        })),
+      });
+
+      const hugeTree = [
+        createFolder('Folder A', 40),
+        createFolder('Folder B', 40),
+        createFolder('Folder C', 40),
+        createFolder('Folder D', 40),
+      ];
+
+      log.navigationTree(hugeTree);
+
+      // Total console.log calls should be limited (100 lines max + some buffer for markers)
+      expect(consoleLogSpy.mock.calls.length).toBeLessThanOrEqual(105);
+    });
+
+    it('should show all folders even when truncating children', () => {
+      const createFolder = (name: string, childCount: number) => ({
+        title: name,
+        url: `/${name.toLowerCase()}`,
+        isCollection: true,
+        children: Array.from({ length: childCount }, (_, i) => ({
+          title: `Child ${i + 1}`,
+          url: `/${name.toLowerCase()}/child-${i + 1}`,
+        })),
+      });
+
+      const treeWithManyFolders = [
+        createFolder('Alpha', 30),
+        createFolder('Beta', 30),
+        createFolder('Gamma', 30),
+      ];
+
+      log.navigationTree(treeWithManyFolders);
+
+      const allOutput = consoleLogSpy.mock.calls.map((call) => call[0]).join('\n');
+
+      // All folder names should appear
+      expect(allOutput).toContain('Alpha');
+      expect(allOutput).toContain('Beta');
+      expect(allOutput).toContain('Gamma');
+    });
+
+    it('should not truncate small navigation trees', () => {
+      const smallTree = [
+        {
+          title: 'Page 1',
+          url: '/page1',
+          children: [
+            { title: 'Child 1', url: '/page1/child1' },
+            { title: 'Child 2', url: '/page1/child2' },
+          ],
+        },
+        {
+          title: 'Page 2',
+          url: '/page2',
+          children: [{ title: 'Child 3', url: '/page2/child3' }],
+        },
+      ];
+
+      log.navigationTree(smallTree);
+
+      const allOutput = consoleLogSpy.mock.calls.map((call) => call[0]).join('\n');
+
+      // Should not contain truncation markers
+      expect(allOutput).not.toContain('...and');
+      expect(allOutput).not.toContain('more item');
+
+      // All items should be present
+      expect(allOutput).toContain('Page 1');
+      expect(allOutput).toContain('Page 2');
+      expect(allOutput).toContain('Child 1');
+      expect(allOutput).toContain('Child 2');
+      expect(allOutput).toContain('Child 3');
+    });
+
+    it('should handle singular "item" vs plural "items" in truncation message', () => {
+      // Create a tree where exactly 1 item will be hidden
+      // We need a situation where maxChildrenPerFolder cuts off exactly 1 item
+      const treeWithOneHidden = [
+        {
+          title: 'Folder',
+          url: '/folder',
+          isCollection: true,
+          children: Array.from({ length: 100 }, (_, i) => ({
+            title: `Item ${i + 1}`,
+            url: `/folder/item-${i + 1}`,
+          })),
+        },
+      ];
+
+      log.navigationTree(treeWithOneHidden);
+
+      const allOutput = consoleLogSpy.mock.calls.map((call) => call[0]).join('\n');
+
+      // Should contain truncation marker (either singular or plural)
+      expect(allOutput).toMatch(/\.\.\.and \d+ more items?/);
+    });
   });
 
   describe('startupBanner', () => {
@@ -204,7 +349,7 @@ describe('colors', () => {
 
       expect(consoleLogSpy).toHaveBeenCalled();
       const output = consoleLogSpy.mock.calls[0]?.[0] as string;
-      expect(output).toContain('Build');
+      // Mode is now shown in commandInfo box, not the banner
       expect(output).toContain('1.0.0');
       expect(output).toContain('2.0.0');
     });
@@ -214,7 +359,7 @@ describe('colors', () => {
 
       expect(consoleLogSpy).toHaveBeenCalled();
       const output = consoleLogSpy.mock.calls[0]?.[0] as string;
-      expect(output).toContain('Development Server');
+      // Mode is now shown in commandInfo box, not the banner
       expect(output).toContain('1.2.3');
       expect(output).toContain('3.4.5');
     });
@@ -224,32 +369,90 @@ describe('colors', () => {
 
       expect(consoleLogSpy).toHaveBeenCalled();
       const output = consoleLogSpy.mock.calls[0]?.[0] as string;
-      expect(output).toContain('Preview Server');
+      // Mode is now shown in commandInfo box, not the banner
       expect(output).toContain('0.1.0');
       expect(output).toContain('0.2.0');
     });
 
-    it('should include STATI name with gradient colors', () => {
+    it('should include ASCII art banner with gradient colors', () => {
       log.startupBanner('Build', '1.0.0', '1.0.0');
 
       expect(consoleLogSpy).toHaveBeenCalled();
       const output = consoleLogSpy.mock.calls[0]?.[0] as string;
       // Check for ANSI escape codes (gradient colors)
       expect(output).toContain('\x1b[');
-      // Check that individual letters are present
-      expect(output).toContain('S');
-      expect(output).toContain('T');
-      expect(output).toContain('A');
-      expect(output).toContain('I');
+      // Check that ASCII art block characters are present
+      expect(output).toContain('█');
+      expect(output).toContain('╗');
+      expect(output).toContain('╚');
     });
 
-    it('should include CLI and Core version labels', () => {
+    it('should include package names and version labels', () => {
       log.startupBanner('Build', '1.0.0', '2.0.0');
 
       expect(consoleLogSpy).toHaveBeenCalled();
       const output = consoleLogSpy.mock.calls[0]?.[0] as string;
-      expect(output).toContain('CLI');
-      expect(output).toContain('Core');
+      expect(output).toContain('@stati/cli');
+      expect(output).toContain('@stati/core');
+    });
+
+    it('should not contain emoji in banner', () => {
+      log.startupBanner('Build', '1.0.0', '1.0.0');
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+      expect(output).not.toContain('⚡');
+    });
+  });
+
+  describe('commandInfo', () => {
+    it('should display command name in box', () => {
+      log.commandInfo('build', []);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+      expect(output).toContain('Build');
+      expect(output).toContain('Command');
+      // Box characters
+      expect(output).toContain('┌');
+      expect(output).toContain('└');
+    });
+
+    it('should display enabled options with highlight', () => {
+      log.commandInfo('build', [
+        { name: 'Force', value: true, isDefault: false },
+        { name: 'Clean', value: false, isDefault: true },
+      ]);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+      expect(output).toContain('Force');
+      expect(output).toContain('enabled');
+      expect(output).toContain('Clean');
+      expect(output).toContain('off');
+    });
+
+    it('should display string values', () => {
+      log.commandInfo('dev', [
+        { name: 'Host', value: 'localhost', isDefault: true },
+        { name: 'Port', value: 3000, isDefault: true },
+      ]);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+      expect(output).toContain('Host');
+      expect(output).toContain('localhost');
+      expect(output).toContain('Port');
+      expect(output).toContain('3000');
+    });
+
+    it('should display dash for empty string values', () => {
+      log.commandInfo('build', [{ name: 'Config', value: '', isDefault: true }]);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+      expect(output).toContain('Config');
+      expect(output).toContain('–');
     });
   });
 
@@ -373,6 +576,107 @@ describe('colors', () => {
       log.progress(50, 100, 'Building pages');
 
       expect(consoleLogSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe('glyph output', () => {
+    it('should use checkmark glyph for success instead of emoji', () => {
+      log.success('test message');
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+      expect(output).toContain('✓');
+      expect(output).not.toContain('✅');
+    });
+
+    it('should use cross glyph for error instead of emoji', () => {
+      log.error('test message');
+
+      expect(consoleErrorSpy).toHaveBeenCalled();
+      const output = consoleErrorSpy.mock.calls[0]?.[0] as string;
+      expect(output).toContain('×');
+      expect(output).not.toContain('❌');
+    });
+
+    it('should use exclamation glyph for warning instead of emoji', () => {
+      log.warning('test message');
+
+      expect(consoleWarnSpy).toHaveBeenCalled();
+      const output = consoleWarnSpy.mock.calls[0]?.[0] as string;
+      expect(output).toContain('!');
+      expect(output).not.toContain('⚠️');
+    });
+
+    it('should use plus/tilde/equals glyphs for file operations instead of emoji', () => {
+      log.file('create', '/path/to/file.ts');
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const createOutput = consoleLogSpy.mock.calls[0]?.[0] as string;
+      expect(createOutput).toContain('+');
+      expect(createOutput).not.toContain('✨');
+
+      consoleLogSpy.mockClear();
+
+      log.file('update', '/path/to/file.ts');
+      const updateOutput = consoleLogSpy.mock.calls[0]?.[0] as string;
+      expect(updateOutput).toContain('~');
+      expect(updateOutput).not.toContain('📝');
+
+      consoleLogSpy.mockClear();
+
+      log.file('copy', '/path/to/file.ts');
+      const copyOutput = consoleLogSpy.mock.calls[0]?.[0] as string;
+      expect(copyOutput).toContain('=');
+      expect(copyOutput).not.toContain('📄');
+    });
+  });
+
+  describe('Ice Blue palette', () => {
+    it('should have brandStrong color function', () => {
+      const result = colors.brandStrong('test');
+      expect(result).toContain('\x1b[');
+      expect(result).toContain('test');
+    });
+
+    it('should have brandDim color function', () => {
+      const result = colors.brandDim('test');
+      expect(result).toContain('\x1b[');
+      expect(result).toContain('test');
+    });
+
+    it('should have dim color function', () => {
+      const result = colors.dim('test');
+      expect(result).toContain('\x1b[');
+      expect(result).toContain('test');
+    });
+
+    it('should have faint color function', () => {
+      const result = colors.faint('test');
+      expect(result).toContain('\x1b[');
+      expect(result).toContain('test');
+    });
+
+    it('should have successGlyph color function', () => {
+      const result = colors.successGlyph('✓');
+      expect(result).toContain('\x1b[');
+      expect(result).toContain('✓');
+    });
+
+    it('should have warningGlyph color function', () => {
+      const result = colors.warningGlyph('!');
+      expect(result).toContain('\x1b[');
+      expect(result).toContain('!');
+    });
+
+    it('should have errorGlyph color function', () => {
+      const result = colors.errorGlyph('×');
+      expect(result).toContain('\x1b[');
+      expect(result).toContain('×');
+    });
+
+    it('should have underline formatting', () => {
+      const result = colors.underline('underlined text');
+      expect(result).toContain('\x1b[4m');
+      expect(result).toContain('underlined text');
     });
   });
 });
