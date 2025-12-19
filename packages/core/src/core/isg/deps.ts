@@ -35,12 +35,18 @@ export class CircularDependencyError extends Error {
  * @param page - The page model to track dependencies for
  * @param config - Stati configuration
  * @returns Array of absolute paths to actually-used template files (POSIX format)
+ * @throws {CircularDependencyError} When circular dependencies are detected in templates
  *
  * @example
  * ```typescript
- * const deps = await trackTemplateDependencies(page, config);
- * console.log(`Page depends on ${deps.length} template files`);
- * // Only includes: layout + partials actually used by the page
+ * try {
+ *   const deps = await trackTemplateDependencies(page, config);
+ *   console.log(`Page depends on ${deps.length} template files`);
+ * } catch (error) {
+ *   if (error instanceof CircularDependencyError) {
+ *     console.error(`Circular dependency: ${error.dependencyChain.join(' -> ')}`);
+ *   }
+ * }
  * ```
  */
 export async function trackTemplateDependencies(
@@ -128,12 +134,13 @@ export async function resolveTemplatePath(
 /**
  * Recursively collects all template dependencies by parsing template content.
  * Only includes templates that are actually referenced (not just accessible).
- * Uses DFS to traverse the dependency graph and handles circular references safely.
+ * Uses DFS to traverse the dependency graph and detects circular references.
  *
  * @param templatePath - Absolute path to template file to analyze
  * @param srcDir - Source directory for resolving relative template paths
  * @param visited - Set to track all visited templates (accumulated dependencies)
  * @param currentPath - Set of templates in current DFS path (for cycle detection)
+ * @throws {CircularDependencyError} When a circular dependency is detected
  */
 async function collectTemplateDependencies(
   templatePath: string,
@@ -144,15 +151,19 @@ async function collectTemplateDependencies(
   // Normalize path for consistent tracking
   const normalizedPath = templatePath.replace(/\\/g, '/');
 
-  // Skip if already processed
-  if (visited.has(normalizedPath)) {
-    return;
-  }
-
-  // Check for circular dependency (safe to continue, just don't recurse)
+  // Check for circular dependency FIRST (before visited check)
+  // A circular dependency means we're visiting a template that's already in our current DFS path
+  // This must be checked before the visited check because a path in currentPath is always in visited
   if (currentPath.has(normalizedPath)) {
     const chain = [...currentPath, normalizedPath];
-    console.error(`Error: Circular template dependency detected: ${chain.join(' -> ')}`);
+    throw new CircularDependencyError(
+      chain,
+      `Circular dependency detected in templates: ${chain.join(' -> ')}`,
+    );
+  }
+
+  // Skip if already processed (but not in current path - those are handled above)
+  if (visited.has(normalizedPath)) {
     return;
   }
 
@@ -180,6 +191,10 @@ async function collectTemplateDependencies(
       await collectTemplateDependencies(depPath, srcDir, visited, currentPath);
     }
   } catch (error) {
+    // Re-throw circular dependency errors - these are fatal
+    if (error instanceof CircularDependencyError) {
+      throw error;
+    }
     // Log warning but continue - don't fail the entire build for template parsing issues
     if (error instanceof Error) {
       console.warn(`Warning: Could not parse template ${templatePath}: ${error.message}`);

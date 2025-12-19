@@ -710,9 +710,8 @@ describe('ISG Dependency Tracking', () => {
       }
     });
 
-    it('should handle self-referencing partials by skipping already-visited templates', async () => {
-      // When a partial references itself or creates a cycle, the visited check
-      // prevents infinite recursion by returning early when the path is already in visited
+    it('should throw CircularDependencyError for self-referencing partials', async () => {
+      // When a partial references itself, it creates a circular dependency that should throw
       const layoutContent = `<%~ stati.partials.recursive() %>`;
       const recursiveContent = `<%~ stati.partials.recursive() %>`;
 
@@ -743,14 +742,10 @@ describe('ISG Dependency Tracking', () => {
         return [];
       });
 
-      const result = await trackTemplateDependencies(mockPage, mockConfig);
-
-      // Should include layout and the recursive partial
-      expect(result.some((p) => p.includes('layout.eta'))).toBe(true);
-      expect(result.some((p) => p.includes('recursive.eta'))).toBe(true);
-
-      // The function completes without infinite loop - visited check prevents re-processing
-      // This is the expected behavior for handling circular references
+      // Should throw CircularDependencyError for self-referencing templates
+      await expect(trackTemplateDependencies(mockPage, mockConfig)).rejects.toThrow(
+        'Circular dependency detected in templates',
+      );
     });
 
     it('should handle empty template content gracefully', async () => {
