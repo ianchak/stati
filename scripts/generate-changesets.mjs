@@ -28,6 +28,7 @@ const SKIP_COMMIT_PATTERNS = [
 // Workspace root files that affect all packages
 const WORKSPACE_ROOT_FILES = [
   'package.json',
+  'package-lock.json',
   'tsconfig.base.json',
   'vitest.config.ts',
   'eslint.config.mjs',
@@ -185,17 +186,12 @@ function determineAffectedPackages(commit) {
 
       // Check for workspace root changes that affect all packages
       if (WORKSPACE_ROOT_FILES.some((rootFile) => file === rootFile)) {
-        console.log(`  Workspace root file changed: ${file} - affecting all packages`);
+        console.log(`  Workspace root file changed: ${file}`);
         hasWorkspaceRootChanges = true;
       }
     }
 
-    // If workspace root files changed, return all packages
-    if (hasWorkspaceRootChanges) {
-      return WORKSPACE_PACKAGES;
-    }
-
-    // Check if only non-package files changed
+    // Check if only non-package files changed (including workspace root files like package-lock.json)
     const onlyNonPackageFiles = changedFiles.every((file) => {
       return NON_PACKAGE_FILES.some((pattern) => {
         if (pattern.endsWith('/')) {
@@ -210,9 +206,23 @@ function determineAffectedPackages(commit) {
       return null; // Signal to skip this commit
     }
 
+    // If workspace root files changed AND packages are affected, return all packages
+    if (hasWorkspaceRootChanges && packages.size > 0) {
+      console.log(`  Workspace root changes affect all packages`);
+      return WORKSPACE_PACKAGES;
+    }
+
     // If specific packages detected, return them
     if (packages.size > 0) {
       return Array.from(packages);
+    }
+
+    // If workspace root files changed but no specific packages detected,
+    // and we haven't already returned (meaning some non-NON_PACKAGE_FILES changed),
+    // affect all packages
+    if (hasWorkspaceRootChanges) {
+      console.log(`  Workspace root changes affect all packages`);
+      return WORKSPACE_PACKAGES;
     }
 
     // Default: affect all packages (conservative approach)
