@@ -222,6 +222,18 @@ async function parseTemplateDependencies(
   const dependencies: string[] = [];
   const templateDir = dirname(templatePath);
 
+  // Strip comments from template content to avoid false positives
+  // This removes:
+  // 1. Eta block comments: <% /* ... */ %> or <% /** ... */ %>
+  // 2. JavaScript single-line comments within Eta blocks: <% // ... %>
+  // 3. JavaScript block comments within Eta blocks (handles multi-line)
+  const contentWithoutComments = content
+    // Remove JS block comments (/* ... */) - handles multi-line
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    // Remove JS single-line comments (// ...) but only within Eta blocks
+    // This is tricky - we'll be conservative and just remove // comments to end of line
+    .replace(/\/\/[^\n]*/g, '');
+
   // Look for Eta include patterns: <%~ include('template') %>
   const includePatterns = [
     /<%[~-]?\s*include\s*\(\s*['"`]([^'"`]+)['"`]\s*\)/g,
@@ -230,7 +242,7 @@ async function parseTemplateDependencies(
 
   for (const pattern of includePatterns) {
     let match;
-    while ((match = pattern.exec(content)) !== null) {
+    while ((match = pattern.exec(contentWithoutComments)) !== null) {
       const includePath = match[1];
       if (includePath) {
         const resolvedPath = await resolveTemplatePathInternal(includePath, srcDir, templateDir);
@@ -249,7 +261,7 @@ async function parseTemplateDependencies(
 
   for (const pattern of layoutPatterns) {
     let match;
-    while ((match = pattern.exec(content)) !== null) {
+    while ((match = pattern.exec(contentWithoutComments)) !== null) {
       const layoutPath = match[1];
       if (layoutPath) {
         const resolvedPath = await resolveTemplatePathInternal(layoutPath, srcDir, templateDir);
@@ -295,7 +307,7 @@ async function parseTemplateDependencies(
 
   for (const pattern of partialPatterns) {
     let match;
-    while ((match = pattern.exec(content)) !== null) {
+    while ((match = pattern.exec(contentWithoutComments)) !== null) {
       const partialName = match[1];
       if (partialName) {
         foundPartials.add(partialName);
