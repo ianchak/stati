@@ -38,7 +38,6 @@ const WORKSPACE_ROOT_FILES = [
 const NON_PACKAGE_FILES = [
   '.github/',
   'docs-site/',
-  'examples/',
   'scripts/',
   '.changeset/',
   'README.md',
@@ -181,6 +180,11 @@ function determineAffectedPackages(commit) {
         packages.add('@stati/cli');
       }
       if (file.startsWith('packages/create-stati/')) {
+        packages.add('create-stati');
+      }
+
+      // Examples folder affects create-stati package (templates are bundled)
+      if (file.startsWith('examples/')) {
         packages.add('create-stati');
       }
 
