@@ -1,5 +1,11 @@
 # @stati/core
 
+## 1.20.3
+
+### Patch Changes
+
+- c880f2c: Fix template dependency tracking to ignore commented-out includes and partials
+
 ## 1.20.2
 
 ### Patch Changes
