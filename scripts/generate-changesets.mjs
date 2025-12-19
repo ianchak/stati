@@ -28,10 +28,22 @@ const SKIP_COMMIT_PATTERNS = [
 // Workspace root files that affect all packages
 const WORKSPACE_ROOT_FILES = [
   'package.json',
-  'package-lock.json',
   'tsconfig.base.json',
   'vitest.config.ts',
   'eslint.config.mjs',
+];
+
+// Files that should not trigger changesets on their own
+const NON_PACKAGE_FILES = [
+  '.github/',
+  'docs-site/',
+  'examples/',
+  'scripts/',
+  '.changeset/',
+  'README.md',
+  'LICENSE',
+  'CONTRIBUTING.md',
+  'package-lock.json', // Lock file changes alone don't require changesets
 ];
 
 // Map conventional commit types to changeset types
@@ -157,6 +169,7 @@ function determineAffectedPackages(commit) {
       .filter(Boolean);
 
     const packages = new Set();
+    let hasWorkspaceRootChanges = false;
 
     for (const file of changedFiles) {
       // Check for package-specific changes
@@ -173,24 +186,27 @@ function determineAffectedPackages(commit) {
       // Check for workspace root changes that affect all packages
       if (WORKSPACE_ROOT_FILES.some((rootFile) => file === rootFile)) {
         console.log(`  Workspace root file changed: ${file} - affecting all packages`);
-        return WORKSPACE_PACKAGES;
+        hasWorkspaceRootChanges = true;
       }
     }
 
-    // If no specific package detected, check if only non-package files changed
-    const onlyNonPackageFiles = changedFiles.every(
-      (file) =>
-        file.startsWith('.github/') ||
-        file.startsWith('docs-site/') ||
-        file.startsWith('examples/') ||
-        file === 'README.md' ||
-        file === 'LICENSE' ||
-        file === 'CONTRIBUTING.md' ||
-        file.endsWith('.md'),
-    );
+    // If workspace root files changed, return all packages
+    if (hasWorkspaceRootChanges) {
+      return WORKSPACE_PACKAGES;
+    }
+
+    // Check if only non-package files changed
+    const onlyNonPackageFiles = changedFiles.every((file) => {
+      return NON_PACKAGE_FILES.some((pattern) => {
+        if (pattern.endsWith('/')) {
+          return file.startsWith(pattern);
+        }
+        return file === pattern || file.endsWith('.md');
+      });
+    });
 
     if (onlyNonPackageFiles && packages.size === 0) {
-      console.log(`Only non-package files changed - skipping`);
+      console.log(`  Only non-package files changed - skipping changeset`);
       return null; // Signal to skip this commit
     }
 
@@ -200,7 +216,7 @@ function determineAffectedPackages(commit) {
     }
 
     // Default: affect all packages (conservative approach)
-    console.log(`Could not determine specific packages - affecting all`);
+    console.log(`  Could not determine specific packages - affecting all`);
     return WORKSPACE_PACKAGES;
   } catch (error) {
     console.error(`Error determining affected packages:`, error);
