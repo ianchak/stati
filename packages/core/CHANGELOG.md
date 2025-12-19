@@ -1,5 +1,12 @@
 # @stati/core
 
+## 1.20.2
+
+### Patch Changes
+
+- 8c21734: Add `isPathWithinDirectory` utility to prevent path traversal attacks in dev/preview servers
+- 8c21734: Refactor template dependency tracking: extract resolver pattern, improve path normalization, expand test coverage
+
 ## 1.20.1
 
 ### Patch Changes
