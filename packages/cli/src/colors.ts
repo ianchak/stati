@@ -240,7 +240,7 @@ function applyHorizontalGradient(line: string): string {
 /**
  * Creates a decorative startup banner with ASCII art and horizontal gradient
  */
-function createStartupBanner(mode: string, cliVersion: string, coreVersion: string): string {
+function createStartupBanner(cliVersion: string, coreVersion: string): string {
   const lines: string[] = [''];
 
   // Apply gradient to each ASCII art line
@@ -879,11 +879,11 @@ export const log = {
    * Decorative startup banner for CLI commands
    */
   startupBanner: (
-    mode: 'Development Server' | 'Preview Server' | 'Build',
+    _mode: 'Development Server' | 'Preview Server' | 'Build',
     cliVersion: string,
     coreVersion: string,
   ) => {
-    console.log('\n' + createStartupBanner(mode, cliVersion, coreVersion));
+    console.log('\n' + createStartupBanner(cliVersion, coreVersion));
   },
 
   /**
