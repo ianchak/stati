@@ -83,7 +83,7 @@ async function performInitialBuild(
 ): Promise<void> {
   try {
     // Clear cache to ensure fresh build on dev server start
-    logger.info?.('Clearing cache for fresh development build...');
+    logger.info?.('• Clearing cache for fresh development build...');
     await invalidate();
 
     await build({

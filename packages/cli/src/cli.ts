@@ -116,12 +116,9 @@ const cli = yargs(hideBin(process.argv))
 
         setEnv('production');
         buildOptions.logger = coloredLogger;
-        const startTime = Date.now();
 
         const result = await build(buildOptions);
-        const buildTime = Date.now() - startTime;
 
-        log.timing('Total build', buildTime);
         log.success('Site built successfully!');
 
         // Handle metrics output

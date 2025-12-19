@@ -241,7 +241,7 @@ describe('Development Server', () => {
     expect(invalidateCall!).toBeLessThan(buildCall!);
 
     // Verify logger messages
-    expect(mockLogger.info).toHaveBeenCalledWith('Clearing cache for fresh development build...');
+    expect(mockLogger.info).toHaveBeenCalledWith('• Clearing cache for fresh development build...');
 
     await devServer.stop();
   });

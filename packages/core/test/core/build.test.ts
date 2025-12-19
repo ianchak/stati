@@ -535,10 +535,7 @@ describe('build.ts', () => {
       expect(consoleSpy).toHaveBeenCalledWith('• Started building your site...');
       expect(consoleSpy).toHaveBeenCalledWith('• Found 3 pages');
       expect(consoleSpy).toHaveBeenCalledWith('Built navigation with 3 top-level items');
-      // ISG shows "Checking" for each page
-      expect(consoleSpy).toHaveBeenCalledWith('Checking /');
-      expect(consoleSpy).toHaveBeenCalledWith('Checking /about');
-      expect(consoleSpy).toHaveBeenCalledWith('Checking /blog/post');
+      // Progress bar handles page-by-page logging (not tested here as default logger doesn't have it)
       expect(consoleSpy).toHaveBeenCalledWith('Copying static assets from static');
       expect(consoleSpy).toHaveBeenCalledWith('Copied 0 static assets');
     });

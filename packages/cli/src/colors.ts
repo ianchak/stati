@@ -1,3 +1,5 @@
+import { performance } from 'node:perf_hooks';
+
 /**
  * Ice Blue Mono-Hue Palette — Single source of truth for CLI colors
  */
@@ -29,6 +31,7 @@ const glyphs = {
   info: '•',
   bullet: '•',
   continuation: '↳',
+  arrow: '→',
   fileCreate: '+',
   fileUpdate: '~',
   fileCopy: '=',
@@ -44,6 +47,7 @@ const glyphsAscii = {
   info: '*',
   bullet: '*',
   continuation: '->',
+  arrow: '->',
   fileCreate: '+',
   fileUpdate: '~',
   fileCopy: '=',
@@ -485,6 +489,278 @@ class RenderingTreeManager {
 const renderingTree = new RenderingTreeManager();
 
 /**
+ * Tracked page data for progress and summary display
+ */
+interface TrackedPage {
+  url: string;
+  status: 'cached' | 'rendered' | 'error';
+  timing?: number;
+}
+
+/**
+ * Progress bar manager for live build progress display
+ * Shows a progress bar with counts and current page during builds,
+ * then displays a grouped summary with slowest pages after completion.
+ */
+class ProgressBarManager {
+  private totalPages = 0;
+  private cachedCount = 0;
+  private renderedCount = 0;
+  private errorCount = 0;
+  private currentUrl = '';
+  private pages: TrackedPage[] = [];
+  private isActive = false;
+  private linesWritten = 0;
+  private startTime = 0;
+
+  /**
+   * Start progress tracking
+   */
+  start(total: number): void {
+    this.totalPages = total;
+    this.cachedCount = 0;
+    this.renderedCount = 0;
+    this.errorCount = 0;
+    this.currentUrl = '';
+    this.pages = [];
+    this.isActive = true;
+    this.linesWritten = 0;
+    this.startTime = performance.now();
+
+    // Show initial progress
+    this.render();
+  }
+
+  /**
+   * Update progress with a page result
+   */
+  update(status: 'cached' | 'rendered' | 'error', url: string, timing?: number): void {
+    if (!this.isActive) return;
+
+    // Update counts
+    if (status === 'cached') {
+      this.cachedCount++;
+    } else if (status === 'rendered') {
+      this.renderedCount++;
+    } else {
+      this.errorCount++;
+    }
+
+    this.currentUrl = url;
+
+    // Track rendered pages for slowest page summary
+    if (status === 'rendered' && timing !== undefined) {
+      this.pages.push({ url, status, timing });
+    }
+
+    // Re-render progress display
+    this.render();
+  }
+
+  /**
+   * End progress tracking
+   */
+  end(): void {
+    if (!this.isActive) return;
+    this.isActive = false;
+
+    // Clear the progress display (move up and clear lines)
+    if (this.linesWritten > 0) {
+      // Move cursor up and clear each line
+      process.stdout.write(`\x1b[${this.linesWritten}A`);
+      for (let i = 0; i < this.linesWritten; i++) {
+        process.stdout.write('\x1b[2K\n');
+      }
+      // Move back up to where we started
+      process.stdout.write(`\x1b[${this.linesWritten}A`);
+    }
+  }
+
+  /**
+   * Get summary data for display
+   */
+  getSummary(): {
+    totalPages: number;
+    cachedCount: number;
+    renderedCount: number;
+    errorCount: number;
+    slowestPages: TrackedPage[];
+    totalTimeMs: number;
+    avgRenderTimeMs: number;
+    cacheHitRate: number;
+  } {
+    // Sort pages by timing (descending) and take top 5
+    const slowestPages = [...this.pages]
+      .filter((p) => p.timing !== undefined)
+      .sort((a, b) => (b.timing ?? 0) - (a.timing ?? 0))
+      .slice(0, 5);
+
+    // Calculate average render time
+    const renderTimes = this.pages.filter((p) => p.timing !== undefined).map((p) => p.timing ?? 0);
+    const avgRenderTimeMs =
+      renderTimes.length > 0
+        ? Math.round(renderTimes.reduce((a, b) => a + b, 0) / renderTimes.length)
+        : 0;
+
+    // Calculate cache hit rate
+    const total = this.cachedCount + this.renderedCount + this.errorCount;
+    const cacheHitRate = total > 0 ? Math.round((this.cachedCount / total) * 100) : 0;
+
+    return {
+      totalPages: this.totalPages,
+      cachedCount: this.cachedCount,
+      renderedCount: this.renderedCount,
+      errorCount: this.errorCount,
+      slowestPages,
+      totalTimeMs: Math.round(performance.now() - this.startTime),
+      avgRenderTimeMs,
+      cacheHitRate,
+    };
+  }
+
+  /**
+   * Render the progress display
+   */
+  private render(): void {
+    // Clear previous output if any
+    if (this.linesWritten > 0) {
+      process.stdout.write(`\x1b[${this.linesWritten}A`);
+    }
+
+    const processed = this.cachedCount + this.renderedCount + this.errorCount;
+    const percentage = this.totalPages > 0 ? Math.floor((processed / this.totalPages) * 100) : 0;
+
+    // Build progress bar (40 chars wide)
+    const barWidth = 40;
+    const filled = Math.floor((processed / this.totalPages) * barWidth);
+    const empty = barWidth - filled;
+    const bar = colors.brand('█'.repeat(filled)) + colors.faint('░'.repeat(empty));
+
+    // Format counts
+    const cachedText =
+      this.cachedCount > 0
+        ? colors.brandStrong(`${getGlyph('success')} ${this.cachedCount} cached`)
+        : '';
+    const renderedText =
+      this.renderedCount > 0
+        ? colors.brand(`${getGlyph('bullet')} ${this.renderedCount} rendered`)
+        : '';
+    const errorText =
+      this.errorCount > 0
+        ? colors.errorGlyph(`${getGlyph('error')} ${this.errorCount} errors`)
+        : '';
+
+    // Build counts line
+    const counts = [cachedText, renderedText, errorText].filter(Boolean).join('    ');
+
+    // Truncate URL if too long
+    const maxUrlLength = 50;
+    const displayUrl =
+      this.currentUrl.length > maxUrlLength
+        ? '...' + this.currentUrl.slice(-(maxUrlLength - 3))
+        : this.currentUrl;
+
+    // Build output lines
+    const lines: string[] = [
+      colors.brand('  Rendering pages...'),
+      `  [${bar}] ${colors.brandStrong(percentage + '%')} ${colors.muted(`(${processed}/${this.totalPages})`)}`,
+      `  ${counts || colors.muted('Starting...')}`,
+      `  ${colors.muted(getGlyph('arrow'))} ${colors.dim(displayUrl || 'Initializing...')}`,
+      '', // Empty line for spacing
+    ];
+
+    // Write output
+    console.log(lines.join('\n'));
+    this.linesWritten = lines.length;
+  }
+
+  /**
+   * Render the final summary
+   */
+  renderSummary(): void {
+    const summary = this.getSummary();
+    const lines: string[] = [];
+
+    // Calculate bar proportions for cached vs rendered
+    const total = summary.cachedCount + summary.renderedCount;
+    const barWidth = 20;
+
+    // Cached line with bar
+    if (summary.cachedCount > 0) {
+      const cachedBar = colors.faint('░'.repeat(barWidth));
+      lines.push(
+        `  ${colors.muted('Cached')}      ${colors.brandStrong(String(summary.cachedCount).padStart(4))} pages   ${cachedBar} ${colors.muted('(skipped)')}`,
+      );
+    }
+
+    // Rendered line with bar and avg time
+    if (summary.renderedCount > 0) {
+      const renderedBarLen = Math.min(
+        barWidth,
+        Math.ceil((summary.renderedCount / total) * barWidth),
+      );
+      const renderedBar = colors.brand('█'.repeat(renderedBarLen));
+      const avgTime =
+        summary.avgRenderTimeMs < 1000
+          ? `${summary.avgRenderTimeMs}ms`
+          : `${(summary.avgRenderTimeMs / 1000).toFixed(2)}s`;
+      lines.push(
+        `  ${colors.muted('Rendered')}    ${colors.brand(String(summary.renderedCount).padStart(4))} pages   ${renderedBar.padEnd(barWidth)} ${colors.muted('avg ' + avgTime)}`,
+      );
+    }
+
+    // Errors line
+    if (summary.errorCount > 0) {
+      lines.push(
+        `  ${colors.errorGlyph('Errors')}      ${colors.errorGlyph(String(summary.errorCount).padStart(4))} pages`,
+      );
+    }
+
+    // Slowest pages (only if we have rendered pages)
+    if (summary.slowestPages.length > 0) {
+      lines.push('');
+      lines.push(`  ${colors.muted('Slowest pages:')}`);
+      for (const page of summary.slowestPages) {
+        const time = page.timing ?? 0;
+        const timeStr = time < 1000 ? `${time}ms` : `${(time / 1000).toFixed(2)}s`;
+        lines.push(
+          `    ${colors.muted(getGlyph('arrow'))} ${colors.timing(timeStr.padStart(7))}   ${colors.dim(page.url)}`,
+        );
+      }
+    }
+
+    // Total line
+    lines.push('');
+    const totalTime =
+      summary.totalTimeMs < 1000
+        ? `${summary.totalTimeMs}ms`
+        : `${(summary.totalTimeMs / 1000).toFixed(1)}s`;
+    lines.push(
+      `  ${colors.muted('Total:')} ${colors.brandStrong(String(summary.totalPages))} pages in ${colors.brandStrong(totalTime)}  ${colors.faint('│')}  ${colors.muted('Cache hit rate:')} ${colors.brand(summary.cacheHitRate + '%')}`,
+    );
+
+    console.log(lines.join('\n'));
+  }
+
+  /**
+   * Reset state
+   */
+  clear(): void {
+    this.totalPages = 0;
+    this.cachedCount = 0;
+    this.renderedCount = 0;
+    this.errorCount = 0;
+    this.currentUrl = '';
+    this.pages = [];
+    this.isActive = false;
+    this.linesWritten = 0;
+  }
+}
+
+// Global instance for managing the progress bar
+const progressBar = new ProgressBarManager();
+
+/**
  * Creates formatted build statistics without using a table
  */
 function createStatsTable(stats: {
@@ -666,6 +942,35 @@ export const log = {
    */
   clearRenderingTree: () => {
     renderingTree.clear();
+  },
+
+  /**
+   * Initialize progress tracking for page rendering
+   * Shows a live progress bar during build
+   */
+  startProgress: (totalPages: number) => {
+    progressBar.start(totalPages);
+  },
+
+  /**
+   * Update progress during page rendering
+   */
+  updateProgress: (status: 'cached' | 'rendered' | 'error', url: string, timing?: number) => {
+    progressBar.update(status, url, timing);
+  },
+
+  /**
+   * End progress tracking and clear the display
+   */
+  endProgress: () => {
+    progressBar.end();
+  },
+
+  /**
+   * Display a summary of the rendering process
+   */
+  showRenderingSummary: () => {
+    progressBar.renderSummary();
   },
 
   /**

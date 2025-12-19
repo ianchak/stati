@@ -20,11 +20,16 @@ export function createLogger() {
     timing: log.timing,
     statsTable: log.statsTable,
     navigationTree: log.navigationTree,
-    // Rendering tree methods
+    // Rendering tree methods (legacy, kept for backwards compatibility)
     startRenderingTree: log.startRenderingTree,
     addTreeNode: log.addTreeNode,
     updateTreeNode: log.updateTreeNode,
     showRenderingTree: log.showRenderingTree,
     clearRenderingTree: log.clearRenderingTree,
+    // Progress bar + summary methods (preferred for large sites)
+    startProgress: log.startProgress,
+    updateProgress: log.updateProgress,
+    endProgress: log.endProgress,
+    showRenderingSummary: log.showRenderingSummary,
   } as const;
 }

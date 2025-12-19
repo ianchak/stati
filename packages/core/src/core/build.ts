@@ -396,28 +396,20 @@ async function processPagesWithCache(
     endHookBeforeAll();
   }
 
-  // Render each page with tree-based progress tracking and ISG
+  // Render each page with progress tracking and ISG
   if (logger.step) {
     logger.step(2, 3, 'Rendering pages');
+    console.log(); // Add spacing after step header
   }
 
-  // Initialize rendering tree
-  if (logger.startRenderingTree) {
-    logger.startRenderingTree('Page Rendering Process');
+  // Initialize progress tracking
+  if (logger.startProgress) {
+    logger.startProgress(pages.length);
   }
 
   for (let i = 0; i < pages.length; i++) {
     const page = pages[i];
     if (!page) continue; // Safety check
-
-    const pageId = `page-${i}`;
-
-    // Add page to rendering tree
-    if (logger.addTreeNode) {
-      logger.addTreeNode('root', pageId, page.url, 'running', { url: page.url });
-    } else {
-      logger.processing(`Checking ${page.url}`);
-    }
 
     // Determine output path
     let outputPath: string;
@@ -441,10 +433,8 @@ async function processPagesWithCache(
     if (!shouldRebuild) {
       // Cache hit - skip rendering
       cacheHits++;
-      if (logger.updateTreeNode) {
-        logger.updateTreeNode(pageId, 'cached', { cacheHit: true, url: page.url });
-      } else {
-        logger.processing(`📋 Cached ${page.url}`);
+      if (logger.updateProgress) {
+        logger.updateProgress('cached', page.url);
       }
       // Record page timing for cached pages (0ms render time)
       recorder.recordPageTiming(page.url, 0, true);
@@ -538,11 +528,8 @@ async function processPagesWithCache(
     // Record page timing for rendered pages (includes template count)
     recorder.recordPageTiming(page.url, renderTime, false, renderResult.templatesLoaded);
 
-    if (logger.updateTreeNode) {
-      logger.updateTreeNode(pageId, 'completed', {
-        timing: renderTime,
-        url: page.url,
-      });
+    if (logger.updateProgress) {
+      logger.updateProgress('rendered', page.url, renderTime);
     }
 
     // Ensure directory exists and write file
@@ -570,11 +557,11 @@ async function processPagesWithCache(
     }
   }
 
-  // Display final rendering tree and clear it
-  if (logger.showRenderingTree) {
-    logger.showRenderingTree();
-    if (logger.clearRenderingTree) {
-      logger.clearRenderingTree();
+  // Display final progress summary
+  if (logger.endProgress) {
+    logger.endProgress();
+    if (logger.showRenderingSummary) {
+      logger.showRenderingSummary();
     }
   }
 

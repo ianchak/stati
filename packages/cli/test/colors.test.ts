@@ -679,4 +679,162 @@ describe('colors', () => {
       expect(result).toContain('underlined text');
     });
   });
+
+  describe('progress bar methods', () => {
+    let stdoutWriteSpy: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      stdoutWriteSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true) as any;
+    });
+
+    afterEach(() => {
+      stdoutWriteSpy.mockRestore();
+    });
+
+    it('should have progress bar methods', () => {
+      expect(log).toHaveProperty('startProgress');
+      expect(log).toHaveProperty('updateProgress');
+      expect(log).toHaveProperty('endProgress');
+      expect(log).toHaveProperty('showRenderingSummary');
+    });
+
+    it('should start progress and display initial state', () => {
+      log.startProgress(100);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+      expect(output).toContain('Rendering pages');
+      expect(output).toContain('0%');
+      expect(output).toContain('0/100');
+
+      // Cleanup
+      log.endProgress();
+    });
+
+    it('should update progress with cached page', () => {
+      log.startProgress(10);
+      consoleLogSpy.mockClear();
+
+      log.updateProgress('cached', '/docs/intro/');
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+      expect(output).toContain('cached');
+      expect(output).toContain('10%');
+      expect(output).toContain('1/10');
+
+      log.endProgress();
+    });
+
+    it('should update progress with rendered page and timing', () => {
+      log.startProgress(10);
+      consoleLogSpy.mockClear();
+
+      log.updateProgress('rendered', '/docs/api/', 125);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+      expect(output).toContain('rendered');
+      expect(output).toContain('/docs/api/');
+
+      log.endProgress();
+    });
+
+    it('should track errors in progress', () => {
+      log.startProgress(10);
+      consoleLogSpy.mockClear();
+
+      log.updateProgress('error', '/broken/page/');
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+      expect(output).toContain('error');
+
+      log.endProgress();
+    });
+
+    it('should show summary with slowest pages', () => {
+      log.startProgress(5);
+
+      // Simulate some cached and rendered pages
+      log.updateProgress('cached', '/cached-1/');
+      log.updateProgress('cached', '/cached-2/');
+      log.updateProgress('rendered', '/slow/', 500);
+      log.updateProgress('rendered', '/fast/', 50);
+      log.updateProgress('rendered', '/medium/', 200);
+
+      log.endProgress();
+      consoleLogSpy.mockClear();
+
+      log.showRenderingSummary();
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+
+      // Should show cached count
+      expect(output).toContain('2');
+      expect(output).toContain('Cached');
+
+      // Should show rendered count
+      expect(output).toContain('3');
+      expect(output).toContain('Rendered');
+
+      // Should show slowest pages (sorted by timing)
+      expect(output).toContain('Slowest pages');
+      expect(output).toContain('/slow/');
+      expect(output).toContain('500ms');
+
+      // Should show cache hit rate
+      expect(output).toContain('Cache hit rate');
+      expect(output).toContain('40%'); // 2/5 = 40%
+    });
+
+    it('should truncate long URLs in progress display', () => {
+      log.startProgress(10);
+      consoleLogSpy.mockClear();
+
+      const longUrl = '/very/long/path/to/a/deeply/nested/page/in/the/docs/section/api/reference/';
+      log.updateProgress('rendered', longUrl, 100);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+      // Should truncate with ellipsis
+      expect(output).toContain('...');
+      expect(output?.length).toBeLessThan((output?.length ?? 0) + longUrl.length);
+
+      log.endProgress();
+    });
+
+    it('should calculate average render time in summary', () => {
+      log.startProgress(3);
+
+      log.updateProgress('rendered', '/page-1/', 100);
+      log.updateProgress('rendered', '/page-2/', 200);
+      log.updateProgress('rendered', '/page-3/', 300);
+
+      log.endProgress();
+      consoleLogSpy.mockClear();
+
+      log.showRenderingSummary();
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+
+      // Average should be (100+200+300)/3 = 200ms
+      expect(output).toContain('avg');
+      expect(output).toContain('200ms');
+    });
+
+    it('should clear progress display on endProgress', () => {
+      log.startProgress(10);
+      log.updateProgress('rendered', '/test/', 50);
+
+      // endProgress should write cursor movement codes to clear lines
+      log.endProgress();
+
+      // Should have written ANSI escape codes to move cursor up
+      expect(stdoutWriteSpy).toHaveBeenCalled();
+    });
+  });
 });

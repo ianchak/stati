@@ -257,6 +257,11 @@ export async function createTypeScriptWatcher(
       continue;
     }
 
+    // Track whether this is the initial build triggered by context.watch()
+    // We skip notifications for the initial build since files were just compiled
+    // by compileTypeScript() during the initial build phase
+    let isInitialBuild = true;
+
     const context = await esbuild.context({
       entryPoints: [entryPath],
       bundle: true,
@@ -299,6 +304,14 @@ export async function createTypeScriptWatcher(
                 };
 
                 latestResults.set(bundleConfig.bundleName, bundleResult);
+
+                // Skip notifications for the initial build triggered by context.watch()
+                // since files were already compiled during performInitialBuild()
+                if (isInitialBuild) {
+                  isInitialBuild = false;
+                  return;
+                }
+
                 logger.info(`TypeScript '${bundleConfig.bundleName}' recompiled.`);
 
                 // Notify with all current results and compile time

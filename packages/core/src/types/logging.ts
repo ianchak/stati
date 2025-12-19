@@ -110,4 +110,23 @@ export interface Logger {
   showRenderingTree?: () => void;
   /** Clear the rendering tree (optional) */
   clearRenderingTree?: () => void;
+
+  // Progress Bar + Summary System (preferred over rendering tree for large sites)
+
+  /** Initialize progress tracking for page rendering (optional) */
+  startProgress?: (totalPages: number) => void;
+  /**
+   * Update progress during page rendering (optional)
+   * @param status - 'cached' | 'rendered' | 'error'
+   * @param url - The URL of the page being processed
+   * @param timing - Render time in milliseconds (for rendered pages)
+   */
+  updateProgress?: (status: 'cached' | 'rendered' | 'error', url: string, timing?: number) => void;
+  /** End progress tracking and prepare for summary (optional) */
+  endProgress?: () => void;
+  /**
+   * Display a summary of the rendering process (optional)
+   * Shows cached/rendered counts, slowest pages, and cache hit rate
+   */
+  showRenderingSummary?: () => void;
 }
