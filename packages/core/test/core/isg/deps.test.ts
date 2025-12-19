@@ -709,5 +709,96 @@ describe('ISG Dependency Tracking', () => {
         expect(dep).not.toContain('\\');
       }
     });
+
+    it('should handle self-referencing partials by skipping already-visited templates', async () => {
+      // When a partial references itself or creates a cycle, the visited check
+      // prevents infinite recursion by returning early when the path is already in visited
+      const layoutContent = `<%~ stati.partials.recursive() %>`;
+      const recursiveContent = `<%~ stati.partials.recursive() %>`;
+
+      const recursivePath = 'test/project/site/_partials/recursive.eta';
+
+      mockPathExists.mockImplementation(async (path: string) => {
+        const normalizedPath = path.replace(/\\/g, '/');
+        return (
+          normalizedPath === 'test/project/site/layout.eta' || normalizedPath === recursivePath
+        );
+      });
+
+      mockReadFile.mockImplementation(async (path: string) => {
+        const normalizedPath = path.replace(/\\/g, '/');
+        if (normalizedPath.includes('layout.eta')) {
+          return layoutContent;
+        }
+        if (normalizedPath.includes('recursive.eta')) {
+          return recursiveContent;
+        }
+        return '';
+      });
+
+      mockGlob.mockImplementation(async (pattern: string) => {
+        if (pattern.includes('recursive.eta')) {
+          return [recursivePath];
+        }
+        return [];
+      });
+
+      const result = await trackTemplateDependencies(mockPage, mockConfig);
+
+      // Should include layout and the recursive partial
+      expect(result.some((p) => p.includes('layout.eta'))).toBe(true);
+      expect(result.some((p) => p.includes('recursive.eta'))).toBe(true);
+
+      // The function completes without infinite loop - visited check prevents re-processing
+      // This is the expected behavior for handling circular references
+    });
+
+    it('should handle empty template content gracefully', async () => {
+      // Layout exists but has no content
+      mockPathExists.mockImplementation(async (path: string) => {
+        const normalizedPath = path.replace(/\\/g, '/');
+        return normalizedPath === 'test/project/site/layout.eta';
+      });
+
+      // Return empty string for template content
+      mockReadFile.mockImplementation(async () => '');
+      mockGlob.mockResolvedValue([]);
+
+      const result = await trackTemplateDependencies(mockPage, mockConfig);
+
+      // Should return only the layout (no partials since template is empty)
+      expect(result).toHaveLength(1);
+      expect(result[0]).toContain('layout.eta');
+    });
+
+    it('should handle template parsing errors gracefully', async () => {
+      // Layout exists but reading throws an error
+      mockPathExists.mockImplementation(async (path: string) => {
+        const normalizedPath = path.replace(/\\/g, '/');
+        return normalizedPath === 'test/project/site/layout.eta';
+      });
+
+      // Throw error when reading template
+      mockReadFile.mockImplementation(async () => {
+        throw new Error('Permission denied');
+      });
+      mockGlob.mockResolvedValue([]);
+
+      // Spy on console.warn to verify error is logged
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const result = await trackTemplateDependencies(mockPage, mockConfig);
+
+      // Should still return the layout path (even though parsing failed)
+      expect(result).toHaveLength(1);
+      expect(result[0]).toContain('layout.eta');
+
+      // Verify warning was logged
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Could not parse template'),
+      );
+
+      consoleWarnSpy.mockRestore();
+    });
   });
 });
