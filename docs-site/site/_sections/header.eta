@@ -62,7 +62,7 @@
                        target="_blank"
                        rel="noopener noreferrer"
                        title="View on GitHub">
-                        <span class="group-hover:scale-110 transition-transform duration-200 inline-block">
+                        <span class="group-hover:scale-110 transition-transform duration-200 block">
                             <%~ stati.partials.icon({ name: 'github', size: 'md' }) %>
                         </span>
                     </a>
