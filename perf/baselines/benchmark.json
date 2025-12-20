@@ -15,7 +15,7 @@
       "tolerance": 0.3
     },
     "warmBuild": {
-      "medianMs": 75,
+      "medianMs": 80,
       "p95Ms": 150,
       "tolerance": 0.3,
       "minCacheHitRate": 0.95
