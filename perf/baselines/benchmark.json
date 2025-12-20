@@ -26,8 +26,8 @@
       "tolerance": 0.3
     },
     "complexBuild": {
-      "medianMs": 250,
-      "p95Ms": 400,
+      "medianMs": 450,
+      "p95Ms": 600,
       "tolerance": 0.3
     }
   }

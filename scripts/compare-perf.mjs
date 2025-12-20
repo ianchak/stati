@@ -287,12 +287,6 @@ function generateReport(metricsOrSummary, comparison, baseline) {
     if (gitBranch) lines.push(`- **Branch:** \`${gitBranch}\``);
     lines.push(`- **Node:** ${nodeVersion}`);
     lines.push(`- **Platform:** ${platform}`);
-    if (metricsOrSummary.pageCount) {
-      lines.push(`- **Test Pages:** ${metricsOrSummary.pageCount}`);
-    }
-    if (metricsOrSummary.complexPageCount) {
-      lines.push(`- **Complex Pages:** ${metricsOrSummary.complexPageCount}`);
-    }
     lines.push('');
   }
 
@@ -355,6 +349,31 @@ function generateReport(metricsOrSummary, comparison, baseline) {
     );
   }
 
+  lines.push('');
+  lines.push('</details>');
+  lines.push('');
+
+  // Test scenario descriptions
+  const pageCount = metricsOrSummary?.pageCount || 100;
+  const complexPageCount = metricsOrSummary?.complexPageCount || 10;
+
+  lines.push('<details>');
+  lines.push('<summary>📖 Test Scenario Details</summary>');
+  lines.push('');
+  lines.push('| Scenario | Description |');
+  lines.push('|----------|-------------|');
+  lines.push(
+    `| **Cold Build** | Full build with no cache. Renders ${pageCount} simple markdown pages + 1 index page. |`,
+  );
+  lines.push(
+    `| **Warm Build** | Rebuild with no file changes. All ${pageCount + 1} pages served from cache. |`,
+  );
+  lines.push(
+    `| **Incremental Build** | Single markdown file modified. Only 1 page re-rendered, ${pageCount} served from cache. |`,
+  );
+  lines.push(
+    `| **Complex Build** | Full build including ${complexPageCount} pages with deeply nested Eta components (hero, grid, cards, footer). Total: ${pageCount + 1 + complexPageCount} pages. |`,
+  );
   lines.push('');
   lines.push('</details>');
   lines.push('');
