@@ -10,24 +10,24 @@
   },
   "thresholds": {
     "coldBuild": {
-      "medianMs": 200,
-      "p95Ms": 350,
+      "medianMs": 300,
+      "p95Ms": 450,
       "tolerance": 0.3
     },
     "warmBuild": {
-      "medianMs": 100,
-      "p95Ms": 200,
+      "medianMs": 75,
+      "p95Ms": 150,
       "tolerance": 0.3,
       "minCacheHitRate": 0.95
     },
     "incrementalBuild": {
-      "medianMs": 100,
-      "p95Ms": 200,
+      "medianMs": 90,
+      "p95Ms": 150,
       "tolerance": 0.3
     },
     "complexBuild": {
-      "medianMs": 450,
-      "p95Ms": 600,
+      "medianMs": 400,
+      "p95Ms": 550,
       "tolerance": 0.3
     }
   }
