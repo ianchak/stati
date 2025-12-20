@@ -91,6 +91,7 @@ function extractPerfResults(benchmarkSummary, metrics) {
     coldBuild: null,
     warmBuild: null,
     incrementalBuild: null,
+    complexBuild: null,
   };
 
   // Prefer benchmark summary from perf tests (has aggregated results)
@@ -111,6 +112,12 @@ function extractPerfResults(benchmarkSummary, metrics) {
     if (benchmarkSummary.incrementalBuild) {
       results.incrementalBuild = {
         medianMs: benchmarkSummary.incrementalBuild.medianMs,
+      };
+    }
+    if (benchmarkSummary.complexBuild) {
+      results.complexBuild = {
+        medianMs: benchmarkSummary.complexBuild.medianMs,
+        p95Ms: benchmarkSummary.complexBuild.p95Ms,
       };
     }
     return results;
@@ -143,6 +150,7 @@ function compareWithBaseline(results, baseline) {
     coldBuild: null,
     warmBuild: null,
     incrementalBuild: null,
+    complexBuild: null,
     overall: 'pass',
   };
 
@@ -210,6 +218,25 @@ function compareWithBaseline(results, baseline) {
     if (status === 'fail') comparison.overall = 'fail';
   }
 
+  // Complex build comparison
+  if (results.complexBuild && thresholds.complexBuild) {
+    const threshold = thresholds.complexBuild;
+    const maxAllowed = threshold.medianMs * (1 + threshold.tolerance);
+    const actual = results.complexBuild.medianMs;
+    const status = actual <= maxAllowed ? 'pass' : 'fail';
+    const change = ((actual - threshold.medianMs) / threshold.medianMs) * 100;
+
+    comparison.complexBuild = {
+      actual,
+      baseline: threshold.medianMs,
+      maxAllowed,
+      change,
+      status,
+    };
+
+    if (status === 'fail') comparison.overall = 'fail';
+  }
+
   return comparison;
 }
 
@@ -263,6 +290,9 @@ function generateReport(metricsOrSummary, comparison, baseline) {
     if (metricsOrSummary.pageCount) {
       lines.push(`- **Test Pages:** ${metricsOrSummary.pageCount}`);
     }
+    if (metricsOrSummary.complexPageCount) {
+      lines.push(`- **Complex Pages:** ${metricsOrSummary.complexPageCount}`);
+    }
     lines.push('');
   }
 
@@ -293,6 +323,13 @@ function generateReport(metricsOrSummary, comparison, baseline) {
     );
   }
 
+  if (comparison.complexBuild) {
+    const c = comparison.complexBuild;
+    lines.push(
+      `| Complex Build | ${formatDuration(c.actual)} | ${formatDuration(c.baseline)} | ${formatChange(c.change)} | ${getStatusEmoji(c.status)} |`,
+    );
+  }
+
   lines.push('');
 
   // Thresholds info
@@ -312,6 +349,11 @@ function generateReport(metricsOrSummary, comparison, baseline) {
   lines.push(
     `| Incremental Build | ${formatDuration(t.incrementalBuild.medianMs * (1 + t.incrementalBuild.tolerance))} | ${(t.incrementalBuild.tolerance * 100).toFixed(0)}% |`,
   );
+  if (t.complexBuild) {
+    lines.push(
+      `| Complex Build | ${formatDuration(t.complexBuild.medianMs * (1 + t.complexBuild.tolerance))} | ${(t.complexBuild.tolerance * 100).toFixed(0)}% |`,
+    );
+  }
 
   lines.push('');
   lines.push('</details>');
@@ -364,6 +406,7 @@ async function main() {
       coldBuild: null,
       warmBuild: null,
       incrementalBuild: null,
+      complexBuild: null,
     };
     console.warn(
       'No benchmark summary or build metrics found. This is expected if performance tests have not been run yet. Generating placeholder report.',

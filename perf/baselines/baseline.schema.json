@@ -48,9 +48,12 @@
         },
         "incrementalBuild": {
           "$ref": "#/definitions/buildThreshold"
+        },
+        "complexBuild": {
+          "$ref": "#/definitions/buildThreshold"
         }
       },
-      "required": ["coldBuild", "warmBuild", "incrementalBuild"]
+      "required": ["coldBuild", "warmBuild", "incrementalBuild", "complexBuild"]
     }
   },
   "definitions": {

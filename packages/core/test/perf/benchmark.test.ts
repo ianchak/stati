@@ -30,6 +30,8 @@ const BENCHMARK_CONFIG = {
   timeout: 60000,
   /** Number of test pages to generate */
   pageCount: 100,
+  /** Number of complex pages with nested components */
+  complexPageCount: 10,
 };
 
 /**
@@ -111,6 +113,62 @@ This is the home page.
   // Create a static asset
   writeFileSync(join(publicDir, 'styles.css'), 'body { margin: 0; }');
 
+  // Create components directory for nested Eta components
+  const componentsDir = join(siteDir, '_components');
+  mkdirSync(componentsDir, { recursive: true });
+
+  // Create nested Eta components
+  const buttonComponent = `<button class="btn <%= it.variant || 'primary' %>">
+  <%= it.text || 'Click me' %>
+</button>`;
+  writeFileSync(join(componentsDir, 'button.eta'), buttonComponent);
+
+  const cardComponent = `<div class="card">
+  <h3><%= it.title %></h3>
+  <p><%= it.description %></p>
+  <%~ include('_components/button', { text: it.buttonText || 'Learn more', variant: 'secondary' }) %>
+</div>`;
+  writeFileSync(join(componentsDir, 'card.eta'), cardComponent);
+
+  const heroComponent = `<section class="hero">
+  <h1><%= it.headline %></h1>
+  <p><%= it.subheadline %></p>
+  <div class="hero-actions">
+    <%~ include('_components/button', { text: 'Get Started', variant: 'primary' }) %>
+    <%~ include('_components/button', { text: 'Learn More', variant: 'outline' }) %>
+  </div>
+</section>`;
+  writeFileSync(join(componentsDir, 'hero.eta'), heroComponent);
+
+  const gridComponent = `<div class="grid">
+  <% for (const item of it.items) { %>
+    <%~ include('_components/card', { title: item.title, description: item.description, buttonText: item.cta }) %>
+  <% } %>
+</div>`;
+  writeFileSync(join(componentsDir, 'grid.eta'), gridComponent);
+
+  const navComponent = `<nav class="nav">
+  <% for (const link of it.links) { %>
+    <a href="<%= link.href %>" class="<%= link.active ? 'active' : '' %>">
+      <%= link.label %>
+    </a>
+  <% } %>
+</nav>`;
+  writeFileSync(join(componentsDir, 'nav.eta'), navComponent);
+
+  const footerComponent = `<footer class="footer">
+  <div class="footer-grid">
+    <% for (const section of it.sections) { %>
+      <div class="footer-section">
+        <h4><%= section.title %></h4>
+        <%~ include('_components/nav', { links: section.links }) %>
+      </div>
+    <% } %>
+  </div>
+  <%~ include('_components/button', { text: 'Back to top', variant: 'ghost' }) %>
+</footer>`;
+  writeFileSync(join(componentsDir, 'footer.eta'), footerComponent);
+
   // Create stati config
   const configContent = `export default {
   site: {
@@ -123,6 +181,75 @@ This is the home page.
 };
 `;
   writeFileSync(join(baseDir, 'stati.config.js'), configContent);
+}
+
+/**
+ * Create complex pages with multiple nested Eta components.
+ */
+function createComplexFixture(baseDir: string, pageCount: number): void {
+  const siteDir = join(baseDir, 'site');
+
+  // Create complex Eta pages with deeply nested components
+  for (let i = 0; i < pageCount; i++) {
+    const complexPageContent = `---
+title: Complex Page ${i}
+description: Complex page with nested components
+---
+
+<%~ include('_components/hero', {
+  headline: 'Welcome to Complex Page ${i}',
+  subheadline: 'This page demonstrates nested component rendering'
+}) %>
+
+<%~ include('_components/grid', {
+  items: [
+    { title: 'Feature 1', description: 'Description for feature 1', cta: 'Explore' },
+    { title: 'Feature 2', description: 'Description for feature 2', cta: 'Discover' },
+    { title: 'Feature 3', description: 'Description for feature 3', cta: 'Learn' },
+    { title: 'Feature 4', description: 'Description for feature 4', cta: 'Try it' },
+    { title: 'Feature 5', description: 'Description for feature 5', cta: 'Get started' },
+    { title: 'Feature 6', description: 'Description for feature 6', cta: 'View more' }
+  ]
+}) %>
+
+<section class="content">
+  <h2>Additional Content</h2>
+  <div class="cards-row">
+    <%~ include('_components/card', { title: 'Card A', description: 'Standalone card A', buttonText: 'Click A' }) %>
+    <%~ include('_components/card', { title: 'Card B', description: 'Standalone card B', buttonText: 'Click B' }) %>
+  </div>
+</section>
+
+<%~ include('_components/footer', {
+  sections: [
+    {
+      title: 'Company',
+      links: [
+        { href: '/about', label: 'About', active: false },
+        { href: '/careers', label: 'Careers', active: false },
+        { href: '/contact', label: 'Contact', active: false }
+      ]
+    },
+    {
+      title: 'Resources',
+      links: [
+        { href: '/docs', label: 'Documentation', active: false },
+        { href: '/blog', label: 'Blog', active: false },
+        { href: '/support', label: 'Support', active: false }
+      ]
+    },
+    {
+      title: 'Legal',
+      links: [
+        { href: '/privacy', label: 'Privacy', active: false },
+        { href: '/terms', label: 'Terms', active: false }
+      ]
+    }
+  ]
+}) %>
+`;
+    writeFileSync(join(siteDir, `complex-${i}.eta`), complexPageContent);
+  }
 }
 
 /**
@@ -153,9 +280,11 @@ interface BenchmarkSummary {
   nodeVersion: string;
   platform: string;
   pageCount: number;
+  complexPageCount: number;
   coldBuild?: { medianMs: number; p95Ms: number };
   warmBuild?: { medianMs: number; p95Ms: number; cacheHitRate: number };
   incrementalBuild?: { medianMs: number };
+  complexBuild?: { medianMs: number; p95Ms: number };
 }
 
 const benchmarkResults: BenchmarkSummary = {
@@ -163,6 +292,7 @@ const benchmarkResults: BenchmarkSummary = {
   nodeVersion: process.version,
   platform: process.platform,
   pageCount: BENCHMARK_CONFIG.pageCount,
+  complexPageCount: BENCHMARK_CONFIG.complexPageCount,
 };
 
 /**
@@ -377,6 +507,72 @@ describe('Build Performance Benchmarks', () => {
 
       // Incremental builds should be fast
       expect(medianDuration).toBeLessThan(5000);
+    },
+    BENCHMARK_CONFIG.timeout,
+  );
+
+  it(
+    'should measure complex build performance with nested components',
+    async () => {
+      // Add complex pages with nested Eta components to the fixture
+      createComplexFixture(testDir, BENCHMARK_CONFIG.complexPageCount);
+
+      const durations: number[] = [];
+
+      // Warmup
+      for (let i = 0; i < BENCHMARK_CONFIG.warmupRuns; i++) {
+        // Clean between warmup runs
+        const cacheDir = join(testDir, '.stati');
+        const distDir = join(testDir, 'dist');
+        if (existsSync(cacheDir)) rmSync(cacheDir, { recursive: true, force: true });
+        if (existsSync(distDir)) rmSync(distDir, { recursive: true, force: true });
+
+        await build({
+          clean: true,
+          force: true,
+          logger: createSilentLogger(),
+          metrics: { enabled: true },
+        });
+      }
+
+      // Measured runs
+      for (let i = 0; i < BENCHMARK_CONFIG.measuredRuns; i++) {
+        // Clean between runs
+        const cacheDir = join(testDir, '.stati');
+        const distDir = join(testDir, 'dist');
+        if (existsSync(cacheDir)) rmSync(cacheDir, { recursive: true, force: true });
+        if (existsSync(distDir)) rmSync(distDir, { recursive: true, force: true });
+
+        const result = await build({
+          clean: true,
+          force: true,
+          logger: createSilentLogger(),
+          metrics: { enabled: true },
+        });
+
+        expect(result.buildMetrics).toBeDefined();
+        durations.push(result.buildMetrics!.totals.durationMs);
+
+        // Total pages = pageCount + 1 (index) + complexPageCount
+        const expectedPages = BENCHMARK_CONFIG.pageCount + 1 + BENCHMARK_CONFIG.complexPageCount;
+        expect(result.cacheMisses).toBe(expectedPages);
+      }
+
+      const medianDuration = median(durations);
+      const p95Duration = p95(durations);
+
+      // Record results for summary
+      benchmarkResults.complexBuild = {
+        medianMs: medianDuration,
+        p95Ms: p95Duration,
+      };
+
+      console.warn(
+        `[PERF] Complex build (${BENCHMARK_CONFIG.complexPageCount} nested component pages): median=${medianDuration.toFixed(0)}ms, p95=${p95Duration.toFixed(0)}ms`,
+      );
+
+      // Complex builds should complete in reasonable time
+      expect(medianDuration).toBeLessThan(15000); // 15 seconds max
     },
     BENCHMARK_CONFIG.timeout,
   );
