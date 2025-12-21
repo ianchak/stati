@@ -119,7 +119,8 @@ This is the home page.
 
   // Create nested Eta components using Stati's partial syntax
   // Components need the guard pattern since they're processed even when not called as partials
-  const buttonComponent = `<% if (!stati.props) { %><% return; } %><button class="btn <%= stati.props.variant || 'primary' %>">
+  // Note: Eta templates do NOT support partial dynamic attributes, so we use template literals
+  const buttonComponent = `<% if (!stati.props) { %><% return; } %><button class="<%= \`btn \${stati.props.variant || 'primary'}\` %>">
   <%= stati.props.text || 'Click me' %>
 </button>`;
   writeFileSync(join(componentsDir, 'button.eta'), buttonComponent);
@@ -150,7 +151,7 @@ This is the home page.
 
   const navComponent = `<% if (!stati.props) { %><% return; } %><nav class="nav">
   <% for (const link of stati.props.links) { %>
-    <a href="<%= link.href %>" class="<%= link.active ? 'active' : '' %>">
+    <a href="<%= link.href %>" class="<%= \`\${link.active ? 'active' : ''}\` %>">
       <%= link.label %>
     </a>
   <% } %>
