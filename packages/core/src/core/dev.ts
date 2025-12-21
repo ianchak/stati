@@ -674,7 +674,11 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
           return; // Let WebSocket server handle this
         }
 
-        logger.processing?.(`${req.method} ${requestPath}`);
+        // Only log page requests, not static assets (files with extensions)
+        const hasFileExtension = requestPath.includes('.') && !requestPath.endsWith('.html');
+        if (!hasFileExtension) {
+          logger.processing?.(`${req.method} ${requestPath}`);
+        }
 
         try {
           const { content, mimeType, statusCode } = await serveFile(requestPath);
