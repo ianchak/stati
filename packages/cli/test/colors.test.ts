@@ -801,7 +801,8 @@ describe('colors', () => {
       const output = consoleLogSpy.mock.calls[0]?.[0] as string;
       // Should truncate with ellipsis
       expect(output).toContain('...');
-      expect(output?.length).toBeLessThan((output?.length ?? 0) + longUrl.length);
+      // The full long URL should not appear in the output (it should be truncated)
+      expect(output).not.toContain(longUrl);
 
       log.endProgress();
     });

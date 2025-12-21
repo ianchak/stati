@@ -1078,8 +1078,9 @@ export const log = {
       }
       countFolders(navigation);
 
-      // Available lines for children (after accounting for folders and markers)
-      const availableForChildren = MAX_LINES - lineCount - navigation.length - folderCount;
+      // Available lines for children (after accounting for folders and potential truncation markers)
+      // We reserve folderCount * 2 to account for both folder lines and their "...and N more" markers
+      const availableForChildren = MAX_LINES - lineCount - navigation.length - folderCount * 2;
       if (folderCount === 0) return Infinity;
 
       // Distribute evenly, minimum 3 items per folder
@@ -1129,7 +1130,7 @@ export const log = {
 
     // Final truncation notice if we hit the limit
     if (lineCount >= MAX_LINES && totalLines + 2 > MAX_LINES) {
-      console.log(colors.dim(`  (output truncated, ${totalLines - MAX_LINES + 2} more lines)`));
+      console.log(colors.dim(`  (output truncated, ${totalLines + 2 - lineCount} more lines)`));
     }
   },
 };
