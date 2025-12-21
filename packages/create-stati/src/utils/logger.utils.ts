@@ -1,3 +1,10 @@
+import { readFileSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 /**
  * Ice Blue Mono-Hue Palette — Single source of truth for CLI colors
  * Matches the palette in @stati/cli for consistency
@@ -33,6 +40,18 @@ const glyphs = {
 } as const;
 
 /**
+ * ASCII art banner for Stati
+ */
+const STATI_ASCII_ART = [
+  '███████╗████████╗ █████╗ ████████╗██╗',
+  '██╔════╝╚══██╔══╝██╔══██╗╚══██╔══╝██║',
+  '███████╗   ██║   ███████║   ██║   ██║',
+  '╚════██║   ██║   ██╔══██║   ██║   ██║',
+  '███████║   ██║   ██║  ██║   ██║   ██║',
+  '╚══════╝   ╚═╝   ╚═╝  ╚═╝   ╚═╝   ╚═╝',
+];
+
+/**
  * Check if color output is enabled
  */
 function isColorEnabled(): boolean {
@@ -50,6 +69,67 @@ function hexToAnsi(hex: string): string {
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
   return `\x1b[38;2;${r};${g};${b}m`;
+}
+
+/**
+ * Parse hex color to RGB tuple
+ */
+function parseHex(hex: string): [number, number, number] {
+  return [
+    parseInt(hex.slice(1, 3), 16),
+    parseInt(hex.slice(3, 5), 16),
+    parseInt(hex.slice(5, 7), 16),
+  ];
+}
+
+/**
+ * Interpolate between two hex colors
+ */
+function lerpColor(colorA: string, colorB: string, t: number): string {
+  const [r1, g1, b1] = parseHex(colorA);
+  const [r2, g2, b2] = parseHex(colorB);
+  const r = Math.round(r1 + (r2 - r1) * t);
+  const g = Math.round(g1 + (g2 - g1) * t);
+  const b = Math.round(b1 + (b2 - b1) * t);
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+}
+
+/**
+ * Apply horizontal gradient to a line of text
+ */
+function applyHorizontalGradient(line: string): string {
+  if (!isColorEnabled()) return line;
+
+  const chars = [...line];
+  const width = chars.length;
+  if (width === 0) return line;
+
+  return (
+    chars
+      .map((char, i) => {
+        // Skip coloring whitespace
+        if (char.trim() === '') return char;
+
+        const t = i / width;
+        let color: string;
+
+        if (t < 0.33) {
+          // Interpolate brandDim → brand
+          const localT = t / 0.33;
+          color = lerpColor(palette.brandDim, palette.brand, localT);
+        } else if (t < 0.66) {
+          // Hold at brand
+          color = palette.brand;
+        } else {
+          // Interpolate brand → brandStrong
+          const localT = (t - 0.66) / 0.34;
+          color = lerpColor(palette.brand, palette.brandStrong, localT);
+        }
+
+        return `${hexToAnsi(color)}${char}`;
+      })
+      .join('') + '\x1b[0m'
+  );
 }
 
 /**
@@ -73,6 +153,43 @@ const colors = {
 };
 
 /**
+ * Get the create-stati package version
+ */
+function getVersion(): string {
+  try {
+    // Navigate from utils/ up to package.json (../../package.json in dist)
+    const packageJsonPath = join(__dirname, '../../package.json');
+    const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+    return packageJson.version;
+  } catch {
+    return 'unknown';
+  }
+}
+
+/**
+ * Creates a decorative startup banner with ASCII art and horizontal gradient
+ */
+function createStartupBanner(): string {
+  const version = getVersion();
+  const lines: string[] = [''];
+
+  // Apply gradient to each ASCII art line
+  for (const artLine of STATI_ASCII_ART) {
+    lines.push(applyHorizontalGradient(artLine));
+  }
+
+  lines.push('');
+
+  // Version line
+  const versionLine = `${colors.muted('create-stati')} ${colors.brand(`v${version}`)}`;
+  lines.push(versionLine);
+
+  lines.push('');
+
+  return lines.join('\n');
+}
+
+/**
  * Shared logger for create-stati with consistent colored output
  */
 export const logger = {
@@ -91,4 +208,11 @@ export const logger = {
   log: (message: string) => console.log(message),
   warn: (message: string) => console.warn(message),
   logError: (message: string) => console.error(message),
+
+  /**
+   * Display decorative startup banner
+   */
+  startupBanner: () => {
+    console.log(createStartupBanner());
+  },
 };

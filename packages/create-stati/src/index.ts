@@ -110,8 +110,8 @@ export async function runCLI(cliOptions?: Partial<CreateOptions> | null): Promis
 
   const options = cliOptions || {};
 
-  console.log(logger.bold(logger.brand('Welcome to Stati')));
-  console.log(logger.muted('Create a new static site with Stati\n'));
+  // Show decorative startup banner (matches @stati/cli header style)
+  logger.startupBanner();
 
   // Determine what prompts we need based on CLI args
   const prompts = [];
@@ -250,27 +250,28 @@ export async function runCLI(cliOptions?: Partial<CreateOptions> | null): Promis
     ...(options.packageManager && { packageManager: options.packageManager }),
   };
 
-  console.log(logger.brand('Creating Stati project...'));
+  console.log('\n' + logger.brand('Creating Stati project...'));
 
   try {
     const result = await createSite(createOptions);
 
     console.log(
-      logger.success(
-        `${logger.glyphs.success} Successfully created Stati project '${result.projectName}'`,
-      ),
+      '\n' +
+        logger.success(
+          `${logger.glyphs.success} Successfully created Stati project '${result.projectName}'`,
+        ),
     );
 
     // Display next steps
     const pm = createOptions.packageManager || 'npm';
     const devCommand = pm === 'npm' ? 'npm run dev' : `${pm} dev`;
-    console.log(logger.warning('\nNext steps:'));
-    console.log(`  cd ${result.projectName}`);
+    console.log(logger.muted('\nNext steps:'));
+    console.log(logger.brand(`  cd ${result.projectName}`));
     if (!createOptions.install) {
-      console.log('  npm install');
+      console.log(logger.brand('  npm install'));
     }
-    console.log(`  ${devCommand}`);
-    console.log(`\n${logger.glyphs.bullet} Happy building with Stati!`);
+    console.log(logger.brand(`  ${devCommand}`));
+    console.log(logger.muted(`\n${logger.glyphs.bullet} Happy building with Stati!`));
   } catch (error) {
     console.error(logger.error(`${logger.glyphs.error} Failed to create Stati site`));
     console.error(logger.error(error instanceof Error ? error.message : 'Unknown error'));
