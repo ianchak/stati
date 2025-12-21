@@ -1,0 +1,219 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { logger } from '../../src/utils/logger.utils.js';
+
+describe('logger.utils', () => {
+  const originalEnv = process.env;
+  let consoleLogSpy: ReturnType<typeof vi.spyOn>;
+  let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    // Force color output in tests
+    process.env = { ...originalEnv, FORCE_COLOR: '1' };
+    delete process.env.NO_COLOR;
+  });
+
+  afterEach(() => {
+    consoleLogSpy.mockRestore();
+    consoleWarnSpy.mockRestore();
+    consoleErrorSpy.mockRestore();
+    process.env = originalEnv;
+  });
+
+  describe('color functions', () => {
+    it('should have brand color function', () => {
+      const result = logger.brand('test');
+      expect(result).toContain('\x1b[');
+      expect(result).toContain('test');
+      expect(result).toContain('\x1b[0m');
+    });
+
+    it('should have success color function', () => {
+      const result = logger.success('success message');
+      expect(result).toContain('\x1b[');
+      expect(result).toContain('success message');
+    });
+
+    it('should have error color function', () => {
+      const result = logger.error('error message');
+      expect(result).toContain('\x1b[');
+      expect(result).toContain('error message');
+    });
+
+    it('should have warning color function', () => {
+      const result = logger.warning('warning message');
+      expect(result).toContain('\x1b[');
+      expect(result).toContain('warning message');
+    });
+
+    it('should have muted color function', () => {
+      const result = logger.muted('muted text');
+      expect(result).toContain('\x1b[');
+      expect(result).toContain('muted text');
+    });
+
+    it('should have bold formatting function', () => {
+      const result = logger.bold('bold text');
+      expect(result).toContain('\x1b[1m');
+      expect(result).toContain('bold text');
+    });
+  });
+
+  describe('glyphs', () => {
+    it('should have success glyph', () => {
+      expect(logger.glyphs.success).toBe('✓');
+    });
+
+    it('should have error glyph', () => {
+      expect(logger.glyphs.error).toBe('×');
+    });
+
+    it('should have warning glyph', () => {
+      expect(logger.glyphs.warning).toBe('!');
+    });
+
+    it('should have bullet glyph', () => {
+      expect(logger.glyphs.bullet).toBe('•');
+    });
+  });
+
+  describe('logging methods', () => {
+    it('should log messages with log method', () => {
+      logger.log('test message');
+      expect(consoleLogSpy).toHaveBeenCalledWith('test message');
+    });
+
+    it('should log warnings with warn method', () => {
+      logger.warn('warning message');
+      expect(consoleWarnSpy).toHaveBeenCalledWith('warning message');
+    });
+
+    it('should log errors with logError method', () => {
+      logger.logError('error message');
+      expect(consoleErrorSpy).toHaveBeenCalledWith('error message');
+    });
+  });
+
+  describe('NO_COLOR environment variable', () => {
+    beforeEach(() => {
+      process.env = { ...originalEnv, NO_COLOR: '1' };
+      delete process.env.FORCE_COLOR;
+    });
+
+    afterEach(() => {
+      process.env = originalEnv;
+    });
+
+    it('should not apply ANSI codes when NO_COLOR is set', () => {
+      const result = logger.brand('test');
+      // When NO_COLOR is set, should return plain text without ANSI codes
+      expect(result).toBe('test');
+      expect(result).not.toContain('\x1b[');
+    });
+
+    it('should not apply bold formatting when NO_COLOR is set', () => {
+      const result = logger.bold('bold text');
+      expect(result).toBe('bold text');
+      expect(result).not.toContain('\x1b[1m');
+    });
+
+    it('should not apply success color when NO_COLOR is set', () => {
+      const result = logger.success('success');
+      expect(result).toBe('success');
+      expect(result).not.toContain('\x1b[');
+    });
+
+    it('should not apply error color when NO_COLOR is set', () => {
+      const result = logger.error('error');
+      expect(result).toBe('error');
+      expect(result).not.toContain('\x1b[');
+    });
+
+    it('should not apply warning color when NO_COLOR is set', () => {
+      const result = logger.warning('warning');
+      expect(result).toBe('warning');
+      expect(result).not.toContain('\x1b[');
+    });
+
+    it('should not apply muted color when NO_COLOR is set', () => {
+      const result = logger.muted('muted');
+      expect(result).toBe('muted');
+      expect(result).not.toContain('\x1b[');
+    });
+  });
+
+  describe('non-TTY environment', () => {
+    let originalIsTTY: boolean | undefined;
+
+    beforeEach(() => {
+      originalIsTTY = process.stdout.isTTY;
+      Object.defineProperty(process.stdout, 'isTTY', {
+        value: false,
+        configurable: true,
+      });
+      // Remove FORCE_COLOR so we rely on TTY detection
+      process.env = { ...originalEnv };
+      delete process.env.FORCE_COLOR;
+      delete process.env.NO_COLOR;
+    });
+
+    afterEach(() => {
+      Object.defineProperty(process.stdout, 'isTTY', {
+        value: originalIsTTY,
+        configurable: true,
+      });
+      process.env = originalEnv;
+    });
+
+    it('should not apply ANSI codes when stdout is not a TTY', () => {
+      const result = logger.brand('test');
+      expect(result).toBe('test');
+      expect(result).not.toContain('\x1b[');
+    });
+
+    it('should not apply bold when stdout is not a TTY', () => {
+      const result = logger.bold('bold');
+      expect(result).toBe('bold');
+      expect(result).not.toContain('\x1b[1m');
+    });
+  });
+
+  describe('FORCE_COLOR environment variable', () => {
+    let originalIsTTY: boolean | undefined;
+
+    beforeEach(() => {
+      originalIsTTY = process.stdout.isTTY;
+      Object.defineProperty(process.stdout, 'isTTY', {
+        value: false,
+        configurable: true,
+      });
+      // Set FORCE_COLOR to override non-TTY
+      process.env = { ...originalEnv, FORCE_COLOR: '1' };
+      delete process.env.NO_COLOR;
+    });
+
+    afterEach(() => {
+      Object.defineProperty(process.stdout, 'isTTY', {
+        value: originalIsTTY,
+        configurable: true,
+      });
+      process.env = originalEnv;
+    });
+
+    it('should apply ANSI codes when FORCE_COLOR is set even if not TTY', () => {
+      const result = logger.brand('test');
+      expect(result).toContain('\x1b[');
+      expect(result).toContain('test');
+    });
+
+    it('should apply bold when FORCE_COLOR is set', () => {
+      const result = logger.bold('bold');
+      expect(result).toContain('\x1b[1m');
+      expect(result).toContain('bold');
+    });
+  });
+});

@@ -836,5 +836,229 @@ describe('colors', () => {
       // Should have written ANSI escape codes to move cursor up
       expect(stdoutWriteSpy).toHaveBeenCalled();
     });
+
+    it('should show errors line in summary when errors occurred', () => {
+      log.startProgress(5);
+
+      log.updateProgress('rendered', '/page-1/', 100);
+      log.updateProgress('error', '/broken-page/');
+      log.updateProgress('rendered', '/page-2/', 100);
+
+      log.endProgress();
+      consoleLogSpy.mockClear();
+
+      log.showRenderingSummary();
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+
+      // Should show error count
+      expect(output).toContain('Errors');
+      expect(output).toContain('1');
+    });
+
+    it('should format time correctly for render times >= 1 second in summary', () => {
+      log.startProgress(3);
+
+      log.updateProgress('rendered', '/page-1/', 1500); // 1.5s
+      log.updateProgress('rendered', '/page-2/', 2500); // 2.5s
+      log.updateProgress('rendered', '/page-3/', 3500); // 3.5s
+
+      log.endProgress();
+      consoleLogSpy.mockClear();
+
+      log.showRenderingSummary();
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+
+      // Average should be 2.5s, formatted as seconds
+      expect(output).toContain('avg');
+      expect(output).toContain('s'); // Should use seconds
+    });
+
+    it('should format total time correctly for times >= 1 second', () => {
+      log.startProgress(1);
+
+      log.updateProgress('rendered', '/page/', 50);
+
+      log.endProgress();
+      consoleLogSpy.mockClear();
+
+      log.showRenderingSummary();
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+
+      // Should show total time and cache hit rate
+      expect(output).toContain('Total');
+      expect(output).toContain('Cache hit rate');
+    });
+
+    it('should handle progress update when not active', () => {
+      // Don't start progress, just try to update
+      log.updateProgress('rendered', '/test/', 100);
+
+      // Should not throw and should not log anything
+      expect(consoleLogSpy).not.toHaveBeenCalled();
+    });
+
+    it('should handle end progress when not active', () => {
+      // Don't start progress, just try to end
+      log.endProgress();
+
+      // Should not throw and should not write cursor movement codes
+      expect(stdoutWriteSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('ASCII icon mode', () => {
+    const originalEnv = process.env;
+
+    beforeEach(() => {
+      process.env = { ...originalEnv, FORCE_COLOR: '1', STATI_ASCII_ICONS: '1' };
+    });
+
+    afterEach(() => {
+      process.env = originalEnv;
+    });
+
+    it('should use ASCII glyphs when STATI_ASCII_ICONS is set', () => {
+      log.success('test message');
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+      // ASCII mode uses 'OK' instead of '✓'
+      expect(output).toContain('OK');
+    });
+
+    it('should use ASCII arrows for file operations', () => {
+      log.file('copy', '/path/to/file.ts');
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+      // Should still use = for copy
+      expect(output).toContain('=');
+    });
+  });
+
+  describe('NO_COLOR environment variable', () => {
+    const originalEnv = process.env;
+
+    beforeEach(() => {
+      process.env = { ...originalEnv, NO_COLOR: '1' };
+      delete process.env.FORCE_COLOR;
+    });
+
+    afterEach(() => {
+      process.env = originalEnv;
+    });
+
+    it('should not apply ANSI codes when NO_COLOR is set', () => {
+      const result = colors.brand('test');
+      // When NO_COLOR is set, should return plain text without ANSI codes
+      expect(result).toBe('test');
+      expect(result).not.toContain('\x1b[');
+    });
+
+    it('should not apply bold formatting when NO_COLOR is set', () => {
+      const result = colors.bold('bold text');
+      expect(result).toBe('bold text');
+      expect(result).not.toContain('\x1b[1m');
+    });
+
+    it('should not apply underline formatting when NO_COLOR is set', () => {
+      const result = colors.underline('underlined');
+      expect(result).toBe('underlined');
+      expect(result).not.toContain('\x1b[4m');
+    });
+
+    it('should format numbers without ANSI codes when NO_COLOR is set', () => {
+      const result = colors.number(42);
+      expect(result).toBe('42');
+      expect(result).not.toContain('\x1b[');
+    });
+  });
+
+  describe('command info box plain text fallback', () => {
+    const originalEnv = process.env;
+
+    beforeEach(() => {
+      process.env = { ...originalEnv, NO_COLOR: '1' };
+      delete process.env.FORCE_COLOR;
+    });
+
+    afterEach(() => {
+      process.env = originalEnv;
+    });
+
+    it('should render plain text command info when NO_COLOR is set', () => {
+      log.commandInfo('build', [{ name: 'Force', value: true, isDefault: false }]);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+      // Plain text fallback should not have box drawing characters
+      expect(output).toContain('Command');
+      expect(output).toContain('build');
+    });
+  });
+
+  describe('slowest pages formatting', () => {
+    let stdoutWriteSpy: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      stdoutWriteSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true) as any;
+    });
+
+    afterEach(() => {
+      stdoutWriteSpy.mockRestore();
+    });
+
+    it('should format slowest page times >= 1 second correctly', () => {
+      log.startProgress(3);
+
+      log.updateProgress('rendered', '/slow-page/', 1500);
+      log.updateProgress('rendered', '/fast-page/', 100);
+      log.updateProgress('rendered', '/medium-page/', 500);
+
+      log.endProgress();
+      consoleLogSpy.mockClear();
+
+      log.showRenderingSummary();
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+
+      // Should format 1500ms as 1.50s
+      expect(output).toContain('/slow-page/');
+      expect(output).toMatch(/1\.50?s/); // 1.5s or 1.50s
+    });
+
+    it('should limit slowest pages to top 5', () => {
+      log.startProgress(10);
+
+      // Render 10 pages with different timings
+      for (let i = 0; i < 10; i++) {
+        log.updateProgress('rendered', `/page-${i}/`, (i + 1) * 100);
+      }
+
+      log.endProgress();
+      consoleLogSpy.mockClear();
+
+      log.showRenderingSummary();
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+
+      // Should show the slowest pages but only up to 5
+      expect(output).toContain('/page-9/'); // 1000ms - slowest
+      expect(output).toContain('/page-8/'); // 900ms
+      expect(output).toContain('/page-7/'); // 800ms
+      expect(output).toContain('/page-6/'); // 700ms
+      expect(output).toContain('/page-5/'); // 600ms
+      // Should not show pages 0-4 (faster ones)
+      expect(output).not.toContain('/page-0/');
+    });
   });
 });
