@@ -204,4 +204,4 @@ The `typecheck` script is added to `package.json` for validating your TypeScript
 - Add content to the `site/` directory
 - Customize the layout in `site/layout.eta`
 - Configure your site in `stati.config.js` (or `stati.config.ts` for TypeScript projects)
-- Learn more about [TypeScript support](/configuration/typescript/)
+- Learn more about [TypeScript support](/configuration/typescript)

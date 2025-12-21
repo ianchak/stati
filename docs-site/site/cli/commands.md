@@ -430,4 +430,4 @@ fi
 
 The Stati CLI is designed to be both simple for basic use and powerful for advanced workflows. Whether you're developing locally, deploying to production, or integrating with CI/CD systems, the CLI provides the tools you need for efficient static site generation.
 
-Next, learn about the [Scaffolder](/cli/scaffolder/) for creating new Stati projects, or explore [Development Workflows](/cli/development/) for advanced development techniques.
+Next, learn about the [Scaffolder](/cli/scaffolder) for creating new Stati projects, or explore [Development Workflows](/cli/development) for advanced development techniques.

@@ -94,9 +94,9 @@ export default defineConfig({
 
 ## Learning Resources
 
-- **Getting Started Guide** - [/getting-started/installation/](/getting-started/installation/)
-- **Configuration Reference** - [/configuration/file/](/configuration/file/)
-- **CLI Commands** - [/cli/commands/](/cli/commands/)
+- **Getting Started Guide** - [/getting-started/installation](/getting-started/installation)
+- **Configuration Reference** - [/configuration/file](/configuration/file)
+- **CLI Commands** - [/cli/commands](/cli/commands)
 
 ## Community Examples
 

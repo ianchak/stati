@@ -68,7 +68,7 @@ This creates a project with:
 - `tsconfig.json` - TypeScript compiler configuration
 - `src/main.ts` - Entry point for your TypeScript code
 
-Run `npm run typecheck` to validate your TypeScript code. Learn more in the [TypeScript configuration guide](/configuration/typescript/).
+Run `npm run typecheck` to validate your TypeScript code. Learn more in the [TypeScript configuration guide](/configuration/typescript).
 
 > **Tip:** If you choose Tailwind CSS, the scaffolder sets up Stati's built-in Tailwind integration in the dev script. This runs both the dev server and Tailwind watcher in a single process—no need for separate build scripts or process managers!
 
@@ -136,6 +136,6 @@ Your site should be available at `http://localhost:3000`.
 
 ## Next Steps
 
-- Learn about the [Project Structure](/getting-started/project-structure/)
-- Follow the [Quick Start Guide](/getting-started/quick-start/)
-- Explore [Core Concepts](/core-concepts/overview/)
+- Learn about the [Project Structure](/getting-started/project-structure)
+- Follow the [Quick Start Guide](/getting-started/quick-start)
+- Explore [Core Concepts](/core-concepts/overview)

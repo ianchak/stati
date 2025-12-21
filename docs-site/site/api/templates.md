@@ -62,7 +62,7 @@ interface SiteConfig {
 
 Front matter values are exposed through `stati.page`. Additional properties you place on `site` in `stati.config.ts` are available at runtime, but the public type includes the three fields above by default.
 
-The `nav` object provides helper methods for working with navigation. See [Navigation API](/api/navigation/) for details on `getTree()`, `findNode()`, `getBreadcrumbs()`, and other navigation helpers.
+The `nav` object provides helper methods for working with navigation. See [Navigation API](/api/navigation) for details on `getTree()`, `findNode()`, `getBreadcrumbs()`, and other navigation helpers.
 
 ## Built-in Helpers
 
@@ -114,7 +114,7 @@ stati.propValue(...args: (string | number | boolean | null | undefined | Record<
 - For single concatenated values (like `data-id="item-42"`), use template literals: `data-id="<%=`item-${id}`%>"`.
 - `propValue()` also tracks Tailwind classes for inventory when Tailwind integration is enabled, ensuring dynamically-generated classes are included in the CSS build.
 
-For more details on Eta template limitations and best practices, see [Template Configuration](/configuration/templates/).
+For more details on Eta template limitations and best practices, see [Template Configuration](/configuration/templates).
 
 ## Text Processing Utilities
 
@@ -223,7 +223,7 @@ Use filters in templates by calling them as functions from the `stati` context:
 
 ## Related Documentation
 
-- [TypeScript Types](/api/types/) - Full type definitions for template context
-- [Build Hooks](/api/hooks/) - Customize rendering with lifecycle hooks
-- [Template Configuration](/configuration/templates/) - Configure template engine options
-- [Navigation API](/api/navigation/) - Working with navigation data in templates
+- [TypeScript Types](/api/types) - Full type definitions for template context
+- [Build Hooks](/api/hooks) - Customize rendering with lifecycle hooks
+- [Template Configuration](/configuration/templates) - Configure template engine options
+- [Navigation API](/api/navigation) - Working with navigation data in templates

@@ -159,7 +159,7 @@ Content older than `maxAgeCapDays` will continue to use the last applicable agin
 
 ## Cache Invalidation
 
-Stati provides cache invalidation through the `stati invalidate` CLI command. See [CLI Commands](/cli/commands/) for full documentation.
+Stati provides cache invalidation through the `stati invalidate` CLI command. See [CLI Commands](/cli/commands) for full documentation.
 
 ### Invalidation Patterns
 

@@ -89,6 +89,6 @@ Yes. Stati is TypeScript-first:
 
 ## Related Resources
 
-- [Glossary](/glossary/) – Definitions of key terms used in Stati
-- [Core Concepts](/core-concepts/overview/) – Deep dive into Stati's architecture
-- [Configuration](/configuration/file/) – Full configuration reference
+- [Glossary](/glossary) – Definitions of key terms used in Stati
+- [Core Concepts](/core-concepts/overview) – Deep dive into Stati's architecture
+- [Configuration](/configuration/file) – Full configuration reference

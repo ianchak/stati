@@ -30,9 +30,9 @@ seo:
 
 ## Quick Overview
 
-1. **[Installation](/getting-started/installation/)** - Install Stati and create your first site
-2. **[Project Structure](/getting-started/project-structure/)** - Understanding how Stati organizes your files
-3. **[Quick Start Guide](/getting-started/quick-start/)** - Build your first site step by step
+1. **[Installation](/getting-started/installation)** - Install Stati and create your first site
+2. **[Project Structure](/getting-started/project-structure)** - Understanding how Stati organizes your files
+3. **[Quick Start Guide](/getting-started/quick-start)** - Build your first site step by step
 
 ## Philosophy
 
@@ -43,11 +43,11 @@ Stati follows these core principles:
 - **Developer experience first** - Great tooling and debugging experience
 - **Modern standards** - Built with modern web technologies
 
-Ready to get started? Head over to the [Installation guide](/getting-started/installation/).
+Ready to get started? Head over to the [Installation guide](/getting-started/installation).
 
 ## Related Topics
 
-- [Installation](/getting-started/installation/) – Install Stati and set up your environment
-- [Project Structure](/getting-started/project-structure/) – Understanding how Stati organizes files
-- [Quick Start Guide](/getting-started/quick-start/) – Build your first site step by step
-- [Core Concepts](/core-concepts/overview/) – Deep dive into Stati's architecture
+- [Installation](/getting-started/installation) – Install Stati and set up your environment
+- [Project Structure](/getting-started/project-structure) – Understanding how Stati organizes files
+- [Quick Start Guide](/getting-started/quick-start) – Build your first site step by step
+- [Core Concepts](/core-concepts/overview) – Deep dive into Stati's architecture

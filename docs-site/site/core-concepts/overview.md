@@ -24,11 +24,11 @@ Stati is built on several key concepts that work together to create a powerful y
 
 Stati combines modern web development tools with proven static site generation patterns:
 
-- **[Filesystem-based Routing](/core-concepts/routing/)** - Your directory structure becomes your site structure
-- **[Templates & Layouts](/core-concepts/templates/)** - Flexible templating with Eta and layout inheritance
-- **[Markdown Pipeline](/core-concepts/markdown/)** - Enhanced Markdown processing with extensible plugins
-- **[Incremental Static Generation (ISG)](/core-concepts/isg/)** - Smart caching and selective rebuilds
-- **[Static Assets & Bundling](/core-concepts/static-assets/)** - Modern asset processing
+- **[Filesystem-based Routing](/core-concepts/routing)** - Your directory structure becomes your site structure
+- **[Templates & Layouts](/core-concepts/templates)** - Flexible templating with Eta and layout inheritance
+- **[Markdown Pipeline](/core-concepts/markdown)** - Enhanced Markdown processing with extensible plugins
+- **[Incremental Static Generation (ISG)](/core-concepts/isg)** - Smart caching and selective rebuilds
+- **[Static Assets & Bundling](/core-concepts/static-assets)** - Modern asset processing
 
 ## The Stati Philosophy
 
@@ -106,12 +106,12 @@ The final result is a fully static site optimized for:
 
 Each core concept builds on the others to create Stati's unique approach to static site generation. As you dive deeper into each topic, you'll discover how they work together to create a powerful and flexible system.
 
-Start with [Filesystem-based Routing](/core-concepts/routing/) to understand how Stati maps your content to URLs, then explore the other concepts to master the full Stati workflow.
+Start with [Filesystem-based Routing](/core-concepts/routing) to understand how Stati maps your content to URLs, then explore the other concepts to master the full Stati workflow.
 
 ## Related Topics
 
-- [Templates & Layouts](/core-concepts/templates/) – Eta templates and layout inheritance
-- [Markdown Pipeline](/core-concepts/markdown/) – Markdown processing and plugins
-- [Incremental Static Generation](/core-concepts/isg/) – Smart caching and rebuilds
-- [Static Assets](/core-concepts/static-assets/) – Asset handling and bundling
-- [Glossary](/glossary/) – Definitions of key terms and concepts
+- [Templates & Layouts](/core-concepts/templates) – Eta templates and layout inheritance
+- [Markdown Pipeline](/core-concepts/markdown) – Markdown processing and plugins
+- [Incremental Static Generation](/core-concepts/isg) – Smart caching and rebuilds
+- [Static Assets](/core-concepts/static-assets) – Asset handling and bundling
+- [Glossary](/glossary) – Definitions of key terms and concepts

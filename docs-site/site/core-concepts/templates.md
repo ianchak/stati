@@ -572,4 +572,4 @@ You can access Stati's version information in templates using `stati.generator.v
 </footer>
 ```
 
-Understanding templates and layouts is crucial for creating maintainable Stati sites. Next, learn about the [Markdown Pipeline](/core-concepts/markdown/) to understand how your content gets processed.
+Understanding templates and layouts is crucial for creating maintainable Stati sites. Next, learn about the [Markdown Pipeline](/core-concepts/markdown) to understand how your content gets processed.
