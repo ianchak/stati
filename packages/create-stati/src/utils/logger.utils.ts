@@ -37,6 +37,7 @@ const glyphs = {
   error: '×',
   warning: '!',
   bullet: '•',
+  arrow: '▸',
 } as const;
 
 /**
@@ -188,6 +189,85 @@ function createStartupBanner(): string {
 
   return lines.join('\n');
 }
+
+/**
+ * Formatted log functions for common CLI output patterns
+ * Matches the pattern in @stati/cli for consistency
+ */
+export const log = {
+  /**
+   * Success message with checkmark glyph
+   */
+  success: (message: string) => {
+    console.log(colors.success(glyphs.success) + ' ' + message);
+  },
+
+  /**
+   * Error message with cross glyph
+   */
+  error: (message: string) => {
+    console.error(colors.error(glyphs.error) + ' ' + message);
+  },
+
+  /**
+   * Warning message with warning glyph
+   */
+  warning: (message: string) => {
+    console.warn(colors.warning(glyphs.warning) + ' ' + message);
+  },
+
+  /**
+   * Info/brand message
+   */
+  info: (message: string) => {
+    console.log(colors.brand(message));
+  },
+
+  /**
+   * Muted/secondary message
+   */
+  muted: (message: string) => {
+    console.log(colors.muted(message));
+  },
+
+  /**
+   * Step instruction (indented with arrow)
+   */
+  step: (message: string) => {
+    console.log(colors.brand(`  ${message}`));
+  },
+
+  /**
+   * Hint/tip message (muted with bullet)
+   */
+  hint: (message: string) => {
+    console.log(colors.muted(`${glyphs.arrow} ${message}`));
+  },
+
+  /**
+   * Blank line
+   */
+  newline: () => {
+    console.log();
+  },
+
+  /**
+   * Display decorative startup banner
+   */
+  startupBanner: () => {
+    console.log(createStartupBanner());
+  },
+
+  /**
+   * Format text as bold
+   */
+  bold: colors.bold,
+
+  /**
+   * Format text with brand color
+   */
+  brand: colors.brand,
+};
 
 /**
  * Shared logger for create-stati with consistent colored output

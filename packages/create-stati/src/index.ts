@@ -2,7 +2,7 @@
 import inquirer from 'inquirer';
 import { createSite, detectAvailablePackageManagers, ALLOWED_PACKAGE_MANAGERS } from './create.js';
 import type { CreateOptions, PackageManager } from './create.js';
-import { logger } from './utils/index.js';
+import { log } from './utils/index.js';
 
 /**
  * Validate that a string is a valid package manager
@@ -16,7 +16,7 @@ export async function parseArgs(
 ): Promise<Partial<CreateOptions> | null> {
   // Check for help flag
   if (args.includes('--help') || args.includes('-h')) {
-    console.log(`${logger.bold('create-stati')} - Create a new Stati static site
+    console.log(`${log.bold('create-stati')} - Create a new Stati static site
 
 Usage:
   create-stati [project-name] [options]
@@ -72,19 +72,15 @@ Examples:
           const pmValue = value || args[++i];
           // Check for missing or empty value
           if (!pmValue || pmValue.trim() === '') {
-            console.error(
-              logger.error(
-                `Missing value for --package-manager. Allowed values: ${ALLOWED_PACKAGE_MANAGERS.join(', ')}`,
-              ),
+            log.error(
+              `Missing value for --package-manager. Allowed values: ${ALLOWED_PACKAGE_MANAGERS.join(', ')}`,
             );
             process.exit(1);
           } else if (isValidPackageManager(pmValue)) {
             options.packageManager = pmValue;
           } else {
-            console.error(
-              logger.error(
-                `Invalid package manager: '${pmValue}'. Allowed values: ${ALLOWED_PACKAGE_MANAGERS.join(', ')}`,
-              ),
+            log.error(
+              `Invalid package manager: '${pmValue}'. Allowed values: ${ALLOWED_PACKAGE_MANAGERS.join(', ')}`,
             );
             process.exit(1);
           }
@@ -111,7 +107,7 @@ export async function runCLI(cliOptions?: Partial<CreateOptions> | null): Promis
   const options = cliOptions || {};
 
   // Show decorative startup banner (matches @stati/cli header style)
-  logger.startupBanner();
+  log.startupBanner();
 
   // Determine what prompts we need based on CLI args
   const prompts = [];
@@ -250,31 +246,29 @@ export async function runCLI(cliOptions?: Partial<CreateOptions> | null): Promis
     ...(options.packageManager && { packageManager: options.packageManager }),
   };
 
-  console.log('\n' + logger.brand('Creating Stati project...'));
+  log.newline();
+  log.info('Creating Stati project...');
 
   try {
     const result = await createSite(createOptions);
 
-    console.log(
-      '\n' +
-        logger.success(
-          `${logger.glyphs.success} Successfully created Stati project '${result.projectName}'`,
-        ),
-    );
+    log.newline();
+    log.success(`Project '${result.projectName}' created successfully!`);
 
     // Display next steps
     const pm = createOptions.packageManager || 'npm';
     const devCommand = pm === 'npm' ? 'npm run dev' : `${pm} dev`;
-    console.log(logger.muted('\nNext steps:'));
-    console.log(logger.brand(`  cd ${result.projectName}`));
+    log.muted('\nNext steps:');
+    log.step(`cd ${result.projectName}`);
     if (!createOptions.install) {
-      console.log(logger.brand('  npm install'));
+      log.step('npm install');
     }
-    console.log(logger.brand(`  ${devCommand}`));
-    console.log(logger.muted(`\n${logger.glyphs.bullet} Happy building with Stati!`));
+    log.step(devCommand);
+    log.newline();
+    log.hint('Happy building with Stati!');
   } catch (error) {
-    console.error(logger.error(`${logger.glyphs.error} Failed to create Stati site`));
-    console.error(logger.error(error instanceof Error ? error.message : 'Unknown error'));
+    log.error('Failed to create Stati site');
+    log.error(error instanceof Error ? error.message : 'Unknown error');
     process.exit(1);
   }
 }
@@ -292,7 +286,8 @@ if (
     import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/')))
 ) {
   main().catch((err: unknown) => {
-    console.error(logger.error('An error occurred:'), err);
+    log.error('An error occurred:');
+    console.error(err);
     process.exit(1);
   });
 }
