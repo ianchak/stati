@@ -1,6 +1,10 @@
 /**
  * Ice Blue Mono-Hue Palette — Single source of truth for CLI colors
  * Matches the palette in @stati/cli for consistency
+ *
+ * NOTE: This palette is intentionally duplicated from @stati/cli to keep
+ * create-stati as a standalone package without runtime dependencies on the CLI.
+ * When updating colors, ensure both files stay in sync.
  */
 const palette = {
   // Brand hue family (Ice Blue)

@@ -68,7 +68,8 @@ function isColorEnabled(): boolean {
  */
 type IconMode = 'unicode' | 'ascii';
 function getIconMode(): IconMode {
-  if (process.env.STATI_ASCII_ICONS === '1') return 'ascii';
+  const asciiEnv = process.env.STATI_ASCII_ICONS?.toLowerCase();
+  if (asciiEnv === '1' || asciiEnv === 'true' || asciiEnv === 'yes') return 'ascii';
   return 'unicode';
 }
 
@@ -1084,7 +1085,10 @@ export const log = {
 
       // Available lines for children (after accounting for folders and potential truncation markers)
       // We reserve folderCount * 2 to account for both folder lines and their "...and N more" markers
-      const availableForChildren = MAX_LINES - lineCount - navigation.length - folderCount * 2;
+      // Additional buffer of 2 lines ensures final truncation notice can always be shown
+      const truncationBuffer = 2;
+      const availableForChildren =
+        MAX_LINES - lineCount - navigation.length - folderCount * 2 - truncationBuffer;
       if (folderCount === 0) return Infinity;
 
       // Distribute evenly, minimum 3 items per folder to ensure meaningful display
