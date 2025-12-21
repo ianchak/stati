@@ -447,8 +447,8 @@ describe('build.ts', () => {
 
       await build({ logger: loggerWithFile });
 
-      // Should use logger.file instead of logger.processing
-      expect(mockFileLogger).toHaveBeenCalledWith('copy', 'script.js');
+      // Should use logger.file instead of logger.processing (with file size)
+      expect(mockFileLogger).toHaveBeenCalledWith('copy', 'script.js', expect.any(Number));
     });
 
     it('should not copy static assets when static directory does not exist', async () => {

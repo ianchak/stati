@@ -28,7 +28,6 @@ const glyphs = {
   success: '✓',
   warning: '!',
   error: '×',
-  info: '•',
   bullet: '•',
   continuation: '↳',
   arrow: '→',
@@ -44,7 +43,6 @@ const glyphsAscii = {
   success: 'OK',
   warning: 'WARN',
   error: 'ERR',
-  info: '*',
   bullet: '*',
   continuation: '->',
   arrow: '->',
@@ -119,6 +117,19 @@ function lerpColor(colorA: string, colorB: string, t: number): string {
 function stripAnsi(text: string): string {
   // eslint-disable-next-line no-control-regex
   return text.replace(/\x1b\[[0-9;]*m/g, '');
+}
+
+/**
+ * Format file size in human-readable format
+ */
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  } else if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(2)} KB`;
+  } else {
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  }
 }
 
 /**
@@ -764,7 +775,16 @@ class ProgressBarManager {
 const progressBar = new ProgressBarManager();
 
 /**
- * Creates formatted build statistics without using a table
+ * Formats bytes into a human-readable string with appropriate units
+ */
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+/**
+ * Creates formatted build summary
  */
 function createStatsTable(stats: {
   totalPages: number;
@@ -774,22 +794,25 @@ function createStatsTable(stats: {
   cacheHits?: number;
   cacheMisses?: number;
 }): string {
-  const sizeKB = (stats.outputSizeBytes / 1024).toFixed(1);
   const timeSeconds = (stats.buildTimeMs / 1000).toFixed(2);
+  const pagesPerSecond =
+    stats.buildTimeMs > 0 ? (stats.totalPages / (stats.buildTimeMs / 1000)).toFixed(1) : '0';
 
-  // Create formatted lines for statistics
+  // Create formatted lines for summary
   const lines: string[] = [];
 
   // Header
-  lines.push(colors.brand('Build Statistics'));
+  lines.push(colors.brand('Build Summary'));
 
-  // Build statistics
-  lines.push(`${colors.muted('  Build time:')} ${colors.brandStrong(timeSeconds)}s`);
-  lines.push(`${colors.muted('  Pages built:')} ${colors.brandStrong(String(stats.totalPages))}`);
+  // Build summary
   lines.push(
-    `${colors.muted('  Assets copied:')} ${colors.brandStrong(String(stats.assetsCount))}`,
+    `${colors.muted('  Pages:')} ${colors.brandStrong(String(stats.totalPages))} ${colors.muted(`(${pagesPerSecond}/s)`)}`,
   );
-  lines.push(`${colors.muted('  Output size:')} ${colors.brandStrong(sizeKB)} KB`);
+  lines.push(`${colors.muted('  Assets:')} ${colors.brandStrong(String(stats.assetsCount))}`);
+  lines.push(
+    `${colors.muted('  Output:')} ${colors.brandStrong(formatBytes(stats.outputSizeBytes))}`,
+  );
+  lines.push(`${colors.muted('  Time:')} ${colors.brandStrong(timeSeconds)}s`);
 
   // Add cache statistics if available
   if (stats.cacheHits !== undefined && stats.cacheMisses !== undefined) {
@@ -797,7 +820,7 @@ function createStatsTable(stats: {
     const hitRate =
       totalCacheRequests > 0 ? ((stats.cacheHits / totalCacheRequests) * 100).toFixed(1) : '0';
     lines.push(
-      `${colors.muted('  Cache hits:')} ${colors.brandStrong(String(stats.cacheHits))}/${colors.brandStrong(String(totalCacheRequests))} (${colors.brand(hitRate + '%')})`,
+      `${colors.muted('  Cache:')} ${colors.brandStrong(String(stats.cacheHits))}/${String(totalCacheRequests)} hits ${colors.muted(`(${hitRate}%)`)}`,
     );
   }
 
@@ -999,14 +1022,16 @@ export const log = {
   /**
    * File operation with proper styling
    */
-  file: (operation: string, path: string) => {
+  file: (operation: string, path: string, sizeInBytes?: number) => {
     const glyph =
       operation === 'copy'
         ? getGlyph('fileCopy')
         : operation === 'create'
           ? getGlyph('fileCreate')
           : getGlyph('fileUpdate');
-    console.log(colors.muted(`  ${glyph} ${operation} ${colors.file(path)}`));
+    const sizeStr =
+      sizeInBytes !== undefined ? ` ${colors.dim(`(${formatFileSize(sizeInBytes)})`)}` : '';
+    console.log(colors.muted(`  ${glyph} ${operation} ${colors.file(path)}${sizeStr}`));
   },
 
   /**

@@ -72,7 +72,7 @@ export interface Logger {
   /** Display progress with a bar (optional) */
   progress?: (current: number, total: number, message: string) => void;
   /** Log file operations (optional) */
-  file?: (operation: string, path: string) => void;
+  file?: (operation: string, path: string, sizeInBytes?: number) => void;
   /** Log URLs with proper styling (optional) */
   url?: (label: string, url: string) => void;
   /** Log timing information (optional) */
