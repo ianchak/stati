@@ -565,7 +565,8 @@ class ProgressBarManager {
     this.isActive = false;
 
     // Clear the progress display (move up and clear lines)
-    if (this.linesWritten > 0) {
+    // Only write ANSI escape codes if output is a TTY to avoid garbled output in CI/piped environments
+    if (this.linesWritten > 0 && process.stdout.isTTY) {
       // Move cursor up and clear each line
       process.stdout.write(`\x1b[${this.linesWritten}A`);
       for (let i = 0; i < this.linesWritten; i++) {
@@ -623,7 +624,8 @@ class ProgressBarManager {
    */
   private render(): void {
     // Clear previous output if any
-    if (this.linesWritten > 0) {
+    // Only write ANSI escape codes if output is a TTY to avoid garbled output in CI/piped environments
+    if (this.linesWritten > 0 && process.stdout.isTTY) {
       process.stdout.write(`\x1b[${this.linesWritten}A`);
     }
 
@@ -1063,6 +1065,8 @@ export const log = {
 
     // Calculate max children per folder if truncation needed
     // Reserve lines for: folders + "...and N more" markers
+    // SAFEGUARD: This ensures all folders are always displayed, with at least 3 children each.
+    // The algorithm prioritizes showing folder structure over showing all children.
     function calculateMaxChildrenPerFolder(): number {
       if (!needsTruncation) return Infinity;
 
@@ -1083,8 +1087,10 @@ export const log = {
       const availableForChildren = MAX_LINES - lineCount - navigation.length - folderCount * 2;
       if (folderCount === 0) return Infinity;
 
-      // Distribute evenly, minimum 3 items per folder
-      return Math.max(3, Math.floor(availableForChildren / Math.max(1, folderCount)));
+      // Distribute evenly, minimum 3 items per folder to ensure meaningful display
+      // Even in deeply nested trees, each folder will show at least 3 children
+      const calculated = Math.floor(availableForChildren / Math.max(1, folderCount));
+      return Math.max(3, calculated);
     }
 
     const maxChildrenPerFolder = calculateMaxChildrenPerFolder();

@@ -828,14 +828,23 @@ describe('colors', () => {
     });
 
     it('should clear progress display on endProgress', () => {
-      log.startProgress(10);
-      log.updateProgress('rendered', '/test/', 50);
+      // Mock isTTY to true so ANSI codes are written
+      const originalIsTTY = process.stdout.isTTY;
+      Object.defineProperty(process.stdout, 'isTTY', { value: true, writable: true });
 
-      // endProgress should write cursor movement codes to clear lines
-      log.endProgress();
+      try {
+        log.startProgress(10);
+        log.updateProgress('rendered', '/test/', 50);
 
-      // Should have written ANSI escape codes to move cursor up
-      expect(stdoutWriteSpy).toHaveBeenCalled();
+        // endProgress should write cursor movement codes to clear lines
+        log.endProgress();
+
+        // Should have written ANSI escape codes to move cursor up
+        expect(stdoutWriteSpy).toHaveBeenCalled();
+      } finally {
+        // Restore original isTTY value
+        Object.defineProperty(process.stdout, 'isTTY', { value: originalIsTTY, writable: true });
+      }
     });
 
     it('should show errors line in summary when errors occurred', () => {
