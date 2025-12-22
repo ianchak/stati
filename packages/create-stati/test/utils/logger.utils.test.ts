@@ -343,13 +343,15 @@ describe('log object', () => {
       log.startupBanner();
 
       expect(consoleLogSpy).toHaveBeenCalled();
-      const output = consoleLogSpy.mock.calls[0]?.[0] as string | undefined;
-      expect(output).toBeDefined();
+      const output = consoleLogSpy.mock.calls[0]?.[0];
+      if (typeof output !== 'string') {
+        throw new Error('Expected output to be a string');
+      }
       // Gradient should produce multiple ANSI color codes
       // Use String.fromCharCode to avoid eslint no-control-regex
       const escapeChar = String.fromCharCode(27);
       const ansiPattern = new RegExp(`${escapeChar}\\[38;2;`, 'g');
-      const ansiCount = (output!.match(ansiPattern) || []).length;
+      const ansiCount = (output.match(ansiPattern) || []).length;
       expect(ansiCount).toBeGreaterThan(5);
     });
   });
