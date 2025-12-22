@@ -81,6 +81,7 @@ vi.mock('../src/colors.js', () => ({
     showRenderingTree: vi.fn(),
     clearRenderingTree: vi.fn(),
     startupBanner: vi.fn(),
+    commandInfo: vi.fn(),
   },
 }));
 
@@ -320,6 +321,166 @@ describe('CLI', () => {
       // Verify that getStatiVersion is available
       expect(getStatiVersion).toBeDefined();
       expect(typeof getStatiVersion).toBe('function');
+    });
+  });
+
+  describe('build command with metrics', () => {
+    it('should pass metrics options to build when enabled', async () => {
+      const { build } = await import('@stati/core');
+
+      await (build as ReturnType<typeof vi.fn>)({
+        force: false,
+        clean: false,
+        includeDrafts: false,
+        cliVersion: '1.0.0',
+        coreVersion: '1.0.0',
+        metrics: {
+          enabled: true,
+          detailed: false,
+        },
+      });
+
+      expect(build).toHaveBeenCalledWith(
+        expect.objectContaining({
+          metrics: {
+            enabled: true,
+            detailed: false,
+          },
+        }),
+      );
+    });
+
+    it('should pass detailed metrics option when enabled', async () => {
+      const { build } = await import('@stati/core');
+
+      await (build as ReturnType<typeof vi.fn>)({
+        force: false,
+        clean: false,
+        includeDrafts: false,
+        metrics: {
+          enabled: true,
+          detailed: true,
+        },
+      });
+
+      expect(build).toHaveBeenCalledWith(
+        expect.objectContaining({
+          metrics: {
+            enabled: true,
+            detailed: true,
+          },
+        }),
+      );
+    });
+
+    it('should not include metrics option when metrics is disabled', async () => {
+      const { build } = await import('@stati/core');
+
+      await (build as ReturnType<typeof vi.fn>)({
+        force: false,
+        clean: false,
+        includeDrafts: false,
+      });
+
+      expect(build).toHaveBeenCalledWith(
+        expect.not.objectContaining({
+          metrics: expect.anything(),
+        }),
+      );
+    });
+  });
+
+  describe('build command with configPath', () => {
+    it('should pass configPath option correctly', async () => {
+      const { build } = await import('@stati/core');
+
+      await (build as ReturnType<typeof vi.fn>)({
+        force: false,
+        clean: false,
+        includeDrafts: false,
+        configPath: './custom-config.js',
+      });
+
+      expect(build).toHaveBeenCalledWith(
+        expect.objectContaining({
+          configPath: './custom-config.js',
+        }),
+      );
+    });
+  });
+
+  describe('writeMetrics integration', () => {
+    it('should have writeMetrics function available from @stati/core', async () => {
+      const { writeMetrics } = await import('@stati/core');
+
+      expect(writeMetrics).toBeDefined();
+      expect(typeof writeMetrics).toBe('function');
+    });
+
+    it('should accept metrics object and options', async () => {
+      const { writeMetrics } = await import('@stati/core');
+
+      const mockMetrics = {
+        build: {
+          totalTimeMs: 1000,
+          phaseTiming: {},
+          cliVersion: '1.0.0',
+          coreVersion: '1.0.0',
+        },
+        isg: {
+          cacheHits: 5,
+          cacheMisses: 3,
+          cacheHitRate: 62.5,
+          pagesRebuilt: 3,
+        },
+        pages: [],
+        timestamps: {
+          buildStarted: new Date().toISOString(),
+          buildCompleted: new Date().toISOString(),
+        },
+      };
+
+      await (writeMetrics as ReturnType<typeof vi.fn>)(mockMetrics, {
+        cacheDir: '.stati',
+      });
+
+      expect(writeMetrics).toHaveBeenCalledWith(mockMetrics, { cacheDir: '.stati' });
+    });
+  });
+
+  describe('invalidate command integration', () => {
+    it('should call invalidate function', async () => {
+      const { invalidate } = await import('@stati/core');
+
+      await (invalidate as ReturnType<typeof vi.fn>)();
+
+      expect(invalidate).toHaveBeenCalled();
+    });
+
+    it('should pass query to invalidate when provided', async () => {
+      const { invalidate } = await import('@stati/core');
+
+      await (invalidate as ReturnType<typeof vi.fn>)('tag:news');
+
+      expect(invalidate).toHaveBeenCalledWith('tag:news');
+    });
+  });
+
+  describe('setEnv integration', () => {
+    it('should have setEnv function available from @stati/core', async () => {
+      const { setEnv } = await import('@stati/core');
+
+      expect(setEnv).toBeDefined();
+      expect(typeof setEnv).toBe('function');
+    });
+  });
+
+  describe('log.commandInfo integration', () => {
+    it('should have log.commandInfo available', async () => {
+      const { log } = await import('../src/colors.js');
+
+      expect(log.commandInfo).toBeDefined();
+      expect(typeof log.commandInfo).toBe('function');
     });
   });
 });

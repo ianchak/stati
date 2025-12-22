@@ -29,10 +29,10 @@ hero:
   subtitle: 'TypeScript-first static site generator with zero-config setup, fast esbuild bundling, and file-based routing.'
   buttons:
     - text: 'Get Started'
-      url: '/getting-started/introduction/'
+      url: '/getting-started/introduction'
       primary: true
     - text: 'Core Concepts'
-      url: '/core-concepts/overview/'
+      url: '/core-concepts/overview'
       primary: false
 features:
   title: 'Why Choose Stati?'
@@ -68,5 +68,5 @@ quickStart:
           color: 'white'
   link:
     text: 'View detailed installation guide'
-    url: '/getting-started/installation/'
+    url: '/getting-started/installation'
 ---

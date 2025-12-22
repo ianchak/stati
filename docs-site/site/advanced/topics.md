@@ -12,7 +12,7 @@ This section covers advanced Stati features and patterns for building high-perfo
 
 ### Build Caching with ISG
 
-Stati uses **Incremental Static Generation (ISG)** for smart caching and selective rebuilds. For comprehensive ISG configuration, see the [ISG documentation](/core-concepts/isg/).
+Stati uses **Incremental Static Generation (ISG)** for smart caching and selective rebuilds. For comprehensive ISG configuration, see the [ISG documentation](/core-concepts/isg).
 
 #### Build Options for Performance
 
@@ -30,7 +30,7 @@ await build({ force: false });
 
 Stati uses the Eta template engine with built-in performance features and automatic template caching via ISG.
 
-For detailed template configuration and `propValue` utility documentation, see [Template Configuration](/configuration/templates/).
+For detailed template configuration and `propValue` utility documentation, see [Template Configuration](/configuration/templates).
 
 #### Static Asset Optimization
 
@@ -52,9 +52,9 @@ export default defineConfig({
 
 Stati includes built-in support for SEO optimization, sitemap generation, and robots.txt creation. For comprehensive documentation on these features, see:
 
-- [SEO Configuration](/configuration/seo/) - Configure automatic SEO meta tags, Open Graph, Twitter Cards, and Schema.org
-- [SEO API](/api/seo/) - Use the `generateSEO()` function in templates
-- [SEO Usage Scenarios](/advanced/seo-usage-scenarios/) - Real-world examples and patterns
+- [SEO Configuration](/configuration/seo) - Configure automatic SEO meta tags, Open Graph, Twitter Cards, and Schema.org
+- [SEO API](/api/seo) - Use the `generateSEO()` function in templates
+- [SEO Usage Scenarios](/advanced/seo-usage-scenarios) - Real-world examples and patterns
 
 These built-in features handle sitemap.xml and robots.txt generation automatically based on your configuration.
 
@@ -98,11 +98,11 @@ export default defineConfig({
 });
 ```
 
-For comprehensive development server and ISG configuration options, see the [Configuration Guide](/configuration/file/).
+For comprehensive development server and ISG configuration options, see the [Configuration Guide](/configuration/file).
 
 ## Markdown Processing
 
-For detailed markdown configuration including custom plugins and renderer modifications, see the [Markdown Configuration](/configuration/markdown/) documentation.
+For detailed markdown configuration including custom plugins and renderer modifications, see the [Markdown Configuration](/configuration/markdown) documentation.
 
 ## Error Handling and Build Hooks
 
@@ -137,7 +137,7 @@ export default defineConfig({
 
 ### Cache Management and Invalidation
 
-For detailed cache management, see the [ISG documentation](/core-concepts/isg/) which covers all invalidation features and query syntax.
+For detailed cache management, see the [ISG documentation](/core-concepts/isg) which covers all invalidation features and query syntax.
 
 ## Template Engine Features
 
@@ -159,7 +159,7 @@ Every template receives the `stati` object with comprehensive page and site data
 <%= stati.collection %>     <!-- Collection data (for index pages) -->
 ```
 
-For comprehensive template configuration including Eta filters, see the [Template Configuration](/configuration/templates/) documentation.
+For comprehensive template configuration including Eta filters, see the [Template Configuration](/configuration/templates) documentation.
 
 These advanced topics showcase Stati's core capabilities for building sophisticated static sites. The framework emphasizes:
 
@@ -169,4 +169,4 @@ These advanced topics showcase Stati's core capabilities for building sophistica
 - **Developer-Friendly** error handling and development workflow
 - **TypeScript-First** configuration with full type safety
 
-For specific implementation details, refer to the [API Reference](/api/reference/) or explore the [Configuration Guide](/configuration/file/) for complete setup instructions.
+For specific implementation details, refer to the [API Reference](/api/reference) or explore the [Configuration Guide](/configuration/file) for complete setup instructions.

@@ -83,7 +83,7 @@ async function performInitialBuild(
 ): Promise<void> {
   try {
     // Clear cache to ensure fresh build on dev server start
-    logger.info?.('Clearing cache for fresh development build...');
+    logger.status('Clearing cache for fresh development build...');
     await invalidate();
 
     await build({
@@ -156,6 +156,7 @@ async function performIncrementalRebuild(
     success: () => {}, // Suppress success messages
     error: logger.error || (() => {}),
     warning: logger.warning || (() => {}),
+    status: () => {}, // Suppress status messages
     building: () => {}, // Suppress building messages
     processing: () => {}, // Suppress processing messages
     stats: () => {}, // Suppress stats messages
@@ -217,13 +218,13 @@ async function performIncrementalRebuild(
       } else {
         action = 'rebuilt';
       }
-      logger.info?.(`⚡ ${relativePath} ${action}`);
+      logger.info?.(`▸ ${relativePath} ${action}`);
     }
     logger.info?.(`   Done in ${duration}ms`);
   } catch (error) {
     const buildError = error instanceof Error ? error : new Error(String(error));
     const duration = Date.now() - startTime;
-    logger.error?.(`❌ Rebuild failed after ${duration}ms: ${buildError.message}`);
+    logger.error?.(`× Rebuild failed after ${duration}ms: ${buildError.message}`);
 
     // Store the error for display in browser
     if (onError) {
@@ -387,7 +388,7 @@ async function handleMarkdownChange(
     // Compare navigation hashes
     if (newNavigationHash !== cacheManifest.navigationHash) {
       // Navigation structure changed - clear cache and force full rebuild
-      logger.info?.('📊 Navigation structure changed, performing full rebuild...');
+      logger.status('Navigation structure changed, performing full rebuild...');
 
       // Force rebuild bypasses ISG cache entirely
       await build({
@@ -494,7 +495,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
   ws.onmessage = function(event) {
     const data = JSON.parse(event.data);
     if (data.type === 'reload') {
-      console.log('⚡ Reloading page due to file changes...');
+      console.log('▸ Reloading page due to file changes...');
       window.location.reload();
     }
   };
@@ -674,7 +675,11 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
           return; // Let WebSocket server handle this
         }
 
-        logger.processing?.(`${req.method} ${requestPath}`);
+        // Only log page requests, not static assets (files with extensions)
+        const hasFileExtension = requestPath.includes('.') && !requestPath.endsWith('.html');
+        if (!hasFileExtension) {
+          logger.processing?.(`${req.method} ${requestPath}`);
+        }
 
         try {
           const { content, mimeType, statusCode } = await serveFile(requestPath);
@@ -735,7 +740,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
             outDir: config.outDir || DEFAULT_OUT_DIR,
             logger,
             onRebuild: (_results, compileTimeMs) => {
-              logger.info?.(`⚡ TypeScript recompiled in ${compileTimeMs}ms`);
+              logger.info?.(`▸ TypeScript recompiled in ${compileTimeMs}ms`);
               // Broadcast reload to WebSocket clients
               if (wsServer) {
                 wsServer.clients.forEach((client: unknown) => {
@@ -754,7 +759,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
           console.log();
           logger.error?.(`TypeScript setup failed: ${tsError.message}`);
           logger.warning?.('──────────────────────────────────────────────────────────────');
-          logger.warning?.('⚠️  TypeScript hot reload is DISABLED for this session.');
+          logger.warning?.('!  TypeScript hot reload is DISABLED for this session.');
           logger.warning?.(
             "    Dev server will continue, but TypeScript changes won't auto-reload.",
           );
@@ -782,7 +787,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
 
       cssWatcher.on('change', (path: string) => {
         const relativePath = path.replace(process.cwd(), '').replace(/\\/g, '/').replace(/^\//, '');
-        logger.info?.(`⚡ ${relativePath} updated`);
+        logger.info?.(`▸ ${relativePath} updated`);
 
         // Just notify clients to reload - no rebuild needed since CSS was already compiled
         if (wsServer) {
@@ -839,9 +844,9 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
 
       logger.success?.(`Dev server running at ${url}`);
       logger.info?.(`\nServing:`);
-      logger.info?.(`  📁 ${outDir}`);
+      logger.info?.(`  • ${outDir}`);
       logger.info?.('Watching:');
-      watchPaths.forEach((path) => logger.info?.(`  📁 ${path}`));
+      watchPaths.forEach((path) => logger.info?.(`  • ${path}`));
       logger.info?.('');
 
       // Open browser if requested

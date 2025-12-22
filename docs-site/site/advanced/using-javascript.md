@@ -598,7 +598,7 @@ Stati automatically adjusts behavior based on build mode:
 - ⚠️ Requires initial setup (`--typescript` flag or config)
 - ⚠️ Run `npm run typecheck` to catch type errors (esbuild doesn't type-check)
 
-> Stati supports [multiple bundles](/configuration/typescript/#multiple-bundles) with per-page targeting for advanced use cases. For full configuration options, see the [TypeScript Configuration Guide](/configuration/typescript/).
+> Stati supports [multiple bundles](/configuration/typescript/#multiple-bundles) with per-page targeting for advanced use cases. For full configuration options, see the [TypeScript Configuration Guide](/configuration/typescript).
 
 ---
 
@@ -1081,7 +1081,7 @@ The key is to use build hooks for anything that can be computed at build time, T
 
 For more information:
 
-- [TypeScript Configuration](/configuration/typescript/)
-- [Build Hooks API](/api/hooks/)
-- [Template Configuration](/configuration/templates/)
+- [TypeScript Configuration](/configuration/typescript)
+- [Build Hooks API](/api/hooks)
+- [Template Configuration](/configuration/templates)
 - [Eta Template Documentation](https://eta.js.org/)

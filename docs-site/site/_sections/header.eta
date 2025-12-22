@@ -26,16 +26,16 @@
             <div class="flex items-center space-x-4">
                 <!-- Navigation -->
                 <nav class="hidden lg:flex items-center space-x-1">
-                    <a href="/getting-started/introduction/" class="nav-link px-4 py-2 rounded-lg text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-gray-100/60 dark:hover:bg-dark-700/60 transition-all duration-200 font-medium">
+                    <a href="/getting-started/introduction" class="nav-link px-4 py-2 rounded-lg text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-gray-100/60 dark:hover:bg-dark-700/60 transition-all duration-200 font-medium">
                         Getting Started
                     </a>
-                    <a href="/core-concepts/overview/" class="nav-link px-4 py-2 rounded-lg text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-gray-100/60 dark:hover:bg-dark-700/60 transition-all duration-200 font-medium">
+                    <a href="/core-concepts/overview" class="nav-link px-4 py-2 rounded-lg text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-gray-100/60 dark:hover:bg-dark-700/60 transition-all duration-200 font-medium">
                         Core Concepts
                     </a>
-                    <a href="/api/reference/" class="nav-link px-4 py-2 rounded-lg text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-gray-100/60 dark:hover:bg-dark-700/60 transition-all duration-200 font-medium">
+                    <a href="/api/reference" class="nav-link px-4 py-2 rounded-lg text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-gray-100/60 dark:hover:bg-dark-700/60 transition-all duration-200 font-medium">
                         API Reference
                     </a>
-                    <a href="/examples/list/" class="nav-link px-4 py-2 rounded-lg text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-gray-100/60 dark:hover:bg-dark-700/60 transition-all duration-200 font-medium">
+                    <a href="/examples/list" class="nav-link px-4 py-2 rounded-lg text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-gray-100/60 dark:hover:bg-dark-700/60 transition-all duration-200 font-medium">
                         Examples
                     </a>
                 </nav>
@@ -79,16 +79,16 @@
     <!-- Mobile Navigation Menu -->
     <div id="mobile-nav" class="hidden lg:hidden absolute top-full left-0 right-0 border-t border-gray-200/50 dark:border-dark-700/50 bg-white/95 dark:bg-dark-900/95 backdrop-blur-lg shadow-lg">
         <nav class="px-6 py-4 space-y-2">
-            <a href="/getting-started/introduction/" class="block px-4 py-3 rounded-lg text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-gray-100/60 dark:hover:bg-dark-700/60 transition-all duration-200 font-medium">
+            <a href="/getting-started/introduction" class="block px-4 py-3 rounded-lg text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-gray-100/60 dark:hover:bg-dark-700/60 transition-all duration-200 font-medium">
                 Getting Started
             </a>
-            <a href="/core-concepts/overview/" class="block px-4 py-3 rounded-lg text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-gray-100/60 dark:hover:bg-dark-700/60 transition-all duration-200 font-medium">
+            <a href="/core-concepts/overview" class="block px-4 py-3 rounded-lg text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-gray-100/60 dark:hover:bg-dark-700/60 transition-all duration-200 font-medium">
                 Core Concepts
             </a>
-            <a href="/api/reference/" class="block px-4 py-3 rounded-lg text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-gray-100/60 dark:hover:bg-dark-700/60 transition-all duration-200 font-medium">
+            <a href="/api/reference" class="block px-4 py-3 rounded-lg text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-gray-100/60 dark:hover:bg-dark-700/60 transition-all duration-200 font-medium">
                 API Reference
             </a>
-            <a href="/examples/list/" class="block px-4 py-3 rounded-lg text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-gray-100/60 dark:hover:bg-dark-700/60 transition-all duration-200 font-medium">
+            <a href="/examples/list" class="block px-4 py-3 rounded-lg text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-gray-100/60 dark:hover:bg-dark-700/60 transition-all duration-200 font-medium">
                 Examples
             </a>
             <div class="border-t border-gray-200/50 dark:border-dark-700/50 my-2 pt-2">

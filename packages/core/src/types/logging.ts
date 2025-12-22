@@ -8,7 +8,7 @@
  * file operations, statistics display, and advanced tree-based rendering visualization.
  *
  * Core Methods (Required):
- * - Basic logging: info, success, warning, error
+ * - Basic logging: info, success, warning, error, status
  * - Build progress: building, processing, stats
  *
  * Enhanced Methods (Optional):
@@ -20,13 +20,14 @@
  * @example Basic Logger Implementation
  * ```typescript
  * const basicLogger: Logger = {
- *   info: (msg) => console.log('\x1b[38;2;37;99;235mℹ️  ' + msg + '\x1b[0m'),
- *   success: (msg) => console.log('\x1b[38;2;22;163;74m✅ ' + msg + '\x1b[0m'),
- *   warning: (msg) => console.warn('\x1b[38;2;217;119;6m⚠️  ' + msg + '\x1b[0m'),
- *   error: (msg) => console.error('\x1b[38;2;220;38;38m❌ ' + msg + '\x1b[0m'),
- *   building: (msg) => console.log('\x1b[38;2;79;70;229m' + msg + '\x1b[0m'),
- *   processing: (msg) => console.log('\x1b[38;2;107;114;128m  ' + msg + '\x1b[0m'),
- *   stats: (msg) => console.log('\x1b[38;2;8;145;178m📊 ' + msg + '\x1b[0m')
+ *   info: (msg) => console.log('\x1b[38;2;56;189;248m• ' + msg + '\x1b[0m'),
+ *   success: (msg) => console.log('\x1b[38;2;34;197;94m✓ ' + msg + '\x1b[0m'),
+ *   warning: (msg) => console.warn('\x1b[38;2;245;158;11m! ' + msg + '\x1b[0m'),
+ *   error: (msg) => console.error('\x1b[38;2;239;68;68m× ' + msg + '\x1b[0m'),
+ *   status: (msg) => console.log('\x1b[38;2;56;189;248m▸ ' + msg + '\x1b[0m'),
+ *   building: (msg) => console.log('\x1b[38;2;56;189;248m' + msg + '\x1b[0m'),
+ *   processing: (msg) => console.log('\x1b[38;2;148;163;184m  ' + msg + '\x1b[0m'),
+ *   stats: (msg) => console.log('\x1b[38;2;186;230;253m• ' + msg + '\x1b[0m')
  * };
  * ```
  *
@@ -37,9 +38,9 @@
  *   header: (msg) => console.log(boxedMessage(msg)),
  *   step: (step, total, msg) => console.log(`[${step}/${total}] ${msg}`),
  *   progress: (current, total, msg) => console.log(progressBar(current, total) + ' ' + msg),
- *   file: (op, path) => console.log(`  📄 ${op} ${path}`),
- *   url: (label, url) => console.log(`  🔗 ${label}: ${url}`),
- *   timing: (op, duration) => console.log(`  ⏱️  ${op} completed in ${duration}ms`),
+ *   file: (op, path) => console.log(`  + ${op} ${path}`),
+ *   url: (label, url) => console.log(`  ${label}: ${url}`),
+ *   timing: (op, duration) => console.log(`  ${op} completed in ${duration}ms`),
  *   divider: (title) => console.log('─'.repeat(50) + ' ' + title),
  *   statsTable: (stats) => displayStatsTable(stats),
  *   startRenderingTree: (label) => initTree(label),
@@ -59,6 +60,8 @@ export interface Logger {
   warning: (message: string) => void;
   /** Log error messages */
   error: (message: string) => void;
+  /** Log status/meta messages with status indicator */
+  status: (message: string) => void;
   /** Log build progress messages */
   building: (message: string) => void;
   /** Log file processing messages */
@@ -72,7 +75,7 @@ export interface Logger {
   /** Display progress with a bar (optional) */
   progress?: (current: number, total: number, message: string) => void;
   /** Log file operations (optional) */
-  file?: (operation: string, path: string) => void;
+  file?: (operation: string, path: string, sizeInBytes?: number) => void;
   /** Log URLs with proper styling (optional) */
   url?: (label: string, url: string) => void;
   /** Log timing information (optional) */
@@ -110,4 +113,23 @@ export interface Logger {
   showRenderingTree?: () => void;
   /** Clear the rendering tree (optional) */
   clearRenderingTree?: () => void;
+
+  // Progress Bar + Summary System
+
+  /** Initialize progress tracking for page rendering (optional) */
+  startProgress?: (totalPages: number) => void;
+  /**
+   * Update progress during page rendering (optional)
+   * @param status - 'cached' | 'rendered' | 'error'
+   * @param url - The URL of the page being processed
+   * @param timing - Render time in milliseconds (for rendered pages)
+   */
+  updateProgress?: (status: 'cached' | 'rendered' | 'error', url: string, timing?: number) => void;
+  /** End progress tracking and prepare for summary (optional) */
+  endProgress?: () => void;
+  /**
+   * Display a summary of the rendering process (optional)
+   * Shows cached/rendered counts, slowest pages, and cache hit rate
+   */
+  showRenderingSummary?: () => void;
 }

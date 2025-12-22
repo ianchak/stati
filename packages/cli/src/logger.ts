@@ -8,6 +8,7 @@ export function createLogger() {
     success: log.success,
     warning: log.warning,
     error: log.error,
+    status: log.status,
     building: log.building,
     processing: log.processing,
     stats: log.stats,
@@ -20,11 +21,10 @@ export function createLogger() {
     timing: log.timing,
     statsTable: log.statsTable,
     navigationTree: log.navigationTree,
-    // Rendering tree methods
-    startRenderingTree: log.startRenderingTree,
-    addTreeNode: log.addTreeNode,
-    updateTreeNode: log.updateTreeNode,
-    showRenderingTree: log.showRenderingTree,
-    clearRenderingTree: log.clearRenderingTree,
+    // Progress bar + summary methods
+    startProgress: log.startProgress,
+    updateProgress: log.updateProgress,
+    endProgress: log.endProgress,
+    showRenderingSummary: log.showRenderingSummary,
   } as const;
 }

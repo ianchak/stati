@@ -74,6 +74,8 @@ export interface CompiledBundleInfo {
   filename: string;
   /** The full path to the bundle (e.g., '/_assets/core-a1b2c3d4.js') */
   path: string;
+  /** The size of the compiled bundle in bytes */
+  sizeInBytes?: number;
 }
 
 /**

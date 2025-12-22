@@ -13,6 +13,62 @@ Stati provides a simple and powerful command-line interface for building, develo
 - Node.js 22 or higher
 - npm 11.5.1 or higher
 
+## Running Stati Commands
+
+When you install `@stati/cli` as a dev dependency (the recommended approach), the `stati` binary is available in your project's `node_modules/.bin` directory. There are three ways to run Stati commands:
+
+### Using npm Scripts (Recommended)
+
+Define commands in your `package.json` scripts section:
+
+```json
+{
+  "scripts": {
+    "dev": "stati dev",
+    "build": "stati build",
+    "preview": "stati preview",
+    "invalidate": "stati invalidate"
+  }
+}
+```
+
+Then run them with npm:
+
+```bash
+npm run dev
+npm run build
+npm run invalidate -- "tag:blog"  # Pass arguments after --
+```
+
+This is the recommended approach because it keeps your project self-contained and works consistently across all environments.
+
+### Using npx
+
+Run any Stati command directly with `npx`:
+
+```bash
+npx stati dev
+npx stati build --clean
+npx stati invalidate "tag:blog"
+```
+
+### Global Installation (Optional)
+
+If you prefer using `stati` directly without `npm run` or `npx`, install the CLI globally:
+
+```bash
+npm install -g @stati/cli
+```
+
+Then run commands directly:
+
+```bash
+stati dev
+stati build
+```
+
+> **Note:** The examples below show commands as `stati <command>` for brevity. Use whichever method suits your workflow—the commands and options are identical.
+
 ## Available Commands
 
 ### `stati dev`
@@ -430,4 +486,4 @@ fi
 
 The Stati CLI is designed to be both simple for basic use and powerful for advanced workflows. Whether you're developing locally, deploying to production, or integrating with CI/CD systems, the CLI provides the tools you need for efficient static site generation.
 
-Next, learn about the [Scaffolder](/cli/scaffolder/) for creating new Stati projects, or explore [Development Workflows](/cli/development/) for advanced development techniques.
+Next, learn about the [Scaffolder](/cli/scaffolder) for creating new Stati projects, or explore [Development Workflows](/cli/development) for advanced development techniques.

@@ -353,7 +353,7 @@ Use the built-in `stati.nav.getBreadcrumbs()` helper to generate breadcrumb navi
 
 The `getBreadcrumbs()` method returns an array of `NavNode` objects from the root to the current page, each with `title` and `url` properties. This is more reliable than manually parsing URL segments because it uses the actual navigation tree and page titles from front matter.
 
-See the [Navigation API](/api/navigation/) for more details on breadcrumb customization.
+See the [Navigation API](/api/navigation) for more details on breadcrumb customization.
 
 ## Best Practices
 
@@ -449,4 +449,4 @@ site/
         └── advanced.md → /api/examples/advanced/
 ```
 
-Understanding filesystem-based routing is key to organizing your Stati site effectively. Next, learn about [Templates & Layouts](/core-concepts/templates/) to understand how your content gets rendered.
+Understanding filesystem-based routing is key to organizing your Stati site effectively. Next, learn about [Templates & Layouts](/core-concepts/templates) to understand how your content gets rendered.

@@ -30,6 +30,7 @@ describe('typescript.utils', () => {
       success: vi.fn(),
       warning: vi.fn(),
       error: vi.fn(),
+      status: vi.fn(),
       debug: vi.fn(),
     } as unknown as Logger;
   });

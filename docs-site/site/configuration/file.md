@@ -459,12 +459,12 @@ export default defineConfig({
 
 For detailed information about specific configuration options, see:
 
-- **[Site Metadata](/configuration/site-metadata/)** - Site title, base URL, and locale settings
-- **[Template Settings](/configuration/templates/)** - Eta template engine configuration
-- **[Markdown Configuration](/configuration/markdown/)** - Plugins and markdown-it processing
-- **[ISG Options](/configuration/isg/)** - Incremental static generation and caching
-- **[SEO Configuration](/configuration/seo/)** - SEO metadata and optimization
-- **[RSS Configuration](/configuration/rss/)** - RSS feed generation
-- **[TypeScript](/configuration/typescript/)** - Built-in TypeScript compilation with esbuild
+- **[Site Metadata](/configuration/site-metadata)** - Site title, base URL, and locale settings
+- **[Template Settings](/configuration/templates)** - Eta template engine configuration
+- **[Markdown Configuration](/configuration/markdown)** - Plugins and markdown-it processing
+- **[ISG Options](/configuration/isg)** - Incremental static generation and caching
+- **[SEO Configuration](/configuration/seo)** - SEO metadata and optimization
+- **[RSS Configuration](/configuration/rss)** - RSS feed generation
+- **[TypeScript](/configuration/typescript)** - Built-in TypeScript compilation with esbuild
 
 The configuration system is designed to grow with your needs while maintaining simplicity for basic use cases. Start with minimal configuration and add complexity as your site evolves.

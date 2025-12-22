@@ -126,6 +126,7 @@ vi.mock('../../src/core/isg/build-lock.js', () => ({
 vi.mock('../../src/core/utils/typescript.utils.js', () => ({
   compileTypeScript: mockCompileTypeScript,
   autoInjectBundles: mockAutoInjectBundles,
+  formatBytes: () => '1.00 KB',
 }));
 
 vi.mock('../../src/search/index.js', () => ({
@@ -436,6 +437,7 @@ describe('build.ts', () => {
         success: vi.fn(),
         warning: vi.fn(),
         error: vi.fn(),
+        status: vi.fn(),
         building: vi.fn(),
         processing: vi.fn(),
         stats: vi.fn(),
@@ -447,8 +449,8 @@ describe('build.ts', () => {
 
       await build({ logger: loggerWithFile });
 
-      // Should use logger.file instead of logger.processing
-      expect(mockFileLogger).toHaveBeenCalledWith('copy', 'script.js');
+      // Should use logger.file instead of logger.processing (with file size)
+      expect(mockFileLogger).toHaveBeenCalledWith('copy', 'script.js', expect.any(Number));
     });
 
     it('should not copy static assets when static directory does not exist', async () => {
@@ -532,13 +534,10 @@ describe('build.ts', () => {
     it('should log build progress messages', async () => {
       await build();
 
-      expect(consoleSpy).toHaveBeenCalledWith('Building your site...');
-      expect(consoleSpy).toHaveBeenCalledWith('📄 Found 3 pages');
+      expect(consoleSpy).toHaveBeenCalledWith('Started building your site...');
+      expect(consoleSpy).toHaveBeenCalledWith('Found 3 pages');
       expect(consoleSpy).toHaveBeenCalledWith('Built navigation with 3 top-level items');
-      // ISG shows "Checking" for each page
-      expect(consoleSpy).toHaveBeenCalledWith('Checking /');
-      expect(consoleSpy).toHaveBeenCalledWith('Checking /about');
-      expect(consoleSpy).toHaveBeenCalledWith('Checking /blog/post');
+      // Progress bar handles page-by-page logging (not tested here as default logger doesn't have it)
       expect(consoleSpy).toHaveBeenCalledWith('Copying static assets from static');
       expect(consoleSpy).toHaveBeenCalledWith('Copied 0 static assets');
     });
@@ -546,7 +545,7 @@ describe('build.ts', () => {
     it('should include version in build message when provided', async () => {
       await build({ cliVersion: '1.2.3' });
 
-      expect(consoleSpy).toHaveBeenCalledWith('Building your site...');
+      expect(consoleSpy).toHaveBeenCalledWith('Started building your site...');
     });
 
     it('should log clean message when cleaning', async () => {
@@ -560,7 +559,7 @@ describe('build.ts', () => {
 
       await build();
 
-      expect(consoleSpy).toHaveBeenCalledWith('📄 Found 0 pages');
+      expect(consoleSpy).toHaveBeenCalledWith('Found 0 pages');
       expect(mockRenderMarkdown).not.toHaveBeenCalled();
       expect(mockRenderPage).not.toHaveBeenCalled();
       // ISG cache manifest should still be saved even with no pages

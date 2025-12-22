@@ -524,5 +524,5 @@ Direct access to the current page's navigation node with all its properties and 
 ## See Also
 
 - [Template Data and Context](/core-concepts/templates/#template-data-and-context)
-- [Template API Reference](/api/reference/)
-- [Routing System](/core-concepts/routing/)
+- [Template API Reference](/api/reference)
+- [Routing System](/core-concepts/routing)

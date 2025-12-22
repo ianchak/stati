@@ -20,6 +20,19 @@ import {
 } from '../../constants.js';
 
 /**
+ * Formats bytes into a human-readable string.
+ */
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  } else if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(2)} KB`;
+  } else {
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  }
+}
+
+/**
  * Options for TypeScript compilation.
  */
 export interface CompileOptions {
@@ -133,14 +146,23 @@ async function compileSingleBundle(
     const bundleFile = outputs.find((f) => f.endsWith('.js'));
     const bundleFilename = bundleFile ? path.basename(bundleFile) : `${bundleConfig.bundleName}.js`;
 
+    // Get the bundle size from metafile
+    const bundleSize = bundleFile ? result.metafile?.outputs[bundleFile]?.bytes : undefined;
+
     // Construct the path relative to site root
     const bundlePath = path.posix.join('/', resolvedConfig.outDir, bundleFilename);
 
-    return {
+    const bundleInfo: CompiledBundleInfo = {
       config: bundleConfig,
       filename: bundleFilename,
       path: bundlePath,
     };
+
+    if (bundleSize !== undefined) {
+      bundleInfo.sizeInBytes = bundleSize;
+    }
+
+    return bundleInfo;
   } catch (error) {
     if (error instanceof Error) {
       logger.error(`Bundle '${bundleConfig.bundleName}' compilation failed: ${error.message}`);
@@ -205,8 +227,19 @@ export async function compileTypeScript(options: CompileOptions): Promise<Compil
   const successfulResults = results.filter((r): r is CompiledBundleInfo => r !== null);
 
   if (successfulResults.length > 0) {
-    const bundleNames = successfulResults.map((r) => r.filename).join(', ');
-    logger.success(`TypeScript compiled: ${bundleNames}`);
+    // Log each bundle on its own line
+    for (const r of successfulResults) {
+      if (logger.file) {
+        logger.file('compiled', r.filename, r.sizeInBytes);
+      }
+    }
+
+    // Calculate and display total
+    const totalBytes = successfulResults.reduce((sum, r) => sum + (r.sizeInBytes ?? 0), 0);
+    const totalSuffix = totalBytes > 0 ? ` (${formatBytes(totalBytes)} total)` : '';
+    logger.success(
+      `Compiled ${successfulResults.length} TypeScript bundle${successfulResults.length > 1 ? 's' : ''}${totalSuffix}`,
+    );
   } else if (resolved.bundles.length > 0) {
     logger.warning('No TypeScript bundles were compiled (all entry points missing).');
   }
@@ -257,6 +290,11 @@ export async function createTypeScriptWatcher(
       continue;
     }
 
+    // Track whether this is the initial build triggered by context.watch()
+    // We skip notifications for the initial build since files were just compiled
+    // by compileTypeScript() during the initial build phase
+    let isInitialBuild = true;
+
     const context = await esbuild.context({
       entryPoints: [entryPath],
       bundle: true,
@@ -299,6 +337,14 @@ export async function createTypeScriptWatcher(
                 };
 
                 latestResults.set(bundleConfig.bundleName, bundleResult);
+
+                // Skip notifications for the initial build triggered by context.watch()
+                // since files were already compiled during performInitialBuild()
+                if (isInitialBuild) {
+                  isInitialBuild = false;
+                  return;
+                }
+
                 logger.info(`TypeScript '${bundleConfig.bundleName}' recompiled.`);
 
                 // Notify with all current results and compile time

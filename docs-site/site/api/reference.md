@@ -10,7 +10,7 @@ Stati provides comprehensive APIs for building dynamic static sites. This page s
 
 ## Template APIs
 
-### [Template API](/api/templates/)
+### [Template API](/api/templates)
 
 Complete reference for Stati template context, built-in helpers, and partial templates. Learn how to work with `stati.propValue()`, template context objects, custom filters, and reusable partials.
 
@@ -21,7 +21,7 @@ Complete reference for Stati template context, built-in helpers, and partial tem
 - Partial templates and component patterns
 - Custom filter registration
 
-### [Navigation API](/api/navigation/)
+### [Navigation API](/api/navigation)
 
 Comprehensive guide to Stati's navigation system and helper methods. Learn how to query and traverse the automatically-generated navigation tree.
 
@@ -34,7 +34,7 @@ Comprehensive guide to Stati's navigation system and helper methods. Learn how t
 
 ## Build & Configuration APIs
 
-### [Build Hooks](/api/hooks/)
+### [Build Hooks](/api/hooks)
 
 Lifecycle hooks for customizing the build process. Inject custom logic before and after builds, or modify pages during rendering.
 
@@ -45,7 +45,7 @@ Lifecycle hooks for customizing the build process. Inject custom logic before an
 - Hook context objects
 - Practical use cases
 
-### [TypeScript Types](/api/types/)
+### [TypeScript Types](/api/types)
 
 Full TypeScript type definitions for Stati's configuration, template context, and programmatic APIs.
 
@@ -58,7 +58,7 @@ Full TypeScript type definitions for Stati's configuration, template context, an
 
 ## Feature APIs
 
-### [SEO API](/api/seo/)
+### [SEO API](/api/seo)
 
 Automatic SEO meta tag generation for Open Graph, Twitter Cards, and Schema.org markup.
 
@@ -69,7 +69,7 @@ Automatic SEO meta tag generation for Open Graph, Twitter Cards, and Schema.org 
 - Page-level SEO overrides
 - Automatic sitemap and robots.txt generation
 
-### [RSS API](/api/rss/)
+### [RSS API](/api/rss)
 
 RSS feed generation for blogs and content collections.
 
@@ -80,7 +80,7 @@ RSS feed generation for blogs and content collections.
 - Custom feed metadata
 - Multiple feed support
 
-### [Error Handling](/api/error-handling/)
+### [Error Handling](/api/error-handling)
 
 Error handling patterns and debugging tools in Stati.
 
@@ -95,12 +95,12 @@ Error handling patterns and debugging tools in Stati.
 
 ### Getting Started
 
-- [Quick Start Guide](/getting-started/quick-start/) - Build your first Stati site
-- [Core Concepts](/core-concepts/overview/) - Understand Stati's architecture
-- [Configuration Guide](/configuration/file/) - Configure your site
+- [Quick Start Guide](/getting-started/quick-start) - Build your first Stati site
+- [Core Concepts](/core-concepts/overview) - Understand Stati's architecture
+- [Configuration Guide](/configuration/file) - Configure your site
 
 ### Advanced Usage
 
-- [Advanced Topics](/advanced/topics/) - Performance, SEO, and deployment
-- [Examples](/examples/list/) - Real-world templates and patterns
-- [Contributing](/advanced/contributing/) - Help improve Stati
+- [Advanced Topics](/advanced/topics) - Performance, SEO, and deployment
+- [Examples](/examples/list) - Real-world templates and patterns
+- [Contributing](/advanced/contributing) - Help improve Stati

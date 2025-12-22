@@ -144,5 +144,5 @@ The interactive CLI tool that creates new Stati projects with styling options, T
 
 ## Related Resources
 
-- [FAQ](/faq/) – Frequently asked questions about Stati
-- [Core Concepts](/core-concepts/overview/) – Deep dive into Stati's architecture
+- [FAQ](/faq) – Frequently asked questions about Stati
+- [Core Concepts](/core-concepts/overview) – Deep dive into Stati's architecture

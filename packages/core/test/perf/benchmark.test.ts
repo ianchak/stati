@@ -30,6 +30,8 @@ const BENCHMARK_CONFIG = {
   timeout: 60000,
   /** Number of test pages to generate */
   pageCount: 100,
+  /** Number of complex pages with nested components */
+  complexPageCount: 10,
 };
 
 /**
@@ -41,6 +43,7 @@ function createSilentLogger() {
     success: () => {},
     warning: () => {},
     error: console.error,
+    status: () => {},
     building: () => {},
     processing: () => {},
     stats: () => {},
@@ -111,6 +114,64 @@ This is the home page.
   // Create a static asset
   writeFileSync(join(publicDir, 'styles.css'), 'body { margin: 0; }');
 
+  // Create components directory for nested Eta components
+  const componentsDir = join(siteDir, '_components');
+  mkdirSync(componentsDir, { recursive: true });
+
+  // Create nested Eta components using Stati's partial syntax
+  // Components need the guard pattern since they're processed even when not called as partials
+  // Note: Eta templates do NOT support partial dynamic attributes, so we use template literals
+  const buttonComponent = `<% if (!stati.props) { %><% return; } %><button class="<%= \`btn \${stati.props.variant || 'primary'}\` %>">
+  <%= stati.props.text || 'Click me' %>
+</button>`;
+  writeFileSync(join(componentsDir, 'button.eta'), buttonComponent);
+
+  const cardComponent = `<% if (!stati.props) { %><% return; } %><div class="card">
+  <h3><%= stati.props.title %></h3>
+  <p><%= stati.props.description %></p>
+  <%~ stati.partials.button({ text: stati.props.buttonText || 'Learn more', variant: 'secondary' }) %>
+</div>`;
+  writeFileSync(join(componentsDir, 'card.eta'), cardComponent);
+
+  const heroComponent = `<% if (!stati.props) { %><% return; } %><section class="hero">
+  <h1><%= stati.props.headline %></h1>
+  <p><%= stati.props.subheadline %></p>
+  <div class="hero-actions">
+    <%~ stati.partials.button({ text: 'Get Started', variant: 'primary' }) %>
+    <%~ stati.partials.button({ text: 'Learn More', variant: 'outline' }) %>
+  </div>
+</section>`;
+  writeFileSync(join(componentsDir, 'hero.eta'), heroComponent);
+
+  const gridComponent = `<% if (!stati.props) { %><% return; } %><div class="grid">
+  <% for (const item of stati.props.items) { %>
+    <%~ stati.partials.card({ title: item.title, description: item.description, buttonText: item.cta }) %>
+  <% } %>
+</div>`;
+  writeFileSync(join(componentsDir, 'grid.eta'), gridComponent);
+
+  const navComponent = `<% if (!stati.props) { %><% return; } %><nav class="nav">
+  <% for (const link of stati.props.links) { %>
+    <a href="<%= link.href %>" class="<%= \`\${link.active ? 'active' : ''}\` %>">
+      <%= link.label %>
+    </a>
+  <% } %>
+</nav>`;
+  writeFileSync(join(componentsDir, 'nav.eta'), navComponent);
+
+  const footerComponent = `<% if (!stati.props) { %><% return; } %><footer class="footer">
+  <div class="footer-grid">
+    <% for (const section of stati.props.sections) { %>
+      <div class="footer-section">
+        <h4><%= section.title %></h4>
+        <%~ stati.partials.nav({ links: section.links }) %>
+      </div>
+    <% } %>
+  </div>
+  <%~ stati.partials.button({ text: 'Back to top', variant: 'ghost' }) %>
+</footer>`;
+  writeFileSync(join(componentsDir, 'footer.eta'), footerComponent);
+
   // Create stati config
   const configContent = `export default {
   site: {
@@ -123,6 +184,86 @@ This is the home page.
 };
 `;
   writeFileSync(join(baseDir, 'stati.config.js'), configContent);
+}
+
+/**
+ * Create complex pages with multiple nested Eta components.
+ * Note: Pages must be .md files as Stati only processes markdown as content.
+ * The components are called via stati.partials in the markdown's template.
+ */
+function createComplexFixture(baseDir: string, pageCount: number): void {
+  const siteDir = join(baseDir, 'site');
+
+  // Create a complex layout that uses nested components
+  const complexLayoutContent = `<!DOCTYPE html>
+<html>
+<head>
+  <title><%= stati.page.title ? \`\${stati.page.title} | Test Site\` : 'Test Site' %></title>
+</head>
+<body>
+  <%~ stati.partials.hero({
+    headline: stati.page.title || 'Welcome',
+    subheadline: stati.page.description || 'A complex page'
+  }) %>
+  <%~ stati.partials.grid({
+    items: [
+      { title: 'Feature 1', description: 'Description for feature 1', cta: 'Explore' },
+      { title: 'Feature 2', description: 'Description for feature 2', cta: 'Discover' },
+      { title: 'Feature 3', description: 'Description for feature 3', cta: 'Learn' },
+      { title: 'Feature 4', description: 'Description for feature 4', cta: 'Try it' },
+      { title: 'Feature 5', description: 'Description for feature 5', cta: 'Get started' },
+      { title: 'Feature 6', description: 'Description for feature 6', cta: 'View more' }
+    ]
+  }) %>
+  <main>
+    <%~ stati.content %>
+  </main>
+  <div class="cards-row">
+    <%~ stati.partials.card({ title: 'Card A', description: 'Standalone card A', buttonText: 'Click A' }) %>
+    <%~ stati.partials.card({ title: 'Card B', description: 'Standalone card B', buttonText: 'Click B' }) %>
+  </div>
+  <%~ stati.partials.footer({
+    sections: [
+      {
+        title: 'Company',
+        links: [
+          { href: '/about', label: 'About', active: false },
+          { href: '/careers', label: 'Careers', active: false },
+          { href: '/contact', label: 'Contact', active: false }
+        ]
+      },
+      {
+        title: 'Resources',
+        links: [
+          { href: '/docs', label: 'Documentation', active: false },
+          { href: '/blog', label: 'Blog', active: false },
+          { href: '/support', label: 'Support', active: false }
+        ]
+      }
+    ]
+  }) %>
+</body>
+</html>`;
+  writeFileSync(join(siteDir, 'complex-layout.eta'), complexLayoutContent);
+
+  // Create complex markdown pages that use the complex layout
+  for (let i = 0; i < pageCount; i++) {
+    const complexPageContent = `---
+title: Complex Page ${i}
+description: Complex page with nested components
+layout: complex-layout
+---
+
+# Complex Page ${i}
+
+This is a complex page that uses nested Eta components via the layout.
+
+## Content Section
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+`;
+    writeFileSync(join(siteDir, `complex-${i}.md`), complexPageContent);
+  }
 }
 
 /**
@@ -153,9 +294,11 @@ interface BenchmarkSummary {
   nodeVersion: string;
   platform: string;
   pageCount: number;
+  complexPageCount: number;
   coldBuild?: { medianMs: number; p95Ms: number };
   warmBuild?: { medianMs: number; p95Ms: number; cacheHitRate: number };
   incrementalBuild?: { medianMs: number };
+  complexBuild?: { medianMs: number; p95Ms: number };
 }
 
 const benchmarkResults: BenchmarkSummary = {
@@ -163,6 +306,7 @@ const benchmarkResults: BenchmarkSummary = {
   nodeVersion: process.version,
   platform: process.platform,
   pageCount: BENCHMARK_CONFIG.pageCount,
+  complexPageCount: BENCHMARK_CONFIG.complexPageCount,
 };
 
 /**
@@ -382,6 +526,73 @@ describe('Build Performance Benchmarks', () => {
   );
 
   it(
+    'should measure complex build performance with nested components',
+    async () => {
+      // Add complex pages with nested Eta components to the fixture
+      createComplexFixture(testDir, BENCHMARK_CONFIG.complexPageCount);
+
+      const durations: number[] = [];
+
+      // Warmup
+      for (let i = 0; i < BENCHMARK_CONFIG.warmupRuns; i++) {
+        // Clean between warmup runs
+        const cacheDir = join(testDir, '.stati');
+        const distDir = join(testDir, 'dist');
+        if (existsSync(cacheDir)) rmSync(cacheDir, { recursive: true, force: true });
+        if (existsSync(distDir)) rmSync(distDir, { recursive: true, force: true });
+
+        await build({
+          clean: true,
+          force: true,
+          logger: createSilentLogger(),
+          metrics: { enabled: true },
+        });
+      }
+
+      // Measured runs
+      for (let i = 0; i < BENCHMARK_CONFIG.measuredRuns; i++) {
+        // Clean between runs
+        const cacheDir = join(testDir, '.stati');
+        const distDir = join(testDir, 'dist');
+        if (existsSync(cacheDir)) rmSync(cacheDir, { recursive: true, force: true });
+        if (existsSync(distDir)) rmSync(distDir, { recursive: true, force: true });
+
+        const result = await build({
+          clean: true,
+          force: true,
+          logger: createSilentLogger(),
+          metrics: { enabled: true },
+        });
+
+        expect(result.buildMetrics).toBeDefined();
+        durations.push(result.buildMetrics!.totals.durationMs);
+
+        // Total pages should include at least the base pages + complex pages
+        // Base: pageCount + 1 (index), Complex: complexPageCount
+        const minExpectedPages = BENCHMARK_CONFIG.pageCount + 1 + BENCHMARK_CONFIG.complexPageCount;
+        expect(result.cacheMisses).toBeGreaterThanOrEqual(minExpectedPages);
+      }
+
+      const medianDuration = median(durations);
+      const p95Duration = p95(durations);
+
+      // Record results for summary
+      benchmarkResults.complexBuild = {
+        medianMs: medianDuration,
+        p95Ms: p95Duration,
+      };
+
+      console.warn(
+        `[PERF] Complex build (${BENCHMARK_CONFIG.complexPageCount} nested component pages): median=${medianDuration.toFixed(0)}ms, p95=${p95Duration.toFixed(0)}ms`,
+      );
+
+      // Complex builds should complete in reasonable time
+      expect(medianDuration).toBeLessThan(15000); // 15 seconds max
+    },
+    BENCHMARK_CONFIG.timeout,
+  );
+
+  it(
     'should measure build with metrics in detailed mode',
     async () => {
       const result = await build({
@@ -393,7 +604,10 @@ describe('Build Performance Benchmarks', () => {
 
       expect(result.buildMetrics).toBeDefined();
       expect(result.buildMetrics!.pageTimings).toBeDefined();
-      expect(result.buildMetrics!.pageTimings!.length).toBe(BENCHMARK_CONFIG.pageCount + 1);
+      // Page count may include complex pages if that test ran before this one
+      expect(result.buildMetrics!.pageTimings!.length).toBeGreaterThanOrEqual(
+        BENCHMARK_CONFIG.pageCount + 1,
+      );
 
       // Verify page timing structure
       const firstTiming = result.buildMetrics!.pageTimings![0];

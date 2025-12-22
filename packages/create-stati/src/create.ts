@@ -6,7 +6,7 @@ import { processStyling } from './css-processors.js';
 import { writeProcessorFiles } from './utils/index.js';
 import type { StylingOption } from './css-processors.js';
 import { setupTypeScript } from './typescript-processor.js';
-import { isCommandAvailable, spawnProcess, logger } from './utils/index.js';
+import { isCommandAvailable, spawnProcess, log } from './utils/index.js';
 
 /**
  * Result of a dependency installation attempt
@@ -381,8 +381,8 @@ coverage/
       await writeFile(join(targetDir, '.gitignore'), gitignoreContent);
     } catch (error) {
       // Git initialization is optional, so we just warn instead of failing
-      logger.warn(
-        'Warning: Failed to initialize git repository: ' +
+      log.warning(
+        'Failed to initialize git repository: ' +
           (error instanceof Error ? error.message : 'Unknown error'),
       );
     }
@@ -413,7 +413,9 @@ coverage/
     // Validate and sanitize target directory
     const safeTargetDir = validateDirectoryPath(targetDir);
 
-    logger.log(`\n📦 Installing dependencies with ${packageManager}...`);
+    log.newline();
+    log.info(`Installing dependencies with ${packageManager}...`);
+    log.newline();
 
     try {
       await spawnProcess(packageManager, ['install'], {
@@ -421,7 +423,8 @@ coverage/
         stdio: 'inherit', // Show install progress to user
       });
 
-      logger.log('Dependencies installed successfully');
+      log.newline();
+      log.success('Dependencies installed');
       return { success: true };
     } catch (error) {
       // Provide more specific error handling based on error type
@@ -430,8 +433,9 @@ coverage/
       const suggestion = getInstallErrorSuggestion(capturedError, packageManager);
 
       // Installation is optional, so we warn instead of failing the entire scaffolding
-      logger.warn('\nWarning: Failed to install dependencies: ' + errorMessage);
-      logger.warn(suggestion);
+      log.newline();
+      log.warning('Failed to install dependencies: ' + errorMessage);
+      log.warning(suggestion);
 
       return { success: false, error: capturedError };
     }
@@ -441,7 +445,7 @@ coverage/
     try {
       await rm(targetDir, { recursive: true, force: true });
     } catch (cleanupError) {
-      logger.warn(`Failed to cleanup directory ${targetDir}: ${cleanupError}`);
+      log.warning(`Failed to cleanup directory ${targetDir}: ${cleanupError}`);
     }
   }
 }

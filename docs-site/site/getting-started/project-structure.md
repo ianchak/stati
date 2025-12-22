@@ -101,7 +101,7 @@ export default defineConfig({
 });
 ```
 
-See the [TypeScript Configuration](/configuration/typescript/) guide for more details on multiple bundles and per-page targeting.
+See the [TypeScript Configuration](/configuration/typescript) guide for more details on multiple bundles and per-page targeting.
 
 ### `package.json`
 
@@ -198,8 +198,8 @@ dist/
 
 ## Next Steps
 
-- Learn about [Templates & Layouts](/core-concepts/templates/)
-- Understand [Filesystem-based Routing](/core-concepts/routing/)
-- Explore [Static Assets](/core-concepts/static-assets/)
-- Configure your [Site Metadata](/configuration/site-metadata/)
-- Enable [TypeScript Compilation](/configuration/typescript/)
+- Learn about [Templates & Layouts](/core-concepts/templates)
+- Understand [Filesystem-based Routing](/core-concepts/routing)
+- Explore [Static Assets](/core-concepts/static-assets)
+- Configure your [Site Metadata](/configuration/site-metadata)
+- Enable [TypeScript Compilation](/configuration/typescript)

@@ -314,6 +314,7 @@ describe('RSS Feed Generation', () => {
         success: vi.fn(),
         warning: vi.fn(),
         error: vi.fn(),
+        status: vi.fn(),
         building: vi.fn(),
         processing: vi.fn(),
         stats: vi.fn(),

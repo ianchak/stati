@@ -11,6 +11,8 @@
     "build:local": "node ../packages/cli/dist/cli.js build --clean && npm run build:css",
     "preview": "stati preview",
     "preview:local": "node ../packages/cli/dist/cli.js preview",
+    "invalidate": "stati invalidate",
+    "invalidate:local": "node ../packages/cli/dist/cli.js invalidate",
     "clean:dist": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "clean:cache": "node -e \"require('node:fs').rmSync('.stati',{recursive:true,force:true})\"",
     "clean": "npm run clean:dist && npm run clean:cache",

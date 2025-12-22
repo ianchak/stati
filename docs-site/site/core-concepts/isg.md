@@ -265,4 +265,4 @@ $ stati build
 💾 Cache: 156 MB, 1,247 entries
 ```
 
-ISG is central to Stati's build workflow. Understanding how to configure and optimize it will improve your development experience and build times. Next, learn about [Static Assets & Bundling](/core-concepts/static-assets/) to understand how Stati handles CSS, JavaScript, and other assets.
+ISG is central to Stati's build workflow. Understanding how to configure and optimize it will improve your development experience and build times. Next, learn about [Static Assets & Bundling](/core-concepts/static-assets) to understand how Stati handles CSS, JavaScript, and other assets.

@@ -84,6 +84,7 @@ title: Home
     success: vi.fn(),
     error: vi.fn(),
     warning: vi.fn(),
+    status: vi.fn(),
     building: vi.fn(),
     processing: vi.fn(),
     stats: vi.fn(),

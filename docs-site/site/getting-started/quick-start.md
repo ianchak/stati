@@ -10,9 +10,9 @@ This guide will walk you through creating your first Stati site from scratch. Yo
 
 ## Need Help?
 
-- Check the [API Reference](/api/reference/) for detailed documentation
-- Browse [Examples](/examples/list/) for inspiration
-- Visit the [Contributing](/advanced/contributing/) section to help improve Stati
+- Check the [API Reference](/api/reference) for detailed documentation
+- Browse [Examples](/examples/list) for inspiration
+- Visit the [Contributing](/advanced/contributing) section to help improve Stati
 
 Before we start, make sure you have:
 
@@ -268,26 +268,26 @@ Now that you have a working Stati site, explore these topics:
 
 ### Learn Core Concepts
 
-- [Filesystem-based Routing](/core-concepts/routing/)
-- [Templates & Layouts](/core-concepts/templates/)
-- [Markdown Pipeline](/core-concepts/markdown/)
-- [Incremental Static Generation](/core-concepts/isg/)
+- [Filesystem-based Routing](/core-concepts/routing)
+- [Templates & Layouts](/core-concepts/templates)
+- [Markdown Pipeline](/core-concepts/markdown)
+- [Incremental Static Generation](/core-concepts/isg)
 
 ### Advanced Configuration
 
-- [Site Metadata](/configuration/site-metadata/)
-- [Template Settings](/configuration/templates/)
-- [Markdown Configuration](/configuration/markdown/)
+- [Site Metadata](/configuration/site-metadata)
+- [Template Settings](/configuration/templates)
+- [Markdown Configuration](/configuration/markdown)
 
 ### Examples and Learning Resources
 
-- [Available Examples](/examples/list/) - Explore currently implemented templates
-- [Configuration Reference](/configuration/file/) - Detailed configuration options
+- [Available Examples](/examples/list) - Explore currently implemented templates
+- [Configuration Reference](/configuration/file) - Detailed configuration options
 
 ## Need Help?
 
-- Check the [API Reference](/api/reference/) for detailed documentation
-- Browse [Examples](/examples/list/) for inspiration
-- Visit the [Contributing](/advanced/contributing/) section to help improve Stati
+- Check the [API Reference](/api/reference) for detailed documentation
+- Browse [Examples](/examples/list) for inspiration
+- Visit the [Contributing](/advanced/contributing) section to help improve Stati
 
 Congratulations! You've successfully created your first Stati site. Happy building! 🎉

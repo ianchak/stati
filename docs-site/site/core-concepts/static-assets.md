@@ -45,7 +45,7 @@ src/
     └── nav.ts           # Component modules
 ```
 
-Your compiled bundles are automatically injected into pages before the closing `</body>` tag. Stati supports multiple bundles with per-page targeting via include/exclude patterns, so you can ship only the JavaScript each page needs. For full TypeScript configuration options, see the [TypeScript Configuration Guide](/configuration/typescript/).
+Your compiled bundles are automatically injected into pages before the closing `</body>` tag. Stati supports multiple bundles with per-page targeting via include/exclude patterns, so you can ship only the JavaScript each page needs. For full TypeScript configuration options, see the [TypeScript Configuration Guide](/configuration/typescript).
 
 ## CSS Processing
 
@@ -232,7 +232,7 @@ This starts both the Stati dev server and Tailwind watcher in a single process. 
 - `tailwindcss` must be installed locally in your project
 - Stati validates the installation before starting the watcher
 
-See the [Development Server](/cli/development/) documentation for more details on Tailwind integration.
+See the [Development Server](/cli/development) documentation for more details on Tailwind integration.
 
 ## Images and Media
 

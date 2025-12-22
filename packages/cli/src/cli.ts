@@ -97,21 +97,28 @@ const cli = yargs(hideBin(process.argv))
         // Show decorative startup banner
         log.startupBanner('Build', getCliVersion(), getStatiVersion());
 
-        // Show build options summary
-        if (buildOptions.force) log.info('Force rebuild enabled');
-        if (buildOptions.clean) log.info('Clean build enabled');
-        if (buildOptions.includeDrafts) log.info('Including draft pages');
-        if (buildOptions.configPath) log.info(`Using config: ${buildOptions.configPath}`);
-        if (metricsEnabled) log.info('Build metrics enabled');
+        // Show command info box with all options
+        log.commandInfo('build', [
+          { name: 'Force', value: !!buildOptions.force, isDefault: !buildOptions.force },
+          { name: 'Clean', value: !!buildOptions.clean, isDefault: !buildOptions.clean },
+          {
+            name: 'Drafts',
+            value: !!buildOptions.includeDrafts,
+            isDefault: !buildOptions.includeDrafts,
+          },
+          {
+            name: 'Config',
+            value: buildOptions.configPath || '',
+            isDefault: !buildOptions.configPath,
+          },
+          { name: 'Metrics', value: metricsEnabled, isDefault: !metricsEnabled },
+        ]);
 
         setEnv('production');
         buildOptions.logger = coloredLogger;
-        const startTime = Date.now();
 
         const result = await build(buildOptions);
-        const buildTime = Date.now() - startTime;
 
-        log.timing('Total build', buildTime);
         log.success('Site built successfully!');
 
         // Handle metrics output
@@ -150,7 +157,7 @@ const cli = yargs(hideBin(process.argv))
           });
 
           if (writeResult.success && writeResult.path) {
-            log.info(`📈 Metrics written to ${writeResult.path}`);
+            log.status(`Metrics written to ${writeResult.path}`);
           } else if (!writeResult.success) {
             const targetPath = metricsOutputPath || `${cacheDir}/metrics/`;
             log.error(
@@ -217,10 +224,18 @@ const cli = yargs(hideBin(process.argv))
         // Show decorative startup banner
         log.startupBanner('Development Server', getCliVersion(), getStatiVersion());
 
-        // Show dev server options
-        log.info(`Server will run at http://${argv.host}:${argv.port}`);
-        if (argv.open) log.info('Browser will open automatically');
-        if (argv.config) log.info(`Using config: ${argv.config}`);
+        // Show command info box with all options
+        log.commandInfo('dev', [
+          { name: 'Host', value: argv.host as string, isDefault: argv.host === 'localhost' },
+          { name: 'Port', value: argv.port as number, isDefault: argv.port === 3000 },
+          { name: 'Open', value: !!argv.open, isDefault: !argv.open },
+          { name: 'Config', value: (argv.config as string) || '', isDefault: !argv.config },
+          {
+            name: 'Tailwind',
+            value: !!(argv['tailwind-input'] && argv['tailwind-output']),
+            isDefault: !(argv['tailwind-input'] && argv['tailwind-output']),
+          },
+        ]);
 
         const devServer = await createDevServer(devOptions);
         await devServer.start();
@@ -325,10 +340,13 @@ const cli = yargs(hideBin(process.argv))
         // Show decorative startup banner
         log.startupBanner('Preview Server', getCliVersion(), getStatiVersion());
 
-        // Show preview server options
-        log.info(`Server will run at http://${argv.host}:${argv.port}`);
-        if (argv.open) log.info('Browser will open automatically');
-        if (argv.config) log.info(`Using config: ${argv.config}`);
+        // Show command info box with all options
+        log.commandInfo('preview', [
+          { name: 'Host', value: argv.host as string, isDefault: argv.host === 'localhost' },
+          { name: 'Port', value: argv.port as number, isDefault: argv.port === 4000 },
+          { name: 'Open', value: !!argv.open, isDefault: !argv.open },
+          { name: 'Config', value: (argv.config as string) || '', isDefault: !argv.config },
+        ]);
 
         const previewServer = await createPreviewServer(previewOptions);
         await previewServer.start();
@@ -361,13 +379,17 @@ const cli = yargs(hideBin(process.argv))
       }),
     async (argv) => {
       try {
-        log.header('Stati Cache Invalidation');
+        // Show decorative startup banner
+        log.startupBanner('Invalidate', getCliVersion(), getStatiVersion());
 
-        if (argv.query) {
-          log.info(`🎯 Invalidating cache for: ${argv.query}`);
-        } else {
-          log.info('🗑️  Clearing entire cache');
-        }
+        // Show command info box with query details
+        log.commandInfo('invalidate', [
+          {
+            name: 'Query',
+            value: (argv.query as string) || 'clear all',
+            isDefault: !argv.query,
+          },
+        ]);
 
         const result: {
           invalidatedCount: number;
@@ -380,10 +402,10 @@ const cli = yargs(hideBin(process.argv))
         } else if (result.invalidatedCount > 0) {
           log.success(`Invalidated ${result.invalidatedCount} cache entries:`);
           result.invalidatedPaths.forEach((path) => {
-            log.info(`   📄 ${path}`);
+            log.info(`   ${path}`);
           });
         } else {
-          log.info('ℹ️  No cache entries matched the query');
+          log.status('No cache entries matched the query');
         }
       } catch (error) {
         log.error(`Invalidation failed: ${error instanceof Error ? error.message : String(error)}`);

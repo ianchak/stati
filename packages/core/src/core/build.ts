@@ -19,6 +19,7 @@ import {
   compileTypeScript,
   autoInjectBundles,
   getBundlePathsForPage,
+  formatBytes,
 } from './utils/index.js';
 import type { CompiledBundleInfo } from './utils/index.js';
 import { join, dirname, relative, posix } from 'node:path';
@@ -168,11 +169,12 @@ async function copyStaticAssetsWithLogging(
   destDir: string,
   logger: Logger,
   basePath = '',
-): Promise<number> {
+): Promise<{ count: number; totalBytes: number }> {
   let filesCopied = 0;
+  let totalBytes = 0;
 
   if (!(await pathExists(sourceDir))) {
-    return 0;
+    return { count: 0, totalBytes: 0 };
   }
 
   const items = await readdir(sourceDir, { withFileTypes: true });
@@ -185,21 +187,25 @@ async function copyStaticAssetsWithLogging(
     if (item.isDirectory()) {
       // Recursively copy directories
       await ensureDir(destPath);
-      filesCopied += await copyStaticAssetsWithLogging(sourcePath, destPath, logger);
+      const result = await copyStaticAssetsWithLogging(sourcePath, destPath, logger);
+      filesCopied += result.count;
+      totalBytes += result.totalBytes;
     } else {
       // Copy individual files
       await ensureDir(dirname(destPath));
       await copyFile(sourcePath, destPath);
+      const fileStats = await stat(sourcePath);
       if (logger.file) {
-        logger.file('copy', relativePath);
+        logger.file('copy', relativePath, fileStats.size);
       } else {
-        logger.processing(`📄 ${relativePath}`);
+        logger.processing(`• ${relativePath}`);
       }
       filesCopied++;
+      totalBytes += fileStats.size;
     }
   }
 
-  return filesCopied;
+  return { count: filesCopied, totalBytes };
 }
 
 /**
@@ -210,6 +216,7 @@ const defaultLogger: Logger = {
   success: (message: string) => console.log(message),
   warning: (message: string) => console.warn(message),
   error: (message: string) => console.error(message),
+  status: (message: string) => console.log(message),
   building: (message: string) => console.log(message),
   processing: (message: string) => console.log(message),
   stats: (message: string) => console.log(message),
@@ -320,7 +327,7 @@ async function loadContentAndBuildNavigation(
 }> {
   // Load all content
   const pages = await loadContent(config, options.includeDrafts);
-  logger.info(`📄 Found ${pages.length} pages`);
+  logger.status(`Found ${pages.length} pages`);
 
   // Build navigation from pages
   if (logger.step) {
@@ -396,28 +403,20 @@ async function processPagesWithCache(
     endHookBeforeAll();
   }
 
-  // Render each page with tree-based progress tracking and ISG
+  // Render each page with progress tracking and ISG
   if (logger.step) {
     logger.step(2, 3, 'Rendering pages');
+    console.log(); // Add spacing after step header
   }
 
-  // Initialize rendering tree
-  if (logger.startRenderingTree) {
-    logger.startRenderingTree('Page Rendering Process');
+  // Initialize progress tracking
+  if (logger.startProgress) {
+    logger.startProgress(pages.length);
   }
 
   for (let i = 0; i < pages.length; i++) {
     const page = pages[i];
     if (!page) continue; // Safety check
-
-    const pageId = `page-${i}`;
-
-    // Add page to rendering tree
-    if (logger.addTreeNode) {
-      logger.addTreeNode('root', pageId, page.url, 'running', { url: page.url });
-    } else {
-      logger.processing(`Checking ${page.url}`);
-    }
 
     // Determine output path
     let outputPath: string;
@@ -441,10 +440,8 @@ async function processPagesWithCache(
     if (!shouldRebuild) {
       // Cache hit - skip rendering
       cacheHits++;
-      if (logger.updateTreeNode) {
-        logger.updateTreeNode(pageId, 'cached', { cacheHit: true, url: page.url });
-      } else {
-        logger.processing(`📋 Cached ${page.url}`);
+      if (logger.updateProgress) {
+        logger.updateProgress('cached', page.url);
       }
       // Record page timing for cached pages (0ms render time)
       recorder.recordPageTiming(page.url, 0, true);
@@ -538,11 +535,8 @@ async function processPagesWithCache(
     // Record page timing for rendered pages (includes template count)
     recorder.recordPageTiming(page.url, renderTime, false, renderResult.templatesLoaded);
 
-    if (logger.updateTreeNode) {
-      logger.updateTreeNode(pageId, 'completed', {
-        timing: renderTime,
-        url: page.url,
-      });
+    if (logger.updateProgress) {
+      logger.updateProgress('rendered', page.url, renderTime);
     }
 
     // Ensure directory exists and write file
@@ -570,11 +564,11 @@ async function processPagesWithCache(
     }
   }
 
-  // Display final rendering tree and clear it
-  if (logger.showRenderingTree) {
-    logger.showRenderingTree();
-    if (logger.clearRenderingTree) {
-      logger.clearRenderingTree();
+  // Display final progress summary
+  if (logger.endProgress) {
+    logger.endProgress();
+    if (logger.showRenderingSummary) {
+      logger.showRenderingSummary();
     }
   }
 
@@ -599,8 +593,17 @@ async function copyStaticAssets(
     logger.step(3, 3, 'Copying static assets');
   }
   logger.info(`Copying static assets from ${config.staticDir}`);
-  const assetsCount = await copyStaticAssetsWithLogging(staticDir, outDir, logger);
-  logger.info(`Copied ${assetsCount} static assets`);
+  const { count: assetsCount, totalBytes } = await copyStaticAssetsWithLogging(
+    staticDir,
+    outDir,
+    logger,
+  );
+  if (assetsCount > 0) {
+    const totalSizeStr = formatBytes(totalBytes);
+    logger.success(`Copied ${assetsCount} static assets (${totalSizeStr})`);
+  } else {
+    logger.info(`Copied 0 static assets`);
+  }
 
   return assetsCount;
 }
@@ -663,7 +666,7 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     coreVersion: options.coreVersion,
   });
 
-  logger.building('Building your site...');
+  logger.status('Started building your site...');
 
   // Load configuration (instrumented)
   const endConfigSpan = recorder.startSpan('configLoadMs');
@@ -676,7 +679,7 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
 
   // Clean output directory and cache if requested
   if (options.clean) {
-    logger.info('Cleaning output directory and ISG cache...');
+    logger.status('Cleaning output directory and ISG cache...');
     await remove(outDir);
     await remove(cacheDir);
   }
@@ -695,14 +698,14 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
       // Write the initial inventory file immediately so Tailwind can scan it
       // This is critical for dev server where Tailwind starts watching before template rendering
       await writeTailwindClassInventory(cacheDir);
-      logger.info(`📦 Loaded ${loadedCount} classes from previous build for Tailwind scanner`);
+      logger.status(`Loaded ${loadedCount} classes from previous build for Tailwind scanner`);
     } else {
       // No previous inventory found - write an empty placeholder file
       // This ensures Tailwind has a file to scan even on first build
       // It will be populated with actual classes after template rendering
       await writeTailwindClassInventory(cacheDir);
-      logger.info(
-        `📦 Created inventory file for Tailwind scanner (will be populated after rendering)`,
+      logger.status(
+        `Created inventory file for Tailwind scanner (will be populated after rendering)`,
       );
     }
   }
@@ -805,7 +808,7 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     if (inventorySize > 0) {
       await writeTailwindClassInventory(cacheDir);
       logger.info('');
-      logger.info(`📝 Generated Tailwind class inventory (${inventorySize} classes tracked)`);
+      logger.status(`Generated Tailwind class inventory (${inventorySize} classes tracked)`);
     }
 
     // Disable inventory tracking after build
@@ -848,7 +851,9 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
         `Generated sitemap index with ${sitemapResult.sitemaps.length} sitemaps (${sitemapResult.entryCount} entries)`,
       );
     } else {
-      logger.success(`Generated sitemap with ${sitemapResult.entryCount} entries`);
+      logger.success(
+        `Generated sitemap.xml with ${sitemapResult.entryCount} entries (${(sitemapResult.sizeInBytes / 1024).toFixed(2)} KB)`,
+      );
     }
   }
 
@@ -861,8 +866,9 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
 
     const robotsContent = generateRobotsTxtFromConfig(config.robots, config.site.baseUrl);
     await writeFile(join(outDir, 'robots.txt'), robotsContent);
+    const robotsSizeBytes = Buffer.byteLength(robotsContent, 'utf8');
 
-    logger.success('Generated robots.txt');
+    logger.success(`Generated robots.txt (${robotsSizeBytes} bytes)`);
   }
 
   // Generate RSS feeds if enabled (only in production mode)
