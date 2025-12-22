@@ -775,15 +775,6 @@ class ProgressBarManager {
 const progressBar = new ProgressBarManager();
 
 /**
- * Formats bytes into a human-readable string with appropriate units
- */
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-}
-
-/**
  * Creates formatted build summary
  */
 function createStatsTable(stats: {
@@ -810,7 +801,7 @@ function createStatsTable(stats: {
   );
   lines.push(`${colors.muted('  Assets:')} ${colors.brandStrong(String(stats.assetsCount))}`);
   lines.push(
-    `${colors.muted('  Output:')} ${colors.brandStrong(formatBytes(stats.outputSizeBytes))}`,
+    `${colors.muted('  Output:')} ${colors.brandStrong(formatFileSize(stats.outputSizeBytes))}`,
   );
   lines.push(`${colors.muted('  Time:')} ${colors.brandStrong(timeSeconds)}s`);
 

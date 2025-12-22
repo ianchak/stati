@@ -126,6 +126,7 @@ vi.mock('../../src/core/isg/build-lock.js', () => ({
 vi.mock('../../src/core/utils/typescript.utils.js', () => ({
   compileTypeScript: mockCompileTypeScript,
   autoInjectBundles: mockAutoInjectBundles,
+  formatBytes: () => '1.00 KB',
 }));
 
 vi.mock('../../src/search/index.js', () => ({

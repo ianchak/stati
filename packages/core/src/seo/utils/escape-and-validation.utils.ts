@@ -2,11 +2,11 @@
  * SEO utility functions for HTML escaping, validation, and tag detection
  */
 
-import { URL } from 'node:url';
 import type { SEOMetadata, RobotsConfig } from '../../types/content.js';
 import type { SEOValidationResult, SEOTagType } from '../../types/seo.js';
 import { SEOTagType as SEOTagTypeEnum } from '../../types/seo.js';
 import type { Logger } from '../../types/logging.js';
+import { isValidUrl } from './url.utils.js';
 
 /**
  * HTML escape cache for performance optimization.
@@ -196,21 +196,6 @@ export function generateRobotsContent(seo: SEOMetadata): string {
   }
 
   return directives.length > 0 ? directives.join(', ') : '';
-}
-
-/**
- * Validate URL format (http or https only).
- *
- * @param url - The URL to validate
- * @returns True if the URL is valid
- */
-function isValidUrl(url: string): boolean {
-  try {
-    const parsed = new URL(url);
-    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-  } catch {
-    return false;
-  }
 }
 
 /**
