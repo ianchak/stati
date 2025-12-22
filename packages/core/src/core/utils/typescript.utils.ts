@@ -22,7 +22,7 @@ import {
 /**
  * Formats bytes into a human-readable string.
  */
-function formatBytes(bytes: number): string {
+export function formatBytes(bytes: number): string {
   if (bytes < 1024) {
     return `${bytes} B`;
   } else if (bytes < 1024 * 1024) {

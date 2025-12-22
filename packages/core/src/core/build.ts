@@ -19,6 +19,7 @@ import {
   compileTypeScript,
   autoInjectBundles,
   getBundlePathsForPage,
+  formatBytes,
 } from './utils/index.js';
 import type { CompiledBundleInfo } from './utils/index.js';
 import { join, dirname, relative, posix } from 'node:path';
@@ -151,19 +152,6 @@ async function getDirectorySize(dirPath: string): Promise<number> {
   }
 
   return totalSize;
-}
-
-/**
- * Formats bytes into a human-readable string.
- */
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) {
-    return `${bytes} B`;
-  } else if (bytes < 1024 * 1024) {
-    return `${(bytes / 1024).toFixed(2)} KB`;
-  } else {
-    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-  }
 }
 
 /**
