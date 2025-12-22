@@ -157,7 +157,7 @@ const cli = yargs(hideBin(process.argv))
           });
 
           if (writeResult.success && writeResult.path) {
-            log.info(`Metrics written to ${writeResult.path}`);
+            log.info(`▸ Metrics written to ${writeResult.path}`);
           } else if (!writeResult.success) {
             const targetPath = metricsOutputPath || `${cacheDir}/metrics/`;
             log.error(
@@ -379,13 +379,17 @@ const cli = yargs(hideBin(process.argv))
       }),
     async (argv) => {
       try {
-        log.header('Stati Cache Invalidation');
+        // Show decorative startup banner
+        log.startupBanner('Invalidate', getCliVersion(), getStatiVersion());
 
-        if (argv.query) {
-          log.info(`Invalidating cache for: ${argv.query}`);
-        } else {
-          log.info('Clearing entire cache');
-        }
+        // Show command info box with query details
+        log.commandInfo('invalidate', [
+          {
+            name: 'Query',
+            value: (argv.query as string) || 'clear all',
+            isDefault: !argv.query,
+          },
+        ]);
 
         const result: {
           invalidatedCount: number;
@@ -401,7 +405,7 @@ const cli = yargs(hideBin(process.argv))
             log.info(`   ${path}`);
           });
         } else {
-          log.info('No cache entries matched the query');
+          log.info('▸ No cache entries matched the query');
         }
       } catch (error) {
         log.error(`Invalidation failed: ${error instanceof Error ? error.message : String(error)}`);

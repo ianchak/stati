@@ -905,7 +905,7 @@ export const log = {
    * Decorative startup banner for CLI commands
    */
   startupBanner: (
-    _mode: 'Development Server' | 'Preview Server' | 'Build',
+    _mode: 'Development Server' | 'Preview Server' | 'Build' | 'Invalidate',
     cliVersion: string,
     coreVersion: string,
   ) => {
