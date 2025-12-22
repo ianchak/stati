@@ -1,5 +1,11 @@
 # @stati/core
 
+## 1.21.0
+
+### Minor Changes
+
+- 480ba92: Add progress tracking methods to Logger interface (startProgress, updateProgress, endProgress, showRenderingSummary)
+
 ## 1.20.3
 
 ### Patch Changes

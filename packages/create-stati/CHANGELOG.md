@@ -1,5 +1,11 @@
 # create-stati
 
+## 1.11.7
+
+### Patch Changes
+
+- 480ba92: Update logger utilities to use new color system
+
 ## 1.11.6
 
 ### Patch Changes

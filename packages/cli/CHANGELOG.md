@@ -1,5 +1,16 @@
 # @stati/cli
 
+## 1.13.0
+
+### Minor Changes
+
+- 480ba92: Add Ice Blue color palette, Unicode/ASCII glyphs, and progress bar + summary system for builds
+
+### Patch Changes
+
+- Updated dependencies [480ba92]
+  - @stati/core@1.21.0
+
 ## 1.12.0
 
 ### Minor Changes
