@@ -120,6 +120,20 @@ vi.mock('../../src/core/utils/typescript.utils.js', () => ({
   ]),
 }));
 
+// Helper function to create a fresh mock logger for each test
+function createMockLogger() {
+  return {
+    info: vi.fn(),
+    error: vi.fn(),
+    success: vi.fn(),
+    warning: vi.fn(),
+    status: vi.fn(),
+    building: vi.fn(),
+    processing: vi.fn(),
+    stats: vi.fn(),
+  };
+}
+
 describe('Development Server', () => {
   let consoleSpy: ReturnType<typeof vi.spyOn>;
 
@@ -183,15 +197,7 @@ describe('Development Server', () => {
   });
 
   it('should handle logger options', async () => {
-    const mockLogger = {
-      info: vi.fn(),
-      error: vi.fn(),
-      success: vi.fn(),
-      warning: vi.fn(),
-      building: vi.fn(),
-      processing: vi.fn(),
-      stats: vi.fn(),
-    };
+    const mockLogger = createMockLogger();
 
     const options: DevServerOptions = {
       logger: mockLogger,
@@ -209,15 +215,7 @@ describe('Development Server', () => {
   });
 
   it('should clear cache during initial startup', async () => {
-    const mockLogger = {
-      info: vi.fn(),
-      error: vi.fn(),
-      success: vi.fn(),
-      warning: vi.fn(),
-      building: vi.fn(),
-      processing: vi.fn(),
-      stats: vi.fn(),
-    };
+    const mockLogger = createMockLogger();
 
     const options: DevServerOptions = {
       port: 8081,
@@ -241,21 +239,13 @@ describe('Development Server', () => {
     expect(invalidateCall!).toBeLessThan(buildCall!);
 
     // Verify logger messages
-    expect(mockLogger.info).toHaveBeenCalledWith('▸ Clearing cache for fresh development build...');
+    expect(mockLogger.status).toHaveBeenCalledWith('Clearing cache for fresh development build...');
 
     await devServer.stop();
   });
 
   it('should handle build errors during initial startup', async () => {
-    const mockLogger = {
-      info: vi.fn(),
-      error: vi.fn(),
-      success: vi.fn(),
-      warning: vi.fn(),
-      building: vi.fn(),
-      processing: vi.fn(),
-      stats: vi.fn(),
-    };
+    const mockLogger = createMockLogger();
 
     // Simulate build failure
     const buildError = new Error('Build failed: template not found');
@@ -280,15 +270,7 @@ describe('Development Server', () => {
   });
 
   it('should handle config loading errors', async () => {
-    const mockLogger = {
-      info: vi.fn(),
-      error: vi.fn(),
-      success: vi.fn(),
-      warning: vi.fn(),
-      building: vi.fn(),
-      processing: vi.fn(),
-      stats: vi.fn(),
-    };
+    const mockLogger = createMockLogger();
 
     mockLoadConfig.mockRejectedValueOnce(new Error('Config file not found'));
 
@@ -302,15 +284,7 @@ describe('Development Server', () => {
   });
 
   it('should handle custom config path', async () => {
-    const mockLogger = {
-      info: vi.fn(),
-      error: vi.fn(),
-      success: vi.fn(),
-      warning: vi.fn(),
-      building: vi.fn(),
-      processing: vi.fn(),
-      stats: vi.fn(),
-    };
+    const mockLogger = createMockLogger();
 
     const customConfigPath = './custom-stati.config.js';
 
@@ -330,15 +304,7 @@ describe('Development Server', () => {
   });
 
   it('should open browser when open option is true', async () => {
-    const mockLogger = {
-      info: vi.fn(),
-      error: vi.fn(),
-      success: vi.fn(),
-      warning: vi.fn(),
-      building: vi.fn(),
-      processing: vi.fn(),
-      stats: vi.fn(),
-    };
+    const mockLogger = createMockLogger();
 
     const options: DevServerOptions = {
       port: 8085,
@@ -358,15 +324,7 @@ describe('Development Server', () => {
   });
 
   it('should gracefully handle browser open failures', async () => {
-    const mockLogger = {
-      info: vi.fn(),
-      error: vi.fn(),
-      success: vi.fn(),
-      warning: vi.fn(),
-      building: vi.fn(),
-      processing: vi.fn(),
-      stats: vi.fn(),
-    };
+    const mockLogger = createMockLogger();
 
     // Mock import failure for 'open' module
     vi.doMock('open', () => {
@@ -474,15 +432,7 @@ describe('Development Server', () => {
         },
       });
 
-      const mockLogger = {
-        info: vi.fn(),
-        error: vi.fn(),
-        success: vi.fn(),
-        warning: vi.fn(),
-        building: vi.fn(),
-        processing: vi.fn(),
-        stats: vi.fn(),
-      };
+      const mockLogger = createMockLogger();
 
       const devServer = await createDevServer({
         port: 8100,
@@ -515,15 +465,7 @@ describe('Development Server', () => {
         },
       });
 
-      const mockLogger = {
-        info: vi.fn(),
-        error: vi.fn(),
-        success: vi.fn(),
-        warning: vi.fn(),
-        building: vi.fn(),
-        processing: vi.fn(),
-        stats: vi.fn(),
-      };
+      const mockLogger = createMockLogger();
 
       const devServer = await createDevServer({
         port: 8101,
@@ -631,15 +573,7 @@ describe('Development Server', () => {
         },
       });
 
-      const mockLogger = {
-        info: vi.fn(),
-        error: vi.fn(),
-        success: vi.fn(),
-        warning: vi.fn(),
-        building: vi.fn(),
-        processing: vi.fn(),
-        stats: vi.fn(),
-      };
+      const mockLogger = createMockLogger();
 
       const devServer = await createDevServer({
         port: 8104,
@@ -721,15 +655,7 @@ describe('Development Server', () => {
         site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
       });
 
-      const mockLogger = {
-        info: vi.fn(),
-        error: vi.fn(),
-        success: vi.fn(),
-        warning: vi.fn(),
-        building: vi.fn(),
-        processing: vi.fn(),
-        stats: vi.fn(),
-      };
+      const mockLogger = createMockLogger();
 
       // Clear build mock to track new calls
       mockBuild.mockClear();
@@ -821,15 +747,7 @@ describe('Development Server', () => {
         site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
       });
 
-      const mockLogger = {
-        info: vi.fn(),
-        error: vi.fn(),
-        success: vi.fn(),
-        warning: vi.fn(),
-        building: vi.fn(),
-        processing: vi.fn(),
-        stats: vi.fn(),
-      };
+      const mockLogger = createMockLogger();
 
       const devServer = await createDevServer({
         port: 8113,
@@ -881,15 +799,7 @@ describe('Development Server', () => {
         site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
       });
 
-      const mockLogger = {
-        info: vi.fn(),
-        error: vi.fn(),
-        success: vi.fn(),
-        warning: vi.fn(),
-        building: vi.fn(),
-        processing: vi.fn(),
-        stats: vi.fn(),
-      };
+      const mockLogger = createMockLogger();
 
       mockBuild.mockClear();
 
@@ -951,15 +861,7 @@ describe('Development Server', () => {
         site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
       });
 
-      const mockLogger = {
-        info: vi.fn(),
-        error: vi.fn(),
-        success: vi.fn(),
-        warning: vi.fn(),
-        building: vi.fn(),
-        processing: vi.fn(),
-        stats: vi.fn(),
-      };
+      const mockLogger = createMockLogger();
 
       mockBuild.mockClear();
 
@@ -1023,15 +925,7 @@ describe('Development Server', () => {
         site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
       });
 
-      const mockLogger = {
-        info: vi.fn(),
-        error: vi.fn(),
-        success: vi.fn(),
-        warning: vi.fn(),
-        building: vi.fn(),
-        processing: vi.fn(),
-        stats: vi.fn(),
-      };
+      const mockLogger = createMockLogger();
 
       mockBuild.mockClear();
 
@@ -1094,15 +988,7 @@ describe('Development Server', () => {
         site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
       });
 
-      const mockLogger = {
-        info: vi.fn(),
-        error: vi.fn(),
-        success: vi.fn(),
-        warning: vi.fn(),
-        building: vi.fn(),
-        processing: vi.fn(),
-        stats: vi.fn(),
-      };
+      const mockLogger = createMockLogger();
 
       mockBuild.mockClear();
 
@@ -1164,15 +1050,7 @@ describe('Development Server', () => {
         site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
       });
 
-      const mockLogger = {
-        info: vi.fn(),
-        error: vi.fn(),
-        success: vi.fn(),
-        warning: vi.fn(),
-        building: vi.fn(),
-        processing: vi.fn(),
-        stats: vi.fn(),
-      };
+      const mockLogger = createMockLogger();
 
       // Use a deferred build that we control
       let buildResolvers: Array<() => void> = [];
@@ -1309,15 +1187,7 @@ describe('Development Server', () => {
         site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
       });
 
-      const mockLogger = {
-        info: vi.fn(),
-        error: vi.fn(),
-        success: vi.fn(),
-        warning: vi.fn(),
-        building: vi.fn(),
-        processing: vi.fn(),
-        stats: vi.fn(),
-      };
+      const mockLogger = createMockLogger();
 
       // Use a deferred build that we control
       let buildResolvers: Array<() => void> = [];
@@ -1453,15 +1323,7 @@ describe('Development Server', () => {
         site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
       });
 
-      const mockLogger = {
-        info: vi.fn(),
-        error: vi.fn(),
-        success: vi.fn(),
-        warning: vi.fn(),
-        building: vi.fn(),
-        processing: vi.fn(),
-        stats: vi.fn(),
-      };
+      const mockLogger = createMockLogger();
 
       // Use a deferred build that we control
       let buildResolvers: Array<{ resolve: () => void; reject: (e: Error) => void }> = [];
@@ -1601,15 +1463,7 @@ describe('Development Server', () => {
         site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
       });
 
-      const mockLogger = {
-        info: vi.fn(),
-        error: vi.fn(),
-        success: vi.fn(),
-        warning: vi.fn(),
-        building: vi.fn(),
-        processing: vi.fn(),
-        stats: vi.fn(),
-      };
+      const mockLogger = createMockLogger();
 
       mockBuild.mockClear();
 
@@ -1706,15 +1560,7 @@ describe('Development Server', () => {
         site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
       });
 
-      const mockLogger = {
-        info: vi.fn(),
-        error: vi.fn(),
-        success: vi.fn(),
-        warning: vi.fn(),
-        building: vi.fn(),
-        processing: vi.fn(),
-        stats: vi.fn(),
-      };
+      const mockLogger = createMockLogger();
 
       mockBuild.mockClear();
 
@@ -1803,15 +1649,7 @@ describe('Development Server', () => {
         site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
       });
 
-      const mockLogger = {
-        info: vi.fn(),
-        error: vi.fn(),
-        success: vi.fn(),
-        warning: vi.fn(),
-        building: vi.fn(),
-        processing: vi.fn(),
-        stats: vi.fn(),
-      };
+      const mockLogger = createMockLogger();
 
       mockBuild.mockClear();
 
@@ -1901,15 +1739,7 @@ describe('Development Server', () => {
         site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
       });
 
-      const mockLogger = {
-        info: vi.fn(),
-        error: vi.fn(),
-        success: vi.fn(),
-        warning: vi.fn(),
-        building: vi.fn(),
-        processing: vi.fn(),
-        stats: vi.fn(),
-      };
+      const mockLogger = createMockLogger();
 
       mockBuild.mockClear();
 
@@ -1985,15 +1815,7 @@ describe('Development Server', () => {
         site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
       });
 
-      const mockLogger = {
-        info: vi.fn(),
-        error: vi.fn(),
-        success: vi.fn(),
-        warning: vi.fn(),
-        building: vi.fn(),
-        processing: vi.fn(),
-        stats: vi.fn(),
-      };
+      const mockLogger = createMockLogger();
 
       mockBuild.mockClear();
 

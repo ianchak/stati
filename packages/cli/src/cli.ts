@@ -157,7 +157,7 @@ const cli = yargs(hideBin(process.argv))
           });
 
           if (writeResult.success && writeResult.path) {
-            log.info(`▸ Metrics written to ${writeResult.path}`);
+            log.status(`Metrics written to ${writeResult.path}`);
           } else if (!writeResult.success) {
             const targetPath = metricsOutputPath || `${cacheDir}/metrics/`;
             log.error(
@@ -405,7 +405,7 @@ const cli = yargs(hideBin(process.argv))
             log.info(`   ${path}`);
           });
         } else {
-          log.info('▸ No cache entries matched the query');
+          log.status('No cache entries matched the query');
         }
       } catch (error) {
         log.error(`Invalidation failed: ${error instanceof Error ? error.message : String(error)}`);

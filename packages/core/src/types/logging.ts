@@ -8,7 +8,7 @@
  * file operations, statistics display, and advanced tree-based rendering visualization.
  *
  * Core Methods (Required):
- * - Basic logging: info, success, warning, error
+ * - Basic logging: info, success, warning, error, status
  * - Build progress: building, processing, stats
  *
  * Enhanced Methods (Optional):
@@ -24,6 +24,7 @@
  *   success: (msg) => console.log('\x1b[38;2;34;197;94m✓ ' + msg + '\x1b[0m'),
  *   warning: (msg) => console.warn('\x1b[38;2;245;158;11m! ' + msg + '\x1b[0m'),
  *   error: (msg) => console.error('\x1b[38;2;239;68;68m× ' + msg + '\x1b[0m'),
+ *   status: (msg) => console.log('\x1b[38;2;56;189;248m▸ ' + msg + '\x1b[0m'),
  *   building: (msg) => console.log('\x1b[38;2;56;189;248m' + msg + '\x1b[0m'),
  *   processing: (msg) => console.log('\x1b[38;2;148;163;184m  ' + msg + '\x1b[0m'),
  *   stats: (msg) => console.log('\x1b[38;2;186;230;253m• ' + msg + '\x1b[0m')
@@ -59,6 +60,8 @@ export interface Logger {
   warning: (message: string) => void;
   /** Log error messages */
   error: (message: string) => void;
+  /** Log status/meta messages with status indicator */
+  status: (message: string) => void;
   /** Log build progress messages */
   building: (message: string) => void;
   /** Log file processing messages */

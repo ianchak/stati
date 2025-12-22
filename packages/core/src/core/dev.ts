@@ -83,7 +83,7 @@ async function performInitialBuild(
 ): Promise<void> {
   try {
     // Clear cache to ensure fresh build on dev server start
-    logger.info?.('▸ Clearing cache for fresh development build...');
+    logger.status('Clearing cache for fresh development build...');
     await invalidate();
 
     await build({
@@ -156,6 +156,7 @@ async function performIncrementalRebuild(
     success: () => {}, // Suppress success messages
     error: logger.error || (() => {}),
     warning: logger.warning || (() => {}),
+    status: () => {}, // Suppress status messages
     building: () => {}, // Suppress building messages
     processing: () => {}, // Suppress processing messages
     stats: () => {}, // Suppress stats messages
@@ -387,7 +388,7 @@ async function handleMarkdownChange(
     // Compare navigation hashes
     if (newNavigationHash !== cacheManifest.navigationHash) {
       // Navigation structure changed - clear cache and force full rebuild
-      logger.info?.('▸ Navigation structure changed, performing full rebuild...');
+      logger.status('Navigation structure changed, performing full rebuild...');
 
       // Force rebuild bypasses ISG cache entirely
       await build({

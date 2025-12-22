@@ -43,6 +43,7 @@ function createSilentLogger() {
     success: () => {},
     warning: () => {},
     error: console.error,
+    status: () => {},
     building: () => {},
     processing: () => {},
     stats: () => {},

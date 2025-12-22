@@ -31,6 +31,7 @@ const glyphs = {
   bullet: '•',
   continuation: '↳',
   arrow: '→',
+  status: '▸',
   fileCreate: '+',
   fileUpdate: '~',
   fileCopy: '=',
@@ -46,6 +47,7 @@ const glyphsAscii = {
   bullet: '*',
   continuation: '->',
   arrow: '->',
+  status: '>',
   fileCreate: '+',
   fileUpdate: '~',
   fileCopy: '=',
@@ -848,6 +850,14 @@ export const log = {
    */
   info: (message: string) => {
     console.log(colors.brand(message));
+  },
+
+  /**
+   * Status/meta message with status glyph (▸)
+   * Used for build status updates, cache operations, and informational markers
+   */
+  status: (message: string) => {
+    console.log(colors.brand(getGlyph('status')) + ' ' + message);
   },
 
   /**

@@ -363,6 +363,7 @@ export function generateSEO(
     success: () => {},
     warning: () => {},
     error: () => {},
+    status: () => {},
     building: () => {},
     processing: () => {},
     stats: () => {},

@@ -8,6 +8,7 @@ export function createLogger() {
     success: log.success,
     warning: log.warning,
     error: log.error,
+    status: log.status,
     building: log.building,
     processing: log.processing,
     stats: log.stats,

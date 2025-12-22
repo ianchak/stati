@@ -13,6 +13,7 @@ export function createFallbackLogger(): Logger {
     success: (msg: string) => console.log(msg),
     error: (msg: string) => console.error(msg),
     warning: (msg: string) => console.warn(msg),
+    status: (msg: string) => console.log(msg),
     building: (msg: string) => console.log(msg),
     processing: (msg: string) => console.log(msg),
     stats: (msg: string) => console.log(msg),
