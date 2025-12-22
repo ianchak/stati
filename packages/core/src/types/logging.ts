@@ -114,7 +114,7 @@ export interface Logger {
   /** Clear the rendering tree (optional) */
   clearRenderingTree?: () => void;
 
-  // Progress Bar + Summary System (preferred over rendering tree for large sites)
+  // Progress Bar + Summary System
 
   /** Initialize progress tracking for page rendering (optional) */
   startProgress?: (totalPages: number) => void;
