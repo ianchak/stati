@@ -1071,4 +1071,249 @@ describe('colors', () => {
       expect(output).not.toContain('/page-0/');
     });
   });
+
+  describe('ASCII icon mode variants', () => {
+    const originalEnv = process.env;
+
+    afterEach(() => {
+      process.env = originalEnv;
+    });
+
+    it('should enable ASCII mode when STATI_ASCII_ICONS is "true"', () => {
+      process.env = { ...originalEnv, FORCE_COLOR: '1', STATI_ASCII_ICONS: 'true' };
+
+      log.success('test');
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+      expect(output).toContain('OK');
+    });
+
+    it('should enable ASCII mode when STATI_ASCII_ICONS is "yes"', () => {
+      process.env = { ...originalEnv, FORCE_COLOR: '1', STATI_ASCII_ICONS: 'yes' };
+
+      log.success('test');
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+      expect(output).toContain('OK');
+    });
+
+    it('should use unicode glyphs when STATI_ASCII_ICONS is not set', () => {
+      process.env = { ...originalEnv, FORCE_COLOR: '1' };
+      delete process.env.STATI_ASCII_ICONS;
+
+      log.success('test');
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+      expect(output).toContain('✓');
+    });
+
+    it('should use ASCII error glyph when in ASCII mode', () => {
+      process.env = { ...originalEnv, FORCE_COLOR: '1', STATI_ASCII_ICONS: '1' };
+
+      log.error('test error');
+
+      expect(consoleErrorSpy).toHaveBeenCalled();
+      const output = consoleErrorSpy.mock.calls[0]?.[0] as string;
+      expect(output).toContain('ERR');
+    });
+
+    it('should use ASCII warning glyph when in ASCII mode', () => {
+      process.env = { ...originalEnv, FORCE_COLOR: '1', STATI_ASCII_ICONS: '1' };
+
+      log.warning('test warning');
+
+      expect(consoleWarnSpy).toHaveBeenCalled();
+      const output = consoleWarnSpy.mock.calls[0]?.[0] as string;
+      expect(output).toContain('WARN');
+    });
+
+    it('should use ASCII bullet glyph in progress display', () => {
+      process.env = { ...originalEnv, FORCE_COLOR: '1', STATI_ASCII_ICONS: '1' };
+
+      log.startProgress(10);
+      log.updateProgress('rendered', '/test/', 100);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls
+        .map((call) => call[0])
+        .join('\n')
+        .replace(/\n+/g, ' ');
+      expect(output).toContain('*');
+
+      log.endProgress();
+    });
+  });
+
+  describe('progress bar edge cases', () => {
+    let stdoutWriteSpy: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      stdoutWriteSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true) as any;
+    });
+
+    afterEach(() => {
+      stdoutWriteSpy.mockRestore();
+    });
+
+    it('should not write ANSI codes when not a TTY', () => {
+      const originalIsTTY = process.stdout.isTTY;
+      Object.defineProperty(process.stdout, 'isTTY', { value: false, writable: true });
+
+      try {
+        log.startProgress(10);
+        log.updateProgress('rendered', '/test/', 50);
+        log.endProgress();
+
+        // Should not have written cursor movement codes
+        const ansiCalls = stdoutWriteSpy.mock.calls.filter(
+          (call) => typeof call[0] === 'string' && call[0].includes('\x1b['),
+        );
+        expect(ansiCalls.length).toBe(0);
+      } finally {
+        Object.defineProperty(process.stdout, 'isTTY', { value: originalIsTTY, writable: true });
+      }
+    });
+
+    it('should handle zero total pages in progress', () => {
+      log.startProgress(0);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+      expect(output).toContain('0%');
+
+      log.endProgress();
+    });
+
+    it('should show only cached pages in summary when no pages were rendered', () => {
+      log.startProgress(3);
+
+      log.updateProgress('cached', '/page-1/');
+      log.updateProgress('cached', '/page-2/');
+      log.updateProgress('cached', '/page-3/');
+
+      log.endProgress();
+      consoleLogSpy.mockClear();
+
+      log.showRenderingSummary();
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+
+      // Should show cached count
+      expect(output).toContain('Cached');
+      expect(output).toContain('3');
+      // Should show 100% cache hit rate
+      expect(output).toContain('100%');
+    });
+
+    it('should show only rendered pages in summary when no pages were cached', () => {
+      log.startProgress(2);
+
+      log.updateProgress('rendered', '/page-1/', 100);
+      log.updateProgress('rendered', '/page-2/', 200);
+
+      log.endProgress();
+      consoleLogSpy.mockClear();
+
+      log.showRenderingSummary();
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+
+      // Should show rendered count
+      expect(output).toContain('Rendered');
+      expect(output).toContain('2');
+      // Should show 0% cache hit rate
+      expect(output).toContain('0%');
+    });
+  });
+
+  describe('file size formatting', () => {
+    it('should format small file sizes in bytes', () => {
+      log.file('create', '/path/to/file.txt', 500);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+      expect(output).toContain('500');
+      expect(output).toContain('B');
+    });
+
+    it('should format kilobyte file sizes', () => {
+      log.file('create', '/path/to/file.txt', 2048);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+      expect(output).toContain('KB');
+    });
+
+    it('should format megabyte file sizes', () => {
+      log.file('create', '/path/to/file.txt', 2 * 1024 * 1024);
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+      expect(output).toContain('MB');
+    });
+  });
+
+  describe('stats table formatting', () => {
+    it('should format build statistics without cache info', () => {
+      log.statsTable({
+        totalPages: 10,
+        assetsCount: 5,
+        buildTimeMs: 1500,
+        outputSizeBytes: 102400,
+      });
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+      expect(output).toContain('Build Summary');
+      expect(output).toContain('Pages');
+      expect(output).toContain('10');
+      expect(output).toContain('Assets');
+      expect(output).toContain('5');
+    });
+
+    it('should format build statistics with cache info', () => {
+      log.statsTable({
+        totalPages: 10,
+        assetsCount: 5,
+        buildTimeMs: 1500,
+        outputSizeBytes: 102400,
+        cacheHits: 7,
+        cacheMisses: 3,
+      });
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+      expect(output).toContain('Cache');
+      expect(output).toContain('7'); // Cache hits
+      expect(output).toContain('10'); // Total cache requests
+      expect(output).toContain('hits');
+      expect(output).toContain('70'); // Hit rate percentage
+    });
+  });
+
+  describe('URL formatting', () => {
+    it('should apply underline to URLs', () => {
+      const result = colors.url('http://localhost:3000');
+      expect(result).toContain('\x1b[4m');
+      expect(result).toContain('http://localhost:3000');
+    });
+
+    it('should not apply underline when NO_COLOR is set', () => {
+      const originalEnv = process.env;
+      process.env = { ...originalEnv, NO_COLOR: '1' };
+      delete process.env.FORCE_COLOR;
+
+      const result = colors.url('http://localhost:3000');
+      expect(result).toBe('http://localhost:3000');
+      expect(result).not.toContain('\x1b[4m');
+
+      process.env = originalEnv;
+    });
+  });
 });

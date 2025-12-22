@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { logger } from '../../src/utils/logger.utils.js';
+import { logger, log } from '../../src/utils/logger.utils.js';
 
 describe('logger.utils', () => {
   const originalEnv = process.env;
@@ -214,6 +214,203 @@ describe('logger.utils', () => {
       const result = logger.bold('bold');
       expect(result).toContain('\x1b[1m');
       expect(result).toContain('bold');
+    });
+  });
+
+  describe('startup banner', () => {
+    it('should display startup banner via logger', () => {
+      logger.startupBanner();
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+      // Should contain ASCII art characters
+      expect(output).toContain('█');
+      expect(output).toContain('╗');
+      // Should contain version info
+      expect(output).toContain('create-stati');
+    });
+  });
+});
+
+describe('log object', () => {
+  const originalEnv = process.env;
+  let consoleLogSpy: ReturnType<typeof vi.spyOn>;
+  let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    // Force color output in tests
+    process.env = { ...originalEnv, FORCE_COLOR: '1' };
+    delete process.env.NO_COLOR;
+  });
+
+  afterEach(() => {
+    consoleLogSpy.mockRestore();
+    consoleWarnSpy.mockRestore();
+    consoleErrorSpy.mockRestore();
+    process.env = originalEnv;
+  });
+
+  describe('logging methods', () => {
+    it('should log success messages with checkmark glyph', () => {
+      log.success('test success');
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+      expect(output).toContain('✓');
+      expect(output).toContain('test success');
+    });
+
+    it('should log error messages with cross glyph', () => {
+      log.error('test error');
+
+      expect(consoleErrorSpy).toHaveBeenCalled();
+      const output = consoleErrorSpy.mock.calls[0]?.[0] as string;
+      expect(output).toContain('×');
+      expect(output).toContain('test error');
+    });
+
+    it('should log warning messages with warning glyph', () => {
+      log.warning('test warning');
+
+      expect(consoleWarnSpy).toHaveBeenCalled();
+      const output = consoleWarnSpy.mock.calls[0]?.[0] as string;
+      expect(output).toContain('!');
+      expect(output).toContain('test warning');
+    });
+
+    it('should log info messages with brand color', () => {
+      log.info('test info');
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+      expect(output).toContain('test info');
+      expect(output).toContain('\x1b['); // Has color
+    });
+
+    it('should log muted messages', () => {
+      log.muted('test muted');
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+      expect(output).toContain('test muted');
+    });
+
+    it('should log step messages with indentation', () => {
+      log.step('test step');
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+      expect(output).toContain('test step');
+      expect(output).toContain('  '); // Has indentation
+    });
+
+    it('should log hint messages with arrow glyph', () => {
+      log.hint('test hint');
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+      expect(output).toContain('▸');
+      expect(output).toContain('test hint');
+    });
+
+    it('should log blank line with newline method', () => {
+      log.newline();
+
+      expect(consoleLogSpy).toHaveBeenCalledWith();
+    });
+  });
+
+  describe('startup banner', () => {
+    it('should display startup banner', () => {
+      log.startupBanner();
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+      // Should contain ASCII art characters
+      expect(output).toContain('█');
+      expect(output).toContain('╗');
+      expect(output).toContain('╚');
+      // Should contain version info
+      expect(output).toContain('create-stati');
+    });
+
+    it('should include horizontal gradient in banner when colors enabled', () => {
+      log.startupBanner();
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+      // Gradient should produce multiple ANSI color codes
+      // Use String.fromCharCode to avoid eslint no-control-regex
+      const escapeChar = String.fromCharCode(27);
+      const ansiPattern = new RegExp(`${escapeChar}\\[38;2;`, 'g');
+      const ansiCount = (output.match(ansiPattern) || []).length;
+      expect(ansiCount).toBeGreaterThan(5);
+    });
+  });
+
+  describe('color helpers', () => {
+    it('should have bold function', () => {
+      const result = log.bold('bold text');
+      expect(result).toContain('\x1b[1m');
+      expect(result).toContain('bold text');
+    });
+
+    it('should have brand function', () => {
+      const result = log.brand('brand text');
+      expect(result).toContain('\x1b[');
+      expect(result).toContain('brand text');
+    });
+  });
+
+  describe('NO_COLOR environment', () => {
+    beforeEach(() => {
+      process.env = { ...originalEnv, NO_COLOR: '1' };
+      delete process.env.FORCE_COLOR;
+    });
+
+    afterEach(() => {
+      process.env = originalEnv;
+    });
+
+    it('should not apply gradient when NO_COLOR is set', () => {
+      log.startupBanner();
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+      // Should not contain ANSI RGB escape codes
+      expect(output).not.toContain('\x1b[38;2;');
+    });
+
+    it('should log plain success message when NO_COLOR is set', () => {
+      log.success('test');
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+      expect(output).toContain('✓');
+      expect(output).toContain('test');
+      // No ANSI codes for colors
+      expect(output).not.toContain('\x1b[38;2;');
+    });
+
+    it('should log plain error message when NO_COLOR is set', () => {
+      log.error('test');
+
+      expect(consoleErrorSpy).toHaveBeenCalled();
+      const output = consoleErrorSpy.mock.calls[0]?.[0] as string;
+      expect(output).not.toContain('\x1b[38;2;');
+    });
+
+    it('should log plain warning message when NO_COLOR is set', () => {
+      log.warning('test');
+
+      expect(consoleWarnSpy).toHaveBeenCalled();
+      const output = consoleWarnSpy.mock.calls[0]?.[0] as string;
+      expect(output).not.toContain('\x1b[38;2;');
     });
   });
 });
