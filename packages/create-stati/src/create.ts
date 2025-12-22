@@ -415,6 +415,7 @@ coverage/
 
     log.newline();
     log.info(`Installing dependencies with ${packageManager}...`);
+    log.newline();
 
     try {
       await spawnProcess(packageManager, ['install'], {
@@ -422,6 +423,7 @@ coverage/
         stdio: 'inherit', // Show install progress to user
       });
 
+      log.newline();
       log.success('Dependencies installed');
       return { success: true };
     } catch (error) {
