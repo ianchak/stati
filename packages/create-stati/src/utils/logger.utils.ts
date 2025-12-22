@@ -238,10 +238,18 @@ export const log = {
   },
 
   /**
-   * Hint/tip message (muted with bullet)
+   * Hint/tip message (muted with arrow)
    */
   hint: (message: string) => {
     console.log(colors.muted(`${glyphs.arrow} ${message}`));
+  },
+
+  /**
+   * Status/meta message with status glyph (▸)
+   * Used for build status updates, cache operations, and informational markers
+   */
+  status: (message: string) => {
+    console.log(colors.brand(glyphs.arrow) + ' ' + message);
   },
 
   /**

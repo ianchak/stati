@@ -318,6 +318,16 @@ describe('log object', () => {
       expect(output).toContain('test hint');
     });
 
+    it('should log status messages with arrow glyph and brand color', () => {
+      log.status('test status');
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+      expect(output).toContain('▸');
+      expect(output).toContain('test status');
+      expect(output).toContain('\x1b['); // Has color
+    });
+
     it('should log blank line with newline method', () => {
       log.newline();
 

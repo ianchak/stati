@@ -265,7 +265,7 @@ export async function runCLI(cliOptions?: Partial<CreateOptions> | null): Promis
     }
     log.step(devCommand);
     log.newline();
-    log.hint('Happy building with Stati!');
+    log.status('Happy building with Stati!');
   } catch (error) {
     log.error('Failed to create Stati site');
     log.error(error instanceof Error ? error.message : 'Unknown error');
