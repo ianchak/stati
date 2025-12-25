@@ -583,4 +583,115 @@ describe('html-report.utils', () => {
       expect(result.error).toContain('Failed to write HTML report');
     });
   });
+
+  describe('edge cases', () => {
+    it('should handle metrics with zero values', () => {
+      const zeroMetrics: BuildMetrics = {
+        ...mockMetrics,
+        totals: {
+          durationMs: 0,
+          peakRssBytes: 0,
+          heapUsedBytes: 0,
+        },
+        phases: {},
+        counts: {
+          totalPages: 0,
+          renderedPages: 0,
+          cachedPages: 0,
+          assetsCopied: 0,
+          templatesLoaded: 0,
+          markdownFilesProcessed: 0,
+        },
+      };
+
+      const html = generateMetricsHtml(zeroMetrics);
+      expect(html).toContain('<!DOCTYPE html>');
+      expect(html).toContain('0 B'); // Zero bytes formatted
+    });
+
+    it('should handle metrics without optional fields', () => {
+      const minimalMetrics: BuildMetrics = {
+        schemaVersion: '1',
+        meta: {
+          timestamp: '2024-01-15T10:30:00.000Z',
+          ci: false,
+          nodeVersion: '22.0.0',
+          platform: 'linux',
+          arch: 'x64',
+          cpuCount: 4,
+          cliVersion: '1.0.0',
+          coreVersion: '1.0.0',
+          command: 'build',
+          flags: {},
+          // No gitCommit or gitBranch
+        },
+        totals: {
+          durationMs: 100,
+          peakRssBytes: 1000,
+          heapUsedBytes: 500,
+        },
+        phases: {},
+        counts: {
+          totalPages: 1,
+          renderedPages: 1,
+          cachedPages: 0,
+          assetsCopied: 0,
+          templatesLoaded: 1,
+          markdownFilesProcessed: 1,
+        },
+        isg: {
+          enabled: false,
+          cacheHitRate: 0,
+          manifestEntries: 0,
+          invalidatedEntries: 0,
+        },
+      };
+
+      const html = generateMetricsHtml(minimalMetrics);
+      expect(html).toContain('<!DOCTYPE html>');
+      // Should not throw when git info is missing
+      expect(html).not.toContain('undefined');
+    });
+
+    it('should handle large duration values', () => {
+      const longBuildMetrics: BuildMetrics = {
+        ...mockMetrics,
+        totals: {
+          durationMs: 3600000, // 1 hour
+          peakRssBytes: 2 * 1024 * 1024 * 1024, // 2 GB
+          heapUsedBytes: 1024 * 1024 * 1024, // 1 GB
+        },
+      };
+
+      const html = generateMetricsHtml(longBuildMetrics);
+      expect(html).toContain('<!DOCTYPE html>');
+    });
+
+    it('should handle pageTimings with empty array', () => {
+      const metricsWithEmptyTimings: BuildMetrics = {
+        ...mockMetrics,
+        pageTimings: [],
+      };
+
+      const html = generateMetricsHtml(metricsWithEmptyTimings);
+      expect(html).toContain('<!DOCTYPE html>');
+    });
+
+    it('should handle special characters in git branch names', () => {
+      const metricsWithSpecialBranch: BuildMetrics = {
+        ...mockMetrics,
+        meta: {
+          ...mockMetrics.meta,
+          gitBranch: 'feature/my-<special>-branch',
+          gitCommit: 'abc123',
+        },
+      };
+
+      const html = generateMetricsHtml(metricsWithSpecialBranch);
+      // HTML should be generated successfully
+      expect(html).toContain('<!DOCTYPE html>');
+      // The branch name should be present (escaping is optional for display)
+      expect(html).toContain('feature/my-');
+    });
+  });
 });

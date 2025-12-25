@@ -10,6 +10,7 @@ import {
   createTypeScriptWatcher,
   autoInjectBundles,
   isValidBundlePath,
+  formatBytes,
 } from '../src/core/utils/typescript.utils.js';
 import type { TypeScriptConfig, BundleConfig } from '../src/types/config.js';
 import type { Logger } from '../src/types/logging.js';
@@ -897,6 +898,39 @@ export const broken = {
         expect(isValidBundlePath('/_assets/bundle')).toBe(false);
         expect(isValidBundlePath('/_assets/bundle.jsx')).toBe(false);
       });
+    });
+  });
+
+  describe('formatBytes', () => {
+    it('should format bytes under 1KB', () => {
+      expect(formatBytes(0)).toBe('0 B');
+      expect(formatBytes(1)).toBe('1 B');
+      expect(formatBytes(512)).toBe('512 B');
+      expect(formatBytes(1023)).toBe('1023 B');
+    });
+
+    it('should format kilobytes', () => {
+      expect(formatBytes(1024)).toBe('1.00 KB');
+      expect(formatBytes(1536)).toBe('1.50 KB');
+      expect(formatBytes(2048)).toBe('2.00 KB');
+      expect(formatBytes(1024 * 100)).toBe('100.00 KB');
+    });
+
+    it('should format megabytes', () => {
+      expect(formatBytes(1024 * 1024)).toBe('1.00 MB');
+      expect(formatBytes(1024 * 1024 * 2.5)).toBe('2.50 MB');
+      expect(formatBytes(1024 * 1024 * 100)).toBe('100.00 MB');
+    });
+
+    it('should handle edge case at boundaries', () => {
+      // Just under 1KB
+      expect(formatBytes(1023)).toBe('1023 B');
+      // Exactly 1KB
+      expect(formatBytes(1024)).toBe('1.00 KB');
+      // Just under 1MB
+      expect(formatBytes(1024 * 1024 - 1)).toBe('1024.00 KB');
+      // Exactly 1MB
+      expect(formatBytes(1024 * 1024)).toBe('1.00 MB');
     });
   });
 });

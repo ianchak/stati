@@ -177,4 +177,90 @@ describe('DevServerLockManager', () => {
       expect(result.status).toBe('rejected');
     });
   });
+
+  it('should return null for getLockInfo when no lock file exists', async () => {
+    const lockInfo = await devLock.getLockInfo();
+    expect(lockInfo).toBeNull();
+  });
+
+  it('should return false for isLockHeld when no lock file exists', async () => {
+    const isHeld = await devLock.isLockHeld();
+    expect(isHeld).toBe(false);
+  });
+
+  it('should release lock gracefully when not holding lock', async () => {
+    // Should not throw when releasing without acquiring first
+    await expect(devLock.releaseLock()).resolves.not.toThrow();
+  });
+
+  it('should handle malformed lock file gracefully', async () => {
+    // Create a malformed lock file
+    const lockPath = join(testDir, '.dev-server-lock');
+    const { writeFile, mkdir, unlink } = await import('node:fs/promises');
+    await mkdir(testDir, { recursive: true });
+    await writeFile(lockPath, 'not-valid-json');
+
+    const newLock = new DevServerLockManager(testDir);
+
+    // getLockInfo should return null for malformed file
+    const lockInfo = await newLock.getLockInfo();
+    expect(lockInfo).toBeNull();
+
+    // isLockHeld should return false for malformed file
+    const isHeld = await newLock.isLockHeld();
+    expect(isHeld).toBe(false);
+
+    // Remove the malformed lock file before acquiring
+    await unlink(lockPath);
+
+    // Should be able to acquire lock since the malformed one is removed
+    await newLock.acquireLock();
+    expect(await newLock.isLockHeld()).toBe(true);
+    await newLock.releaseLock();
+  });
+
+  it('should handle empty lock file gracefully', async () => {
+    const lockPath = join(testDir, '.dev-server-lock');
+    const { writeFile, mkdir, unlink } = await import('node:fs/promises');
+    await mkdir(testDir, { recursive: true });
+    await writeFile(lockPath, '');
+
+    const newLock = new DevServerLockManager(testDir);
+
+    // Check that empty file is handled
+    const lockInfo = await newLock.getLockInfo();
+    expect(lockInfo).toBeNull();
+
+    // Remove the empty lock file before acquiring
+    await unlink(lockPath);
+
+    // Should be able to acquire lock
+    await newLock.acquireLock();
+    expect(await newLock.isLockHeld()).toBe(true);
+    await newLock.releaseLock();
+  });
+
+  it('should include hostname in lock file', async () => {
+    await devLock.acquireLock();
+    const lockInfo = await devLock.getLockInfo();
+
+    expect(lockInfo).toBeTruthy();
+    expect(lockInfo?.hostname).toBeDefined();
+    expect(typeof lockInfo?.hostname).toBe('string');
+
+    await devLock.releaseLock();
+  });
+
+  it('should include timestamp in lock file', async () => {
+    await devLock.acquireLock();
+    const lockInfo = await devLock.getLockInfo();
+
+    expect(lockInfo).toBeTruthy();
+    expect(lockInfo?.timestamp).toBeDefined();
+    // Timestamp should be a valid ISO string
+    const date = new Date(lockInfo!.timestamp);
+    expect(date.getTime()).not.toBeNaN();
+
+    await devLock.releaseLock();
+  });
 });
