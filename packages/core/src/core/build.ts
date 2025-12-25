@@ -662,11 +662,6 @@ async function processPagesWithCache(
   recorder.recordPhase('fileWriteTotalMs', totalFileWriteTime);
   recorder.recordPhase('cacheEntryTotalMs', totalCacheEntryTime);
 
-  // Force garbage collection in dev mode to prevent memory accumulation
-  if (isDevMode && global.gc) {
-    global.gc();
-  }
-
   // Display final progress summary
   if (logger.endProgress) {
     logger.endProgress();
