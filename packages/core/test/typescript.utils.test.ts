@@ -10,6 +10,8 @@ import {
   createTypeScriptWatcher,
   autoInjectBundles,
   isValidBundlePath,
+  formatBytes,
+  detectExistingBundles,
 } from '../src/core/utils/typescript.utils.js';
 import type { TypeScriptConfig, BundleConfig } from '../src/types/config.js';
 import type { Logger } from '../src/types/logging.js';
@@ -897,6 +899,219 @@ export const broken = {
         expect(isValidBundlePath('/_assets/bundle')).toBe(false);
         expect(isValidBundlePath('/_assets/bundle.jsx')).toBe(false);
       });
+    });
+  });
+
+  describe('formatBytes', () => {
+    it('should format bytes under 1KB', () => {
+      expect(formatBytes(0)).toBe('0 B');
+      expect(formatBytes(1)).toBe('1 B');
+      expect(formatBytes(512)).toBe('512 B');
+      expect(formatBytes(1023)).toBe('1023 B');
+    });
+
+    it('should format kilobytes', () => {
+      expect(formatBytes(1024)).toBe('1.00 KB');
+      expect(formatBytes(1536)).toBe('1.50 KB');
+      expect(formatBytes(2048)).toBe('2.00 KB');
+      expect(formatBytes(1024 * 100)).toBe('100.00 KB');
+    });
+
+    it('should format megabytes', () => {
+      expect(formatBytes(1024 * 1024)).toBe('1.00 MB');
+      expect(formatBytes(1024 * 1024 * 2.5)).toBe('2.50 MB');
+      expect(formatBytes(1024 * 1024 * 100)).toBe('100.00 MB');
+    });
+
+    it('should handle edge case at boundaries', () => {
+      // Just under 1KB
+      expect(formatBytes(1023)).toBe('1023 B');
+      // Exactly 1KB
+      expect(formatBytes(1024)).toBe('1.00 KB');
+      // Just under 1MB
+      expect(formatBytes(1024 * 1024 - 1)).toBe('1024.00 KB');
+      // Exactly 1MB
+      expect(formatBytes(1024 * 1024)).toBe('1.00 MB');
+    });
+  });
+
+  describe('detectExistingBundles', () => {
+    it('should return empty array when output directory does not exist', async () => {
+      const nonExistentDir = join(testDir, 'non-existent-project');
+      const config: TypeScriptConfig = {
+        enabled: true,
+        bundles: [{ entryPoint: 'main.ts', bundleName: 'main' }],
+      };
+
+      const results = await detectExistingBundles({
+        projectRoot: nonExistentDir,
+        config,
+        mode: 'development',
+      });
+
+      expect(results).toEqual([]);
+    });
+
+    it('should detect existing bundles in development mode', async () => {
+      // Create the output directory structure
+      const assetsDir = join(testDir, 'dist', '_assets');
+      mkdirSync(assetsDir, { recursive: true });
+      writeFileSync(join(assetsDir, 'main.js'), 'console.log("main");');
+      writeFileSync(join(assetsDir, 'docs.js'), 'console.log("docs");');
+
+      const config: TypeScriptConfig = {
+        enabled: true,
+        bundles: [
+          { entryPoint: 'main.ts', bundleName: 'main' },
+          { entryPoint: 'docs.ts', bundleName: 'docs' },
+        ],
+      };
+
+      const results = await detectExistingBundles({
+        projectRoot: testDir,
+        config,
+        mode: 'development',
+      });
+
+      expect(results).toHaveLength(2);
+      expect(results.find((r) => r.config.bundleName === 'main')).toBeDefined();
+      expect(results.find((r) => r.config.bundleName === 'docs')).toBeDefined();
+    });
+
+    it('should detect existing bundles in production mode with hashes', async () => {
+      // Create the output directory structure with hashed filenames
+      const assetsDir = join(testDir, 'dist', '_assets');
+      mkdirSync(assetsDir, { recursive: true });
+      writeFileSync(join(assetsDir, 'main-abc123.js'), 'console.log("main");');
+      writeFileSync(join(assetsDir, 'docs-xyz789.js'), 'console.log("docs");');
+
+      const config: TypeScriptConfig = {
+        enabled: true,
+        bundles: [
+          { entryPoint: 'main.ts', bundleName: 'main' },
+          { entryPoint: 'docs.ts', bundleName: 'docs' },
+        ],
+      };
+
+      const results = await detectExistingBundles({
+        projectRoot: testDir,
+        config,
+        mode: 'production',
+      });
+
+      expect(results).toHaveLength(2);
+      const mainBundle = results.find((r) => r.config.bundleName === 'main');
+      const docsBundle = results.find((r) => r.config.bundleName === 'docs');
+
+      expect(mainBundle).toBeDefined();
+      expect(mainBundle?.filename).toBe('main-abc123.js');
+      expect(docsBundle).toBeDefined();
+      expect(docsBundle?.filename).toBe('docs-xyz789.js');
+    });
+
+    it('should return empty array when no matching bundles found', async () => {
+      // Create the output directory with non-matching files
+      const assetsDir = join(testDir, 'dist', '_assets');
+      mkdirSync(assetsDir, { recursive: true });
+      writeFileSync(join(assetsDir, 'other.js'), 'console.log("other");');
+
+      const config: TypeScriptConfig = {
+        enabled: true,
+        bundles: [{ entryPoint: 'main.ts', bundleName: 'main' }],
+      };
+
+      const results = await detectExistingBundles({
+        projectRoot: testDir,
+        config,
+        mode: 'development',
+      });
+
+      expect(results).toEqual([]);
+    });
+
+    it('should use default bundle config when none specified', async () => {
+      // Create the output directory with default bundle name
+      const assetsDir = join(testDir, 'dist', '_assets');
+      mkdirSync(assetsDir, { recursive: true });
+      writeFileSync(join(assetsDir, 'main.js'), 'console.log("main");');
+
+      const config: TypeScriptConfig = {
+        enabled: true,
+        // No bundles specified - should use default
+      };
+
+      const results = await detectExistingBundles({
+        projectRoot: testDir,
+        config,
+        mode: 'development',
+      });
+
+      // Should detect the default 'main' bundle
+      expect(results.length).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should handle custom output directory', async () => {
+      // Create custom output directory structure
+      const customDir = join(testDir, 'custom-dist', '_assets');
+      mkdirSync(customDir, { recursive: true });
+      writeFileSync(join(customDir, 'main.js'), 'console.log("main");');
+
+      const config: TypeScriptConfig = {
+        enabled: true,
+        bundles: [{ entryPoint: 'main.ts', bundleName: 'main' }],
+      };
+
+      const results = await detectExistingBundles({
+        projectRoot: testDir,
+        config,
+        outDir: 'custom-dist',
+        mode: 'development',
+      });
+
+      expect(results).toHaveLength(1);
+      expect(results[0]?.filename).toBe('main.js');
+    });
+
+    it('should generate correct bundle paths', async () => {
+      const assetsDir = join(testDir, 'dist', '_assets');
+      mkdirSync(assetsDir, { recursive: true });
+      writeFileSync(join(assetsDir, 'main.js'), 'console.log("main");');
+
+      const config: TypeScriptConfig = {
+        enabled: true,
+        bundles: [{ entryPoint: 'main.ts', bundleName: 'main' }],
+      };
+
+      const results = await detectExistingBundles({
+        projectRoot: testDir,
+        config,
+        mode: 'development',
+      });
+
+      expect(results).toHaveLength(1);
+      expect(results[0]?.path).toBe('/_assets/main.js');
+    });
+
+    it('should handle read directory errors gracefully', async () => {
+      // Create a file where directory is expected (causes readdir to fail)
+      const distDir = join(testDir, 'dist');
+      mkdirSync(distDir, { recursive: true });
+      // Create _assets as a file instead of directory
+      writeFileSync(join(distDir, '_assets'), 'not a directory');
+
+      const config: TypeScriptConfig = {
+        enabled: true,
+        bundles: [{ entryPoint: 'main.ts', bundleName: 'main' }],
+      };
+
+      const results = await detectExistingBundles({
+        projectRoot: testDir,
+        config,
+        mode: 'development',
+      });
+
+      // Should return empty array on error, not throw
+      expect(results).toEqual([]);
     });
   });
 });

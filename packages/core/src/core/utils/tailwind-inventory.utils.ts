@@ -7,8 +7,9 @@
  * final CSS output.
  */
 
-import { writeFile, ensureDir, pathExists, readFile } from './fs.utils.js';
+import { createHash } from 'node:crypto';
 import { join } from 'node:path';
+import { writeFile, ensureDir, pathExists, readFile } from './fs.utils.js';
 
 /**
  * Module-level Set to track Tailwind classes across template renders.
@@ -204,8 +205,10 @@ export function isTrackingEnabled(): boolean {
  *
  * The generated file contains all tracked classes in a hidden div.
  * This file should be added to Tailwind's content configuration.
+ * Skips write if the inventory hasn't changed (dev mode optimization).
  *
  * @param cacheDir - Directory where the inventory file should be written (typically .stati/)
+ * @param skipIfUnchanged - If true, skip write when class count matches previous
  * @returns Path to the generated inventory file
  *
  * @example
@@ -214,11 +217,48 @@ export function isTrackingEnabled(): boolean {
  * // File written to: /path/to/project/.stati/tailwind-classes.html
  * ```
  */
-export async function writeTailwindClassInventory(cacheDir: string): Promise<string> {
-  await ensureDir(cacheDir);
 
+// Cache for tailwind inventory state (dev mode optimization)
+let lastInventorySize: number | null = null;
+let lastInventoryContentHash: string | null = null;
+
+/**
+ * Computes a hash of the class list for change detection.
+ * Uses sorted classes for deterministic hashing.
+ *
+ * @param classes - Array of class names
+ * @returns 8-character MD5 hash
+ */
+function computeClassListHash(classes: string[]): string {
+  const sortedClasses = [...classes].sort();
+  return createHash('md5').update(sortedClasses.join(' ')).digest('hex').substring(0, 8);
+}
+
+export async function writeTailwindClassInventory(
+  cacheDir: string,
+  skipIfUnchanged = false,
+): Promise<string> {
   const inventoryPath = join(cacheDir, 'tailwind-classes.html');
   const classes = getInventory();
+
+  // Skip write if content hash hasn't changed (dev mode optimization)
+  // Compares sorted class list hash to detect actual changes, not just count
+  if (skipIfUnchanged && lastInventorySize === classes.length) {
+    const contentHash = computeClassListHash(classes);
+    if (contentHash === lastInventoryContentHash) {
+      return inventoryPath;
+    }
+    // Count matched but content changed - update hash and proceed to write
+    lastInventoryContentHash = contentHash;
+  }
+
+  // Update cached state
+  lastInventorySize = classes.length;
+  if (skipIfUnchanged && !lastInventoryContentHash) {
+    lastInventoryContentHash = computeClassListHash(classes);
+  }
+
+  await ensureDir(cacheDir);
 
   // Generate HTML with all tracked classes
   // Using hidden div so it's scanned by Tailwind but not rendered

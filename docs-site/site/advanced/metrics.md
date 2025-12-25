@@ -55,6 +55,29 @@ Include per-page timing information in the output:
 stati build --metrics --metrics-detailed
 ```
 
+### `--metrics-html`
+
+Generate an interactive HTML report alongside the JSON file:
+
+```bash
+stati build --metrics --metrics-html
+```
+
+The HTML report provides:
+
+- Visual summary cards for key metrics
+- Interactive phase breakdown with click-to-expand descriptions
+- Timeline view showing phases in execution order
+- ISG cache performance visualization
+- Per-page timing waterfall chart (when `--metrics-detailed` is also used)
+- Embedded JSON data for debugging
+
+You can combine all flags for the most comprehensive output:
+
+```bash
+stati build --metrics --metrics-detailed --metrics-html
+```
+
 ## Understanding the Output
 
 ### JSON Output

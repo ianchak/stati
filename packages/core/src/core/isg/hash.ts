@@ -23,6 +23,20 @@ function createSha256Hash(data: string | string[]): string {
 }
 
 /**
+ * Per-build cache for file hashes to avoid recomputing the same file hash
+ * multiple times during a single build.
+ * Key: normalized file path, Value: computed hash or null if file doesn't exist
+ */
+const fileHashCache = new Map<string, string | null>();
+
+/**
+ * Clears the file hash cache. Should be called at the start of each build.
+ */
+export function clearFileHashCache(): void {
+  fileHashCache.clear();
+}
+
+/**
  * Computes a SHA-256 hash of page content and front matter.
  * Used to detect when page content has changed.
  *
@@ -71,20 +85,33 @@ export function computeContentHash(content: string, frontMatter: Record<string, 
  * ```
  */
 export async function computeFileHash(filePath: string): Promise<string | null> {
+  // Normalize path for consistent cache key
+  const normalizedPath = filePath.replace(/\\/g, '/');
+
+  // Check cache first
+  if (fileHashCache.has(normalizedPath)) {
+    return fileHashCache.get(normalizedPath) ?? null;
+  }
+
   try {
     if (!(await pathExists(filePath))) {
+      fileHashCache.set(normalizedPath, null);
       return null;
     }
 
     const content = await readFile(filePath, 'utf-8');
     if (!content) {
+      fileHashCache.set(normalizedPath, null);
       return null;
     }
-    return createSha256Hash(content);
+    const hash = createSha256Hash(content);
+    fileHashCache.set(normalizedPath, hash);
+    return hash;
   } catch (error) {
     console.warn(
       `Failed to compute hash for ${filePath}: ${error instanceof Error ? error.message : String(error)}`,
     );
+    fileHashCache.set(normalizedPath, null);
     return null;
   }
 }

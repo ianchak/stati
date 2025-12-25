@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createMarkdownProcessor, renderMarkdown, extractToc } from '../../src/core/markdown.js';
+import {
+  createMarkdownProcessor,
+  renderMarkdown,
+  extractToc,
+  clearMarkdownProcessorCache,
+} from '../../src/core/markdown.js';
+import { setEnv } from '../../src/env.js';
 import type { StatiConfig } from '../../src/types/index.js';
 
 describe('markdown.ts', () => {
@@ -833,6 +839,178 @@ Even more content with **bold** and *italic* text.`;
       expect(toc).toHaveLength(3);
       // Verify we got valid TOC data
       expect(toc.every((entry) => entry.id && entry.text && entry.level)).toBe(true);
+    });
+  });
+
+  describe('Markdown processor caching', () => {
+    beforeEach(() => {
+      clearMarkdownProcessorCache();
+    });
+
+    it('should cache processor in development mode', async () => {
+      // Set environment to development
+      setEnv('development');
+
+      const config: StatiConfig = {
+        ...baseConfig,
+        markdown: {
+          configure: vi.fn(),
+        },
+      };
+
+      // First call should create processor
+      const md1 = await createMarkdownProcessor(config);
+      expect(config.markdown!.configure).toHaveBeenCalledTimes(1);
+
+      // Second call should return cached processor
+      const md2 = await createMarkdownProcessor(config);
+      expect(config.markdown!.configure).toHaveBeenCalledTimes(1); // Still just once
+
+      // Should be the same instance
+      expect(md1).toBe(md2);
+    });
+
+    it('should not cache processor in production mode', async () => {
+      // Set environment to production
+      setEnv('production');
+
+      const config: StatiConfig = {
+        ...baseConfig,
+        markdown: {
+          configure: vi.fn(),
+        },
+      };
+
+      // First call
+      await createMarkdownProcessor(config);
+      expect(config.markdown!.configure).toHaveBeenCalledTimes(1);
+
+      // Second call should create new processor
+      await createMarkdownProcessor(config);
+      expect(config.markdown!.configure).toHaveBeenCalledTimes(2); // Called twice
+
+      // May or may not be the same instance in production
+      // (depends on implementation, but configure should be called twice)
+    });
+
+    it('should clear cache when clearMarkdownProcessorCache is called', async () => {
+      setEnv('development');
+
+      const config: StatiConfig = {
+        ...baseConfig,
+        markdown: {
+          configure: vi.fn(),
+        },
+      };
+
+      // Create processor (gets cached)
+      await createMarkdownProcessor(config);
+      expect(config.markdown!.configure).toHaveBeenCalledTimes(1);
+
+      // Clear cache
+      clearMarkdownProcessorCache();
+
+      // Create processor again (should not use cache)
+      await createMarkdownProcessor(config);
+      expect(config.markdown!.configure).toHaveBeenCalledTimes(2);
+    });
+
+    it('should cache processor with plugins', async () => {
+      setEnv('development');
+
+      const config: StatiConfig = {
+        ...baseConfig,
+        markdown: {
+          plugins: ['anchor'],
+          configure: vi.fn(),
+        },
+      };
+
+      // Create processor with plugins
+      const md1 = await createMarkdownProcessor(config);
+
+      // Create again - should use cache
+      const md2 = await createMarkdownProcessor(config);
+
+      expect(md1).toBe(md2);
+      // Configure should only be called once even with plugins
+      expect(config.markdown!.configure).toHaveBeenCalledTimes(1);
+    });
+
+    it('should handle cache with different configs', async () => {
+      setEnv('development');
+
+      const config1: StatiConfig = {
+        ...baseConfig,
+        markdown: {
+          configure: vi.fn(),
+        },
+      };
+
+      const config2: StatiConfig = {
+        ...baseConfig,
+        markdown: {
+          configure: vi.fn(),
+        },
+      };
+
+      // Create processor with first config
+      const md1 = await createMarkdownProcessor(config1);
+      expect(config1.markdown!.configure).toHaveBeenCalledTimes(1);
+
+      // Create with second config (cache should still work since same base config)
+      const md2 = await createMarkdownProcessor(config2);
+
+      // In current implementation, cache is global so md2 uses cached processor
+      // configure on config2 might not be called if cache is hit
+      expect(md1).toBe(md2);
+    });
+
+    it('should recreate processor after cache clear', async () => {
+      setEnv('development');
+
+      // Create initial processor
+      const md1 = await createMarkdownProcessor(baseConfig);
+      const content = '# Test';
+      const result1 = renderMarkdown(content, md1);
+
+      // Clear cache
+      clearMarkdownProcessorCache();
+
+      // Create new processor
+      const md2 = await createMarkdownProcessor(baseConfig);
+      const result2 = renderMarkdown(content, md2);
+
+      // Both should produce same output
+      expect(result1.html).toBe(result2.html);
+    });
+
+    it('should cache processor across multiple renders in dev mode', async () => {
+      setEnv('development');
+
+      const configureSpy = vi.fn();
+      const config: StatiConfig = {
+        ...baseConfig,
+        markdown: {
+          configure: configureSpy,
+        },
+      };
+
+      // Multiple operations
+      const md1 = await createMarkdownProcessor(config);
+      renderMarkdown('# Page 1', md1);
+
+      const md2 = await createMarkdownProcessor(config);
+      renderMarkdown('# Page 2', md2);
+
+      const md3 = await createMarkdownProcessor(config);
+      renderMarkdown('# Page 3', md3);
+
+      // Configure should only be called once
+      expect(configureSpy).toHaveBeenCalledTimes(1);
+      // All should be same instance
+      expect(md1).toBe(md2);
+      expect(md2).toBe(md3);
     });
   });
 });

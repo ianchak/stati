@@ -9,7 +9,12 @@ import type { FSWatcher } from 'chokidar';
 import { build } from './build.js';
 import { invalidate } from './invalidate.js';
 import { loadConfig } from '../config/loader.js';
-import { loadCacheManifest, saveCacheManifest, computeNavigationHash } from './isg/index.js';
+import {
+  loadCacheManifest,
+  saveCacheManifest,
+  computeNavigationHash,
+  DevServerLockManager,
+} from './isg/index.js';
 import { loadContent } from './content.js';
 import { buildNavigation } from './navigation.js';
 import {
@@ -150,16 +155,31 @@ async function performIncrementalRebuild(
   // All changes being processed in this build (primary + batched)
   const allChanges = [{ path: changedPath, eventType }, ...batchedChanges];
 
-  // Create a quiet logger for dev builds that suppresses verbose output
-  const devLogger: Logger = {
-    info: () => {}, // Suppress info messages
-    success: () => {}, // Suppress success messages
-    error: logger.error || (() => {}),
-    warning: logger.warning || (() => {}),
-    status: () => {}, // Suppress status messages
-    building: () => {}, // Suppress building messages
-    processing: () => {}, // Suppress processing messages
-    stats: () => {}, // Suppress stats messages
+  // Create a dev logger that shows progress for template rebuilds
+  // but suppresses other verbose output
+  const createDevLogger = (showProgress: boolean): Logger => {
+    const baseLogger: Logger = {
+      info: () => {}, // Suppress info messages
+      success: () => {}, // Suppress success messages
+      error: logger.error || (() => {}),
+      warning: logger.warning || (() => {}),
+      status: () => {}, // Suppress status messages
+      building: () => {}, // Suppress building messages
+      processing: () => {}, // Suppress processing messages
+      stats: () => {}, // Suppress stats messages
+    };
+
+    // Enable progress tracking for template rebuilds (but not the full summary)
+    if (showProgress && logger.startProgress && logger.updateProgress && logger.endProgress) {
+      return {
+        ...baseLogger,
+        startProgress: logger.startProgress,
+        updateProgress: logger.updateProgress,
+        endProgress: logger.endProgress,
+      };
+    }
+
+    return baseLogger;
   };
 
   // Helper to check if a path is a static asset
@@ -173,14 +193,21 @@ async function performIncrementalRebuild(
   const getRelativePath = (path: string) =>
     path.replace(process.cwd(), '').replace(/\\/g, '/').replace(/^\//, '');
 
+  // Track template change result for better output
+  let templateChangeResult: TemplateChangeResult | null = null;
+
   try {
     // Check if the changed file is a template/partial
     if (changedPath.endsWith(TEMPLATE_EXTENSION) || changedPath.includes('_partials')) {
-      await handleTemplateChange(changedPath, configPath, devLogger);
+      // Use progress-enabled logger for template changes (rebuilds multiple pages)
+      const devLogger = createDevLogger(true);
+      templateChangeResult = await handleTemplateChange(changedPath, configPath, devLogger);
     } else if (changedPath.endsWith('.md')) {
+      const devLogger = createDevLogger(false);
       await handleMarkdownChange(changedPath, configPath, devLogger);
     } else {
       // Static file changed - use normal rebuild
+      const devLogger = createDevLogger(false);
       await build({
         logger: devLogger,
         force: false,
@@ -207,7 +234,7 @@ async function performIncrementalRebuild(
 
     const duration = Date.now() - startTime;
 
-    // Log all files that were processed in this batch
+    // Log rebuild result with affected page info for template changes
     for (const change of allChanges) {
       const relativePath = getRelativePath(change.path);
       let action: string;
@@ -218,9 +245,17 @@ async function performIncrementalRebuild(
       } else {
         action = 'rebuilt';
       }
-      logger.info?.(`▸ ${relativePath} ${action}`);
+
+      // For template changes, include affected page count
+      if (templateChangeResult && templateChangeResult.affectedPages > 0) {
+        const { affectedPages, totalPages } = templateChangeResult;
+        logger.info?.(`▸ ${relativePath} ${action}`);
+        logger.info?.(`   ${affectedPages}/${totalPages} pages rebuilt in ${duration}ms`);
+      } else {
+        logger.info?.(`▸ ${relativePath} ${action}`);
+        logger.info?.(`   Done in ${duration}ms`);
+      }
     }
-    logger.info?.(`   Done in ${duration}ms`);
   } catch (error) {
     const buildError = error instanceof Error ? error : new Error(String(error));
     const duration = Date.now() - startTime;
@@ -263,15 +298,27 @@ async function performIncrementalRebuild(
 }
 
 /**
+ * Result of handling a template change
+ */
+interface TemplateChangeResult {
+  /** Number of pages affected by this template change */
+  affectedPages: number;
+  /** Total pages in the site */
+  totalPages: number;
+}
+
+/**
  * Handles template/partial file changes by invalidating affected pages.
  * Uses proper path normalization to ensure reliable matching between
  * file watcher paths and cached dependency paths.
+ *
+ * @returns Object with affected and total page counts
  */
 async function handleTemplateChange(
   templatePath: string,
   configPath: string | undefined,
   logger: Logger,
-): Promise<void> {
+): Promise<TemplateChangeResult> {
   const cacheDir = resolveCacheDir();
 
   try {
@@ -286,13 +333,17 @@ async function handleTemplateChange(
         clean: false,
         ...(configPath && { configPath }),
       });
-      return;
+      return { affectedPages: 0, totalPages: 0 };
     }
 
     // Normalize the changed template path to absolute POSIX format for reliable comparison
     // This handles cases where the watcher provides relative paths, Windows paths, or different
     // path representations than what's stored in the cache manifest
+    // NOTE: Only used for string comparison, never for file system operations
     const normalizedTemplatePath = normalizePathForComparison(templatePath);
+
+    // Get total page count from manifest
+    const totalPages = Object.keys(cacheManifest.entries).length;
 
     // Find pages that depend on this template
     let affectedPagesCount = 0;
@@ -300,7 +351,7 @@ async function handleTemplateChange(
     for (const [pagePath, entry] of Object.entries(cacheManifest.entries)) {
       // Check if any of the page's dependencies match the changed template
       const hasMatchingDep = entry.deps.some((dep) => {
-        // Normalize the cached dependency path to the same format
+        // Normalize the cached dependency path to the same format for comparison only
         const normalizedDep = normalizePathForComparison(dep);
 
         // Direct path comparison - both paths are now in consistent format
@@ -309,8 +360,12 @@ async function handleTemplateChange(
 
       if (hasMatchingDep) {
         affectedPagesCount++;
-        // Remove from cache to force rebuild
-        delete cacheManifest.entries[pagePath];
+        // Mark entry as stale by invalidating its inputsHash
+        // This forces a rebuild while preserving deps for fast update optimization
+        cacheManifest.entries[pagePath] = {
+          ...entry,
+          inputsHash: 'STALE', // Forces rebuild in shouldRebuildPage
+        };
       }
     }
 
@@ -319,12 +374,18 @@ async function handleTemplateChange(
       await saveCacheManifest(cacheDir, cacheManifest);
 
       // Perform incremental rebuild (only affected pages will be rebuilt)
+      // skipManifestSave: true because we already saved the manifest above
+      // skipAssetCopy: true because template changes don't affect static assets
       await build({
         logger,
         force: false,
         clean: false,
+        skipManifestSave: true,
+        skipAssetCopy: true,
         ...(configPath && { configPath }),
       });
+
+      return { affectedPages: affectedPagesCount, totalPages };
     } else {
       // If no affected pages were found but a template changed,
       // force a full rebuild to ensure changes are reflected
@@ -335,6 +396,8 @@ async function handleTemplateChange(
         clean: false,
         ...(configPath && { configPath }),
       });
+
+      return { affectedPages: totalPages, totalPages };
     }
   } catch (_error) {
     try {
@@ -348,6 +411,8 @@ async function handleTemplateChange(
     } catch (fallbackError) {
       throw fallbackError instanceof Error ? fallbackError : new Error(String(fallbackError));
     }
+    // Return zeros on error fallback
+    return { affectedPages: 0, totalPages: 0 };
   }
 }
 
@@ -440,6 +505,10 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
   });
 
   setEnv('development');
+
+  // Create dev server lock manager
+  const cacheDir = resolveCacheDir();
+  const devLock = new DevServerLockManager(cacheDir);
 
   const url = `http://${host}:${port}`;
   let httpServer: ReturnType<typeof createServer> | null = null;
@@ -663,12 +732,22 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
     url,
 
     async start(): Promise<void> {
+      // Acquire dev server lock to prevent multiple dev servers in the same directory
+      try {
+        await devLock.acquireLock();
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        logger.error?.(`Failed to start dev server:\n${message}`);
+        throw error;
+      }
+
       // Perform initial build
       await performInitialBuild(configPath, logger, setLastBuildError);
 
       // Create HTTP server
       httpServer = createServer(async (req, res) => {
         const requestPath = req.url || '/';
+        const requestStart = Date.now();
 
         // Handle WebSocket upgrade path
         if (requestPath === '/__ws') {
@@ -683,6 +762,17 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
 
         try {
           const { content, mimeType, statusCode } = await serveFile(requestPath);
+          const responseTime = Date.now() - requestStart;
+
+          // Log slow responses with memory info
+          if (responseTime > 2000) {
+            const mem = process.memoryUsage();
+            const heapMB = Math.round(mem.heapUsed / 1024 / 1024);
+            const rssMB = Math.round(mem.rss / 1024 / 1024);
+            logger.warning?.(
+              `Slow response: ${requestPath} took ${responseTime}ms (heap: ${heapMB}MB, rss: ${rssMB}MB)`,
+            );
+          }
 
           res.writeHead(statusCode, {
             'Content-Type': mimeType,
@@ -863,6 +953,10 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
     async stop(): Promise<void> {
       if (isStopping) return;
       isStopping = true;
+
+      // Release dev server lock first to allow other servers to start
+      await devLock.releaseLock();
+
       if (watcher) {
         await watcher.close();
         watcher = null;

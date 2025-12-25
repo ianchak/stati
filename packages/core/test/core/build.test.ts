@@ -30,6 +30,7 @@ const {
   mockWithBuildLock,
   mockBuildNavigation,
   mockCompileTypeScript,
+  mockDetectExistingBundles,
   mockAutoInjectBundles,
   mockComputeSearchIndexFilename,
   mockGenerateSearchIndex,
@@ -56,6 +57,7 @@ const {
   mockBuildNavigation: vi.fn(),
   // TypeScript mocks
   mockCompileTypeScript: vi.fn(),
+  mockDetectExistingBundles: vi.fn(),
   mockAutoInjectBundles: vi.fn(),
   // ISG mocks
   mockLoadCacheManifest: vi.fn(),
@@ -125,6 +127,7 @@ vi.mock('../../src/core/isg/build-lock.js', () => ({
 
 vi.mock('../../src/core/utils/typescript.utils.js', () => ({
   compileTypeScript: mockCompileTypeScript,
+  detectExistingBundles: mockDetectExistingBundles,
   autoInjectBundles: mockAutoInjectBundles,
   formatBytes: () => '1.00 KB',
 }));
@@ -232,6 +235,10 @@ describe('build.ts', () => {
       { title: 'About', url: '/about' },
       { title: 'Blog', url: '/blog' },
     ]);
+
+    // Setup TypeScript mocks
+    mockCompileTypeScript.mockResolvedValue([]);
+    mockDetectExistingBundles.mockResolvedValue([]);
 
     // Setup search mocks
     mockComputeSearchIndexFilename.mockReturnValue('search-index-abc123.json');
@@ -972,7 +979,7 @@ describe('build.ts', () => {
       mockAutoInjectBundles.mockImplementation((html) => html);
     });
 
-    it('should compile TypeScript when enabled in config', async () => {
+    it('should detect existing bundles in development mode when TypeScript is enabled', async () => {
       const configWithTypeScript: StatiConfig = {
         ...mockConfig,
         typescript: {
@@ -984,12 +991,13 @@ describe('build.ts', () => {
 
       await build();
 
-      expect(mockCompileTypeScript).toHaveBeenCalledWith(
+      expect(mockDetectExistingBundles).toHaveBeenCalledWith(
         expect.objectContaining({
           config: { enabled: true },
           mode: 'development',
         }),
       );
+      expect(mockCompileTypeScript).not.toHaveBeenCalled();
     });
 
     it('should not compile TypeScript when disabled', async () => {
@@ -998,9 +1006,10 @@ describe('build.ts', () => {
       await build();
 
       expect(mockCompileTypeScript).not.toHaveBeenCalled();
+      expect(mockDetectExistingBundles).not.toHaveBeenCalled();
     });
 
-    it('should inject bundle path into rendered HTML', async () => {
+    it('should inject bundle paths into assets when bundles exist', async () => {
       const configWithTypeScript: StatiConfig = {
         ...mockConfig,
         typescript: {
@@ -1008,7 +1017,7 @@ describe('build.ts', () => {
         },
       };
 
-      mockCompileTypeScript.mockResolvedValue([
+      mockDetectExistingBundles.mockResolvedValue([
         {
           filename: 'main-abc123.js',
           path: '/_assets/main-abc123.js',
@@ -1022,7 +1031,7 @@ describe('build.ts', () => {
       expect(mockAutoInjectBundles).toHaveBeenCalled();
     });
 
-    it('should pass correct mode based on environment', async () => {
+    it('should compile TypeScript in production mode', async () => {
       const configWithTypeScript: StatiConfig = {
         ...mockConfig,
         typescript: {
@@ -1041,9 +1050,11 @@ describe('build.ts', () => {
           mode: 'production',
         }),
       );
+      expect(mockDetectExistingBundles).not.toHaveBeenCalled();
     });
 
-    it('should pass assets to renderPage when bundle is generated', async () => {
+    it('should pass assets to renderPage when bundle is generated in production', async () => {
+      setEnv('production');
       const configWithTypeScript: StatiConfig = {
         ...mockConfig,
         typescript: {
@@ -1078,7 +1089,8 @@ describe('build.ts', () => {
       );
     });
 
-    it('should handle TypeScript compilation returning no bundle', async () => {
+    it('should handle TypeScript compilation returning no bundle in production', async () => {
+      setEnv('production');
       const configWithTypeScript: StatiConfig = {
         ...mockConfig,
         typescript: {
@@ -1145,6 +1157,7 @@ describe('build.ts', () => {
         }),
         expect.stringContaining('dist'),
         'search-index-abc123.json',
+        true, // skipIfUnchanged - true in development mode
       );
     });
 

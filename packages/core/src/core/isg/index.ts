@@ -15,9 +15,15 @@ export { shouldRebuildPage, createCacheEntry, updateCacheEntry } from './builder
 
 // Build locking
 export { BuildLockManager, withBuildLock } from './build-lock.js';
+export { DevServerLockManager } from './dev-server-lock.js';
 
 // Dependency tracking
-export { CircularDependencyError, trackTemplateDependencies, resolveTemplatePath } from './deps.js';
+export {
+  CircularDependencyError,
+  trackTemplateDependencies,
+  resolveTemplatePath,
+  clearTemplatePathCache,
+} from './deps.js';
 
 // Hash computation
 export {
@@ -25,6 +31,7 @@ export {
   computeFileHash,
   computeInputsHash,
   computeNavigationHash,
+  clearFileHashCache,
 } from './hash.js';
 
 // TTL and aging

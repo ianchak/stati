@@ -1,4 +1,4 @@
-import { getEnv } from '../../env.js';
+import { isProduction } from '../../env.js';
 import { type CallablePartial } from './callable-partials.utils.js';
 
 /**
@@ -104,7 +104,7 @@ export function createValidatingPartialsProxy<T extends string | CallablePartial
 ): Record<string, T> {
   // In production, return partials as-is
   // Only skip validation if explicitly set to production
-  if (getEnv() === 'production') {
+  if (isProduction()) {
     return partials;
   }
 

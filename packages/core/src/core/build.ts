@@ -17,6 +17,7 @@ import {
   isTailwindUsed,
   loadPreviousInventory,
   compileTypeScript,
+  detectExistingBundles,
   autoInjectBundles,
   getBundlePathsForPage,
   formatBytes,
@@ -37,6 +38,8 @@ import {
   updateCacheEntry,
   withBuildLock,
   computeNavigationHash,
+  clearFileHashCache,
+  clearTemplatePathCache,
 } from './isg/index.js';
 import {
   generateSitemap,
@@ -51,7 +54,7 @@ import {
   writeSearchIndex,
   autoInjectSearchMeta,
 } from '../search/index.js';
-import { getEnv } from '../env.js';
+import { getEnv, isDevelopment } from '../env.js';
 import { DEFAULT_OUT_DIR } from '../constants.js';
 import type {
   BuildContext,
@@ -59,6 +62,7 @@ import type {
   Logger,
   StatiConfig,
   CacheManifest,
+  CacheEntry,
   PageModel,
   NavNode,
   StatiAssets,
@@ -116,6 +120,12 @@ export interface BuildOptions {
   coreVersion?: string | undefined;
   /** Metrics collection options */
   metrics?: MetricsOptions | undefined;
+  /** Skip updating cache entries after render (dev mode optimization) */
+  skipCacheUpdate?: boolean | undefined;
+  /** Skip saving cache manifest at end of build (dev mode optimization when caller already saved it) */
+  skipManifestSave?: boolean | undefined;
+  /** Skip copying static assets (dev mode optimization for template-only changes) */
+  skipAssetCopy?: boolean | undefined;
 }
 
 /**
@@ -260,11 +270,22 @@ const defaultLogger: Logger = {
 export async function build(options: BuildOptions = {}): Promise<BuildResult> {
   const cacheDir = resolveCacheDir();
 
+  // Clear per-build caches at the start of each build
+  // This prevents stale data from previous builds and ensures consistent state
+  clearFileHashCache();
+  clearTemplatePathCache();
+
   // Ensure cache directory exists before acquiring build lock
   await ensureDir(cacheDir);
 
+  // In dev mode, bypass file-based build lock (dev server handles concurrency via isBuildingRef
+  // and dev server lock prevents multiple dev servers in the same directory)
+  if (isDevelopment()) {
+    return buildInternal(options);
+  }
+
   // Use build lock to prevent concurrent builds, with force option to override
-  return await withBuildLock(cacheDir, () => buildInternal(options), {
+  return withBuildLock(cacheDir, () => buildInternal(options), {
     force: Boolean(options.force || options.clean), // Allow force if user explicitly requests it
     timeout: 60000, // 1 minute timeout
   });
@@ -414,6 +435,21 @@ async function processPagesWithCache(
     logger.startProgress(pages.length);
   }
 
+  // Track timing for shouldRebuildPage
+  let totalShouldRebuildTime = 0;
+  let totalRenderTime = 0;
+  let totalFileWriteTime = 0;
+  let totalCacheEntryTime = 0;
+
+  // Batch pending writes for parallel execution (dev mode optimization)
+  const isDevMode = isDevelopment();
+  const pendingWrites: Array<{ outputPath: string; content: string }> = [];
+  const pendingCacheUpdates: Array<{
+    cacheKey: string;
+    page: PageModel;
+    existingEntry: CacheEntry | undefined;
+  }> = [];
+
   for (let i = 0; i < pages.length; i++) {
     const page = pages[i];
     if (!page) continue; // Safety check
@@ -434,8 +470,11 @@ async function processPagesWithCache(
     const existingEntry = manifest.entries[cacheKey];
 
     // Check if we should rebuild this page (considering ISG logic)
+    const shouldRebuildStart = performance.now();
     const shouldRebuild =
       options.force || (await shouldRebuildPage(page, existingEntry, config, buildTime));
+    const shouldRebuildTime = performance.now() - shouldRebuildStart;
+    totalShouldRebuildTime += shouldRebuildTime;
 
     if (!shouldRebuild) {
       // Cache hit - skip rendering
@@ -484,6 +523,7 @@ async function processPagesWithCache(
     };
 
     // Render with template
+    const renderPageStart = performance.now();
     const renderResult = await renderPage(
       page,
       htmlContent,
@@ -495,6 +535,8 @@ async function processPagesWithCache(
       toc,
       logger,
     );
+    const renderPageTime = performance.now() - renderPageStart;
+    totalRenderTime += renderPageTime;
     let finalHtml = renderResult.html;
 
     // Record templates loaded for this page
@@ -539,15 +581,32 @@ async function processPagesWithCache(
       logger.updateProgress('rendered', page.url, renderTime);
     }
 
-    // Ensure directory exists and write file
-    await ensureDir(dirname(outputPath));
-    await writeFile(outputPath, finalHtml, 'utf-8');
-
-    // Update cache manifest
-    if (existingEntry) {
-      manifest.entries[cacheKey] = await updateCacheEntry(existingEntry, page, config, buildTime);
+    // In dev mode, batch writes for parallel execution to avoid Windows filesystem slowdown
+    if (isDevMode) {
+      pendingWrites.push({ outputPath, content: finalHtml });
+      pendingCacheUpdates.push({ cacheKey, page, existingEntry });
     } else {
-      manifest.entries[cacheKey] = await createCacheEntry(page, config, buildTime);
+      // Production mode: write immediately
+      const fileWriteStart = performance.now();
+      await ensureDir(dirname(outputPath));
+      await writeFile(outputPath, finalHtml, 'utf-8');
+      totalFileWriteTime += performance.now() - fileWriteStart;
+
+      // Update cache manifest
+      if (!options.skipCacheUpdate) {
+        const cacheEntryStart = performance.now();
+        if (existingEntry) {
+          manifest.entries[cacheKey] = await updateCacheEntry(
+            existingEntry,
+            page,
+            config,
+            buildTime,
+          );
+        } else {
+          manifest.entries[cacheKey] = await createCacheEntry(page, config, buildTime);
+        }
+        totalCacheEntryTime += performance.now() - cacheEntryStart;
+      }
     }
 
     // Collect searchable page data if search is enabled
@@ -563,6 +622,46 @@ async function processPagesWithCache(
       recorder.addToPhase('hookAfterRenderTotalMs', performance.now() - hookStart);
     }
   }
+
+  // In dev mode, execute batched writes in parallel
+  if (isDevMode && pendingWrites.length > 0) {
+    const fileWriteStart = performance.now();
+
+    // Ensure all directories exist first
+    const uniqueDirs = [...new Set(pendingWrites.map((w) => dirname(w.outputPath)))];
+    await Promise.all(uniqueDirs.map((dir) => ensureDir(dir)));
+
+    // Write all files in parallel
+    await Promise.all(pendingWrites.map((w) => writeFile(w.outputPath, w.content, 'utf-8')));
+    totalFileWriteTime = performance.now() - fileWriteStart;
+
+    // Update cache entries SEQUENTIALLY with fast update (reuse existing deps)
+    // This avoids expensive template dependency tracking on each incremental rebuild
+    if (!options.skipCacheUpdate) {
+      const cacheEntryStart = performance.now();
+      for (const { cacheKey, page, existingEntry } of pendingCacheUpdates) {
+        if (existingEntry) {
+          // Fast update: reuse existing deps, just update hashes and timestamp
+          manifest.entries[cacheKey] = await updateCacheEntry(
+            existingEntry,
+            page,
+            config,
+            buildTime,
+            true, // fastUpdate = true in dev mode
+          );
+        } else {
+          manifest.entries[cacheKey] = await createCacheEntry(page, config, buildTime);
+        }
+      }
+      totalCacheEntryTime = performance.now() - cacheEntryStart;
+    }
+  }
+
+  // Record detailed phase timings in metrics
+  recorder.recordPhase('shouldRebuildTotalMs', totalShouldRebuildTime);
+  recorder.recordPhase('renderPageTotalMs', totalRenderTime);
+  recorder.recordPhase('fileWriteTotalMs', totalFileWriteTime);
+  recorder.recordPhase('cacheEntryTotalMs', totalCacheEntryTime);
 
   // Display final progress summary
   if (logger.endProgress) {
@@ -619,13 +718,20 @@ async function generateBuildStats(
   cacheHits: number,
   cacheMisses: number,
   logger: Logger,
+  recorder: MetricRecorder = noopMetricRecorder,
 ): Promise<BuildStats> {
   const buildEndTime = Date.now();
+
+  const outputSizeStart = performance.now();
+  const outputSizeBytes = await getDirectorySize(outDir);
+  const dirSizeTime = performance.now() - outputSizeStart;
+  recorder.recordPhase('getDirectorySizeMs', dirSizeTime);
+
   const buildStats: BuildStats = {
     totalPages: pages.length,
     assetsCount,
     buildTimeMs: buildEndTime - buildStartTime,
-    outputSizeBytes: await getDirectorySize(outDir),
+    outputSizeBytes,
     // Include ISG cache statistics
     cacheHits,
     cacheMisses,
@@ -687,6 +793,7 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
   await ensureDir(outDir);
 
   // Enable Tailwind class inventory tracking only if Tailwind is detected
+  const tailwindInitStart = performance.now();
   const hasTailwind = await isTailwindUsed();
   if (hasTailwind) {
     enableInventoryTracking();
@@ -709,6 +816,8 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
       );
     }
   }
+  const tailwindInitTime = performance.now() - tailwindInitStart;
+  recorder.recordPhase('tailwindInitMs', tailwindInitTime);
 
   // Load cache manifest for ISG (after potential clean operation)
   const endManifestLoadSpan = recorder.startSpan('cacheManifestLoadMs');
@@ -737,24 +846,36 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
   manifest.navigationHash = navigationHash;
 
   // Compile TypeScript if enabled
+  // In dev mode, skip compilation since esbuild watcher handles it
   let compiledBundles: CompiledBundleInfo[] = [];
+  const isDevMode = isDevelopment();
 
-  if (config.typescript?.enabled) {
+  if (config.typescript?.enabled && isDevMode) {
+    // In dev mode, detect existing bundles compiled by esbuild watcher
+    compiledBundles = await detectExistingBundles({
+      projectRoot: process.cwd(),
+      config: config.typescript,
+      outDir: config.outDir || DEFAULT_OUT_DIR,
+      mode: 'development',
+    });
+  } else if (config.typescript?.enabled) {
     const endTsSpan = recorder.startSpan('typescriptCompileMs');
     compiledBundles = await compileTypeScript({
       projectRoot: process.cwd(),
       config: config.typescript,
       outDir: config.outDir || DEFAULT_OUT_DIR,
-      mode: getEnv() === 'production' ? 'production' : 'development',
+      mode: 'production',
       logger,
     });
     endTsSpan();
   }
 
   // Pre-compute search index filename if search is enabled
+  // In dev mode, use a stable filename to simlplify testing and debugging
   let searchIndexFilename: string | undefined;
   if (config.search?.enabled) {
-    searchIndexFilename = computeSearchIndexFilename(config.search, buildStartTime.toString());
+    const buildId = isDevMode ? 'dev' : buildStartTime.toString();
+    searchIndexFilename = computeSearchIndexFilename(config.search, buildId);
   }
 
   // Process pages with ISG caching logic
@@ -792,8 +913,18 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
 
     const endSearchIndexSpan = recorder.startSpan('searchIndexGenerationMs');
     const searchIndex = generateSearchIndex(searchablePages, config.search);
-    searchIndexMetadata = await writeSearchIndex(searchIndex, outDir, searchIndexFilename);
     endSearchIndexSpan();
+    const writeStart = performance.now();
+    // In dev mode, skip write if content hasn't changed (template-only changes)
+    const skipIfUnchanged = isDevMode;
+    searchIndexMetadata = await writeSearchIndex(
+      searchIndex,
+      outDir,
+      searchIndexFilename,
+      skipIfUnchanged,
+    );
+    const writeTime = performance.now() - writeStart;
+    recorder.recordPhase('searchIndexWriteMs', writeTime);
 
     logger.success(`Generated search index with ${searchIndexMetadata.documentCount} documents`);
   }
@@ -803,10 +934,13 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
   recorder.increment('cachedPages', cacheHits);
 
   // Write Tailwind class inventory after all templates have been rendered (if Tailwind is used)
+  const tailwindStart = performance.now();
   if (hasTailwind) {
     const inventorySize = getInventorySize();
     if (inventorySize > 0) {
-      await writeTailwindClassInventory(cacheDir);
+      // In dev mode, skip write if inventory size hasn't changed
+      const skipIfUnchanged = isDevMode;
+      await writeTailwindClassInventory(cacheDir, skipIfUnchanged);
       logger.info('');
       logger.status(`Generated Tailwind class inventory (${inventorySize} classes tracked)`);
     }
@@ -814,16 +948,22 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     // Disable inventory tracking after build
     disableInventoryTracking();
   }
+  const tailwindInventoryTime = performance.now() - tailwindStart;
+  recorder.recordPhase('tailwindInventoryMs', tailwindInventoryTime);
 
-  // Save updated cache manifest
+  // Save updated cache manifest (skip if caller already saved it, e.g., dev mode template change)
   const endManifestSaveSpan = recorder.startSpan('cacheManifestSaveMs');
-  await saveCacheManifest(cacheDir, manifest);
+  if (!options.skipManifestSave) {
+    await saveCacheManifest(cacheDir, manifest);
+  }
   endManifestSaveSpan();
 
-  // Copy static assets and count them
+  // Copy static assets and count them (skip for template-only changes in dev mode)
   const endAssetSpan = recorder.startSpan('assetCopyMs');
   let assetsCount = 0;
-  assetsCount = await copyStaticAssets(config, outDir, logger);
+  if (!options.skipAssetCopy) {
+    assetsCount = await copyStaticAssets(config, outDir, logger);
+  }
   endAssetSpan();
   recorder.increment('assetsCopied', assetsCount);
 
@@ -930,16 +1070,26 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     endHookAfterAll();
   }
 
-  // Calculate build statistics
-  const buildStats = await generateBuildStats(
-    pages,
-    assetsCount,
-    buildStartTime,
-    outDir,
-    cacheHits,
-    cacheMisses,
-    logger,
-  );
+  // Generate build statistics (skip in dev mode for performance)
+  const buildStats: BuildStats = isDevMode
+    ? {
+        totalPages: pages.length,
+        assetsCount: 0,
+        buildTimeMs: Date.now() - buildStartTime,
+        outputSizeBytes: 0,
+        cacheHits,
+        cacheMisses,
+      }
+    : await generateBuildStats(
+        pages,
+        assetsCount,
+        buildStartTime,
+        outDir,
+        cacheHits,
+        cacheMisses,
+        logger,
+        recorder,
+      );
 
   // Set ISG metrics
   const totalPages = pages.length;

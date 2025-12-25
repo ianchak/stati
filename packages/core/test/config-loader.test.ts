@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { join } from 'node:path';
 import { mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { getConfigFilePaths, loadConfig } from '../src/config/loader.js';
+import { getConfigFilePaths, loadConfig, clearConfigCache } from '../src/config/loader.js';
 
 // Test the actual loader functionality by creating a simpler approach
 // Focus on testing the logic rather than mocking complex dynamic imports
@@ -414,6 +414,126 @@ export default config;`;
       // Assert - TypeScript config should be used (it comes first in search order)
       expect(config.srcDir).toBe('from-ts');
       expect(config.site.title).toBe('TypeScript Config');
+    });
+  });
+
+  describe('config cache mechanism', () => {
+    it('should cache config and return cached version on subsequent loads', async () => {
+      // Arrange - create a config file
+      const configPath = join(testDir, 'stati.config.mjs');
+      const configContent = `export default {
+  srcDir: 'cached-src',
+  site: { title: 'Cached Site' }
+};`;
+      writeFileSync(configPath, configContent, 'utf-8');
+
+      // Act - load config twice
+      const config1 = await loadConfig(testDir);
+      const config2 = await loadConfig(testDir);
+
+      // Assert - both should have same values (cached)
+      expect(config1.srcDir).toBe('cached-src');
+      expect(config2.srcDir).toBe('cached-src');
+      expect(config1.site.title).toBe(config2.site.title);
+    });
+
+    it('should clear internal cache when clearConfigCache is called', () => {
+      // This tests the cache clearing function exists and can be called
+      // Actual config reload still depends on Node.js module caching
+      expect(() => clearConfigCache()).not.toThrow();
+    });
+
+    it('should handle cache when config file is deleted', async () => {
+      // Arrange - create config and load it
+      const configPath = join(testDir, 'stati.config.mjs');
+      writeFileSync(
+        configPath,
+        `export default {
+  srcDir: 'to-be-deleted',
+  site: { title: 'Deleted' }
+};`,
+        'utf-8',
+      );
+
+      const config1 = await loadConfig(testDir);
+      expect(config1.srcDir).toBe('to-be-deleted');
+
+      // Act - delete config file
+      rmSync(configPath);
+
+      // Load again
+      const config2 = await loadConfig(testDir);
+
+      // Assert - should return default config
+      expect(config2.srcDir).toBe('site');
+      expect(config2.outDir).toBe('dist');
+    });
+
+    it('should cache configs from different directories separately', async () => {
+      // Arrange - create two different test directories
+      const testDir2 = join(
+        tmpdir(),
+        `stati-test-2-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      );
+      mkdirSync(testDir2, { recursive: true });
+
+      const configPath1 = join(testDir, 'stati.config.mjs');
+      const configPath2 = join(testDir2, 'stati.config.mjs');
+
+      writeFileSync(
+        configPath1,
+        `export default {
+  srcDir: 'dir1-src',
+  site: { title: 'Dir 1' }
+};`,
+        'utf-8',
+      );
+
+      writeFileSync(
+        configPath2,
+        `export default {
+  srcDir: 'dir2-src',
+  site: { title: 'Dir 2' }
+};`,
+        'utf-8',
+      );
+
+      // Act - load configs from both directories
+      const config1 = await loadConfig(testDir);
+      const config2 = await loadConfig(testDir2);
+
+      // Assert - configs should be different
+      expect(config1.srcDir).toBe('dir1-src');
+      expect(config2.srcDir).toBe('dir2-src');
+      expect(config1.site.title).toBe('Dir 1');
+      expect(config2.site.title).toBe('Dir 2');
+
+      // Cleanup
+      rmSync(testDir2, { recursive: true, force: true });
+    });
+
+    it('should validate cache behavior with TypeScript configs', async () => {
+      // This test validates that TypeScript configs can be loaded and cached
+      const configPath = join(testDir, 'stati.config.ts');
+      writeFileSync(
+        configPath,
+        `export default {
+  srcDir: 'ts-cache-src',
+  site: { title: 'TS Cache' }
+};`,
+        'utf-8',
+      );
+
+      // Act - load config
+      const config = await loadConfig(testDir);
+
+      // Assert - config should be loaded
+      expect(config.srcDir).toBe('ts-cache-src');
+      expect(config.site.title).toBe('TS Cache');
+
+      // Verify cleanup happened
+      const compiledPath = join(testDir, 'stati.config.compiled.mjs');
+      expect(existsSync(compiledPath)).toBe(false);
     });
   });
 });

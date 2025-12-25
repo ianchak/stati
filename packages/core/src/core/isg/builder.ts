@@ -3,6 +3,7 @@ import { computeContentHash, computeFileHash, computeInputsHash } from './hash.j
 import { trackTemplateDependencies } from './deps.js';
 import { computeEffectiveTTL, computeNextRebuildAt, isPageFrozen } from './ttl.js';
 import { validatePageISGOverrides, extractNumericOverride } from './validation.js';
+import { performance } from 'node:perf_hooks';
 
 /**
  * Determines the output path for a page.
@@ -269,16 +270,25 @@ export async function createCacheEntry(
   config: StatiConfig,
   renderedAt: Date,
 ): Promise<CacheEntry> {
+  const timings: Record<string, number> = {};
+  let start = performance.now();
+
   // Validate page-level ISG overrides first
   validatePageISGOverrides(page.frontMatter, page.sourcePath);
+  timings.validate = performance.now() - start;
 
   // Compute content hash
+  start = performance.now();
   const contentHash = computeContentHash(page.content, page.frontMatter);
+  timings.contentHash = performance.now() - start;
 
   // Track all template dependencies
+  start = performance.now();
   const deps = await trackTemplateDependencies(page, config);
+  timings.trackDeps = performance.now() - start;
 
   // Compute hashes for all dependencies
+  start = performance.now();
   const depsHashes: string[] = [];
   for (const dep of deps) {
     const depHash = await computeFileHash(dep);
@@ -286,6 +296,7 @@ export async function createCacheEntry(
       depsHashes.push(depHash);
     }
   }
+  timings.depsHashes = performance.now() - start;
 
   const inputsHash = computeInputsHash(contentHash, depsHashes);
 
@@ -346,12 +357,63 @@ export async function createCacheEntry(
 }
 
 /**
+ * Checks if the template structure has changed by comparing the layout file's
+ * modification time against when the cache entry was last rendered.
+ * This detects when new includes/extends have been added to templates.
+ *
+ * @param entry - The existing cache entry
+ * @returns True if template structure may have changed, false if structure is unchanged
+ */
+async function hasTemplateStructureChanged(entry: CacheEntry): Promise<boolean> {
+  try {
+    // If the entry has a layout in its deps, check if that layout file has been modified
+    // since the last render. Layout files are typically the first dep or contain the
+    // includes/extends declarations.
+    if (entry.deps.length === 0) {
+      return false;
+    }
+
+    // Get the timestamp of the last render
+    const lastRendered = new Date(entry.renderedAt).getTime();
+
+    // Import stat from node:fs/promises at runtime to avoid circular dependency issues
+    const { stat } = await import('node:fs/promises');
+
+    // Check if any template files (layout or partials) have been modified
+    // We only need to check the first few deps (usually layout and immediate includes)
+    // as a heuristic to detect structural changes without expensive full tracking
+    const depsToCheck = entry.deps.slice(0, 3);
+
+    for (const depPath of depsToCheck) {
+      try {
+        const stats = await stat(depPath);
+        if (stats.mtimeMs > lastRendered) {
+          // Template file was modified after last render - structure may have changed
+          return true;
+        }
+      } catch (_error) {
+        // If we can't stat the file, assume it might have changed
+        return true;
+      }
+    }
+
+    return false;
+  } catch (_error) {
+    // On any error, be conservative and assume structure changed
+    return true;
+  }
+}
+
+/**
  * Updates an existing cache entry with new information after rebuilding.
+ * In dev mode, this is optimized to reuse the existing deps array since
+ * template structure rarely changes between incremental rebuilds.
  *
  * @param entry - Existing cache entry
  * @param page - The page model
  * @param config - Stati configuration
  * @param renderedAt - When the page was rendered
+ * @param fastUpdate - If true, skip expensive dep tracking (dev mode optimization)
  * @returns Updated cache entry
  *
  * @example
@@ -364,8 +426,43 @@ export async function updateCacheEntry(
   page: PageModel,
   config: StatiConfig,
   renderedAt: Date,
+  fastUpdate = false,
 ): Promise<CacheEntry> {
-  // Create a new entry and preserve the original publishedAt if not overridden
+  // In fast update mode (dev), reuse existing deps to avoid expensive tracking
+  if (fastUpdate && entry.deps.length > 0) {
+    // Detect if template structure has changed (new includes/extends added)
+    // by checking if the layout file has been modified or if template content
+    // contains different dependency patterns
+    const structureChanged = await hasTemplateStructureChanged(entry);
+
+    if (structureChanged) {
+      // Template structure changed - fall through to full dependency tracking
+      // This ensures we pick up new includes/extends
+    } else {
+      // Structure unchanged - safe to reuse existing deps
+      // Just update the content hash and timestamp, keep existing deps
+      const contentHash = computeContentHash(page.content, page.frontMatter);
+
+      // Compute hashes for existing dependencies (fast - files are cached)
+      const depsHashes: string[] = [];
+      for (const dep of entry.deps) {
+        const depHash = await computeFileHash(dep);
+        if (depHash) {
+          depsHashes.push(depHash);
+        }
+      }
+
+      const inputsHash = computeInputsHash(contentHash, depsHashes);
+
+      return {
+        ...entry,
+        inputsHash,
+        renderedAt: renderedAt.toISOString(),
+      };
+    }
+  }
+
+  // Full update - create new entry and preserve original publishedAt
   const newEntry = await createCacheEntry(page, config, renderedAt);
 
   // Preserve original publishedAt if no new one is specified

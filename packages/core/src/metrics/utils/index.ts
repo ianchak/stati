@@ -20,3 +20,6 @@ export {
 export { DEFAULT_METRICS_DIR, generateMetricsFilename, writeMetrics } from './writer.utils.js';
 
 export type { WriteMetricsOptions, WriteMetricsResult } from './writer.utils.js';
+
+// HTML report utilities
+export { generateMetricsHtml, writeMetricsHtml } from './html-report.utils.js';

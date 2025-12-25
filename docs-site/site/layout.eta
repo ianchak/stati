@@ -13,11 +13,11 @@
     <link rel="stylesheet" href="/styles.css">
     <link rel="stylesheet" href="/prism-stati.css">
     <link rel="alternate" type="application/rss+xml" title="Stati Documentation Updates" href="/feed.xml">
-    <% if (stati.assets?.bundlePaths && stati.assets.bundlePaths.length > 0) { %>
-    <% for (const bundlePath of stati.assets.bundlePaths) { %>
+<% if (stati.assets?.bundlePaths && stati.assets.bundlePaths.length > 0) { _%>
+<% for (const bundlePath of stati.assets.bundlePaths) { %>
     <link rel="modulepreload" href="<%= bundlePath %>">
-    <% } %>
-    <% } %>
+<% } _%>
+<% } _%>
 </head>
 <body class="bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-dark-950 dark:via-dark-900 dark:to-dark-900/80 text-gray-900 dark:text-gray-100 font-sans antialiased">
     <!-- Skip to content link for accessibility -->
@@ -62,5 +62,8 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
         </svg>
     </button>
+
+    <!-- Search UI Templates -->
+    <%~ stati.partials.searchTemplates %>
 </body>
 </html>

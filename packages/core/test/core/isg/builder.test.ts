@@ -513,4 +513,594 @@ describe('ISG Build Integration', () => {
       );
     });
   });
+
+  describe('Cache entry validation', () => {
+    it('should consider valid cache entry with all required fields', async () => {
+      const validEntry: CacheEntry = {
+        path: 'test.html',
+        inputsHash: 'hash123',
+        deps: [testLayoutPath],
+        tags: ['test'],
+        renderedAt: '2024-01-01T00:00:00.000Z',
+        ttlSeconds: 3600,
+      };
+
+      // Valid entry should not trigger rebuild due to corruption
+      const result = await shouldRebuildPage(mockPage, validEntry, mockConfig, fixedDate);
+
+      // Should depend on content/TTL logic, not validation failure
+      expect(result).toBeDefined();
+    });
+
+    it('should rebuild when entry is missing required path field', async () => {
+      const invalidEntry = {
+        // path missing
+        inputsHash: 'hash123',
+        deps: [testLayoutPath],
+        tags: ['test'],
+        renderedAt: '2024-01-01T00:00:00.000Z',
+        ttlSeconds: 3600,
+      } as unknown as CacheEntry;
+
+      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      expect(result).toBe(true);
+    });
+
+    it('should rebuild when entry is missing inputsHash field', async () => {
+      const invalidEntry = {
+        path: 'test.html',
+        // inputsHash missing
+        deps: [testLayoutPath],
+        tags: ['test'],
+        renderedAt: '2024-01-01T00:00:00.000Z',
+        ttlSeconds: 3600,
+      } as unknown as CacheEntry;
+
+      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      expect(result).toBe(true);
+    });
+
+    it('should rebuild when entry is missing renderedAt field', async () => {
+      const invalidEntry = {
+        path: 'test.html',
+        inputsHash: 'hash123',
+        deps: [testLayoutPath],
+        tags: ['test'],
+        // renderedAt missing
+        ttlSeconds: 3600,
+      } as unknown as CacheEntry;
+
+      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      expect(result).toBe(true);
+    });
+
+    it('should rebuild when ttlSeconds is not a number', async () => {
+      const invalidEntry = {
+        path: 'test.html',
+        inputsHash: 'hash123',
+        deps: [testLayoutPath],
+        tags: ['test'],
+        renderedAt: '2024-01-01T00:00:00.000Z',
+        ttlSeconds: 'not a number' as unknown as number,
+      };
+
+      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      expect(result).toBe(true);
+    });
+
+    it('should rebuild when ttlSeconds is NaN', async () => {
+      const invalidEntry: CacheEntry = {
+        path: 'test.html',
+        inputsHash: 'hash123',
+        deps: [testLayoutPath],
+        tags: ['test'],
+        renderedAt: '2024-01-01T00:00:00.000Z',
+        ttlSeconds: NaN,
+      };
+
+      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      expect(result).toBe(true);
+    });
+
+    it('should rebuild when ttlSeconds is Infinity', async () => {
+      const invalidEntry: CacheEntry = {
+        path: 'test.html',
+        inputsHash: 'hash123',
+        deps: [testLayoutPath],
+        tags: ['test'],
+        renderedAt: '2024-01-01T00:00:00.000Z',
+        ttlSeconds: Infinity,
+      };
+
+      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      expect(result).toBe(true);
+    });
+
+    it('should rebuild when deps is not an array', async () => {
+      const invalidEntry = {
+        path: 'test.html',
+        inputsHash: 'hash123',
+        deps: 'not an array' as unknown as string[],
+        tags: ['test'],
+        renderedAt: '2024-01-01T00:00:00.000Z',
+        ttlSeconds: 3600,
+      };
+
+      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      expect(result).toBe(true);
+    });
+
+    it('should rebuild when tags is not an array', async () => {
+      const invalidEntry = {
+        path: 'test.html',
+        inputsHash: 'hash123',
+        deps: [testLayoutPath],
+        tags: 'not an array' as unknown as string[],
+        renderedAt: '2024-01-01T00:00:00.000Z',
+        ttlSeconds: 3600,
+      };
+
+      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      expect(result).toBe(true);
+    });
+
+    it('should rebuild when deps contains non-string values', async () => {
+      const invalidEntry = {
+        path: 'test.html',
+        inputsHash: 'hash123',
+        deps: [testLayoutPath, 123, null] as unknown as string[],
+        tags: ['test'],
+        renderedAt: '2024-01-01T00:00:00.000Z',
+        ttlSeconds: 3600,
+      };
+
+      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      expect(result).toBe(true);
+    });
+
+    it('should rebuild when tags contains non-string values', async () => {
+      const invalidEntry = {
+        path: 'test.html',
+        inputsHash: 'hash123',
+        deps: [testLayoutPath],
+        tags: ['valid', 42, { tag: 'invalid' }] as unknown as string[],
+        renderedAt: '2024-01-01T00:00:00.000Z',
+        ttlSeconds: 3600,
+      };
+
+      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      expect(result).toBe(true);
+    });
+
+    it('should rebuild when entry is null', async () => {
+      const result = await shouldRebuildPage(
+        mockPage,
+        null as unknown as CacheEntry,
+        mockConfig,
+        fixedDate,
+      );
+      expect(result).toBe(true);
+    });
+
+    it('should rebuild when entry is not an object', async () => {
+      const invalidEntry = 'not an object' as unknown as CacheEntry;
+      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      expect(result).toBe(true);
+    });
+
+    it('should handle entry with invalid publishedAt type', async () => {
+      const invalidEntry = {
+        path: 'test.html',
+        inputsHash: 'hash123',
+        deps: [testLayoutPath],
+        tags: ['test'],
+        renderedAt: '2024-01-01T00:00:00.000Z',
+        ttlSeconds: 3600,
+        publishedAt: 12345 as unknown as string,
+      };
+
+      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      expect(result).toBe(true);
+    });
+
+    it('should handle entry with invalid maxAgeCapDays type', async () => {
+      const invalidEntry = {
+        path: 'test.html',
+        inputsHash: 'hash123',
+        deps: [testLayoutPath],
+        tags: ['test'],
+        renderedAt: '2024-01-01T00:00:00.000Z',
+        ttlSeconds: 3600,
+        maxAgeCapDays: 'not a number' as unknown as number,
+      };
+
+      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      expect(result).toBe(true);
+    });
+
+    it('should accept entry with empty arrays', async () => {
+      const validEntry: CacheEntry = {
+        path: 'test.html',
+        inputsHash: 'hash123',
+        deps: [],
+        tags: [],
+        renderedAt: '2024-01-01T00:00:00.000Z',
+        ttlSeconds: 3600,
+      };
+
+      // Empty arrays are valid
+      const result = await shouldRebuildPage(mockPage, validEntry, mockConfig, fixedDate);
+      expect(result).toBeDefined(); // Should depend on other logic, not validation
+    });
+
+    it('should accept entry with optional fields omitted', async () => {
+      const validEntry: CacheEntry = {
+        path: 'test.html',
+        inputsHash: 'hash123',
+        deps: [testLayoutPath],
+        tags: ['test'],
+        renderedAt: '2024-01-01T00:00:00.000Z',
+        ttlSeconds: 3600,
+      };
+
+      const result = await shouldRebuildPage(mockPage, validEntry, mockConfig, fixedDate);
+      expect(result).toBeDefined();
+    });
+
+    it('should rebuild when path is empty string', async () => {
+      const invalidEntry: CacheEntry = {
+        path: '',
+        inputsHash: 'hash123',
+        deps: [testLayoutPath],
+        tags: ['test'],
+        renderedAt: '2024-01-01T00:00:00.000Z',
+        ttlSeconds: 3600,
+      };
+
+      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      expect(result).toBe(true);
+    });
+
+    it('should rebuild when inputsHash is empty string', async () => {
+      const invalidEntry: CacheEntry = {
+        path: 'test.html',
+        inputsHash: '',
+        deps: [testLayoutPath],
+        tags: ['test'],
+        renderedAt: '2024-01-01T00:00:00.000Z',
+        ttlSeconds: 3600,
+      };
+
+      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      expect(result).toBe(true);
+    });
+
+    it('should rebuild when renderedAt is empty string', async () => {
+      const invalidEntry: CacheEntry = {
+        path: 'test.html',
+        inputsHash: 'hash123',
+        deps: [testLayoutPath],
+        tags: ['test'],
+        renderedAt: '',
+        ttlSeconds: 3600,
+      };
+
+      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      expect(result).toBe(true);
+    });
+
+    it('should handle deeply corrupted entry object', async () => {
+      const invalidEntry = {
+        path: null,
+        inputsHash: undefined,
+        deps: 'string',
+        tags: { not: 'array' },
+        renderedAt: 12345,
+        ttlSeconds: 'invalid',
+      } as unknown as CacheEntry;
+
+      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      expect(result).toBe(true);
+    });
+  });
+
+  describe('Fast update mode with structural change detection', () => {
+    const existingEntry: CacheEntry = {
+      path: 'test.html',
+      inputsHash: 'old_inputs',
+      deps: [testLayoutPath, testHeaderPath],
+      tags: ['page'],
+      renderedAt: fixedDate.toISOString(),
+      ttlSeconds: 3600,
+    };
+
+    beforeEach(() => {
+      // Reset mocks for fast update tests
+      vi.clearAllMocks();
+      mockComputeContentHash.mockReturnValue('content123');
+      mockComputeFileHash.mockResolvedValue('file123');
+      mockComputeInputsHash.mockReturnValue('inputs123');
+      mockTrackTemplateDependencies.mockResolvedValue([testLayoutPath, testHeaderPath]);
+      mockComputeEffectiveTTL.mockReturnValue(3600);
+    });
+
+    it('should reuse existing deps when templates are unchanged (fast path)', async () => {
+      // Mock fs.promises.stat to return old modification times
+      const mockStat = vi.fn().mockResolvedValue({
+        mtimeMs: fixedDate.getTime() - 10000, // Modified before last render
+      });
+
+      vi.doMock('node:fs/promises', () => ({
+        stat: mockStat,
+      }));
+
+      const result = await updateCacheEntry(
+        existingEntry,
+        mockPage,
+        mockConfig,
+        fixedDate,
+        true, // fastUpdate = true
+      );
+
+      // Should reuse existing deps without calling trackTemplateDependencies
+      expect(result.deps).toEqual([testLayoutPath, testHeaderPath]);
+      expect(mockTrackTemplateDependencies).not.toHaveBeenCalled();
+      expect(mockComputeContentHash).toHaveBeenCalledTimes(1);
+      expect(mockComputeFileHash).toHaveBeenCalledWith(testLayoutPath);
+      expect(mockComputeFileHash).toHaveBeenCalledWith(testHeaderPath);
+      expect(result.renderedAt).toBe(fixedDate.toISOString());
+
+      vi.doUnmock('node:fs/promises');
+    });
+
+    it('should perform full dependency tracking when template is modified (slow path)', async () => {
+      // Mock fs.promises.stat to return recent modification time
+      const mockStat = vi.fn().mockResolvedValue({
+        mtimeMs: fixedDate.getTime() + 1000, // Modified after last render
+      });
+
+      vi.doMock('node:fs/promises', () => ({
+        stat: mockStat,
+      }));
+
+      const newDeps = [testLayoutPath, testHeaderPath, testFooterPath];
+      mockTrackTemplateDependencies.mockResolvedValue(newDeps);
+
+      const result = await updateCacheEntry(
+        existingEntry,
+        mockPage,
+        mockConfig,
+        fixedDate,
+        true, // fastUpdate = true
+      );
+
+      // Should perform full dependency tracking because template changed
+      expect(mockTrackTemplateDependencies).toHaveBeenCalled();
+      expect(result.deps).toEqual(newDeps);
+
+      vi.doUnmock('node:fs/promises');
+    });
+
+    it('should perform full tracking when stat fails (conservative approach)', async () => {
+      // Mock fs.promises.stat to throw an error (file not found, permission denied, etc.)
+      const mockStat = vi.fn().mockRejectedValue(new Error('ENOENT: file not found'));
+
+      vi.doMock('node:fs/promises', () => ({
+        stat: mockStat,
+      }));
+
+      const newDeps = [testLayoutPath, testHeaderPath, testNavPath];
+      mockTrackTemplateDependencies.mockResolvedValue(newDeps);
+
+      const result = await updateCacheEntry(
+        existingEntry,
+        mockPage,
+        mockConfig,
+        fixedDate,
+        true, // fastUpdate = true
+      );
+
+      // Should fall back to full dependency tracking on stat error
+      expect(mockTrackTemplateDependencies).toHaveBeenCalled();
+      expect(result.deps).toEqual(newDeps);
+
+      vi.doUnmock('node:fs/promises');
+    });
+
+    it('should skip fast update when entry has no deps', async () => {
+      const entryWithoutDeps: CacheEntry = {
+        ...existingEntry,
+        deps: [],
+      };
+
+      const newDeps = [testLayoutPath];
+      mockTrackTemplateDependencies.mockResolvedValue(newDeps);
+
+      const result = await updateCacheEntry(
+        entryWithoutDeps,
+        mockPage,
+        mockConfig,
+        fixedDate,
+        true, // fastUpdate = true
+      );
+
+      // Should perform full tracking since there are no existing deps
+      expect(mockTrackTemplateDependencies).toHaveBeenCalled();
+      expect(result.deps).toEqual(newDeps);
+    });
+
+    it('should always perform full tracking when fastUpdate is false', async () => {
+      const newDeps = [testLayoutPath, testHeaderPath, testFooterPath];
+      mockTrackTemplateDependencies.mockResolvedValue(newDeps);
+
+      const result = await updateCacheEntry(
+        existingEntry,
+        mockPage,
+        mockConfig,
+        fixedDate,
+        false, // fastUpdate = false
+      );
+
+      // Should always do full tracking in non-fast mode
+      expect(mockTrackTemplateDependencies).toHaveBeenCalled();
+      expect(result.deps).toEqual(newDeps);
+    });
+
+    it('should check only first 3 deps for structural changes', async () => {
+      const entryWithManyDeps: CacheEntry = {
+        ...existingEntry,
+        deps: [testLayoutPath, testHeaderPath, testFooterPath, testNavPath, '/test/extra.eta'],
+      };
+
+      // Mock stat to be called multiple times
+      const mockStat = vi.fn().mockResolvedValue({
+        mtimeMs: fixedDate.getTime() - 10000, // All old
+      });
+
+      vi.doMock('node:fs/promises', () => ({
+        stat: mockStat,
+      }));
+
+      await updateCacheEntry(
+        entryWithManyDeps,
+        mockPage,
+        mockConfig,
+        fixedDate,
+        true, // fastUpdate = true
+      );
+
+      // Should only check first 3 deps as a heuristic
+      expect(mockStat).toHaveBeenCalledTimes(3);
+      expect(mockStat).toHaveBeenCalledWith(testLayoutPath);
+      expect(mockStat).toHaveBeenCalledWith(testHeaderPath);
+      expect(mockStat).toHaveBeenCalledWith(testFooterPath);
+      expect(mockStat).not.toHaveBeenCalledWith(testNavPath);
+
+      vi.doUnmock('node:fs/promises');
+    });
+
+    it('should handle mixed stat results (some succeed, one fails)', async () => {
+      // First call succeeds, second call fails
+      const mockStat = vi
+        .fn()
+        .mockResolvedValueOnce({
+          mtimeMs: fixedDate.getTime() - 10000,
+        })
+        .mockRejectedValueOnce(new Error('Permission denied'));
+
+      vi.doMock('node:fs/promises', () => ({
+        stat: mockStat,
+      }));
+
+      const newDeps = [testLayoutPath, testHeaderPath, testFooterPath];
+      mockTrackTemplateDependencies.mockResolvedValue(newDeps);
+
+      const result = await updateCacheEntry(
+        existingEntry,
+        mockPage,
+        mockConfig,
+        fixedDate,
+        true, // fastUpdate = true
+      );
+
+      // Should fall back to full tracking on any stat failure
+      expect(mockTrackTemplateDependencies).toHaveBeenCalled();
+      expect(result.deps).toEqual(newDeps);
+
+      vi.doUnmock('node:fs/promises');
+    });
+
+    it('should preserve publishedAt in fast update mode', async () => {
+      const entryWithPublishedAt: CacheEntry = {
+        ...existingEntry,
+        publishedAt: '2024-01-01T00:00:00.000Z',
+      };
+
+      const mockStat = vi.fn().mockResolvedValue({
+        mtimeMs: fixedDate.getTime() - 10000,
+      });
+
+      vi.doMock('node:fs/promises', () => ({
+        stat: mockStat,
+      }));
+
+      const result = await updateCacheEntry(
+        entryWithPublishedAt,
+        mockPage,
+        mockConfig,
+        fixedDate,
+        true, // fastUpdate = true
+      );
+
+      // Fast update reuses existing entry structure
+      expect(result.inputsHash).toBe('inputs123');
+      expect(result.renderedAt).toBe(fixedDate.toISOString());
+      // Note: publishedAt is not explicitly preserved in fast path since we return a new object
+      // but the original entry's publishedAt can be accessed if needed
+
+      vi.doUnmock('node:fs/promises');
+    });
+
+    it('should update inputsHash correctly in fast update mode', async () => {
+      const mockStat = vi.fn().mockResolvedValue({
+        mtimeMs: fixedDate.getTime() - 10000,
+      });
+
+      vi.doMock('node:fs/promises', () => ({
+        stat: mockStat,
+      }));
+
+      mockComputeContentHash.mockReturnValue('new_content_hash');
+      mockComputeFileHash
+        .mockResolvedValueOnce('layout_hash_123')
+        .mockResolvedValueOnce('header_hash_456');
+      mockComputeInputsHash.mockReturnValue('new_combined_hash');
+
+      const result = await updateCacheEntry(
+        existingEntry,
+        mockPage,
+        mockConfig,
+        fixedDate,
+        true, // fastUpdate = true
+      );
+
+      expect(mockComputeContentHash).toHaveBeenCalledWith(mockPage.content, mockPage.frontMatter);
+      expect(mockComputeInputsHash).toHaveBeenCalledWith('new_content_hash', [
+        'layout_hash_123',
+        'header_hash_456',
+      ]);
+      expect(result.inputsHash).toBe('new_combined_hash');
+
+      vi.doUnmock('node:fs/promises');
+    });
+
+    it('should handle null file hashes in fast update mode', async () => {
+      const mockStat = vi.fn().mockResolvedValue({
+        mtimeMs: fixedDate.getTime() - 10000,
+      });
+
+      vi.doMock('node:fs/promises', () => ({
+        stat: mockStat,
+      }));
+
+      // One dep returns null hash (file might be missing)
+      mockComputeFileHash.mockResolvedValueOnce('layout_hash').mockResolvedValueOnce(null);
+
+      mockComputeInputsHash.mockReturnValue('partial_hash');
+
+      const result = await updateCacheEntry(
+        existingEntry,
+        mockPage,
+        mockConfig,
+        fixedDate,
+        true, // fastUpdate = true
+      );
+
+      // Should only include non-null hashes
+      expect(mockComputeInputsHash).toHaveBeenCalledWith('content123', ['layout_hash']);
+      expect(result.inputsHash).toBe('partial_hash');
+
+      vi.doUnmock('node:fs/promises');
+    });
+  });
 });

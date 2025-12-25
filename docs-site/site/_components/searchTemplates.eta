@@ -1,0 +1,200 @@
+<%
+/**
+ * Search Templates Component
+ *
+ * Hidden HTML templates for the client-side search functionality.
+ * These templates are cloned and populated by search-ui.ts at runtime.
+ *
+ * Templates:
+ *   - search-container: The main dropdown container (desktop)
+ *   - search-mobile-modal: Full-screen search modal (mobile)
+ *   - search-loading: Loading state
+ *   - search-no-results: No results found state
+ *   - search-error: Error state
+ *   - search-results: Results wrapper with header and footer
+ *   - search-result-item: Individual result item
+ *
+ * Usage:
+ *   Include in layout: <%~ stati.partials.searchTemplates %>
+ *
+ * Tailwind safelist (used dynamically via JS):
+ *   bg-primary-50 dark:bg-primary-900/20
+ */
+%>
+
+<!-- Mobile Search Modal -->
+<div id="mobile-search-modal" class="fixed inset-0 z-50 hidden lg:hidden">
+    <!-- Backdrop -->
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" data-close-modal></div>
+    <!-- Modal content -->
+    <div class="relative flex flex-col h-full bg-white dark:bg-dark-900">
+        <!-- Header with input -->
+        <div class="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-dark-700">
+            <span class="text-gray-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+            </span>
+            <input id="mobile-search-input"
+                   type="search"
+                   placeholder="Search documentation..."
+                   class="flex-1 bg-transparent text-base text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none"
+                   autocomplete="off">
+            <button data-close-modal class="p-2 -mr-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <!-- Results container -->
+        <div id="mobile-search-results" class="flex-1 overflow-y-auto"></div>
+    </div>
+</div>
+
+<!-- Search Dropdown Container (Desktop) -->
+<template id="search-container-template">
+    <div id="search-results"
+         class="fixed w-[600px] bg-white/95 dark:bg-dark-900/95 backdrop-blur-xl border border-gray-200/60 dark:border-dark-700/60 rounded-2xl shadow-2xl shadow-gray-900/20 dark:shadow-black/50 overflow-hidden hidden"
+         style="z-index: 9999;"
+         role="listbox"
+         aria-label="Search results">
+    </div>
+</template>
+
+<!-- Loading State -->
+<template id="search-loading-template">
+    <div class="p-6 text-center">
+        <div class="inline-flex items-center gap-2 text-gray-500 dark:text-gray-400">
+            <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span class="text-sm">Searching...</span>
+        </div>
+    </div>
+</template>
+
+<!-- No Results State -->
+<template id="search-no-results-template">
+    <div class="p-8 text-center">
+        <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 dark:bg-dark-800 mb-3">
+            <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+        </div>
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+            No results found for "<span data-search-query class="font-medium text-gray-700 dark:text-gray-300"></span>"
+        </p>
+        <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Try different keywords</p>
+    </div>
+</template>
+
+<!-- Error State -->
+<template id="search-error-template">
+    <div class="p-8 text-center">
+        <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 mb-3">
+            <svg class="w-6 h-6 text-red-500 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+        </div>
+        <p class="text-sm text-red-600 dark:text-red-400 font-medium">Search failed</p>
+        <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Please try again</p>
+    </div>
+</template>
+
+<!-- Results Wrapper (header + list + footer) -->
+<template id="search-results-template">
+    <div class="search-results-wrapper">
+        <!-- Header -->
+        <div class="px-4 py-3 border-b border-gray-200/60 dark:border-dark-700/60 bg-gray-50/50 dark:bg-dark-800/50">
+            <p data-results-count class="text-xs font-medium text-gray-500 dark:text-gray-400"></p>
+        </div>
+
+        <!-- Results List -->
+        <ul class="max-h-[400px] overflow-y-auto"></ul>
+
+        <!-- Footer -->
+        <div class="px-4 py-3 border-t border-gray-200/60 dark:border-dark-700/60 bg-gray-50/80 dark:bg-dark-800/80 flex items-center justify-between">
+            <div class="flex items-center gap-5 text-xs text-gray-500 dark:text-gray-400">
+                <span class="inline-flex items-center gap-2">
+                    <kbd class="inline-flex items-center justify-center min-w-[24px] px-1.5 py-1 bg-white dark:bg-dark-700 rounded-md border border-gray-300 dark:border-dark-600 font-mono text-[10px] text-gray-600 dark:text-gray-300 shadow-sm">↑↓</kbd>
+                    <span class="text-gray-400 dark:text-gray-500">Navigate</span>
+                </span>
+                <span class="inline-flex items-center gap-2">
+                    <kbd class="inline-flex items-center justify-center min-w-[24px] px-1.5 py-1 bg-white dark:bg-dark-700 rounded-md border border-gray-300 dark:border-dark-600 font-mono text-[10px] text-gray-600 dark:text-gray-300 shadow-sm">↵</kbd>
+                    <span class="text-gray-400 dark:text-gray-500">Select</span>
+                </span>
+                <span class="inline-flex items-center gap-2">
+                    <kbd class="inline-flex items-center justify-center min-w-[24px] px-1.5 py-1 bg-white dark:bg-dark-700 rounded-md border border-gray-300 dark:border-dark-600 font-mono text-[10px] text-gray-600 dark:text-gray-300 shadow-sm">esc</kbd>
+                    <span class="text-gray-400 dark:text-gray-500">Close</span>
+                </span>
+            </div>
+            <div class="flex items-center gap-1.5 text-[11px]">
+                <span class="text-gray-400 dark:text-gray-500">Powered by</span>
+                <span class="font-semibold bg-gradient-to-r from-primary-600 to-primary-500 dark:from-primary-400 dark:to-primary-300 bg-clip-text text-transparent">Stati</span>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- Result Item - Page -->
+<template id="search-page-item-template">
+    <li role="option"
+        class="search-result-item group px-4 py-3 hover:bg-primary-50/50 dark:hover:bg-primary-900/20 transition-all duration-150 border-b border-gray-100/80 dark:border-dark-700/50 last:border-b-0"
+        style="cursor: pointer;"
+        aria-selected="false">
+        <div class="flex items-start gap-3">
+            <div class="flex-shrink-0 mt-0.5 p-1.5 rounded-lg bg-gray-100 dark:bg-dark-700 text-gray-400 dark:text-gray-500 group-hover:bg-primary-100 dark:group-hover:bg-primary-900/30 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+                <div data-result-heading class="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-primary-700 dark:group-hover:text-primary-300 transition-colors"></div>
+                <div class="text-xs text-gray-400 dark:text-gray-500 mt-0.5 flex items-center gap-1">
+                    <svg class="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+                    </svg>
+                    <span data-result-breadcrumb class="truncate"></span>
+                </div>
+                <p data-result-snippet class="text-xs text-gray-500 dark:text-gray-400 mt-1.5 line-clamp-2 leading-relaxed"></p>
+            </div>
+            <div class="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </div>
+        </div>
+    </li>
+</template>
+
+<!-- Result Item - Section -->
+<template id="search-section-item-template">
+    <li role="option"
+        class="search-result-item group px-4 py-3 hover:bg-primary-50/50 dark:hover:bg-primary-900/20 transition-all duration-150 border-b border-gray-100/80 dark:border-dark-700/50 last:border-b-0"
+        style="cursor: pointer;"
+        aria-selected="false">
+        <div class="flex items-start gap-3">
+            <div class="flex-shrink-0 mt-0.5 p-1.5 rounded-lg bg-gray-100 dark:bg-dark-700 text-gray-400 dark:text-gray-500 group-hover:bg-primary-100 dark:group-hover:bg-primary-900/30 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path>
+                </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+                <div data-result-heading class="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-primary-700 dark:group-hover:text-primary-300 transition-colors"></div>
+                <div class="text-xs text-gray-400 dark:text-gray-500 mt-0.5 flex items-center gap-1">
+                    <svg class="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+                    </svg>
+                    <span data-result-breadcrumb class="truncate"></span>
+                </div>
+                <p data-result-snippet class="text-xs text-gray-500 dark:text-gray-400 mt-1.5 line-clamp-2 leading-relaxed"></p>
+            </div>
+            <div class="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </div>
+        </div>
+    </li>
+</template>

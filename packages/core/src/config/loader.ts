@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { StatiConfig } from '../types/index.js';
@@ -14,6 +14,28 @@ import {
   DEFAULT_MAX_AGE_CAP_DAYS,
   CONFIG_FILE_PATTERNS,
 } from '../constants.js';
+
+/**
+ * Cached config entry with modification time for staleness detection
+ */
+interface CachedConfig {
+  config: StatiConfig;
+  configPath: string;
+  mtime: number;
+}
+
+/**
+ * Config cache to prevent repeated dynamic imports during dev server rebuilds.
+ * Key is the resolved config file path.
+ */
+const configCache = new Map<string, CachedConfig>();
+
+/**
+ * Clear the config cache. Useful when config file changes are detected.
+ */
+export function clearConfigCache(): void {
+  configCache.clear();
+}
 
 /**
  * Default configuration values for Stati.
@@ -78,15 +100,37 @@ export async function loadConfig(cwd: string = process.cwd()): Promise<StatiConf
     return DEFAULT_CONFIG;
   }
 
+  const resolvedConfigPath = resolve(configPath);
+
+  // Check if we have a cached config and if it's still valid
+  const cached = configCache.get(resolvedConfigPath);
+  if (cached) {
+    try {
+      const currentMtime = statSync(resolvedConfigPath).mtimeMs;
+      if (currentMtime === cached.mtime) {
+        // Config file hasn't changed, return cached version
+        return cached.config;
+      }
+      // Config changed, clear this cache entry
+      configCache.delete(resolvedConfigPath);
+    } catch {
+      // If we can't stat the file, clear cache and reload
+      configCache.delete(resolvedConfigPath);
+    }
+  }
+
   try {
     let configModule;
     let compiledPath: string | undefined;
+    // Get current mtime for cache-busting
+    const currentMtime = statSync(resolvedConfigPath).mtimeMs;
 
     // If it's a .ts file, compile it first
     if (configPath.endsWith('.ts')) {
       try {
-        compiledPath = await compileStatiConfig(resolve(configPath));
-        const configUrl = pathToFileURL(compiledPath).href;
+        compiledPath = await compileStatiConfig(resolvedConfigPath);
+        // Add cache-busting query parameter to force Node.js to re-evaluate the module
+        const configUrl = `${pathToFileURL(compiledPath).href}?t=${currentMtime}`;
         configModule = await import(configUrl);
       } finally {
         // Clean up compiled file
@@ -96,7 +140,8 @@ export async function loadConfig(cwd: string = process.cwd()): Promise<StatiConf
       }
     } else {
       // Existing logic for .js/.mjs
-      const configUrl = pathToFileURL(resolve(configPath)).href;
+      // Add cache-busting query parameter to force Node.js to re-evaluate the module
+      const configUrl = `${pathToFileURL(resolvedConfigPath).href}?t=${currentMtime}`;
       configModule = await import(configUrl);
     }
 
@@ -124,6 +169,18 @@ export async function loadConfig(cwd: string = process.cwd()): Promise<StatiConf
         );
       }
       throw error; // Re-throw non-ISG errors
+    }
+
+    // Cache the loaded config with its modification time
+    try {
+      const mtime = statSync(resolvedConfigPath).mtimeMs;
+      configCache.set(resolvedConfigPath, {
+        config: mergedConfig,
+        configPath: resolvedConfigPath,
+        mtime,
+      });
+    } catch {
+      // If we can't stat, still return the config but don't cache
     }
 
     return mergedConfig;

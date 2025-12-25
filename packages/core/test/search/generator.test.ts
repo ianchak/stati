@@ -445,6 +445,235 @@ describe('writeSearchIndex', () => {
     expect(writtenContent).not.toContain('\n');
     expect(JSON.parse(writtenContent)).toEqual(searchIndex);
   });
+
+  describe('skipIfUnchanged optimization', () => {
+    // Import the module to reset its internal state
+    let writeSearchIndexModule: typeof import('../../src/search/generator.js');
+
+    beforeEach(async () => {
+      vi.clearAllMocks();
+      mockWriteFile.mockResolvedValue(undefined);
+      mockEnsureDir.mockResolvedValue(undefined);
+
+      // Reset the module to clear cached state between tests
+      vi.resetModules();
+      writeSearchIndexModule = await import('../../src/search/generator.js');
+    });
+
+    afterEach(() => {
+      vi.clearAllMocks();
+    });
+
+    it('writes file on first call even with skipIfUnchanged=true', async () => {
+      const searchIndex: SearchIndex = {
+        version: '1.0.0',
+        generatedAt: '2024-01-01T00:00:00.000Z',
+        documentCount: 2,
+        documents: [
+          {
+            id: '/test#top',
+            url: '/test',
+            anchor: '',
+            title: 'Test',
+            heading: 'Test',
+            level: 1,
+            content: 'Test content',
+            breadcrumb: 'Test',
+          },
+        ],
+      };
+
+      await writeSearchIndexModule.writeSearchIndex(searchIndex, '/dist', 'index.json', true);
+
+      expect(mockWriteFile).toHaveBeenCalledTimes(1);
+    });
+
+    it('skips write when content hash matches (same count, same content)', async () => {
+      const searchIndex: SearchIndex = {
+        version: '1.0.0',
+        generatedAt: '2024-01-01T00:00:00.000Z',
+        documentCount: 2,
+        documents: [
+          {
+            id: '/test#top',
+            url: '/test',
+            anchor: '',
+            title: 'Test',
+            heading: 'Test',
+            level: 1,
+            content: 'Test content',
+            breadcrumb: 'Test',
+          },
+        ],
+      };
+
+      // First write
+      await writeSearchIndexModule.writeSearchIndex(searchIndex, '/dist', 'index.json', true);
+      expect(mockWriteFile).toHaveBeenCalledTimes(1);
+
+      // Second write with identical content - should skip
+      await writeSearchIndexModule.writeSearchIndex(searchIndex, '/dist', 'index.json', true);
+      expect(mockWriteFile).toHaveBeenCalledTimes(1); // Still 1, not 2
+    });
+
+    it('writes when document count changes (fast path)', async () => {
+      const searchIndex1: SearchIndex = {
+        version: '1.0.0',
+        generatedAt: '2024-01-01T00:00:00.000Z',
+        documentCount: 2,
+        documents: [
+          {
+            id: '/test#top',
+            url: '/test',
+            anchor: '',
+            title: 'Test',
+            heading: 'Test',
+            level: 1,
+            content: 'Test content',
+            breadcrumb: 'Test',
+          },
+        ],
+      };
+
+      const searchIndex2: SearchIndex = {
+        ...searchIndex1,
+        documentCount: 3,
+        documents: [
+          ...searchIndex1.documents,
+          {
+            id: '/new#top',
+            url: '/new',
+            anchor: '',
+            title: 'New',
+            heading: 'New',
+            level: 1,
+            content: 'New content',
+            breadcrumb: 'New',
+          },
+        ],
+      };
+
+      await writeSearchIndexModule.writeSearchIndex(searchIndex1, '/dist', 'index.json', true);
+      await writeSearchIndexModule.writeSearchIndex(searchIndex2, '/dist', 'index.json', true);
+
+      expect(mockWriteFile).toHaveBeenCalledTimes(2);
+    });
+
+    it('writes when content changes but count stays same (hash detects change)', async () => {
+      const searchIndex1: SearchIndex = {
+        version: '1.0.0',
+        generatedAt: '2024-01-01T00:00:00.000Z',
+        documentCount: 2,
+        documents: [
+          {
+            id: '/test#top',
+            url: '/test',
+            anchor: '',
+            title: 'Test',
+            heading: 'Test',
+            level: 1,
+            content: 'Original content',
+            breadcrumb: 'Test',
+          },
+        ],
+      };
+
+      const searchIndex2: SearchIndex = {
+        version: '1.0.0',
+        generatedAt: '2024-01-01T00:00:00.000Z',
+        documentCount: 2, // Same count
+        documents: [
+          {
+            id: '/test#top',
+            url: '/test',
+            anchor: '',
+            title: 'Test',
+            heading: 'Test',
+            level: 1,
+            content: 'Modified content', // Different content
+            breadcrumb: 'Test',
+          },
+        ],
+      };
+
+      await writeSearchIndexModule.writeSearchIndex(searchIndex1, '/dist', 'index.json', true);
+      await writeSearchIndexModule.writeSearchIndex(searchIndex2, '/dist', 'index.json', true);
+
+      // Should write both times because content hash differs
+      expect(mockWriteFile).toHaveBeenCalledTimes(2);
+    });
+
+    it('always writes when skipIfUnchanged=false', async () => {
+      const searchIndex: SearchIndex = {
+        version: '1.0.0',
+        generatedAt: '2024-01-01T00:00:00.000Z',
+        documentCount: 2,
+        documents: [
+          {
+            id: '/test#top',
+            url: '/test',
+            anchor: '',
+            title: 'Test',
+            heading: 'Test',
+            level: 1,
+            content: 'Test content',
+            breadcrumb: 'Test',
+          },
+        ],
+      };
+
+      // Multiple writes with skipIfUnchanged=false
+      await writeSearchIndexModule.writeSearchIndex(searchIndex, '/dist', 'index.json', false);
+      await writeSearchIndexModule.writeSearchIndex(searchIndex, '/dist', 'index.json', false);
+      await writeSearchIndexModule.writeSearchIndex(searchIndex, '/dist', 'index.json', false);
+
+      expect(mockWriteFile).toHaveBeenCalledTimes(3);
+    });
+
+    it('returns correct metadata when skipping write', async () => {
+      const searchIndex: SearchIndex = {
+        version: '1.0.0',
+        generatedAt: '2024-01-01T00:00:00.000Z',
+        documentCount: 5,
+        documents: [],
+      };
+
+      // First write
+      const result1 = await writeSearchIndexModule.writeSearchIndex(
+        searchIndex,
+        '/dist',
+        'search.json',
+        true,
+      );
+      expect(result1.documentCount).toBe(5);
+      expect(result1.enabled).toBe(true);
+
+      // Second write (skipped)
+      const result2 = await writeSearchIndexModule.writeSearchIndex(
+        searchIndex,
+        '/dist',
+        'search.json',
+        true,
+      );
+      expect(result2.documentCount).toBe(5);
+      expect(result2.enabled).toBe(true);
+      expect(result2.indexPath).toBe('/search.json');
+    });
+
+    it('handles empty documents array', async () => {
+      const searchIndex: SearchIndex = {
+        version: '1.0.0',
+        generatedAt: '2024-01-01T00:00:00.000Z',
+        documentCount: 0,
+        documents: [],
+      };
+
+      await writeSearchIndexModule.writeSearchIndex(searchIndex, '/dist', 'index.json', true);
+      await writeSearchIndexModule.writeSearchIndex(searchIndex, '/dist', 'index.json', true);
+
+      expect(mockWriteFile).toHaveBeenCalledTimes(1); // Should skip second write
+    });
+  });
 });
 
 describe('computeSearchIndexFilename', () => {

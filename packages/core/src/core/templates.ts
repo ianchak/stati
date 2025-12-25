@@ -23,7 +23,7 @@ import {
   wrapPartialsAsCallable,
   createNavigationHelpers,
 } from './utils/index.js';
-import { getEnv } from '../env.js';
+import { isDevelopment, isProduction } from '../env.js';
 import { generateSEO } from '../seo/index.js';
 
 /**
@@ -235,8 +235,8 @@ export function createTemplateEngine(config: StatiConfig): Eta {
 
   const eta = new Eta({
     views: templateDir,
-    cache: getEnv() === 'production',
-    cacheFilepaths: getEnv() === 'production',
+    cache: isProduction(),
+    cacheFilepaths: isProduction(),
     varName: 'stati',
   });
 
@@ -379,7 +379,7 @@ export async function renderPage(
           );
 
           // In development mode, throw enhanced template error for partials too
-          if (getEnv() === 'development') {
+          if (isDevelopment()) {
             const templateError = createTemplateError(
               error instanceof Error ? error : new Error(String(error)),
               partialPath,
@@ -442,7 +442,7 @@ export async function renderPage(
     );
 
     // In development mode, throw enhanced template error for better debugging
-    if (getEnv() === 'development') {
+    if (isDevelopment()) {
       const templateError = createTemplateError(
         error instanceof Error ? error : new Error(String(error)),
         layoutPath || undefined,

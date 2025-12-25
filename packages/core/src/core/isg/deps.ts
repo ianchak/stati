@@ -11,6 +11,27 @@ import type { PageModel, StatiConfig } from '../../types/index.js';
 import { TEMPLATE_EXTENSION } from '../../constants.js';
 
 /**
+ * Per-build cache for template path resolution (glob results).
+ * Cleared at the start of each build via clearTemplatePathCache().
+ */
+const templatePathCache = new Map<string, string | null>();
+
+/**
+ * Per-build cache for template content reads.
+ * Cleared at the start of each build via clearTemplatePathCache().
+ */
+const templateContentCache = new Map<string, string | null>();
+
+/**
+ * Clears the template path and content caches.
+ * Should be called at the start of each build.
+ */
+export function clearTemplatePathCache(): void {
+  templatePathCache.clear();
+  templateContentCache.clear();
+}
+
+/**
  * Error thrown when a circular dependency is detected in templates.
  */
 export class CircularDependencyError extends Error {
@@ -177,8 +198,14 @@ async function collectTemplateDependencies(
   visited.add(normalizedPath);
 
   try {
-    // Read template content to find includes/extends
-    const content = await readFile(templatePath, 'utf-8');
+    // Read template content to find includes/extends (use cache)
+    let content: string | null | undefined;
+    if (templateContentCache.has(normalizedPath)) {
+      content = templateContentCache.get(normalizedPath);
+    } else {
+      content = await readFile(templatePath, 'utf-8');
+      templateContentCache.set(normalizedPath, content ?? null);
+    }
     if (!content) {
       return;
     }
@@ -341,6 +368,14 @@ async function resolveTemplatePathInternal(
   srcDir: string,
   currentDir?: string,
 ): Promise<string | null> {
+  // Create cache key from all inputs
+  const cacheKey = `${templateRef}|${srcDir}|${currentDir ?? ''}`;
+
+  // Check cache first
+  if (templatePathCache.has(cacheKey)) {
+    return templatePathCache.get(cacheKey) ?? null;
+  }
+
   const templateName = templateRef.endsWith(TEMPLATE_EXTENSION)
     ? templateRef
     : `${templateRef}${TEMPLATE_EXTENSION}`;
@@ -348,6 +383,7 @@ async function resolveTemplatePathInternal(
   // Try absolute path from srcDir
   const absolutePath = join(srcDir, templateName);
   if (await pathExists(absolutePath)) {
+    templatePathCache.set(cacheKey, absolutePath);
     return absolutePath;
   }
 
@@ -389,7 +425,9 @@ async function resolveTemplatePathInternal(
       const matches = await glob(pattern, { absolute: true });
       if (matches.length > 0) {
         // Normalize to POSIX format for consistent cross-platform path handling
-        return matches[0]!.replace(/\\/g, '/');
+        const result = matches[0]!.replace(/\\/g, '/');
+        templatePathCache.set(cacheKey, result);
+        return result;
       }
     } catch {
       // Continue if directory doesn't exist or can't be read
@@ -397,5 +435,6 @@ async function resolveTemplatePathInternal(
     }
   }
 
+  templatePathCache.set(cacheKey, null);
   return null;
 }

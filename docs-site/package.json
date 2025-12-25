@@ -9,6 +9,10 @@
     "dev:local": "node ../packages/cli/dist/cli.js dev --tailwind-input src/styles.css --tailwind-output dist/styles.css",
     "build": "stati build && npm run build:css",
     "build:local": "node ../packages/cli/dist/cli.js build --clean && npm run build:css",
+    "build:local:metrics": "node ../packages/cli/dist/cli.js build --clean --metrics && npm run build:css",
+    "build:local:metrics:detailed": "node ../packages/cli/dist/cli.js build --clean --metrics --metrics-detailed && npm run build:css",
+    "build:local:metrics:html": "node ../packages/cli/dist/cli.js build --clean --metrics --metrics-html && npm run build:css",
+    "build:local:metrics:full": "node ../packages/cli/dist/cli.js build --clean --metrics --metrics-detailed --metrics-html && npm run build:css",
     "preview": "stati preview",
     "preview:local": "node ../packages/cli/dist/cli.js preview",
     "invalidate": "stati invalidate",
@@ -47,6 +51,7 @@
   },
   "dependencies": {
     "@tsparticles/engine": "3.9.1",
-    "@tsparticles/slim": "3.9.1"
+    "@tsparticles/slim": "3.9.1",
+    "flexsearch": "0.8.212"
   }
 }

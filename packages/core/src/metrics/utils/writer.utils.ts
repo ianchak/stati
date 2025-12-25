@@ -6,6 +6,7 @@
 import { writeFile, mkdir } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import type { BuildMetrics } from '../types.js';
+import { generateMetricsHtml } from './html-report.utils.js';
 
 /**
  * Default metrics output directory (relative to cache dir).
@@ -35,6 +36,8 @@ export interface WriteMetricsOptions {
   outputPath?: string | undefined;
   /** Format: json (default) or ndjson */
   format?: 'json' | 'ndjson' | undefined;
+  /** Whether to also generate an HTML report (default: false, requires --metrics-html flag) */
+  generateHtml?: boolean | undefined;
 }
 
 /**
@@ -43,16 +46,17 @@ export interface WriteMetricsOptions {
 export interface WriteMetricsResult {
   success: boolean;
   path?: string;
+  htmlPath?: string;
   error?: string;
 }
 
 /**
- * Write build metrics to a JSON file.
+ * Write build metrics to a JSON file and optionally an HTML report.
  * Degrades gracefully on failure - logs warning but doesn't throw.
  *
  * @param metrics - The metrics to write
  * @param options - Write options
- * @returns Result indicating success/failure and path
+ * @returns Result indicating success/failure and paths
  *
  * @example
  * ```typescript
@@ -62,6 +66,7 @@ export interface WriteMetricsResult {
  *
  * if (result.success) {
  *   console.log(`Metrics written to ${result.path}`);
+ *   console.log(`HTML report: ${result.htmlPath}`);
  * }
  * ```
  */
@@ -96,13 +101,28 @@ export async function writeMetrics(
       content = JSON.stringify(metrics, null, 2) + '\n';
     }
 
-    // Write file
+    // Write JSON file
     await writeFile(outputPath, content, 'utf-8');
 
-    return {
+    const result: WriteMetricsResult = {
       success: true,
       path: outputPath,
     };
+
+    // Generate HTML report if explicitly enabled
+    const shouldGenerateHtml = options.generateHtml === true;
+    if (shouldGenerateHtml) {
+      try {
+        const htmlPath = outputPath.replace(/\.json$/, '.html');
+        const htmlContent = generateMetricsHtml(metrics);
+        await writeFile(htmlPath, htmlContent, 'utf-8');
+        result.htmlPath = htmlPath;
+      } catch {
+        // HTML generation failure is non-critical, don't fail the whole operation
+      }
+    }
+
+    return result;
   } catch (error) {
     // Graceful degradation - don't throw, just report failure
     const errorMessage = error instanceof Error ? error.message : String(error);

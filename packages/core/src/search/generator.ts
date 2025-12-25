@@ -316,19 +316,48 @@ export function generateSearchIndex(
 
 /**
  * Writes the search index to a JSON file.
+ * Skips write if content hasn't changed (dev mode optimization).
  *
  * @param searchIndex - The search index to write
  * @param outDir - Output directory path
  * @param filename - Pre-computed filename (from computeSearchIndexFilename)
+ * @param skipIfUnchanged - If true, skip write when document count matches previous
  * @returns Metadata about the written search index
  */
+
+// Cache for search index state (dev mode optimization)
+let lastSearchIndexDocCount: number | null = null;
+let lastSearchIndexContentHash: string | null = null;
+
 export async function writeSearchIndex(
   searchIndex: SearchIndex,
   outDir: string,
   filename: string,
+  skipIfUnchanged = false,
 ): Promise<SearchIndexMetadata> {
-  // Serialize index
+  // Serialize full index for hash computation and potential write
   const content = JSON.stringify(searchIndex, null, 0);
+
+  // Skip write if content hash hasn't changed (dev mode optimization)
+  // Uses fast MD5 hash to detect actual content changes, not just count
+  if (skipIfUnchanged && lastSearchIndexDocCount === searchIndex.documentCount) {
+    const contentHash = generateContentHash(content);
+    if (contentHash === lastSearchIndexContentHash) {
+      return {
+        enabled: true,
+        indexPath: `/${filename}`,
+        documentCount: searchIndex.documentCount,
+      };
+    }
+    // Count matched but content changed - update hash and proceed to write
+    lastSearchIndexContentHash = contentHash;
+  }
+
+  // Update cached state
+  lastSearchIndexDocCount = searchIndex.documentCount;
+  if (skipIfUnchanged && !lastSearchIndexContentHash) {
+    lastSearchIndexContentHash = generateContentHash(content);
+  }
 
   // Ensure output directory exists
   await ensureDir(outDir);
