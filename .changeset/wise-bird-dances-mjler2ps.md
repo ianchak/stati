@@ -1,7 +1,5 @@
 ---
-"@stati/core": minor
-"@stati/cli": minor
-"create-stati": minor
+"@stati/core": patch
 ---
 
-add search functionality with FlexSearch integration
+Optimize search index writes in dev mode by skipping unchanged indexes

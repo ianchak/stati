@@ -2,4 +2,4 @@
 "@stati/core": minor
 ---
 
-enhance incremental rebuild and caching for templates
+Optimize dev server with improved caching and partial validation
