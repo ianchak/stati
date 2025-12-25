@@ -572,3 +572,180 @@ describe('Tailwind Detection', () => {
     expect(detected).toBe(false);
   });
 });
+
+describe('Tailwind Inventory - Write Optimization', () => {
+  let tempDir: string;
+
+  beforeEach(async () => {
+    tempDir = await mkdtemp(join(tmpdir(), 'stati-tailwind-write-opt-'));
+    await ensureDir(tempDir);
+    clearInventory();
+    enableInventoryTracking();
+  });
+
+  afterEach(async () => {
+    await remove(tempDir);
+    clearInventory();
+    disableInventoryTracking();
+  });
+
+  it('should write file on first call even with skipIfUnchanged=true', async () => {
+    trackTailwindClass('from-primary-50');
+    trackTailwindClass('to-primary-100');
+
+    const inventoryPath = await writeTailwindClassInventory(tempDir, true);
+    const fileExists = await pathExists(inventoryPath);
+
+    expect(fileExists).toBe(true);
+  });
+
+  it('should skip write when content hash matches (same count, same classes)', async () => {
+    trackTailwindClass('from-primary-50');
+    trackTailwindClass('to-primary-100');
+
+    const path1 = await writeTailwindClassInventory(tempDir, true);
+    const mtime1 = (await pathExists(path1)) ? (await import('fs')).statSync(path1).mtime : null;
+
+    // Small delay to ensure mtime would differ if file was rewritten
+    await new Promise((resolve) => globalThis.setTimeout(resolve, 10));
+
+    const path2 = await writeTailwindClassInventory(tempDir, true);
+    const mtime2 = (await pathExists(path2)) ? (await import('fs')).statSync(path2).mtime : null;
+
+    expect(path1).toBe(path2);
+    expect(mtime1?.getTime()).toBe(mtime2?.getTime()); // File not rewritten
+  });
+
+  it('should write when classes change but count stays same (hash detects change)', async () => {
+    trackTailwindClass('from-primary-50');
+    trackTailwindClass('to-primary-100');
+
+    await writeTailwindClassInventory(tempDir, true);
+
+    // Clear and add same count but different classes
+    clearInventory();
+    enableInventoryTracking();
+    trackTailwindClass('bg-emerald-500'); // Different class
+    trackTailwindClass('text-emerald-600'); // Different class
+
+    const path2 = await writeTailwindClassInventory(tempDir, true);
+    const content2 = await readFile(path2, 'utf-8');
+
+    // Should have written because hash differs
+    expect(content2).toContain('bg-emerald-500');
+    expect(content2).toContain('text-emerald-600');
+    expect(content2).not.toContain('from-primary-50');
+    expect(content2).not.toContain('to-primary-100');
+  });
+
+  it('should always write when skipIfUnchanged=false', async () => {
+    trackTailwindClass('from-primary-50');
+
+    const path1 = await writeTailwindClassInventory(tempDir, false);
+    const mtime1 = (await import('fs')).statSync(path1).mtime;
+
+    await new Promise((resolve) => globalThis.setTimeout(resolve, 10));
+
+    const path2 = await writeTailwindClassInventory(tempDir, false);
+    const mtime2 = (await import('fs')).statSync(path2).mtime;
+
+    // File should be rewritten even with same content
+    expect(mtime2.getTime()).toBeGreaterThan(mtime1.getTime());
+  });
+
+  it('should handle empty inventory on first write', async () => {
+    // No classes tracked
+    const inventoryPath = await writeTailwindClassInventory(tempDir, true);
+    const content = await readFile(inventoryPath, 'utf-8');
+
+    expect(content).toContain('Classes tracked: 0');
+    expect(content).toContain('<!-- No dynamic classes tracked yet -->');
+  });
+
+  it('should skip write for empty inventory when called multiple times', async () => {
+    const path1 = await writeTailwindClassInventory(tempDir, true);
+    const mtime1 = (await import('fs')).statSync(path1).mtime;
+
+    await new Promise((resolve) => globalThis.setTimeout(resolve, 10));
+
+    const path2 = await writeTailwindClassInventory(tempDir, true);
+    const mtime2 = (await import('fs')).statSync(path2).mtime;
+
+    expect(mtime1.getTime()).toBe(mtime2.getTime()); // Should skip write
+  });
+
+  it('should use sorted classes for deterministic hashing', async () => {
+    // Add classes in different order
+    trackTailwindClass('z-class');
+    trackTailwindClass('a-class');
+    trackTailwindClass('m-class');
+
+    const path1 = await writeTailwindClassInventory(tempDir, true);
+
+    // Clear and re-add in different order
+    clearInventory();
+    enableInventoryTracking();
+    trackTailwindClass('m-class');
+    trackTailwindClass('z-class');
+    trackTailwindClass('a-class');
+
+    const path2 = await writeTailwindClassInventory(tempDir, true);
+    const mtime1 = (await import('fs')).statSync(path1).mtime;
+    const mtime2 = (await import('fs')).statSync(path2).mtime;
+
+    // Should skip because sorted classes produce same hash
+    expect(mtime1.getTime()).toBe(mtime2.getTime());
+  });
+
+  it('should handle large class inventories efficiently', async () => {
+    // Track 1000 classes
+    for (let i = 0; i < 1000; i++) {
+      trackTailwindClass(`class-${i}`);
+    }
+
+    const start = globalThis.performance.now();
+    await writeTailwindClassInventory(tempDir, true);
+    const _firstWriteTime = globalThis.performance.now() - start;
+
+    const start2 = globalThis.performance.now();
+    await writeTailwindClassInventory(tempDir, true);
+    const skipTime = globalThis.performance.now() - start2;
+
+    // Skip should be much faster - hash computation should be minimal
+    expect(skipTime).toBeLessThan(20); // ms - generous threshold for CI/test variability
+    // Just verify it works, don't compare times as they can be flaky
+  });
+
+  it('should return correct path when skipping write', async () => {
+    trackTailwindClass('from-primary-50');
+
+    const path1 = await writeTailwindClassInventory(tempDir, true);
+    const path2 = await writeTailwindClassInventory(tempDir, true);
+
+    expect(path1).toBe(path2);
+    expect(path2).toBe(join(tempDir, 'tailwind-classes.html'));
+  });
+
+  it('should handle class replacement scenario', async () => {
+    // Simulate replacing one class with another (same count)
+    trackTailwindClass('from-primary-50');
+    trackTailwindClass('to-primary-100');
+    trackTailwindClass('bg-blue-500');
+
+    await writeTailwindClassInventory(tempDir, true);
+
+    // Replace bg-blue-500 with bg-red-500
+    clearInventory();
+    enableInventoryTracking();
+    trackTailwindClass('from-primary-50');
+    trackTailwindClass('to-primary-100');
+    trackTailwindClass('bg-red-500'); // Replaced
+
+    const inventoryPath = await writeTailwindClassInventory(tempDir, true);
+    const content = await readFile(inventoryPath, 'utf-8');
+
+    // Should detect the change and write
+    expect(content).toContain('bg-red-500');
+    expect(content).not.toContain('bg-blue-500');
+  });
+});

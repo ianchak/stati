@@ -327,6 +327,7 @@ export function generateSearchIndex(
 
 // Cache for search index state (dev mode optimization)
 let lastSearchIndexDocCount: number | null = null;
+let lastSearchIndexContentHash: string | null = null;
 
 export async function writeSearchIndex(
   searchIndex: SearchIndex,
@@ -334,20 +335,29 @@ export async function writeSearchIndex(
   filename: string,
   skipIfUnchanged = false,
 ): Promise<SearchIndexMetadata> {
-  // Skip write if document count hasn't changed (dev mode optimization)
+  // Serialize full index for hash computation and potential write
+  const content = JSON.stringify(searchIndex, null, 0);
+
+  // Skip write if content hash hasn't changed (dev mode optimization)
+  // Uses fast MD5 hash to detect actual content changes, not just count
   if (skipIfUnchanged && lastSearchIndexDocCount === searchIndex.documentCount) {
-    return {
-      enabled: true,
-      indexPath: `/${filename}`,
-      documentCount: searchIndex.documentCount,
-    };
+    const contentHash = generateContentHash(content);
+    if (contentHash === lastSearchIndexContentHash) {
+      return {
+        enabled: true,
+        indexPath: `/${filename}`,
+        documentCount: searchIndex.documentCount,
+      };
+    }
+    // Count matched but content changed - update hash and proceed to write
+    lastSearchIndexContentHash = contentHash;
   }
 
-  // Update cached count
+  // Update cached state
   lastSearchIndexDocCount = searchIndex.documentCount;
-
-  // Serialize full index for writing
-  const content = JSON.stringify(searchIndex, null, 0);
+  if (skipIfUnchanged && !lastSearchIndexContentHash) {
+    lastSearchIndexContentHash = generateContentHash(content);
+  }
 
   // Ensure output directory exists
   await ensureDir(outDir);

@@ -7,8 +7,9 @@
  * final CSS output.
  */
 
-import { writeFile, ensureDir, pathExists, readFile } from './fs.utils.js';
+import { createHash } from 'node:crypto';
 import { join } from 'node:path';
+import { writeFile, ensureDir, pathExists, readFile } from './fs.utils.js';
 
 /**
  * Module-level Set to track Tailwind classes across template renders.
@@ -219,6 +220,19 @@ export function isTrackingEnabled(): boolean {
 
 // Cache for tailwind inventory state (dev mode optimization)
 let lastInventorySize: number | null = null;
+let lastInventoryContentHash: string | null = null;
+
+/**
+ * Computes a hash of the class list for change detection.
+ * Uses sorted classes for deterministic hashing.
+ *
+ * @param classes - Array of class names
+ * @returns 8-character MD5 hash
+ */
+function computeClassListHash(classes: string[]): string {
+  const sortedClasses = [...classes].sort();
+  return createHash('md5').update(sortedClasses.join(' ')).digest('hex').substring(0, 8);
+}
 
 export async function writeTailwindClassInventory(
   cacheDir: string,
@@ -227,13 +241,22 @@ export async function writeTailwindClassInventory(
   const inventoryPath = join(cacheDir, 'tailwind-classes.html');
   const classes = getInventory();
 
-  // Skip write if inventory size hasn't changed (dev mode optimization)
+  // Skip write if content hash hasn't changed (dev mode optimization)
+  // Compares sorted class list hash to detect actual changes, not just count
   if (skipIfUnchanged && lastInventorySize === classes.length) {
-    return inventoryPath;
+    const contentHash = computeClassListHash(classes);
+    if (contentHash === lastInventoryContentHash) {
+      return inventoryPath;
+    }
+    // Count matched but content changed - update hash and proceed to write
+    lastInventoryContentHash = contentHash;
   }
 
-  // Update cached size
+  // Update cached state
   lastInventorySize = classes.length;
+  if (skipIfUnchanged && !lastInventoryContentHash) {
+    lastInventoryContentHash = computeClassListHash(classes);
+  }
 
   await ensureDir(cacheDir);
 

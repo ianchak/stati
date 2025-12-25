@@ -882,11 +882,11 @@ Even more content with **bold** and *italic* text.`;
       };
 
       // First call
-      const _md1 = await createMarkdownProcessor(config);
+      await createMarkdownProcessor(config);
       expect(config.markdown!.configure).toHaveBeenCalledTimes(1);
 
       // Second call should create new processor
-      const _md2 = await createMarkdownProcessor(config);
+      await createMarkdownProcessor(config);
       expect(config.markdown!.configure).toHaveBeenCalledTimes(2); // Called twice
 
       // May or may not be the same instance in production
