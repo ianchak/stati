@@ -1,4 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { join } from 'node:path';
+import { remove, pathExists } from '../../src/core/utils/index.js';
 
 // Mock all dependencies with factory functions
 vi.mock('../../src/config/loader.js', () => ({
@@ -59,6 +61,14 @@ const defaultConfig = {
 describe('Error Handling Scenarios', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  afterEach(async () => {
+    // Clean up any lock files that might have been created
+    const lockPath = join(process.cwd(), '.stati', '.dev-server-lock');
+    if (await pathExists(lockPath)) {
+      await remove(lockPath);
+    }
   });
 
   describe('Configuration Errors', () => {

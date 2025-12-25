@@ -94,6 +94,17 @@ vi.mock('../../src/core/isg/index.js', () => ({
   loadCacheManifest: vi.fn().mockResolvedValue(null),
   saveCacheManifest: vi.fn().mockResolvedValue(undefined),
   computeNavigationHash: vi.fn().mockReturnValue('hash123'),
+  DevServerLockManager: class {
+    async acquireLock() {
+      return Promise.resolve();
+    }
+    async releaseLock() {
+      return Promise.resolve();
+    }
+    isLocked() {
+      return false;
+    }
+  },
 }));
 
 vi.mock('fs/promises', () => ({
