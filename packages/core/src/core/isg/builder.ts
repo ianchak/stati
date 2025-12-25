@@ -361,16 +361,10 @@ export async function createCacheEntry(
  * modification time against when the cache entry was last rendered.
  * This detects when new includes/extends have been added to templates.
  *
- * @param page - The page model
  * @param entry - The existing cache entry
- * @param _config - Stati configuration (unused, for future extensibility)
  * @returns True if template structure may have changed, false if structure is unchanged
  */
-async function hasTemplateStructureChanged(
-  page: PageModel,
-  entry: CacheEntry,
-  _config: StatiConfig,
-): Promise<boolean> {
+async function hasTemplateStructureChanged(entry: CacheEntry): Promise<boolean> {
   try {
     // If the entry has a layout in its deps, check if that layout file has been modified
     // since the last render. Layout files are typically the first dep or contain the
@@ -439,7 +433,7 @@ export async function updateCacheEntry(
     // Detect if template structure has changed (new includes/extends added)
     // by checking if the layout file has been modified or if template content
     // contains different dependency patterns
-    const structureChanged = await hasTemplateStructureChanged(page, entry, config);
+    const structureChanged = await hasTemplateStructureChanged(entry);
 
     if (structureChanged) {
       // Template structure changed - fall through to full dependency tracking
