@@ -316,18 +316,37 @@ export function generateSearchIndex(
 
 /**
  * Writes the search index to a JSON file.
+ * Skips write if content hasn't changed (dev mode optimization).
  *
  * @param searchIndex - The search index to write
  * @param outDir - Output directory path
  * @param filename - Pre-computed filename (from computeSearchIndexFilename)
+ * @param skipIfUnchanged - If true, skip write when document count matches previous
  * @returns Metadata about the written search index
  */
+
+// Cache for search index state (dev mode optimization)
+let lastSearchIndexDocCount: number | null = null;
+
 export async function writeSearchIndex(
   searchIndex: SearchIndex,
   outDir: string,
   filename: string,
+  skipIfUnchanged = false,
 ): Promise<SearchIndexMetadata> {
-  // Serialize index
+  // Skip write if document count hasn't changed (dev mode optimization)
+  if (skipIfUnchanged && lastSearchIndexDocCount === searchIndex.documentCount) {
+    return {
+      enabled: true,
+      indexPath: `/${filename}`,
+      documentCount: searchIndex.documentCount,
+    };
+  }
+
+  // Update cached count
+  lastSearchIndexDocCount = searchIndex.documentCount;
+
+  // Serialize full index for writing
   const content = JSON.stringify(searchIndex, null, 0);
 
   // Ensure output directory exists

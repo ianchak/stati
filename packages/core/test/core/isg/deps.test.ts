@@ -18,7 +18,11 @@ vi.mock('fast-glob', () => ({
 const mockCwd = vi.fn();
 vi.stubGlobal('process', { cwd: mockCwd });
 
-import { trackTemplateDependencies, resolveTemplatePath } from '../../../src/core/isg/deps.js';
+import {
+  trackTemplateDependencies,
+  resolveTemplatePath,
+  clearTemplatePathCache,
+} from '../../../src/core/isg/deps.js';
 
 describe('ISG Dependency Tracking', () => {
   // Use POSIX-style paths for consistency in test comparisons
@@ -53,6 +57,7 @@ describe('ISG Dependency Tracking', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    clearTemplatePathCache();
     mockCwd.mockReturnValue(testCwd);
 
     // Get the mocked modules

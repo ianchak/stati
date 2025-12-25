@@ -140,6 +140,12 @@ export function normalizePathForComparison(filePath: string, basePath?: string):
     normalized = join(base, normalized).replace(/\\/g, '/');
   }
 
+  // Normalize Windows drive letter to uppercase for consistent comparison
+  // File system is case-insensitive on Windows, but string comparison is case-sensitive
+  if (/^[a-z]:/.test(normalized)) {
+    normalized = normalized.charAt(0).toUpperCase() + normalized.slice(1);
+  }
+
   // Use posix.normalize to clean up any '..' or '.' segments and remove redundant separators
   normalized = posix.normalize(normalized);
 

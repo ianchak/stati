@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url';
 import path from 'node:path';
 import type { StatiConfig, TocEntry } from '../types/index.js';
 import { slugify } from './utils/index.js';
+import { isDevelopment } from '../env.js';
 
 /**
  * Result of rendering markdown content.
@@ -14,6 +15,20 @@ export interface MarkdownResult {
   html: string;
   /** Table of contents entries extracted from headings */
   toc: TocEntry[];
+}
+
+/**
+ * Cached markdown processor for dev mode to avoid re-creating on each rebuild.
+ * This significantly improves rebuild performance by avoiding repeated plugin loading.
+ */
+let cachedMarkdownProcessor: MarkdownIt | null = null;
+
+/**
+ * Clear the cached markdown processor.
+ * Call this when the config changes or when starting a fresh build.
+ */
+export function clearMarkdownProcessorCache(): void {
+  cachedMarkdownProcessor = null;
 }
 
 /**
@@ -36,8 +51,15 @@ async function loadMarkdownPlugin(pluginName: string) {
 /**
  * Creates and configures a MarkdownIt processor based on the provided configuration.
  * Supports both plugin array format and configure function format.
+ * In development mode, caches the processor to avoid recreating it on each rebuild.
  */
 export async function createMarkdownProcessor(config: StatiConfig): Promise<MarkdownIt> {
+  // In dev mode, return cached processor if available
+  // This avoids recreating the processor and reloading plugins on each rebuild
+  if (isDevelopment() && cachedMarkdownProcessor) {
+    return cachedMarkdownProcessor;
+  }
+
   const md = new MarkdownIt({
     html: true,
     linkify: true,
@@ -73,6 +95,11 @@ export async function createMarkdownProcessor(config: StatiConfig): Promise<Mark
   // Apply user configuration function (this runs after plugins for override capability)
   if (config.markdown?.configure) {
     config.markdown.configure(md);
+  }
+
+  // Cache in dev mode
+  if (isDevelopment()) {
+    cachedMarkdownProcessor = md;
   }
 
   return md;

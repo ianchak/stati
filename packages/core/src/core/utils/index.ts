@@ -109,6 +109,7 @@ export {
   cleanupCompiledConfig,
   autoInjectBundles,
   formatBytes,
+  detectExistingBundles,
 } from './typescript.utils.js';
 export type { CompileOptions, WatchOptions } from './typescript.utils.js';
 

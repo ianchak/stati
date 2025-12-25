@@ -91,17 +91,48 @@ export interface MetricsTotals {
  * All fields are optional as not all phases run in every build.
  */
 export interface MetricsPhases {
+  /** Configuration file loading and validation */
   readonly configLoadMs?: number;
+  /** Content discovery and markdown parsing */
   readonly contentDiscoveryMs?: number;
+  /** Navigation tree building */
   readonly navigationBuildMs?: number;
+  /** Cache manifest loading from disk */
   readonly cacheManifestLoadMs?: number;
+  /** TypeScript compilation */
   readonly typescriptCompileMs?: number;
+  /** Total page rendering time (includes shouldRebuild + render + fileWrite + cacheEntry) */
   readonly pageRenderingMs?: number;
+  /** Aggregate time checking if pages need rebuild (shouldRebuildPage) */
+  readonly shouldRebuildTotalMs?: number;
+  /** Aggregate time rendering pages (renderPage) */
+  readonly renderPageTotalMs?: number;
+  /** Aggregate time writing HTML files to disk */
+  readonly fileWriteTotalMs?: number;
+  /** Aggregate time updating cache entries */
+  readonly cacheEntryTotalMs?: number;
+  /** Search index generation */
   readonly searchIndexGenerationMs?: number;
+  /** Search index write to disk */
+  readonly searchIndexWriteMs?: number;
+  /** Static asset copying */
   readonly assetCopyMs?: number;
+  /** Cache manifest saving to disk */
   readonly cacheManifestSaveMs?: number;
+  /** Sitemap generation */
   readonly sitemapGenerationMs?: number;
+  /** RSS feed generation */
   readonly rssGenerationMs?: number;
+  /** Tailwind detection and inventory initialization */
+  readonly tailwindInitMs?: number;
+  /** Tailwind inventory write at end of build */
+  readonly tailwindInventoryMs?: number;
+  /** Directory size calculation for build stats */
+  readonly getDirectorySizeMs?: number;
+  /** Build lock acquisition */
+  readonly lockAcquireMs?: number;
+  /** Build lock release */
+  readonly lockReleaseMs?: number;
   /** Build hooks - only recorded when hooks are configured */
   readonly hookBeforeAllMs?: number;
   readonly hookAfterAllMs?: number;

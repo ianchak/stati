@@ -122,8 +122,8 @@ export {
 } from './rss/index.js';
 
 // Re-export config and env utilities
-export { loadConfig } from './config/loader.js';
-export { setEnv, getEnv } from './env.js';
+export { loadConfig, clearConfigCache } from './config/loader.js';
+export { setEnv, getEnv, isDevelopment, isProduction, isTest } from './env.js';
 
 // Re-export version utility
 export { getStatiVersion } from './core/utils/index.js';

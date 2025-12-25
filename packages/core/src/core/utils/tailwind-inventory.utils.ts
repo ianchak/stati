@@ -204,8 +204,10 @@ export function isTrackingEnabled(): boolean {
  *
  * The generated file contains all tracked classes in a hidden div.
  * This file should be added to Tailwind's content configuration.
+ * Skips write if the inventory hasn't changed (dev mode optimization).
  *
  * @param cacheDir - Directory where the inventory file should be written (typically .stati/)
+ * @param skipIfUnchanged - If true, skip write when class count matches previous
  * @returns Path to the generated inventory file
  *
  * @example
@@ -214,11 +216,26 @@ export function isTrackingEnabled(): boolean {
  * // File written to: /path/to/project/.stati/tailwind-classes.html
  * ```
  */
-export async function writeTailwindClassInventory(cacheDir: string): Promise<string> {
-  await ensureDir(cacheDir);
 
+// Cache for tailwind inventory state (dev mode optimization)
+let lastInventorySize: number | null = null;
+
+export async function writeTailwindClassInventory(
+  cacheDir: string,
+  skipIfUnchanged = false,
+): Promise<string> {
   const inventoryPath = join(cacheDir, 'tailwind-classes.html');
   const classes = getInventory();
+
+  // Skip write if inventory size hasn't changed (dev mode optimization)
+  if (skipIfUnchanged && lastInventorySize === classes.length) {
+    return inventoryPath;
+  }
+
+  // Update cached size
+  lastInventorySize = classes.length;
+
+  await ensureDir(cacheDir);
 
   // Generate HTML with all tracked classes
   // Using hidden div so it's scanned by Tailwind but not rendered

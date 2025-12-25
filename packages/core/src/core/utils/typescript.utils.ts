@@ -103,6 +103,59 @@ function resolveConfig(
 }
 
 /**
+ * Detects existing TypeScript bundles in the output directory.
+ * Used when skipping TypeScript compilation (e.g., in dev mode where esbuild watcher handles it).
+ * Looks for bundles matching the config bundle names in the output directory.
+ *
+ * @param options - Same options as compileTypeScript
+ * @returns Array of detected bundle info
+ */
+export async function detectExistingBundles(
+  options: Omit<CompileOptions, 'logger'>,
+): Promise<CompiledBundleInfo[]> {
+  const { projectRoot, config, outDir: globalOutDir = DEFAULT_OUT_DIR, mode } = options;
+  const resolved = resolveConfig(config, mode);
+  const outDir = path.join(projectRoot, globalOutDir, resolved.outDir);
+
+  const results: CompiledBundleInfo[] = [];
+
+  // Check if output directory exists
+  if (!(await pathExists(outDir))) {
+    return results;
+  }
+
+  try {
+    const files = await fs.readdir(outDir);
+
+    for (const bundleConfig of resolved.bundles) {
+      // In dev mode, bundles use stable names (no hash)
+      // In prod mode, bundles have hashes like "bundleName-abc123.js"
+      const pattern =
+        mode === 'development'
+          ? `${bundleConfig.bundleName}.js`
+          : new RegExp(`^${bundleConfig.bundleName}-[a-zA-Z0-9]+\\.js$`);
+
+      const matchingFile = files.find((f) =>
+        typeof pattern === 'string' ? f === pattern : pattern.test(f),
+      );
+
+      if (matchingFile) {
+        const bundlePath = path.posix.join('/', resolved.outDir, matchingFile);
+        results.push({
+          config: bundleConfig,
+          filename: matchingFile,
+          path: bundlePath,
+        });
+      }
+    }
+  } catch {
+    // If we can't read the directory, return empty results
+  }
+
+  return results;
+}
+
+/**
  * Compile a single bundle using esbuild.
  * @internal
  */
