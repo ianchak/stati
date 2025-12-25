@@ -107,6 +107,15 @@ export function resolveStaticPath(config: StatiConfig, relativePath: string): st
  * This utility ensures that paths from different sources (file watchers, cache manifest,
  * glob results) can be reliably compared even when they use different representations.
  *
+ * **WARNING: This function is for STRING COMPARISON ONLY.**
+ * **DO NOT use the returned path for file system operations.**
+ *
+ * The normalization uppercases Windows drive letters (c: → C:) for consistent
+ * comparison on case-insensitive Windows file systems. However, this can break
+ * file operations in case-sensitive environments like WSL or Unix systems mounted
+ * on Windows. Always use the original path for actual file system operations
+ * (fs.readFile, fs.writeFile, etc.).
+ *
  * @param filePath - Path to normalize (can be relative or absolute, Windows or POSIX)
  * @param basePath - Optional base path to resolve relative paths against (defaults to cwd)
  * @returns Normalized absolute path with forward slashes and no trailing slashes
@@ -124,6 +133,15 @@ export function resolveStaticPath(config: StatiConfig, relativePath: string): st
  * // Already POSIX path
  * normalizePathForComparison('/project/site/layout.eta')
  * // Returns: '/project/site/layout.eta'
+ *
+ * // CORRECT: Use for comparison
+ * const normalized1 = normalizePathForComparison(watcherPath);
+ * const normalized2 = normalizePathForComparison(cachedPath);
+ * if (normalized1 === normalized2) { ... }
+ *
+ * // WRONG: Do not use for file operations
+ * const normalized = normalizePathForComparison(filePath);
+ * await fs.readFile(normalized); // BAD! Use original filePath instead
  * ```
  */
 export function normalizePathForComparison(filePath: string, basePath?: string): string {

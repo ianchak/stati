@@ -339,6 +339,7 @@ async function handleTemplateChange(
     // Normalize the changed template path to absolute POSIX format for reliable comparison
     // This handles cases where the watcher provides relative paths, Windows paths, or different
     // path representations than what's stored in the cache manifest
+    // NOTE: Only used for string comparison, never for file system operations
     const normalizedTemplatePath = normalizePathForComparison(templatePath);
 
     // Get total page count from manifest
@@ -350,7 +351,7 @@ async function handleTemplateChange(
     for (const [pagePath, entry] of Object.entries(cacheManifest.entries)) {
       // Check if any of the page's dependencies match the changed template
       const hasMatchingDep = entry.deps.some((dep) => {
-        // Normalize the cached dependency path to the same format
+        // Normalize the cached dependency path to the same format for comparison only
         const normalizedDep = normalizePathForComparison(dep);
 
         // Direct path comparison - both paths are now in consistent format

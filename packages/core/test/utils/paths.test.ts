@@ -159,6 +159,27 @@ describe('Path Normalization Utilities', () => {
         expect(normalizedWatcher).toContain('_partials/header.eta');
         expect(normalizedWatcher).not.toContain('\\');
       });
+
+      it('should normalize Windows drive letters to uppercase for consistent comparison', () => {
+        // This test documents that drive letters are uppercased for comparison
+        // WARNING: These normalized paths should ONLY be used for string comparison,
+        // NEVER for actual file system operations (especially in WSL or case-sensitive environments)
+        const pathWithLowercase = 'c:\\project\\site\\layout.eta';
+        const pathWithUppercase = 'C:\\project\\site\\layout.eta';
+
+        const normalizedLower = normalizePathForComparison(pathWithLowercase);
+        const normalizedUpper = normalizePathForComparison(pathWithUppercase);
+
+        // Drive letter should be uppercase for both
+        expect(normalizedLower).toMatch(/^[A-Z]:\//);
+        expect(normalizedUpper).toMatch(/^[A-Z]:\//);
+        // They should match for comparison purposes
+        expect(normalizedLower).toBe(normalizedUpper);
+
+        // Verify the rest of the path is consistent
+        expect(normalizedLower).toBe('C:/project/site/layout.eta');
+        expect(normalizedUpper).toBe('C:/project/site/layout.eta');
+      });
     });
   });
 
