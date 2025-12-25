@@ -9,7 +9,12 @@ import type { FSWatcher } from 'chokidar';
 import { build } from './build.js';
 import { invalidate } from './invalidate.js';
 import { loadConfig } from '../config/loader.js';
-import { loadCacheManifest, saveCacheManifest, computeNavigationHash } from './isg/index.js';
+import {
+  loadCacheManifest,
+  saveCacheManifest,
+  computeNavigationHash,
+  DevServerLockManager,
+} from './isg/index.js';
 import { loadContent } from './content.js';
 import { buildNavigation } from './navigation.js';
 import {
@@ -500,6 +505,10 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
 
   setEnv('development');
 
+  // Create dev server lock manager
+  const cacheDir = resolveCacheDir();
+  const devLock = new DevServerLockManager(cacheDir);
+
   const url = `http://${host}:${port}`;
   let httpServer: ReturnType<typeof createServer> | null = null;
   let wsServer: WebSocketServer | null = null;
@@ -722,6 +731,15 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
     url,
 
     async start(): Promise<void> {
+      // Acquire dev server lock to prevent multiple dev servers in the same directory
+      try {
+        await devLock.acquireLock();
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        logger.error?.(`Failed to start dev server:\n${message}`);
+        throw error;
+      }
+
       // Perform initial build
       await performInitialBuild(configPath, logger, setLastBuildError);
 
@@ -934,6 +952,10 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
     async stop(): Promise<void> {
       if (isStopping) return;
       isStopping = true;
+
+      // Release dev server lock first to allow other servers to start
+      await devLock.releaseLock();
+
       if (watcher) {
         await watcher.close();
         watcher = null;

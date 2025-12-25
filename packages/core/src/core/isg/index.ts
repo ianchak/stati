@@ -15,6 +15,7 @@ export { shouldRebuildPage, createCacheEntry, updateCacheEntry } from './builder
 
 // Build locking
 export { BuildLockManager, withBuildLock } from './build-lock.js';
+export { DevServerLockManager } from './dev-server-lock.js';
 
 // Dependency tracking
 export {
