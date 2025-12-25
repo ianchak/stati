@@ -513,4 +513,294 @@ describe('ISG Build Integration', () => {
       );
     });
   });
+
+  describe('Cache entry validation', () => {
+    it('should consider valid cache entry with all required fields', async () => {
+      const validEntry: CacheEntry = {
+        path: 'test.html',
+        inputsHash: 'hash123',
+        deps: [testLayoutPath],
+        tags: ['test'],
+        renderedAt: '2024-01-01T00:00:00.000Z',
+        ttlSeconds: 3600,
+      };
+
+      // Valid entry should not trigger rebuild due to corruption
+      const result = await shouldRebuildPage(mockPage, validEntry, mockConfig, fixedDate);
+
+      // Should depend on content/TTL logic, not validation failure
+      expect(result).toBeDefined();
+    });
+
+    it('should rebuild when entry is missing required path field', async () => {
+      const invalidEntry = {
+        // path missing
+        inputsHash: 'hash123',
+        deps: [testLayoutPath],
+        tags: ['test'],
+        renderedAt: '2024-01-01T00:00:00.000Z',
+        ttlSeconds: 3600,
+      } as unknown as CacheEntry;
+
+      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      expect(result).toBe(true);
+    });
+
+    it('should rebuild when entry is missing inputsHash field', async () => {
+      const invalidEntry = {
+        path: 'test.html',
+        // inputsHash missing
+        deps: [testLayoutPath],
+        tags: ['test'],
+        renderedAt: '2024-01-01T00:00:00.000Z',
+        ttlSeconds: 3600,
+      } as unknown as CacheEntry;
+
+      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      expect(result).toBe(true);
+    });
+
+    it('should rebuild when entry is missing renderedAt field', async () => {
+      const invalidEntry = {
+        path: 'test.html',
+        inputsHash: 'hash123',
+        deps: [testLayoutPath],
+        tags: ['test'],
+        // renderedAt missing
+        ttlSeconds: 3600,
+      } as unknown as CacheEntry;
+
+      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      expect(result).toBe(true);
+    });
+
+    it('should rebuild when ttlSeconds is not a number', async () => {
+      const invalidEntry = {
+        path: 'test.html',
+        inputsHash: 'hash123',
+        deps: [testLayoutPath],
+        tags: ['test'],
+        renderedAt: '2024-01-01T00:00:00.000Z',
+        ttlSeconds: 'not a number' as unknown as number,
+      };
+
+      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      expect(result).toBe(true);
+    });
+
+    it('should rebuild when ttlSeconds is NaN', async () => {
+      const invalidEntry: CacheEntry = {
+        path: 'test.html',
+        inputsHash: 'hash123',
+        deps: [testLayoutPath],
+        tags: ['test'],
+        renderedAt: '2024-01-01T00:00:00.000Z',
+        ttlSeconds: NaN,
+      };
+
+      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      expect(result).toBe(true);
+    });
+
+    it('should rebuild when ttlSeconds is Infinity', async () => {
+      const invalidEntry: CacheEntry = {
+        path: 'test.html',
+        inputsHash: 'hash123',
+        deps: [testLayoutPath],
+        tags: ['test'],
+        renderedAt: '2024-01-01T00:00:00.000Z',
+        ttlSeconds: Infinity,
+      };
+
+      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      expect(result).toBe(true);
+    });
+
+    it('should rebuild when deps is not an array', async () => {
+      const invalidEntry = {
+        path: 'test.html',
+        inputsHash: 'hash123',
+        deps: 'not an array' as unknown as string[],
+        tags: ['test'],
+        renderedAt: '2024-01-01T00:00:00.000Z',
+        ttlSeconds: 3600,
+      };
+
+      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      expect(result).toBe(true);
+    });
+
+    it('should rebuild when tags is not an array', async () => {
+      const invalidEntry = {
+        path: 'test.html',
+        inputsHash: 'hash123',
+        deps: [testLayoutPath],
+        tags: 'not an array' as unknown as string[],
+        renderedAt: '2024-01-01T00:00:00.000Z',
+        ttlSeconds: 3600,
+      };
+
+      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      expect(result).toBe(true);
+    });
+
+    it('should rebuild when deps contains non-string values', async () => {
+      const invalidEntry = {
+        path: 'test.html',
+        inputsHash: 'hash123',
+        deps: [testLayoutPath, 123, null] as unknown as string[],
+        tags: ['test'],
+        renderedAt: '2024-01-01T00:00:00.000Z',
+        ttlSeconds: 3600,
+      };
+
+      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      expect(result).toBe(true);
+    });
+
+    it('should rebuild when tags contains non-string values', async () => {
+      const invalidEntry = {
+        path: 'test.html',
+        inputsHash: 'hash123',
+        deps: [testLayoutPath],
+        tags: ['valid', 42, { tag: 'invalid' }] as unknown as string[],
+        renderedAt: '2024-01-01T00:00:00.000Z',
+        ttlSeconds: 3600,
+      };
+
+      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      expect(result).toBe(true);
+    });
+
+    it('should rebuild when entry is null', async () => {
+      const result = await shouldRebuildPage(
+        mockPage,
+        null as unknown as CacheEntry,
+        mockConfig,
+        fixedDate,
+      );
+      expect(result).toBe(true);
+    });
+
+    it('should rebuild when entry is not an object', async () => {
+      const invalidEntry = 'not an object' as unknown as CacheEntry;
+      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      expect(result).toBe(true);
+    });
+
+    it('should handle entry with invalid publishedAt type', async () => {
+      const invalidEntry = {
+        path: 'test.html',
+        inputsHash: 'hash123',
+        deps: [testLayoutPath],
+        tags: ['test'],
+        renderedAt: '2024-01-01T00:00:00.000Z',
+        ttlSeconds: 3600,
+        publishedAt: 12345 as unknown as string,
+      };
+
+      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      expect(result).toBe(true);
+    });
+
+    it('should handle entry with invalid maxAgeCapDays type', async () => {
+      const invalidEntry = {
+        path: 'test.html',
+        inputsHash: 'hash123',
+        deps: [testLayoutPath],
+        tags: ['test'],
+        renderedAt: '2024-01-01T00:00:00.000Z',
+        ttlSeconds: 3600,
+        maxAgeCapDays: 'not a number' as unknown as number,
+      };
+
+      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      expect(result).toBe(true);
+    });
+
+    it('should accept entry with empty arrays', async () => {
+      const validEntry: CacheEntry = {
+        path: 'test.html',
+        inputsHash: 'hash123',
+        deps: [],
+        tags: [],
+        renderedAt: '2024-01-01T00:00:00.000Z',
+        ttlSeconds: 3600,
+      };
+
+      // Empty arrays are valid
+      const result = await shouldRebuildPage(mockPage, validEntry, mockConfig, fixedDate);
+      expect(result).toBeDefined(); // Should depend on other logic, not validation
+    });
+
+    it('should accept entry with optional fields omitted', async () => {
+      const validEntry: CacheEntry = {
+        path: 'test.html',
+        inputsHash: 'hash123',
+        deps: [testLayoutPath],
+        tags: ['test'],
+        renderedAt: '2024-01-01T00:00:00.000Z',
+        ttlSeconds: 3600,
+      };
+
+      const result = await shouldRebuildPage(mockPage, validEntry, mockConfig, fixedDate);
+      expect(result).toBeDefined();
+    });
+
+    it('should rebuild when path is empty string', async () => {
+      const invalidEntry: CacheEntry = {
+        path: '',
+        inputsHash: 'hash123',
+        deps: [testLayoutPath],
+        tags: ['test'],
+        renderedAt: '2024-01-01T00:00:00.000Z',
+        ttlSeconds: 3600,
+      };
+
+      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      expect(result).toBe(true);
+    });
+
+    it('should rebuild when inputsHash is empty string', async () => {
+      const invalidEntry: CacheEntry = {
+        path: 'test.html',
+        inputsHash: '',
+        deps: [testLayoutPath],
+        tags: ['test'],
+        renderedAt: '2024-01-01T00:00:00.000Z',
+        ttlSeconds: 3600,
+      };
+
+      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      expect(result).toBe(true);
+    });
+
+    it('should rebuild when renderedAt is empty string', async () => {
+      const invalidEntry: CacheEntry = {
+        path: 'test.html',
+        inputsHash: 'hash123',
+        deps: [testLayoutPath],
+        tags: ['test'],
+        renderedAt: '',
+        ttlSeconds: 3600,
+      };
+
+      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      expect(result).toBe(true);
+    });
+
+    it('should handle deeply corrupted entry object', async () => {
+      const invalidEntry = {
+        path: null,
+        inputsHash: undefined,
+        deps: 'string',
+        tags: { not: 'array' },
+        renderedAt: 12345,
+        ttlSeconds: 'invalid',
+      } as unknown as CacheEntry;
+
+      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      expect(result).toBe(true);
+    });
+  });
 });

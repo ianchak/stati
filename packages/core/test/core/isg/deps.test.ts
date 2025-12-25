@@ -801,4 +801,72 @@ describe('ISG Dependency Tracking', () => {
       consoleWarnSpy.mockRestore();
     });
   });
+
+  describe('Template caching', () => {
+    it('should cache template content reads', async () => {
+      const layoutPath = 'test/project/site/layout.eta';
+      const layoutContent = '<!DOCTYPE html><%~ stati.body %>';
+
+      mockPathExists.mockImplementation(async (path: string) => {
+        const normalizedPath = path.replace(/\\/g, '/');
+        return normalizedPath === layoutPath;
+      });
+
+      let readCount = 0;
+      mockReadFile.mockImplementation(async () => {
+        readCount++;
+        return layoutContent;
+      });
+      mockGlob.mockResolvedValue([]);
+
+      // Track dependencies twice
+      await trackTemplateDependencies(mockPage, mockConfig);
+      await trackTemplateDependencies(mockPage, mockConfig);
+
+      // Content should only be read once (cached)
+      expect(readCount).toBe(1);
+    });
+
+    it('should cache template path with .eta extension', async () => {
+      mockPathExists.mockResolvedValue(true);
+
+      const path1 = await resolveTemplatePath('layout', mockConfig);
+      const path2 = await resolveTemplatePath('layout', mockConfig);
+
+      expect(path1).toBe(path2);
+      expect(path1).toContain('layout.eta');
+    });
+
+    it('should clear content cache when clearTemplatePathCache is called', async () => {
+      const layoutPath = 'test/project/site/layout.eta';
+      const layoutContent = '<!DOCTYPE html>';
+
+      mockPathExists.mockImplementation(async (path: string) => {
+        const normalizedPath = path.replace(/\\/g, '/');
+        return normalizedPath === layoutPath;
+      });
+
+      let readCount = 0;
+      mockReadFile.mockImplementation(async () => {
+        readCount++;
+        return layoutContent;
+      });
+      mockGlob.mockResolvedValue([]);
+
+      // First tracking (populates content cache)
+      await trackTemplateDependencies(mockPage, mockConfig);
+      expect(readCount).toBe(1);
+
+      // Second tracking (uses cache)
+      await trackTemplateDependencies(mockPage, mockConfig);
+      expect(readCount).toBe(1); // Still 1 due to cache
+
+      // Clear cache
+      clearTemplatePathCache();
+
+      // Third tracking (cache cleared, should read again)
+      await trackTemplateDependencies(mockPage, mockConfig);
+      expect(readCount).toBe(2); // Increased after cache clear
+    });
+  });
 });
