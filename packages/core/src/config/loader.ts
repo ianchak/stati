@@ -122,12 +122,15 @@ export async function loadConfig(cwd: string = process.cwd()): Promise<StatiConf
   try {
     let configModule;
     let compiledPath: string | undefined;
+    // Get current mtime for cache-busting
+    const currentMtime = statSync(resolvedConfigPath).mtimeMs;
 
     // If it's a .ts file, compile it first
     if (configPath.endsWith('.ts')) {
       try {
         compiledPath = await compileStatiConfig(resolvedConfigPath);
-        const configUrl = pathToFileURL(compiledPath).href;
+        // Add cache-busting query parameter to force Node.js to re-evaluate the module
+        const configUrl = `${pathToFileURL(compiledPath).href}?t=${currentMtime}`;
         configModule = await import(configUrl);
       } finally {
         // Clean up compiled file
@@ -137,7 +140,8 @@ export async function loadConfig(cwd: string = process.cwd()): Promise<StatiConf
       }
     } else {
       // Existing logic for .js/.mjs
-      const configUrl = pathToFileURL(resolvedConfigPath).href;
+      // Add cache-busting query parameter to force Node.js to re-evaluate the module
+      const configUrl = `${pathToFileURL(resolvedConfigPath).href}?t=${currentMtime}`;
       configModule = await import(configUrl);
     }
 
