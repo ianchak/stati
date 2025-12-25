@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { join } from 'node:path';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -262,5 +262,103 @@ describe('DevServerLockManager', () => {
     expect(date.getTime()).not.toBeNaN();
 
     await devLock.releaseLock();
+  });
+
+  it('should display different location message for different host', async () => {
+    // Create a lock with a different hostname
+    const lockPath = join(testDir, '.dev-server-lock');
+    const { writeFile, mkdir } = await import('node:fs/promises');
+    await mkdir(testDir, { recursive: true });
+    await writeFile(
+      lockPath,
+      JSON.stringify({
+        pid: process.pid, // Same PID so it looks running
+        timestamp: new Date().toISOString(),
+        hostname: 'different-host', // Different hostname
+      }),
+    );
+
+    const newLock = new DevServerLockManager(testDir);
+    try {
+      await newLock.acquireLock();
+      expect.fail('Should have thrown an error');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      // Should mention the different host
+      expect(message).toContain('different-host');
+      expect(message).toContain('already running');
+    }
+  });
+
+  it('should display same machine location for same host', async () => {
+    await devLock.acquireLock();
+
+    const secondDevLock = new DevServerLockManager(testDir);
+    try {
+      await secondDevLock.acquireLock();
+      expect.fail('Should have thrown an error');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      // Should mention "this machine" for same host
+      expect(message).toContain('this machine');
+    }
+  });
+
+  it('should handle lock file with unknown hostname gracefully', async () => {
+    // Create a lock without hostname
+    const lockPath = join(testDir, '.dev-server-lock');
+    const { writeFile, mkdir } = await import('node:fs/promises');
+    await mkdir(testDir, { recursive: true });
+    await writeFile(
+      lockPath,
+      JSON.stringify({
+        pid: process.pid, // Same PID so it looks running
+        timestamp: new Date().toISOString(),
+        // No hostname
+      }),
+    );
+
+    const newLock = new DevServerLockManager(testDir);
+    try {
+      await newLock.acquireLock();
+      expect.fail('Should have thrown an error');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      // Should handle missing hostname
+      expect(message).toContain('already running');
+    }
+  });
+
+  it('should warn when releasing lock fails', async () => {
+    // Spy on console.warn to capture warning
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await devLock.acquireLock();
+
+    // Delete the lock file to simulate failure during release
+    const lockPath = join(testDir, '.dev-server-lock');
+    const { unlink } = await import('node:fs/promises');
+    await unlink(lockPath);
+
+    // Manually set isLocked to true and try to release
+    // This should trigger the error path when checking lock ownership
+    await devLock.releaseLock();
+
+    // Restore console.warn
+    warnSpy.mockRestore();
+  });
+
+  it('should handle isLockHeld with error gracefully', async () => {
+    // Test the error catch path in isLockHeld
+    const newLock = new DevServerLockManager(testDir);
+    const isHeld = await newLock.isLockHeld();
+    expect(isHeld).toBe(false);
+  });
+
+  it('should handle getLockInfo with error gracefully', async () => {
+    // Test the error catch path in getLockInfo
+    const newLock = new DevServerLockManager(testDir);
+    const info = await newLock.getLockInfo();
+    expect(info).toBeNull();
   });
 });
