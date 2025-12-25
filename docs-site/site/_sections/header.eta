@@ -68,6 +68,11 @@
                     </a>
                 </div>
 
+                <!-- Mobile search button -->
+                <button id="mobile-search-btn" class="lg:hidden p-2.5 rounded-lg text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white hover:bg-gray-100/80 dark:hover:bg-dark-700/80 transition-all duration-200 backdrop-blur-sm" aria-label="Search documentation">
+                    <%~ stati.partials.icon({ name: 'search', size: 'lg' }) %>
+                </button>
+
                 <!-- Mobile menu button -->
                 <button id="mobile-menu-btn" class="lg:hidden p-2.5 rounded-lg text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white hover:bg-gray-100/80 dark:hover:bg-dark-700/80 transition-all duration-200 backdrop-blur-sm">
                     <%~ stati.partials.icon({ name: 'menu', size: 'lg' }) %>

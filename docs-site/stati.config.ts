@@ -60,6 +60,9 @@ export default defineConfig({
     ttlSeconds: 86400, // 24 hours for docs
     maxAgeCapDays: 30, // Docs update frequently
   },
+  search: {
+    enabled: true,
+  },
   sitemap: {
     enabled: true,
     defaultPriority: 0.7,
