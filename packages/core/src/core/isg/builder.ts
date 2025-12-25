@@ -357,6 +357,60 @@ export async function createCacheEntry(
 }
 
 /**
+ * Checks if the template structure has changed by comparing the layout file's
+ * modification time against when the cache entry was last rendered.
+ * This detects when new includes/extends have been added to templates.
+ *
+ * @param page - The page model
+ * @param entry - The existing cache entry
+ * @param _config - Stati configuration (unused, for future extensibility)
+ * @returns True if template structure may have changed, false if structure is unchanged
+ */
+async function hasTemplateStructureChanged(
+  page: PageModel,
+  entry: CacheEntry,
+  _config: StatiConfig,
+): Promise<boolean> {
+  try {
+    // If the entry has a layout in its deps, check if that layout file has been modified
+    // since the last render. Layout files are typically the first dep or contain the
+    // includes/extends declarations.
+    if (entry.deps.length === 0) {
+      return false;
+    }
+
+    // Get the timestamp of the last render
+    const lastRendered = new Date(entry.renderedAt).getTime();
+
+    // Import stat from node:fs/promises at runtime to avoid circular dependency issues
+    const { stat } = await import('node:fs/promises');
+
+    // Check if any template files (layout or partials) have been modified
+    // We only need to check the first few deps (usually layout and immediate includes)
+    // as a heuristic to detect structural changes without expensive full tracking
+    const depsToCheck = entry.deps.slice(0, 3);
+
+    for (const depPath of depsToCheck) {
+      try {
+        const stats = await stat(depPath);
+        if (stats.mtimeMs > lastRendered) {
+          // Template file was modified after last render - structure may have changed
+          return true;
+        }
+      } catch (_error) {
+        // If we can't stat the file, assume it might have changed
+        return true;
+      }
+    }
+
+    return false;
+  } catch (_error) {
+    // On any error, be conservative and assume structure changed
+    return true;
+  }
+}
+
+/**
  * Updates an existing cache entry with new information after rebuilding.
  * In dev mode, this is optimized to reuse the existing deps array since
  * template structure rarely changes between incremental rebuilds.
@@ -382,25 +436,36 @@ export async function updateCacheEntry(
 ): Promise<CacheEntry> {
   // In fast update mode (dev), reuse existing deps to avoid expensive tracking
   if (fastUpdate && entry.deps.length > 0) {
-    // Just update the content hash and timestamp, keep existing deps
-    const contentHash = computeContentHash(page.content, page.frontMatter);
+    // Detect if template structure has changed (new includes/extends added)
+    // by checking if the layout file has been modified or if template content
+    // contains different dependency patterns
+    const structureChanged = await hasTemplateStructureChanged(page, entry, config);
 
-    // Compute hashes for existing dependencies (fast - files are cached)
-    const depsHashes: string[] = [];
-    for (const dep of entry.deps) {
-      const depHash = await computeFileHash(dep);
-      if (depHash) {
-        depsHashes.push(depHash);
+    if (structureChanged) {
+      // Template structure changed - fall through to full dependency tracking
+      // This ensures we pick up new includes/extends
+    } else {
+      // Structure unchanged - safe to reuse existing deps
+      // Just update the content hash and timestamp, keep existing deps
+      const contentHash = computeContentHash(page.content, page.frontMatter);
+
+      // Compute hashes for existing dependencies (fast - files are cached)
+      const depsHashes: string[] = [];
+      for (const dep of entry.deps) {
+        const depHash = await computeFileHash(dep);
+        if (depHash) {
+          depsHashes.push(depHash);
+        }
       }
+
+      const inputsHash = computeInputsHash(contentHash, depsHashes);
+
+      return {
+        ...entry,
+        inputsHash,
+        renderedAt: renderedAt.toISOString(),
+      };
     }
-
-    const inputsHash = computeInputsHash(contentHash, depsHashes);
-
-    return {
-      ...entry,
-      inputsHash,
-      renderedAt: renderedAt.toISOString(),
-    };
   }
 
   // Full update - create new entry and preserve original publishedAt

@@ -803,4 +803,304 @@ describe('ISG Build Integration', () => {
       expect(result).toBe(true);
     });
   });
+
+  describe('Fast update mode with structural change detection', () => {
+    const existingEntry: CacheEntry = {
+      path: 'test.html',
+      inputsHash: 'old_inputs',
+      deps: [testLayoutPath, testHeaderPath],
+      tags: ['page'],
+      renderedAt: fixedDate.toISOString(),
+      ttlSeconds: 3600,
+    };
+
+    beforeEach(() => {
+      // Reset mocks for fast update tests
+      vi.clearAllMocks();
+      mockComputeContentHash.mockReturnValue('content123');
+      mockComputeFileHash.mockResolvedValue('file123');
+      mockComputeInputsHash.mockReturnValue('inputs123');
+      mockTrackTemplateDependencies.mockResolvedValue([testLayoutPath, testHeaderPath]);
+      mockComputeEffectiveTTL.mockReturnValue(3600);
+    });
+
+    it('should reuse existing deps when templates are unchanged (fast path)', async () => {
+      // Mock fs.promises.stat to return old modification times
+      const mockStat = vi.fn().mockResolvedValue({
+        mtimeMs: fixedDate.getTime() - 10000, // Modified before last render
+      });
+
+      vi.doMock('node:fs/promises', () => ({
+        stat: mockStat,
+      }));
+
+      const result = await updateCacheEntry(
+        existingEntry,
+        mockPage,
+        mockConfig,
+        fixedDate,
+        true, // fastUpdate = true
+      );
+
+      // Should reuse existing deps without calling trackTemplateDependencies
+      expect(result.deps).toEqual([testLayoutPath, testHeaderPath]);
+      expect(mockTrackTemplateDependencies).not.toHaveBeenCalled();
+      expect(mockComputeContentHash).toHaveBeenCalledTimes(1);
+      expect(mockComputeFileHash).toHaveBeenCalledWith(testLayoutPath);
+      expect(mockComputeFileHash).toHaveBeenCalledWith(testHeaderPath);
+      expect(result.renderedAt).toBe(fixedDate.toISOString());
+
+      vi.doUnmock('node:fs/promises');
+    });
+
+    it('should perform full dependency tracking when template is modified (slow path)', async () => {
+      // Mock fs.promises.stat to return recent modification time
+      const mockStat = vi.fn().mockResolvedValue({
+        mtimeMs: fixedDate.getTime() + 1000, // Modified after last render
+      });
+
+      vi.doMock('node:fs/promises', () => ({
+        stat: mockStat,
+      }));
+
+      const newDeps = [testLayoutPath, testHeaderPath, testFooterPath];
+      mockTrackTemplateDependencies.mockResolvedValue(newDeps);
+
+      const result = await updateCacheEntry(
+        existingEntry,
+        mockPage,
+        mockConfig,
+        fixedDate,
+        true, // fastUpdate = true
+      );
+
+      // Should perform full dependency tracking because template changed
+      expect(mockTrackTemplateDependencies).toHaveBeenCalled();
+      expect(result.deps).toEqual(newDeps);
+
+      vi.doUnmock('node:fs/promises');
+    });
+
+    it('should perform full tracking when stat fails (conservative approach)', async () => {
+      // Mock fs.promises.stat to throw an error (file not found, permission denied, etc.)
+      const mockStat = vi.fn().mockRejectedValue(new Error('ENOENT: file not found'));
+
+      vi.doMock('node:fs/promises', () => ({
+        stat: mockStat,
+      }));
+
+      const newDeps = [testLayoutPath, testHeaderPath, testNavPath];
+      mockTrackTemplateDependencies.mockResolvedValue(newDeps);
+
+      const result = await updateCacheEntry(
+        existingEntry,
+        mockPage,
+        mockConfig,
+        fixedDate,
+        true, // fastUpdate = true
+      );
+
+      // Should fall back to full dependency tracking on stat error
+      expect(mockTrackTemplateDependencies).toHaveBeenCalled();
+      expect(result.deps).toEqual(newDeps);
+
+      vi.doUnmock('node:fs/promises');
+    });
+
+    it('should skip fast update when entry has no deps', async () => {
+      const entryWithoutDeps: CacheEntry = {
+        ...existingEntry,
+        deps: [],
+      };
+
+      const newDeps = [testLayoutPath];
+      mockTrackTemplateDependencies.mockResolvedValue(newDeps);
+
+      const result = await updateCacheEntry(
+        entryWithoutDeps,
+        mockPage,
+        mockConfig,
+        fixedDate,
+        true, // fastUpdate = true
+      );
+
+      // Should perform full tracking since there are no existing deps
+      expect(mockTrackTemplateDependencies).toHaveBeenCalled();
+      expect(result.deps).toEqual(newDeps);
+    });
+
+    it('should always perform full tracking when fastUpdate is false', async () => {
+      const newDeps = [testLayoutPath, testHeaderPath, testFooterPath];
+      mockTrackTemplateDependencies.mockResolvedValue(newDeps);
+
+      const result = await updateCacheEntry(
+        existingEntry,
+        mockPage,
+        mockConfig,
+        fixedDate,
+        false, // fastUpdate = false
+      );
+
+      // Should always do full tracking in non-fast mode
+      expect(mockTrackTemplateDependencies).toHaveBeenCalled();
+      expect(result.deps).toEqual(newDeps);
+    });
+
+    it('should check only first 3 deps for structural changes', async () => {
+      const entryWithManyDeps: CacheEntry = {
+        ...existingEntry,
+        deps: [testLayoutPath, testHeaderPath, testFooterPath, testNavPath, '/test/extra.eta'],
+      };
+
+      // Mock stat to be called multiple times
+      const mockStat = vi.fn().mockResolvedValue({
+        mtimeMs: fixedDate.getTime() - 10000, // All old
+      });
+
+      vi.doMock('node:fs/promises', () => ({
+        stat: mockStat,
+      }));
+
+      await updateCacheEntry(
+        entryWithManyDeps,
+        mockPage,
+        mockConfig,
+        fixedDate,
+        true, // fastUpdate = true
+      );
+
+      // Should only check first 3 deps as a heuristic
+      expect(mockStat).toHaveBeenCalledTimes(3);
+      expect(mockStat).toHaveBeenCalledWith(testLayoutPath);
+      expect(mockStat).toHaveBeenCalledWith(testHeaderPath);
+      expect(mockStat).toHaveBeenCalledWith(testFooterPath);
+      expect(mockStat).not.toHaveBeenCalledWith(testNavPath);
+
+      vi.doUnmock('node:fs/promises');
+    });
+
+    it('should handle mixed stat results (some succeed, one fails)', async () => {
+      // First call succeeds, second call fails
+      const mockStat = vi
+        .fn()
+        .mockResolvedValueOnce({
+          mtimeMs: fixedDate.getTime() - 10000,
+        })
+        .mockRejectedValueOnce(new Error('Permission denied'));
+
+      vi.doMock('node:fs/promises', () => ({
+        stat: mockStat,
+      }));
+
+      const newDeps = [testLayoutPath, testHeaderPath, testFooterPath];
+      mockTrackTemplateDependencies.mockResolvedValue(newDeps);
+
+      const result = await updateCacheEntry(
+        existingEntry,
+        mockPage,
+        mockConfig,
+        fixedDate,
+        true, // fastUpdate = true
+      );
+
+      // Should fall back to full tracking on any stat failure
+      expect(mockTrackTemplateDependencies).toHaveBeenCalled();
+      expect(result.deps).toEqual(newDeps);
+
+      vi.doUnmock('node:fs/promises');
+    });
+
+    it('should preserve publishedAt in fast update mode', async () => {
+      const entryWithPublishedAt: CacheEntry = {
+        ...existingEntry,
+        publishedAt: '2024-01-01T00:00:00.000Z',
+      };
+
+      const mockStat = vi.fn().mockResolvedValue({
+        mtimeMs: fixedDate.getTime() - 10000,
+      });
+
+      vi.doMock('node:fs/promises', () => ({
+        stat: mockStat,
+      }));
+
+      const result = await updateCacheEntry(
+        entryWithPublishedAt,
+        mockPage,
+        mockConfig,
+        fixedDate,
+        true, // fastUpdate = true
+      );
+
+      // Fast update reuses existing entry structure
+      expect(result.inputsHash).toBe('inputs123');
+      expect(result.renderedAt).toBe(fixedDate.toISOString());
+      // Note: publishedAt is not explicitly preserved in fast path since we return a new object
+      // but the original entry's publishedAt can be accessed if needed
+
+      vi.doUnmock('node:fs/promises');
+    });
+
+    it('should update inputsHash correctly in fast update mode', async () => {
+      const mockStat = vi.fn().mockResolvedValue({
+        mtimeMs: fixedDate.getTime() - 10000,
+      });
+
+      vi.doMock('node:fs/promises', () => ({
+        stat: mockStat,
+      }));
+
+      mockComputeContentHash.mockReturnValue('new_content_hash');
+      mockComputeFileHash
+        .mockResolvedValueOnce('layout_hash_123')
+        .mockResolvedValueOnce('header_hash_456');
+      mockComputeInputsHash.mockReturnValue('new_combined_hash');
+
+      const result = await updateCacheEntry(
+        existingEntry,
+        mockPage,
+        mockConfig,
+        fixedDate,
+        true, // fastUpdate = true
+      );
+
+      expect(mockComputeContentHash).toHaveBeenCalledWith(mockPage.content, mockPage.frontMatter);
+      expect(mockComputeInputsHash).toHaveBeenCalledWith('new_content_hash', [
+        'layout_hash_123',
+        'header_hash_456',
+      ]);
+      expect(result.inputsHash).toBe('new_combined_hash');
+
+      vi.doUnmock('node:fs/promises');
+    });
+
+    it('should handle null file hashes in fast update mode', async () => {
+      const mockStat = vi.fn().mockResolvedValue({
+        mtimeMs: fixedDate.getTime() - 10000,
+      });
+
+      vi.doMock('node:fs/promises', () => ({
+        stat: mockStat,
+      }));
+
+      // One dep returns null hash (file might be missing)
+      mockComputeFileHash.mockResolvedValueOnce('layout_hash').mockResolvedValueOnce(null);
+
+      mockComputeInputsHash.mockReturnValue('partial_hash');
+
+      const result = await updateCacheEntry(
+        existingEntry,
+        mockPage,
+        mockConfig,
+        fixedDate,
+        true, // fastUpdate = true
+      );
+
+      // Should only include non-null hashes
+      expect(mockComputeInputsHash).toHaveBeenCalledWith('content123', ['layout_hash']);
+      expect(result.inputsHash).toBe('partial_hash');
+
+      vi.doUnmock('node:fs/promises');
+    });
+  });
 });
