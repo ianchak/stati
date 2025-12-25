@@ -1,5 +1,24 @@
 # @stati/core
 
+## 1.22.0
+
+### Minor Changes
+
+- 5e6eed8: Improve dev server performance with comprehensive caching and concurrency management
+  - Cache markdown processor, templates, file hashes, and config in dev mode
+  - Add dev server lock manager to prevent multiple instances
+  - Optimize cache updates with fast mode that reuses existing deps
+  - Add batched pending changes queue for incremental rebuilds
+  - Skip TypeScript compilation in dev when bundles exist
+  - Add isDevelopment(), isProduction(), isTest() helpers
+
+### Patch Changes
+
+- 5e6eed8: Optimize search index and Tailwind inventory writes in dev mode
+  - Skip writes when content hash unchanged (search index and Tailwind inventory)
+  - Use MD5 hash for accurate change detection
+  - Escape single quotes in HTML output for security
+
 ## 1.21.0
 
 ### Minor Changes
