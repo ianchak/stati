@@ -746,7 +746,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
           const responseTime = Date.now() - requestStart;
 
           // Log slow responses with memory info
-          if (responseTime > 1000) {
+          if (responseTime > 2000) {
             const mem = process.memoryUsage();
             const heapMB = Math.round(mem.heapUsed / 1024 / 1024);
             const rssMB = Math.round(mem.rss / 1024 / 1024);
