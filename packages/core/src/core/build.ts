@@ -875,7 +875,7 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
   }
 
   // Pre-compute search index filename if search is enabled
-  // In dev mode, use a stable filename to avoid accumulating old index files
+  // In dev mode, use a stable filename to simlplify testing and debugging
   let searchIndexFilename: string | undefined;
   if (config.search?.enabled) {
     const buildId = isDevMode ? 'dev' : buildStartTime.toString();
