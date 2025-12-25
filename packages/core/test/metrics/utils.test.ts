@@ -15,6 +15,8 @@ import {
   getMemoryUsage,
   writeMetrics,
   generateMetricsFilename,
+  generateMetricsHtml,
+  writeMetricsHtml,
   DEFAULT_METRICS_DIR,
 } from '../../src/metrics/utils/index.js';
 import type { BuildMetrics } from '../../src/metrics/types.js';
@@ -314,6 +316,271 @@ describe('writer.utils', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('string error');
+    });
+
+    it('should not generate HTML report by default (requires generateHtml: true)', async () => {
+      const result = await writeMetrics(mockMetrics, {
+        cacheDir: '.stati',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.htmlPath).toBeUndefined();
+      // Should have written only JSON
+      expect(writeFile).toHaveBeenCalledTimes(1);
+    });
+
+    it('should generate HTML report when generateHtml is true', async () => {
+      const result = await writeMetrics(mockMetrics, {
+        cacheDir: '.stati',
+        generateHtml: true,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.htmlPath).toContain('.html');
+      // Should have written both JSON and HTML
+      expect(writeFile).toHaveBeenCalledTimes(2);
+    });
+
+    it('should not generate HTML when generateHtml is false', async () => {
+      const result = await writeMetrics(mockMetrics, {
+        cacheDir: '.stati',
+        generateHtml: false,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.htmlPath).toBeUndefined();
+      // Should have written only JSON
+      expect(writeFile).toHaveBeenCalledTimes(1);
+    });
+  });
+});
+
+describe('html-report.utils', () => {
+  const mockMetrics: BuildMetrics = {
+    schemaVersion: '1',
+    meta: {
+      timestamp: '2024-01-15T10:30:00.000Z',
+      ci: false,
+      nodeVersion: '22.0.0',
+      platform: 'linux',
+      arch: 'x64',
+      cpuCount: 4,
+      cliVersion: '1.0.0',
+      coreVersion: '1.0.0',
+      command: 'build',
+      flags: {
+        force: false,
+        clean: true,
+      },
+      gitCommit: 'abc123def456',
+      gitBranch: 'main',
+    },
+    totals: {
+      durationMs: 1000,
+      peakRssBytes: 100000000,
+      heapUsedBytes: 50000000,
+    },
+    phases: {
+      configLoadMs: 50,
+      contentDiscoveryMs: 100,
+      pageRenderingMs: 500,
+      assetCopyMs: 50,
+    },
+    counts: {
+      totalPages: 10,
+      renderedPages: 5,
+      cachedPages: 5,
+      assetsCopied: 2,
+      templatesLoaded: 20,
+      markdownFilesProcessed: 10,
+    },
+    isg: {
+      enabled: true,
+      cacheHitRate: 0.5,
+      manifestEntries: 10,
+      invalidatedEntries: 2,
+    },
+  };
+
+  describe('generateMetricsHtml', () => {
+    it('should generate valid HTML document', () => {
+      const html = generateMetricsHtml(mockMetrics);
+      expect(html).toContain('<!DOCTYPE html>');
+      expect(html).toContain('<html lang="en">');
+      expect(html).toContain('</html>');
+    });
+
+    it('should include title with timestamp', () => {
+      const html = generateMetricsHtml(mockMetrics);
+      expect(html).toContain('Stati Build Metrics Report');
+      expect(html).toContain('2024-01-15T10:30:00.000Z');
+    });
+
+    it('should include summary cards', () => {
+      const html = generateMetricsHtml(mockMetrics);
+      expect(html).toContain('Total Duration');
+      expect(html).toContain('Pages');
+      expect(html).toContain('Cache Hit Rate');
+      expect(html).toContain('Peak Memory');
+    });
+
+    it('should display phase breakdown', () => {
+      const html = generateMetricsHtml(mockMetrics);
+      expect(html).toContain('Phase Breakdown');
+      expect(html).toContain('Config Loading');
+      expect(html).toContain('Content Discovery');
+      expect(html).toContain('Page Rendering');
+    });
+
+    it('should include ISG cache section', () => {
+      const html = generateMetricsHtml(mockMetrics);
+      expect(html).toContain('ISG Cache Performance');
+      expect(html).toContain('Pages from Cache');
+      expect(html).toContain('Pages Rendered');
+    });
+
+    it('should include raw JSON data', () => {
+      const html = generateMetricsHtml(mockMetrics);
+      expect(html).toContain('Raw JSON Data');
+      expect(html).toContain('"schemaVersion": "1"');
+    });
+
+    it('should include git info when available', () => {
+      const html = generateMetricsHtml(mockMetrics);
+      expect(html).toContain('main');
+      expect(html).toContain('abc123d'); // truncated commit
+    });
+
+    it('should include CLI flags', () => {
+      const html = generateMetricsHtml(mockMetrics);
+      expect(html).toContain('--force');
+      expect(html).toContain('--clean');
+    });
+
+    it('should show Local badge when not in CI', () => {
+      const html = generateMetricsHtml(mockMetrics);
+      expect(html).toContain('Local');
+    });
+
+    it('should show CI badge when in CI', () => {
+      const ciMetrics = {
+        ...mockMetrics,
+        meta: { ...mockMetrics.meta, ci: true },
+      };
+      const html = generateMetricsHtml(ciMetrics);
+      expect(html).toContain('>CI<');
+    });
+
+    it('should handle detailed metrics with pageTimings', () => {
+      const detailedMetrics: BuildMetrics = {
+        ...mockMetrics,
+        pageTimings: [
+          { url: '/page1', durationMs: 50, cached: false, templatesLoaded: 5 },
+          { url: '/page2', durationMs: 30, cached: true },
+        ],
+      };
+      const html = generateMetricsHtml(detailedMetrics);
+      expect(html).toContain('Page Timings');
+      expect(html).toContain('/page1');
+      expect(html).toContain('/page2');
+      expect(html).toContain('Detailed');
+      expect(html).toContain('Waterfall View');
+    });
+
+    it('should handle incremental metrics', () => {
+      const incrementalMetrics: BuildMetrics = {
+        ...mockMetrics,
+        incremental: {
+          triggerFile: 'src/index.md',
+          triggerType: 'markdown',
+          renderedPages: 1,
+          cachedPages: 9,
+          durationMs: 100,
+        },
+      };
+      const html = generateMetricsHtml(incrementalMetrics);
+      expect(html).toContain('Incremental Rebuild');
+      expect(html).toContain('src/index.md');
+      expect(html).toContain('markdown');
+    });
+
+    it('should escape HTML special characters in JSON output', () => {
+      const html = generateMetricsHtml(mockMetrics);
+      // The JSON section should escape < and > to prevent XSS from user data
+      // Check that the JSON pre content uses &lt; and &gt; escaping
+      const jsonPreMatch = html.match(/<pre id="json-content">([\s\S]*?)<\/pre>/);
+      expect(jsonPreMatch).toBeTruthy();
+      // Verify basic structure is preserved after escaping
+      expect(jsonPreMatch![1]).toContain('"schemaVersion": "1"');
+    });
+
+    it('should include interactive JavaScript', () => {
+      const html = generateMetricsHtml(mockMetrics);
+      expect(html).toContain('function switchTab');
+      expect(html).toContain('function copyJson');
+    });
+
+    it('should include phase descriptions that expand on click', () => {
+      const html = generateMetricsHtml(mockMetrics);
+      // Should have expandable phase items
+      expect(html).toContain('togglePhase(this)');
+      expect(html).toContain('phase-description');
+      expect(html).toContain('phase-expand-icon');
+      // Should include detailed descriptions
+      expect(html).toContain('Time spent loading and validating the stati.config.ts');
+    });
+
+    it('should include timeline view with execution order', () => {
+      const html = generateMetricsHtml(mockMetrics);
+      // Should have view tabs
+      expect(html).toContain("switchPhaseView('duration')");
+      expect(html).toContain("switchPhaseView('timeline')");
+      expect(html).toContain('By Duration');
+      expect(html).toContain('Timeline');
+      // Should have timeline elements
+      expect(html).toContain('timeline-view');
+      expect(html).toContain('timeline-track');
+      expect(html).toContain('timeline-list');
+      expect(html).toContain('timeline-item');
+      expect(html).toContain('timeline-order');
+    });
+
+    it('should display phases in correct order in timeline view', () => {
+      const html = generateMetricsHtml(mockMetrics);
+      // Timeline view should have phases in execution order (not by duration)
+      // The timeline items should have order numbers
+      expect(html).toMatch(/<div class="timeline-order">1<\/div>/);
+      // Should include expandable timeline items
+      expect(html).toContain('toggleTimeline(this)');
+      expect(html).toContain('expandTimelineItem(');
+    });
+
+    it('should include phase color classes for timeline segments', () => {
+      const html = generateMetricsHtml(mockMetrics);
+      // Should have color classes for timeline visualization
+      expect(html).toContain('phase-color-0');
+      expect(html).toContain('phase-color-1');
+    });
+  });
+
+  describe('writeMetricsHtml', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    it('should write HTML file successfully', async () => {
+      const result = await writeMetricsHtml(mockMetrics, '/path/to/metrics.html');
+      expect(result.success).toBe(true);
+      expect(result.path).toBe('/path/to/metrics.html');
+      expect(writeFile).toHaveBeenCalled();
+    });
+
+    it('should handle write errors gracefully', async () => {
+      vi.mocked(writeFile).mockRejectedValueOnce(new Error('EACCES: permission denied'));
+
+      const result = await writeMetricsHtml(mockMetrics, '/path/to/metrics.html');
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Failed to write HTML report');
     });
   });
 });

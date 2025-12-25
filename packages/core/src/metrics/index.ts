@@ -61,6 +61,9 @@ export {
   writeMetrics,
   generateMetricsFilename,
   DEFAULT_METRICS_DIR,
+  // HTML report utilities
+  generateMetricsHtml,
+  writeMetricsHtml,
   // System utilities
   isCI,
   getGitCommit,

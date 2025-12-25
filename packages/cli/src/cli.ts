@@ -66,6 +66,10 @@ const cli = yargs(hideBin(process.argv))
         .option('metrics-detailed', {
           type: 'boolean',
           description: 'Include per-page timing in metrics',
+        })
+        .option('metrics-html', {
+          type: 'boolean',
+          description: 'Generate HTML report alongside JSON metrics',
         }),
     async (argv) => {
       // Check for metrics enabled via environment or flag
@@ -154,10 +158,14 @@ const cli = yargs(hideBin(process.argv))
           const writeResult = await writeMetrics(result.buildMetrics, {
             cacheDir,
             outputPath: metricsOutputPath,
+            generateHtml: !!argv['metrics-html'],
           });
 
           if (writeResult.success && writeResult.path) {
             log.status(`Metrics written to ${writeResult.path}`);
+            if (writeResult.htmlPath) {
+              log.status(`HTML report written to ${writeResult.htmlPath}`);
+            }
           } else if (!writeResult.success) {
             const targetPath = metricsOutputPath || `${cacheDir}/metrics/`;
             log.error(
