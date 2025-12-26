@@ -1,19 +1,19 @@
 import { performance } from 'node:perf_hooks';
 
 /**
- * Ice Blue Mono-Hue Palette — Single source of truth for CLI colors
+ * Ice Blue Mono-Hue Palette - Single source of truth for CLI colors
  */
 const palette = {
   // Brand hue family (Ice Blue)
-  brandStrong: '#bae6fd', // sky-200 — numbers, emphasis, stats
-  brand: '#38bdf8', // sky-400 — headers, step indicators, folders
-  brandDim: '#0ea5e9', // sky-500 — gradient start, subtle brand
+  brandStrong: '#bae6fd', // sky-200 - numbers, emphasis, stats
+  brand: '#38bdf8', // sky-400 - headers, step indicators, folders
+  brandDim: '#0ea5e9', // sky-500 - gradient start, subtle brand
 
   // Neutral ramp
-  fg: '#e5e7eb', // gray-200 — default foreground (rarely used)
-  muted: '#94a3b8', // slate-400 — labels, file paths
-  dim: '#64748b', // slate-500 — timing, metadata
-  faint: '#475569', // slate-600 — very subtle elements
+  fg: '#e5e7eb', // gray-200 - default foreground (rarely used)
+  muted: '#94a3b8', // slate-400 - labels, file paths
+  dim: '#64748b', // slate-500 - timing, metadata
+  faint: '#475569', // slate-600 - very subtle elements
 
   // Status glyph colors (glyph/prefix only, not full message)
   successGlyph: '#22c55e', // green-500

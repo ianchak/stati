@@ -26,7 +26,7 @@ A reusable template wrapper that provides consistent structure (header, footer, 
 
 ## Partials
 
-Reusable template fragments stored in underscore-prefixed directories (e.g., `_partials/`, `_components/`). Include them via `stati.partials.header`. Stati uses a **flat namespace** for partials — the file name becomes the partial name regardless of subdirectory.
+Reusable template fragments stored in underscore-prefixed directories (e.g., `_partials/`, `_components/`). Include them via `stati.partials.header`. Stati uses a **flat namespace** for partials - the file name becomes the partial name regardless of subdirectory.
 
 ## Callable Partials
 

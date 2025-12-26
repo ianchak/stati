@@ -188,7 +188,7 @@ The `counts` object tracks quantities processed during the build:
 
 #### Templates Loaded
 
-The `templatesLoaded` counter tracks the total number of Eta templates (layouts and partials) loaded during the build. This is an **accumulated total** across all rendered pages—if 5 pages each load 4 templates, `templatesLoaded` will be 20.
+The `templatesLoaded` counter tracks the total number of Eta templates (layouts and partials) loaded during the build. This is an **accumulated total** across all rendered pages - if 5 pages each load 4 templates, `templatesLoaded` will be 20.
 
 When using `--metrics-detailed`, per-page template counts are also available in `pageTimings`:
 

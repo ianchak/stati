@@ -147,7 +147,7 @@ Example for preloading:
 
 ## Multiple Bundles
 
-Stati supports compiling multiple TypeScript bundles with per-page targeting. Instead of shipping a single bundle to all pages, you can define an array of bundles—each with its own entry point and glob-based patterns to control which pages receive which bundles.
+Stati supports compiling multiple TypeScript bundles with per-page targeting. Instead of shipping a single bundle to all pages, you can define an array of bundles, each with its own entry point and glob-based patterns to control which pages receive which bundles.
 
 ### BundleConfig Options
 

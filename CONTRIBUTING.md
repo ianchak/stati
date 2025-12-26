@@ -1,6 +1,6 @@
 # Contributing to Stati
 
-Thanks for your interest in contributing to **Stati** — a lightweight, TypeScript-first static site generator.
+Thanks for your interest in contributing to **Stati** - a lightweight, TypeScript-first static site generator.
 
 ---
 
@@ -87,7 +87,7 @@ npx stati invalidate "tag:news"
 
 - `stati build [--force] [--clean] [--include-drafts] [--config path]`
 - `stati dev [--port 3000] [--host localhost] [--open] [--config path]`
-- `stati invalidate [tag:foo|path:/x|age:3months]` — cache invalidation
+- `stati invalidate [tag:foo|path:/x|age:3months]` - cache invalidation
 
 ---
 
@@ -161,10 +161,10 @@ npm run test:ci        # Full CI pipeline including tests
 
 Every push and pull request triggers the CI workflow (`.github/workflows/ci.yml`):
 
-1. **Dependency Install** — `npm ci` with npm 11.5.1+
-2. **Build Packages** — `npm run build` (core → cli → create-stati)
-3. **Run Tests** — Vitest with coverage (perf tests excluded from CI)
-4. **Upload Coverage** — Reports sent to Codecov
+1. **Dependency Install** - `npm ci` with npm 11.5.1+
+2. **Build Packages** - `npm run build` (core → cli → create-stati)
+3. **Run Tests** - Vitest with coverage (perf tests excluded from CI)
+4. **Upload Coverage** - Reports sent to Codecov
 
 The pipeline runs on Ubuntu with Node.js 22. Version commits from the publish workflow are automatically skipped to prevent infinite loops.
 
@@ -268,4 +268,4 @@ npm run changeset:dry-run
 
 ## Thank You
 
-Your contributions make this project better. Whether you're fixing bugs, suggesting features, writing docs, or improving templates — you’re helping developers build faster, simpler static sites.
+Your contributions make this project better. Whether you're fixing bugs, suggesting features, writing docs, or improving templates - you're helping developers build faster, simpler static sites.

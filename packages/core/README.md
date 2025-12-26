@@ -1,6 +1,6 @@
 # @stati/core
 
-**The core engine powering Stati — a minimal, TypeScript-first static site generator that's fast to learn and even faster to build with.**
+**The core engine powering Stati - a minimal, TypeScript-first static site generator that's fast to learn and even faster to build with.**
 
 Built for developers who want modern tooling without the complexity. Write in Markdown, template with Eta, and deploy anywhere.
 
@@ -85,18 +85,18 @@ That's it! Your site is ready.
 
 ### For New Users
 
-- **Zero Configuration Required** — Works out of the box with sensible defaults
-- **Simple File Structure** — Markdown files automatically become pages
-- **Live Reload Built-In** — See changes instantly during development
-- **SEO Ready** — Automatic meta tags and structured data
+- **Zero Configuration Required** - Works out of the box with sensible defaults
+- **Simple File Structure** - Markdown files automatically become pages
+- **Live Reload Built-In** - See changes instantly during development
+- **SEO Ready** - Automatic meta tags and structured data
 
 ### For Advanced Users
 
-- **Programmatic API** — Full control over the build process
-- **TypeScript-First** — Complete type safety for configuration
-- **TypeScript Compilation** — Built-in esbuild for client-side TypeScript
-- **Extensible Hooks** — Customize every stage of the build
-- **Smart Caching** — Incremental builds with intelligent invalidation
+- **Programmatic API** - Full control over the build process
+- **TypeScript-First** - Complete type safety for configuration
+- **TypeScript Compilation** - Built-in esbuild for client-side TypeScript
+- **Extensible Hooks** - Customize every stage of the build
+- **Smart Caching** - Incremental builds with intelligent invalidation
 
 ---
 
@@ -217,7 +217,7 @@ This is all you need! Stati automatically enables:
 
 ### Extended Configuration (Common Options)
 
-Below are commonly used configuration options. This is **not a complete list** — see the [full configuration documentation](https://stati.build/configuration/) for all available options.
+Below are commonly used configuration options. This is **not a complete list** - see the [full configuration documentation](https://stati.build/configuration/) for all available options.
 
 ```javascript
 import { defineConfig } from '@stati/core';
@@ -451,11 +451,11 @@ Invalidate cache by tags, paths, patterns, or age.
 
 **Query Syntax:**
 
-- `tag:blog` — Invalidate pages with specific tag
-- `path:/posts` — Invalidate pages under path
-- `glob:/blog/**` — Invalidate by glob pattern
-- `age:3months` — Invalidate content younger than 3 months
-- No query — Clear entire cache
+- `tag:blog` - Invalidate pages with specific tag
+- `path:/posts` - Invalidate pages under path
+- `glob:/blog/**` - Invalidate by glob pattern
+- `age:3months` - Invalidate content younger than 3 months
+- No query - Clear entire cache
 
 **Examples:**
 
@@ -564,11 +564,11 @@ import type {
 
 Stati supports rich Markdown features out of the box:
 
-- **Front-matter** — YAML, TOML, or JSON metadata
-- **Plugins** — Full markdown-it ecosystem compatibility
-- **Syntax highlighting** — Code blocks with language support
-- **Custom rendering** — Configure parser behavior
-- **Draft mode** — Mark pages as `draft: true`
+- **Front-matter** - YAML, TOML, or JSON metadata
+- **Plugins** - Full markdown-it ecosystem compatibility
+- **Syntax highlighting** - Code blocks with language support
+- **Custom rendering** - Configure parser behavior
+- **Draft mode** - Mark pages as `draft: true`
 
 **Example with plugins:**
 
@@ -588,11 +588,11 @@ export default defineConfig({
 
 Powered by [Eta](https://eta.js.org) for fast, flexible templates:
 
-- **Layouts** — Template inheritance via `layout` property
-- **Partials** — Reusable components
-- **Custom filters** — Transform data in templates
-- **Type-safe helpers** — Access page data with autocomplete
-- **Hot reload** — See template changes instantly
+- **Layouts** - Template inheritance via `layout` property
+- **Partials** - Reusable components
+- **Custom filters** - Transform data in templates
+- **Type-safe helpers** - Access page data with autocomplete
+- **Hot reload** - See template changes instantly
 
 **Template structure:**
 
@@ -617,10 +617,10 @@ Powered by [Eta](https://eta.js.org) for fast, flexible templates:
 
 Automatic navigation hierarchy based on your file structure:
 
-- **Auto-generated tree** — Reflects directory structure
-- **Breadcrumbs** — Parent-child relationships
-- **Custom ordering** — Use `order` in front-matter
-- **Index pages** — Special handling for `index.md`
+- **Auto-generated tree** - Reflects directory structure
+- **Breadcrumbs** - Parent-child relationships
+- **Custom ordering** - Use `order` in front-matter
+- **Index pages** - Special handling for `index.md`
 
 **Access in templates:**
 
@@ -644,21 +644,21 @@ Automatic navigation hierarchy based on your file structure:
 
 Built for productivity:
 
-- **Live reload** — WebSocket-based instant updates
-- **Fast rebuilds** — Only rebuild changed pages
-- **Error overlay** — See build errors in browser
-- **Static assets** — Served from `public/` directory
-- **Source maps** — Debug with original code
+- **Live reload** - WebSocket-based instant updates
+- **Fast rebuilds** - Only rebuild changed pages
+- **Error overlay** - See build errors in browser
+- **Static assets** - Served from `public/` directory
+- **Source maps** - Debug with original code
 
 ### Caching & Performance
 
 Smart caching for lightning-fast builds:
 
-- **Modification tracking** — Rebuild only changed files
-- **Incremental builds** — Skip unchanged pages
-- **Tag invalidation** — Update related content together
-- **TTL-based refresh** — Control cache lifetime
-- **Age-based rules** — Different TTL for old content
+- **Modification tracking** - Rebuild only changed files
+- **Incremental builds** - Skip unchanged pages
+- **Tag invalidation** - Update related content together
+- **TTL-based refresh** - Control cache lifetime
+- **Age-based rules** - Different TTL for old content
 
 **Cache strategies:**
 
@@ -745,11 +745,11 @@ export default defineConfig({
 
 ## Learn More
 
-- [**Full Documentation**](https://stati.build) — Complete guides and tutorials
-- [**Configuration Guide**](https://stati.build/configuration/file/) — All options explained
-- [**API Reference**](https://stati.build/api/reference/) — Detailed API docs
-- [**Examples**](https://stati.build/examples/list/) — Real-world projects
-- [**Contributing**](https://github.com/ianchak/stati/blob/main/CONTRIBUTING.md) — Help improve Stati
+- [**Full Documentation**](https://stati.build) - Complete guides and tutorials
+- [**Configuration Guide**](https://stati.build/configuration/file/) - All options explained
+- [**API Reference**](https://stati.build/api/reference/) - Detailed API docs
+- [**Examples**](https://stati.build/examples/list/) - Real-world projects
+- [**Contributing**](https://github.com/ianchak/stati/blob/main/CONTRIBUTING.md) - Help improve Stati
 
 ---
 
@@ -757,19 +757,19 @@ export default defineConfig({
 
 Stati Core is built on these principles:
 
-- **Simplicity First** — Sensible defaults that just work
-- **Performance Matters** — Fast builds, smart caching
-- **Developer Experience** — Great tooling, clear errors
-- **Type Safety** — TypeScript throughout
-- **Extensibility** — Customize when you need to
+- **Simplicity First** - Sensible defaults that just work
+- **Performance Matters** - Fast builds, smart caching
+- **Developer Experience** - Great tooling, clear errors
+- **Type Safety** - TypeScript throughout
+- **Extensibility** - Customize when you need to
 
 ---
 
 ## Support & Community
 
-- [GitHub Issues](https://github.com/ianchak/stati/issues) — Report bugs or request features
-- [Discussions](https://github.com/ianchak/stati/discussions) — Ask questions, share ideas
-- [Documentation](https://stati.build) — Comprehensive guides
+- [GitHub Issues](https://github.com/ianchak/stati/issues) - Report bugs or request features
+- [Discussions](https://github.com/ianchak/stati/discussions) - Ask questions, share ideas
+- [Documentation](https://stati.build) - Comprehensive guides
 
 ---
 

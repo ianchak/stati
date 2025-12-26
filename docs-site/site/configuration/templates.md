@@ -310,7 +310,7 @@ When TypeScript is enabled, Stati provides access to compiled bundle paths via `
 
 ### Auto-Injection (Default Behavior)
 
-By default, Stati **automatically injects** all matched bundle scripts before the closing `</body>` tag. You don't need to add script tags manually—they're handled for you during both development and production builds.
+By default, Stati **automatically injects** all matched bundle scripts before the closing `</body>` tag. You don't need to add script tags manually - they're handled for you during both development and production builds.
 
 ### Accessing Bundle Paths
 

@@ -137,10 +137,10 @@ npm test -- --watch
 
 Every push and pull request triggers the CI workflow (`.github/workflows/ci.yml`):
 
-1. **Dependency Install** — `npm ci` with npm 11.5.1+
-2. **Build Packages** — `npm run build` (core → cli → create-stati)
-3. **Run Tests** — Vitest with coverage (perf tests excluded from CI)
-4. **Upload Coverage** — Reports sent to Codecov
+1. **Dependency Install** - `npm ci` with npm 11.5.1+
+2. **Build Packages** - `npm run build` (core → cli → create-stati)
+3. **Run Tests** - Vitest with coverage (perf tests excluded from CI)
+4. **Upload Coverage** - Reports sent to Codecov
 
 The pipeline runs on Ubuntu with Node.js 22. Version commits from the publish workflow are automatically skipped.
 

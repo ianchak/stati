@@ -67,7 +67,7 @@ stati dev
 stati build
 ```
 
-> **Note:** The examples below show commands as `stati <command>` for brevity. Use whichever method suits your workflow—the commands and options are identical.
+> **Note:** The examples below show commands as `stati <command>` for brevity. Use whichever method suits your workflow - the commands and options are identical.
 
 ## Available Commands
 
