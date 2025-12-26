@@ -220,7 +220,7 @@
   }
 
   .prose li {
-    @apply text-gray-600 dark:text-gray-300;
+    @apply text-gray-600 dark:text-gray-300 m-0;
   }
 
   .prose li::marker {

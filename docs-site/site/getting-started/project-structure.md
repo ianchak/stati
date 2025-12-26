@@ -179,7 +179,7 @@ Layouts and partials cascade down the directory tree:
 
 - **`index.md`** - Becomes the directory's homepage
 - **`site/blog/index.md`** → `/blog/`
-- **No index file** → Directory listing (if enabled)
+- **No index file** → 404 (add an `index.md` to make the directory accessible)
 
 ## Build Output
 
