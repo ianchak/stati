@@ -634,6 +634,32 @@ describe('SEO Generator - generateOpenGraphTags', () => {
     expect(tags.join('\n')).not.toContain('og:title" content="Page Title"');
   });
 
+  it('should fall back to site description when page has no description', () => {
+    const page = createMockPage({
+      frontMatter: {
+        title: 'Page Without Description',
+      },
+    });
+    const config = createMockConfig({
+      site: {
+        title: 'Test Site',
+        baseUrl: 'https://example.com',
+        description: 'Default site description for Open Graph',
+      },
+    });
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
+
+    const tags = generateOpenGraphTags(ctx);
+    expect(tags.join('\n')).toContain(
+      'og:description" content="Default site description for Open Graph"',
+    );
+  });
+
   it('should generate OG image with URL', () => {
     const page = createMockPage({
       frontMatter: {
@@ -841,6 +867,32 @@ describe('SEO Generator - generateTwitterCardTags', () => {
 
     const tags = generateTwitterCardTags(ctx);
     expect(tags.join('\n')).toContain('twitter:card" content="summary_large_image"');
+  });
+
+  it('should fall back to site description when page has no description', () => {
+    const page = createMockPage({
+      frontMatter: {
+        title: 'Page Without Description',
+      },
+    });
+    const config = createMockConfig({
+      site: {
+        title: 'Test Site',
+        baseUrl: 'https://example.com',
+        description: 'Default site description for Twitter Cards',
+      },
+    });
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
+
+    const tags = generateTwitterCardTags(ctx);
+    expect(tags.join('\n')).toContain(
+      'twitter:description" content="Default site description for Twitter Cards"',
+    );
   });
 
   it('should use custom card type', () => {
