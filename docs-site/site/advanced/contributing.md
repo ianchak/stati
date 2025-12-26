@@ -45,8 +45,6 @@ npm test
 npm run lint
 npm run typecheck
 
-# Optional: watch core package TypeScript
-npm run dev --workspace=@stati/core
 ```
 
 ### Project Structure
@@ -66,11 +64,11 @@ stati/
 │       ├── src/
 │       ├── tests/
 │       └── package.json
-├── examples/              # Example projects
+├── examples/              # Example projects (bundled with the scaffolder)
 │   ├── blog/
 │   ├── docs/
 │   └── blank/
-├── docs/                  # Project documentation
+├── docs-site/             # Project documentation site
 ├── scripts/               # Build and development scripts
 └── package.json           # Root package.json
 ```
@@ -135,63 +133,60 @@ npm test -- packages/core/src/__tests__/build.test.ts
 npm test -- --watch
 ```
 
-### Test Categories
+### CI Pipeline
 
-1. **Unit Tests** - Test individual functions and classes
-2. **Integration Tests** - Test component interactions
-3. **End-to-End Tests** - Test complete workflows
-4. **Example Tests** - Validate example projects
+Every push and pull request triggers the CI workflow (`.github/workflows/ci.yml`):
 
-Example test structure:
+1. **Dependency Install** — `npm ci` with npm 11.5.1+
+2. **Build Packages** — `npm run build` (core → cli → create-stati)
+3. **Run Tests** — Vitest with coverage (perf tests excluded from CI)
+4. **Upload Coverage** — Reports sent to Codecov
 
-```typescript
-// packages/core/src/__tests__/build.test.ts
-import { describe, it, expect } from 'vitest';
-import { build } from '../../core/build.js';
+The pipeline runs on Ubuntu with Node.js 22. Version commits from the publish workflow are automatically skipped.
 
-describe('build', () => {
-  it('returns build statistics', async () => {
-    const stats = await build({ force: true });
+### Performance Benchmarks
 
-    expect(stats.totalPages).toBeGreaterThanOrEqual(0);
-    expect(stats.assetsCount).toBeGreaterThanOrEqual(0);
-  });
-});
+Performance tests live in `packages/core/test/perf/` and measure build speed across scenarios:
+
+| Scenario | Description | Baseline |
+| -------- | ----------- | -------- |
+| Cold Build | Clean slate, no cache | ~300ms median |
+| Warm Build | No changes, high cache hit | ~80ms median |
+| Incremental | Single file change | ~90ms median |
+| Complex | Nested components, 100 pages | ~400ms median |
+
+Run benchmarks locally:
+
+```bash
+# Run perf tests (excluded from regular test runs)
+npx vitest run packages/core/test/perf
+
+# Benchmarks use 100 generated pages with warmup runs
 ```
 
+Baselines are defined in `perf/baselines/benchmark.json` with a 30% tolerance. Tests validate median duration and cache hit rates.
+
+### Build Metrics System
+
+Stati includes a metrics system for debugging performance issues. Enable it via CLI:
+
+```bash
+stati build --metrics                    # Write JSON to .stati/metrics/
+stati build --metrics --metrics-html     # Also generate HTML report
+stati build --metrics --metrics-detailed # Include per-page timings
+```
+
+**Metrics include:**
+
+- **Totals:** Duration, peak RSS, heap usage
+- **Phases:** Config load, content discovery, rendering, asset copy, etc.
+- **Counts:** Pages rendered, cache hits/misses, assets copied
+- **ISG:** Cache hit rate, skipped pages, rebuild reasons
+- **Per-page timing** (when `--metrics-detailed` is used)
+
+Metrics are written to `.stati/metrics/` as JSON files with timestamps. Use these to diagnose slow builds or cache inefficiencies.
+
 ## Contributing Guidelines
-
-### Types of Contributions
-
-**🐛 Bug Fixes**
-
-- Fix functionality issues
-- Improve error handling
-- Performance improvements
-
-**✨ New Features**
-
-- Add new Stati capabilities
-- Extend plugin system
-- Improve developer experience
-
-**📚 Documentation**
-
-- Fix typos and unclear sections
-- Add examples and tutorials
-- Improve API documentation
-
-**🧪 Testing**
-
-- Add test coverage
-- Improve test reliability
-- Add integration tests
-
-**🔧 Infrastructure**
-
-- Improve build process
-- CI/CD improvements
-- Development tooling
 
 ### Pull Request Process
 
@@ -289,49 +284,119 @@ export async function build(config: StatiConfig, options: BuildOptions = {}): Pr
 
 ### Error Handling
 
+Stati uses domain-specific error classes rather than a generic error class. Each error type captures relevant context for debugging:
+
 ```typescript
-// Use custom error classes
-export class StatiError extends Error {
+// Domain-specific errors with context
+export class ISGConfigurationError extends Error {
   constructor(
+    public readonly code: ISGValidationError,
+    public readonly field: string,
+    public readonly value: unknown,
     message: string,
-    public code: string,
-    public category: ErrorCategory,
   ) {
     super(message);
-    this.name = 'StatiError';
+    this.name = 'ISGConfigurationError';
   }
 }
 
-// Provide helpful error messages
-throw new StatiError(
-  `Template not found: ${templatePath}. ` + `Make sure the file exists and check the file path.`,
-  'TEMPLATE_NOT_FOUND',
-  'template',
-);
+// Error with dependency chain for debugging
+export class CircularDependencyError extends Error {
+  constructor(
+    public readonly dependencyChain: string[],
+    message: string,
+  ) {
+    super(message);
+    this.name = 'CircularDependencyError';
+  }
+}
+
+// Self-documenting error messages
+export class DuplicateBundleNameError extends Error {
+  constructor(duplicates: string[]) {
+    super(
+      `Duplicate bundleName(s) found in configuration: ${duplicates.join(', ')}. ` +
+        'Each bundle must have a unique bundleName.',
+    );
+    this.name = 'DuplicateBundleNameError';
+  }
+}
 ```
+
+**Guidelines:**
+
+- Create domain-specific error classes (e.g., `TemplateError`, `ISGConfigurationError`)
+- Include relevant context as public readonly properties
+- Provide actionable error messages that explain what went wrong and how to fix it
+- Use error codes (enums) for structured error identification where appropriate
 
 ### Performance Considerations
 
-```typescript
-// Use caching appropriately
-const cache = new Map<string, CachedItem>();
+Stati uses several patterns to optimize build performance:
 
-function expensiveOperation(input: string): Result {
-  if (cache.has(input)) {
-    return cache.get(input)!.result;
+**Module-level caches with clear functions:**
+
+```typescript
+// Cache expensive operations at module level
+const templatePathCache = new Map<string, string | null>();
+const templateContentCache = new Map<string, string | null>();
+
+// Clear at the start of each build
+export function clearTemplatePathCache(): void {
+  templatePathCache.clear();
+  templateContentCache.clear();
+}
+
+// Use cache in hot paths
+export async function computeFileHash(filePath: string): Promise<string | null> {
+  const normalizedPath = filePath.replace(/\\/g, '/');
+
+  if (fileHashCache.has(normalizedPath)) {
+    return fileHashCache.get(normalizedPath) ?? null;
   }
 
-  const result = doExpensiveWork(input);
-  cache.set(input, { result, timestamp: Date.now() });
-  return result;
-}
-
-// Optimize for common cases
-function processPages(pages: Page[]): ProcessedPage[] {
-  // Batch operations when possible
-  return pages.map((page) => processPage(page));
+  const hash = createSha256Hash(await readFile(filePath, 'utf-8'));
+  fileHashCache.set(normalizedPath, hash);
+  return hash;
 }
 ```
+
+**Bounded caches with LRU eviction:**
+
+```typescript
+const escapeHtmlCache = new Map<string, string>();
+const ESCAPE_CACHE_MAX_SIZE = 1000;
+
+export function escapeHtml(text: string): string {
+  const cached = escapeHtmlCache.get(text);
+  if (cached !== undefined) return cached;
+
+  const result = text.replace(/[&<>"']/g, (char) => htmlEscapes[char] || char);
+
+  // Clear when full to prevent unbounded growth
+  if (escapeHtmlCache.size >= ESCAPE_CACHE_MAX_SIZE) {
+    escapeHtmlCache.clear();
+  }
+  escapeHtmlCache.set(text, result);
+  return result;
+}
+```
+
+**Parallel I/O operations:**
+
+```typescript
+// Batch file writes in dev mode for Windows filesystem performance
+const uniqueDirs = [...new Set(pendingWrites.map((w) => dirname(w.outputPath)))];
+await Promise.all(uniqueDirs.map((dir) => ensureDir(dir)));
+await Promise.all(pendingWrites.map((w) => writeFile(w.outputPath, w.content, 'utf-8')));
+```
+
+**Guidelines:**
+
+- Use module-level `Map` caches with explicit `clear()` functions
+- Implement size limits on caches to prevent memory leaks
+- Batch I/O operations with `Promise.all` for parallel execution
+- Normalize paths before using as cache keys (`/` not `\`)
 
 ## Release Process
 
@@ -348,17 +413,20 @@ Stati follows [Semantic Versioning](https://semver.org/):
 We use [Changesets](https://github.com/changesets/changesets) for version management:
 
 ```bash
-# Add a changeset
-npx changeset
+# Create a changeset manually
+npm run changeset
 
-# Version packages
-npx changeset version
+# Check pending changes
+npm run changeset:status
 
-# Publish packages
-npx changeset publish
+# Auto-generate changesets from commits (used by CI)
+npm run changeset:generate
+
+# Preview version changes
+npm run changeset:dry-run
 ```
 
-Example changeset:
+Changeset messages should be a brief summary of the changes made:
 
 ```markdown
 ---
@@ -366,18 +434,8 @@ Example changeset:
 '@stati/cli': patch
 ---
 
-Add ISG aging algorithm for intelligent cache TTL management. This feature automatically adjusts cache durations based on content age, improving performance for sites with mixed content freshness.
+Add ISG aging algorithm for cache TTL management
 ```
-
-### Release Notes
-
-Each release includes:
-
-- **New Features** with examples
-- **Bug Fixes** with issue references
-- **Breaking Changes** with migration guides
-- **Performance Improvements**
-- **Documentation Updates**
 
 ## Documentation
 
@@ -464,22 +522,6 @@ Contributors are recognized in:
 - **Changelog** for each release
 - **Contributors** section in README
 - **All Contributors** bot acknowledgment
-
-## Roadmap
-
-### Current Priorities
-
-1. **Performance validation**
-  - Benchmark build and cache behaviour using the bundled examples.
-  - Track Incremental Static Generation cache metrics.
-
-1. **Developer experience**
-  - Improve diagnostic output in the CLI.
-  - Expand automated test coverage for build edge cases.
-
-1. **Documentation coverage**
-  - Keep this docs-site in sync with shipped features.
-  - Add walkthroughs for the blank template workflow.
 
 ## Getting Started Contributing
 

@@ -1,6 +1,6 @@
 # Stati
 
-**A minimal, TypeScript-first static site generator that's fast to learn and even faster to build with.**
+**A feature-packed, TypeScript-first static site generator that's fast to learn and even faster to build with.**
 
 Built for developers who want modern tooling without the complexity. Write in Markdown, template with Eta, and deploy anywhere.
 
@@ -216,9 +216,8 @@ export default defineConfig({
 
   // Markdown processing
   markdown: {
+    toc: true, // TOC + heading anchors (default: true)
     plugins: [
-      'anchor',                                      // Add anchor links to headings
-      'toc-done-right',                             // Table of contents
       ['external-links', { externalTarget: '_blank' }], // Open external links in new tab
     ],
     configure: (md) => {
@@ -277,14 +276,14 @@ export default defineConfig({
   dev: {
     port: 3000,
     host: 'localhost',
-    open: true,               // Auto-open browser
+    open: false,              // Auto-open browser (default: false)
   },
 
   // TypeScript compilation (opt-in)
   typescript: {
     enabled: true,            // Enable TypeScript compilation
     srcDir: 'src',            // Source directory (default: 'src')
-    entryPoint: 'main.ts',    // Entry file (default: 'main.ts')
+    // If bundles omitted, defaults to [{ entryPoint: 'main.ts', bundleName: 'main' }]
     // hash and minify are automatic based on build mode
   },
 

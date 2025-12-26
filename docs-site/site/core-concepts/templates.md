@@ -90,6 +90,7 @@ In your templates, you have access to:
 <%= stati.site.title %>     <!-- Site title from config -->
 <%= stati.site.baseUrl %>   <!-- Site base URL -->
 <%= stati.site.defaultLocale %> <!-- Default locale (optional) -->
+<%= stati.site.description %> <!-- Default site description (optional) -->
 
 <!-- Generator data -->
 <%= stati.generator.version %> <!-- Stati core version -->

@@ -76,6 +76,7 @@ stati dev [options]
 **Options:**
 
 - `--port <number>` - Server port (default: 3000)
+- `--host <string>` - Host address (default: localhost)
 - `--open` - Open browser automatically
 - `--config <path>` - Path to custom config file
 

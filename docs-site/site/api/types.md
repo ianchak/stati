@@ -91,6 +91,9 @@ interface SiteConfig {
 
   /** Default locale for internationalization (optional) */
   defaultLocale?: string;
+
+  /** Default site description for meta tags (used as fallback when page has no description) */
+  description?: string;
 }
 ```
 

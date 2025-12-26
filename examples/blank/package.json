@@ -20,8 +20,8 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@stati/cli": "^1.11.0",
-    "@stati/core": "^1.18.0"
+    "@stati/cli": "^1.13.0",
+    "@stati/core": "^1.22.0"
   },
   "engines": {
     "node": ">=22.0.0"

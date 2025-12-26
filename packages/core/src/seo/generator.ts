@@ -99,7 +99,7 @@ export function generateSEOMetadata(ctx: SEOContext): string {
 
   // Description meta tag
   if (shouldGenerate(SEOTagType.Description)) {
-    const description = seo.description || page.frontMatter.description;
+    const description = seo.description || page.frontMatter.description || config.site.description;
     if (description) {
       meta.push(`<meta name="description" content="${escapeHtml(description)}">`);
     }
@@ -177,7 +177,8 @@ export function generateOpenGraphTags(ctx: SEOContext): string[] {
 
   // Basic OG tags with fallback chain
   const ogTitle = og.title || seo.title || page.frontMatter.title || config.site.title;
-  const ogDescription = og.description || seo.description || page.frontMatter.description;
+  const ogDescription =
+    og.description || seo.description || page.frontMatter.description || config.site.description;
   const ogUrl = og.url || seo.canonical || resolveAbsoluteUrl(page.url || '/', siteUrl);
   const ogType = og.type || 'website';
   const ogSiteName = og.siteName || config.site.title;
@@ -286,7 +287,11 @@ export function generateTwitterCardTags(ctx: SEOContext): string[] {
 
   // Title and description with fallback chains
   const twitterTitle = twitter.title || seo.title || page.frontMatter.title || config.site.title;
-  const twitterDescription = twitter.description || seo.description || page.frontMatter.description;
+  const twitterDescription =
+    twitter.description ||
+    seo.description ||
+    page.frontMatter.description ||
+    config.site.description;
 
   tags.push(`<meta name="twitter:title" content="${escapeHtml(twitterTitle)}">`);
   if (twitterDescription) {
