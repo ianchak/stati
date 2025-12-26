@@ -1,6 +1,6 @@
 # Stati
 
-**A minimal, TypeScript-first static site generator that's fast to learn and even faster to build with.**
+**A feature-packed, TypeScript-first static site generator that's fast to learn and even faster to build with.**
 
 Built for developers who want modern tooling without the complexity. Write in Markdown, template with Eta, and deploy anywhere.
 
