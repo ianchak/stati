@@ -128,29 +128,44 @@ export default defineConfig({
     // Custom filters for Eta templates
     filters: {
       // Date formatting
-      date: (date, format = 'long') => {
+      date: (date) => {
         return new Intl.DateTimeFormat('en-US', {
-          dateStyle: format,
+          dateStyle: 'long',
         }).format(new Date(date));
       },
 
       // Slugify text
       slug: (text) => {
-        return text
+        return String(text)
           .toLowerCase()
           .replace(/[^\w\s-]/g, '')
           .replace(/[\s_-]+/g, '-')
           .replace(/^-+|-+$/g, '');
       },
 
-      // Truncate text
-      truncate: (text, length = 150) => {
-        if (text.length <= length) return text;
-        return text.slice(0, length) + '...';
-      },
+      // Uppercase transform
+      upper: (text) => String(text).toUpperCase(),
     },
   },
 });
+```
+
+> **Note:** Filters are added to the `stati` context and called as functions.
+
+**Using filters in templates:**
+
+```eta
+<!-- Apply date filter -->
+<time><%= stati.date(stati.page.date) %></time>
+
+<!-- Apply slug filter -->
+<a href="/<%= stati.slug(stati.page.title) %>/">Link</a>
+
+<!-- Apply uppercase filter -->
+<span><%= stati.upper(stati.page.category) %></span>
+
+<!-- Chain filters -->
+<span><%= stati.upper(stati.slug(stati.page.title)) %></span>
 ```
 
 ### ISG Configuration
@@ -212,6 +227,12 @@ export default defineConfig({
 });
 ```
 
+**Available Options:**
+
+- `port` (number) - Port for development server (default: 3000)
+- `host` (string) - Host to bind to (default: 'localhost')
+- `open` (boolean) - Whether to open browser automatically (default: false)
+
 ### Preview Server
 
 Configure the preview server:
@@ -226,6 +247,12 @@ export default defineConfig({
   },
 });
 ```
+
+**Available Options:**
+
+- `port` (number) - Port for preview server (default: 4000)
+- `host` (string) - Host to bind to (default: 'localhost')
+- `open` (boolean) - Whether to open browser automatically (default: false)
 
 > **Note:** CLI options (e.g., `stati dev --port 8080` or `stati preview --port 8080`) take precedence over config file settings.
 
@@ -287,35 +314,6 @@ interface PageContext {
   page: PageModel;      // The page being processed
   config: StatiConfig;  // The resolved configuration
 }
-```
-
-## Environment-based Configuration
-
-You can use environment variables to configure your site differently for development, staging, and production:
-
-```javascript
-// stati.config.js
-const isDev = process.env.NODE_ENV === 'development';
-const isProd = process.env.NODE_ENV === 'production';
-
-export default defineConfig({
-  site: {
-    title: 'My Site',
-    baseUrl: isProd ? 'https://my-site.com' : 'http://localhost:3000',
-  },
-
-  // Enable ISG only in production
-  isg: {
-    enabled: isProd,
-    ttlSeconds: isProd ? 3600 : 0,
-  },
-
-  // Development server configuration
-  dev: {
-    port: parseInt(process.env.PORT || '3000'),
-    open: isDev,
-  },
-});
 ```
 
 ### Multiple Configuration Files
