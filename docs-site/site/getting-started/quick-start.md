@@ -30,12 +30,14 @@ Use the Stati scaffolder to create a new project:
 npx create-stati my-first-site
 ```
 
-This will:
+The scaffolder will prompt you for:
 
-- Create a new directory called `my-first-site`
-- Copy the blank starter template into that directory
-- Prepare `package.json` with Stati scripts and metadata
-- Offer to initialize a git repository if you enable it during the prompt
+- **Template** - Choose from available starters (blank is the default)
+- **CSS solution** - Plain CSS, Sass/SCSS, or Tailwind CSS
+- **TypeScript** - Enable TypeScript support for your project
+- **Git initialization** - Initialize a git repository (enabled by default)
+- **Install dependencies** - Run package installation automatically (enabled by default)
+- **Package manager** - Choose npm, yarn, pnpm, or bun (if multiple are available)
 
 Navigate to your new project:
 
@@ -70,11 +72,13 @@ Start the development server to see your site:
 npm run dev
 ```
 
-- Start the development server (usually on [http://localhost:3000](http://localhost:3000))
-- Watch for file changes
-- Automatically reload the browser when you make changes
+The dev server will:
 
-Open your browser and navigate to the URL shown in the terminal (typically [http://localhost:3000](http://localhost:3000)).
+- Serve your site at [http://localhost:3000](http://localhost:3000) (configurable)
+- Watch for file changes in `site/` and `public/`
+- Automatically rebuild and reload the browser when you save changes
+
+Open your browser and navigate to the URL shown in the terminal.
 
 ## Step 4: Edit Your First Page
 
@@ -227,18 +231,22 @@ export default defineConfig({
     baseUrl: 'https://my-site.com', // Your domain when deployed
   },
 
-  // Enable development features
   dev: {
     port: 3000,
     open: true,
   },
 
-  // Markdown configuration
-  markdown: {
-    options: {
-      linkify: true,
-      typographer: true,
-    },
+  // Generate sitemap.xml for search engines
+  sitemap: {
+    enabled: true,
+    defaultChangeFreq: 'weekly',
+    defaultPriority: 0.5,
+  },
+
+  // Generate robots.txt
+  robots: {
+    enabled: true,
+    sitemap: true, // Auto-include sitemap URL
   },
 });
 ```
@@ -289,5 +297,3 @@ Now that you have a working Stati site, explore these topics:
 - Check the [API Reference](/api/reference) for detailed documentation
 - Browse [Examples](/examples/list) for inspiration
 - Visit the [Contributing](/advanced/contributing) section to help improve Stati
-
-Congratulations! You've successfully created your first Stati site. Happy building! 🎉
