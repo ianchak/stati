@@ -27,6 +27,8 @@ export interface SiteConfig {
   readonly baseUrl: string;
   /** Default locale for internationalization (optional) */
   readonly defaultLocale?: string;
+  /** Default site description for meta tags (used as fallback when page has no description) */
+  readonly description?: string;
 }
 
 /**

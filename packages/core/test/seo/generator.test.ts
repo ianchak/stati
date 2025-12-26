@@ -106,6 +106,32 @@ describe('SEO Generator - generateSEOMetadata', () => {
     expect(result).toContain('<meta name="description" content="A test page description">');
   });
 
+  it('should fall back to site description when page has no description', () => {
+    const page = createMockPage({
+      frontMatter: {
+        title: 'Page Without Description',
+      },
+    });
+    const config = createMockConfig({
+      site: {
+        title: 'Test Site',
+        baseUrl: 'https://example.com',
+        description: 'Default site description for all pages',
+      },
+    });
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
+
+    const result = generateSEOMetadata(ctx);
+    expect(result).toContain(
+      '<meta name="description" content="Default site description for all pages">',
+    );
+  });
+
   it('should generate keywords from tags array', () => {
     const page = createMockPage({
       frontMatter: {

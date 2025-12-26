@@ -82,6 +82,32 @@ Common locale formats:
 - `'fr-FR'` - French (France)
 - `'de-DE'` - German (Germany)
 
+#### `description` (optional)
+
+Default site description used as a fallback for meta tags when a page doesn't have its own description.
+
+```javascript
+export default defineConfig({
+  site: {
+    title: 'My Site',
+    baseUrl: 'https://example.com',
+    description: 'A modern static site built with Stati',
+  },
+});
+```
+
+This description is used as the last fallback in the description chain:
+
+1. Page frontmatter `seo.description`
+2. Page frontmatter `description`
+3. Site config `description` (this field)
+
+The site description appears in:
+
+- `<meta name="description">` tag
+- `<meta property="og:description">` (Open Graph)
+- `<meta name="twitter:description">` (Twitter Cards)
+
 ## Author Configuration
 
 Author information is configured through the `seo.defaultAuthor` property, not the `site` object:
