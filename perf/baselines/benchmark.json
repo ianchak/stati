@@ -2,7 +2,7 @@
   "$schema": "./baseline.schema.json",
   "version": "1",
   "description": "Performance baselines for Stati build benchmarks",
-  "updated": "2024-12-20T00:00:00.000Z",
+  "updated": "2024-12-26T00:00:00.000Z",
   "environment": {
     "nodeVersion": "22",
     "pageCount": 100,
@@ -10,24 +10,24 @@
   },
   "thresholds": {
     "coldBuild": {
-      "medianMs": 300,
-      "p95Ms": 450,
+      "medianMs": 220,
+      "p95Ms": 300,
       "tolerance": 0.3
     },
     "warmBuild": {
-      "medianMs": 80,
-      "p95Ms": 150,
+      "medianMs": 50,
+      "p95Ms": 80,
       "tolerance": 0.3,
       "minCacheHitRate": 0.95
     },
     "incrementalBuild": {
-      "medianMs": 90,
-      "p95Ms": 150,
+      "medianMs": 55,
+      "p95Ms": 90,
       "tolerance": 0.3
     },
     "complexBuild": {
-      "medianMs": 400,
-      "p95Ms": 550,
+      "medianMs": 280,
+      "p95Ms": 380,
       "tolerance": 0.3
     }
   }
