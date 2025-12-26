@@ -159,6 +159,74 @@ describe('build', () => {
 });
 ```
 
+### CI Pipeline
+
+Every push and pull request triggers the CI workflow (`.github/workflows/ci.yml`):
+
+1. **Dependency Install** — `npm ci` with npm 11.5.1+
+2. **Build Packages** — `npm run build` (core → cli → create-stati)
+3. **Run Tests** — Vitest with coverage (perf tests excluded from CI)
+4. **Upload Coverage** — Reports sent to Codecov
+
+The pipeline runs on Ubuntu with Node.js 22. Version commits from the publish workflow are automatically skipped.
+
+### Performance Benchmarks
+
+Performance tests live in `packages/core/test/perf/` and measure build speed across scenarios:
+
+| Scenario | Description | Baseline |
+| -------- | ----------- | -------- |
+| Cold Build | Clean slate, no cache | ~300ms median |
+| Warm Build | No changes, high cache hit | ~80ms median |
+| Incremental | Single file change | ~90ms median |
+| Complex | Nested components, 100 pages | ~400ms median |
+
+Run benchmarks locally:
+
+```bash
+# Run perf tests (excluded from regular test runs)
+npx vitest run packages/core/test/perf
+
+# Benchmarks use 100 generated pages with warmup runs
+```
+
+Baselines are defined in `perf/baselines/benchmark.json` with a 30% tolerance. Tests validate median duration and cache hit rates.
+
+### Build Metrics System
+
+Stati includes a metrics system for debugging performance issues. Enable it via CLI:
+
+```bash
+stati build --metrics                    # Write JSON to .stati/metrics/
+stati build --metrics --metrics-html     # Also generate HTML report
+stati build --metrics --metrics-detailed # Include per-page timings
+```
+
+**Metrics include:**
+
+- **Totals:** Duration, peak RSS, heap usage
+- **Phases:** Config load, content discovery, rendering, asset copy, etc.
+- **Counts:** Pages rendered, cache hits/misses, assets copied
+- **ISG:** Cache hit rate, skipped pages, rebuild reasons
+- **Per-page timing** (when `--metrics-detailed` is used)
+
+**Programmatic access:**
+
+```typescript
+import { build } from '@stati/core';
+
+const result = await build({
+  metrics: { enabled: true, detailed: true }
+});
+
+if (result.buildMetrics) {
+  console.log(`Duration: ${result.buildMetrics.totals.durationMs}ms`);
+  console.log(`Cache hit rate: ${result.buildMetrics.isg.cacheHitRate}`);
+}
+```
+
+Metrics are written to `.stati/metrics/` as JSON files with timestamps. Use these to diagnose slow builds or cache inefficiencies.
+
 ## Contributing Guidelines
 
 ### Types of Contributions

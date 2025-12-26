@@ -4,7 +4,7 @@ Thanks for your interest in contributing to **Stati** — a lightweight, TypeScr
 
 ---
 
-## 🛠 Requirements
+## Requirements
 
 - **Node.js** 22+ (see `engines` in package.json)
 - **npm** 11.5.1+ with workspace support (required for OIDC publishing)
@@ -12,7 +12,7 @@ Thanks for your interest in contributing to **Stati** — a lightweight, TypeScr
 
 ---
 
-## 🚧 Project Structure
+## Project Structure
 
 ```
 packages/
@@ -45,20 +45,18 @@ npm run test:ci
 
 ---
 
-## 📜 Available Scripts
+## Available Scripts
 
 ```bash
 # Code quality and validation
 npm run lint           # ESLint across packages
 npm run typecheck      # TypeScript compilation check
 
-# Testing (Vitest with 154+ tests)
+# Testing
 npm run test           # Run all tests across packages
-npm run test:ci        # CI-specific testing with workspace support
 
 # Building
 npm run build          # Build core, cli, and create-stati packages
-npm run build:demo     # Build packages and example blog
 
 # Full pipeline
 npm run test:ci        # Lint + typecheck + test + build (CI workflow)
@@ -93,7 +91,7 @@ npx stati invalidate "tag:news"
 
 ---
 
-## 🔄 Making Changes
+## Making Changes
 
 ### 1. Fork + Clone the Repo
 
@@ -114,7 +112,7 @@ This creates a `.md` file in `.changeset/` describing the change and its bump ty
 Make sure everything passes:
 
 ```bash
-npm run ci
+npm run test:ci
 ```
 
 ### 4. Open a PR
@@ -136,9 +134,9 @@ PRs should be:
 
 ---
 
-## 🧪 Tests
+## Tests
 
-- **Framework:** Vitest with comprehensive test coverage (154+ tests)
+- **Framework:** Vitest with comprehensive test coverage
 - **Coverage:** Unit tests for all core functionality including:
   - Configuration loading and validation
   - Content processing and markdown rendering
@@ -153,20 +151,94 @@ PRs should be:
 **Running Tests:**
 
 ```bash
-npm run test           # Run all tests
+npm run test           # Run all tests (excludes perf tests)
 npm run test:ci        # Full CI pipeline including tests
 ```
 
 ---
 
-## 🤝 Contributor Roles
+## CI Pipeline
+
+Every push and pull request triggers the CI workflow (`.github/workflows/ci.yml`):
+
+1. **Dependency Install** — `npm ci` with npm 11.5.1+
+2. **Build Packages** — `npm run build` (core → cli → create-stati)
+3. **Run Tests** — Vitest with coverage (perf tests excluded from CI)
+4. **Upload Coverage** — Reports sent to Codecov
+
+The pipeline runs on Ubuntu with Node.js 22. Version commits from the publish workflow are automatically skipped to prevent infinite loops.
+
+---
+
+## Performance Benchmarks
+
+Performance tests live in `packages/core/test/perf/` and measure build speed across scenarios:
+
+| Scenario | Description | Baseline |
+| -------- | ----------- | -------- |
+| Cold Build | Clean slate, no cache | ~300ms median |
+| Warm Build | No changes, high cache hit | ~80ms median |
+| Incremental | Single file change | ~90ms median |
+| Complex | Nested components, 100 pages | ~400ms median |
+
+**Running Benchmarks:**
+
+```bash
+# Run perf tests (excluded from regular test runs)
+npx vitest run packages/core/test/perf
+
+# Benchmarks use 100 generated pages with warmup runs
+```
+
+Baselines are defined in `perf/baselines/benchmark.json` with a 30% tolerance. Tests validate median duration and cache hit rates.
+
+---
+
+## Build Metrics System
+
+Stati includes a metrics system for debugging performance issues. Enable it via CLI:
+
+```bash
+stati build --metrics                    # Write JSON to .stati/metrics/
+stati build --metrics --metrics-html     # Also generate HTML report
+stati build --metrics --metrics-detailed # Include per-page timings
+```
+
+**Metrics include:**
+
+- **Totals:** Duration, peak RSS, heap usage
+- **Phases:** Config load, content discovery, rendering, asset copy, etc.
+- **Counts:** Pages rendered, cache hits/misses, assets copied
+- **ISG:** Cache hit rate, skipped pages, rebuild reasons
+- **Per-page timing** (when `--metrics-detailed` is used)
+
+**Programmatic access:**
+
+```typescript
+import { build } from '@stati/core';
+
+const result = await build({
+  metrics: { enabled: true, detailed: true }
+});
+
+if (result.buildMetrics) {
+  console.log(`Duration: ${result.buildMetrics.totals.durationMs}ms`);
+  console.log(`Cache hit rate: ${result.buildMetrics.isg.cacheHitRate}`);
+}
+```
+
+Metrics are written to `.stati/metrics/` as JSON files with timestamps. Use these to diagnose slow builds or cache inefficiencies.
+
+---
+
+## Contributor Roles
 
 - `type:bug`, `type:feat`, `type:chore`, `area:isg`, `area:scaffolder`, etc.
 - GitHub templates + labels help guide issues & PRs
 
 ---
 
-## 🏁 Release Flow
+## Release Flow
 
 **Releases are now fully automated!** When you merge a PR with a changeset to `main`, GitHub Actions automatically:
 
@@ -194,6 +266,6 @@ npm run changeset:dry-run
 
 ---
 
-## 🙏 Thank You!
+## Thank You
 
 Your contributions make this project better. Whether you're fixing bugs, suggesting features, writing docs, or improving templates — you’re helping developers build faster, simpler static sites.

@@ -237,9 +237,8 @@ export default defineConfig({
 
   // Markdown processing
   markdown: {
+    toc: true,                                      // TOC + heading anchors (default: true)
     plugins: [
-      'anchor',                                      // Anchor links to headings
-      'toc-done-right',                             // Table of contents
       ['external-links', { externalTarget: '_blank' }], // External links in new tab
     ],
     configure: (md) => {
@@ -576,9 +575,8 @@ Stati supports rich Markdown features out of the box:
 ```javascript
 export default defineConfig({
   markdown: {
+    toc: true,                     // TOC + heading anchors (built-in, default: true)
     plugins: [
-      'anchor',                    // Add anchor links
-      'table',                     // Enhanced tables
       'footnote',                  // Footnote support
       ['abbr', { /* options */ }], // Abbreviations
     ],
