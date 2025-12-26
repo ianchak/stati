@@ -1,5 +1,11 @@
 # @stati/core
 
+## 1.23.0
+
+### Minor Changes
+
+- 79e4340: Add `site.description` config option as fallback for SEO meta tags
+
 ## 1.22.0
 
 ### Minor Changes
