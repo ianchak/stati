@@ -413,17 +413,20 @@ Stati follows [Semantic Versioning](https://semver.org/):
 We use [Changesets](https://github.com/changesets/changesets) for version management:
 
 ```bash
-# Add a changeset
-npx changeset
+# Create a changeset manually
+npm run changeset
 
-# Version packages
-npx changeset version
+# Check pending changes
+npm run changeset:status
 
-# Publish packages
-npx changeset publish
+# Auto-generate changesets from commits (used by CI)
+npm run changeset:generate
+
+# Preview version changes
+npm run changeset:dry-run
 ```
 
-Example changeset:
+Changeset messages should be a brief summary of the changes made:
 
 ```markdown
 ---
@@ -431,7 +434,7 @@ Example changeset:
 '@stati/cli': patch
 ---
 
-Add ISG aging algorithm for intelligent cache TTL management. This feature automatically adjusts cache durations based on content age, improving performance for sites with mixed content freshness.
+Add ISG aging algorithm for cache TTL management
 ```
 
 ## Documentation

@@ -240,7 +240,7 @@ Metrics are written to `.stati/metrics/` as JSON files with timestamps. Use thes
 
 ## Release Flow
 
-**Releases are now fully automated!** When you merge a PR with a changeset to `main`, GitHub Actions automatically:
+**Releases are fully automated!** When you merge a PR with a changeset to `main`, GitHub Actions automatically:
 
 1. Versions packages based on changesets
 2. Publishes to npm using OIDC authentication
