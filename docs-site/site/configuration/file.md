@@ -41,13 +41,15 @@ const config: StatiConfig = {
     defaultLocale: 'en-US',
   },
 
-  // Full type safety for all options
+  // Type-safe plugin configuration
   markdown: {
-    options: {
-      html: true,
-      linkify: true,
-      typographer: true,
-    },
+    plugins: [['footnote', { backref: true }]],
+  },
+
+  // ISG options with autocomplete
+  isg: {
+    enabled: true,
+    ttlSeconds: 3600,
   },
 };
 
@@ -64,18 +66,22 @@ The foundation of your site configuration:
 export default defineConfig({
   site: {
     title: 'Stati Documentation',        // Required
-    baseUrl: 'https://stati.dev',         // Required
-    defaultLocale: 'en-US',               // Optional
+    baseUrl: 'https://stati.build',      // Required
+    description: 'Build static sites',   // Optional
+    defaultLocale: 'en-US',              // Optional
   },
 });
 ```
 
 **Required Fields:**
+
 - `title` (string) - The site's title, used in templates and metadata
 - `baseUrl` (string) - Base URL for the site, used for absolute URL generation
 
 **Optional Fields:**
+
 - `defaultLocale` (string) - Default locale for internationalization (e.g., 'en-US', 'fr-FR')
+- `description` (string) - Default site description for meta tags (used as fallback when page has no description)
 
 ### Markdown Configuration
 
@@ -86,9 +92,8 @@ export default defineConfig({
   markdown: {
     // Plugin configuration - array of plugin names or [name, options] tuples
     plugins: [
-      'anchor',                    // markdown-it-anchor - Add anchors to headings
-      'toc-done-right',           // markdown-it-toc-done-right - Table of contents
-      ['footnote', { /* options */ }],  // markdown-it-footnote - Footnotes with options
+      'footnote',                          // markdown-it-footnote - Footnotes
+      ['container', { validate: () => true }],  // markdown-it-container with options
     ],
 
     // Custom markdown-it configuration function
@@ -105,6 +110,8 @@ export default defineConfig({
   },
 });
 ```
+
+> **Note:** TOC extraction and heading anchor generation are built into Stati and enabled by default. You don't need `markdown-it-anchor` or `markdown-it-toc-done-right` plugins.
 
 **Available Options:**
 - `plugins` (array) - Array of markdown-it plugin names (strings) or [name, options] tuples
@@ -355,7 +362,7 @@ export default defineConfig({
 
      // Markdown processing
      markdown: {
-       plugins: ['anchor'],  // markdown-it-anchor
+       plugins: ['footnote'],  // markdown-it-footnote
      },
    });
    ```
@@ -382,7 +389,7 @@ export default defineConfig({
 
    // config/markdown.js
    export const markdownConfig = {
-     plugins: ['anchor', 'toc-done-right'],  // Stati auto-prepends 'markdown-it-'
+     plugins: ['footnote', 'emoji'],  // Stati auto-prepends 'markdown-it-'
    };
 
    // stati.config.js

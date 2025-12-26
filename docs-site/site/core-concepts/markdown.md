@@ -138,8 +138,8 @@ Create interactive checkboxes:
 URLs and email addresses are automatically converted to links:
 
 ```markdown
-Visit https://stati.dev for more information.
-Contact us at hello@stati.dev for support.
+Visit https://stati.build for more information.
+Contact us at hello@stati.build for support.
 ```
 
 ### Typography Enhancements
@@ -169,7 +169,6 @@ import { defineConfig } from '@stati/core';
 export default defineConfig({
   markdown: {
     plugins: [
-      'anchor',           // markdown-it-anchor
       'footnote',        // markdown-it-footnote
       ['mark', { /* options */ }], // markdown-it-mark with options
     ]
@@ -177,10 +176,12 @@ export default defineConfig({
 });
 ```
 
+> **Note:** TOC extraction and heading anchor generation are built into Stati and enabled by default. You don't need `markdown-it-anchor` or `markdown-it-toc-done-right` plugins.
+
 **Note:** You need to install the plugins separately via npm:
 
 ```bash
-npm install markdown-it-anchor markdown-it-footnote markdown-it-mark
+npm install markdown-it-footnote markdown-it-mark
 ```
 
 ## Configuration
@@ -194,30 +195,31 @@ import { defineConfig } from '@stati/core';
 
 export default defineConfig({
   markdown: {
-    // Markdown-It options
-    options: {
-      html: true, // Enable HTML tags in source
-      linkify: true, // Auto-convert URL-like text to links
-      typographer: true, // Enable smart quotes and other typographic substitutions
-      breaks: false, // Convert '\n' in paragraphs into <br>
-      xhtmlOut: false, // Use '/' to close single tags (<br />)
+    // Plugins array - Stati auto-prepends 'markdown-it-'
+    plugins: [
+      'footnote',               // Plugin name only
+      ['emoji', { shortcuts: {} }],  // Plugin with options
+    ],
+
+    // Custom markdown-it configuration
+    configure: (md) => {
+      // Modify settings (html, linkify, typographer are enabled by default)
+      md.set({ breaks: true });
+
+      // Add custom rendering rules
+      md.renderer.rules.code_inline = (tokens, idx) => {
+        const token = tokens[idx];
+        return `<code class="inline-code">${token.content}</code>`;
+      };
     },
 
-    // Plugin configuration
-    plugins: {
-      anchor: {
-        permalink: true,
-        permalinkBefore: true,
-        permalinkSymbol: '🔗',
-      },
-      toc: {
-        includeLevel: [1, 2, 3],
-        containerClass: 'table-of-contents',
-      },
-    },
+    // Enable/disable TOC extraction and heading anchors (default: true)
+    toc: true,
   },
 });
 ```
+
+> **Note:** HTML tags, linkify, and typographer are enabled by default in Stati and cannot be disabled. TOC extraction and heading anchors are also built-in.
 
 ### Advanced Configuration
 
@@ -225,7 +227,7 @@ export default defineConfig({
 export default defineConfig({
   markdown: {
     // Custom renderer modifications
-    setup(md) {
+    configure(md) {
       // Add custom rules
       md.renderer.rules.code_inline = (tokens, idx) => {
         const token = tokens[idx];

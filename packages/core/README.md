@@ -690,7 +690,8 @@ export default defineConfig({
     baseUrl: 'https://docs.example.com',
   },
   markdown: {
-    plugins: ['anchor', 'toc-done-right', 'container'],
+    // TOC and heading anchors are built-in (enabled by default)
+    plugins: ['container', 'footnote'],
   },
 });
 ```

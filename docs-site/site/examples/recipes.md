@@ -753,9 +753,8 @@ Add custom markdown processing with plugins and the configure function:
 export default defineConfig({
   markdown: {
     // Load markdown-it plugins (Stati auto-prepends 'markdown-it-')
+    // Note: TOC and heading anchors are built-in, no plugins needed
     plugins: [
-      'anchor',
-      'toc-done-right',
       ['container', 'tip'],
       ['container', 'warning']
     ],
