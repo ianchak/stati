@@ -72,6 +72,8 @@ The HTML report provides:
 - Per-page timing waterfall chart (when `--metrics-detailed` is also used)
 - Embedded JSON data for debugging
 
+![Stati Build Metrics HTML Report](/images/stati_build_metrics.jpg)
+
 You can combine all flags for the most comprehensive output:
 
 ```bash
