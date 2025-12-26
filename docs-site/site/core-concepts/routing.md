@@ -56,7 +56,7 @@ blog/index.md → /blog/
 blog/my-post.md → /blog/my-post/
 ```
 
-### Important: No Automatic Slug Transform ation
+### Important: No Automatic Slug Transformation
 
 **Stati preserves filenames exactly as written** (minus the `.md` extension). There is NO automatic:
 - Lowercase conversion
@@ -165,10 +165,7 @@ site/
 └── index.md             ✅ Routed - Creates / homepage
 ```
 
-**Note:** `README.md` files ARE routed because they are markdown files. If you don't want a README to appear on your site, either:
-- Use a different extension: `README.txt`
-- Place it in an underscore folder: `_docs/README.md`
-- Mark it as draft in front matter: `draft: true`
+**Note:** `README.md` files ARE routed because they are markdown files. Don't place README files in your `site/` directory, keep them in your project root or other non-site directories.
 
 #### **Use Cases for Underscore Exclusion**
 
