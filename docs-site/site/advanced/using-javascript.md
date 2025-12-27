@@ -623,12 +623,17 @@ Stati provides four main hooks:
 3. **`afterRender`** - Runs after rendering each page
 4. **`afterAll`** - Runs once after the build completes
 
+> **Important:** Hook contexts (`BuildContext` and `PageContext`) don't include shared state properties. To share data between hooks, use module-level variables as shown in the examples below. Data can then be added to `ctx.page.frontMatter` in `beforeRender` to make it available in templates.
+
 ### Example: Fetch Data at Build Time
 
 In your `stati.config.js`:
 
 ```javascript
 import { defineConfig } from '@stati/core';
+
+// Module-level state for sharing data between hooks
+let sharedData = {};
 
 export default defineConfig({
     site: {
@@ -644,10 +649,15 @@ export default defineConfig({
             const response = await fetch('https://api.example.com/products');
             const products = await response.json();
 
-            // Store in context for use in pages
-            ctx.globalData = { products };
+            // Store in module-level state
+            sharedData.products = products;
 
             console.log(`Loaded ${products.length} products`);
+        },
+
+        beforeRender: async (ctx) => {
+            // Add shared data to page frontmatter
+            ctx.page.frontMatter.products = sharedData.products;
         }
     }
 });
@@ -658,7 +668,7 @@ Access the data in your templates:
 ```eta
 <h1>Our Products</h1>
 <div class="products">
-    <% stati.globalData.products.forEach(product => { %>
+    <% stati.page.products.forEach(product => { %>
         <article class="product">
             <h2><%= product.name %></h2>
             <p><%= product.description %></p>
@@ -729,11 +739,11 @@ export default defineConfig({
 Display related posts:
 
 ```eta
-<% if (stati.relatedPosts && stati.relatedPosts.length > 0) { %>
+<% if (stati.page.relatedPosts && stati.page.relatedPosts.length > 0) { %>
     <aside class="related-posts">
         <h2>Related Posts</h2>
         <ul>
-            <% stati.relatedPosts.forEach(post => { %>
+            <% stati.page.relatedPosts.forEach(post => { %>
                 <li>
                     <a href="<%= post.url %>">
                         <%= post.frontMatter.title %>
@@ -982,16 +992,28 @@ async function fetchFromCMS() {
 3. **Validate data in build hooks:**
 
    ```javascript
-   beforeAll: async (ctx) => {
-       const data = await fetchExternalData();
+   // Module-level state
+   let validatedData = null;
 
-       // Validate before using
-       if (!isValidData(data)) {
+   export default defineConfig({
+     hooks: {
+       beforeAll: async (ctx) => {
+         const data = await fetchExternalData();
+
+         // Validate before using
+         if (!isValidData(data)) {
            throw new Error('Invalid data from API');
-       }
+         }
 
-       ctx.globalData = data;
-   }
+         validatedData = data;
+       },
+
+       beforeRender: async (ctx) => {
+         // Add validated data to pages as needed
+         ctx.page.frontMatter.externalData = validatedData;
+       }
+     }
+   });
    ```
 
 ### Combining Methods
@@ -1002,6 +1024,9 @@ You can (and should) use multiple methods together. Here's an example that combi
 // stati.config.ts - Build hooks for data + TypeScript enabled
 import { defineConfig } from '@stati/core';
 
+// Module-level state for sharing data between hooks
+let blogPosts: any[] = [];
+
 export default defineConfig({
     typescript: {
         enabled: true, // Your TypeScript bundle is auto-injected
@@ -1009,9 +1034,12 @@ export default defineConfig({
     hooks: {
         beforeAll: async (ctx) => {
             // Fetch blog posts at build time
-            ctx.globalData = await fetchBlogPosts();
+            blogPosts = await fetchBlogPosts();
         },
         beforeRender: async (ctx) => {
+            // Add shared data to page frontmatter
+            ctx.page.frontMatter.blogPosts = blogPosts;
+
             // Calculate reading time
             ctx.page.frontMatter.readingTime =
                 calculateReadingTime(ctx.page.content);
@@ -1044,11 +1072,13 @@ document.addEventListener('DOMContentLoaded', () => {
     <% } %>
 </head>
 <body>
-    <!-- Use data from build hooks -->
+    <!-- Use data from build hooks (added to page frontmatter) -->
     <nav>
-        <% stati.globalData.blogPosts.slice(0, 5).forEach(post => { %>
+        <% if (stati.page.blogPosts) { %>
+          <% stati.page.blogPosts.slice(0, 5).forEach(post => { %>
             <a href="<%= post.url %>"><%= post.title %></a>
-        <% }); %>
+          <% }); %>
+        <% } %>
     </nav>
 
     <main><%~ stati.content %></main>
