@@ -10,7 +10,7 @@ Stati provides a streamlined approach to site metadata and SEO. The `site` confi
 
 ## Site Configuration
 
-The `site` object contains three core properties that define your site's identity:
+The `site` object contains essential properties that define your site's identity:
 
 ```javascript
 // stati.config.js
