@@ -150,10 +150,10 @@ Performance tests live in `packages/core/test/perf/` and measure build speed acr
 
 | Scenario | Description | Baseline |
 | -------- | ----------- | -------- |
-| Cold Build | Clean slate, no cache | ~300ms median |
-| Warm Build | No changes, high cache hit | ~80ms median |
-| Incremental | Single file change | ~90ms median |
-| Complex | Nested components, 100 pages | ~400ms median |
+| Cold Build | Clean slate, no cache | ~220ms median |
+| Warm Build | No changes, high cache hit | ~50ms median |
+| Incremental | Single file change | ~55ms median |
+| Complex | Nested components, 111 pages | ~280ms median |
 
 Run benchmarks locally:
 
