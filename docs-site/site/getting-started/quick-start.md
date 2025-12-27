@@ -60,8 +60,7 @@ my-first-site/
 │   └── styles.css
 └── site/                 # Your content and templates
     ├── index.md          # Homepage content
-    ├── layout.eta        # Base layout template
-    └── _partials/        # Reusable template parts
+    └── layout.eta        # Base layout template
 ```
 
 ## Step 3: Start the Development Server
