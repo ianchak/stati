@@ -30,16 +30,16 @@ Stati follows these key principles:
 - Configuration file not found or unreadable
 - Invalid configuration syntax (malformed JSON/JS)
 - Missing required configuration fields
-- Invalid configuration values
+- Invalid configuration values (e.g., ISG validation failures)
 
-**Error codes**: `CONFIG_NOT_FOUND`, `CONFIG_INVALID_SYNTAX`, `CONFIG_VALIDATION_FAILED`
+**Example errors**:
 
 ```javascript
 // Example: Invalid configuration
 export default {
   srcDir: 123, // ❌ Error: srcDir must be a string
   isg: {
-    ttlSeconds: 'invalid' // ❌ Error: ttlSeconds must be a number
+    ttlSeconds: 'invalid' // ❌ Error: ISGConfigurationError - ttlSeconds must be a number
   }
 };
 ```
@@ -48,39 +48,36 @@ export default {
 
 **When they occur**: During content discovery and front matter parsing
 
-**Handling**: Skip problematic files and continue with build
+**Handling**:
+
+- **Individual file errors**: Skips unreadable files with warning and continues
+- **Directory errors**: Build fails if content directory is inaccessible
+- **Empty directory**: Build continues (valid scenario)
 
 **Common scenarios**:
 
-- Content directory not found or inaccessible
-- Individual content files with invalid front matter
-- File system permission errors
-- Corrupted content files
-
-**Error codes**: `CONTENT_DIR_NOT_FOUND`, `FRONTMATTER_INVALID`, `FILE_READ_ERROR`
-
-```yaml
----
-title: My Post
-date: invalid-date # ❌ Error: Invalid date format
-draft # ❌ Error: Missing value for draft field
----
-```
+- Individual content files that cannot be read
+- Invalid front matter (parsed but may cause issues downstream)
+- Empty content directory (handled gracefully)
+- Content directory not found (build fails)
 
 ### Template Rendering Errors
 
 **When they occur**: During template processing and HTML generation
 
-**Handling**: Use built-in fallback template
+**Handling**:
+
+- **Development mode**: Throws `TemplateError` with detailed context (file, line, column)
+- **Production mode**: Uses built-in fallback template (see Fallback Mechanisms section)
 
 **Common scenarios**:
 
 - Template file not found
 - Template syntax errors
-- Template rendering failures
+- Template rendering failures (both layouts and partials)
 - Missing template data
 
-**Error codes**: `TEMPLATE_NOT_FOUND`, `TEMPLATE_SYNTAX_ERROR`, `TEMPLATE_RENDER_ERROR`
+**Applies to**: Both layout templates and partial templates
 
 ```eta
 <!-- Template syntax error -->
@@ -106,8 +103,6 @@ draft # ❌ Error: Missing value for draft field
 - File system corruption
 - Directory creation failures
 
-**Error codes**: `PERMISSION_DENIED`, `DISK_SPACE_FULL`, `OUTPUT_DIR_ERROR`
-
 ### Build Hook Errors
 
 **When they occur**: During execution of user-defined build hooks
@@ -120,8 +115,6 @@ draft # ❌ Error: Missing value for draft field
 - Async hook rejection
 - Hook timeout
 
-**Error codes**: `HOOK_BEFORE_ALL_FAILED`, `HOOK_AFTER_ALL_FAILED`, `HOOK_BEFORE_RENDER_FAILED`, `HOOK_AFTER_RENDER_FAILED`
-
 ```javascript
 export default defineConfig({
   hooks: {
@@ -132,70 +125,134 @@ export default defineConfig({
 });
 ```
 
-## StatiError Class
+## Error Classes
 
-Stati uses a structured error class for consistent error handling:
+Stati uses domain-specific error classes that capture relevant context for debugging. Each error type includes structured information to help identify and resolve issues quickly.
+
+### Template Errors
 
 ```typescript
-class StatiError extends Error {
+class TemplateError extends Error {
+  public readonly filePath?: string;
+  public readonly line?: number;
+  public readonly column?: number;
+  public readonly template?: string;
+  public readonly context?: {
+    before?: string[];
+    after?: string[];
+  };
+
   constructor(
-    public code: string,
     message: string,
-    public details?: Record<string, unknown>
+    filePath?: string,
+    line?: number,
+    column?: number,
+    template?: string
   ) {
     super(message);
-    this.name = 'StatiError';
+    this.name = 'TemplateError';
+    if (filePath !== undefined) this.filePath = filePath;
+    if (line !== undefined) this.line = line;
+    if (column !== undefined) this.column = column;
+    if (template !== undefined) this.template = template;
   }
 }
 ```
 
-### Error Code Patterns
+**Thrown when**: Template syntax errors, missing templates, or template rendering failures occur.
 
-Error codes follow consistent naming:
+### ISG Configuration Errors
 
-- **CONFIG_** - Configuration-related errors
-- **CONTENT_** - Content loading and processing errors
-- **TEMPLATE_** - Template rendering errors
-- **FILE_** - File system operation errors
-- **HOOK_** - Build hook execution errors
-- **ISG_** - Incremental Static Generation errors
+```typescript
+class ISGConfigurationError extends Error {
+  constructor(
+    public readonly code: ISGValidationError,
+    public readonly field: string,
+    public readonly value: unknown,
+    message: string
+  ) {
+    super(message);
+    this.name = 'ISGConfigurationError';
+  }
+}
+
+enum ISGValidationError {
+  INVALID_TTL = 'ISG_INVALID_TTL',
+  INVALID_MAX_AGE_CAP = 'ISG_INVALID_MAX_AGE_CAP',
+  INVALID_AGING_RULE = 'ISG_INVALID_AGING_RULE',
+  DUPLICATE_AGING_RULE = 'ISG_DUPLICATE_AGING_RULE',
+  UNSORTED_AGING_RULES = 'ISG_UNSORTED_AGING_RULES',
+  AGING_RULE_EXCEEDS_CAP = 'ISG_AGING_RULE_EXCEEDS_CAP'
+}
+```
+
+**Thrown when**: ISG configuration validation fails (invalid TTL, aging rules, etc.).
+
+### Circular Dependency Errors
+
+```typescript
+class CircularDependencyError extends Error {
+  constructor(
+    public readonly dependencyChain: string[],
+    message: string
+  ) {
+    super(message);
+    this.name = 'CircularDependencyError';
+  }
+}
+```
+
+**Thrown when**: Template dependencies form a circular reference.
+
+### Bundle Configuration Errors
+
+```typescript
+class DuplicateBundleNameError extends Error {
+  constructor(duplicates: string[]) {
+    super(
+      `Duplicate bundleName(s) found in configuration: ${duplicates.join(', ')}. ` +
+        'Each bundle must have a unique bundleName.'
+    );
+    this.name = 'DuplicateBundleNameError';
+  }
+}
+```
+
+**Thrown when**: TypeScript bundle configurations contain duplicate bundle names.
 
 ## Fallback Mechanisms
 
 ### Template Fallback
 
-When template rendering fails, Stati uses a built-in fallback:
+When template rendering fails, Stati uses a built-in fallback that generates minimal valid HTML:
 
 ```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{page.title}</title>
-    <meta name="description" content="{page.description}">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(title)}</title>
+  ${description ? `<meta name="description" content="${escapeHtml(description)}">` : ''}
 </head>
 <body>
-    <main>{rendered_content}</main>
+  <main>
+    ${body}
+  </main>
 </body>
 </html>
 ```
 
-### Content Fallback
+The fallback template:
 
-When markdown processing fails:
-
-- Original content is wrapped in `<pre>` tags
-- HTML is properly escaped for safety
-- Build continues with fallback content
+- Uses the page's title and description from frontmatter
+- HTML-escapes all content for security
+- Renders the markdown-processed body content
+- Provides a minimal but valid HTML structure
 
 ### Navigation Fallback
 
-If navigation building fails:
-
-- Empty navigation array is provided to templates
-- Site remains functional without navigation
-- Error is logged but build continues
+Stati builds navigation from the page structure during the content loading phase. If no pages are found or the pages array is empty, navigation will be an empty array. However, if navigation building encounters an error (such as corrupted page data), the build will fail rather than providing a fallback, as navigation is critical to site structure
 
 ## Error Reporting
 
@@ -218,16 +275,22 @@ Template syntax error: Unexpected token 'if' at line 15
 
 ### Build Statistics
 
-Errors are tracked in build statistics:
+Build statistics are tracked and returned from the build function:
 
 ```typescript
 interface BuildStats {
-  pages: number;
-  assets: number;
-  errors: number;
-  warnings: number;
-  criticalErrors: string[];
-  buildTime: number;
+  /** Total number of pages processed */
+  totalPages: number;
+  /** Number of static assets copied */
+  assetsCount: number;
+  /** Total build time in milliseconds */
+  buildTimeMs: number;
+  /** Total size of output directory in bytes */
+  outputSizeBytes: number;
+  /** Number of cache hits (if caching enabled) */
+  cacheHits?: number;
+  /** Number of cache misses (if caching enabled) */
+  cacheMisses?: number;
 }
 ```
 
@@ -250,20 +313,9 @@ stati build
 node -e "console.log(require('./stati.config.js'))"
 ```
 
-### 2. Use Verbose Logging
+### 2. Check Build Output
 
-**Enable detailed output:**
-
-```bash
-DEBUG=stati:* stati build
-```
-
-**Check specific components:**
-
-```bash
-DEBUG=stati:templates stati build
-DEBUG=stati:content stati build
-```
+Examine build output for error messages and stack traces. Stati provides detailed error information including file paths and line numbers when available.
 
 ### 3. Common Error Scenarios
 
@@ -325,13 +377,13 @@ export default defineConfig({
 });
 ```
 
-### 3. Test Content Incrementally
+### 4. Test Content Incrementally
 
 **Gradual rollout approach:**
 
 1. Test with a subset of content first
-2. Use `--include-drafts` flag for testing
-3. Monitor error output during builds
+2. Use `--include-drafts` flag for testing draft content
+3. Monitor build output for errors
 4. Fix issues before expanding content
 
 ### 4. Use Consistent Front Matter
@@ -387,15 +439,17 @@ stati build --clean --force
 
 ```bash
 # Ensure clean starting point
-stati build --clean --verbose
+stati build --clean
 ```
 
 ### 2. Monitor Development Server
 
 ```bash
 # Watch for errors in development
-stati dev --verbose
+stati dev
 ```
+
+The development server provides an error overlay in the browser when build errors occur, making it easy to identify and fix issues without checking terminal output.
 
 ### 3. Test Production Build
 
