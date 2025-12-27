@@ -495,7 +495,7 @@ seo:
 ---
 ```
 
-Recommended dimensions: **1200 x 630 pixels**.
+Recommended dimensions: **1200 x 630 pixels** (not enforced by Stati).
 
 ### 6. Use Structured Data
 
@@ -581,10 +581,10 @@ Stati validates SEO configuration at build time. Common errors:
 
 For large sites (10,000+ pages):
 
-- Sitemap generation handles large sites well
-- Auto-injection adds minimal overhead (~1-2ms per page)
-- Consider using `sitemap.filter` to exclude unnecessary pages
-- Use `generateIndex: true` for sites with more than 50,000 URLs to split into multiple sitemaps
+- Sitemap generation automatically splits into multiple files at 50,000 URLs
+- Auto-injection overhead is minimal during builds
+- Consider using `sitemap.filter` to exclude unnecessary pages from sitemap
+- Use `generateIndex: true` to create a sitemap index when splitting is needed
 
 ## Next Steps
 
