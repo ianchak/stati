@@ -53,7 +53,7 @@ Stati maintains a cache manifest at `.stati/cache/manifest.json`:
       "tags": ["blog", "posts"],
       "publishedAt": "2024-01-15T10:00:00Z",
       "renderedAt": "2024-01-15T10:00:00Z",
-      "ttlSeconds": 3600
+      "ttlSeconds": 21600
     }
   }
 }
@@ -81,11 +81,11 @@ export default defineConfig({
     // Enable ISG (default: true)
     enabled: true,
 
-    // Cache TTL in seconds (default: 1 hour)
-    ttlSeconds: 3600,
+    // Cache TTL in seconds (default: 6 hours)
+    ttlSeconds: 21600,
 
-    // Maximum age cap in days (default: 30 days)
-    maxAgeCapDays: 30,
+    // Maximum age cap in days (default: 365 days)
+    maxAgeCapDays: 365,
 
     // Progressive TTL increases based on content age
     aging: [
@@ -154,7 +154,7 @@ ISG uses a single global configuration approach. All content shares the same TTL
 export default defineConfig({
   isg: {
     // Global TTL for all content
-    ttlSeconds: 3600, // 1 hour
+    ttlSeconds: 21600, // 6 hours
 
     // Age-based TTL adjustments apply to all content
     aging: [
@@ -225,7 +225,7 @@ During development, ISG provides fast feedback:
 - **Content change** - Only the changed page and its dependents rebuild
 - **Template change** - All pages using that template rebuild
 
-This means most edits during development result in sub-second rebuilds.
+This means most edits during development result in significantly faster rebuilds compared to full site regeneration.
 
 ## Cache Storage
 
