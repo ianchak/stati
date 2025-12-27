@@ -43,7 +43,7 @@ Invalid Eta template syntax.
 
 1. Check for unclosed tags: `<%` must have matching `%>`
 2. Use `<%~` for unescaped output (HTML), `<%=` for escaped output
-3. Avoid partial dynamic attributes (see [Eta Template Restrictions](/core-concepts/templates/#restrictions))
+3. Avoid partial dynamic attributes (see [Dynamic Attribute Values](/core-concepts/templates#dynamic-attribute-values))
 
 ---
 
@@ -137,7 +137,7 @@ RSS feeds are only generated during production builds, not in development mode.
 1. Run `stati build` (not `stati dev`) to generate the RSS feed
 2. Ensure `rss.enabled: true` is set in your `stati.config.ts`
 3. Verify `site.baseUrl` is configured (required for RSS URLs)
-4. Check the `dist/` directory for the generated `feed.xml` file
+4. Check the `dist/` directory for your configured feed file(s) (filename is set in `rss.feeds[].filename`)
 
 ---
 
@@ -158,15 +158,15 @@ Sitemaps are only generated during production builds.
 ## TypeScript bundles not appearing
 
 **Cause:**
-TypeScript auto-injection may be disabled or bundles may not be compiling.
+TypeScript bundles may not be compiling or bundle patterns may not match your pages.
 
 **Solution:**
 
 1. Ensure `typescript.enabled: true` in your config
-2. Check that `autoInject` is not set to `false`
-3. Verify your entry point exists at `src/main.ts` (or configured `srcDir`)
-4. Check the dev server console for TypeScript compilation errors
-5. If using `include`/`exclude` patterns in bundles, verify they match your page URLs
+2. Verify your entry point exists at `src/main.ts` (or configured `srcDir`)
+3. Check the dev server console for TypeScript compilation errors
+4. If using `include`/`exclude` patterns in bundles, verify they match your page URLs
+5. Bundles are automatically injected when TypeScript is enabled
 
 ---
 
@@ -261,7 +261,7 @@ Eta templates don't support mixing static and dynamic text within attribute valu
    class="<%= stati.propValue('base-class', `hover:bg-${color}-300`, isActive && 'active') %>"
    ```
 
-3. See [Eta Template Restrictions](/core-concepts/templates/#dynamic-attribute-values) for details
+3. See [Dynamic Attribute Values](/core-concepts/templates#dynamic-attribute-values) for details
 
 ---
 
