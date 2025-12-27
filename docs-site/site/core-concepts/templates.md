@@ -432,21 +432,27 @@ You can combine data passed to the partial with Stati's global data:
 
 ### Hierarchical Partials
 
-Partials inherit from parent directories:
+Partials are discovered **upward** from the current page's directory to the root. A page can access partials from its own directory and all parent directories, but **not** from child directories.
 
 ```text
 site/
 ├── _partials/
-│   ├── header.eta       # Available everywhere
+│   ├── header.eta       # Available to ALL pages
 │   └── footer.eta
 └── blog/
     ├── _partials/
-    │   ├── sidebar.eta  # Available in blog/ and subdirectories
-    │   └── tagList.eta
+    │   ├── sidebar.eta  # Available to blog/ and blog/posts/ pages
+    │   └── tagList.eta  # NOT available to root pages
     └── posts/
         └── _partials/
-            └── meta.eta # Available only in posts/
+            └── meta.eta # Available ONLY to blog/posts/ pages
 ```
+
+**Key points:**
+
+- Root layout (`site/layout.eta`) can only access `site/_partials/`
+- Blog layout (`site/blog/layout.eta`) can access both `site/_partials/` AND `site/blog/_partials/`
+- More specific partials (deeper in hierarchy) override less specific ones with the same name
 
 ## Template Data and Context
 
