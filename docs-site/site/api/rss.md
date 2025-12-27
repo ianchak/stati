@@ -119,6 +119,8 @@ interface RSSFeedConfig {
 
 Field mappings for RSS feed items.
 
+> **Note:** This type is defined inline within `RSSFeedConfig.itemMapping` but documented here for clarity and reference.
+
 ```typescript
 interface RSSItemMapping {
   title?: string | ((page: PageModel) => string);
@@ -166,6 +168,8 @@ interface RSSItemMapping {
 
 Feed image configuration.
 
+> **Note:** This type is defined inline within `RSSFeedConfig.image` but documented here for clarity and reference.
+
 ```typescript
 interface RSSImageConfig {
   url: string;
@@ -189,6 +193,8 @@ interface RSSImageConfig {
 ### RSSEnclosure
 
 Media enclosure for podcast episodes or other media files.
+
+> **Note:** This type is the return type of `RSSFeedConfig.enclosure` function but documented here for clarity and reference.
 
 ```typescript
 interface RSSEnclosure {
@@ -344,7 +350,8 @@ Generates a single RSS feed from pages.
 function generateRSSFeed(
   pages: PageModel[],
   config: StatiConfig,
-  feedConfig: RSSFeedConfig
+  feedConfig: RSSFeedConfig,
+  logger?: Logger
 ): RSSGenerationResult
 ```
 
@@ -353,6 +360,7 @@ function generateRSSFeed(
 - `pages` - All pages in the site
 - `config` - Stati configuration
 - `feedConfig` - Feed configuration
+- `logger` - Optional logger instance for warnings
 
 **Returns:** RSS generation result
 
@@ -379,7 +387,8 @@ Generates all configured RSS feeds for a site.
 ```typescript
 function generateRSSFeeds(
   pages: PageModel[],
-  config: StatiConfig
+  config: StatiConfig,
+  logger?: Logger
 ): RSSGenerationResult[]
 ```
 
@@ -387,6 +396,7 @@ function generateRSSFeeds(
 
 - `pages` - All pages in the site
 - `config` - Stati configuration (with RSS config)
+- `logger` - Optional logger instance for warnings
 
 **Returns:** Array of RSS generation results
 
