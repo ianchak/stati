@@ -33,8 +33,8 @@ export default defineConfig({
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `enabled` | boolean | `false` | Enable or disable ISG caching |
-| `ttlSeconds` | number | `3600` | Default cache time-to-live in seconds |
-| `maxAgeCapDays` | number | - | Maximum age in days for applying aging rules |
+| `ttlSeconds` | number | `21600` | Default cache time-to-live in seconds (6 hours) |
+| `maxAgeCapDays` | number | `365` | Maximum age in days for applying aging rules (1 year) |
 | `aging` | AgingRule[] | `[]` | Array of aging rules for progressive cache extension |
 
 ## TTL (Time To Live)
@@ -45,7 +45,7 @@ The `ttlSeconds` option sets the default cache duration for all pages:
 export default defineConfig({
   isg: {
     enabled: true,
-    ttlSeconds: 3600, // 1 hour in seconds
+    ttlSeconds: 3600, // 1 hour (override default of 6 hours)
   },
 });
 ```
@@ -223,9 +223,6 @@ stati build --force
 
 # Clean cache before building
 stati build --clean
-
-# Clean cache with selective invalidation
-stati build --clean --invalidate "tag:blog"
 ```
 
 ## How ISG Works
@@ -261,17 +258,16 @@ ISG automatically tracks template dependencies:
 
 ### Tag Extraction
 
-Tags are extracted from page front matter:
+Tags are extracted from the `tags` array in page front matter:
 
 ```yaml
 ---
 title: My Blog Post
 tags: [blog, tutorial, javascript]
-category: development
 ---
 ```
 
-Both `tags` arrays and individual properties like `category` become searchable tags for invalidation.
+Only values in the `tags` array become searchable tags for invalidation. Individual properties like `category` are not automatically converted to tags.
 
 ## Best Practices
 
@@ -284,7 +280,7 @@ Both `tags` arrays and individual properties like `category` become searchable t
 
 ### Development Workflow
 
-1. **Dev Mode**: ISG is bypassed in `stati dev` (watch mode)
+1. **Dev Mode**: Cache is cleared at dev server startup, then ISG is used for incremental rebuilds during watch mode
 2. **Test Builds**: Use `stati build` locally to test ISG behavior
 3. **Selective Invalidation**: Use `stati invalidate` with specific patterns during testing
 4. **Cache Inspection**: Review `.stati/cache/manifest.json` to understand cache state
