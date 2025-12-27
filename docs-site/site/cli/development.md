@@ -35,7 +35,7 @@ When you start the server Stati:
 1. Clears the incremental cache by calling `invalidate()` with no query.
 2. Runs a full build with the current configuration so the `dist/` directory is ready to serve.
 3. Boots an HTTP server (default `http://localhost:3000`) and a WebSocket endpoint at `/__ws` for live reload events.
-4. Begins watching the resolved content directory (default `site/`) and static assets directory (default `public/`).
+4. Begins watching the resolved content directory (default `site`) and static assets directory (default `public`).
 
 If `--open` is set, Stati attempts to launch your default browser using the `open` package.
 
@@ -44,7 +44,7 @@ If `--open` is set, Stati attempts to launch your default browser using the `ope
 File watching is handled by `chokidar` with listeners for file additions, edits, and deletions. Whenever a change is detected Stati:
 
 - Starts an incremental rebuild unless another rebuild is already in progress.
-- Logs which file triggered the rebuild, for example `⚡ site/blog/post.md rebuilt in 95ms`.
+- Logs which file triggered the rebuild, for example `▸ site/blog/post.md rebuilt` followed by `Done in 95ms`.
 - Broadcasts a `reload` message over the WebSocket connection so connected browsers refresh automatically.
 
 ## Template changes and cache invalidation
@@ -59,7 +59,7 @@ This logic lives in `handleTemplateChange` inside `packages/core/src/core/dev.ts
 
 ## Static assets
 
-Static files inside `public/` are part of the watch list. When assets change they are recopied into `dist/` during the rebuild, so image and favicon updates appear on the next refresh.
+Static files inside `public` are part of the watch list. When assets change they are recopied into `dist/` during the rebuild, so image and favicon updates appear on the next refresh.
 
 ## Tailwind CSS Integration
 
@@ -100,6 +100,6 @@ Press `Ctrl+C` (or send `SIGINT`/`SIGTERM`) to stop the server. Stati closes the
 ## Troubleshooting
 
 - **Repeated failures** – Check the browser overlay for the full stack trace, then inspect the terminal output logged by the CLI.
-- **Changes not showing up** – Ensure the file is inside `site/` or `public/`. Files outside those directories are not watched.
+- **Changes not showing up** – Ensure the file is inside `site` or `public`. Files outside those directories are not watched.
 - **Cache feels stale** – Run `stati build --clean` in another terminal to rebuild everything and refresh the manifest.
 - **Port already in use** – Start the server on a different port with `stati dev --port 4001`.
