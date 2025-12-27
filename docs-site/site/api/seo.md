@@ -38,13 +38,16 @@ const html = generateSEOMetadata({
   page: pageData,
   config: statiConfig,
   siteUrl: 'https://example.com',
+  logger: logger, // Logger instance for validation warnings
   exclude: new Set([SEOTagType.Title]), // Skip title generation
 });
 ```
 
-**Throws:**
+**Behavior:**
 
-- `Error`: If SEO validation fails (invalid canonical URL, malformed data, etc.)
+- Validation errors are logged as warnings rather than throwing to allow builds to continue with degraded SEO
+- This prevents a single SEO issue from blocking the entire build
+- Validation warnings are logged when `config.seo.debug` is enabled
 
 ---
 
@@ -56,14 +59,21 @@ Template helper function for convenient SEO generation in Eta templates.
 
 ```typescript
 function generateSEO(
-  stati: TemplateContext,
+  context: {
+    page: PageModel;
+    config: StatiConfig;
+    site?: SiteConfig;
+  },
   tags?: Array<SEOTagType | string>
 ): string
 ```
 
 **Parameters:**
 
-- `stati` (TemplateContext): The template context object (available as `stati` in templates)
+- `context` (object): The SEO generation context
+  - `page` (PageModel): The page model with frontmatter and metadata
+  - `config` (StatiConfig): The Stati configuration object
+  - `site` (SiteConfig, optional): Site configuration (can be omitted if provided in config)
 - `tags` (Array<SEOTagType | string>, optional): Array of tag types to generate. Use **strings** in Eta templates (`'title'`, `'description'`, etc.). The `SEOTagType` enum is only available for programmatic/TypeScript usage.
 
 **Returns:**
@@ -89,11 +99,18 @@ function generateSEO(
 import { generateSEO, SEOTagType } from '@stati/core';
 
 // Using enum values in TypeScript code
-const html = generateSEO({ page, config, site: config.site }, [SEOTagType.Title, SEOTagType.OpenGraph]);
+const html = generateSEO(
+  { page, config, site: config.site },
+  [SEOTagType.Title, SEOTagType.OpenGraph]
+);
 
 // Or using strings
 const html2 = generateSEO({ page, config, site: config.site }, ['title', 'description']);
 ```
+
+**Template Context:**
+
+When used in Eta templates, Stati automatically wraps this function to provide the context, so you call it as `stati.generateSEO(tags)` where `stati` is the template context object.
 
 ---
 
@@ -681,6 +698,9 @@ interface SEOContext {
 
   /** Base URL of the site */
   siteUrl: string;
+
+  /** Logger for debug output and validation warnings */
+  logger: Logger;
 
   /** Set of tag types to exclude from generation (blacklist mode) */
   exclude?: Set<SEOTagType>;
