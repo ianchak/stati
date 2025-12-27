@@ -29,6 +29,7 @@ Stati executes hooks in the following order:
 Called once before starting the build process.
 
 **Use cases:**
+
 - Initialize external services
 - Fetch remote data
 - Validate environment setup
@@ -42,10 +43,6 @@ export default defineConfig({
 
       // Initialize external services
       await initializeAnalytics();
-
-      // Fetch remote data
-      const apiData = await fetch('https://api.example.com/data');
-      ctx.globalData = await apiData.json();
 
       // Validate environment
       if (!process.env.API_KEY) {
@@ -61,6 +58,7 @@ export default defineConfig({
 Called once after completing the build process.
 
 **Use cases:**
+
 - Generate sitemaps and RSS feeds
 - Deploy to CDN or hosting service
 - Send build notifications
@@ -86,8 +84,7 @@ export default defineConfig({
       // Send notification
       await sendBuildNotification({
         status: 'success',
-        pageCount: ctx.pages.length,
-        buildTime: ctx.buildStats.duration
+        pageCount: ctx.pages.length
       });
     }
   }
@@ -99,6 +96,7 @@ export default defineConfig({
 Called before rendering each individual page.
 
 **Use cases:**
+
 - Add dynamic data to pages
 - Calculate reading time or word count
 - Inject build metadata
@@ -115,19 +113,10 @@ export default defineConfig({
       const wordCount = ctx.page.content.split(/\s+/).length;
       ctx.page.frontMatter.readingTime = Math.ceil(wordCount / 200);
 
-      // Add previous/next navigation for blog posts
+      // Add custom metadata based on URL
       if (ctx.page.url.startsWith('/blog/')) {
-        const blogPosts = ctx.pages
-          .filter(p => p.url.startsWith('/blog/') && p.url !== '/blog/')
-          .sort((a, b) => new Date(b.frontMatter.date) - new Date(a.frontMatter.date));
-
-        const currentIndex = blogPosts.findIndex(p => p.url === ctx.page.url);
-        ctx.page.frontMatter.prevPost = blogPosts[currentIndex + 1] || null;
-        ctx.page.frontMatter.nextPost = blogPosts[currentIndex - 1] || null;
+        ctx.page.frontMatter.section = 'blog';
       }
-
-      // Inject global data
-      ctx.page.frontMatter.siteData = ctx.globalData;
     }
   }
 });
@@ -138,6 +127,7 @@ export default defineConfig({
 Called after rendering each individual page.
 
 **Use cases:**
+
 - Post-process generated HTML
 - Validate output
 - Generate search indices
@@ -149,25 +139,13 @@ export default defineConfig({
     afterRender: async (ctx) => {
       console.log(`Rendered page: ${ctx.page.url}`);
 
-      // Minify HTML in production
-      if (process.env.NODE_ENV === 'production') {
-        ctx.html = await minifyHTML(ctx.html);
-      }
-
-      // Extract headings for search index
-      const headings = extractHeadings(ctx.html);
-      await addToSearchIndex({
+      // Extract data for search index or analytics
+      const wordCount = ctx.page.content.split(/\s+/).length;
+      await trackPageMetrics({
         url: ctx.page.url,
         title: ctx.page.frontMatter.title,
-        content: ctx.page.content,
-        headings: headings
+        wordCount: wordCount
       });
-
-      // Validate HTML
-      const validationErrors = await validateHTML(ctx.html);
-      if (validationErrors.length > 0) {
-        console.warn(`HTML validation warnings for ${ctx.page.url}:`, validationErrors);
-      }
     }
   }
 });
@@ -180,35 +158,36 @@ Each hook receives a context object with different properties:
 ### `beforeAll` and `afterAll` Context
 
 ```typescript
-interface GlobalHookContext {
-  pages: PageModel[];           // All discovered pages
+interface BuildContext {
   config: StatiConfig;          // Build configuration
-  buildStats: BuildStats;       // Build timing and statistics
-  globalData?: any;            // Shared data between hooks
+  pages: PageModel[];           // All discovered pages
 }
 ```
 
 ### `beforeRender` and `afterRender` Context
 
 ```typescript
-interface PageHookContext {
+interface PageContext {
   page: PageModel;             // Current page being processed
   config: StatiConfig;         // Build configuration
-  globalData?: any;           // Shared data from beforeAll
-  html?: string;              // Generated HTML (afterRender only)
 }
 ```
 
 ## Advanced Hook Patterns
 
-### Shared Data Between Hooks
+### External State Management
+
+Since hook contexts don't support shared state, use module-level state or external storage for sharing data between hooks:
 
 ```javascript
+// Module-level state
+let sharedBuildData = {};
+
 export default defineConfig({
   hooks: {
     beforeAll: async (ctx) => {
-      // Fetch data once, share across all pages
-      ctx.globalData = {
+      // Fetch data once, store in module state
+      sharedBuildData = {
         posts: await fetchBlogPosts(),
         authors: await fetchAuthors(),
         buildId: generateBuildId()
@@ -216,16 +195,12 @@ export default defineConfig({
     },
 
     beforeRender: async (ctx) => {
-      // Access shared data
-      const { posts, authors } = ctx.globalData;
+      // Access shared data from module state
+      ctx.page.frontMatter.buildId = sharedBuildData.buildId;
 
-      // Add related posts
+      // Add page-specific processing
       if (ctx.page.frontMatter.type === 'post') {
-        ctx.page.frontMatter.relatedPosts = findRelatedPosts(
-          ctx.page,
-          posts,
-          3
-        );
+        ctx.page.frontMatter.section = 'blog';
       }
     }
   }
@@ -249,12 +224,10 @@ export default defineConfig({
     },
 
     afterRender: async (ctx) => {
-      // Only minify production builds
-      if (process.env.NODE_ENV !== 'production') {
-        return;
+      // Only log in production builds
+      if (process.env.NODE_ENV === 'production') {
+        console.log(`Built production page: ${ctx.page.url}`);
       }
-
-      ctx.html = await minifyHTML(ctx.html);
     }
   }
 });
@@ -263,14 +236,16 @@ export default defineConfig({
 ### Error Handling in Hooks
 
 ```javascript
+let fallbackData = null;
+
 export default defineConfig({
   hooks: {
     beforeAll: async (ctx) => {
       try {
-        ctx.globalData = await fetchExternalData();
+        fallbackData = await fetchExternalData();
       } catch (error) {
         console.warn('Failed to fetch external data, using fallback:', error.message);
-        ctx.globalData = { fallback: true };
+        fallbackData = { fallback: true };
       }
     },
 
@@ -293,6 +268,8 @@ export default defineConfig({
 ### Async Hook Patterns
 
 ```javascript
+let sharedData = {};
+
 export default defineConfig({
   hooks: {
     beforeAll: async (ctx) => {
@@ -303,14 +280,12 @@ export default defineConfig({
         fetchCategories()
       ]);
 
-      ctx.globalData = { posts, authors, categories };
+      sharedData = { posts, authors, categories };
     },
 
     afterAll: async (ctx) => {
       // Parallel deployment tasks
       await Promise.all([
-        generateSitemap(ctx.pages),
-        generateRSSFeed(ctx.pages),
         uploadToS3(ctx.config.outDir),
         purgeCloudflareCache()
       ]);
@@ -329,15 +304,22 @@ const isDraft = (page) => page.frontMatter.draft === true;
 const isPublished = (page) => !isDraft(page);
 const isBlogContent = (page) => page.url.startsWith('/blog/');
 
+let publishedPosts = [];
+
 export default defineConfig({
   hooks: {
     beforeAll: async (ctx) => {
-      const publishedPosts = ctx.pages
+      publishedPosts = ctx.pages
         .filter(isPost)
         .filter(isPublished)
         .sort((a, b) => new Date(b.frontMatter.date) - new Date(a.frontMatter.date));
+    },
 
-      ctx.globalData = { publishedPosts };
+    beforeRender: async (ctx) => {
+      // Use the filtered posts in page hooks
+      if (ctx.page.url === '/blog/') {
+        ctx.page.frontMatter.recentPosts = publishedPosts.slice(0, 5);
+      }
     }
   }
 });
@@ -374,14 +356,24 @@ function calculateReadingTime(content) {
 ### Blog with Related Posts
 
 ```javascript
+let allPosts = [];
+
+function intersection(arr1, arr2) {
+  return arr1.filter(item => arr2.includes(item));
+}
+
 export default defineConfig({
   hooks: {
+    beforeAll: async (ctx) => {
+      // Store all posts for use in page hooks
+      allPosts = ctx.pages.filter(p => p.frontMatter.type === 'post');
+    },
+
     beforeRender: async (ctx) => {
       if (ctx.page.frontMatter.type !== 'post') return;
 
       // Find related posts by tags
       const currentTags = ctx.page.frontMatter.tags || [];
-      const allPosts = ctx.pages.filter(p => p.frontMatter.type === 'post');
 
       const relatedPosts = allPosts
         .filter(p => p.url !== ctx.page.url)
