@@ -113,6 +113,10 @@ The process of marking cached entries as stale using `stati invalidate` with pat
 
 A page marked with `draft: true` in frontmatter, excluded from production builds unless `--include-drafts` is used.
 
+## Dynamic Attribute Values
+
+A templating pattern required when embedding dynamic content in HTML attributes. Eta doesn't support partial interpolation like mixing static and dynamic text in attributes. Instead, use template literals for the entire attribute value, or use `stati.propValue()` for space-separated values like multiple CSS classes. See [Dynamic Attribute Values](/core-concepts/templates#dynamic-attribute-values) in the templates documentation.
+
 ## Collection
 
 A group of pages in a directory, often with shared layout and navigation (e.g., blog posts, documentation sections).
