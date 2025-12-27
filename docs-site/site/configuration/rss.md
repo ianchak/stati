@@ -217,6 +217,7 @@ Customize how page data maps to RSS feed items:
 ### Default Mapping
 
 By default, Stati uses these frontmatter fields:
+
 - `title` → RSS item title
 - `description` → RSS item description
 - `publishedAt` or `date` → RSS item pubDate

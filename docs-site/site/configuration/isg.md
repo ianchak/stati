@@ -67,6 +67,7 @@ Aging rules allow you to progressively extend cache TTL based on content age. Th
 ### How Aging Rules Work
 
 Each aging rule specifies:
+
 - `untilDays` - Age threshold in days after content was rendered
 - `ttlSeconds` - Cache duration in seconds for content that reaches this age
 

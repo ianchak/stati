@@ -49,7 +49,7 @@ npm run typecheck
 
 ### Project Structure
 
-```
+```text
 stati/
 ├── packages/
 │   ├── core/              # Core Stati engine
@@ -477,8 +477,7 @@ More detailed information.
 
 Links to related documentation.
 
-````
-
+```text
 ### API Documentation
 
 Use TypeScript interfaces for API docs:

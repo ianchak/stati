@@ -26,6 +26,7 @@ Stati follows these key principles:
 **Handling**: Immediate failure with detailed error message
 
 **Common scenarios**:
+
 - Configuration file not found or unreadable
 - Invalid configuration syntax (malformed JSON/JS)
 - Missing required configuration fields
@@ -50,6 +51,7 @@ export default {
 **Handling**: Skip problematic files and continue with build
 
 **Common scenarios**:
+
 - Content directory not found or inaccessible
 - Individual content files with invalid front matter
 - File system permission errors
@@ -72,6 +74,7 @@ draft # ❌ Error: Missing value for draft field
 **Handling**: Use built-in fallback template
 
 **Common scenarios**:
+
 - Template file not found
 - Template syntax errors
 - Template rendering failures
@@ -97,6 +100,7 @@ draft # ❌ Error: Missing value for draft field
 **Handling**: Immediate failure (critical for build success)
 
 **Common scenarios**:
+
 - Output directory permission errors
 - Disk space exhausted
 - File system corruption
@@ -111,6 +115,7 @@ draft # ❌ Error: Missing value for draft field
 **Handling**: Immediate failure (hooks are user-controlled)
 
 **Common scenarios**:
+
 - Hook function throws an exception
 - Async hook rejection
 - Hook timeout
@@ -179,6 +184,7 @@ When template rendering fails, Stati uses a built-in fallback:
 ### Content Fallback
 
 When markdown processing fails:
+
 - Original content is wrapped in `<pre>` tags
 - HTML is properly escaped for safety
 - Build continues with fallback content
@@ -186,6 +192,7 @@ When markdown processing fails:
 ### Navigation Fallback
 
 If navigation building fails:
+
 - Empty navigation array is provided to templates
 - Site remains functional without navigation
 - Error is logged but build continues
@@ -229,6 +236,7 @@ interface BuildStats {
 ### 1. Isolate the Problem
 
 **Build with subset of content:**
+
 ```bash
 # Move most content out temporarily
 mv site/blog site/blog-backup
@@ -236,6 +244,7 @@ stati build
 ```
 
 **Check configuration:**
+
 ```bash
 # Test configuration loading
 node -e "console.log(require('./stati.config.js'))"
@@ -244,11 +253,13 @@ node -e "console.log(require('./stati.config.js'))"
 ### 2. Use Verbose Logging
 
 **Enable detailed output:**
+
 ```bash
 DEBUG=stati:* stati build
 ```
 
 **Check specific components:**
+
 ```bash
 DEBUG=stati:templates stati build
 DEBUG=stati:content stati build
@@ -257,16 +268,19 @@ DEBUG=stati:content stati build
 ### 3. Common Error Scenarios
 
 **Build fails immediately:**
+
 - ✅ Check configuration file syntax
 - ✅ Verify directory permissions
 - ✅ Ensure required directories exist
 
 **Some pages missing from output:**
+
 - ✅ Check for `draft: true` in front matter
 - ✅ Verify content directory structure
 - ✅ Look for template resolution errors
 
 **Template rendering issues:**
+
 - ✅ Verify template syntax in isolation
 - ✅ Check template data availability
 - ✅ Review template file permissions
@@ -314,6 +328,7 @@ export default defineConfig({
 ### 3. Test Content Incrementally
 
 **Gradual rollout approach:**
+
 1. Test with a subset of content first
 2. Use `--include-drafts` flag for testing
 3. Monitor error output during builds
@@ -322,6 +337,7 @@ export default defineConfig({
 ### 4. Use Consistent Front Matter
 
 **Establish a schema:**
+
 ```yaml
 ---
 title: string (required)
@@ -353,6 +369,7 @@ If a build is interrupted:
 ### Cache-Related Issues
 
 **Clear cache when encountering:**
+
 ```bash
 # Clear all cache
 stati build --clean

@@ -44,8 +44,7 @@ function hello() {
 ```
 ````
 
-````
-
+```text
 ### Front Matter
 
 Every markdown file can include YAML front matter:

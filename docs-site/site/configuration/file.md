@@ -114,6 +114,7 @@ export default defineConfig({
 > **Note:** TOC extraction and heading anchor generation are built into Stati and enabled by default. You don't need `markdown-it-anchor` or `markdown-it-toc-done-right` plugins.
 
 **Available Options:**
+
 - `plugins` (array) - Array of markdown-it plugin names (strings) or [name, options] tuples
 - `configure` (function) - Function that receives the markdown-it instance for custom configuration
 - `toc` (boolean) - Enable/disable TOC extraction and heading anchor generation (default: `true`)
@@ -195,6 +196,7 @@ export default defineConfig({
 ```
 
 **Available Options:**
+
 - `enabled` (boolean) - Enable or disable ISG caching (default: false)
 - `ttlSeconds` (number) - Default cache time-to-live in seconds (default: 3600)
 - `maxAgeCapDays` (number) - Maximum age in days for applying aging rules

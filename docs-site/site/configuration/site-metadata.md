@@ -77,6 +77,7 @@ export default defineConfig({
 ```
 
 Common locale formats:
+
 - `'en-US'` - English (United States)
 - `'en-GB'` - English (United Kingdom)
 - `'es-ES'` - Spanish (Spain)
@@ -192,6 +193,7 @@ export default defineConfig({
 ```
 
 Stati's build system automatically:
+
 - Detects existing SEO tags in your HTML
 - Generates missing tags from page frontmatter
 - Injects them before `</head>`

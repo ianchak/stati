@@ -260,11 +260,13 @@ Stati doesn't provide built-in syntax highlighting. You have two options:
 Use the `markdown-it-prism` plugin with Prism.js:
 
 **Install:**
+
 ```bash
 npm install @widgetbot/markdown-it-prism prismjs
 ```
 
 **Configure:**
+
 ```javascript
 export default defineConfig({
   markdown: {
@@ -276,6 +278,7 @@ export default defineConfig({
 ```
 
 **Add to layout:**
+
 ```html
 <link rel="stylesheet" href="/path/to/prism.css">
 <script src="/path/to/prism.js"></script>

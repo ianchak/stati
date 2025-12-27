@@ -14,7 +14,7 @@ Stati uses filesystem-based routing, which means the structure of your `site/` d
 
 The mapping from files to URLs is straightforward:
 
-```
+```text
 site/
 ├── index.md              → /
 ├── about.md               → /about/
@@ -29,7 +29,7 @@ site/
 
 Every directory can have its own `index.md` file, which becomes the homepage for that section:
 
-```
+```text
 site/
 ├── index.md              → / (site homepage)
 ├── docs/
@@ -50,7 +50,7 @@ Stati automatically generates clean URLs by:
 - Converting `index` files to directory URLs
 - Adding trailing slashes for consistency
 
-```
+```text
 about.md → /about/
 blog/index.md → /blog/
 blog/my-post.md → /blog/my-post/
@@ -59,6 +59,7 @@ blog/my-post.md → /blog/my-post/
 ### Important: No Automatic Slug Transformation
 
 **Stati preserves filenames exactly as written** (minus the `.md` extension). There is NO automatic:
+
 - Lowercase conversion
 - Space/underscore to hyphen conversion
 - Special character removal
@@ -66,7 +67,7 @@ blog/my-post.md → /blog/my-post/
 
 This means you must use URL-safe filenames from the start:
 
-```
+```text
 ✅ Good (URL-safe):
 about.md → /about/
 my-post.md → /my-post/
@@ -94,7 +95,7 @@ To ensure clean, working URLs:
 
 Stati supports unlimited nesting levels:
 
-```
+```text
 site/
 └── docs/
     └── guides/
@@ -106,7 +107,7 @@ site/
 
 Organize content by topic, date, or any logical structure:
 
-```
+```text
 site/
 ├── blog/
 │   ├── 2024/
@@ -173,6 +174,7 @@ site/
 #### **Use Cases for Underscore Exclusion**
 
 **Partial Templates:**
+
 ```text
 _partials/
 ├── header.eta          # Site header
@@ -182,6 +184,7 @@ _partials/
 ```
 
 **Component Library:**
+
 ```text
 _components/
 ├── button.eta          # Reusable button
@@ -193,6 +196,7 @@ _components/
 ```
 
 **Data and Configuration:**
+
 ```text
 _data/
 ├── site-config.json    # Site-wide settings
@@ -202,6 +206,7 @@ _data/
 ```
 
 **Development Files:**
+
 ```text
 _drafts/                # Work-in-progress content
 _temp/                  # Temporary build files
@@ -215,7 +220,7 @@ This convention allows you to organize helper files, templates, and components w
 
 `layout.eta` files are special template files that don't generate routes but define the layout for their directory and subdirectories:
 
-```
+```text
 site/
 ├── layout.eta          # Root layout
 ├── index.md            → / (uses root layout)
@@ -231,7 +236,7 @@ site/
 
 For blogs and news sites, organize by date:
 
-```
+```text
 site/
 └── blog/
     ├── index.md
@@ -247,7 +252,7 @@ site/
 
 For documentation or portfolio sites:
 
-```
+```text
 site/
 ├── projects/
 │   ├── web-development/
@@ -272,6 +277,7 @@ permalink: '/custom-path/'
 ```
 
 **Important:** When using `permalink`:
+
 - Must be a static string (no template variables or date formatting)
 - Must start with `/`
 - Should end with `/` for consistency
@@ -377,7 +383,7 @@ See the [Navigation API](/api/navigation) for more details on breadcrumb customi
 
 1. **Use meaningful directory names**
 
-   ```
+   ```text
    site/
    ├── getting-started/    # Clear section purpose
    ├── tutorials/          # Obvious content type
@@ -386,7 +392,7 @@ See the [Navigation API](/api/navigation) for more details on breadcrumb customi
 
 2. **Keep related content together**
 
-   ```
+   ```text
    site/
    └── blog/
        ├── index.md        # Blog homepage
@@ -419,7 +425,7 @@ See the [Navigation API](/api/navigation) for more details on breadcrumb customi
 
 Organize content by language:
 
-```
+```text
 site/
 ├── en/
 │   ├── index.md → /en/
@@ -436,7 +442,7 @@ site/
 
 Structure API docs logically:
 
-```
+```text
 site/
 └── api/
     ├── index.md → /api/ (API overview)
