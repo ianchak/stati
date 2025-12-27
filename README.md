@@ -16,11 +16,11 @@ Built for developers who want modern tooling without the complexity. Write in Ma
 
 ## Why Stati?
 
-- **Fast Setup** — Create a site in under 2 minutes with `npx create-stati`
-- **Simple by Design** — Markdown files become pages. No complex configuration required.
-- **Smart Caching** — Incremental builds with intelligent cache invalidation
-- **Your Choice of CSS** — Plain CSS, Sass, or Tailwind CSS
-- **SEO Ready** — Automatic meta tags, Open Graph, and structured data
+- **Fast Setup** - Create a site in under 2 minutes with `npx create-stati`
+- **Simple by Design** - Markdown files become pages. No complex configuration required.
+- **Smart Caching** - Incremental builds with intelligent cache invalidation
+- **Your Choice of CSS** - Plain CSS, Sass, or Tailwind CSS
+- **SEO Ready** - Automatic meta tags, Open Graph, and structured data
 
 ---
 
@@ -109,9 +109,9 @@ Customize layouts with [Eta templates](https://eta.js.org):
 ### Incremental Static Generation (ISG)
 
 Pages rebuild only when needed:
-- **Smart caching** — Only changed pages rebuild
-- **TTL-based refresh** — Control how long pages stay cached
-- **Tag-based invalidation** — Update related content together
+- **Smart caching** - Only changed pages rebuild
+- **TTL-based refresh** - Control how long pages stay cached
+- **Tag-based invalidation** - Update related content together
 
 ```bash
 # Invalidate by tag
@@ -144,9 +144,9 @@ Choose your styling approach during setup:
 npx create-stati my-site --styling=tailwind
 ```
 
-- **Plain CSS** — Simple and straightforward
-- **Sass/SCSS** — CSS with superpowers
-- **Tailwind CSS** — Utility-first framework
+- **Plain CSS** - Simple and straightforward
+- **Sass/SCSS** - CSS with superpowers
+- **Tailwind CSS** - Utility-first framework
 
 ---
 
@@ -349,12 +349,12 @@ Your content here...
 
 ## Documentation
 
-- [**Getting Started**](https://stati.build/getting-started/introduction/) — Installation and first steps
-- [**Core Concepts**](https://stati.build/core-concepts/overview/) — How Stati works
-- [**Configuration**](https://stati.build/configuration/file/) — All configuration options
-- [**SEO Guide**](https://stati.build/configuration/seo/) — Optimize for search engines
-- [**ISG & Caching**](https://stati.build/configuration/isg/) — Smart rebuilds explained
-- [**API Reference**](https://stati.build/api/reference/) — Complete API documentation
+- [**Getting Started**](https://stati.build/getting-started/introduction/) - Installation and first steps
+- [**Core Concepts**](https://stati.build/core-concepts/overview/) - How Stati works
+- [**Configuration**](https://stati.build/configuration/file/) - All configuration options
+- [**SEO Guide**](https://stati.build/configuration/seo/) - Optimize for search engines
+- [**ISG & Caching**](https://stati.build/configuration/isg/) - Smart rebuilds explained
+- [**API Reference**](https://stati.build/api/reference/) - Complete API documentation
 
 ---
 
@@ -394,11 +394,11 @@ We welcome contributions! See [CONTRIBUTING.md](./CONTRIBUTING.md) for:
 
 Stati is built on these principles:
 
-- **Simplicity over complexity** — Only include what you need
-- **Speed by default** — Fast builds, fast development, fast sites
-- **TypeScript-first** — Type safety throughout
-- **Developer experience** — Great tooling makes great sites
-- **Safe defaults** — Sensible choices that just work
+- **Simplicity over complexity** - Only include what you need
+- **Speed by default** - Fast builds, fast development, fast sites
+- **TypeScript-first** - Type safety throughout
+- **Developer experience** - Great tooling makes great sites
+- **Safe defaults** - Sensible choices that just work
 
 ---
 

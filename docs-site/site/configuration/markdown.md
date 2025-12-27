@@ -18,9 +18,9 @@ import { defineConfig } from '@stati/core';
 
 export default defineConfig({
   markdown: {
-    // Array of markdown-it plugins
+    // Array of markdown-it plugins (Stati auto-prepends 'markdown-it-')
     plugins: [
-      'anchor',                    // Plugin name only
+      'footnote',                  // Plugin name only
       ['prism', { options }],      // Plugin with options
     ],
 
@@ -35,6 +35,8 @@ export default defineConfig({
   },
 });
 ```
+
+> **Note:** TOC extraction and heading anchor generation are built into Stati and enabled by default. You don't need external plugins for these features.
 
 ### `markdown.toc`
 
@@ -82,7 +84,7 @@ The `plugins` option accepts an array of markdown-it plugins. Stati automaticall
 ```javascript
 export default defineConfig({
   markdown: {
-    plugins: ['anchor', 'footnote', 'emoji'],
+    plugins: ['footnote', 'emoji', 'external-links'],
   },
 });
 ```
@@ -93,11 +95,11 @@ export default defineConfig({
 export default defineConfig({
   markdown: {
     plugins: [
-      ['anchor', {
-        slugify: (s) => s.toLowerCase().trim().replace(/[\s\W-]+/g, '-'),
-      }],
       ['prism', {
         defaultLanguage: 'javascript',
+      }],
+      ['external-links', {
+        externalTarget: '_blank',
       }],
     ],
   },
@@ -109,18 +111,18 @@ export default defineConfig({
 Plugins must be installed as npm dependencies:
 
 ```bash
-npm install markdown-it-anchor
 npm install markdown-it-footnote
 npm install @widgetbot/markdown-it-prism
+npm install markdown-it-external-links
 ```
 
 ### Common Plugins
 
+> **Built-in Features:** Stati has built-in TOC extraction and heading anchor generation (enabled by default). You don't need `markdown-it-anchor` or `markdown-it-toc-done-right` plugins.
+
 | Plugin | Package | Purpose |
 |--------|---------|---------|
-| `anchor` | `markdown-it-anchor` | Add IDs to headings |
 | `prism` | `@widgetbot/markdown-it-prism` | Syntax highlighting |
-| `toc-done-right` | `markdown-it-toc-done-right` | Table of contents |
 | `footnote` | `markdown-it-footnote` | Footnote support |
 | `emoji` | `markdown-it-emoji` | Emoji shortcuts :smile: |
 | `external-links` | `markdown-it-external-links` | External link attributes |
@@ -132,16 +134,8 @@ npm install @widgetbot/markdown-it-prism
 ```javascript
 export default defineConfig({
   markdown: {
+    // Note: TOC and heading anchors are built-in (enabled by default)
     plugins: [
-      // Add IDs to headings for deep linking
-      ['anchor', {
-        slugify: (s) => s.toLowerCase().trim().replace(/[\s\W-]+/g, '-'),
-        permalink: false,
-      }],
-
-      // Generate table of contents
-      'toc-done-right',
-
       // Syntax highlighting with Prism.js
       ['prism', {
         defaultLanguage: 'javascript',
@@ -266,11 +260,13 @@ Stati doesn't provide built-in syntax highlighting. You have two options:
 Use the `markdown-it-prism` plugin with Prism.js:
 
 **Install:**
+
 ```bash
 npm install @widgetbot/markdown-it-prism prismjs
 ```
 
 **Configure:**
+
 ```javascript
 export default defineConfig({
   markdown: {
@@ -282,6 +278,7 @@ export default defineConfig({
 ```
 
 **Add to layout:**
+
 ```html
 <link rel="stylesheet" href="/path/to/prism.css">
 <script src="/path/to/prism.js"></script>
@@ -374,15 +371,8 @@ import { defineConfig } from '@stati/core';
 
 export default defineConfig({
   markdown: {
+    // Note: TOC and heading anchors are built-in (enabled by default)
     plugins: [
-      // Heading anchors
-      ['anchor', {
-        slugify: (s) => s.toLowerCase().trim().replace(/[\s\W-]+/g, '-'),
-      }],
-
-      // Table of contents
-      'toc-done-right',
-
       // Syntax highlighting
       ['prism', { defaultLanguage: 'javascript' }],
 

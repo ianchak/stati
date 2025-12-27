@@ -66,11 +66,11 @@ This creates a project with:
 
 - `stati.config.ts` - Type-safe configuration file
 - `tsconfig.json` - TypeScript compiler configuration
-- `src/main.ts` - Entry point for your TypeScript code
+- `src/main.ts` - Entry point for client-side TypeScript code
 
-Run `npm run typecheck` to validate your TypeScript code. Learn more in the [TypeScript configuration guide](/configuration/typescript).
+Stati compiles your TypeScript files from `src/` using esbuild. Run `npm run typecheck` to validate your TypeScript code. Learn more in the [TypeScript configuration guide](/configuration/typescript).
 
-> **Tip:** If you choose Tailwind CSS, the scaffolder sets up Stati's built-in Tailwind integration in the dev script. This runs both the dev server and Tailwind watcher in a single process—no need for separate build scripts or process managers!
+> **Tip:** If you choose Tailwind CSS, the scaffolder sets up Stati's built-in Tailwind integration in the dev script. This runs both the dev server and Tailwind watcher in a single process - no need for separate build scripts or process managers!
 
 ## Manual Installation
 
@@ -105,10 +105,11 @@ export default defineConfig({
 });
 ```
 
-Add scripts to your `package.json`:
+Add scripts to your `package.json` (and ensure `"type": "module"` for ESM imports):
 
 ```json
 {
+  "type": "module",
   "scripts": {
     "dev": "stati dev",
     "build": "stati build",

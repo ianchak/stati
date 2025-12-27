@@ -399,6 +399,4 @@ export default defineConfig({
 });
 ```
 
-
-
 Build hooks provide powerful extensibility while maintaining Stati's performance and simplicity. Use them to integrate external services, process content dynamically, and customize the build pipeline to match your specific needs.

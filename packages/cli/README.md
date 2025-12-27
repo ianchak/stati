@@ -1,6 +1,6 @@
 # @stati/cli
 
-**The command-line interface for Stati — a minimal, TypeScript-first static site generator that's fast to learn and even faster to build with.**
+**The command-line interface for Stati - a minimal, TypeScript-first static site generator that's fast to learn and even faster to build with.**
 
 Run your development server, build for production, and manage your site's cache with simple commands.
 

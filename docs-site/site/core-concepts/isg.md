@@ -53,7 +53,7 @@ Stati maintains a cache manifest at `.stati/cache/manifest.json`:
       "tags": ["blog", "posts"],
       "publishedAt": "2024-01-15T10:00:00Z",
       "renderedAt": "2024-01-15T10:00:00Z",
-      "ttlSeconds": 3600
+      "ttlSeconds": 21600
     }
   }
 }
@@ -81,11 +81,11 @@ export default defineConfig({
     // Enable ISG (default: true)
     enabled: true,
 
-    // Cache TTL in seconds (default: 1 hour)
-    ttlSeconds: 3600,
+    // Cache TTL in seconds (default: 6 hours)
+    ttlSeconds: 21600,
 
-    // Maximum age cap in days (default: 30 days)
-    maxAgeCapDays: 30,
+    // Maximum age cap in days (default: 365 days)
+    maxAgeCapDays: 365,
 
     // Progressive TTL increases based on content age
     aging: [
@@ -154,7 +154,7 @@ ISG uses a single global configuration approach. All content shares the same TTL
 export default defineConfig({
   isg: {
     // Global TTL for all content
-    ttlSeconds: 3600, // 1 hour
+    ttlSeconds: 21600, // 6 hours
 
     // Age-based TTL adjustments apply to all content
     aging: [
@@ -219,20 +219,13 @@ Stati with ISG (incremental):
 
 ### Development Experience
 
-```bash
-# Initial dev server start
-$ stati dev
-✅ Build completed in 2.3s (1,247 pages)
-🚀 Dev server running at [http://localhost:3000](http://localhost:3000)
+During development, ISG provides fast feedback:
 
-# Make a change to blog/post-1.md
-✅ Rebuilt in 0.1s (1 page updated)
-♻️  Browser refreshed
+- **Initial build** - Full build of all pages
+- **Content change** - Only the changed page and its dependents rebuild
+- **Template change** - All pages using that template rebuild
 
-# Make a change to layout.eta
-✅ Rebuilt in 1.2s (247 pages updated)
-♻️  Browser refreshed
-```
+This means most edits during development result in significantly faster rebuilds compared to full site regeneration.
 
 ## Cache Storage
 
@@ -246,23 +239,42 @@ $ stati dev
 
 ### Cache Persistence
 
-The cache persists between builds in the `.stati/cache/` directory:
+The `.stati/cache/` directory stores build cache data between runs:
 
 - `manifest.json` - Tracks all cached pages and their metadata
-- Generated HTML files are cached until their dependencies change
+- Cache is invalidated when content or dependencies change
+
+**Hosting Considerations:**
+
+| Environment                  | Cache Behavior         | Setup Required              |
+| ---------------------------- | ---------------------- | --------------------------- |
+| Traditional servers          | Persists on disk       | None                        |
+| CI/CD pipelines              | Lost between runs      | Cache `.stati/` directory   |
+| Serverless (Vercel, Netlify) | Ephemeral filesystems  | Use platform cache features |
+| Docker containers            | Lost on rebuild        | Mount volume for `.stati/`  |
+
+**CI/CD Cache Examples:**
+
+```yaml
+# GitHub Actions
+- uses: actions/cache@v4
+  with:
+    path: .stati/cache
+    key: stati-cache-${{ hashFiles('site/**') }}
+    restore-keys: stati-cache-
+
+# GitLab CI
+cache:
+  paths:
+    - .stati/cache/
+```
+
+For platforms with ephemeral filesystems, the first build will always be a full build. Subsequent builds within the same deployment or cached CI run will benefit from ISG.
 
 ## Monitoring and Debugging
 
 ### Build Output
 
-Stati shows cache performance during builds:
-
-```bash
-$ stati build
-
-✅ Build completed in 1.2s
-📄 Pages: 247 generated, 1,000 cached (95.2% hit rate)
-💾 Cache: 156 MB, 1,247 entries
-```
+Stati reports cache performance during builds, showing how many pages were generated vs cached and the cache hit rate. Use the `--metrics` flag for detailed build performance data.
 
 ISG is central to Stati's build workflow. Understanding how to configure and optimize it will improve your development experience and build times. Next, learn about [Static Assets & Bundling](/core-concepts/static-assets) to understand how Stati handles CSS, JavaScript, and other assets.

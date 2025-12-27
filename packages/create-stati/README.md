@@ -1,6 +1,6 @@
 # create-stati
 
-**The official scaffolding tool for Stati — get a new static site up and running in under 2 minutes.**
+**The official scaffolding tool for Stati - get a new static site up and running in under 2 minutes.**
 
 Create a production-ready Stati site with your choice of template and styling, complete with sensible defaults and best practices built-in.
 

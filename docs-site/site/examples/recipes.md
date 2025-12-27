@@ -453,7 +453,7 @@ Use filters in templates:
 
 ### Breadcrumb Navigation
 
-Generate breadcrumbs from the current page URL:
+Stati provides `stati.nav.getBreadcrumbs()` which uses the navigation tree for accurate titles:
 
 ```html
 <!-- _partials/breadcrumbs.eta -->
@@ -462,21 +462,12 @@ Generate breadcrumbs from the current page URL:
     <li class="breadcrumb-item">
       <a href="/">Home</a>
     </li>
-    <%
-      const parts = stati.page.url.split('/').filter(Boolean);
-      let currentPath = '';
-    %>
-    <% parts.forEach((part, index) => { %>
-      <% currentPath += '/' + part; %>
+    <% stati.nav.getBreadcrumbs().forEach((crumb, index, array) => { %>
       <li class="breadcrumb-item">
-        <% if (index < parts.length - 1) { %>
-          <a href="<%= currentPath %>">
-            <%= part.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) %>
-          </a>
+        <% if (index === array.length - 1) { %>
+          <span aria-current="page"><%= crumb.title %></span>
         <% } else { %>
-          <span aria-current="page">
-            <%= stati.page.title || part.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) %>
-          </span>
+          <a href="<%= crumb.url %>"><%= crumb.title %></a>
         <% } %>
       </li>
     <% }); %>
@@ -678,6 +669,9 @@ This page will be tagged with `blog`, `tutorial`, and `javascript` in the cache,
 stati invalidate "tag:blog"
 stati invalidate "tag:tutorial"
 
+# Invalidate by path prefix
+stati invalidate "path:/blog"
+
 # Invalidate by glob pattern
 stati invalidate "glob:/blog/**"
 
@@ -753,9 +747,8 @@ Add custom markdown processing with plugins and the configure function:
 export default defineConfig({
   markdown: {
     // Load markdown-it plugins (Stati auto-prepends 'markdown-it-')
+    // Note: TOC and heading anchors are built-in, no plugins needed
     plugins: [
-      'anchor',
-      'toc-done-right',
       ['container', 'tip'],
       ['container', 'warning']
     ],

@@ -342,8 +342,6 @@ interface TemplateContext {
 }
 ```
 
-
-
 ## ISG Types
 
 ### ISG Configuration
@@ -477,8 +475,6 @@ For advanced use cases like preloading, access via `stati.assets`:
   <% } %>
 <% } %>
 ```
-
-
 
 ## Utility Types
 

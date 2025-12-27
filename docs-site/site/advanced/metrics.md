@@ -72,6 +72,8 @@ The HTML report provides:
 - Per-page timing waterfall chart (when `--metrics-detailed` is also used)
 - Embedded JSON data for debugging
 
+![Stati Build Metrics HTML Report](/images/stati_build_metrics.jpg)
+
 You can combine all flags for the most comprehensive output:
 
 ```bash
@@ -186,7 +188,7 @@ The `counts` object tracks quantities processed during the build:
 
 #### Templates Loaded
 
-The `templatesLoaded` counter tracks the total number of Eta templates (layouts and partials) loaded during the build. This is an **accumulated total** across all rendered pages—if 5 pages each load 4 templates, `templatesLoaded` will be 20.
+The `templatesLoaded` counter tracks the total number of Eta templates (layouts and partials) loaded during the build. This is an **accumulated total** across all rendered pages - if 5 pages each load 4 templates, `templatesLoaded` will be 20.
 
 When using `--metrics-detailed`, per-page template counts are also available in `pageTimings`:
 

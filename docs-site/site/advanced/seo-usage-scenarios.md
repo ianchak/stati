@@ -20,16 +20,6 @@ seo:
 
 This guide covers five different approaches to using Stati's SEO features, from zero-configuration automatic injection to full custom control. Choose the approach that best fits your project's requirements.
 
-## Table of Contents
-
-- [Scenario 1: Automatic SEO](#scenario-1-automatic-seo)
-- [Scenario 2: Enhanced SEO](#scenario-2-enhanced-seo)
-- [Scenario 3: Hybrid Mode](#scenario-3-hybrid-mode)
-- [Scenario 4: Selective Manual Control](#scenario-4-selective-manual-control)
-- [Scenario 5: Full Custom Control](#scenario-5-full-custom-control)
-- [Comparison Table](#comparison-table)
-- [Testing & Validation](#testing-validation)
-
 ---
 
 ## Scenario 1: Automatic SEO
