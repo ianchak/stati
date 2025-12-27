@@ -17,7 +17,7 @@ Complete reference for Stati template context, built-in helpers, and partial tem
 **Key Topics:**
 
 - Template context (`stati` object)
-- Built-in helpers (`propValue`, text processing)
+- Built-in helpers (`propValue`, `generateSEO`)
 - Partial templates and component patterns
 - Custom filter registration
 
