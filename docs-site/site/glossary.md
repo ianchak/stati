@@ -75,7 +75,7 @@ The object passed to every Eta template containing:
 - `stati.page` – Current page data and frontmatter
 - `stati.content` – Rendered HTML content
 - `stati.nav` – Navigation helpers and tree
-- `stati.partials` – Rendered partial markup
+- `stati.partials` – Partial templates accessible as properties (rendered markup) or callable functions (with props)
 
 ## SEO Metadata
 
