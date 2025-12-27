@@ -49,7 +49,7 @@ const config: StatiConfig = {
   // ISG options with autocomplete
   isg: {
     enabled: true,
-    ttlSeconds: 3600,
+    ttlSeconds: 21600,
   },
 };
 
@@ -180,10 +180,10 @@ export default defineConfig({
     enabled: true,
 
     // Default cache TTL in seconds
-    ttlSeconds: 3600, // 1 hour
+    ttlSeconds: 21600, // 6 hours
 
     // Maximum age cap in days
-    maxAgeCapDays: 30,
+    maxAgeCapDays: 365,
 
     // Aging rules for progressive cache extension
     aging: [
@@ -193,13 +193,12 @@ export default defineConfig({
     ],
   },
 });
-```
 
 **Available Options:**
 
-- `enabled` (boolean) - Enable or disable ISG caching (default: false)
-- `ttlSeconds` (number) - Default cache time-to-live in seconds (default: 3600)
-- `maxAgeCapDays` (number) - Maximum age in days for applying aging rules
+- `enabled` (boolean) - Enable or disable ISG caching (default: true)
+- `ttlSeconds` (number) - Default cache time-to-live in seconds (default: 21600)
+- `maxAgeCapDays` (number) - Maximum age in days for applying aging rules (default: 365)
 - `aging` (array) - Array of aging rules with `untilDays` and `ttlSeconds` properties
 
 **Aging Rules:**
@@ -433,7 +432,7 @@ const environments = {
     },
     isg: {
       enabled: true,
-      ttlSeconds: 3600,
+      ttlSeconds: 21600,
       aging: [
         { untilDays: 7, ttlSeconds: 21600 },
         { untilDays: 30, ttlSeconds: 86400 },
