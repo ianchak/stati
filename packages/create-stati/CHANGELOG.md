@@ -1,5 +1,11 @@
 # create-stati
 
+## 1.11.8
+
+### Patch Changes
+
+- 7ba43f5: standardize punctuation in documentation for consistency
+
 ## 1.11.7
 
 ### Patch Changes

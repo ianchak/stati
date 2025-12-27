@@ -1,5 +1,11 @@
 # @stati/core
 
+## 1.23.1
+
+### Patch Changes
+
+- 7ba43f5: standardize punctuation in documentation for consistency
+
 ## 1.23.0
 
 ### Minor Changes

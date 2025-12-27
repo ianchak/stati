@@ -1,5 +1,13 @@
 # @stati/cli
 
+## 1.13.1
+
+### Patch Changes
+
+- 7ba43f5: standardize punctuation in documentation for consistency
+- Updated dependencies [7ba43f5]
+  - @stati/core@1.23.1
+
 ## 1.13.0
 
 ### Minor Changes
