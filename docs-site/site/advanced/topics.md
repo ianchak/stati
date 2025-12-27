@@ -155,7 +155,7 @@ Every template receives the `stati` object with comprehensive page and site data
 <%= stati.site.title %>     <!-- Site title -->
 <%= stati.site.baseUrl %>   <!-- Site base URL -->
 
-<%= stati.nav %>            <!-- Auto-generated navigation -->
+<%= stati.nav %>            <!-- Navigation tree helpers -->
 <%= stati.collection %>     <!-- Collection data (for index pages) -->
 ```
 
