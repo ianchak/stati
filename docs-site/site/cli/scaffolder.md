@@ -28,7 +28,7 @@ Running the scaffolder will:
 - Update `package.json` with your project name and Stati metadata
 - Set up optional styling scripts based on the chosen styling option
 - Initialize a Git repository by default (use `--no-git` to skip)
-- Install dependencies automatically when enabled (defaults to prompt)
+- Install dependencies by default (use `--no-install` to skip)
 
 > **Note:** You can skip automatic dependency installation with `--no-install` and install them manually later.
 >
