@@ -65,7 +65,9 @@ Static assets that should be copied directly to the output directory. Everything
 
 Template partials that can be included in your layouts and pages (or even other partials).
 
-Directories starting with `_` are excluded from routing. So you can organize the structure of your partials as you see fit.
+Directories starting with `_` are excluded from routing, so you can organize your partials as you see fit.
+
+**Example organization:**
 
 - **`_partials/header.eta`** - Site header
 - **`_components/footer.eta`** - Site footer
@@ -161,11 +163,13 @@ site/
 
 ## Special Files and Directories
 
-### Files Starting with `_`
+### Directories Starting with `_`
 
-- **Excluded from routing** - Won't generate pages
-- **Used for partials and utilities** - Can be included in templates
+- **Excluded from routing** - Contents won't generate pages
+- **Used for partials and utilities** - Templates can be included via `stati.partials`
 - **Examples**: `_partials/`, `_components/`, `_data/`
+
+> **Note:** Individual files starting with `_` (like `_draft.md`) are NOT automatically excluded. Use `draft: true` in frontmatter to exclude drafts.
 
 ### Template Inheritance
 
@@ -179,7 +183,7 @@ Layouts and partials cascade down the directory tree:
 
 - **`index.md`** - Becomes the directory's homepage
 - **`site/blog/index.md`** → `/blog/`
-- **No index file** → Directory listing (if enabled)
+- **No index file** → 404 (add an `index.md` to make the directory accessible)
 
 ## Build Output
 

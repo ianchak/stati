@@ -92,7 +92,7 @@ npm run watch:css   # Watch and compile SCSS only
 npm run build:css   # Compile SCSS only
 ```
 
-The scaffolder creates a `styles/` directory with your SCSS source files and sets up the build pipeline.
+The scaffolder creates an `src/styles.scss` file with your SCSS source and sets up the build pipeline.
 
 ## Tailwind CSS Integration
 

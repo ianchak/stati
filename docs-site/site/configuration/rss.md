@@ -217,6 +217,7 @@ Customize how page data maps to RSS feed items:
 ### Default Mapping
 
 By default, Stati uses these frontmatter fields:
+
 - `title` → RSS item title
 - `description` → RSS item description
 - `publishedAt` or `date` → RSS item pubDate
@@ -487,6 +488,9 @@ if (result.warnings.length > 0) {
 
 - Missing required fields (`filename`, `title`, `description`)
 - Invalid TTL value (must be non-negative)
+- Invalid `maxItems` value (must be a positive number)
+- Invalid `sortBy` value (must be one of: `date-desc`, `date-asc`, `title-asc`, `title-desc`, `custom`)
+- Missing `sortFn` when `sortBy` is `custom`
 - Duplicate feed filenames
 - Missing image fields when image is specified
 

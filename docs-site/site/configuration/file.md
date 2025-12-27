@@ -41,13 +41,15 @@ const config: StatiConfig = {
     defaultLocale: 'en-US',
   },
 
-  // Full type safety for all options
+  // Type-safe plugin configuration
   markdown: {
-    options: {
-      html: true,
-      linkify: true,
-      typographer: true,
-    },
+    plugins: [['footnote', { backref: true }]],
+  },
+
+  // ISG options with autocomplete
+  isg: {
+    enabled: true,
+    ttlSeconds: 21600,
   },
 };
 
@@ -64,18 +66,22 @@ The foundation of your site configuration:
 export default defineConfig({
   site: {
     title: 'Stati Documentation',        // Required
-    baseUrl: 'https://stati.dev',         // Required
-    defaultLocale: 'en-US',               // Optional
+    baseUrl: 'https://stati.build',      // Required
+    description: 'Build static sites',   // Optional
+    defaultLocale: 'en-US',              // Optional
   },
 });
 ```
 
 **Required Fields:**
+
 - `title` (string) - The site's title, used in templates and metadata
 - `baseUrl` (string) - Base URL for the site, used for absolute URL generation
 
 **Optional Fields:**
+
 - `defaultLocale` (string) - Default locale for internationalization (e.g., 'en-US', 'fr-FR')
+- `description` (string) - Default site description for meta tags (used as fallback when page has no description)
 
 ### Markdown Configuration
 
@@ -86,9 +92,8 @@ export default defineConfig({
   markdown: {
     // Plugin configuration - array of plugin names or [name, options] tuples
     plugins: [
-      'anchor',                    // markdown-it-anchor - Add anchors to headings
-      'toc-done-right',           // markdown-it-toc-done-right - Table of contents
-      ['footnote', { /* options */ }],  // markdown-it-footnote - Footnotes with options
+      'footnote',                          // markdown-it-footnote - Footnotes
+      ['container', { validate: () => true }],  // markdown-it-container with options
     ],
 
     // Custom markdown-it configuration function
@@ -106,7 +111,10 @@ export default defineConfig({
 });
 ```
 
+> **Note:** TOC extraction and heading anchor generation are built into Stati and enabled by default. You don't need `markdown-it-anchor` or `markdown-it-toc-done-right` plugins.
+
 **Available Options:**
+
 - `plugins` (array) - Array of markdown-it plugin names (strings) or [name, options] tuples
 - `configure` (function) - Function that receives the markdown-it instance for custom configuration
 - `toc` (boolean) - Enable/disable TOC extraction and heading anchor generation (default: `true`)
@@ -121,29 +129,44 @@ export default defineConfig({
     // Custom filters for Eta templates
     filters: {
       // Date formatting
-      date: (date, format = 'long') => {
+      date: (date) => {
         return new Intl.DateTimeFormat('en-US', {
-          dateStyle: format,
+          dateStyle: 'long',
         }).format(new Date(date));
       },
 
       // Slugify text
       slug: (text) => {
-        return text
+        return String(text)
           .toLowerCase()
           .replace(/[^\w\s-]/g, '')
           .replace(/[\s_-]+/g, '-')
           .replace(/^-+|-+$/g, '');
       },
 
-      // Truncate text
-      truncate: (text, length = 150) => {
-        if (text.length <= length) return text;
-        return text.slice(0, length) + '...';
-      },
+      // Uppercase transform
+      upper: (text) => String(text).toUpperCase(),
     },
   },
 });
+```
+
+> **Note:** Filters are added to the `stati` context and called as functions.
+
+**Using filters in templates:**
+
+```eta
+<!-- Apply date filter -->
+<time><%= stati.date(stati.page.date) %></time>
+
+<!-- Apply slug filter -->
+<a href="/<%= stati.slug(stati.page.title) %>/">Link</a>
+
+<!-- Apply uppercase filter -->
+<span><%= stati.upper(stati.page.category) %></span>
+
+<!-- Chain filters -->
+<span><%= stati.upper(stati.slug(stati.page.title)) %></span>
 ```
 
 ### ISG Configuration
@@ -157,10 +180,10 @@ export default defineConfig({
     enabled: true,
 
     // Default cache TTL in seconds
-    ttlSeconds: 3600, // 1 hour
+    ttlSeconds: 21600, // 6 hours
 
     // Maximum age cap in days
-    maxAgeCapDays: 30,
+    maxAgeCapDays: 365,
 
     // Aging rules for progressive cache extension
     aging: [
@@ -170,12 +193,12 @@ export default defineConfig({
     ],
   },
 });
-```
 
 **Available Options:**
-- `enabled` (boolean) - Enable or disable ISG caching (default: false)
-- `ttlSeconds` (number) - Default cache time-to-live in seconds (default: 3600)
-- `maxAgeCapDays` (number) - Maximum age in days for applying aging rules
+
+- `enabled` (boolean) - Enable or disable ISG caching (default: true)
+- `ttlSeconds` (number) - Default cache time-to-live in seconds (default: 21600)
+- `maxAgeCapDays` (number) - Maximum age in days for applying aging rules (default: 365)
 - `aging` (array) - Array of aging rules with `untilDays` and `ttlSeconds` properties
 
 **Aging Rules:**
@@ -205,6 +228,12 @@ export default defineConfig({
 });
 ```
 
+**Available Options:**
+
+- `port` (number) - Port for development server (default: 3000)
+- `host` (string) - Host to bind to (default: 'localhost')
+- `open` (boolean) - Whether to open browser automatically (default: false)
+
 ### Preview Server
 
 Configure the preview server:
@@ -219,6 +248,12 @@ export default defineConfig({
   },
 });
 ```
+
+**Available Options:**
+
+- `port` (number) - Port for preview server (default: 4000)
+- `host` (string) - Host to bind to (default: 'localhost')
+- `open` (boolean) - Whether to open browser automatically (default: false)
 
 > **Note:** CLI options (e.g., `stati dev --port 8080` or `stati preview --port 8080`) take precedence over config file settings.
 
@@ -282,35 +317,6 @@ interface PageContext {
 }
 ```
 
-## Environment-based Configuration
-
-You can use environment variables to configure your site differently for development, staging, and production:
-
-```javascript
-// stati.config.js
-const isDev = process.env.NODE_ENV === 'development';
-const isProd = process.env.NODE_ENV === 'production';
-
-export default defineConfig({
-  site: {
-    title: 'My Site',
-    baseUrl: isProd ? 'https://my-site.com' : 'http://localhost:3000',
-  },
-
-  // Enable ISG only in production
-  isg: {
-    enabled: isProd,
-    ttlSeconds: isProd ? 3600 : 0,
-  },
-
-  // Development server configuration
-  dev: {
-    port: parseInt(process.env.PORT || '3000'),
-    open: isDev,
-  },
-});
-```
-
 ### Multiple Configuration Files
 
 You can split configuration across multiple files:
@@ -355,7 +361,7 @@ export default defineConfig({
 
      // Markdown processing
      markdown: {
-       plugins: ['anchor'],  // markdown-it-anchor
+       plugins: ['footnote'],  // markdown-it-footnote
      },
    });
    ```
@@ -382,7 +388,7 @@ export default defineConfig({
 
    // config/markdown.js
    export const markdownConfig = {
-     plugins: ['anchor', 'toc-done-right'],  // Stati auto-prepends 'markdown-it-'
+     plugins: ['footnote', 'emoji'],  // Stati auto-prepends 'markdown-it-'
    };
 
    // stati.config.js
@@ -426,7 +432,7 @@ const environments = {
     },
     isg: {
       enabled: true,
-      ttlSeconds: 3600,
+      ttlSeconds: 21600,
       aging: [
         { untilDays: 7, ttlSeconds: 21600 },
         { untilDays: 30, ttlSeconds: 86400 },

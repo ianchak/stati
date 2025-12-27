@@ -20,16 +20,6 @@ seo:
 
 This guide covers five different approaches to using Stati's SEO features, from zero-configuration automatic injection to full custom control. Choose the approach that best fits your project's requirements.
 
-## Table of Contents
-
-- [Scenario 1: Automatic SEO](#scenario-1-automatic-seo)
-- [Scenario 2: Enhanced SEO](#scenario-2-enhanced-seo)
-- [Scenario 3: Hybrid Mode](#scenario-3-hybrid-mode)
-- [Scenario 4: Selective Manual Control](#scenario-4-selective-manual-control)
-- [Scenario 5: Full Custom Control](#scenario-5-full-custom-control)
-- [Comparison Table](#comparison-table)
-- [Testing & Validation](#testing-validation)
-
 ---
 
 ## Scenario 1: Automatic SEO
@@ -91,16 +81,14 @@ Gets these SEO tags automatically injected:
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- Auto-injected by Stati -->
-  <title>My Page | My Site</title>
-  <meta name="description" content="Welcome to my page content.">
+  <title>My Page</title>
   <link rel="canonical" href="https://example.com/my-page">
   <meta property="og:title" content="My Page">
-  <meta property="og:description" content="Welcome to my page content.">
   <meta property="og:url" content="https://example.com/my-page">
   <meta property="og:type" content="website">
+  <meta property="og:site_name" content="My Site">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="My Page">
-  <meta name="twitter:description" content="Welcome to my page content.">
 </head>
 <body>
   <h1>My Page</h1>
@@ -108,6 +96,8 @@ Gets these SEO tags automatically injected:
 </body>
 </html>
 ```
+
+**Note:** The title uses only the page title from frontmatter or config fallbacks. For custom title formats like "Page | Site", use manual templating (see Scenario 3 or 5). Description and other optional meta tags are only generated if specified in frontmatter or config.
 
 ### Optional: Enable Sitemap
 
@@ -273,7 +263,7 @@ Keep auto-injection enabled but manually override specific SEO tags when needed.
   <!-- Stati auto-generates: description, canonical, OG tags, Twitter, etc. -->
 </head>
 <body>
-  <%~ it.content %>
+  <%~ stati.content %>
 </body>
 </html>
 ```
@@ -302,7 +292,7 @@ Keep auto-injection enabled but manually override specific SEO tags when needed.
   <!-- Stati still auto-generates: title, description, canonical, Twitter, etc. -->
 </head>
 <body>
-  <%~ it.content %>
+  <%~ stati.content %>
 </body>
 </html>
 ```
@@ -329,7 +319,7 @@ Keep auto-injection enabled but manually override specific SEO tags when needed.
   <!-- Stati auto-generates all missing tags -->
 </head>
 <body>
-  <%~ it.content %>
+  <%~ stati.content %>
 </body>
 </html>
 ```
@@ -354,7 +344,7 @@ Keep auto-injection enabled but manually override specific SEO tags when needed.
   <!-- Stati auto-generates: title, description, canonical, Twitter (if no OG) -->
 </head>
 <body>
-  <%~ it.content %>
+  <%~ stati.content %>
 </body>
 </html>
 ```
@@ -419,7 +409,7 @@ export default defineConfig({
   <meta name="custom-meta" content="custom value">
 </head>
 <body>
-  <%~ it.content %>
+  <%~ stati.content %>
 </body>
 </html>
 ```
@@ -445,7 +435,7 @@ export default defineConfig({
   <meta name="twitter:image" content="<%= stati.site.baseUrl %>/images/twitter-<%= stati.page.slug %>.jpg">
 </head>
 <body>
-  <%~ it.content %>
+  <%~ stati.content %>
 </body>
 </html>
 ```
@@ -464,7 +454,7 @@ export default defineConfig({
   <meta name="theme-color" content="#000000">
 </head>
 <body>
-  <%~ it.content %>
+  <%~ stati.content %>
 </body>
 </html>
 ```
@@ -479,6 +469,7 @@ export default defineConfig({
 - `canonical` - Canonical link tag
 - `opengraph` - All Open Graph tags
 - `twitter` - All Twitter Card tags
+- `structuredData` - JSON-LD structured data script tag
 
 ### When to Use
 
@@ -582,7 +573,7 @@ export default defineConfig({
   <!-- Your other custom tags -->
 </head>
 <body>
-  <%~ it.content %>
+  <%~ stati.content %>
 </body>
 </html>
 ```

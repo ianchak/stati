@@ -67,7 +67,7 @@ stati dev
 stati build
 ```
 
-> **Note:** The examples below show commands as `stati <command>` for brevity. Use whichever method suits your workflow—the commands and options are identical.
+> **Note:** The examples below show commands as `stati <command>` for brevity. Use whichever method suits your workflow - the commands and options are identical.
 
 ## Available Commands
 
@@ -162,6 +162,10 @@ stati build [options]
 | `--clean` | boolean | false | Clean cache before building |
 | `--config` | string | - | Path to config file |
 | `--include-drafts` | boolean | false | Include draft pages in the build |
+| `--metrics` | boolean | false | Enable build metrics collection |
+| `--metrics-file` | string | - | Output path for metrics JSON (default: .stati/metrics/) |
+| `--metrics-detailed` | boolean | false | Include per-page timing in metrics |
+| `--metrics-html` | boolean | false | Generate HTML report alongside JSON metrics |
 
 **Examples:**
 
@@ -177,6 +181,12 @@ stati build --force
 
 # Include draft pages
 stati build --include-drafts
+
+# Collect build metrics
+stati build --metrics
+
+# Collect detailed build metrics with HTML report
+stati build --metrics --metrics-detailed --metrics-html
 ```
 
 ### `stati invalidate`

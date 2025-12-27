@@ -147,7 +147,7 @@ Example for preloading:
 
 ## Multiple Bundles
 
-Stati supports compiling multiple TypeScript bundles with per-page targeting. Instead of shipping a single bundle to all pages, you can define an array of bundles—each with its own entry point and glob-based patterns to control which pages receive which bundles.
+Stati supports compiling multiple TypeScript bundles with per-page targeting. Instead of shipping a single bundle to all pages, you can define an array of bundles, each with its own entry point and glob-based patterns to control which pages receive which bundles.
 
 ### BundleConfig Options
 
@@ -222,7 +222,7 @@ export default defineConfig({
 
 ### Pattern Matching
 
-Patterns use minimatch-style glob syntax:
+Patterns use glob syntax (minimatch-compatible):
 
 | Pattern | Matches |
 |---------|---------|
@@ -369,8 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
 If you see this warning:
 
 ```text
-TypeScript entry point not found: /path/to/src/main.ts
-Skipping TypeScript compilation.
+TypeScript entry point not found: /path/to/src/main.ts (bundle: main)
 ```
 
 Ensure your entry file exists at the configured location (`srcDir/entryPoint`). For multiple bundles, each missing entry point is skipped with a warning, and compilation continues with the remaining bundles.

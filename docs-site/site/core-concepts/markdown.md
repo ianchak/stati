@@ -44,8 +44,7 @@ function hello() {
 ```
 ````
 
-````
-
+```text
 ### Front Matter
 
 Every markdown file can include YAML front matter:
@@ -66,7 +65,34 @@ layout: 'post'
 
 ### Syntax Highlighting
 
-Code blocks automatically get syntax highlighting using Prism.js:
+Code blocks in markdown are rendered with language class attributes. To add syntax highlighting, you need to include a client-side library like Prism.js or Highlight.js in your templates.
+
+Stati automatically adds language classes to code blocks:
+
+```html
+<!-- Rendered output for code blocks -->
+<pre><code class="language-typescript">
+// Your code here
+</code></pre>
+```
+
+**To add syntax highlighting:**
+
+1. Choose a highlighting library (Prism.js, Highlight.js, etc.)
+2. Include the library CSS and JS in your layout template
+3. Code blocks will be automatically highlighted client-side
+
+**Example with Prism.js:**
+
+```eta
+<!-- In your layout.eta -->
+<head>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs/themes/prism.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/prismjs/prism.min.js"></script>
+</head>
+```
+
+**Markdown example:**
 
 ````markdown
 ```typescript
@@ -138,8 +164,8 @@ Create interactive checkboxes:
 URLs and email addresses are automatically converted to links:
 
 ```markdown
-Visit https://stati.dev for more information.
-Contact us at hello@stati.dev for support.
+Visit https://stati.build for more information.
+Contact us at hello@stati.build for support.
 ```
 
 ### Typography Enhancements
@@ -169,7 +195,6 @@ import { defineConfig } from '@stati/core';
 export default defineConfig({
   markdown: {
     plugins: [
-      'anchor',           // markdown-it-anchor
       'footnote',        // markdown-it-footnote
       ['mark', { /* options */ }], // markdown-it-mark with options
     ]
@@ -177,10 +202,12 @@ export default defineConfig({
 });
 ```
 
+> **Note:** TOC extraction and heading anchor generation are built into Stati and enabled by default. You don't need `markdown-it-anchor` or `markdown-it-toc-done-right` plugins.
+
 **Note:** You need to install the plugins separately via npm:
 
 ```bash
-npm install markdown-it-anchor markdown-it-footnote markdown-it-mark
+npm install markdown-it-footnote markdown-it-mark
 ```
 
 ## Configuration
@@ -194,30 +221,31 @@ import { defineConfig } from '@stati/core';
 
 export default defineConfig({
   markdown: {
-    // Markdown-It options
-    options: {
-      html: true, // Enable HTML tags in source
-      linkify: true, // Auto-convert URL-like text to links
-      typographer: true, // Enable smart quotes and other typographic substitutions
-      breaks: false, // Convert '\n' in paragraphs into <br>
-      xhtmlOut: false, // Use '/' to close single tags (<br />)
+    // Plugins array - Stati auto-prepends 'markdown-it-'
+    plugins: [
+      'footnote',               // Plugin name only
+      ['emoji', { shortcuts: {} }],  // Plugin with options
+    ],
+
+    // Custom markdown-it configuration
+    configure: (md) => {
+      // Modify settings (html, linkify, typographer are enabled by default)
+      md.set({ breaks: true });
+
+      // Add custom rendering rules
+      md.renderer.rules.code_inline = (tokens, idx) => {
+        const token = tokens[idx];
+        return `<code class="inline-code">${token.content}</code>`;
+      };
     },
 
-    // Plugin configuration
-    plugins: {
-      anchor: {
-        permalink: true,
-        permalinkBefore: true,
-        permalinkSymbol: '🔗',
-      },
-      toc: {
-        includeLevel: [1, 2, 3],
-        containerClass: 'table-of-contents',
-      },
-    },
+    // Enable/disable TOC extraction and heading anchors (default: true)
+    toc: true,
   },
 });
 ```
+
+> **Note:** HTML tags, linkify, and typographer are enabled by default in Stati and cannot be disabled. TOC extraction and heading anchors are also built-in.
 
 ### Advanced Configuration
 
@@ -225,7 +253,7 @@ export default defineConfig({
 export default defineConfig({
   markdown: {
     // Custom renderer modifications
-    setup(md) {
+    configure(md) {
       // Add custom rules
       md.renderer.rules.code_inline = (tokens, idx) => {
         const token = tokens[idx];
@@ -279,7 +307,7 @@ function alertPlugin(md, options = {}) {
 // Usage in config
 export default defineConfig({
   markdown: {
-    setup(md) {
+    configure(md) {
       md.use(alertPlugin);
     },
   },
@@ -317,6 +345,8 @@ estimatedTime: '30 minutes'
 # Content here...
 ```
 
+> **Note:** Stati supports standard frontmatter fields like `title`, `description`, `tags`, `layout`, `date`, `order`, and `draft`. You can also add custom fields (like `difficulty`, `estimatedTime`, `lastModified`, `contributors` above) which will be available in templates via `stati.page.*`.
+
 Access in templates:
 
 ```eta
@@ -338,58 +368,46 @@ Access in templates:
 
 ### Content Excerpts
 
-Automatically generate excerpts:
+Stati does not currently provide built-in excerpt support. To create excerpts, you can:
+
+1. Add an `excerpt` field to your frontmatter
+2. Use custom filters to truncate content
+3. Process content in build hooks
+
+**Example using frontmatter:**
 
 ```markdown
 ---
 title: 'My Post'
+excerpt: 'This is a custom excerpt for the post.'
 ---
 
-This is the excerpt. It appears before the first <!--more--> comment.
+# My Post
 
-<!--more-->
-
-This is the full content that appears after the excerpt separator.
+Full content goes here...
 ```
 
-### Markdown in Templates
-
-Process markdown within templates:
+Access in templates:
 
 ```eta
-<%
-// Process markdown at build time
-const additionalContent = `
-## Dynamic Section
-
-This content is **processed** at build time.
-`;
-%>
-
-<div class="dynamic-content">
-  <%~ stati.renderMarkdown(additionalContent) %>
-</div>
+<p class="excerpt"><%= stati.page.excerpt %></p>
 ```
 
 ## Performance Optimization
 
-### Caching
-
-Markdown processing is cached by default:
-
-- **Parsed content** is cached based on file modification time
-- **Rendered HTML** is cached until source changes
-- **Plugin outputs** are cached when possible
-
 ### Build-time Processing
 
-All markdown processing happens at build time:
+All markdown processing happens at build time, not at runtime. This means:
+
+- Markdown is parsed and rendered to HTML during the build
+- All plugins run once during build
+- The output is static HTML with no runtime markdown processing
 
 ```javascript
 // This runs during build, not at runtime
 export default defineConfig({
   markdown: {
-    setup(md) {
+    configure(md) {
       // Expensive processing is done once during build
       md.use(expensivePlugin, {
         // Pre-computed options
@@ -401,134 +419,15 @@ export default defineConfig({
 });
 ```
 
-### Incremental Regeneration
+### Incremental Static Generation
 
-With ISG, only changed markdown files are reprocessed:
+Stati's ISG system provides intelligent caching for rendered pages:
 
-```javascript
-export default defineConfig({
-  isg: {
-    ttlSeconds: 3600, // Cache for 1 hour
+- **Page caching** - Rendered HTML is cached and only rebuilt when content or dependencies change
+- **Content hash tracking** - Changes trigger rebuilds automatically
+- **Template dependency tracking** - Updates to layouts or partials invalidate dependent pages
+- **TTL-based rebuilds** - Configure how long pages stay cached
 
-    // Invalidation rules
-    invalidation: {
-      // Invalidate when markdown files change
-      patterns: ['**/*.md'],
-
-      // Invalidate dependent pages
-      dependencies: {
-        'blog/index.md': ['blog/**/*.md'],
-      },
-    },
-  },
-});
-```
-
-## Advanced Features
-
-### Custom Markdown Extensions
-
-Create domain-specific extensions:
-
-```javascript
-// Extension for API documentation
-function apiDocPlugin(md) {
-  md.inline.ruler.before('emphasis', 'api_endpoint', function (state, silent) {
-    const match = state.src.slice(state.pos).match(/^@(GET|POST|PUT|DELETE)\s+(.+?)@/);
-    if (!match) return false;
-
-    if (!silent) {
-      const token = state.push('api_endpoint', '', 0);
-      token.content = match[0];
-      token.meta = { method: match[1], endpoint: match[2] };
-    }
-
-    state.pos += match[0].length;
-    return true;
-  });
-
-  md.renderer.rules.api_endpoint = function (tokens, idx) {
-    const token = tokens[idx];
-    const { method, endpoint } = token.meta;
-    return `<span class="api-endpoint method-${method.toLowerCase()}">
-      <code class="method">${method}</code>
-      <code class="endpoint">${endpoint}</code>
-    </span>`;
-  };
-}
-```
-
-Usage:
-
-```markdown
-Use the @GET /api/users@ endpoint to fetch user data.
-Send a @POST /api/users@ request to create a new user.
-```
-
-### Content Transformation
-
-Transform content based on context:
-
-```javascript
-export default defineConfig({
-  markdown: {
-    setup(md) {
-      // Transform relative images to absolute
-      const defaultImageRule = md.renderer.rules.image;
-      md.renderer.rules.image = function (tokens, idx, options, env) {
-        const token = tokens[idx];
-        const src = token.attrGet('src');
-
-        if (src && !src.startsWith('http') && !src.startsWith('/')) {
-          token.attrSet('src', `/images/${src}`);
-        }
-
-        return defaultImageRule(tokens, idx, options, env);
-      };
-    },
-  },
-});
-```
-
-## Testing and Debugging
-
-### Markdown Debugging
-
-```javascript
-export default defineConfig({
-  markdown: {
-    setup(md) {
-      if (process.env.NODE_ENV === 'development') {
-        // Log markdown processing
-        md.core.ruler.push('debug', function (state) {
-          console.log('Processing:', state.src.slice(0, 100));
-          return true;
-        });
-      }
-    },
-  },
-});
-```
-
-### Content Validation
-
-```javascript
-// Validate markdown content during build
-export default defineConfig({
-  hooks: {
-    beforeRender(page) {
-      // Check for common issues
-      if (page.content.includes('TODO')) {
-        console.warn(`TODO found in ${page.path}`);
-      }
-
-      // Validate front matter
-      if (!page.title) {
-        throw new Error(`Missing title in ${page.path}`);
-      }
-    },
-  },
-});
-```
+See the [ISG Configuration](/configuration/isg) documentation for details on cache TTL, aging rules, and invalidation strategies.
 
 The markdown pipeline is one of Stati's core features, providing powerful content processing with extensible plugins. Next, learn about [Incremental Static Generation](/core-concepts/isg) to understand how Stati handles caching and rebuilds.

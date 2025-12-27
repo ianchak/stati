@@ -210,7 +210,7 @@ const index = await loadSearchIndex();
 const results = search(index, 'installation');
 ```
 
-For production use, consider using a client-side search library like [Fuse.js](https://fusejs.io/) or [Lunr.js](https://lunrjs.com/) for better search capabilities including fuzzy matching and relevance scoring.
+For production use, consider using a client-side search library like [Fuse.js](https://www.fusejs.io/) or [Lunr.js](https://lunrjs.com/) for better search capabilities including fuzzy matching and relevance scoring.
 
 ## Cache Busting
 

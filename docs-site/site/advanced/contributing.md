@@ -49,7 +49,7 @@ npm run typecheck
 
 ### Project Structure
 
-```
+```text
 stati/
 ├── packages/
 │   ├── core/              # Core Stati engine
@@ -137,10 +137,10 @@ npm test -- --watch
 
 Every push and pull request triggers the CI workflow (`.github/workflows/ci.yml`):
 
-1. **Dependency Install** — `npm ci` with npm 11.5.1+
-2. **Build Packages** — `npm run build` (core → cli → create-stati)
-3. **Run Tests** — Vitest with coverage (perf tests excluded from CI)
-4. **Upload Coverage** — Reports sent to Codecov
+1. **Dependency Install** - `npm ci` with npm 11.5.1+
+2. **Build Packages** - `npm run build` (core → cli → create-stati)
+3. **Run Tests** - Vitest with coverage (perf tests excluded from CI)
+4. **Upload Coverage** - Reports sent to Codecov
 
 The pipeline runs on Ubuntu with Node.js 22. Version commits from the publish workflow are automatically skipped.
 
@@ -150,10 +150,10 @@ Performance tests live in `packages/core/test/perf/` and measure build speed acr
 
 | Scenario | Description | Baseline |
 | -------- | ----------- | -------- |
-| Cold Build | Clean slate, no cache | ~300ms median |
-| Warm Build | No changes, high cache hit | ~80ms median |
-| Incremental | Single file change | ~90ms median |
-| Complex | Nested components, 100 pages | ~400ms median |
+| Cold Build | Clean slate, no cache | ~220ms median |
+| Warm Build | No changes, high cache hit | ~50ms median |
+| Incremental | Single file change | ~55ms median |
+| Complex | Nested components, 111 pages | ~280ms median |
 
 Run benchmarks locally:
 
@@ -477,8 +477,7 @@ More detailed information.
 
 Links to related documentation.
 
-````
-
+```text
 ### API Documentation
 
 Use TypeScript interfaces for API docs:

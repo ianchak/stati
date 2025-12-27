@@ -10,7 +10,7 @@ Stati provides a streamlined approach to site metadata and SEO. The `site` confi
 
 ## Site Configuration
 
-The `site` object contains three core properties that define your site's identity:
+The `site` object contains essential properties that define your site's identity:
 
 ```javascript
 // stati.config.js
@@ -21,6 +21,7 @@ export default defineConfig({
     title: 'My Stati Site',
     baseUrl: 'https://example.com',
     defaultLocale: 'en-US', // Optional
+    description: 'A modern static site built with Stati', // Optional
   },
 });
 ```
@@ -76,6 +77,7 @@ export default defineConfig({
 ```
 
 Common locale formats:
+
 - `'en-US'` - English (United States)
 - `'en-GB'` - English (United Kingdom)
 - `'es-ES'` - Spanish (Spain)
@@ -133,13 +135,14 @@ export default defineConfig({
 ```markdown
 ---
 title: 'My Post'
-author:
-  name: 'John Doe'
-  email: 'john@example.com'
-  url: 'https://johndoe.com'
+seo:
+  author:
+    name: 'John Doe'
+    email: 'john@example.com'
+    url: 'https://johndoe.com'
 ---
 
-# Post Content# Post Content
+# Post Content
 ```
 
 ## SEO Metadata
@@ -148,22 +151,25 @@ Stati manages SEO metadata through page frontmatter and the SEO configuration sy
 
 ### Page-Level SEO
 
-All SEO metadata is defined in page frontmatter:
+SEO metadata is defined in page frontmatter. The `title` and `description` fields can be at the root level, while other SEO fields must be nested under the `seo` key:
 
 ```markdown
 ---
 title: 'My Page Title'
 description: 'A compelling description for search engines'
-keywords: ['seo', 'metadata', 'stati']
-author:
-  name: 'Jane Smith'
-  email: 'jane@example.com'
-robots: 'index, follow'
-canonical: 'https://example.com/canonical-url'
+seo:
+  keywords: ['seo', 'metadata', 'stati']
+  author:
+    name: 'Jane Smith'
+    email: 'jane@example.com'
+  robots: 'index, follow'
+  canonical: 'https://example.com/canonical-url'
 ---
 
 # Page Content
 ```
+
+**Note:** The `tags` frontmatter field (at root level) is used as a fallback for keywords if `seo.keywords` is not specified.
 
 ### SEO Tag Injection
 
@@ -187,6 +193,7 @@ export default defineConfig({
 ```
 
 Stati's build system automatically:
+
 - Detects existing SEO tags in your HTML
 - Generates missing tags from page frontmatter
 - Injects them before `</head>`
@@ -303,13 +310,15 @@ Configure automated sitemap and robots.txt generation:
 export default defineConfig({
   site: {
     title: 'My Site',
-    baseUrl: 'https://example.com',
+    baseUrl: 'https://example.com', // Used by sitemap for absolute URLs
   },
   sitemap: {
     enabled: true,
-    hostname: 'https://example.com',
+    // Uses site.baseUrl for generating absolute URLs
+    defaultPriority: 0.5,
+    defaultChangeFreq: 'monthly',
   },
-  robotsTxt: {
+  robots: {
     enabled: true,
     sitemap: true, // Auto-reference sitemap.xml
     userAgents: [
@@ -396,9 +405,9 @@ export default defineConfig({
 ### Per-Page Frontmatter
 
 1. **Required Fields:** Always include `title` and `description` in frontmatter
-2. **Keywords:** Use 3-5 relevant keywords per page
-3. **Author Override:** Specify authors per-page for multi-author sites
-4. **Robots Control:** Use `robots` frontmatter for page-specific indexing rules
+2. **Keywords:** Use `seo.keywords` or the `tags` field (which acts as fallback)
+3. **Author Override:** Use `seo.author` to specify per-page authors for multi-author sites
+4. **Robots Control:** Use `seo.robots` for page-specific indexing rules
 
 ### Testing
 

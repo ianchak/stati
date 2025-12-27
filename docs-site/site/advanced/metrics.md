@@ -72,6 +72,8 @@ The HTML report provides:
 - Per-page timing waterfall chart (when `--metrics-detailed` is also used)
 - Embedded JSON data for debugging
 
+![Stati Build Metrics HTML Report](/images/stati_build_metrics.jpg)
+
 You can combine all flags for the most comprehensive output:
 
 ```bash
@@ -159,17 +161,27 @@ The `phases` object shows how long each build phase took:
 | `cacheManifestLoadMs` | Loading ISG cache manifest |
 | `typescriptCompileMs` | Compiling TypeScript bundles |
 | `pageRenderingMs` | Rendering pages (markdown + templates) |
+| `shouldRebuildTotalMs` | Aggregate time checking if pages need rebuild |
+| `renderPageTotalMs` | Aggregate time rendering pages |
+| `fileWriteTotalMs` | Aggregate time writing HTML files to disk |
+| `cacheEntryTotalMs` | Aggregate time updating cache entries |
 | `searchIndexGenerationMs` | Generating search index JSON |
+| `searchIndexWriteMs` | Writing search index to disk |
 | `assetCopyMs` | Copying static assets |
 | `cacheManifestSaveMs` | Saving updated cache manifest |
 | `sitemapGenerationMs` | Generating sitemap.xml |
 | `rssGenerationMs` | Generating RSS feeds |
+| `tailwindInitMs` | Tailwind detection and inventory initialization |
+| `tailwindInventoryMs` | Writing Tailwind inventory at end of build |
+| `getDirectorySizeMs` | Calculating directory size for build stats |
+| `lockAcquireMs` | Build lock acquisition |
+| `lockReleaseMs` | Build lock release |
 | `hookBeforeAllMs` | Time spent in `beforeAll` hook (if configured) |
 | `hookAfterAllMs` | Time spent in `afterAll` hook (if configured) |
 | `hookBeforeRenderTotalMs` | Total time spent in `beforeRender` hooks across all pages |
 | `hookAfterRenderTotalMs` | Total time spent in `afterRender` hooks across all pages |
 
-> **Note:** Hook timings are only recorded when the corresponding hooks are defined in your `stati.config.ts`. This helps identify if custom hooks are impacting build performance.
+> **Note:** Not all phases appear in every build. Only phases that actually run will be included in the metrics output. For example, hook timings are only recorded when the corresponding hooks are defined in your `stati.config.ts`, and TypeScript compilation only runs when TypeScript bundles are configured.
 
 ### Counts
 
@@ -186,7 +198,7 @@ The `counts` object tracks quantities processed during the build:
 
 #### Templates Loaded
 
-The `templatesLoaded` counter tracks the total number of Eta templates (layouts and partials) loaded during the build. This is an **accumulated total** across all rendered pages—if 5 pages each load 4 templates, `templatesLoaded` will be 20.
+The `templatesLoaded` counter tracks the total number of Eta templates (layouts and partials) loaded during the build. This is an **accumulated total** across all rendered pages - if 5 pages each load 4 templates, `templatesLoaded` will be 20.
 
 When using `--metrics-detailed`, per-page template counts are also available in `pageTimings`:
 

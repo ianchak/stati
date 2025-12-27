@@ -6,7 +6,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 /**
- * Ice Blue Mono-Hue Palette — Single source of truth for CLI colors
+ * Ice Blue Mono-Hue Palette - Single source of truth for CLI colors
  * Matches the palette in @stati/cli for consistency
  *
  * NOTE: This palette is intentionally duplicated from @stati/cli to keep
@@ -15,13 +15,13 @@ const __dirname = dirname(__filename);
  */
 const palette = {
   // Brand hue family (Ice Blue)
-  brandStrong: '#bae6fd', // sky-200 — numbers, emphasis, stats
-  brand: '#38bdf8', // sky-400 — headers, step indicators, folders
-  brandDim: '#0ea5e9', // sky-500 — gradient start, subtle brand
+  brandStrong: '#bae6fd', // sky-200 - numbers, emphasis, stats
+  brand: '#38bdf8', // sky-400 - headers, step indicators, folders
+  brandDim: '#0ea5e9', // sky-500 - gradient start, subtle brand
 
   // Neutral ramp
-  muted: '#94a3b8', // slate-400 — labels, file paths
-  dim: '#64748b', // slate-500 — timing, metadata
+  muted: '#94a3b8', // slate-400 - labels, file paths
+  dim: '#64748b', // slate-500 - timing, metadata
 
   // Status glyph colors (glyph/prefix only, not full message)
   successGlyph: '#22c55e', // green-500

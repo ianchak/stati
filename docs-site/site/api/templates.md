@@ -10,7 +10,7 @@ Stati templates have access to a rich context object and built-in helpers for bu
 
 ## Template Context (`stati`)
 
-Every Eta template receives a `TemplateContext` object with site metadata, front matter, and rendered content:
+Every Eta template receives a `TemplateContext` object with site metadata, front matter, and rendered content. The runtime context includes additional properties not present in the TypeScript type definition:
 
 ```typescript
 interface TemplateContext {
@@ -19,8 +19,8 @@ interface TemplateContext {
     path: string;
     url: string;
     content: string;
-    toc: TocEntry[]; // Table of contents entries
-    navNode?: NavNode; // Current page's navigation node
+    toc: TocEntry[]; // Table of contents entries (added at runtime)
+    navNode?: NavNode; // Current page's navigation node (added at runtime)
     title?: string;
     description?: string;
     [key: string]: unknown; // Front matter fields
@@ -38,10 +38,10 @@ interface TemplateContext {
     getCurrentNode: () => NavNode | undefined;
   };
   collection?: CollectionData; // Only for index pages
-  partials: Record<string, string>; // Rendered partial markup
+  partials: Record<string, CallablePartial>; // Callable partial functions (runtime type)
   assets?: StatiAssets; // TypeScript bundle paths (when enabled)
-  propValue: (...args) => string; // Class/attribute value builder
-  generateSEO: (tags?: string[]) => string; // SEO tag generator
+  propValue: (...args) => string; // Class/attribute value builder (added at runtime)
+  generateSEO: (tags?: string[]) => string; // SEO tag generator (added at runtime)
 }
 
 interface TocEntry {
@@ -53,16 +53,43 @@ interface TocEntry {
   level: number;
 }
 
+interface CallablePartial {
+  // Can be called with optional props
+  (props?: Record<string, unknown>): string;
+  // Can be used directly in template interpolation
+  toString(): string;
+  valueOf(): string;
+}
+
 interface SiteConfig {
   title: string;
   baseUrl: string;
   defaultLocale?: string;
+}
+
+interface StatiAssets {
+  /** Array of TypeScript bundle paths matched for this page */
+  bundlePaths: string[];
+  /** Path to search index file (when search enabled) */
+  searchIndexPath?: string;
 }
 ```
 
 Front matter values are exposed through `stati.page`. Additional properties you place on `site` in `stati.config.ts` are available at runtime, but the public type includes the three fields above by default.
 
 The `nav` object provides helper methods for working with navigation. See [Navigation API](/api/navigation) for details on `getTree()`, `findNode()`, `getBreadcrumbs()`, and other navigation helpers.
+
+**Type Definition Notes:**
+
+The runtime `TemplateContext` includes several properties added dynamically that are not present in the static TypeScript type definition (`packages/core/src/types/content.ts`):
+
+- `page.toc` - Added during rendering from markdown heading extraction
+- `page.navNode` - Added from navigation tree matching
+- `propValue` - Utility function added to base context
+- `generateSEO` - SEO helper function added to base context
+- `partials` - Runtime type is `Record<string, CallablePartial>` (callable functions), not `Record<string, string>` as in the type definition
+
+This distinction exists because TypeScript's type system cannot fully express the dynamic context merging that happens at runtime. The TypeScript definition provides the minimum guaranteed contract, while the actual runtime context is richer.
 
 ## Built-in Helpers
 
@@ -73,7 +100,16 @@ Builds property values from various inputs, similar to the `classnames` library.
 **Signature:**
 
 ```typescript
-stati.propValue(...args: (string | number | boolean | null | undefined | Record<string, any> | any[])[]): string
+type PropValueArg =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | Record<string, boolean | string | number | null | undefined>
+  | PropValueArg[];
+
+stati.propValue(...args: PropValueArg[]): string
 ```
 
 **Examples:**

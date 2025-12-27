@@ -57,6 +57,9 @@ interface StatiConfig {
   /** RSS feed generation configuration */
   rss?: RSSConfig;
 
+  /** Search index generation configuration */
+  search?: SearchConfig;
+
   /** TypeScript compilation settings */
   typescript?: TypeScriptConfig;
 
@@ -342,8 +345,6 @@ interface TemplateContext {
 }
 ```
 
-
-
 ## ISG Types
 
 ### ISG Configuration
@@ -478,8 +479,6 @@ For advanced use cases like preloading, access via `stati.assets`:
 <% } %>
 ```
 
-
-
 ## Utility Types
 
 ### Configuration Helper
@@ -543,14 +542,11 @@ export type {
 } from '@stati/core';
 ```
 
-Additional types like `TemplateContext`, `CollectionData`, `StatiAssets`, `TocEntry`, and `CacheEntry` are available from the internal types barrel but are primarily used by the framework internally.
+Note: Types like `TemplateContext`, `CollectionData`, `StatiAssets`, `TocEntry`, and `CacheEntry` are used internally by the framework and are not exported from `@stati/core`. If you need these types for advanced use cases, they can be found in `packages/core/src/types/` but are not part of the public API.
 
 ### CLI Package
 
-```typescript
-// From @stati/cli
-export { cli } from '@stati/cli';
-```
+The `@stati/cli` package provides the `stati` command-line interface as a binary. It does not export any programmatic API - use `@stati/core` functions directly if you need to build programmatically.
 
 ### Create-Stati Package
 

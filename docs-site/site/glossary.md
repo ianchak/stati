@@ -24,9 +24,13 @@ Stati's templating engine. Eta files (`.eta`) support layouts, partials, filters
 
 A reusable template wrapper that provides consistent structure (header, footer, navigation). Pages specify their layout via frontmatter: `layout: layout.eta`.
 
+## Layout Inheritance
+
+Stati's hierarchical layout system where more specific layouts **override** parent directory layouts. A `layout.eta` in a subdirectory completely replaces the root layout for pages in that directory. For example, `site/blog/layout.eta` overrides `site/layout.eta` for all pages under `/blog/`. Section layouts must be complete HTML documents.
+
 ## Partials
 
-Reusable template fragments stored in underscore-prefixed directories (e.g., `_partials/`, `_components/`). Include them via `stati.partials.header`. Stati uses a **flat namespace** for partials — the file name becomes the partial name regardless of subdirectory.
+Reusable template fragments stored in underscore-prefixed directories (e.g., `_partials/`, `_components/`). Include them via `stati.partials.header`. Stati uses a **flat namespace** for partials - the file name becomes the partial name regardless of subdirectory.
 
 ## Callable Partials
 
@@ -59,6 +63,10 @@ Data is accessed inside the partial via `stati.props`. Callable partials enable 
 
 YAML metadata at the top of Markdown files. Controls title, description, layout, order, and SEO settings.
 
+## Hierarchical Partials
+
+Partials are discovered **upward** from the current page's directory to the root. A page can access partials from its own directory and all parent directories, but **not** from child directories. For example, a root layout can only access `site/_partials/`, while a blog layout can access both `site/_partials/` AND `site/blog/_partials/`. More specific partials (deeper in hierarchy) override less specific ones with the same name.
+
 ## Template Context (`stati`)
 
 The object passed to every Eta template containing:
@@ -67,7 +75,7 @@ The object passed to every Eta template containing:
 - `stati.page` – Current page data and frontmatter
 - `stati.content` – Rendered HTML content
 - `stati.nav` – Navigation helpers and tree
-- `stati.partials` – Rendered partial markup
+- `stati.partials` – Partial templates accessible as properties (rendered markup) or callable functions (with props)
 
 ## SEO Metadata
 
@@ -104,6 +112,10 @@ The process of marking cached entries as stale using `stati invalidate` with pat
 ## Draft
 
 A page marked with `draft: true` in frontmatter, excluded from production builds unless `--include-drafts` is used.
+
+## Dynamic Attribute Values
+
+A templating pattern required when embedding dynamic content in HTML attributes. Eta doesn't support partial interpolation like mixing static and dynamic text in attributes. Instead, use template literals for the entire attribute value, or use `stati.propValue()` for space-separated values like multiple CSS classes. See [Dynamic Attribute Values](/core-concepts/templates#dynamic-attribute-values) in the templates documentation.
 
 ## Collection
 

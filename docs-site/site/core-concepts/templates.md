@@ -104,16 +104,16 @@ In your templates, you have access to:
 
 ### Layout Inheritance
 
-Stati supports hierarchical layouts that inherit from parent directories:
+Stati supports hierarchical layouts where more specific layouts **override** parent directory layouts:
 
 ```text
 site/
-├── layout.eta           # Root layout (all pages)
+├── layout.eta           # Root layout (fallback for all pages)
 └── blog/
-    ├── layout.eta       # Blog layout (override for /blog pages)
+    ├── layout.eta       # Blog layout (overrides root for /blog pages)
     ├── index.md
     └── posts/
-        ├── layout.eta   # Post layout (override for /blog/posts pages)
+        ├── layout.eta   # Post layout (overrides blog for /blog/posts pages)
         └── my-post.md
 ```
 
@@ -185,44 +185,62 @@ The first match wins, providing maximum flexibility while maintaining sensible d
 
 ### Section Layout Example
 
+Section layouts **completely replace** the root layout for pages in that directory and its subdirectories. They must be complete HTML documents (or include another complete layout via partials).
+
 `site/blog/layout.eta`:
 
 ```eta
-<!-- This extends the root layout -->
-<div class="blog-container">
-    <aside class="blog-sidebar">
-        <%~ stati.partials.blogNav %>
-    </aside>
+<!DOCTYPE html>
+<html lang="<%= stati.site.defaultLocale || 'en-US' %>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= stati.page.title ? `${stati.page.title} | ${stati.site.title}` : stati.site.title %></title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <%~ stati.partials.header %>
 
-    <article class="blog-content">
-        <% if (stati.page.title) { %>
-        <header class="post-header">
-            <h1><%= stati.page.title %></h1>
-            <% if (stati.page.date) { %>
-            <time datetime="<%= stati.page.date %>">
-                <%= new Date(stati.page.date).toLocaleDateString() %>
-            </time>
+    <div class="blog-container">
+        <aside class="blog-sidebar">
+            <%~ stati.partials.blogNav %>
+        </aside>
+
+        <article class="blog-content">
+            <% if (stati.page.title) { %>
+            <header class="post-header">
+                <h1><%= stati.page.title %></h1>
+                <% if (stati.page.date) { %>
+                <time datetime="<%= stati.page.date %>">
+                    <%= new Date(stati.page.date).toLocaleDateString() %>
+                </time>
+                <% } %>
+                <% if (stati.page.tags) { %>
+                <div class="tags">
+                    <% stati.page.tags.forEach(tag => { %>
+                    <span class="tag"><%= tag %></span>
+                    <% }); %>
+                </div>
+                <% } %>
+            </header>
             <% } %>
-            <% if (stati.page.tags) { %>
-            <div class="tags">
-                <% stati.page.tags.forEach(tag => { %>
-                <span class="tag"><%= tag %></span>
-                <% }); %>
+
+            <div class="prose">
+                <%~ stati.content %>
             </div>
-            <% } %>
-        </header>
-        <% } %>
+        </article>
+    </div>
 
-        <div class="prose">
-            <%~ stati.content %>
-        </div>
-    </article>
-</div>
+    <%~ stati.partials.footer %>
+</body>
+</html>
 ```
+
+> **Note:** To share common structure (header, footer, meta tags) between layouts, extract them into partials and include them in each layout.
 
 ## Partial Templates
 
-Partials are reusable template components stored in `_partials/` directories.
+Partials are reusable template components stored in `_` (underscore) prefixed directories.
 
 ### Partial Discovery Rules
 
@@ -414,21 +432,27 @@ You can combine data passed to the partial with Stati's global data:
 
 ### Hierarchical Partials
 
-Partials inherit from parent directories:
+Partials are discovered **upward** from the current page's directory to the root. A page can access partials from its own directory and all parent directories, but **not** from child directories.
 
 ```text
 site/
 ├── _partials/
-│   ├── header.eta       # Available everywhere
+│   ├── header.eta       # Available to ALL pages
 │   └── footer.eta
 └── blog/
     ├── _partials/
-    │   ├── sidebar.eta  # Available in blog/ and subdirectories
-    │   └── tagList.eta
+    │   ├── sidebar.eta  # Available to blog/ and blog/posts/ pages
+    │   └── tagList.eta  # NOT available to root pages
     └── posts/
         └── _partials/
-            └── meta.eta # Available only in posts/
+            └── meta.eta # Available ONLY to blog/posts/ pages
 ```
+
+**Key points:**
+
+- Root layout (`site/layout.eta`) can only access `site/_partials/`
+- Blog layout (`site/blog/layout.eta`) can access both `site/_partials/` AND `site/blog/_partials/`
+- More specific partials (deeper in hierarchy) override less specific ones with the same name
 
 ## Template Data and Context
 
