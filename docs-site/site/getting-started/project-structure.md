@@ -65,7 +65,9 @@ Static assets that should be copied directly to the output directory. Everything
 
 Template partials that can be included in your layouts and pages (or even other partials).
 
-Directories starting with `_` are excluded from routing. So you can organize the structure of your partials as you see fit.
+Directories starting with `_` are excluded from routing, so you can organize your partials as you see fit.
+
+**Example organization:**
 
 - **`_partials/header.eta`** - Site header
 - **`_components/footer.eta`** - Site footer
