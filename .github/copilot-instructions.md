@@ -153,3 +153,67 @@ Import from the barrel: `import { slugify, normalizePathForComparison } from './
 - Cache hiccups: clear `.stati/` or run `stati build --clean`; the invalidate logic lives under `core/invalidate.ts`.
 - If templates stop refreshing, inspect dependency tracking in `core/isg/manifest.ts`; `handleTemplateChange` expects POSIX-normalized paths.
 - For docs regressions, run `npm run build` followed by entering the directory `docs-site` and running one of the local scripts. In the `docs-site` dir `npm run build:local` to confirm build is running with local CLI. In the `docs-site` dir `npm run dev:local` to start a dev server with local CLI. In the `docs-site` dir `npm run preview:local` to preview the static build with local CLI.
+
+## Documentation Reference
+
+The official Stati documentation lives in `docs-site/site/`. Read these files directly for authoritative guidance:
+
+### Getting Started
+
+- `docs-site/site/getting-started/introduction.md` - What is Stati, key features, and philosophy
+- `docs-site/site/getting-started/installation.md` - Node.js requirements and installation methods
+- `docs-site/site/getting-started/quick-start.md` - Create your first Stati site in minutes
+- `docs-site/site/getting-started/project-structure.md` - Directory layout and file conventions
+
+### Core Concepts
+
+- `docs-site/site/core-concepts/overview.md` - Fundamental concepts and architecture
+- `docs-site/site/core-concepts/templates.md` - Eta templating, layouts, partials, and helpers
+- `docs-site/site/core-concepts/markdown.md` - Frontmatter, markdown-it plugins, and content authoring
+- `docs-site/site/core-concepts/routing.md` - URL generation, slugs, and navigation trees
+- `docs-site/site/core-concepts/static-assets.md` - Public directory, asset handling, and copying
+- `docs-site/site/core-concepts/isg.md` - Incremental Static Generation and caching
+
+### Configuration
+
+- `docs-site/site/configuration/file.md` - `stati.config.ts` structure and `defineConfig()`
+- `docs-site/site/configuration/site-metadata.md` - Title, baseUrl, description, locale
+- `docs-site/site/configuration/templates.md` - Eta configuration and custom filters
+- `docs-site/site/configuration/markdown.md` - Plugins, TOC, and markdown-it customization
+- `docs-site/site/configuration/typescript.md` - Client-side TS bundling with esbuild
+- `docs-site/site/configuration/isg.md` - Cache TTL, aging rules, and invalidation
+- `docs-site/site/configuration/seo.md` - Meta tags, Open Graph, and structured data
+- `docs-site/site/configuration/search.md` - Search index generation and configuration
+- `docs-site/site/configuration/rss.md` - Feed generation and customization
+
+### CLI
+
+- `docs-site/site/cli/commands.md` - `build`, `dev`, `preview`, `invalidate` reference
+- `docs-site/site/cli/development.md` - Dev server, hot reload, and error overlay
+- `docs-site/site/cli/scaffolder.md` - `create-stati` options and templates
+
+### API Reference
+
+- `docs-site/site/api/reference.md` - Complete API documentation
+- `docs-site/site/api/types.md` - TypeScript type definitions
+- `docs-site/site/api/hooks.md` - Build lifecycle hooks (`beforeAll`, `afterRender`, etc.)
+- `docs-site/site/api/navigation.md` - Navigation helpers and tree utilities
+- `docs-site/site/api/templates.md` - Template context, partials, and callable partials
+- `docs-site/site/api/seo.md` - SEO helper functions and injection
+- `docs-site/site/api/rss.md` - RSS feed API
+- `docs-site/site/api/error-handling.md` - Error patterns and overlay system
+
+### Advanced Topics
+
+- `docs-site/site/advanced/metrics.md` - Build performance measurement and reporting
+- `docs-site/site/advanced/troubleshooting.md` - Common issues and solutions
+- `docs-site/site/advanced/contributing.md` - Development setup and contribution guide
+- `docs-site/site/advanced/using-javascript.md` - JS config files instead of TypeScript
+- `docs-site/site/advanced/seo-usage-scenarios.md` - Real-world SEO patterns
+
+### Other Resources
+
+- `docs-site/site/faq.md` - Frequently asked questions
+- `docs-site/site/glossary.md` - Term definitions
+- `docs-site/site/examples/list.md` - Starter templates and example sites
+- `docs-site/site/examples/recipes.md` - Common patterns and solutions
