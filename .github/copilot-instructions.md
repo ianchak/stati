@@ -86,7 +86,7 @@ All config blocks live under `defineConfig()`. Key sections:
 - **markdown.plugins**: Array of `[pluginName, options]` tuples (e.g., `['external-links', { externalTarget: '_blank' }]`, `['prism', { defaultLanguage: 'javascript' }]`).
 - **markdown.configure**: Callback receiving the markdown-it instance for advanced customization.
 - **markdown.toc**: Enable TOC extraction and heading anchors (default: `true`).
-- **eta.filters**: Object of custom filter functions available in templates as `<%= it.value | filterName %>`.
+- **eta.filters**: Object of custom filter functions available in templates as `<%= stati.filterName(value) %>` (called as functions, not pipes).
 - **typescript**: `enabled`, `srcDir`, `outDir`, `hash`, `minify`, `bundles[]` with `entryPoint`, `bundleName`, `include`/`exclude` glob patterns for selective bundle injection.
 - **isg**: `enabled`, `ttlSeconds`, `maxAgeCapDays`, `aging[]` (array of `{ untilDays, ttlSeconds }` rules).
 - **seo**: `defaultAuthor`, `autoInject`, `debug` - SEO metadata configuration.
