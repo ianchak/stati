@@ -125,9 +125,9 @@ site/
 
 Stati excludes certain files and directories from URL generation:
 
-#### **Files and Folders Starting with `_` (Underscore)**
+#### **Directories Starting with `_` (Underscore)**
 
-**Critical Rule**: Any file or directory starting with `_` is excluded from routing:
+**Critical Rule**: Any **directory** starting with `_` (and all files within it) is excluded from routing. Individual files starting with `_` are NOT automatically excluded:
 
 ```text
 site/
@@ -144,10 +144,13 @@ site/
 │   └── config.json
 ├── _drafts/             ❌ Not routed - Draft content
 │   └── upcoming-post.md
+├── _notes.md            ✅ ROUTED! - Individual files with _ ARE processed
 ├── partials/            ✅ Routed - Creates /partials/ (no underscore)
 │   └── content.md       ✅ Routed - Creates /partials/content/
 └── published.md         ✅ Routed - Creates /published/
 ```
+
+> **Tip:** To exclude individual files, use `draft: true` in frontmatter instead of filename prefixes.
 
 #### **Non-Markdown Files**
 

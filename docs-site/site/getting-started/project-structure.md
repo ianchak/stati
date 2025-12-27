@@ -161,11 +161,13 @@ site/
 
 ## Special Files and Directories
 
-### Files Starting with `_`
+### Directories Starting with `_`
 
-- **Excluded from routing** - Won't generate pages
-- **Used for partials and utilities** - Can be included in templates
+- **Excluded from routing** - Contents won't generate pages
+- **Used for partials and utilities** - Templates can be included via `stati.partials`
 - **Examples**: `_partials/`, `_components/`, `_data/`
+
+> **Note:** Individual files starting with `_` (like `_draft.md`) are NOT automatically excluded. Use `draft: true` in frontmatter to exclude drafts.
 
 ### Template Inheritance
 
