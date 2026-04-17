@@ -44,7 +44,7 @@
     "fast-glob": "^3.3.3",
     "fs-extra": "^11.2.0",
     "gray-matter": "^4.0.3",
-    "markdown-it": "^14.1.0",
+    "markdown-it": "^14.1.1",
     "open": "^10.1.0",
     "ws": "^8.18.0"
   },
