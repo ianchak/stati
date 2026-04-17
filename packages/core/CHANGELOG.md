@@ -1,5 +1,11 @@
 # @stati/core
 
+## 1.23.2
+
+### Patch Changes
+
+- 57a8a2d: replace minimatch with matchesGlob for pattern matching
+
 ## 1.23.1
 
 ### Patch Changes
