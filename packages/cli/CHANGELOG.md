@@ -1,5 +1,16 @@
 # @stati/cli
 
+## 1.13.3
+
+### Patch Changes
+
+- 38374fd: address memory leak during development sessions
+
+  Added a dedicated test for memory leaks in the dev server by
+
+- Updated dependencies [38374fd]
+  - @stati/core@1.23.4
+
 ## 1.13.2
 
 ### Patch Changes

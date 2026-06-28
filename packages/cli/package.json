@@ -1,6 +1,6 @@
 {
   "name": "@stati/cli",
-  "version": "1.13.2",
+  "version": "1.13.3",
   "type": "module",
   "bin": {
     "stati": "./dist/cli.js"
@@ -25,7 +25,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@stati/core": "^1.23.3",
+    "@stati/core": "^1.23.4",
     "yargs": "^17.7.2"
   },
   "devDependencies": {

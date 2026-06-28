@@ -1,5 +1,13 @@
 # create-stati
 
+## 1.11.10
+
+### Patch Changes
+
+- 38374fd: address memory leak during development sessions
+
+  Added a dedicated test for memory leaks in the dev server by
+
 ## 1.11.9
 
 ### Patch Changes
