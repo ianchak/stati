@@ -10,6 +10,7 @@ import { build } from './build.js';
 import { invalidate } from './invalidate.js';
 import { loadConfig } from '../config/loader.js';
 import { clearTemplateEngineCache } from './templates.js';
+import { clearMarkdownProcessorCache } from './markdown.js';
 import {
   loadCacheManifest,
   saveCacheManifest,
@@ -1002,6 +1003,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
 
       // Release cached dev-session engines so they can be garbage collected
       clearTemplateEngineCache();
+      clearMarkdownProcessorCache();
 
       logger.info?.('Dev server stopped');
     },
