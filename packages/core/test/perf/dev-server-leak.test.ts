@@ -14,9 +14,10 @@
  *
  * Run locally / in CI with accurate heap detection:
  *   npm run test:dev-leak
- * (that script passes --expose-gc). Without --expose-gc the heap assertions are
- * skipped and only rebuild-time stability is checked, so it still works in a
- * normal `vitest run`.
+ * This test is excluded from the default Vitest config and runs via
+ * `vitest.leak.config.ts`, which uses fork `execArgv: ['--expose-gc']`.
+ * Without `--expose-gc`, heap assertions are skipped and only rebuild-time
+ * stability is checked.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
