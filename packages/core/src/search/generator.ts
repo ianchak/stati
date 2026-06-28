@@ -5,8 +5,8 @@
 
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
-import { minimatch } from 'minimatch';
 import { writeFile, ensureDir } from '../core/utils/fs.utils.js';
+import { matchesGlob } from '../core/utils/glob-patterns.utils.js';
 import { SEARCH_INDEX_VERSION, SEARCH_DEFAULTS } from './constants.js';
 import type { PageModel, TocEntry } from '../types/content.js';
 import type {
@@ -252,7 +252,7 @@ export function shouldExcludePage(page: PageModel, config: SearchConfig): boolea
   // Check exclude patterns
   const excludePatterns = config.exclude ?? SEARCH_DEFAULTS.exclude;
   for (const pattern of excludePatterns) {
-    if (minimatch(page.url, pattern)) {
+    if (matchesGlob(page.url, pattern)) {
       return true;
     }
   }

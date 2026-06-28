@@ -1,6 +1,6 @@
 {
   "name": "@stati/core",
-  "version": "1.23.1",
+  "version": "1.23.3",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -39,7 +39,7 @@
   },
   "dependencies": {
     "chokidar": "^3.6.0",
-    "esbuild": "^0.27.0",
+    "esbuild": "^0.28.1",
     "eta": "^3.5.0",
     "fast-glob": "^3.3.3",
     "fs-extra": "^11.2.0",
