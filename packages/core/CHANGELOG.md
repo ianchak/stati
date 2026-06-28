@@ -1,5 +1,13 @@
 # @stati/core
 
+## 1.23.3
+
+### Patch Changes
+
+- 1f37feb: update esbuild to version 0.28.1 in package.json
+
+  Updated the esbuild dependency from version 0.27.0 to 0.28.1 to
+
 ## 1.23.2
 
 ### Patch Changes
