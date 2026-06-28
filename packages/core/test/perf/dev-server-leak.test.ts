@@ -38,7 +38,7 @@ const LEAK_CONFIG = {
   /** Warmup rebuilds before measuring */
   warmupRebuilds: 5,
   /** Measured rebuilds */
-  rebuilds: 50,
+  rebuilds: 100,
   /** Test timeout */
   timeout: 180000,
   /** Max acceptable heap growth across the whole session, in MB (gc available) */
