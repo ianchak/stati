@@ -41,7 +41,7 @@ const LEAK_CONFIG = {
   rebuilds: 50,
   /** Test timeout */
   timeout: 180000,
-  /** Max acceptable RSS growth across the whole session, in MB (gc available) */
+  /** Max acceptable heap growth across the whole session, in MB (gc available) */
   maxHeapGrowthMb: 25,
   /** Max ratio of late-window rebuild time vs early-window rebuild time */
   maxRebuildTimeRatio: 1.6,
