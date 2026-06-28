@@ -1,15 +1,23 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createTemplateEngine, renderPage } from '../../src/core/templates.js';
+import {
+  createTemplateEngine,
+  clearTemplateEngineCache,
+  renderPage,
+} from '../../src/core/templates.js';
 import type { StatiConfig, PageModel } from '../../src/types/index.js';
 import type { Eta } from 'eta';
 import { join } from 'node:path';
 
 // Create hoisted mocks
-const { mockPathExists, mockGlob, MockEta } = vi.hoisted(() => ({
-  mockPathExists: vi.fn(),
-  mockGlob: vi.fn(),
-  MockEta: vi.fn(),
-}));
+const { mockPathExists, mockGlob, MockEta, mockIsDevelopment, mockIsProduction } = vi.hoisted(
+  () => ({
+    mockPathExists: vi.fn(),
+    mockGlob: vi.fn(),
+    MockEta: vi.fn(),
+    mockIsDevelopment: vi.fn(),
+    mockIsProduction: vi.fn(),
+  }),
+);
 
 // Mock dependencies
 vi.mock('fs-extra', () => ({
@@ -24,6 +32,11 @@ vi.mock('fast-glob', () => ({
 
 vi.mock('eta', () => ({
   Eta: MockEta,
+}));
+
+vi.mock('../../src/env.js', () => ({
+  isDevelopment: () => mockIsDevelopment(),
+  isProduction: () => mockIsProduction(),
 }));
 
 describe('templates.ts', () => {
@@ -59,6 +72,9 @@ describe('templates.ts', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(process, 'cwd').mockReturnValue(mockProjectRoot);
+    clearTemplateEngineCache();
+    mockIsDevelopment.mockReturnValue(false);
+    mockIsProduction.mockReturnValue(false);
 
     mockEtaInstance = {
       renderAsync: vi.fn(),
@@ -79,6 +95,16 @@ describe('templates.ts', () => {
         varName: 'stati',
       });
       expect(eta).toBe(mockEtaInstance);
+    });
+
+    it('should reuse cached Eta instance in development for the same template directory', () => {
+      mockIsDevelopment.mockReturnValue(true);
+
+      const firstEta = createTemplateEngine(mockConfig);
+      const secondEta = createTemplateEngine(mockConfig);
+
+      expect(MockEta).toHaveBeenCalledTimes(1);
+      expect(secondEta).toBe(firstEta);
     });
   });
 
