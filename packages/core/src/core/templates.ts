@@ -230,15 +230,48 @@ async function discoverPartials(
   return partials;
 }
 
+/**
+ * Cached template engine for dev mode to avoid re-creating on each rebuild.
+ *
+ * Recreating the Eta instance and recompiling every template on each dev rebuild
+ * generates large transient native allocations that the V8 allocator does not
+ * return to the OS, causing monotonic RSS growth and increasing rebuild times
+ * over a long dev session. Reusing a single instance (with template caching on)
+ * keeps rebuild cost flat. The cache is keyed by template directory so a config
+ * change pointing to a different srcDir still produces a fresh engine.
+ */
+let cachedTemplateEngine: { templateDir: string; eta: Eta } | null = null;
+
+/**
+ * Clear the cached template engine. Call this when templates change in dev mode
+ * so the next build recompiles them, or when shutting down a dev session.
+ */
+export function clearTemplateEngineCache(): void {
+  cachedTemplateEngine = null;
+}
+
 export function createTemplateEngine(config: StatiConfig): Eta {
   const templateDir = resolveSrcDir(config);
 
+  // In dev mode, reuse a single cached engine across rebuilds to avoid
+  // per-rebuild compile churn and the associated native-memory growth.
+  if (isDevelopment() && cachedTemplateEngine && cachedTemplateEngine.templateDir === templateDir) {
+    return cachedTemplateEngine.eta;
+  }
+
+  // Enable the template cache in dev too so partials/layouts compile once and are
+  // reused across rebuilds; template edits clear this cache via clearTemplateEngineCache().
+  const useCache = isDevelopment() || isProduction();
   const eta = new Eta({
     views: templateDir,
-    cache: isProduction(),
-    cacheFilepaths: isProduction(),
+    cache: useCache,
+    cacheFilepaths: useCache,
     varName: 'stati',
   });
+
+  if (isDevelopment()) {
+    cachedTemplateEngine = { templateDir, eta };
+  }
 
   return eta;
 }

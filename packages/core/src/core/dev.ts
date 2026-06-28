@@ -9,6 +9,8 @@ import type { FSWatcher } from 'chokidar';
 import { build } from './build.js';
 import { invalidate } from './invalidate.js';
 import { loadConfig } from '../config/loader.js';
+import { clearTemplateEngineCache } from './templates.js';
+import { clearMarkdownProcessorCache } from './markdown.js';
 import {
   loadCacheManifest,
   saveCacheManifest,
@@ -322,6 +324,11 @@ async function handleTemplateChange(
   const cacheDir = resolveCacheDir();
 
   try {
+    // Drop the cached Eta engine so the changed template (and any compiled partials)
+    // are recompiled on the next build. This keeps rebuilds correct while still
+    // reusing the engine across the common markdown-only edit path.
+    clearTemplateEngineCache();
+
     // Load existing cache manifest
     const cacheManifest = await loadCacheManifest(cacheDir);
 
@@ -993,6 +1000,10 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
         });
         httpServer = null;
       }
+
+      // Release cached dev-session engines so they can be garbage collected
+      clearTemplateEngineCache();
+      clearMarkdownProcessorCache();
 
       logger.info?.('Dev server stopped');
     },
