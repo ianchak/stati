@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitest/config';
+import { configDefaults } from 'vitest/config';
 
 export default defineConfig({
   test: {
@@ -7,6 +8,8 @@ export default defineConfig({
     globals: false,
     mockReset: true,
     restoreMocks: true,
+    // The dev-server leak test needs --expose-gc; it runs via its own config (npm run test:dev-leak)
+    exclude: [...configDefaults.exclude, '**/perf/dev-server-leak.test.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],

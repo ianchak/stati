@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "vitest run",
+    "test:dev-leak": "vitest run -c vitest.leak.config.ts",
     "test:create-stati": "npm run build -w packages/create-stati && cd examples && node ../packages/create-stati/dist/index.js test-scaffolded",
     "test:create-stati:cleanup": "node -e \"require('node:fs').rmSync('examples/test-scaffolded', { recursive: true, force: true })\"",
     "lint": "eslint . --ext .ts",
@@ -17,7 +18,7 @@
     "test:blank:preview": "npm run build && cd examples/blank && npm run preview",
     "test:blank:clean": "cd examples/blank && npm run clean",
     "test:blank:full": "npm run test:blank:clean && npm run test:blank:build && echo Build completed successfully!",
-    "test:ci": "npm run build && npm run lint:ci && npm run typecheck:ci && npm run test --workspaces --if-present",
+    "test:ci": "npm run build && npm run lint:ci && npm run typecheck:ci && npm run test --workspaces --if-present && npm run test:dev-leak",
     "changeset": "changeset",
     "changeset:status": "changeset status",
     "changeset:generate": "node scripts/generate-changesets.mjs",
