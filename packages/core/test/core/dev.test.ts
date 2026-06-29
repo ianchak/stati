@@ -7,6 +7,10 @@ import { build } from '../../src/core/build.js';
 import { invalidate } from '../../src/core/invalidate.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
+const { mockFg } = vi.hoisted(() => ({
+  mockFg: vi.fn(),
+}));
+
 // Store the request handler for testing
 let capturedRequestHandler: ((req: IncomingMessage, res: ServerResponse) => void) | null = null;
 
@@ -43,6 +47,10 @@ vi.mock('chokidar', () => ({
       close: vi.fn(() => Promise.resolve()),
     })),
   },
+}));
+
+vi.mock('fast-glob', () => ({
+  default: mockFg,
 }));
 
 vi.mock('open', () => ({
@@ -151,11 +159,13 @@ describe('Development Server', () => {
   const mockLoadConfig = vi.mocked(loadConfig);
   const mockBuild = vi.mocked(build);
   const mockInvalidate = vi.mocked(invalidate);
+  const mockDiscoverOutputCssFiles = vi.mocked(mockFg);
 
   beforeEach(() => {
     consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.clearAllMocks();
     capturedRequestHandler = null;
+    mockDiscoverOutputCssFiles.mockResolvedValue([]);
 
     // Ensure mocks return valid data
     mockLoadConfig.mockResolvedValue({
@@ -607,6 +617,7 @@ describe('Development Server', () => {
       const chokidar = await import('chokidar');
       const mockWatch = vi.mocked(chokidar.default.watch);
       mockWatch.mockClear();
+      mockDiscoverOutputCssFiles.mockResolvedValueOnce(['C:/repo/dist/styles.css']);
 
       mockLoadConfig.mockResolvedValueOnce({
         srcDir: 'site',
@@ -636,6 +647,7 @@ describe('Development Server', () => {
     it('should trigger reload without rebuild when CSS file changes', async () => {
       const chokidar = await import('chokidar');
       const mockWatch = vi.mocked(chokidar.default.watch);
+      mockDiscoverOutputCssFiles.mockResolvedValueOnce(['C:/repo/dist/styles.css']);
 
       // Store the change handler for CSS watcher
       let cssChangeHandler: ((path: string) => void) | undefined;
@@ -700,6 +712,7 @@ describe('Development Server', () => {
     it('should close CSS watcher on stop', async () => {
       const chokidar = await import('chokidar');
       const mockWatch = vi.mocked(chokidar.default.watch);
+      mockDiscoverOutputCssFiles.mockResolvedValueOnce(['C:/repo/dist/styles.css']);
 
       const mockCssWatcherClose = vi.fn(() => Promise.resolve());
       let watcherIndex = 0;
