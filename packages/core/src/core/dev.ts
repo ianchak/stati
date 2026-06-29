@@ -279,7 +279,7 @@ async function performIncrementalRebuild(
         await onBuildEnd();
       } catch (error) {
         logger.error?.(
-          `Failed CSS watcher refresh after build: ${error instanceof Error ? error.message : String(error)}`,
+          `Failed post-build hook after rebuild: ${error instanceof Error ? error.message : String(error)}`,
         );
       }
     }
