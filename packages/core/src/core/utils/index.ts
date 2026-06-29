@@ -115,3 +115,10 @@ export type { CompileOptions, WatchOptions } from './typescript.utils.js';
 
 // HTML manipulation utilities
 export { findHeadClosePosition, injectBeforeHeadClose } from './html.utils.js';
+
+// Environment utilities
+export { isEnabledEnvFlag } from './env.utils.js';
+
+// Dev-server CSS watcher utilities
+export { discoverOutputCssFiles, refreshCssOutputWatcher } from './dev-css-watcher.utils.js';
+export type { RefreshCssOutputWatcherParams } from './dev-css-watcher.utils.js';

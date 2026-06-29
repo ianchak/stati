@@ -29,6 +29,8 @@ import {
   createFallbackLogger,
   mergeServerOptions,
   createTypeScriptWatcher,
+  isEnabledEnvFlag,
+  refreshCssOutputWatcher,
   normalizePathForComparison,
   isPathWithinDirectory,
 } from './utils/index.js';
@@ -131,6 +133,7 @@ async function performInitialBuild(
  *   active build. The `changes` Map stores file paths as keys and their event types as values,
  *   ensuring each file is only processed once with its most recent event type.
  * @param onError - Optional callback invoked when build errors occur
+ * @param onBuildEnd - Optional callback invoked after each build attempt finishes (success or failure)
  * @param batchedChanges - Array of changes to process in a single batch (used for pending queue processing)
  */
 async function performIncrementalRebuild(
@@ -143,6 +146,7 @@ async function performIncrementalRebuild(
   isBuildingRef: { value: boolean },
   pendingChangesRef: { changes: Map<string, 'add' | 'change' | 'unlink'> },
   onError?: (error: Error | null) => void,
+  onBuildEnd?: () => Promise<void> | void,
   batchedChanges: Array<{ path: string; eventType: 'add' | 'change' | 'unlink' }> = [],
 ): Promise<void> {
   // If a build is in progress, queue this change for processing after the current build
@@ -270,6 +274,16 @@ async function performIncrementalRebuild(
   } finally {
     isBuildingRef.value = false;
 
+    if (onBuildEnd) {
+      try {
+        await onBuildEnd();
+      } catch (error) {
+        logger.error?.(
+          `Failed post-build hook after rebuild: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
+
     // Check if there are pending changes that occurred during this build
     if (pendingChangesRef.changes.size > 0) {
       // Get all pending changes - the build will process all of them at once
@@ -292,6 +306,7 @@ async function performIncrementalRebuild(
           isBuildingRef,
           pendingChangesRef,
           onError,
+          onBuildEnd,
           remaining, // Pass remaining changes as batched
         );
       }
@@ -534,6 +549,11 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
   const isBuildingRef = { value: false };
   const pendingChangesRef = { changes: new Map<string, 'add' | 'change' | 'unlink'>() };
   let isStopping = false;
+  const watchedCssFiles = new Set<string>();
+
+  // Diagnostics toggles used for investigating dev-server rebuild slowdown.
+  const disableCssWatcher = isEnabledEnvFlag(process.env.STATI_DEV_DISABLE_CSS_WATCHER);
+  const disableWsReload = isEnabledEnvFlag(process.env.STATI_DEV_DISABLE_WS_RELOAD);
 
   /**
    * Gets MIME type for a file based on its extension
@@ -839,7 +859,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
             onRebuild: (_results, compileTimeMs) => {
               logger.info?.(`▸ TypeScript recompiled in ${compileTimeMs}ms`);
               // Broadcast reload to WebSocket clients
-              if (wsServer) {
+              if (wsServer && !disableWsReload) {
                 wsServer.clients.forEach((client: unknown) => {
                   const ws = client as { readyState: number; send: (data: string) => void };
                   if (ws.readyState === 1) {
@@ -874,28 +894,24 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
         ignoreInitial: true,
       });
 
-      // Set up separate watcher for CSS files in output directory
-      // This enables live reload when external tools (like Tailwind CLI) update CSS
-      cssWatcher = chokidar.watch([join(outDir, '**/*.css')], {
-        ignored: /(^|[/\\])\../, // ignore dotfiles
-        persistent: true,
-        ignoreInitial: true,
-      });
+      const refreshCssWatcher = async (): Promise<void> => {
+        cssWatcher = await refreshCssOutputWatcher({
+          outDir,
+          logger,
+          wsServer,
+          disableWsReload,
+          cssWatcher,
+          watchedCssFiles,
+        });
+      };
 
-      cssWatcher.on('change', (path: string) => {
-        const relativePath = path.replace(process.cwd(), '').replace(/\\/g, '/').replace(/^\//, '');
-        logger.info?.(`▸ ${relativePath} updated`);
+      if (!disableCssWatcher) {
+        await refreshCssWatcher();
 
-        // Just notify clients to reload - no rebuild needed since CSS was already compiled
-        if (wsServer) {
-          wsServer.clients.forEach((client: unknown) => {
-            const ws = client as { readyState: number; send: (data: string) => void };
-            if (ws.readyState === 1) {
-              ws.send(JSON.stringify({ type: 'reload' }));
-            }
-          });
+        if (!cssWatcher) {
+          logger.info?.('  • [dev] No CSS files found in output; CSS watcher not started');
         }
-      });
+      }
 
       watcher.on('change', (path: string) => {
         void performIncrementalRebuild(
@@ -904,10 +920,11 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
           configPath,
           staticDir,
           logger,
-          wsServer,
+          disableWsReload ? null : wsServer,
           isBuildingRef,
           pendingChangesRef,
           setLastBuildError,
+          disableCssWatcher ? undefined : refreshCssWatcher,
         );
       });
 
@@ -918,10 +935,11 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
           configPath,
           staticDir,
           logger,
-          wsServer,
+          disableWsReload ? null : wsServer,
           isBuildingRef,
           pendingChangesRef,
           setLastBuildError,
+          disableCssWatcher ? undefined : refreshCssWatcher,
         );
       });
 
@@ -932,10 +950,11 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
           configPath,
           staticDir,
           logger,
-          wsServer,
+          disableWsReload ? null : wsServer,
           isBuildingRef,
           pendingChangesRef,
           setLastBuildError,
+          disableCssWatcher ? undefined : refreshCssWatcher,
         );
       });
 
@@ -944,6 +963,12 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
       logger.info?.(`  • ${outDir}`);
       logger.info?.('Watching:');
       watchPaths.forEach((path) => logger.info?.(`  • ${path}`));
+      if (disableCssWatcher) {
+        logger.info?.('  • [diagnostic] CSS output watcher disabled');
+      }
+      if (disableWsReload) {
+        logger.info?.('  • [diagnostic] WebSocket reload broadcast disabled');
+      }
       logger.info?.('');
 
       // Open browser if requested

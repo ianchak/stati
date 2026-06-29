@@ -6,6 +6,7 @@
   "scripts": {
     "test": "vitest run",
     "test:dev-leak": "vitest run -c vitest.leak.config.ts",
+    "test:dev-rebuild-slowdown": "node scripts/check-dev-server-slowdown.mjs",
     "test:create-stati": "npm run build -w packages/create-stati && cd examples && node ../packages/create-stati/dist/index.js test-scaffolded",
     "test:create-stati:cleanup": "node -e \"require('node:fs').rmSync('examples/test-scaffolded', { recursive: true, force: true })\"",
     "lint": "eslint . --ext .ts",
