@@ -1,0 +1,91 @@
+name: Dev Server Slowdown Check
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  issues: write
+
+# Prevent multiple runs for the same PR update.
+concurrency:
+  group: dev-server-slowdown-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-slowdown:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build core package
+        run: npm run build -w packages/core
+
+      - name: Run dev-server slowdown check
+        id: slowdown
+        continue-on-error: true
+        env:
+          STATI_DEV_CHECK_REPORT_PATH: dev-server-slowdown-report.md
+        run: npm run test:dev-rebuild-slowdown
+
+      - name: Comment PR with slowdown stats
+        if: ${{ always() && github.event_name == 'pull_request' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = 'dev-server-slowdown-report.md';
+            const COMMENT_MARKER = '<!-- stati-dev-server-slowdown-report -->';
+
+            let report = '## Dev Server Slowdown Check\n\nNo slowdown report was generated.';
+            if (fs.existsSync(path)) {
+              report = fs.readFileSync(path, 'utf-8');
+            }
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existingComment = comments.find((comment) =>
+              comment.body.includes(COMMENT_MARKER),
+            );
+
+            const body = `${COMMENT_MARKER}\n${report}`;
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body,
+              });
+              console.log(`Updated slowdown comment #${existingComment.id}`);
+            } else {
+              const { data: newComment } = await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+              console.log(`Created slowdown comment #${newComment.id}`);
+            }
+
+      - name: Fail if slowdown detected
+        if: ${{ steps.slowdown.outcome == 'failure' }}
+        run: |
+          echo "Dev server slowdown check failed"
+          exit 1
