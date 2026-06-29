@@ -6,6 +6,7 @@ import { loadConfig } from '../../src/config/loader.js';
 import { build } from '../../src/core/build.js';
 import { invalidate } from '../../src/core/invalidate.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import * as fsUtils from '../../src/core/utils/fs.utils.js';
 
 const { mockFg } = vi.hoisted(() => ({
   mockFg: vi.fn(),
@@ -55,6 +56,10 @@ vi.mock('fast-glob', () => ({
 
 vi.mock('open', () => ({
   default: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('../../src/core/utils/fs.utils.js', () => ({
+  pathExists: vi.fn().mockResolvedValue(true),
 }));
 
 vi.mock('../../src/config/loader.js', () => ({
@@ -166,6 +171,7 @@ describe('Development Server', () => {
     vi.clearAllMocks();
     capturedRequestHandler = null;
     mockDiscoverOutputCssFiles.mockResolvedValue([]);
+    vi.mocked(fsUtils.pathExists).mockResolvedValue(true);
 
     // Ensure mocks return valid data
     mockLoadConfig.mockResolvedValue({

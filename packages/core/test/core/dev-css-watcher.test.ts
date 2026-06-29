@@ -4,6 +4,7 @@ import { createDevServer } from '../../src/core/dev.js';
 import { loadConfig } from '../../src/config/loader.js';
 import { build } from '../../src/core/build.js';
 import { invalidate } from '../../src/core/invalidate.js';
+import * as fsUtils from '../../src/core/utils/fs.utils.js';
 
 const { mockFg, createdWatchers } = vi.hoisted(() => ({
   mockFg: vi.fn(),
@@ -61,6 +62,10 @@ vi.mock('chokidar', () => ({
       return watcher;
     }),
   },
+}));
+
+vi.mock('../../src/core/utils/fs.utils.js', () => ({
+  pathExists: vi.fn().mockResolvedValue(true),
 }));
 
 vi.mock('../../src/config/loader.js', () => ({
@@ -124,6 +129,8 @@ describe('Dev Server CSS watcher reconciliation', () => {
     vi.clearAllMocks();
     createdWatchers.length = 0;
 
+    vi.mocked(fsUtils.pathExists).mockResolvedValue(true);
+
     mockLoadConfig.mockResolvedValue({
       srcDir: 'site',
       outDir: 'dist',
@@ -185,6 +192,20 @@ describe('Dev Server CSS watcher reconciliation', () => {
 
     expect(createdWatchers).toHaveLength(2);
     expect(createdWatchers[1]!.close).not.toHaveBeenCalled();
+
+    await devServer.stop();
+  });
+
+  it('starts without CSS watcher when outDir does not exist after initial build', async () => {
+    vi.mocked(fsUtils.pathExists).mockResolvedValue(false);
+
+    const logger = createLogger();
+    const devServer = await createDevServer({ port: 3192, logger });
+    await devServer.start();
+
+    // Only the source/static watcher should be created; no CSS watcher.
+    expect(createdWatchers).toHaveLength(1);
+    expect(mockFg).not.toHaveBeenCalled();
 
     await devServer.stop();
   });

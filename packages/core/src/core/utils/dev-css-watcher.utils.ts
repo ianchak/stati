@@ -3,6 +3,7 @@ import fg from 'fast-glob';
 import type { FSWatcher } from 'chokidar';
 import type { WebSocketServer } from 'ws';
 import type { Logger } from '../../types/index.js';
+import { pathExists } from './fs.utils.js';
 
 /**
  * Returns concrete CSS files currently present in outDir.
@@ -11,6 +12,10 @@ import type { Logger } from '../../types/index.js';
  * which can add significant overhead on large docs sites.
  */
 export async function discoverOutputCssFiles(outDir: string): Promise<string[]> {
+  if (!(await pathExists(outDir))) {
+    return [];
+  }
+
   const cssFiles = await fg('**/*.css', {
     cwd: outDir,
     absolute: true,
