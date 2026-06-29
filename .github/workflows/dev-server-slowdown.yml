@@ -54,34 +54,40 @@ jobs:
               report = fs.readFileSync(path, 'utf-8');
             }
 
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-
-            const existingComment = comments.find((comment) =>
-              comment.body.includes(COMMENT_MARKER),
-            );
-
-            const body = `${COMMENT_MARKER}\n${report}`;
-
-            if (existingComment) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existingComment.id,
-                body,
-              });
-              console.log(`Updated slowdown comment #${existingComment.id}`);
-            } else {
-              const { data: newComment } = await github.rest.issues.createComment({
+            try {
+              const { data: comments } = await github.rest.issues.listComments({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
-                body,
               });
-              console.log(`Created slowdown comment #${newComment.id}`);
+
+              const existingComment = comments.find((comment) =>
+                comment.body.includes(COMMENT_MARKER),
+              );
+
+              const body = `${COMMENT_MARKER}\n${report}`;
+
+              if (existingComment) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existingComment.id,
+                  body,
+                });
+                console.log(`Updated slowdown comment #${existingComment.id}`);
+              } else {
+                const { data: newComment } = await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body,
+                });
+                console.log(`Created slowdown comment #${newComment.id}`);
+              }
+            } catch (error) {
+              // Some PR contexts (for example, forked or restricted bot runs) deny comment writes.
+              // Keep the workflow focused on slowdown detection rather than comment permissions.
+              core.warning(`Skipping slowdown PR comment: ${error.message}`);
             }
 
       - name: Fail if slowdown detected
