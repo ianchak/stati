@@ -1,5 +1,12 @@
 # create-stati
 
+## 1.12.0
+
+### Minor Changes
+
+- a785e03: add CSS watcher diagnostics and slowdown check script
+  - Introduced a new script to check for dev server rebuild slowdown.
+
 ## 1.11.10
 
 ### Patch Changes

@@ -1,5 +1,17 @@
 # @stati/cli
 
+## 1.14.0
+
+### Minor Changes
+
+- a785e03: add CSS watcher diagnostics and slowdown check script
+  - Introduced a new script to check for dev server rebuild slowdown.
+
+### Patch Changes
+
+- Updated dependencies [a785e03]
+  - @stati/core@1.24.0
+
 ## 1.13.3
 
 ### Patch Changes
