@@ -40,6 +40,11 @@ function formatChange(early, late) {
   return `${deltaPrefix}${delta}ms (${percentPrefix}${percent.toFixed(1)}%)`;
 }
 
+function isEnabledEnvFlag(value) {
+  if (!value) return false;
+  return ['1', 'true', 'yes', 'on'].includes(value.toLowerCase());
+}
+
 function buildReport({
   iterations,
   validCount,
@@ -205,8 +210,8 @@ async function main() {
     const early = median(valid.slice(0, sampleWindow));
     const late = median(valid.slice(-sampleWindow));
     const ratio = early > 0 ? late / early : Number.POSITIVE_INFINITY;
-    const cssWatcherDisabled = process.env.STATI_DEV_DISABLE_CSS_WATCHER === '1';
-    const wsReloadDisabled = process.env.STATI_DEV_DISABLE_WS_RELOAD === '1';
+    const cssWatcherDisabled = isEnabledEnvFlag(process.env.STATI_DEV_DISABLE_CSS_WATCHER);
+    const wsReloadDisabled = isEnabledEnvFlag(process.env.STATI_DEV_DISABLE_WS_RELOAD);
     const reason =
       valid.length < 4
         ? `only ${valid.length} rebuild sample(s) were collected`
