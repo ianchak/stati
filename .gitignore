@@ -57,6 +57,14 @@ tsconfig.tsbuildinfo
 !.env.example
 !.env.*.example
 
+### Speci
+speci.config.json
+.speci-logs/
+.speci-lock
+docs/PROGRESS.md
+docs/tasks/
+.github/agents/
+
 ### Local development files
 /docs/
 *prompt*.md
