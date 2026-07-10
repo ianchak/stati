@@ -44,5 +44,8 @@
     </main>
 
     <%~ stati.partials.footer %>
+
+    <!-- Search modal (used by header search trigger on all pages) -->
+    <%~ stati.partials.searchTemplates %>
 </body>
 </html>

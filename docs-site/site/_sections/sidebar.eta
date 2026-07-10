@@ -51,20 +51,39 @@ const sections = [
     iconName: 'link',
   },
 ];
+
+// Normalizes route paths for reliable active-link detection in server-rendered markup.
+function normalizeRoutePath(path) {
+  if (!path) return '/';
+  let normalized = String(path).split('#')[0].split('?')[0] || '/';
+  normalized = normalized.replace(/\/index\.html$/, '/').replace(/\/+/g, '/');
+  if (!normalized.startsWith('/')) {
+    normalized = `/${normalized}`;
+  }
+  if (normalized.length > 1) {
+    normalized = normalized.replace(/\/+$/, '');
+  }
+  return normalized || '/';
+}
+
+const currentPagePath = normalizeRoutePath(stati.page.url);
 %>
-<aside id="sidebar" class="fixed lg:sticky top-0 lg:top-18 left-0 w-80 h-screen lg:h-[calc(100vh-4.5rem)] bg-white/80 dark:bg-dark-900/80 backdrop-blur-xl border-r border-gray-200/60 dark:border-dark-700/60 overflow-y-auto transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out z-40 shadow-xl shadow-gray-900/5">
-    <nav class="p-6">
+<aside id="sidebar" class="fixed lg:sticky top-0 lg:top-18 left-0 w-80 h-screen lg:h-[calc(100vh-4.5rem)] bg-white/90 dark:bg-dark-900/90 backdrop-blur-xl border-r border-slate-200/70 dark:border-slate-700/70 overflow-y-auto transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out z-40 shadow-soft">
+  <nav class="p-5">
         <!-- Search Bar -->
-        <div class="mb-8">
+    <div class="mb-7">
             <div class="relative">
-                <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+        <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400">
                     <%~ stati.partials.icon({ name: 'search', size: 'sm' }) %>
                 </span>
-                <input type="search" placeholder="Search documentation..." class="w-full pl-10 pr-4 py-2.5 text-sm bg-gray-50/80 dark:bg-dark-800/80 border border-gray-200/60 dark:border-dark-700/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-200 placeholder-gray-400">
+        <input type="search" placeholder="Search docs" class="w-full pl-10 pr-12 py-2.5 text-sm bg-slate-50/90 dark:bg-slate-800/90 border border-slate-300/70 dark:border-slate-600/70 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 transition-all duration-200 placeholder-slate-400">
+        <div class="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+          <kbd>/</kbd>
+        </div>
             </div>
         </div>
 
-        <div class="space-y-6">
+    <div class="space-y-5">
             <% // Iterate over sections and list their child pages dynamically
             sections.forEach(section => {
               // Get child pages for this section using nav helper
@@ -74,19 +93,21 @@ const sections = [
             %>
             <!-- <%= section.displayName %> -->
             <div class="nav-section">
-                <button class="<%= stati.propValue('section-toggle flex items-center justify-between w-full px-4 py-3 text-left rounded-xl transition-all duration-200 group', `bg-gradient-to-r from-${color}-50 to-${color}-100/50 dark:from-${color}-900/20 dark:to-${color}-800/20`, `border border-${color}-200/50 dark:border-${color}-800/50`, `hover:shadow-md hover:shadow-${color}-500/10`) %>" data-section="<%= sectionSlug %>">
+              <button class="<%= stati.propValue('section-toggle flex items-center justify-between w-full px-3 py-2.5 text-left rounded-xl transition-all duration-200 group bg-slate-100/85 dark:bg-slate-800/75 border border-slate-200/80 dark:border-slate-700/70 hover:bg-slate-200/70 dark:hover:bg-slate-800') %>" data-section="<%= sectionSlug %>">
                     <div class="flex items-center space-x-3">
-                        <div class="<%= stati.propValue('flex items-center justify-center w-8 h-8 rounded-lg', `bg-${color}-500/10 dark:bg-${color}-400/20`) %>">
+                  <div class="<%= stati.propValue('flex items-center justify-center w-8 h-8 rounded-lg border', `bg-${color}-500/10 dark:bg-${color}-400/10`, `border-${color}-200/80 dark:border-${color}-700/60`) %>">
                             <%~ stati.partials.icon({ name: section.iconName, size: 'sm', class: `text-${color}-600 dark:text-${color}-400` }) %>
                         </div>
-                        <span class="font-semibold text-gray-900 dark:text-white text-sm"><%= section.displayName %></span>
+                  <span class="font-semibold text-slate-900 dark:text-slate-100 text-sm"><%= section.displayName %></span>
                     </div>
-                    <%~ stati.partials.icon({ name: 'chevron-down', size: 'sm', class: 'text-gray-500 transform transition-transform duration-200 group-data-[expanded=true]:rotate-180' }) %>
+                <%~ stati.partials.icon({ name: 'chevron-down', size: 'sm', class: 'text-slate-500 dark:text-slate-400 transform transition-transform duration-200 group-data-[expanded=true]:rotate-180' }) %>
                 </button>
-                <div class="section-content mt-2 space-y-1" data-section="<%= sectionSlug %>">
-                    <% sectionChildren.forEach(page => { %>
-                    <a href="<%= page.url %>" class="<%= stati.propValue('sidebar-link flex items-center pl-4 pr-4 py-2.5 text-sm text-gray-600 dark:text-gray-300 rounded-lg transition-all duration-200 font-medium group', `hover:text-${color}-600 dark:hover:text-${color}-400`, `hover:bg-${color}-50/60 dark:hover:bg-${color}-900/20`) %>">
-                        <span class="<%= stati.propValue('w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full mr-3 transition-colors duration-200', `group-hover:bg-${color}-500`) %>"></span>
+              <div class="section-content mt-2 space-y-1.5" data-section="<%= sectionSlug %>">
+                    <% sectionChildren.forEach(page => {
+                      const isCurrentPage = normalizeRoutePath(page.url) === currentPagePath;
+                    %>
+                <a href="<%= page.url %>" class="<%= stati.propValue('sidebar-link flex items-center pl-4 pr-4 py-2.5 text-sm rounded-lg transition-all duration-200 font-medium group', isCurrentPage && 'active', isCurrentPage && `active-${sectionSlug}`) %>">
+                  <span class="<%= stati.propValue('w-1.5 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full mr-3 transition-colors duration-200', `group-hover:bg-${color}-500`) %>"></span>
                         <%= page.title %>
                     </a>
                     <% }) %>

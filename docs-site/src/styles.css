@@ -3,17 +3,35 @@
 @tailwind utilities;
 
 @layer base {
-  /* Base theme colors on html to prevent white flash between page navigations */
   html {
-    background-color: #f8fafc; /* slate-50 fallback for light mode */
+    background-color: #f8fafc;
+    --docs-surface: #ffffff;
+    --docs-surface-muted: #f3f6fb;
+    --docs-border: #dbe3ef;
+    --docs-text-strong: #0f172a;
+    --docs-text-muted: #475569;
+    --docs-link: #1d4ed8;
+    --docs-link-hover: #1e40af;
+    --docs-inline-code-bg: #eaf0fb;
+    --docs-inline-code-border: #cdd9ef;
+    --docs-inline-code-text: #1e3a8a;
   }
 
   html[data-theme='dark'],
   html.dark {
-    background-color: #020617; /* slate-950 for dark mode */
+    background-color: #020617;
+    --docs-surface: #0b1220;
+    --docs-surface-muted: #111b2f;
+    --docs-border: #22324f;
+    --docs-text-strong: #f8fafc;
+    --docs-text-muted: #cbd5e1;
+    --docs-link: #93c5fd;
+    --docs-link-hover: #bfdbfe;
+    --docs-inline-code-bg: #162238;
+    --docs-inline-code-border: #2f4467;
+    --docs-inline-code-text: #dbeafe;
   }
 
-  /* Self-hosted Inter variable font */
   @font-face {
     font-family: 'Inter';
     src: url('/fonts/inter.woff2') format('woff2');
@@ -22,7 +40,6 @@
     font-display: swap;
   }
 
-  /* Self-hosted Fira Code variable font */
   @font-face {
     font-family: 'Fira Code';
     src: url('/fonts/fira-code.woff2') format('woff2');
@@ -31,7 +48,6 @@
     font-display: swap;
   }
 
-  /* Fallback font adjustments to minimize layout shift */
   @font-face {
     font-family: 'Inter Fallback';
     src: local('Arial');
@@ -50,24 +66,22 @@
     line-gap-override: 0%;
   }
 
-  /* Custom scrollbar for better dark theme support */
   ::-webkit-scrollbar {
-    @apply w-2;
+    @apply w-2.5;
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-gray-100 dark:bg-dark-800;
+    @apply bg-slate-100 dark:bg-slate-900;
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-gray-300 dark:bg-dark-600 rounded-full;
+    @apply bg-slate-300 dark:bg-slate-700 rounded-full;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-gray-400 dark:bg-dark-500;
+    @apply bg-slate-400 dark:bg-slate-600;
   }
 
-  /* Refined scrollbar for TOC */
   #toc-nav::-webkit-scrollbar {
     @apply w-1.5;
   }
@@ -77,27 +91,31 @@
   }
 
   #toc-nav::-webkit-scrollbar-thumb {
-    @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+    @apply bg-slate-300 dark:bg-slate-700 rounded-full;
   }
 
   #toc-nav::-webkit-scrollbar-thumb:hover {
-    @apply bg-gray-400 dark:bg-gray-500;
+    @apply bg-slate-400 dark:bg-slate-600;
   }
 
-  /* Better focus styles */
-  *:focus {
-    @apply outline-none ring-2 ring-primary-500/50 ring-offset-2 ring-offset-white dark:ring-offset-dark-900;
+  *:focus-visible {
+    @apply outline-none ring-2 ring-primary-500/40 ring-offset-2 ring-offset-white dark:ring-offset-dark-900 rounded-md;
   }
 
-  /* Smooth scroll behavior */
   html {
     @apply scroll-smooth;
     scroll-padding-top: 6rem;
   }
 
-  /* Typography improvements */
   body {
-    @apply text-gray-700 dark:text-gray-200;
+    @apply text-slate-700 dark:text-slate-200;
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(37, 99, 235, 0.07) 1px, transparent 0),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.88));
+    background-size:
+      28px 28px,
+      100% 100%;
+    background-attachment: fixed;
     font-feature-settings:
       'kern' 1,
       'liga' 1,
@@ -106,101 +124,104 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+
+  .dark body {
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(147, 197, 253, 0.08) 1px, transparent 0),
+      linear-gradient(to bottom, rgba(2, 6, 23, 0.95), rgba(2, 8, 28, 0.92));
+  }
+
+  kbd {
+    @apply rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300;
+  }
 }
 
 @layer components {
-  /* Navigation styles */
   .nav-link {
-    @apply relative overflow-hidden;
+    @apply relative rounded-lg;
   }
 
   .nav-link::before {
-    @apply absolute inset-0 bg-gradient-to-r from-primary-500/10 to-primary-600/10 translate-x-full transition-transform duration-300 ease-out;
+    @apply absolute left-3 right-3 -bottom-0.5 h-0.5 bg-primary-500/70 rounded-full scale-x-0 origin-left transition-transform duration-200 ease-out;
     content: '';
   }
 
   .nav-link:hover::before {
-    @apply translate-x-0;
+    @apply scale-x-100;
   }
 
-  /* Sidebar improvements */
   .section-content {
-    @apply transition-[max-height] duration-150 ease-out;
-    /* Prevent Safari from collapsing content before JS calculates scrollHeight */
+    @apply transition-[max-height] duration-200 ease-out;
     max-height: none;
     overflow: hidden;
   }
 
   .sidebar-link {
-    @apply relative;
-    /* Prevent flex items from collapsing in Safari */
+    @apply relative border border-transparent text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100/80 dark:hover:bg-slate-800/60;
     flex-shrink: 0;
-    min-height: 2.5rem; /* Match py-2.5 (10px * 2) + content height */
+    min-height: 2.5rem;
   }
 
-  /* Prevent bullet from collapsing in Safari */
   .sidebar-link > span:first-child {
     flex-shrink: 0;
   }
 
-  /* Base active state - fallback */
   .sidebar-link.active {
-    @apply font-semibold;
+    @apply text-slate-900 dark:text-white bg-white dark:bg-slate-800 border-slate-300/80 dark:border-slate-600/70 font-semibold shadow-soft;
   }
 
-  /* Section-specific active states */
   .sidebar-link.active-getting-started {
-    @apply text-primary-700 dark:text-primary-300 bg-primary-100 dark:bg-primary-900/30;
+    @apply text-primary-700 dark:text-primary-200 border-primary-200 dark:border-primary-700;
   }
 
   .sidebar-link.active-core-concepts {
-    @apply text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/30;
+    @apply text-primary-700 dark:text-primary-200 border-primary-200 dark:border-primary-700;
   }
 
   .sidebar-link.active-configuration {
-    @apply text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/30;
+    @apply text-primary-700 dark:text-primary-200 border-primary-200 dark:border-primary-700;
   }
 
   .sidebar-link.active-cli {
-    @apply text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/30;
+    @apply text-primary-700 dark:text-primary-200 border-primary-200 dark:border-primary-700;
   }
 
   .sidebar-link.active-api {
-    @apply text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-900/30;
+    @apply text-primary-700 dark:text-primary-200 border-primary-200 dark:border-primary-700;
   }
 
   .sidebar-link.active-examples {
-    @apply text-cyan-700 dark:text-cyan-300 bg-cyan-100 dark:bg-cyan-900/30;
+    @apply text-primary-700 dark:text-primary-200 border-primary-200 dark:border-primary-700;
   }
 
   .sidebar-link.active-advanced {
-    @apply text-gray-900 dark:text-gray-100 bg-gray-200 dark:bg-gray-800/50 font-bold;
+    @apply text-primary-700 dark:text-primary-200 border-primary-200 dark:border-primary-700;
   }
 
-  /* Enhanced prose styles */
   .prose {
-    @apply text-gray-700 dark:text-gray-200 leading-relaxed;
+    @apply min-w-0 leading-8 text-[17px] text-slate-700 dark:text-slate-300;
+    max-width: 74ch;
   }
 
   .prose h1 {
-    @apply text-4xl lg:text-5xl font-bold mb-8 mt-0 text-gray-900 dark:text-white leading-tight;
+    @apply text-4xl lg:text-[2.9rem] font-extrabold tracking-tight mb-10 mt-0 text-slate-950 dark:text-white leading-tight;
   }
 
   .prose h2 {
-    @apply text-2xl lg:text-3xl font-bold mb-6 mt-12 text-gray-900 dark:text-white relative;
+    @apply text-2xl lg:text-[2rem] font-bold tracking-tight mb-4 mt-14 text-slate-900 dark:text-slate-100 relative;
   }
 
   .prose h2::before {
-    @apply absolute -left-4 top-1 w-1 h-8 bg-gradient-to-b from-primary-500 to-primary-600 rounded-full;
+    @apply absolute -left-4 top-[0.35rem] w-1 h-8 bg-gradient-to-b from-primary-500 to-primary-600 rounded-full;
     content: '';
   }
 
   .prose h3 {
-    @apply text-xl lg:text-2xl font-semibold mb-4 mt-10 text-gray-900 dark:text-white;
+    @apply text-xl lg:text-2xl font-semibold mb-3 mt-10 text-slate-900 dark:text-slate-100;
   }
 
   .prose h4 {
-    @apply text-lg lg:text-xl font-semibold mb-3 mt-8 text-gray-900 dark:text-white;
+    @apply text-lg lg:text-xl font-semibold mb-2 mt-8 text-slate-900 dark:text-slate-100;
   }
 
   .prose h1 code,
@@ -211,32 +232,37 @@
   }
 
   .prose p {
-    @apply mb-6 leading-relaxed text-gray-600 dark:text-gray-300;
+    @apply mb-6 text-slate-700 dark:text-slate-300;
   }
 
   .prose ul,
   .prose ol {
-    @apply mb-6 pl-6 space-y-2;
+    @apply mb-6 pl-6 space-y-2.5;
   }
 
   .prose li {
-    @apply text-gray-600 dark:text-gray-300 m-0;
+    @apply text-slate-700 dark:text-slate-300 m-0;
   }
 
   .prose li::marker {
-    @apply text-primary-500;
+    @apply text-primary-600 dark:text-primary-400;
   }
 
   .prose code {
-    @apply bg-gray-100 dark:bg-dark-800 px-2.5 py-1 rounded-md text-sm font-mono text-primary-700 dark:text-primary-300 font-medium;
+    background-color: var(--docs-inline-code-bg);
+    border-color: var(--docs-inline-code-border);
+    color: var(--docs-inline-code-text);
+    @apply border px-2.5 py-1 rounded-md text-[0.84em] font-semibold font-mono;
   }
 
   .prose pre {
-    @apply bg-gray-50 dark:bg-dark-800 text-gray-800 dark:text-gray-100 p-6 rounded-xl overflow-x-auto mb-6 shadow-soft-lg border border-gray-200 dark:border-dark-700/50 max-w-full;
+    @apply relative mb-8 overflow-x-auto rounded-2xl border p-0 shadow-soft-lg max-w-full;
+    background: var(--docs-surface-muted);
+    border-color: var(--docs-border);
   }
 
   .prose pre code {
-    @apply bg-transparent px-0 py-0 text-inherit rounded-none;
+    @apply block bg-transparent border-0 rounded-none px-6 py-5 text-[0.84rem] leading-7;
   }
 
   .prose pre code,
@@ -246,47 +272,45 @@
   }
 
   .prose blockquote {
-    @apply border-l-4 border-primary-500 bg-primary-50/50 dark:bg-primary-900/20 pl-6 py-4 italic text-gray-700 dark:text-gray-300 mb-6 rounded-r-lg;
+    @apply mb-6 rounded-r-xl border-l-4 border-primary-500 bg-primary-50/60 dark:bg-primary-900/20 px-6 py-4 italic text-slate-700 dark:text-slate-300;
   }
 
   .prose th,
   .prose td {
-    @apply border-b border-gray-200 dark:border-dark-600 px-6 py-4 text-left;
+    @apply border-b border-slate-200 dark:border-slate-700 px-6 py-4 text-left;
   }
 
   .prose th {
-    @apply bg-gray-50 dark:bg-dark-700 font-semibold text-gray-900 dark:text-white;
+    @apply bg-slate-100/80 dark:bg-slate-800 font-semibold text-slate-900 dark:text-white;
   }
 
   .prose td {
-    @apply text-gray-600 dark:text-gray-300;
+    @apply text-slate-600 dark:text-slate-300;
   }
 
   .prose a {
-    @apply text-primary-600 dark:text-primary-400 font-medium no-underline relative;
+    color: var(--docs-link);
+    @apply font-semibold no-underline relative;
     transition: all 0.2s ease;
   }
 
   .prose a::after {
-    @apply absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-primary-500 to-primary-600 transition-all duration-300;
+    @apply absolute bottom-0 left-0 h-[2px] w-full scale-x-0 origin-left bg-primary-500 transition-transform duration-200;
     content: '';
   }
 
   .prose a:hover::after {
-    @apply w-full;
+    @apply scale-x-100;
   }
 
   .prose a:hover {
-    @apply text-primary-700 dark:text-primary-300;
-  }
-
-  /* Constrain prose content to prevent horizontal overflow */
-  .prose {
-    @apply min-w-0;
+    color: var(--docs-link-hover);
   }
 
   .prose table {
-    @apply table w-full border-collapse mb-6 bg-white dark:bg-dark-800 rounded-lg overflow-hidden shadow-soft;
+    @apply table w-full border-collapse mb-8 rounded-xl overflow-hidden shadow-soft;
+    background: var(--docs-surface);
+    border: 1px solid var(--docs-border);
   }
 
   .prose thead,
@@ -300,21 +324,18 @@
     @apply max-w-full;
   }
 
-  /* Button components */
   .btn-primary {
-    @apply bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-semibold px-6 py-3 rounded-lg shadow-soft hover:shadow-glow transition-all duration-300 transform hover:scale-105;
+    @apply rounded-lg bg-primary-600 px-6 py-3 font-semibold text-white shadow-soft transition-all duration-200 hover:bg-primary-700 hover:shadow-soft-lg;
   }
 
   .btn-secondary {
-    @apply bg-white dark:bg-dark-800 border-2 border-primary-600 dark:border-primary-400 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 font-semibold px-6 py-3 rounded-lg shadow-soft hover:shadow-soft-lg transition-all duration-300;
+    @apply rounded-lg border-2 border-primary-600 bg-white px-6 py-3 font-semibold text-primary-700 shadow-soft transition-all duration-200 hover:bg-primary-50 hover:shadow-soft-lg dark:border-primary-400 dark:bg-dark-800 dark:text-primary-300 dark:hover:bg-primary-900/20;
   }
 
-  /* Card component */
   .card {
-    @apply bg-white/60 dark:bg-dark-800/60 backdrop-blur-sm rounded-xl p-6 shadow-soft hover:shadow-soft-lg transition-all duration-300 border border-gray-200/50 dark:border-dark-700/50;
+    @apply rounded-xl border border-slate-200/70 bg-white/85 p-6 shadow-soft backdrop-blur-sm transition-all duration-300 hover:shadow-soft-lg dark:border-slate-700/60 dark:bg-dark-800/70;
   }
 
-  /* Gradient text utility */
   .gradient-text {
     @apply bg-gradient-to-r from-primary-600 to-primary-500 bg-clip-text text-transparent;
   }
@@ -323,7 +344,6 @@
     @apply from-primary-400 to-primary-300;
   }
 
-  /* Loading animation */
   @keyframes pulse-slow {
     0%,
     100% {
@@ -338,19 +358,16 @@
     animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 
-  /* Modern glass effect */
   .glass {
     @apply bg-white/10 dark:bg-white/5 backdrop-blur-lg border border-white/20 dark:border-white/10;
   }
 }
 
 @layer utilities {
-  /* Text selection styles */
   ::selection {
     @apply bg-primary-200 dark:bg-primary-800 text-primary-900 dark:text-primary-100;
   }
 
-  /* Animation utilities */
   .animate-float {
     animation: float 6s ease-in-out infinite;
   }
@@ -365,33 +382,27 @@
     }
   }
 
-  /* Backdrop utilities */
   .backdrop-blur-xs {
     backdrop-filter: blur(2px);
   }
 }
 
-/* Enable view transitions for cross-document navigation */
 @view-transition {
   navigation: auto;
 }
 
-/* Exclude TOC and sidebar from view transitions to prevent flash during navigation.
-   These elements are server-rendered at build time and should remain visible. */
 #toc,
 #sidebar {
   view-transition-name: none;
 }
 
-/* Hide the old page immediately to prevent flash/pop */
 ::view-transition-old(root) {
   animation: none;
   opacity: 0;
 }
 
-/* Fade in the new page smoothly */
 ::view-transition-new(root) {
-  animation: fade-in 0.15s ease-out;
+  animation: fade-in 0.2s ease-out;
 }
 
 @keyframes fade-in {
@@ -403,9 +414,13 @@
   }
 }
 
-/* Reduced motion: actually disable cross-document transitions */
 @media (prefers-reduced-motion: reduce) {
   @view-transition {
     navigation: none;
+  }
+
+  .animate-float,
+  .pulse-slow {
+    animation: none;
   }
 }

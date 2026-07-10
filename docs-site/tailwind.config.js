@@ -40,16 +40,19 @@ export default {
       },
       fontFamily: {
         sans: [
+          'IBM Plex Sans',
+          'Aptos',
+          'Segoe UI Variable',
           'Inter',
           'Inter Fallback',
           'system-ui',
           '-apple-system',
           'BlinkMacSystemFont',
           'Segoe UI',
-          'Roboto',
           'sans-serif',
         ],
         mono: [
+          'JetBrains Mono',
           'Fira Code',
           'Fira Code Fallback',
           'Menlo',
@@ -91,8 +94,9 @@ export default {
         xs: '2px',
       },
       boxShadow: {
-        soft: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
-        'soft-lg': '0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03)',
+        soft: '0 8px 20px -12px rgba(15, 23, 42, 0.2), 0 2px 8px -4px rgba(15, 23, 42, 0.08)',
+        'soft-lg':
+          '0 18px 36px -18px rgba(15, 23, 42, 0.28), 0 8px 16px -8px rgba(15, 23, 42, 0.12)',
         glow: '0 0 20px rgba(59, 130, 246, 0.3)',
         'glow-lg': '0 0 40px rgba(59, 130, 246, 0.2)',
       },

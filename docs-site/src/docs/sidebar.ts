@@ -34,13 +34,39 @@ function getElements(): SidebarElements {
  * Normalizes a path for comparison (handles trailing slashes and index.html).
  */
 function normalizePath(path: string): string {
-  // Remove index.html if present
-  let normalized = path.replace(/\/index\.html$/, '/');
-  // Ensure trailing slash for directories
-  if (!normalized.endsWith('/') && !normalized.includes('.')) {
-    normalized += '/';
+  if (!path) return '/';
+
+  let normalized = path.trim();
+
+  // Support absolute URLs and raw href values uniformly.
+  try {
+    normalized = new URL(normalized, window.location.origin).pathname;
+  } catch {
+    // Keep raw value if URL parsing fails.
   }
-  return normalized;
+
+  // Strip query/hash if present and decode URL-safe chars.
+  normalized = normalized.split('#')[0]?.split('?')[0] || '/';
+  try {
+    normalized = decodeURIComponent(normalized);
+  } catch {
+    // Keep undecoded value if malformed encoding is present.
+  }
+
+  // Ensure leading slash for relative links.
+  if (!normalized.startsWith('/')) {
+    normalized = `/${normalized}`;
+  }
+
+  // Remove index.html and collapse duplicate slashes.
+  normalized = normalized.replace(/\/index\.html$/, '/').replace(/\/+/g, '/');
+
+  // Normalize trailing slash (except root).
+  if (normalized.length > 1) {
+    normalized = normalized.replace(/\/+$/, '');
+  }
+
+  return normalized || '/';
 }
 
 /**
@@ -182,9 +208,39 @@ function setupScrollPersistence(sidebar: HTMLElement): void {
  * Returns the active link element if found.
  */
 function highlightActivePage(state: SectionState): HTMLAnchorElement | null {
+  const serverActiveLink = document.querySelector<HTMLAnchorElement>('.sidebar-link.active');
+  if (serverActiveLink) {
+    const section = serverActiveLink.closest('.nav-section');
+    const toggle = section?.querySelector<HTMLElement>('.section-toggle');
+    const sectionName = toggle?.getAttribute('data-section');
+    const content = section?.querySelector<HTMLElement>('.section-content');
+
+    if (toggle && sectionName && content) {
+      toggle.setAttribute('data-expanded', 'true');
+      content.style.maxHeight = `${content.scrollHeight}px`;
+      content.style.overflow = 'visible';
+
+      state[sectionName] = true;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    return serverActiveLink;
+  }
+
   const currentPath = window.location.pathname;
   const normalizedCurrentPath = normalizePath(currentPath);
   let activeLink: HTMLAnchorElement | null = null;
+  let activePath = '';
+
+  // Clear any stale active classes before applying the new one.
+  document.querySelectorAll<HTMLAnchorElement>('.sidebar-link').forEach((link) => {
+    link.classList.remove('active');
+    for (const className of Array.from(link.classList)) {
+      if (className.startsWith('active-')) {
+        link.classList.remove(className);
+      }
+    }
+  });
 
   document.querySelectorAll<HTMLAnchorElement>('.sidebar-link').forEach((link) => {
     const linkHref = link.getAttribute('href');
@@ -192,38 +248,53 @@ function highlightActivePage(state: SectionState): HTMLAnchorElement | null {
 
     const normalizedLinkHref = normalizePath(linkHref);
 
-    if (normalizedLinkHref === normalizedCurrentPath) {
-      // Add the active class
-      link.classList.add('active');
-      activeLink = link;
+    const isExactMatch = normalizedLinkHref === normalizedCurrentPath;
+    const isParentMatch =
+      normalizedLinkHref !== '/' && normalizedCurrentPath.startsWith(`${normalizedLinkHref}/`);
 
-      // Determine section-specific colors for active state
-      const section = link.closest('.nav-section');
-      if (!section) return;
-
-      const toggle = section.querySelector<HTMLElement>('.section-toggle');
-      if (!toggle) return;
-
-      const sectionName = toggle.getAttribute('data-section');
-      if (!sectionName) return;
-
-      // Add section-specific active class
-      link.classList.add(`active-${sectionName}`);
-
-      // Expand parent section if needed
-      const content = section.querySelector<HTMLElement>('.section-content');
-      if (content) {
-        toggle.setAttribute('data-expanded', 'true');
-        content.style.maxHeight = `${content.scrollHeight}px`;
-        content.style.overflow = 'visible';
-
-        state[sectionName] = true;
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    if (isExactMatch || isParentMatch) {
+      // Pick the most specific matching path.
+      if (normalizedLinkHref.length >= activePath.length) {
+        activePath = normalizedLinkHref;
+        activeLink = link;
       }
     }
   });
 
-  return activeLink;
+  if (!activeLink) {
+    return null;
+  }
+
+  const resolvedActiveLink = activeLink as HTMLAnchorElement;
+
+  // Add the active class.
+  resolvedActiveLink.classList.add('active');
+
+  // Determine section-specific colors for active state.
+  const section = resolvedActiveLink.closest('.nav-section');
+  if (!section) return resolvedActiveLink;
+
+  const toggle = section.querySelector<HTMLElement>('.section-toggle');
+  if (!toggle) return resolvedActiveLink;
+
+  const sectionName = toggle.getAttribute('data-section');
+  if (!sectionName) return resolvedActiveLink;
+
+  // Add section-specific active class.
+  resolvedActiveLink.classList.add(`active-${sectionName}`);
+
+  // Expand parent section if needed.
+  const content = section.querySelector<HTMLElement>('.section-content');
+  if (content) {
+    toggle.setAttribute('data-expanded', 'true');
+    content.style.maxHeight = `${content.scrollHeight}px`;
+    content.style.overflow = 'visible';
+
+    state[sectionName] = true;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  return resolvedActiveLink;
 }
 
 /**
@@ -231,28 +302,30 @@ function highlightActivePage(state: SectionState): HTMLAnchorElement | null {
  * Only scrolls if the active item is outside the visible area.
  */
 function ensureActiveItemVisible(sidebar: HTMLElement, activeLink: HTMLAnchorElement): void {
-  const sidebarRect = sidebar.getBoundingClientRect();
-  const linkRect = activeLink.getBoundingClientRect();
+  // Wait a frame so expanded section heights are applied before scrolling.
+  requestAnimationFrame(() => {
+    try {
+      activeLink.scrollIntoView({
+        block: 'nearest',
+        inline: 'nearest',
+      });
+    } catch {
+      // Fallback for environments where scrollIntoView options are unsupported.
+      const sidebarRect = sidebar.getBoundingClientRect();
+      const linkRect = activeLink.getBoundingClientRect();
+      const linkTopRelativeToSidebar = linkRect.top - sidebarRect.top + sidebar.scrollTop;
+      const linkBottomRelativeToSidebar = linkTopRelativeToSidebar + linkRect.height;
+      const visibleTop = sidebar.scrollTop;
+      const visibleBottom = sidebar.scrollTop + sidebar.clientHeight;
+      const padding = 5;
 
-  // Calculate the link's position relative to the sidebar's scroll container
-  const linkTopRelativeToSidebar = linkRect.top - sidebarRect.top + sidebar.scrollTop;
-  const linkBottomRelativeToSidebar = linkTopRelativeToSidebar + linkRect.height;
-
-  const visibleTop = sidebar.scrollTop;
-  const visibleBottom = sidebar.scrollTop + sidebar.clientHeight;
-
-  // Add some padding for better visibility
-  const padding = 5;
-
-  // Check if the active link is outside the visible area
-  if (linkTopRelativeToSidebar < visibleTop + padding) {
-    // Link is above visible area - scroll up
-    sidebar.scrollTop = linkTopRelativeToSidebar - padding;
-  } else if (linkBottomRelativeToSidebar > visibleBottom - padding) {
-    // Link is below visible area - scroll down
-    sidebar.scrollTop = linkBottomRelativeToSidebar - sidebar.clientHeight + padding;
-  }
-  // If link is already visible, don't change scroll position
+      if (linkTopRelativeToSidebar < visibleTop + padding) {
+        sidebar.scrollTop = linkTopRelativeToSidebar - padding;
+      } else if (linkBottomRelativeToSidebar > visibleBottom - padding) {
+        sidebar.scrollTop = linkBottomRelativeToSidebar - sidebar.clientHeight + padding;
+      }
+    }
+  });
 }
 
 /**
@@ -319,6 +392,15 @@ export function initSidebar(): void {
         overlay.classList.add('opacity-0', 'pointer-events-none');
         elements.toggleBtn?.classList.remove('opacity-0', 'pointer-events-none');
       }
+    });
+
+    // On mobile, close sidebar after selecting a destination link.
+    sidebar.querySelectorAll<HTMLAnchorElement>('a.sidebar-link').forEach((link) => {
+      link.addEventListener('click', () => {
+        if (window.innerWidth < 1024) {
+          toggleMobileSidebar(elements, true);
+        }
+      });
     });
   }
 }

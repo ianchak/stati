@@ -24,13 +24,13 @@ function updateActiveLink(activeId: string, links: HTMLAnchorElement[], tocNav: 
   // Remove active state from all links
   links.forEach((link) => {
     link.classList.remove(
-      'text-blue-600',
-      'dark:text-blue-400',
-      'border-blue-600',
-      'dark:border-blue-400',
+      'text-primary-700',
+      'dark:text-primary-300',
+      'border-primary-600',
+      'dark:border-primary-400',
       'font-medium',
-      'bg-blue-50',
-      'dark:bg-blue-900/20',
+      'bg-primary-50/70',
+      'dark:bg-primary-900/20',
     );
     link.classList.add('text-gray-600', 'dark:text-gray-300');
   });
@@ -40,13 +40,13 @@ function updateActiveLink(activeId: string, links: HTMLAnchorElement[], tocNav: 
   if (activeLink) {
     activeLink.classList.remove('text-gray-600', 'dark:text-gray-300');
     activeLink.classList.add(
-      'text-blue-600',
-      'dark:text-blue-400',
-      'border-blue-600',
-      'dark:border-blue-400',
+      'text-primary-700',
+      'dark:text-primary-300',
+      'border-primary-600',
+      'dark:border-primary-400',
       'font-medium',
-      'bg-blue-50',
-      'dark:bg-blue-900/20',
+      'bg-primary-50/70',
+      'dark:bg-primary-900/20',
     );
   }
 }
