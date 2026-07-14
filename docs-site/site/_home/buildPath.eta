@@ -27,13 +27,17 @@ const steps = stepsInput.length === 5 ? stepsInput : fallbackSteps;
         </header>
 
         <ol class="docs-build-path__list" aria-label="Stati build pipeline">
-            <% for (const step of steps) { %>
-                <li class="docs-build-path__step">
+            <% steps.forEach((step, i) => {
+                const isFirst = i === 0;
+                const isLast = i === steps.length - 1;
+            %>
+                <li class="<%= stati.propValue('docs-build-path__step', isFirst && 'docs-build-path__step--source', isLast && 'docs-build-path__step--output') %>">
+                    <span class="docs-build-path__node" aria-hidden="true"></span>
                     <p class="docs-build-path__token"><code><%= step.token %></code></p>
                     <p class="docs-build-path__label"><%= step.label %></p>
                     <p class="docs-build-path__detail"><%= step.detail %></p>
                 </li>
-            <% } %>
+            <% }) %>
         </ol>
     </div>
 </section>

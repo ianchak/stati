@@ -17,12 +17,12 @@
 if (!stati.props) { %><% return; } %>
 <%
 const { id, label, active } = stati.props;
-const activeClass = 'active bg-primary-600 text-white border-primary-600 shadow-soft';
-const inactiveClass = 'bg-white dark:bg-dark-900 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-800 border-gray-300 dark:border-dark-600';
+const activeClass = 'active border-transparent shadow-soft';
+const inactiveClass = 'docs-proof-tab--inactive';
 %>
 <button type="button"
         id="<%= `proof-tab-${id}` %>"
-        class="<%= stati.propValue('feature-tab w-full shrink-0 snap-start rounded-xl border px-4 py-3 text-left text-sm font-semibold md:px-4 md:py-3', active ? activeClass : inactiveClass) %>"
+        class="<%= stati.propValue('feature-tab docs-proof-tab w-full shrink-0 snap-start rounded-xl border px-4 py-3 text-left text-sm font-semibold md:px-4 md:py-3', active ? activeClass : inactiveClass) %>"
         data-tab="<%= id %>"
         role="tab"
         aria-controls="<%= `proof-panel-${id}` %>"

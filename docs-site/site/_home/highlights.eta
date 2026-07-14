@@ -38,7 +38,7 @@ const tabs = [
                 </div>
             </aside>
 
-            <div class="md:col-span-9 rounded-2xl border border-gray-200 dark:border-dark-600 bg-[var(--docs-surface-muted)] shadow-soft overflow-hidden min-h-[28rem]">
+            <div class="md:col-span-9 rounded-2xl border border-[var(--docs-border)] bg-[var(--docs-surface-muted)] shadow-soft overflow-hidden min-h-[28rem]">
                 <%~ stati.partials.tabTypescript({ active: true }) %>
                 <%~ stati.partials.tabIsg %>
                 <%~ stati.partials.tabTemplates %>

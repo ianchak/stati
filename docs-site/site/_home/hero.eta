@@ -2,7 +2,9 @@
 /**
  * Hero Section (Homepage)
  *
- * Source/output composition with real config and generated structure.
+ * Source/build/output composition with real config and generated structure.
+ * The source panel uses a small static tokenizer (no client JS, no Prism
+ * dependency) so keywords, strings, and property names carry semantic color.
  */
 const hero = stati.page.hero || {};
 const source = hero.source || {};
@@ -25,6 +27,30 @@ const outputRows = Array.isArray(output.rows)
       { path: '/search-index.json', note: 'search metadata' },
       { path: '/.stati/cache/manifest.json', note: 'ISG manifest' },
     ];
+
+const escapeHtml = (value) =>
+  value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+const KEYWORDS = /\b(import|from|export|default|const)\b/g;
+
+const tokenizeLine = (line) => {
+  // Split on string literals first so keyword/property rules never match
+  // inside a quoted value. Odd-indexed parts are the quoted strings.
+  const parts = line.split(/('[^']*'|"[^"]*")/g);
+  return parts
+    .map((part, i) => {
+      if (i % 2 === 1) {
+        return `<span class="tok-str">${escapeHtml(part)}</span>`;
+      }
+      let segment = escapeHtml(part);
+      segment = segment.replace(KEYWORDS, '<span class="tok-kw">$1</span>');
+      segment = segment.replace(/([A-Za-z_][\w]*)(?=:)/g, '<span class="tok-prop">$1</span>');
+      return segment;
+    })
+    .join('');
+};
+
+const sourceHtml = sourceLines.map(tokenizeLine).join('\n');
 %>
 <section class="docs-hero">
     <div class="docs-hero__inner">
@@ -47,20 +73,27 @@ const outputRows = Array.isArray(output.rows)
         </div>
 
         <div class="docs-hero__proof" aria-label="Stati source and generated output">
-            <section class="docs-hero-card" aria-labelledby="hero-source-label">
+            <section class="docs-hero-card docs-hero-card--source" aria-labelledby="hero-source-label">
                 <h2 id="hero-source-label" class="docs-hero-card__label"><%= source.label || 'stati.config.ts' %></h2>
-                <pre class="docs-hero-card__code"><code><%= sourceLines.join('\n') %></code></pre>
+                <pre class="docs-hero-card__code"><code><%~ sourceHtml %></code></pre>
             </section>
 
-            <span class="docs-hero__build-edge" aria-hidden="true"></span>
+            <div class="docs-hero__build-edge" aria-hidden="true">
+                <span class="docs-hero__build-line"></span>
+                <span class="docs-hero__build-label">compiles to</span>
+                <span class="docs-hero__build-line"></span>
+            </div>
 
             <section class="docs-hero-card docs-hero-card--output" aria-labelledby="hero-output-label">
                 <h2 id="hero-output-label" class="docs-hero-card__label"><%= output.label || 'dist output' %></h2>
                 <ul class="docs-hero-output-list">
                     <% for (const row of outputRows) { %>
                         <li class="docs-hero-output-list__item">
-                            <code><%= row.path %></code>
-                            <% if (row.note) { %><span><%= row.note %></span><% } %>
+                            <span class="docs-hero-output-list__path">
+                                <%~ stati.partials.icon({ name: 'check', size: 'xs', class: 'docs-hero-output-list__check' }) %>
+                                <code><%= row.path %></code>
+                            </span>
+                            <% if (row.note) { %><span class="docs-hero-output-list__note"><%= row.note %></span><% } %>
                         </li>
                     <% } %>
                 </ul>

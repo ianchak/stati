@@ -92,29 +92,29 @@ features:
     - title: 'ISG cache manifest'
       description: 'Incremental rebuild state is persisted and queried by path, tags, and age.'
       span: 'large'
-      icon: 'arrow-path'
+      icon: 'refresh'
       artifact:
         label: '.stati/cache/manifest.json'
         lines:
           - '{ "path": "index.html", "ttlSeconds": 900, "tags": ["docs"] }'
     - title: 'Filesystem routing'
       description: 'Content structure maps directly to output routes.'
-      icon: 'document-text'
+      icon: 'routes'
       artifact:
         label: 'Route path'
         value: '/core-concepts/isg/index.html'
     - title: 'Markdown transform'
       description: 'markdown-it plus plugins handles headings, links, and syntax output.'
-      icon: 'document-text'
+      icon: 'document'
       artifact:
         label: 'Config fragment'
         value: "markdown: { plugins: [['external-links', { externalTarget: '_blank' }]] }"
     - title: 'Configuration surface'
       description: 'defineConfig keeps site, markdown, ISG, and SEO settings in one typed file.'
-      icon: 'document-text'
+      icon: 'cog'
     - title: 'Tooling workflow'
       description: 'Scaffold, build, and invalidate through documented CLI commands.'
-      icon: 'wrench-screwdriver'
+      icon: 'terminal'
       artifact:
         label: 'CLI command'
         value: 'stati invalidate tag:news'

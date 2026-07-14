@@ -11,6 +11,7 @@ const fallbackItems = [
     title: 'TypeScript-first bundle routing',
     description: 'Typed bundle definitions keep route-level JavaScript explicit.',
     span: 'large',
+    icon: 'code-bracket',
     artifact: {
       label: 'typescript.bundles[]',
       lines: ["{ entryPoint: 'home.ts', bundleName: 'home', include: ['index.md'] }"],
@@ -20,6 +21,7 @@ const fallbackItems = [
     title: 'ISG cache manifest',
     description: 'Incremental rebuild state is persisted and queried by path, tags, and age.',
     span: 'large',
+    icon: 'refresh',
     artifact: {
       label: '.stati/cache/manifest.json',
       lines: ['{ "path": "index.html", "ttlSeconds": 900, "tags": ["docs"] }'],
@@ -28,20 +30,24 @@ const fallbackItems = [
   {
     title: 'Filesystem routing',
     description: 'Content structure maps directly to output routes.',
+    icon: 'routes',
     artifact: { label: 'Route path', value: '/core-concepts/isg/index.html' },
   },
   {
     title: 'Markdown transform',
     description: 'markdown-it plus plugins handles headings, links, and syntax output.',
+    icon: 'document',
     artifact: { label: 'Config fragment', value: "markdown: { plugins: [['external-links', { externalTarget: '_blank' }]] }" },
   },
   {
     title: 'Configuration surface',
     description: 'defineConfig keeps site, markdown, ISG, and SEO settings in one typed file.',
+    icon: 'cog',
   },
   {
     title: 'Tooling workflow',
     description: 'Scaffold, build, and invalidate through documented CLI commands.',
+    icon: 'terminal',
     artifact: { label: 'CLI command', value: 'stati invalidate tag:news' },
   },
 ];
@@ -59,8 +65,18 @@ const modules = itemsInput.length === 6 ? itemsInput : fallbackItems;
         </header>
 
         <div class="docs-capabilities__grid" role="list" aria-label="Stati capabilities">
-            <% for (const module of modules) { %>
-                <article role="listitem" class="<%= stati.propValue('docs-capability', module.span === 'large' && 'docs-capability--large') %>">
+            <% modules.forEach((module, i) => {
+                const isLarge = module.span === 'large';
+                const variantClass = isLarge
+                    ? (i === 0 ? 'docs-capability--source' : 'docs-capability--cache')
+                    : 'docs-capability--plain';
+            %>
+                <article role="listitem" class="<%= stati.propValue('docs-capability', isLarge && 'docs-capability--large', variantClass) %>">
+                    <% if (module.icon) { %>
+                        <span class="docs-capability__icon">
+                            <%~ stati.partials.icon({ name: module.icon, size: isLarge ? 'lg' : 'md', strokeWidth: 1.5 }) %>
+                        </span>
+                    <% } %>
                     <h3 class="docs-capability__title"><%= module.title %></h3>
                     <p class="docs-capability__description"><%= module.description %></p>
 
@@ -75,7 +91,7 @@ const modules = itemsInput.length === 6 ? itemsInput : fallbackItems;
                         </div>
                     <% } %>
                 </article>
-            <% } %>
+            <% }) %>
         </div>
     </div>
 </section>
