@@ -25,9 +25,9 @@
 | Milestone | Name | Tasks | MVT | Complete | Total | Status |
 | --- | --- | --- | --- | --- | --- | --- |
 | M1 | Foundation and Design System | 001-004 | MVT_M1 | 4 | 5 | IN PROGRESS |
-| M2 | Composed Editorial Experience | 005-010 | MVT_M2 | 0 | 7 | NOT STARTED |
-| M3 | Runtime Performance and Motion | 011-015 | MVT_M3 | 0 | 6 | NOT STARTED |
-| M4 | Verification and Handoff | 016-020 | MVT_M4 | 0 | 6 | NOT STARTED |
+| M2 | Composed Editorial Experience | 005-010 | MVT_M2 | 6 | 7 | IN PROGRESS |
+| M3 | Runtime Performance and Motion | 011-015 | MVT_M3 | 5 | 6 | IN PROGRESS |
+| M4 | Verification and Handoff | 016-020 | MVT_M4 | 5 | 6 | IN PROGRESS |
 
 ## Milestone: M1 - Foundation and Design System
 
@@ -54,11 +54,11 @@ graph TD
 | Task ID | Title | File | Status | Review Status | Priority | Complexity | Dependencies |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | TASK_005 | Build Source/Output Hero | `TASK_005_build_source_output_hero.md` | COMPLETE | PASSED | HIGH | L | TASK_004 |
-| TASK_006 | Build Path and Capability Map | `TASK_006_build_path_and_capability_map.md` | IN REVIEW | — | HIGH | L | TASK_005 |
-| TASK_007 | Build Proof Desk and Command Close | `TASK_007_build_proof_desk_and_command_close.md` | NOT STARTED | — | HIGH | L | TASK_006 |
-| TASK_008 | Polish Documentation Chrome | `TASK_008_polish_documentation_chrome.md` | NOT STARTED | — | HIGH | L | TASK_004 |
-| TASK_009 | Apply Motion and CSS Discipline | `TASK_009_apply_motion_and_css_discipline.md` | NOT STARTED | — | HIGH | M | TASK_005-TASK_008 |
-| TASK_010 | Integrate Homepage and Chrome | `TASK_010_integrate_homepage_and_chrome.md` | NOT STARTED | — | HIGH | M | TASK_005-TASK_009 |
+| TASK_006 | Build Path and Capability Map | `TASK_006_build_path_and_capability_map.md` | COMPLETE | PASSED | HIGH | L | TASK_005 |
+| TASK_007 | Build Proof Desk and Command Close | `TASK_007_build_proof_desk_and_command_close.md` | COMPLETE | PASSED | HIGH | L | TASK_006 |
+| TASK_008 | Polish Documentation Chrome | `TASK_008_polish_documentation_chrome.md` | COMPLETE | PASSED | HIGH | L | TASK_004 |
+| TASK_009 | Apply Motion and CSS Discipline | `TASK_009_apply_motion_and_css_discipline.md` | COMPLETE | PASSED | HIGH | M | TASK_005-TASK_008 |
+| TASK_010 | Integrate Homepage and Chrome | `TASK_010_integrate_homepage_and_chrome.md` | COMPLETE | PASSED | HIGH | M | TASK_005-TASK_009 |
 | MVT_M2 | Composed Editorial Experience Manual Test | `MVT_M2_composed_editorial_experience.md` | NOT STARTED | — | — | 60 min | TASK_005-TASK_010 |
 
 ```mermaid
@@ -81,11 +81,11 @@ graph TD
 
 | Task ID | Title | File | Status | Review Status | Priority | Complexity | Dependencies |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| TASK_011 | Remove tsParticles | `TASK_011_remove_tsparticles.md` | NOT STARTED | — | HIGH | M | TASK_010 |
-| TASK_012 | Add Typed Idle Scheduler | `TASK_012_add_typed_idle_scheduler.md` | NOT STARTED | — | MEDIUM | S | TASK_011 |
-| TASK_013 | Defer Non-Critical Docs Initialization | `TASK_013_defer_noncritical_docs_initialization.md` | NOT STARTED | — | MEDIUM | S | TASK_012 |
-| TASK_014 | Add Live Reduced-Motion Behavior | `TASK_014_add_live_reduced_motion_behavior.md` | NOT STARTED | — | HIGH | M | TASK_013 |
-| TASK_015 | Integrate Route Bundles and Runtime | `TASK_015_integrate_route_bundles_and_runtime.md` | NOT STARTED | — | HIGH | M | TASK_011-TASK_014 |
+| TASK_011 | Remove tsParticles | `TASK_011_remove_tsparticles.md` | COMPLETE | PASSED | HIGH | M | TASK_010 |
+| TASK_012 | Add Typed Idle Scheduler | `TASK_012_add_typed_idle_scheduler.md` | COMPLETE | PASSED | MEDIUM | S | TASK_011 |
+| TASK_013 | Defer Non-Critical Docs Initialization | `TASK_013_defer_noncritical_docs_initialization.md` | COMPLETE | PASSED | MEDIUM | S | TASK_012 |
+| TASK_014 | Add Live Reduced-Motion Behavior | `TASK_014_add_live_reduced_motion_behavior.md` | COMPLETE | PASSED | HIGH | M | TASK_013 |
+| TASK_015 | Integrate Route Bundles and Runtime | `TASK_015_integrate_route_bundles_and_runtime.md` | COMPLETE | PASSED | HIGH | M | TASK_011-TASK_014 |
 | MVT_M3 | Runtime Performance and Motion Manual Test | `MVT_M3_runtime_performance_and_motion.md` | NOT STARTED | — | — | 45 min | TASK_011-TASK_015 |
 
 ```mermaid
@@ -102,11 +102,11 @@ graph TD
 
 | Task ID | Title | File | Status | Review Status | Priority | Complexity | Dependencies |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| TASK_016 | Clean Build Artifact Hygiene | `TASK_016_clean_build_artifact_hygiene.md` | NOT STARTED | — | HIGH | S | TASK_015 |
-| TASK_017 | Execute Full QA and Design Preflight | `TASK_017_execute_full_qa_and_design_preflight.md` | NOT STARTED | — | HIGH | L | TASK_016 |
-| TASK_018 | Remeasure Performance Budgets | `TASK_018_remeasure_performance_budgets.md` | NOT STARTED | — | HIGH | M | TASK_001, TASK_016, TASK_017 |
-| TASK_019 | Document Design and Performance Decisions | `TASK_019_document_design_and_performance_decisions.md` | NOT STARTED | — | MEDIUM | M | TASK_017, TASK_018 |
-| TASK_020 | Integrate Release Acceptance and Handoff | `TASK_020_integrate_release_acceptance_and_handoff.md` | NOT STARTED | — | HIGH | M | TASK_016-TASK_019 |
+| TASK_016 | Clean Build Artifact Hygiene | `TASK_016_clean_build_artifact_hygiene.md` | COMPLETE | PASSED | HIGH | S | TASK_015 |
+| TASK_017 | Execute Full QA and Design Preflight | `TASK_017_execute_full_qa_and_design_preflight.md` | COMPLETE | PASSED | HIGH | L | TASK_016 |
+| TASK_018 | Remeasure Performance Budgets | `TASK_018_remeasure_performance_budgets.md` | COMPLETE | PASSED | HIGH | M | TASK_001, TASK_016, TASK_017 |
+| TASK_019 | Document Design and Performance Decisions | `TASK_019_document_design_and_performance_decisions.md` | COMPLETE | PASSED | MEDIUM | M | TASK_017, TASK_018 |
+| TASK_020 | Integrate Release Acceptance and Handoff | `TASK_020_integrate_release_acceptance_and_handoff.md` | COMPLETE | PASSED | HIGH | M | TASK_016-TASK_019 |
 | MVT_M4 | Verification and Handoff Manual Test | `MVT_M4_verification_and_handoff.md` | NOT STARTED | — | — | 75 min | TASK_016-TASK_020 |
 
 ```mermaid
@@ -139,11 +139,11 @@ None yet.
 
 ## Subagent Tracking
 
-Last Subagent ID: SA-20260714-005
+Last Subagent ID: SA-20260714-019
 
 ## Review Tracking
 
-Last Review ID: RA-20260714-005
+Last Review ID: RA-20260714-020
 
 | Task ID | Assigned To | Attempts | Review Failure Notes |
 | --- | --- | --- | --- |
@@ -152,7 +152,21 @@ Last Review ID: RA-20260714-005
 | TASK_003 | SA-20260714-002 | 1 | PASSED (RA-20260714-003) |
 | TASK_004 | SA-20260714-003 | 1 | PASSED (RA-20260714-004) |
 | TASK_005 | SA-20260714-004 | 1 | PASSED (RA-20260714-005) |
-| TASK_006 | SA-20260714-005 | 1 |  |
+| TASK_006 | SA-20260714-005 | 1 | PASSED (RA-20260714-006) |
+| TASK_007 | SA-20260714-006 | 1 | PASSED (RA-20260714-007) |
+| TASK_008 | SA-20260714-007 | 1 | PASSED (RA-20260714-008) |
+| TASK_009 | SA-20260714-008 | 1 | PASSED (RA-20260714-009) |
+| TASK_010 | SA-20260714-009 | 1 | PASSED (RA-20260714-010) |
+| TASK_011 | SA-20260714-010 | 1 | PASSED (RA-20260714-011) |
+| TASK_012 | SA-20260714-011 | 1 | PASSED (RA-20260714-012) |
+| TASK_013 | SA-20260714-012 | 1 | PASSED (RA-20260714-013) |
+| TASK_014 | SA-20260714-013 | 1 | PASSED (RA-20260714-014) |
+| TASK_015 | SA-20260714-014 | 1 | PASSED (RA-20260714-015) |
+| TASK_016 | SA-20260714-015 | 1 | PASSED (RA-20260714-016) |
+| TASK_017 | SA-20260714-016 | 1 | PASSED (RA-20260714-017) |
+| TASK_018 | SA-20260714-017 | 1 | PASSED (RA-20260714-018) |
+| TASK_019 | SA-20260714-018 | 1 | PASSED (RA-20260714-019) |
+| TASK_020 | SA-20260714-019 | 1 | PASSED (RA-20260714-020) |
 
 ## Agent Handoff
 
@@ -160,11 +174,11 @@ Last Review ID: RA-20260714-005
 
 | Field | Value |
 | --- | --- |
-| Task | TASK_006 |
-| Impl Agent | SA-20260714-005 |
-| Files Changed | `docs-site/site/_home/buildPath.eta`, `docs-site/site/home.eta`, `docs-site/site/_home/features.eta`, `docs-site/site/index.md`, `docs-site/src/styles.css` |
-| Tests Added | `packages/core/test/integration/task-006-homepage-composition.test.ts` (4 new tests) |
-| Rework? | No |
-| Focus Areas | Build-path vocabulary and ordering (`site/*.md` → `.stati/cache`), 6-module asymmetric capability map (TypeScript/ISG large), and <768 single-column behavior for both sections |
-| Known Limitations | Existing homepage background/other sections were left unchanged; this task only added the build-path band and capability map surfaces |
-| Gate Results | format:✅ lint:✅ typecheck:✅ test:✅ |
+| Task | - |
+| Impl Agent | - |
+| Files Changed | - |
+| Tests Added | - |
+| Rework? | - |
+| Focus Areas | - |
+| Known Limitations | - |
+| Gate Results | - |

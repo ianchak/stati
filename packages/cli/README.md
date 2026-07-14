@@ -257,7 +257,6 @@ stati invalidate
    Your site will be available at `http://localhost:3000`
 
 4. **Make changes:**
-
    - Edit `site/index.md` for your homepage content
    - Modify `site/layout.eta` for your HTML structure
    - Update `public/styles.css` for styling

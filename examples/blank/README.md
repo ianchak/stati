@@ -8,6 +8,7 @@ A minimal starter template for [Stati](https://github.com/ianchak/stati) static 
 - **npm** 11.5.1 or higher
 
 Verify your versions:
+
 ```bash
 node --version  # Should be v22.0.0 or higher
 npm --version   # Should be 11.5.1 or higher

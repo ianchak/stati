@@ -1,1 +1,1 @@
-"# Example News site" 
+"# Example News site"

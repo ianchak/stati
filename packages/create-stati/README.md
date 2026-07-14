@@ -386,4 +386,3 @@ You can customize this file to add features like SEO, sitemap, ISG caching, and 
 ## License
 
 MIT © [Imre Csige](https://github.com/ianchak)
-
