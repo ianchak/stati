@@ -858,6 +858,20 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
       outDir: config.outDir || DEFAULT_OUT_DIR,
       mode: 'development',
     });
+
+    // On initial dev startup, watcher output may not exist yet.
+    // Compile once so pages can auto-inject bundle scripts immediately.
+    if (compiledBundles.length === 0) {
+      const endTsSpan = recorder.startSpan('typescriptCompileMs');
+      compiledBundles = await compileTypeScript({
+        projectRoot: process.cwd(),
+        config: config.typescript,
+        outDir: config.outDir || DEFAULT_OUT_DIR,
+        mode: 'development',
+        logger,
+      });
+      endTsSpan();
+    }
   } else if (config.typescript?.enabled) {
     const endTsSpan = recorder.startSpan('typescriptCompileMs');
     compiledBundles = await compileTypeScript({
