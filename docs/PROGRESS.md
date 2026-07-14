@@ -24,7 +24,7 @@
 
 | Milestone | Name | Tasks | MVT | Complete | Total | Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| M1 | Foundation and Design System | 001-004 | MVT_M1 | 2 | 5 | IN PROGRESS |
+| M1 | Foundation and Design System | 001-004 | MVT_M1 | 4 | 5 | IN PROGRESS |
 | M2 | Composed Editorial Experience | 005-010 | MVT_M2 | 0 | 7 | NOT STARTED |
 | M3 | Runtime Performance and Motion | 011-015 | MVT_M3 | 0 | 6 | NOT STARTED |
 | M4 | Verification and Handoff | 016-020 | MVT_M4 | 0 | 6 | NOT STARTED |
@@ -35,8 +35,8 @@
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | TASK_001 | Capture Reproducible Baseline | `TASK_001_capture_reproducible_baseline.md` | COMPLETE | PASSED | HIGH | S | None |
 | TASK_002 | Build Intentional Font Pipeline | `TASK_002_build_intentional_font_pipeline.md` | COMPLETE | PASSED | HIGH | M | TASK_001 |
-| TASK_003 | Establish Tokens, Type, and Syntax System | `TASK_003_establish_tokens_type_and_syntax_system.md` | IN REVIEW | — | HIGH | L | TASK_002 |
-| TASK_004 | Integrate and Validate Foundation | `TASK_004_integrate_and_validate_foundation.md` | NOT STARTED | — | HIGH | M | TASK_001, TASK_002, TASK_003 |
+| TASK_003 | Establish Tokens, Type, and Syntax System | `TASK_003_establish_tokens_type_and_syntax_system.md` | COMPLETE | PASSED | HIGH | L | TASK_002 |
+| TASK_004 | Integrate and Validate Foundation | `TASK_004_integrate_and_validate_foundation.md` | COMPLETE | PASSED | HIGH | M | TASK_001, TASK_002, TASK_003 |
 | MVT_M1 | Foundation and Design System Manual Test | `MVT_M1_foundation_and_design_system.md` | NOT STARTED | — | — | 35 min | TASK_001-TASK_004 |
 
 ```mermaid
@@ -53,8 +53,8 @@ graph TD
 
 | Task ID | Title | File | Status | Review Status | Priority | Complexity | Dependencies |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| TASK_005 | Build Source/Output Hero | `TASK_005_build_source_output_hero.md` | NOT STARTED | — | HIGH | L | TASK_004 |
-| TASK_006 | Build Path and Capability Map | `TASK_006_build_path_and_capability_map.md` | NOT STARTED | — | HIGH | L | TASK_005 |
+| TASK_005 | Build Source/Output Hero | `TASK_005_build_source_output_hero.md` | COMPLETE | PASSED | HIGH | L | TASK_004 |
+| TASK_006 | Build Path and Capability Map | `TASK_006_build_path_and_capability_map.md` | IN REVIEW | — | HIGH | L | TASK_005 |
 | TASK_007 | Build Proof Desk and Command Close | `TASK_007_build_proof_desk_and_command_close.md` | NOT STARTED | — | HIGH | L | TASK_006 |
 | TASK_008 | Polish Documentation Chrome | `TASK_008_polish_documentation_chrome.md` | NOT STARTED | — | HIGH | L | TASK_004 |
 | TASK_009 | Apply Motion and CSS Discipline | `TASK_009_apply_motion_and_css_discipline.md` | NOT STARTED | — | HIGH | M | TASK_005-TASK_008 |
@@ -139,17 +139,20 @@ None yet.
 
 ## Subagent Tracking
 
-Last Subagent ID: SA-20260714-002
+Last Subagent ID: SA-20260714-005
 
 ## Review Tracking
 
-Last Review ID: RA-20260714-002
+Last Review ID: RA-20260714-005
 
 | Task ID | Assigned To | Attempts | Review Failure Notes |
 | --- | --- | --- | --- |
 | TASK_001 | SA-20260713-002 | 1 | PASSED (RA-20260714-001) |
 | TASK_002 | SA-20260714-001 | 1 | PASSED (RA-20260714-002) |
-| TASK_003 | SA-20260714-002 | 1 |  |
+| TASK_003 | SA-20260714-002 | 1 | PASSED (RA-20260714-003) |
+| TASK_004 | SA-20260714-003 | 1 | PASSED (RA-20260714-004) |
+| TASK_005 | SA-20260714-004 | 1 | PASSED (RA-20260714-005) |
+| TASK_006 | SA-20260714-005 | 1 |  |
 
 ## Agent Handoff
 
@@ -157,11 +160,11 @@ Last Review ID: RA-20260714-002
 
 | Field | Value |
 | --- | --- |
-| Task | TASK_003 |
-| Impl Agent | SA-20260714-002 |
-| Files Changed | `docs-site/tailwind.config.js`, `docs-site/src/styles.css`, `docs-site/public/prism-stati.css` |
-| Tests Added | None |
+| Task | TASK_006 |
+| Impl Agent | SA-20260714-005 |
+| Files Changed | `docs-site/site/_home/buildPath.eta`, `docs-site/site/home.eta`, `docs-site/site/_home/features.eta`, `docs-site/site/index.md`, `docs-site/src/styles.css` |
+| Tests Added | `packages/core/test/integration/task-006-homepage-composition.test.ts` (4 new tests) |
 | Rework? | No |
-| Focus Areas | Token anchors in `:root`/dark theme vars, prose type scale clamps, and Prism surface/background parity with docs code surfaces |
-| Known Limitations | Full chrome/homepage layout cleanup and motion cleanup are handled in later tasks (TASK_004+) |
+| Focus Areas | Build-path vocabulary and ordering (`site/*.md` → `.stati/cache`), 6-module asymmetric capability map (TypeScript/ISG large), and <768 single-column behavior for both sections |
+| Known Limitations | Existing homepage background/other sections were left unchanged; this task only added the build-path band and capability map surfaces |
 | Gate Results | format:✅ lint:✅ typecheck:✅ test:✅ |
