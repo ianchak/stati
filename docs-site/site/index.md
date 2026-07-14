@@ -119,16 +119,11 @@ features:
         label: 'CLI command'
         value: 'stati invalidate tag:news'
 quickStart:
-  title: 'Get Started in Minutes'
-  subtitle: 'Create a new Stati site with a single command.'
-  commands:
-    - comment: 'Create a new Stati site with the interactive scaffolder'
-      parts:
-        - text: 'npx'
-          color: 'yellow'
-        - text: 'create-stati'
-          color: 'white'
+  title: 'One command. A real project.'
+  subtitle: 'Scaffold a working docs site, then iterate with local build and preview scripts.'
+  command: 'npx create-stati'
+  note: 'Generated projects include site layout, starter content, and public assets.'
   link:
-    text: 'View detailed installation guide'
+    text: 'Get started'
     url: '/getting-started/installation'
 ---

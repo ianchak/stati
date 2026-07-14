@@ -44,7 +44,7 @@ function hello() {
 ```
 ````
 
-```text
+````text
 ### Front Matter
 
 Every markdown file can include YAML front matter:
@@ -126,22 +126,22 @@ npm run build
 Create tables using standard markdown table syntax:
 
 ```markdown
-| Feature        | Stati          | Other SSGs  |
-| -------------- | -------------- | ----------- |
-| TypeScript     | ✅ First-class | ⚠️ Add-on   |
-| ISG            | ✅ Built-in    | ❌ Manual   |
-| esbuild        | ✅ Integrated  | ⚠️ Optional |
-| Simplicity     | ✅ Minimal     | 📦 Varies   |
+| Feature    | Stati          | Other SSGs  |
+| ---------- | -------------- | ----------- |
+| TypeScript | ✅ First-class | ⚠️ Add-on   |
+| ISG        | ✅ Built-in    | ❌ Manual   |
+| esbuild    | ✅ Integrated  | ⚠️ Optional |
+| Simplicity | ✅ Minimal     | 📦 Varies   |
 ```
 
 Renders as:
 
-| Feature        | Stati          | Other SSGs  |
-| -------------- | -------------- | ----------- |
-| TypeScript     | ✅ First-class | ⚠️ Add-on   |
-| ISG            | ✅ Built-in    | ❌ Manual   |
-| esbuild        | ✅ Integrated  | ⚠️ Optional |
-| Simplicity     | ✅ Minimal     | 📦 Varies   |
+| Feature    | Stati          | Other SSGs  |
+| ---------- | -------------- | ----------- |
+| TypeScript | ✅ First-class | ⚠️ Add-on   |
+| ISG        | ✅ Built-in    | ❌ Manual   |
+| esbuild    | ✅ Integrated  | ⚠️ Optional |
+| Simplicity | ✅ Minimal     | 📦 Varies   |
 
 ### Task Lists
 
@@ -195,9 +195,14 @@ import { defineConfig } from '@stati/core';
 export default defineConfig({
   markdown: {
     plugins: [
-      'footnote',        // markdown-it-footnote
-      ['mark', { /* options */ }], // markdown-it-mark with options
-    ]
+      'footnote', // markdown-it-footnote
+      [
+        'mark',
+        {
+          /* options */
+        },
+      ], // markdown-it-mark with options
+    ],
   },
 });
 ```
@@ -223,8 +228,8 @@ export default defineConfig({
   markdown: {
     // Plugins array - Stati auto-prepends 'markdown-it-'
     plugins: [
-      'footnote',               // Plugin name only
-      ['emoji', { shortcuts: {} }],  // Plugin with options
+      'footnote', // Plugin name only
+      ['emoji', { shortcuts: {} }], // Plugin with options
     ],
 
     // Custom markdown-it configuration

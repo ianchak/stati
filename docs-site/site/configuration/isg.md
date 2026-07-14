@@ -30,12 +30,12 @@ export default defineConfig({
 
 ### Available Options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `enabled` | boolean | `false` | Enable or disable ISG caching |
-| `ttlSeconds` | number | `21600` | Default cache time-to-live in seconds (6 hours) |
-| `maxAgeCapDays` | number | `365` | Maximum age in days for applying aging rules (1 year) |
-| `aging` | AgingRule[] | `[]` | Array of aging rules for progressive cache extension |
+| Option          | Type        | Default | Description                                           |
+| --------------- | ----------- | ------- | ----------------------------------------------------- |
+| `enabled`       | boolean     | `false` | Enable or disable ISG caching                         |
+| `ttlSeconds`    | number      | `21600` | Default cache time-to-live in seconds (6 hours)       |
+| `maxAgeCapDays` | number      | `365`   | Maximum age in days for applying aging rules (1 year) |
+| `aging`         | AgingRule[] | `[]`    | Array of aging rules for progressive cache extension  |
 
 ## TTL (Time To Live)
 
@@ -52,13 +52,13 @@ export default defineConfig({
 
 ### Common TTL Values
 
-| Duration | Seconds | Use Case |
-|----------|---------|----------|
-| 5 minutes | 300 | Frequently updated news sites |
-| 1 hour | 3600 | Regular blog updates |
-| 6 hours | 21600 | Daily updated content |
-| 24 hours | 86400 | Static documentation |
-| 1 week | 604800 | Rarely changing content |
+| Duration  | Seconds | Use Case                      |
+| --------- | ------- | ----------------------------- |
+| 5 minutes | 300     | Frequently updated news sites |
+| 1 hour    | 3600    | Regular blog updates          |
+| 6 hours   | 21600   | Daily updated content         |
+| 24 hours  | 86400   | Static documentation          |
+| 1 week    | 604800  | Rarely changing content       |
 
 ## Aging Rules
 
@@ -78,9 +78,9 @@ export default defineConfig({
     ttlSeconds: 3600, // Default: 1 hour
     maxAgeCapDays: 365, // Stop applying rules after 1 year
     aging: [
-      { untilDays: 7, ttlSeconds: 86400 },     // 1 day for week-old content
-      { untilDays: 30, ttlSeconds: 604800 },   // 1 week for month-old content
-      { untilDays: 90, ttlSeconds: 2592000 },  // 30 days for 3-month-old content
+      { untilDays: 7, ttlSeconds: 86400 }, // 1 day for week-old content
+      { untilDays: 30, ttlSeconds: 604800 }, // 1 week for month-old content
+      { untilDays: 90, ttlSeconds: 2592000 }, // 30 days for 3-month-old content
     ],
   },
 });
@@ -97,8 +97,8 @@ export default defineConfig({
     ttlSeconds: 300, // 5 minutes for new articles
     maxAgeCapDays: 30,
     aging: [
-      { untilDays: 1, ttlSeconds: 3600 },    // 1 hour for day-old news
-      { untilDays: 7, ttlSeconds: 86400 },   // 1 day for week-old news
+      { untilDays: 1, ttlSeconds: 3600 }, // 1 hour for day-old news
+      { untilDays: 7, ttlSeconds: 86400 }, // 1 day for week-old news
       { untilDays: 30, ttlSeconds: 604800 }, // 1 week for month-old archives
     ],
   },
@@ -114,8 +114,8 @@ export default defineConfig({
     ttlSeconds: 21600, // 6 hours for all docs
     maxAgeCapDays: 365,
     aging: [
-      { untilDays: 30, ttlSeconds: 86400 },   // 1 day for month-old docs
-      { untilDays: 90, ttlSeconds: 604800 },  // 1 week for older docs
+      { untilDays: 30, ttlSeconds: 86400 }, // 1 day for month-old docs
+      { untilDays: 90, ttlSeconds: 604800 }, // 1 week for older docs
     ],
   },
 });
@@ -130,8 +130,8 @@ export default defineConfig({
     ttlSeconds: 3600, // 1 hour default
     maxAgeCapDays: 180,
     aging: [
-      { untilDays: 7, ttlSeconds: 21600 },   // 6 hours for week-old posts
-      { untilDays: 30, ttlSeconds: 86400 },  // 1 day for month-old posts
+      { untilDays: 7, ttlSeconds: 21600 }, // 6 hours for week-old posts
+      { untilDays: 30, ttlSeconds: 86400 }, // 1 day for month-old posts
       { untilDays: 90, ttlSeconds: 604800 }, // 1 week for 3-month-old posts
     ],
   },
@@ -164,13 +164,13 @@ Stati provides cache invalidation through the `stati invalidate` CLI command. Se
 
 ### Invalidation Patterns
 
-| Pattern | Example | Description |
-|---------|---------|-------------|
-| `tag:value` | `tag:blog` | Invalidate entries with specific tag |
-| `path:value` | `path:/blog` | Invalidate specific path or prefix |
-| `glob:pattern` | `glob:blog/**` | Invalidate paths matching glob pattern |
-| `age:duration` | `age:1week` | Invalidate entries rendered within time window |
-| (empty) | `stati invalidate` | Clear entire cache |
+| Pattern        | Example            | Description                                    |
+| -------------- | ------------------ | ---------------------------------------------- |
+| `tag:value`    | `tag:blog`         | Invalidate entries with specific tag           |
+| `path:value`   | `path:/blog`       | Invalidate specific path or prefix             |
+| `glob:pattern` | `glob:blog/**`     | Invalidate paths matching glob pattern         |
+| `age:duration` | `age:1week`        | Invalidate entries rendered within time window |
+| (empty)        | `stati invalidate` | Clear entire cache                             |
 
 ### CLI Examples
 
@@ -201,12 +201,12 @@ stati invalidate "tag:my blog" "path:/my path"
 
 The `age:` pattern uses exact calendar arithmetic for precise time calculations:
 
-| Format | Example | Description |
-|--------|---------|-------------|
-| `age:Ndays` | `age:7days` | Content rendered in last N days |
-| `age:Nweeks` | `age:2weeks` | Content rendered in last N weeks (N × 7 days) |
+| Format        | Example       | Description                                               |
+| ------------- | ------------- | --------------------------------------------------------- |
+| `age:Ndays`   | `age:7days`   | Content rendered in last N days                           |
+| `age:Nweeks`  | `age:2weeks`  | Content rendered in last N weeks (N × 7 days)             |
 | `age:Nmonths` | `age:3months` | Content rendered in last N months (exact calendar months) |
-| `age:Nyears` | `age:1year` | Content rendered in last N years (exact calendar years) |
+| `age:Nyears`  | `age:1year`   | Content rendered in last N years (exact calendar years)   |
 
 **Note:** Months and years use exact calendar arithmetic (accounting for varying month lengths and leap years), not approximate day counts.
 

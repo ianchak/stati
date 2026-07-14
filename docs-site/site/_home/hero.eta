@@ -2,52 +2,69 @@
 /**
  * Hero Section (Homepage)
  *
- * Large title, subtitle, and CTA buttons for the homepage.
- * Uses the button component for CTA buttons.
+ * Source/output composition with real config and generated structure.
  */
+const hero = stati.page.hero || {};
+const source = hero.source || {};
+const output = hero.output || {};
+const sourceLines = Array.isArray(source.lines)
+  ? source.lines
+  : [
+      "export default defineConfig({",
+      "  srcDir: 'site',",
+      "  outDir: 'dist',",
+      "  search: { enabled: true },",
+      "  isg: { ttlSeconds: 900 }",
+      '});',
+    ];
+const outputRows = Array.isArray(output.rows)
+  ? output.rows
+  : [
+      { path: '/index.html', note: 'home route' },
+      { path: '/core-concepts/overview/index.html', note: 'docs page' },
+      { path: '/search-index.json', note: 'search metadata' },
+      { path: '/.stati/cache/manifest.json', note: 'ISG manifest' },
+    ];
 %>
-<!-- Hero Section -->
-<section class="relative bg-gradient-to-b from-white via-white to-gray-50/30 dark:from-dark-950 dark:via-dark-950 dark:to-dark-900/30 overflow-hidden">
-    <!-- Decorative background elements -->
-    <div class="absolute inset-0 overflow-hidden pointer-events-none">
-        <!-- Animated gradient orbs -->
-        <div class="absolute -top-20 left-1/4 w-96 h-96 bg-primary-400/8 dark:bg-primary-500/12 rounded-full blur-3xl animate-pulse"></div>
-        <div class="absolute -bottom-20 right-1/4 w-96 h-96 bg-blue-400/8 dark:bg-blue-500/12 rounded-full blur-3xl animate-pulse" style="animation-delay: 2s"></div>
-    </div>
+<section class="docs-hero">
+    <div class="docs-hero__inner">
+        <div class="docs-hero__content">
+            <h1 class="docs-hero__title"><%= hero.title || 'TypeScript in. Static HTML out.' %></h1>
+            <p class="docs-hero__subtitle"><%= hero.subtitle || stati.page.description %></p>
 
-    <!-- Particles container -->
-    <div id="particles-js" class="absolute inset-0 opacity-40 dark:opacity-30"></div>
-
-    <!-- Content -->
-    <div class="relative z-10 max-w-7xl mx-auto px-6 lg:px-12 py-32 lg:py-48 overflow-visible">
-        <div class="text-center">
-            <!-- Main Title -->
-            <div class="mb-8 overflow-visible">
-                <h1 class="text-9xl sm:text-[10rem] md:text-[12rem] lg:text-[14rem] xl:text-[16rem] font-black leading-none tracking-tighter overflow-visible">
-                    <span class="inline-block bg-gradient-to-br from-primary-600 via-primary-500 to-blue-600 dark:from-primary-400 dark:via-primary-300 dark:to-blue-400 bg-clip-text text-transparent pr-2"
-                          style="letter-spacing: -0.05em;">
-                        <%= stati.page.hero?.title || stati.site.title %>
-                    </span>
-                </h1>
-            </div>
-
-            <!-- Subtitle -->
-            <p class="text-xl sm:text-2xl md:text-3xl text-gray-600 dark:text-gray-300 mb-16 max-w-3xl mx-auto leading-relaxed font-light">
-                <%~ stati.page.hero?.subtitle || stati.page.description %>
-            </p>
-
-            <!-- CTA Buttons -->
-            <div class="flex flex-col sm:flex-row gap-5 justify-center items-center">
-                <% for (let button of (stati.page.hero?.buttons || [])) { %>
+            <div class="docs-hero__actions">
+                <% for (const button of (hero.buttons || [])) { %>
                     <%~ stati.partials.button({
                         href: button.url,
                         text: button.text,
                         variant: button.primary ? 'primary' : 'secondary',
-                        size: 'lg',
-                        icon: button.primary ? 'arrow-right' : 'chevron-right'
+                        size: 'md',
+                        icon: button.primary ? 'arrow-right' : 'chevron-right',
+                        class: 'whitespace-nowrap'
                     }) %>
                 <% } %>
             </div>
+        </div>
+
+        <div class="docs-hero__proof" aria-label="Stati source and generated output">
+            <section class="docs-hero-card" aria-labelledby="hero-source-label">
+                <h2 id="hero-source-label" class="docs-hero-card__label"><%= source.label || 'stati.config.ts' %></h2>
+                <pre class="docs-hero-card__code"><code><%= sourceLines.join('\n') %></code></pre>
+            </section>
+
+            <span class="docs-hero__build-edge" aria-hidden="true"></span>
+
+            <section class="docs-hero-card docs-hero-card--output" aria-labelledby="hero-output-label">
+                <h2 id="hero-output-label" class="docs-hero-card__label"><%= output.label || 'dist output' %></h2>
+                <ul class="docs-hero-output-list">
+                    <% for (const row of outputRows) { %>
+                        <li class="docs-hero-output-list__item">
+                            <code><%= row.path %></code>
+                            <% if (row.note) { %><span><%= row.note %></span><% } %>
+                        </li>
+                    <% } %>
+                </ul>
+            </section>
         </div>
     </div>
 </section>

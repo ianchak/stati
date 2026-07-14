@@ -7,7 +7,7 @@
     <meta name="view-transition" content="same-origin">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 
-    <link rel="preload" href="/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/ibm-plex-sans-var.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/fonts/fira-code.woff2" as="font" type="font/woff2" crossorigin>
 
     <link rel="stylesheet" href="/styles.css">
@@ -19,27 +19,29 @@
 <% } _%>
 <% } _%>
 </head>
-<body class="bg-slate-50/95 dark:bg-dark-950 text-gray-900 dark:text-gray-100 font-sans antialiased">
+<body class="bg-docs-canvas text-docs-text-strong font-sans antialiased">
     <!-- Skip to content link for accessibility -->
-    <a href="#main-content" class="skip-link sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-primary-600 text-white px-4 py-2 rounded-md z-50 transition-all duration-200">
+    <a href="#main-content" class="skip-link sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-primary-600 text-white px-4 py-2 rounded-md z-50 transition-colors duration-150">
         Skip to main content
     </a>
 
     <%~ stati.partials.header %>
 
-    <div id="reading-progress" class="fixed top-0 left-0 h-[3px] w-0 bg-gradient-to-r from-primary-500 to-blue-400 z-[70] transition-[width] duration-150 ease-out"></div>
+    <div id="reading-progress" class="fixed top-0 left-0 h-[3px] w-0 bg-docs-cobalt z-[70] transition-[width] duration-150 ease-out"></div>
 
     <div class="flex relative">
         <%~ stati.partials.sidebar %>
 
         <!-- Floating sidebar toggle button for mobile -->
-        <button id="sidebar-toggle-btn" data-mobile-menu class="fixed bottom-6 left-6 lg:hidden bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-900 p-3 rounded-xl shadow-soft transition-all duration-200 z-40">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-            </svg>
+        <button
+            id="sidebar-toggle-btn"
+            data-mobile-menu
+            class="fixed bottom-6 left-6 lg:hidden inline-flex min-h-10 min-w-10 items-center justify-center rounded-xl border border-docs-border bg-docs-surface text-docs-text-strong shadow-soft transition-colors duration-150 hover:bg-docs-surface-muted z-40"
+            aria-label="Toggle sidebar">
+            <%~ stati.partials.icon({ name: 'menu', size: 'md', strokeWidth: 1.5 }) %>
         </button>
 
-        <main id="main-content" class="flex-1 min-w-0 transition-all duration-300 ease-in-out">
+        <main id="main-content" class="flex-1 min-w-0 transition-[margin,padding] duration-200 ease-in-out">
             <div class="flex min-w-0">
                 <!-- Main content area -->
                 <div class="flex-1 min-w-0 px-5 lg:px-10 py-10 lg:py-14 overflow-x-auto">
@@ -59,10 +61,11 @@
     <%~ stati.partials.footer %>
 
     <!-- Scroll to top button -->
-    <button id="scroll-to-top" class="fixed bottom-6 right-6 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-900 p-3 rounded-xl shadow-soft opacity-0 pointer-events-none transition-all duration-200 z-40">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
-        </svg>
+    <button
+        id="scroll-to-top"
+        class="fixed bottom-6 right-6 inline-flex min-h-10 min-w-10 items-center justify-center rounded-xl border border-docs-border bg-docs-surface text-docs-text-strong shadow-soft opacity-0 pointer-events-none transition-[opacity,background-color,color,border-color] duration-150 hover:bg-docs-surface-muted z-40"
+        aria-label="Scroll to top">
+        <%~ stati.partials.icon({ name: 'arrow-up', size: 'md', strokeWidth: 1.5 }) %>
     </button>
 
     <!-- Search UI Templates -->

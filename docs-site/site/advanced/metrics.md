@@ -153,33 +153,33 @@ A consistently low cache hit rate might indicate:
 
 The `phases` object shows how long each build phase took:
 
-| Phase | Description |
-|-------|-------------|
-| `configLoadMs` | Loading and parsing `stati.config.ts` |
-| `contentDiscoveryMs` | Finding and parsing markdown files |
-| `navigationBuildMs` | Building navigation tree from pages |
-| `cacheManifestLoadMs` | Loading ISG cache manifest |
-| `typescriptCompileMs` | Compiling TypeScript bundles |
-| `pageRenderingMs` | Rendering pages (markdown + templates) |
-| `shouldRebuildTotalMs` | Aggregate time checking if pages need rebuild |
-| `renderPageTotalMs` | Aggregate time rendering pages |
-| `fileWriteTotalMs` | Aggregate time writing HTML files to disk |
-| `cacheEntryTotalMs` | Aggregate time updating cache entries |
-| `searchIndexGenerationMs` | Generating search index JSON |
-| `searchIndexWriteMs` | Writing search index to disk |
-| `assetCopyMs` | Copying static assets |
-| `cacheManifestSaveMs` | Saving updated cache manifest |
-| `sitemapGenerationMs` | Generating sitemap.xml |
-| `rssGenerationMs` | Generating RSS feeds |
-| `tailwindInitMs` | Tailwind detection and inventory initialization |
-| `tailwindInventoryMs` | Writing Tailwind inventory at end of build |
-| `getDirectorySizeMs` | Calculating directory size for build stats |
-| `lockAcquireMs` | Build lock acquisition |
-| `lockReleaseMs` | Build lock release |
-| `hookBeforeAllMs` | Time spent in `beforeAll` hook (if configured) |
-| `hookAfterAllMs` | Time spent in `afterAll` hook (if configured) |
+| Phase                     | Description                                               |
+| ------------------------- | --------------------------------------------------------- |
+| `configLoadMs`            | Loading and parsing `stati.config.ts`                     |
+| `contentDiscoveryMs`      | Finding and parsing markdown files                        |
+| `navigationBuildMs`       | Building navigation tree from pages                       |
+| `cacheManifestLoadMs`     | Loading ISG cache manifest                                |
+| `typescriptCompileMs`     | Compiling TypeScript bundles                              |
+| `pageRenderingMs`         | Rendering pages (markdown + templates)                    |
+| `shouldRebuildTotalMs`    | Aggregate time checking if pages need rebuild             |
+| `renderPageTotalMs`       | Aggregate time rendering pages                            |
+| `fileWriteTotalMs`        | Aggregate time writing HTML files to disk                 |
+| `cacheEntryTotalMs`       | Aggregate time updating cache entries                     |
+| `searchIndexGenerationMs` | Generating search index JSON                              |
+| `searchIndexWriteMs`      | Writing search index to disk                              |
+| `assetCopyMs`             | Copying static assets                                     |
+| `cacheManifestSaveMs`     | Saving updated cache manifest                             |
+| `sitemapGenerationMs`     | Generating sitemap.xml                                    |
+| `rssGenerationMs`         | Generating RSS feeds                                      |
+| `tailwindInitMs`          | Tailwind detection and inventory initialization           |
+| `tailwindInventoryMs`     | Writing Tailwind inventory at end of build                |
+| `getDirectorySizeMs`      | Calculating directory size for build stats                |
+| `lockAcquireMs`           | Build lock acquisition                                    |
+| `lockReleaseMs`           | Build lock release                                        |
+| `hookBeforeAllMs`         | Time spent in `beforeAll` hook (if configured)            |
+| `hookAfterAllMs`          | Time spent in `afterAll` hook (if configured)             |
 | `hookBeforeRenderTotalMs` | Total time spent in `beforeRender` hooks across all pages |
-| `hookAfterRenderTotalMs` | Total time spent in `afterRender` hooks across all pages |
+| `hookAfterRenderTotalMs`  | Total time spent in `afterRender` hooks across all pages  |
 
 > **Note:** Not all phases appear in every build. Only phases that actually run will be included in the metrics output. For example, hook timings are only recorded when the corresponding hooks are defined in your `stati.config.ts`, and TypeScript compilation only runs when TypeScript bundles are configured.
 
@@ -187,14 +187,14 @@ The `phases` object shows how long each build phase took:
 
 The `counts` object tracks quantities processed during the build:
 
-| Counter | Description |
-|---------|-------------|
-| `totalPages` | Total number of pages discovered |
-| `renderedPages` | Pages that were rendered (cache misses) |
-| `cachedPages` | Pages served from cache (cache hits) |
-| `assetsCopied` | Number of static assets copied |
-| `templatesLoaded` | Total templates loaded across all rendered pages |
-| `markdownFilesProcessed` | Number of markdown files processed |
+| Counter                  | Description                                      |
+| ------------------------ | ------------------------------------------------ |
+| `totalPages`             | Total number of pages discovered                 |
+| `renderedPages`          | Pages that were rendered (cache misses)          |
+| `cachedPages`            | Pages served from cache (cache hits)             |
+| `assetsCopied`           | Number of static assets copied                   |
+| `templatesLoaded`        | Total templates loaded across all rendered pages |
+| `markdownFilesProcessed` | Number of markdown files processed               |
 
 #### Templates Loaded
 
@@ -269,7 +269,7 @@ import { build } from '@stati/core';
 import type { BuildResult, BuildMetrics } from '@stati/core';
 
 const result: BuildResult = await build({
-  metrics: { enabled: true, detailed: true }
+  metrics: { enabled: true, detailed: true },
 });
 
 if (result.buildMetrics) {

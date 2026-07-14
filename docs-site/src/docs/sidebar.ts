@@ -40,7 +40,7 @@ function normalizePath(path: string): string {
 
   // Support absolute URLs and raw href values uniformly.
   try {
-    normalized = new URL(normalized, window.location.origin).pathname;
+    normalized = new window.URL(normalized, window.location.origin).pathname;
   } catch {
     // Keep raw value if URL parsing fails.
   }
@@ -235,11 +235,6 @@ function highlightActivePage(state: SectionState): HTMLAnchorElement | null {
   // Clear any stale active classes before applying the new one.
   document.querySelectorAll<HTMLAnchorElement>('.sidebar-link').forEach((link) => {
     link.classList.remove('active');
-    for (const className of Array.from(link.classList)) {
-      if (className.startsWith('active-')) {
-        link.classList.remove(className);
-      }
-    }
   });
 
   document.querySelectorAll<HTMLAnchorElement>('.sidebar-link').forEach((link) => {
@@ -280,9 +275,6 @@ function highlightActivePage(state: SectionState): HTMLAnchorElement | null {
   const sectionName = toggle.getAttribute('data-section');
   if (!sectionName) return resolvedActiveLink;
 
-  // Add section-specific active class.
-  resolvedActiveLink.classList.add(`active-${sectionName}`);
-
   // Expand parent section if needed.
   const content = section.querySelector<HTMLElement>('.section-content');
   if (content) {
@@ -303,7 +295,7 @@ function highlightActivePage(state: SectionState): HTMLAnchorElement | null {
  */
 function ensureActiveItemVisible(sidebar: HTMLElement, activeLink: HTMLAnchorElement): void {
   // Wait a frame so expanded section heights are applied before scrolling.
-  requestAnimationFrame(() => {
+  window.requestAnimationFrame(() => {
     try {
       activeLink.scrollIntoView({
         block: 'nearest',

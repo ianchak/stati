@@ -81,15 +81,15 @@ stati dev [options]
 
 **Options:**
 
-| Flag | Type | Default | Description |
-|------|------|---------|-------------|
-| `--port` | number | 3000 | Port to run the dev server on |
-| `--host` | string | localhost | Host to bind the dev server to |
-| `--open` | boolean | false | Open browser after starting server |
-| `--config` | string | - | Path to config file |
-| `--tailwind-input` | string | - | Input file path for Tailwind CSS watcher |
-| `--tailwind-output` | string | - | Output file path for compiled Tailwind CSS |
-| `--tailwind-verbose` | boolean | false | Show all Tailwind CSS output (default shows errors only) |
+| Flag                 | Type    | Default   | Description                                              |
+| -------------------- | ------- | --------- | -------------------------------------------------------- |
+| `--port`             | number  | 3000      | Port to run the dev server on                            |
+| `--host`             | string  | localhost | Host to bind the dev server to                           |
+| `--open`             | boolean | false     | Open browser after starting server                       |
+| `--config`           | string  | -         | Path to config file                                      |
+| `--tailwind-input`   | string  | -         | Input file path for Tailwind CSS watcher                 |
+| `--tailwind-output`  | string  | -         | Output file path for compiled Tailwind CSS               |
+| `--tailwind-verbose` | boolean | false     | Show all Tailwind CSS output (default shows errors only) |
 
 **Examples:**
 
@@ -123,12 +123,12 @@ stati preview [options]
 
 **Options:**
 
-| Flag | Type | Default | Description |
-|------|------|---------|-------------|
-| `--port` | number | 4000 | Port to run the preview server on |
-| `--host` | string | localhost | Host to bind the preview server to |
-| `--open` | boolean | false | Open browser after starting server |
-| `--config` | string | - | Path to config file |
+| Flag       | Type    | Default   | Description                        |
+| ---------- | ------- | --------- | ---------------------------------- |
+| `--port`   | number  | 4000      | Port to run the preview server on  |
+| `--host`   | string  | localhost | Host to bind the preview server to |
+| `--open`   | boolean | false     | Open browser after starting server |
+| `--config` | string  | -         | Path to config file                |
 
 **Examples:**
 
@@ -156,16 +156,16 @@ stati build [options]
 
 **Options:**
 
-| Flag | Type | Default | Description |
-|------|------|---------|-------------|
-| `--force` | boolean | false | Force full rebuild without deleting cache |
-| `--clean` | boolean | false | Clean cache before building |
-| `--config` | string | - | Path to config file |
-| `--include-drafts` | boolean | false | Include draft pages in the build |
-| `--metrics` | boolean | false | Enable build metrics collection |
-| `--metrics-file` | string | - | Output path for metrics JSON (default: .stati/metrics/) |
-| `--metrics-detailed` | boolean | false | Include per-page timing in metrics |
-| `--metrics-html` | boolean | false | Generate HTML report alongside JSON metrics |
+| Flag                 | Type    | Default | Description                                             |
+| -------------------- | ------- | ------- | ------------------------------------------------------- |
+| `--force`            | boolean | false   | Force full rebuild without deleting cache               |
+| `--clean`            | boolean | false   | Clean cache before building                             |
+| `--config`           | string  | -       | Path to config file                                     |
+| `--include-drafts`   | boolean | false   | Include draft pages in the build                        |
+| `--metrics`          | boolean | false   | Enable build metrics collection                         |
+| `--metrics-file`     | string  | -       | Output path for metrics JSON (default: .stati/metrics/) |
+| `--metrics-detailed` | boolean | false   | Include per-page timing in metrics                      |
+| `--metrics-html`     | boolean | false   | Generate HTML report alongside JSON metrics             |
 
 **Examples:**
 
@@ -199,13 +199,13 @@ stati invalidate [query]
 
 **Query Patterns:**
 
-| Pattern | Format | Example | Description |
-|---------|--------|---------|-------------|
-| Tag | `tag:value` | `tag:blog` | Invalidate by tag |
-| Path | `path:/route` | `path:/about` | Invalidate specific path or nested routes |
-| Glob | `glob:pattern` | `glob:blog/**` | Invalidate paths matching glob expressions |
-| Age | `age:duration` | `age:1week` | Invalidate entries rendered within specified time window (uses calendar arithmetic) |
-| Clear All | (empty) | `stati invalidate` | Clear entire cache |
+| Pattern   | Format         | Example            | Description                                                                         |
+| --------- | -------------- | ------------------ | ----------------------------------------------------------------------------------- |
+| Tag       | `tag:value`    | `tag:blog`         | Invalidate by tag                                                                   |
+| Path      | `path:/route`  | `path:/about`      | Invalidate specific path or nested routes                                           |
+| Glob      | `glob:pattern` | `glob:blog/**`     | Invalidate paths matching glob expressions                                          |
+| Age       | `age:duration` | `age:1week`        | Invalidate entries rendered within specified time window (uses calendar arithmetic) |
+| Clear All | (empty)        | `stati invalidate` | Clear entire cache                                                                  |
 
 **Examples:**
 

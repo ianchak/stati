@@ -4,16 +4,16 @@ description: 'Understand the fundamental concepts that power Stati.'
 order: 1
 seo:
   structuredData:
-    "@context": "https://schema.org"
-    "@type": "TechArticle"
-    "headline": "Core Concepts in Stati"
-    "description": "Understand the fundamental concepts that power Stati, including routing, templates, Markdown, and ISG."
-    "about":
-      - "routing"
-      - "templates"
-      - "Markdown"
-      - "ISG"
-    "proficiencyLevel": "Beginner"
+    '@context': 'https://schema.org'
+    '@type': 'TechArticle'
+    'headline': 'Core Concepts in Stati'
+    'description': 'Understand the fundamental concepts that power Stati, including routing, templates, Markdown, and ISG.'
+    'about':
+      - 'routing'
+      - 'templates'
+      - 'Markdown'
+      - 'ISG'
+    'proficiencyLevel': 'Beginner'
 ---
 
 # Core Concepts in Stati

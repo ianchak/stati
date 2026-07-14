@@ -24,7 +24,7 @@ function getIndentClass(level) {
         <nav class="space-y-1 overflow-y-auto flex-1 min-h-[120px] px-3 py-3" id="toc-nav">
             <% for (const entry of stati.page.toc) { %>
             <a href="<%= `#${entry.id}` %>"
-               class="<%= stati.propValue('block text-[13px] leading-5 text-slate-600 hover:text-primary-700 dark:text-slate-300 dark:hover:text-primary-300 transition-colors duration-200 py-1.5 border-l-2 border-transparent hover:border-primary-500 rounded-r-md no-underline', getIndentClass(entry.level)) %>"
+               class="<%= stati.propValue('block min-h-10 text-[13px] leading-5 text-slate-600 hover:text-primary-700 dark:text-slate-300 dark:hover:text-primary-300 transition-colors duration-150 py-2 border-l-2 border-transparent hover:border-primary-500 rounded-r-md no-underline', getIndentClass(entry.level)) %>"
                data-target="<%= entry.id %>">
                 <%= entry.text %>
             </a>

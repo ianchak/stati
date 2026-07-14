@@ -5,15 +5,15 @@ layout: layout.eta
 order: 2
 seo:
   structuredData:
-    "@context": "https://schema.org"
-    "@type": "TechArticle"
-    "headline": "SEO Usage Scenarios in Stati"
-    "description": "Learn different strategies for using SEO features in your Stati project, from automatic to fully custom control."
-    "about":
-      - "SEO"
-      - "Open Graph"
-      - "sitemaps"
-    "proficiencyLevel": "Intermediate"
+    '@context': 'https://schema.org'
+    '@type': 'TechArticle'
+    'headline': 'SEO Usage Scenarios in Stati'
+    'description': 'Learn different strategies for using SEO features in your Stati project, from automatic to fully custom control.'
+    'about':
+      - 'SEO'
+      - 'Open Graph'
+      - 'sitemaps'
+    'proficiencyLevel': 'Intermediate'
 ---
 
 # SEO Usage Scenarios
@@ -60,14 +60,14 @@ With automatic SEO, a simple page template like this:
 ```html
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body>
-  <h1>My Page</h1>
-  <p>Welcome to my page content.</p>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  </head>
+  <body>
+    <h1>My Page</h1>
+    <p>Welcome to my page content.</p>
+  </body>
 </html>
 ```
 
@@ -76,24 +76,24 @@ Gets these SEO tags automatically injected:
 ```html
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- Auto-injected by Stati -->
-  <title>My Page</title>
-  <link rel="canonical" href="https://example.com/my-page">
-  <meta property="og:title" content="My Page">
-  <meta property="og:url" content="https://example.com/my-page">
-  <meta property="og:type" content="website">
-  <meta property="og:site_name" content="My Site">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="My Page">
-</head>
-<body>
-  <h1>My Page</h1>
-  <p>Welcome to my page content.</p>
-</body>
+    <!-- Auto-injected by Stati -->
+    <title>My Page</title>
+    <link rel="canonical" href="https://example.com/my-page" />
+    <meta property="og:title" content="My Page" />
+    <meta property="og:url" content="https://example.com/my-page" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="My Site" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="My Page" />
+  </head>
+  <body>
+    <h1>My Page</h1>
+    <p>Welcome to my page content.</p>
+  </body>
 </html>
 ```
 
@@ -219,7 +219,7 @@ For pages you want to exclude or deprioritize:
 ---
 title: Draft Page
 sitemap:
-  exclude: true  # Exclude from sitemap
+  exclude: true # Exclude from sitemap
 ---
 ```
 
@@ -256,15 +256,15 @@ Keep auto-injection enabled but manually override specific SEO tags when needed.
 <!-- site/layout.eta -->
 <!DOCTYPE html>
 <html>
-<head>
-  <!-- Manual title with custom format -->
-  <title><%= stati.page.title %> - <%= stati.site.title %> | Premium Guides</title>
+  <head>
+    <!-- Manual title with custom format -->
+    <title><%= stati.page.title %> - <%= stati.site.title %> | Premium Guides</title>
 
-  <!-- Stati auto-generates: description, canonical, OG tags, Twitter, etc. -->
-</head>
-<body>
-  <%~ stati.content %>
-</body>
+    <!-- Stati auto-generates: description, canonical, OG tags, Twitter, etc. -->
+  </head>
+  <body>
+    <%~ stati.content %>
+  </body>
 </html>
 ```
 
@@ -279,21 +279,21 @@ Keep auto-injection enabled but manually override specific SEO tags when needed.
 <!-- site/layout.eta -->
 <!DOCTYPE html>
 <html>
-<head>
-  <!-- Custom OG image tag -->
-  <meta property="og:image" content="<%= stati.site.baseUrl %>/custom-og.jpg">
+  <head>
+    <!-- Custom OG image tag -->
+    <meta property="og:image" content="<%= stati.site.baseUrl %>/custom-og.jpg" />
 
-  <!-- Stati detects OG tag and SKIPS all Open Graph generation -->
-  <!-- You must add other OG tags manually -->
-  <meta property="og:title" content="<%= stati.page.title %>">
-  <meta property="og:description" content="<%= stati.page.description %>">
-  <meta property="og:url" content="<%= stati.site.baseUrl %><%= stati.page.url %>">
+    <!-- Stati detects OG tag and SKIPS all Open Graph generation -->
+    <!-- You must add other OG tags manually -->
+    <meta property="og:title" content="<%= stati.page.title %>" />
+    <meta property="og:description" content="<%= stati.page.description %>" />
+    <meta property="og:url" content="<%= stati.site.baseUrl %><%= stati.page.url %>" />
 
-  <!-- Stati still auto-generates: title, description, canonical, Twitter, etc. -->
-</head>
-<body>
-  <%~ stati.content %>
-</body>
+    <!-- Stati still auto-generates: title, description, canonical, Twitter, etc. -->
+  </head>
+  <body>
+    <%~ stati.content %>
+  </body>
 </html>
 ```
 
@@ -305,22 +305,20 @@ Keep auto-injection enabled but manually override specific SEO tags when needed.
 <!-- site/layout.eta -->
 <!DOCTYPE html>
 <html>
-<head>
-  <% if (stati.page.customTitle) { %>
+  <head>
+    <% if (stati.page.customTitle) { %>
     <!-- Use custom title format for specific pages -->
     <title><%= stati.page.customTitle %></title>
-  <% } %>
-
-  <% if (stati.page.author) { %>
+    <% } %> <% if (stati.page.author) { %>
     <!-- Custom author meta tag -->
-    <meta name="author" content="<%= stati.page.author %>">
-  <% } %>
+    <meta name="author" content="<%= stati.page.author %>" />
+    <% } %>
 
-  <!-- Stati auto-generates all missing tags -->
-</head>
-<body>
-  <%~ stati.content %>
-</body>
+    <!-- Stati auto-generates all missing tags -->
+  </head>
+  <body>
+    <%~ stati.content %>
+  </body>
 </html>
 ```
 
@@ -330,22 +328,22 @@ Keep auto-injection enabled but manually override specific SEO tags when needed.
 <!-- site/layout.eta -->
 <!DOCTYPE html>
 <html>
-<head>
-  <% if (stati.page.ogImage) { %>
+  <head>
+    <% if (stati.page.ogImage) { %>
     <!-- Complete custom Open Graph section -->
-    <meta property="og:image" content="<%= stati.page.ogImage %>">
-    <meta property="og:image:alt" content="<%= stati.page.ogImageAlt || stati.page.title %>">
-    <meta property="og:title" content="<%= stati.page.title %>">
-    <meta property="og:description" content="<%= stati.page.description %>">
-    <meta property="og:url" content="<%= stati.site.baseUrl %><%= stati.page.url %>">
-    <meta property="og:type" content="article">
-  <% } %>
+    <meta property="og:image" content="<%= stati.page.ogImage %>" />
+    <meta property="og:image:alt" content="<%= stati.page.ogImageAlt || stati.page.title %>" />
+    <meta property="og:title" content="<%= stati.page.title %>" />
+    <meta property="og:description" content="<%= stati.page.description %>" />
+    <meta property="og:url" content="<%= stati.site.baseUrl %><%= stati.page.url %>" />
+    <meta property="og:type" content="article" />
+    <% } %>
 
-  <!-- Stati auto-generates: title, description, canonical, Twitter (if no OG) -->
-</head>
-<body>
-  <%~ stati.content %>
-</body>
+    <!-- Stati auto-generates: title, description, canonical, Twitter (if no OG) -->
+  </head>
+  <body>
+    <%~ stati.content %>
+  </body>
 </html>
 ```
 
@@ -353,10 +351,10 @@ Keep auto-injection enabled but manually override specific SEO tags when needed.
 
 Understanding tag groups is critical for hybrid mode:
 
-| Group | Behavior |
-|-------|----------|
-| **Open Graph** | If **any** `og:*` tag exists, **all** OG tags are skipped |
-| **Twitter Cards** | If **any** `twitter:*` tag exists, **all** Twitter tags are skipped |
+| Group               | Behavior                                                                |
+| ------------------- | ----------------------------------------------------------------------- |
+| **Open Graph**      | If **any** `og:*` tag exists, **all** OG tags are skipped               |
+| **Twitter Cards**   | If **any** `twitter:*` tag exists, **all** Twitter tags are skipped     |
 | **Individual Tags** | Title, description, keywords, author, robots, canonical are independent |
 
 ### When to Use
@@ -400,17 +398,17 @@ export default defineConfig({
 <!-- site/layout.eta -->
 <!DOCTYPE html>
 <html>
-<head>
-  <!-- Generate only title and description -->
-  <%~ stati.generateSEO(['title', 'description']) %>
+  <head>
+    <!-- Generate only title and description -->
+    <%~ stati.generateSEO(['title', 'description']) %>
 
-  <!-- Add custom tags -->
-  <link rel="canonical" href="<%= stati.site.baseUrl %><%= stati.page.url %>">
-  <meta name="custom-meta" content="custom value">
-</head>
-<body>
-  <%~ stati.content %>
-</body>
+    <!-- Add custom tags -->
+    <link rel="canonical" href="<%= stati.site.baseUrl %><%= stati.page.url %>" />
+    <meta name="custom-meta" content="custom value" />
+  </head>
+  <body>
+    <%~ stati.content %>
+  </body>
 </html>
 ```
 
@@ -420,23 +418,29 @@ export default defineConfig({
 <!-- site/layout.eta -->
 <!DOCTYPE html>
 <html>
-<head>
-  <!-- Generate basic SEO tags -->
-  <%~ stati.generateSEO(['title', 'description', 'canonical', 'author']) %>
+  <head>
+    <!-- Generate basic SEO tags -->
+    <%~ stati.generateSEO(['title', 'description', 'canonical', 'author']) %>
 
-  <!-- Custom Open Graph -->
-  <meta property="og:title" content="<%= stati.page.title %> | <%= stati.site.title %>">
-  <meta property="og:image" content="<%= stati.site.baseUrl %>/images/og-<%= stati.page.slug %>.jpg">
-  <meta property="og:type" content="article">
+    <!-- Custom Open Graph -->
+    <meta property="og:title" content="<%= stati.page.title %> | <%= stati.site.title %>" />
+    <meta
+      property="og:image"
+      content="<%= stati.site.baseUrl %>/images/og-<%= stati.page.slug %>.jpg"
+    />
+    <meta property="og:type" content="article" />
 
-  <!-- Custom Twitter -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:site" content="@mysite">
-  <meta name="twitter:image" content="<%= stati.site.baseUrl %>/images/twitter-<%= stati.page.slug %>.jpg">
-</head>
-<body>
-  <%~ stati.content %>
-</body>
+    <!-- Custom Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@mysite" />
+    <meta
+      name="twitter:image"
+      content="<%= stati.site.baseUrl %>/images/twitter-<%= stati.page.slug %>.jpg"
+    />
+  </head>
+  <body>
+    <%~ stati.content %>
+  </body>
 </html>
 ```
 
@@ -446,16 +450,16 @@ export default defineConfig({
 <!-- site/layout.eta -->
 <!DOCTYPE html>
 <html>
-<head>
-  <!-- Generate multiple specific tag types -->
-  <%~ stati.generateSEO(['title', 'description', 'canonical', 'opengraph']) %>
+  <head>
+    <!-- Generate multiple specific tag types -->
+    <%~ stati.generateSEO(['title', 'description', 'canonical', 'opengraph']) %>
 
-  <!-- Add custom tags -->
-  <meta name="theme-color" content="#000000">
-</head>
-<body>
-  <%~ stati.content %>
-</body>
+    <!-- Add custom tags -->
+    <meta name="theme-color" content="#000000" />
+  </head>
+  <body>
+    <%~ stati.content %>
+  </body>
 </html>
 ```
 
@@ -506,75 +510,71 @@ export default defineConfig({
 <!-- site/layout.eta -->
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- Manual title with custom logic -->
-  <title>
-    <% if (stati.page.seoTitle) { %>
-      <%= stati.page.seoTitle %>
-    <% } else if (stati.page.title) { %>
-      <%= stati.page.title %> | <%= stati.site.title %>
-    <% } else { %>
-      <%= stati.site.title %>
+    <!-- Manual title with custom logic -->
+    <title>
+      <% if (stati.page.seoTitle) { %> <%= stati.page.seoTitle %> <% } else if (stati.page.title) {
+      %> <%= stati.page.title %> | <%= stati.site.title %> <% } else { %> <%= stati.site.title %> <%
+      } %>
+    </title>
+
+    <!-- Manual meta description -->
+    <% if (stati.page.description) { %>
+    <meta name="description" content="<%= stati.page.description %>" />
     <% } %>
-  </title>
 
-  <!-- Manual meta description -->
-  <% if (stati.page.description) { %>
-    <meta name="description" content="<%= stati.page.description %>">
-  <% } %>
+    <!-- Manual keywords -->
+    <% if (stati.page.tags && stati.page.tags.length > 0) { %>
+    <meta name="keywords" content="<%= stati.page.tags.join(', ') %>" />
+    <% } %>
 
-  <!-- Manual keywords -->
-  <% if (stati.page.tags && stati.page.tags.length > 0) { %>
-    <meta name="keywords" content="<%= stati.page.tags.join(', ') %>">
-  <% } %>
+    <!-- Manual canonical -->
+    <link rel="canonical" href="<%= stati.site.baseUrl %><%= stati.page.url %>" />
 
-  <!-- Manual canonical -->
-  <link rel="canonical" href="<%= stati.site.baseUrl %><%= stati.page.url %>">
+    <!-- Manual Open Graph -->
+    <meta property="og:title" content="<%= stati.page.title || stati.site.title %>" />
+    <% if (stati.page.description) { %>
+    <meta property="og:description" content="<%= stati.page.description %>" />
+    <% } %>
+    <meta property="og:url" content="<%= stati.site.baseUrl %><%= stati.page.url %>" />
+    <meta property="og:type" content="<%= stati.page.type || 'website' %>" />
 
-  <!-- Manual Open Graph -->
-  <meta property="og:title" content="<%= stati.page.title || stati.site.title %>">
-  <% if (stati.page.description) { %>
-  <meta property="og:description" content="<%= stati.page.description %>">
-  <% } %>
-  <meta property="og:url" content="<%= stati.site.baseUrl %><%= stati.page.url %>">
-  <meta property="og:type" content="<%= stati.page.type || 'website' %>">
-
-  <% if (stati.page.ogImage) { %>
-    <meta property="og:image" content="<%= stati.site.baseUrl %><%= stati.page.ogImage %>">
+    <% if (stati.page.ogImage) { %>
+    <meta property="og:image" content="<%= stati.site.baseUrl %><%= stati.page.ogImage %>" />
     <% if (stati.page.ogImageWidth) { %>
-      <meta property="og:image:width" content="<%= stati.page.ogImageWidth %>">
-    <% } %>
-    <% if (stati.page.ogImageHeight) { %>
-      <meta property="og:image:height" content="<%= stati.page.ogImageHeight %>">
-    <% } %>
-  <% } %>
+    <meta property="og:image:width" content="<%= stati.page.ogImageWidth %>" />
+    <% } %> <% if (stati.page.ogImageHeight) { %>
+    <meta property="og:image:height" content="<%= stati.page.ogImageHeight %>" />
+    <% } %> <% } %>
 
-  <!-- Manual Twitter Cards -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:site" content="@mysite">
-  <meta name="twitter:title" content="<%= stati.page.title %>">
-  <% if (stati.page.description) { %>
-    <meta name="twitter:description" content="<%= stati.page.description %>">
-  <% } %>
-  <% if (stati.page.twitterImage || stati.page.ogImage) { %>
-    <meta name="twitter:image" content="<%= stati.site.baseUrl %><%= stati.page.twitterImage || stati.page.ogImage %>">
-  <% } %>
+    <!-- Manual Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@mysite" />
+    <meta name="twitter:title" content="<%= stati.page.title %>" />
+    <% if (stati.page.description) { %>
+    <meta name="twitter:description" content="<%= stati.page.description %>" />
+    <% } %> <% if (stati.page.twitterImage || stati.page.ogImage) { %>
+    <meta
+      name="twitter:image"
+      content="<%= stati.site.baseUrl %><%= stati.page.twitterImage || stati.page.ogImage %>"
+    />
+    <% } %>
 
-  <!-- Manual structured data -->
-  <% if (stati.page.schema) { %>
+    <!-- Manual structured data -->
+    <% if (stati.page.schema) { %>
     <script type="application/ld+json">
       <%~ JSON.stringify(stati.page.schema, null, 2) %>
     </script>
-  <% } %>
+    <% } %>
 
-  <!-- Your other custom tags -->
-</head>
-<body>
-  <%~ stati.content %>
-</body>
+    <!-- Your other custom tags -->
+  </head>
+  <body>
+    <%~ stati.content %>
+  </body>
 </html>
 ```
 
@@ -607,16 +607,16 @@ export default defineConfig({
 
 ## Comparison Table
 
-| Feature | Scenario 1: Automatic | Scenario 2: Enhanced | Scenario 3: Hybrid | Scenario 4: Selective | Scenario 5: Full Custom |
-|---------|----------------------|---------------------|-------------------|----------------------|------------------------|
-| **Setup Effort** | None | Low | Low | Medium | High |
-| **Code Changes** | None | None | Minimal | Medium | Extensive |
-| **Control Level** | Low | Medium | High | High | Complete |
-| **Auto-Injection** | Yes | Yes | Yes | No | No |
-| **Custom Tags** | No | Frontmatter | Template | Template | Full |
-| **Fallback** | Always | Always | Partial | No | No |
-| **Maintenance** | Minimal | Low | Low | Medium | High |
-| **Best For** | New projects | Most projects | Advanced needs | Specific control | Complex SEO |
+| Feature            | Scenario 1: Automatic | Scenario 2: Enhanced | Scenario 3: Hybrid | Scenario 4: Selective | Scenario 5: Full Custom |
+| ------------------ | --------------------- | -------------------- | ------------------ | --------------------- | ----------------------- |
+| **Setup Effort**   | None                  | Low                  | Low                | Medium                | High                    |
+| **Code Changes**   | None                  | None                 | Minimal            | Medium                | Extensive               |
+| **Control Level**  | Low                   | Medium               | High               | High                  | Complete                |
+| **Auto-Injection** | Yes                   | Yes                  | Yes                | No                    | No                      |
+| **Custom Tags**    | No                    | Frontmatter          | Template           | Template              | Full                    |
+| **Fallback**       | Always                | Always               | Partial            | No                    | No                      |
+| **Maintenance**    | Minimal               | Low                  | Low                | Medium                | High                    |
+| **Best For**       | New projects          | Most projects        | Advanced needs     | Specific control      | Complex SEO             |
 
 ---
 
@@ -670,11 +670,11 @@ After implementing SEO, validate your setup:
 ```typescript
 export default defineConfig({
   site: {
-    baseUrl: 'https://example.com' // Required for sitemap URLs
+    baseUrl: 'https://example.com', // Required for sitemap URLs
   },
   sitemap: {
     enabled: true,
-  }
+  },
 });
 ```
 

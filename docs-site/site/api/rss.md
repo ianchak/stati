@@ -261,12 +261,12 @@ const result = validateRSSConfig(config.rss);
 
 if (!result.valid) {
   console.error('Validation failed with errors:');
-  result.errors.forEach(error => console.error(`  - ${error}`));
+  result.errors.forEach((error) => console.error(`  - ${error}`));
 }
 
 if (result.warnings.length > 0) {
   console.warn('Validation warnings:');
-  result.warnings.forEach(warning => console.warn(`  - ${warning}`));
+  result.warnings.forEach((warning) => console.warn(`  - ${warning}`));
 }
 ```
 
@@ -277,10 +277,7 @@ if (result.warnings.length > 0) {
 Validates a single RSS feed configuration.
 
 ```typescript
-function validateRSSFeedConfig(
-  feedConfig: RSSFeedConfig,
-  feedIndex?: number
-): RSSValidationResult
+function validateRSSFeedConfig(feedConfig: RSSFeedConfig, feedIndex?: number): RSSValidationResult;
 ```
 
 **Parameters:**
@@ -316,9 +313,7 @@ if (result.warnings.length > 0) {
 Validates the entire RSS configuration.
 
 ```typescript
-function validateRSSConfig(
-  rssConfig: RSSConfig | undefined
-): RSSValidationResult
+function validateRSSConfig(rssConfig: RSSConfig | undefined): RSSValidationResult;
 ```
 
 **Parameters:**
@@ -336,7 +331,7 @@ const result = validateRSSConfig(config.rss);
 
 if (!result.valid) {
   console.error('RSS configuration is invalid');
-  result.errors.forEach(error => console.error('  -', error));
+  result.errors.forEach((error) => console.error('  -', error));
 }
 ```
 
@@ -351,8 +346,8 @@ function generateRSSFeed(
   pages: PageModel[],
   config: StatiConfig,
   feedConfig: RSSFeedConfig,
-  logger?: Logger
-): RSSGenerationResult
+  logger?: Logger,
+): RSSGenerationResult;
 ```
 
 **Parameters:**
@@ -388,8 +383,8 @@ Generates all configured RSS feeds for a site.
 function generateRSSFeeds(
   pages: PageModel[],
   config: StatiConfig,
-  logger?: Logger
-): RSSGenerationResult[]
+  logger?: Logger,
+): RSSGenerationResult[];
 ```
 
 **Parameters:**

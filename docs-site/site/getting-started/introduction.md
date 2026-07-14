@@ -4,16 +4,16 @@ description: 'Learn how to get started with Stati, the TypeScript-first static s
 order: 1
 seo:
   structuredData:
-    "@context": "https://schema.org"
-    "@type": "TechArticle"
-    "headline": "Getting Started with Stati"
-    "description": "Learn how to install and set up Stati, the TypeScript-first static site generator."
-    "about":
-      - "static site generator"
-      - "TypeScript"
-      - "esbuild"
-      - "file-based routing"
-    "proficiencyLevel": "Beginner"
+    '@context': 'https://schema.org'
+    '@type': 'TechArticle'
+    'headline': 'Getting Started with Stati'
+    'description': 'Learn how to install and set up Stati, the TypeScript-first static site generator.'
+    'about':
+      - 'static site generator'
+      - 'TypeScript'
+      - 'esbuild'
+      - 'file-based routing'
+    'proficiencyLevel': 'Beginner'
 ---
 
 # Getting Started with Stati

@@ -10,31 +10,20 @@ interface TabConfig {
   inactiveClasses: string[];
 }
 
+const PROOF_TRANSITION_MS = 200;
+
 const DEFAULT_CONFIG: TabConfig = {
   tabSelector: '.feature-tab',
   contentSelector: '.feature-content',
-  activeClasses: [
-    'active',
-    'bg-gradient-to-r',
-    'from-primary-500',
-    'to-blue-600',
-    'text-white',
-    'shadow-md',
-    'shadow-gray-900/10',
-    'dark:shadow-black/20',
-  ],
+  activeClasses: ['active', 'bg-primary-600', 'text-white', 'border-primary-600', 'shadow-soft'],
   inactiveClasses: [
-    'bg-white/90',
-    'dark:bg-dark-800',
+    'bg-white',
+    'dark:bg-dark-900',
     'text-gray-700',
     'dark:text-gray-300',
     'hover:bg-gray-100',
-    'dark:hover:bg-dark-700',
-    'hover:shadow-sm',
-    'hover:shadow-gray-900/5',
-    'dark:hover:shadow-black/10',
-    'border',
-    'border-gray-300/60',
+    'dark:hover:bg-dark-800',
+    'border-gray-300',
     'dark:border-dark-600',
   ],
 };
@@ -58,7 +47,7 @@ function activateTab(
   });
 
   // Activate the target tab
-  const activeTab = document.querySelector<HTMLElement>(`[data-tab="${targetTab}"]`);
+  const activeTab = Array.from(tabs).find((tab) => tab.getAttribute('data-tab') === targetTab);
   if (activeTab) {
     activeTab.classList.remove(...config.inactiveClasses);
     activeTab.classList.add(...config.activeClasses);
@@ -70,15 +59,31 @@ function activateTab(
     }
   }
 
-  // Update content visibility
+  // Update content visibility and animate proof panel transitions.
   contents.forEach((content) => {
-    if (content.getAttribute('data-content') === targetTab) {
+    const isTargetContent = content.getAttribute('data-content') === targetTab;
+    if (isTargetContent) {
       content.classList.remove('hidden');
-      content.classList.add('active');
-    } else {
-      content.classList.add('hidden');
       content.classList.remove('active');
+      content.setAttribute('aria-hidden', 'false');
+      window.requestAnimationFrame(() => {
+        content.classList.add('active');
+      });
+      return;
     }
+
+    content.setAttribute('aria-hidden', 'true');
+    if (content.classList.contains('active')) {
+      content.classList.remove('active');
+      window.setTimeout(() => {
+        if (!content.classList.contains('active')) {
+          content.classList.add('hidden');
+        }
+      }, PROOF_TRANSITION_MS);
+      return;
+    }
+
+    content.classList.add('hidden');
   });
 }
 

@@ -10,49 +10,47 @@
 
 const active = stati.props?.active || false;
 %>
-<div class="<%= stati.propValue('feature-content h-full p-8 lg:p-12', active ? 'active' : 'hidden') %>" data-content="isg" role="tabpanel">
-    <div class="grid lg:grid-cols-2 gap-8 items-center h-full">
+<div class="<%= stati.propValue('feature-content h-full p-6 lg:p-10', active ? 'active' : 'hidden') %>"
+     id="proof-panel-isg"
+     data-content="isg"
+     role="tabpanel"
+     aria-labelledby="proof-tab-isg"
+     aria-hidden="<%= active ? 'false' : 'true' %>">
+    <div class="grid lg:grid-cols-2 gap-8 items-start h-full">
         <div>
-            <h3 class="text-3xl font-bold mb-4 text-gray-900 dark:text-gray-100">
-                Incremental Static Generation
+            <h3 class="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">
+                Incremental cache controls
             </h3>
-            <p class="text-lg text-gray-600 dark:text-gray-300 mb-6">
-                Smart caching and dependency tracking means Stati only rebuilds what actually changed. Perfect for large sites with hundreds or thousands of pages.
+            <p class="text-base text-gray-600 dark:text-gray-300 mb-6">
+                Cache entries store dependencies, timestamps, and TTL so rebuild work stays targeted.
             </p>
             <ul class="space-y-3">
-                <%~ stati.partials.highlightItem({ text: 'Automatic dependency tracking' }) %>
-                <%~ stati.partials.highlightItem({ text: 'Selective rebuilds save time and resources' }) %>
-                <%~ stati.partials.highlightItem({ text: 'Flexible cache invalidation by path, tag, or age' }) %>
+                <%~ stati.partials.highlightItem({ text: 'Manifest tracks output path, input hash, deps, and TTL' }) %>
+                <%~ stati.partials.highlightItem({ text: 'Invalidate by path, tag, or content age query' }) %>
+                <%~ stati.partials.highlightItem({ text: 'Aging rules increase TTL for older content safely' }) %>
             </ul>
             <%~ stati.partials.button({
                 href: '/configuration/isg/',
-                text: 'Learn More',
-                variant: 'primary',
+                text: 'ISG configuration',
+                variant: 'secondary',
                 icon: 'chevron-right',
                 class: 'mt-8'
             }) %>
         </div>
         <div class="relative">
-            <pre class="language-bash rounded-xl overflow-hidden shadow-md shadow-gray-900/5 dark:shadow-black/10"><code class="language-bash"># Only rebuilds changed files
-npm run build
-
-# Invalidate specific paths
-stati invalidate path:/blog/
-
-# Invalidate by tag
-stati invalidate tag:navigation
-
-# Invalidate recent content (last 7 days)
-stati invalidate age:7days
-
-# Force full rebuild
-stati build --clean</code></pre>
+            <pre class="language-json rounded-xl overflow-hidden shadow-md shadow-gray-900/5 dark:shadow-black/10"><code class="language-json">{
+  "index.md": {
+    "path": "index.html",
+    "inputsHash": "8413a9...",
+    "deps": ["site/_home/highlights.eta"],
+    "ttlSeconds": 900,
+    "renderedAt": "2026-07-14T06:41:12.000Z"
+  }
+}</code></pre>
             <div class="mt-4">
-                <pre class="language-javascript rounded-xl overflow-hidden shadow-md shadow-gray-900/5 dark:shadow-black/10"><code class="language-javascript">// Programmatic invalidation
-import { invalidate } from '@stati/core';
-
-await invalidate('tag:blog');
-await invalidate('path:/about/ age:30days');</code></pre>
+                <pre class="language-bash rounded-xl overflow-hidden shadow-md shadow-gray-900/5 dark:shadow-black/10"><code class="language-bash">stati invalidate tag:news
+stati invalidate age:3months
+stati invalidate path:/api/*</code></pre>
             </div>
         </div>
     </div>

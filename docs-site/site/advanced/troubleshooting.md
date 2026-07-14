@@ -221,7 +221,7 @@ hooks: {
       console.error('Hook failed:', error);
       // Decide: throw to stop build, or continue
     }
-  }
+  };
 }
 ```
 

@@ -4,6 +4,8 @@
  * smooth scrolling and active section highlighting using IntersectionObserver.
  */
 
+import { prefersReducedMotion } from '../core/index.js';
+
 /** Selector for headings to track for scroll-spy */
 const HEADING_SELECTOR = 'h2[id], h3[id], h4[id], h5[id], h6[id]';
 
@@ -51,6 +53,10 @@ function updateActiveLink(activeId: string, links: HTMLAnchorElement[], tocNav: 
   }
 }
 
+function getScrollBehavior(): 'auto' | 'smooth' {
+  return prefersReducedMotion() ? 'auto' : 'smooth';
+}
+
 /**
  * Initializes the Table of Contents scroll-spy functionality.
  * TOC links are server-rendered; this sets up smooth scrolling and active highlighting.
@@ -72,9 +78,9 @@ export function initToc(): void {
       const targetElement = targetId ? document.getElementById(targetId) : null;
 
       if (targetElement) {
-        // Smooth scroll to the target
+        // Respect live reduced-motion preference when navigating to headings.
         targetElement.scrollIntoView({
-          behavior: 'smooth',
+          behavior: getScrollBehavior(),
           block: 'start',
         });
 
@@ -120,7 +126,7 @@ export function initToc(): void {
       // Smooth scroll to target after a brief delay to ensure page is loaded
       setTimeout(() => {
         targetElement.scrollIntoView({
-          behavior: 'smooth',
+          behavior: getScrollBehavior(),
           block: 'start',
         });
       }, 100);

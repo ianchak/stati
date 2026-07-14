@@ -535,11 +535,7 @@ export type {
 } from '@stati/core';
 
 // RSS types
-export type {
-  RSSConfig,
-  RSSFeedConfig,
-  RSSGenerationResult,
-} from '@stati/core';
+export type { RSSConfig, RSSFeedConfig, RSSGenerationResult } from '@stati/core';
 ```
 
 Note: Types like `TemplateContext`, `CollectionData`, `StatiAssets`, `TocEntry`, and `CacheEntry` are used internally by the framework and are not exported from `@stati/core`. If you need these types for advanced use cases, they can be found in `packages/core/src/types/` but are not part of the public API.

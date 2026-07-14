@@ -10,25 +10,29 @@
 
 const active = stati.props?.active || false;
 %>
-<div class="<%= stati.propValue('feature-content h-full p-8 lg:p-12', active ? 'active' : 'hidden') %>" data-content="typescript" role="tabpanel">
-    <div class="grid lg:grid-cols-2 gap-8 items-center h-full">
+<div class="<%= stati.propValue('feature-content h-full p-6 lg:p-10', active ? 'active' : 'hidden') %>"
+     id="proof-panel-typescript"
+     data-content="typescript"
+     role="tabpanel"
+     aria-labelledby="proof-tab-typescript"
+     aria-hidden="<%= active ? 'false' : 'true' %>">
+    <div class="grid lg:grid-cols-2 gap-8 items-start h-full">
         <div>
-            <h3 class="text-3xl font-bold mb-4 text-gray-900 dark:text-gray-100">
-                Full TypeScript Support
+            <h3 class="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">
+                Typed bundle configuration
             </h3>
-            <p class="text-lg text-gray-600 dark:text-gray-300 mb-6">
-                Built with TypeScript from the ground up. Type-safe configuration with IntelliSense, plus built-in esbuild compilation for your client-side TypeScript code.
+            <p class="text-base text-gray-600 dark:text-gray-300 mb-6">
+                Define route-targeted bundles with typed config and explicit include patterns.
             </p>
             <ul class="space-y-3">
-                <%~ stati.partials.highlightItem({ text: 'Full type inference with <code class="text-sm bg-gray-100 dark:bg-dark-700 px-2 py-1 rounded">defineConfig()</code> in <code class="text-sm bg-gray-100 dark:bg-dark-700 px-2 py-1 rounded">stati.config.ts</code>' }) %>
-                <%~ stati.partials.highlightItem({ text: 'Built-in esbuild compilation with automatic script injection' }) %>
-                <%~ stati.partials.highlightItem({ text: 'Dev mode: source maps & hot reload. Prod mode: minification & hashing' }) %>
-                <%~ stati.partials.highlightItem({ text: 'Multiple bundles with per-page targeting via include/exclude patterns' }) %>
+                <%~ stati.partials.highlightItem({ text: 'Typed <code class="text-sm bg-gray-100 dark:bg-dark-700 px-2 py-1 rounded">defineConfig()</code> contract for bundle entries' }) %>
+                <%~ stati.partials.highlightItem({ text: 'Route include and exclude globs control delivery targets' }) %>
+                <%~ stati.partials.highlightItem({ text: 'Generated assets are exposed through <code class="text-sm bg-gray-100 dark:bg-dark-700 px-2 py-1 rounded">stati.assets.bundlePaths</code>' }) %>
             </ul>
             <%~ stati.partials.button({
                 href: '/configuration/typescript/',
-                text: 'Learn More',
-                variant: 'primary',
+                text: 'TypeScript configuration',
+                variant: 'secondary',
                 icon: 'chevron-right',
                 class: 'mt-8'
             }) %>
@@ -37,22 +41,18 @@ const active = stati.props?.active || false;
             <pre class="language-typescript rounded-xl overflow-hidden shadow-md shadow-gray-900/5 dark:shadow-black/10"><code class="language-typescript">import { defineConfig } from '@stati/core';
 
 export default defineConfig({
-  site: {
-    title: 'My Stati Site',
-    baseUrl: 'https://example.com',
-  },
-
   typescript: {
     enabled: true,
     bundles: [
       {
-        // Included on all pages by default
-        entryPoint: 'main.ts',
+        entryPoint: 'home.ts',
+        bundleName: 'home',
+        include: ['index.md'],
       },
       {
-        // Only included on docs pages
         entryPoint: 'docs.ts',
-        include: ['/docs/**'],
+        bundleName: 'docs',
+        exclude: ['index.md'],
       },
     ],
   },

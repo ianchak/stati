@@ -3,11 +3,16 @@
  * Includes sidebar navigation, table of contents, scroll-to-top, and search.
  */
 
+import { onIdle } from './core/index.js';
 import { initSidebar, initToc, initScrollToTop, initReadingProgress } from './docs/index.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   initSidebar();
   initToc();
-  initScrollToTop();
-  initReadingProgress();
+  onIdle(() => {
+    initScrollToTop();
+  });
+  onIdle(() => {
+    initReadingProgress();
+  });
 });

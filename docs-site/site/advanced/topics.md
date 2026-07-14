@@ -43,8 +43,8 @@ export default defineConfig({
     afterAll: async (ctx) => {
       // Custom asset processing after build
       console.log(`Copied ${ctx.config.staticDir} assets`);
-    }
-  }
+    },
+  },
 });
 ```
 
@@ -93,8 +93,8 @@ export default defineConfig({
         // Production-only tasks
         console.log('Production build completed');
       }
-    }
-  }
+    },
+  },
 });
 ```
 
@@ -130,8 +130,8 @@ export default defineConfig({
         console.error(`Page validation failed: ${error.message}`);
         throw error;
       }
-    }
-  }
+    },
+  },
 });
 ```
 

@@ -5,15 +5,15 @@ layout: layout.eta
 order: 6
 seo:
   structuredData:
-    "@context": "https://schema.org"
-    "@type": "TechArticle"
-    "headline": "SEO Configuration in Stati"
-    "description": "Complete guide to SEO metadata generation, sitemap, and robots.txt configuration in Stati."
-    "about":
-      - "SEO"
-      - "meta tags"
-      - "sitemap"
-    "proficiencyLevel": "Intermediate"
+    '@context': 'https://schema.org'
+    '@type': 'TechArticle'
+    'headline': 'SEO Configuration in Stati'
+    'description': 'Complete guide to SEO metadata generation, sitemap, and robots.txt configuration in Stati.'
+    'about':
+      - 'SEO'
+      - 'meta tags'
+      - 'sitemap'
+    'proficiencyLevel': 'Intermediate'
 ---
 
 # SEO Configuration
@@ -83,7 +83,7 @@ Generate only specific SEO tags using tag type strings:
 <head>
   <%~ stati.generateSEO(['title', 'description', 'canonical']) %>
   <!-- Add custom Open Graph tags -->
-  <meta property="og:custom" content="value">
+  <meta property="og:custom" content="value" />
 </head>
 ```
 
@@ -211,14 +211,14 @@ seo:
 title: My Page
 seo:
   robots:
-    index: true           # Allow indexing (default: true)
-    follow: true          # Allow following links (default: true)
-    archive: true         # Allow archiving
-    snippet: true         # Allow snippets in search results
-    imageindex: true      # Allow indexing images
-    maxSnippet: 160       # Maximum snippet length
+    index: true # Allow indexing (default: true)
+    follow: true # Allow following links (default: true)
+    archive: true # Allow archiving
+    snippet: true # Allow snippets in search results
+    imageindex: true # Allow indexing images
+    maxSnippet: 160 # Maximum snippet length
     maxImagePreview: large # Image preview size: none, standard, large
-    maxVideoPreview: -1   # Video preview duration (-1 = no limit)
+    maxVideoPreview: -1 # Video preview duration (-1 = no limit)
 ---
 ```
 
@@ -314,10 +314,10 @@ Control sitemap behavior for individual pages using frontmatter:
 ---
 title: My Page
 sitemap:
-  exclude: false        # Exclude from sitemap (default: false)
-  priority: 0.8         # Priority (0.0 to 1.0)
-  changefreq: weekly    # Change frequency
-  lastmod: 2025-01-20   # Last modification date
+  exclude: false # Exclude from sitemap (default: false)
+  priority: 0.8 # Priority (0.0 to 1.0)
+  changefreq: weekly # Change frequency
+  lastmod: 2025-01-20 # Last modification date
 ---
 ```
 
@@ -374,16 +374,10 @@ export default defineConfig({
     ],
 
     // Global disallow rules (applies to all user agents)
-    disallow: [
-      '/admin/',
-      '/private/',
-      '/api/',
-    ],
+    disallow: ['/admin/', '/private/', '/api/'],
 
     // Global allow rules (useful with disallow wildcards)
-    allow: [
-      '/api/public/',
-    ],
+    allow: ['/api/public/'],
 
     // Crawl delay in seconds (be careful with this)
     crawlDelay: undefined,
@@ -392,10 +386,7 @@ export default defineConfig({
     sitemap: 'https://example.com/sitemap.xml',
 
     // Custom lines to add to robots.txt
-    customLines: [
-      'User-agent: AnotherBot',
-      'Disallow: /restricted/',
-    ],
+    customLines: ['User-agent: AnotherBot', 'Disallow: /restricted/'],
   },
 });
 ```

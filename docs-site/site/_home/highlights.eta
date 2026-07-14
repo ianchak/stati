@@ -2,46 +2,43 @@
 /**
  * Highlights Section (Homepage)
  *
- * Tabbed feature showcase with TypeScript, ISG, Templates, Routing, and Markdown tabs.
- * Uses sectionHeader, highlightTab, and individual tab content partials.
+ * Proof-desk composition with accessible tabs.
  */
-
 const tabs = [
-  { id: 'typescript', label: 'TypeScript-First' },
-  { id: 'isg', label: 'ISG & Caching' },
-  { id: 'templates', label: 'Eta Templates' },
-  { id: 'routing', label: 'Filesystem Routing' },
-  { id: 'markdown', label: 'Markdown Pipeline' },
+  { id: 'typescript', label: 'TypeScript-first build' },
+  { id: 'isg', label: 'ISG cache behavior' },
+  { id: 'templates', label: 'Eta template rendering' },
+  { id: 'routing', label: 'Route mapping' },
+  { id: 'markdown', label: 'Markdown transform' },
 ];
 %>
-<section class="py-20 lg:py-24 bg-gradient-to-b from-white via-gray-50/40 to-gray-50 dark:from-dark-950 dark:via-dark-900/40 dark:to-dark-900 relative overflow-hidden">
-    <!-- Decorative background elements -->
-    <div class="absolute inset-0 overflow-hidden pointer-events-none">
-        <div class="absolute top-1/4 -left-24 w-96 h-96 bg-indigo-300/12 dark:bg-indigo-800/10 rounded-full blur-3xl"></div>
-        <div class="absolute bottom-1/4 -right-24 w-80 h-80 bg-purple-300/10 dark:bg-purple-800/8 rounded-full blur-3xl"></div>
-    </div>
+<section class="py-16 md:py-20 lg:py-24 bg-[var(--docs-surface)]" aria-labelledby="proof-desk-title">
+    <div class="max-w-7xl mx-auto px-6 lg:px-12">
+        <header class="mb-10 max-w-[65ch]">
+            <h2 id="proof-desk-title" class="m-0 text-3xl font-bold tracking-tight text-[var(--docs-text-strong)] md:text-4xl">
+                See each layer work.
+            </h2>
+            <p class="mt-4 mb-0 text-lg text-[var(--docs-text-muted)]">
+                Five real demonstrations share one tab system, keyboard flow, and proof surface.
+            </p>
+        </header>
 
-    <div class="relative z-10 max-w-7xl mx-auto px-6 lg:px-12">
-        <%~ stati.partials.sectionHeader({
-            title: 'Powerful Features',
-            subtitle: 'Modern static site generation with features that make development fast, intuitive, and type-safe'
-        }) %>
+        <div class="grid grid-cols-1 gap-6 md:grid-cols-12 md:gap-5">
+            <aside class="md:col-span-3">
+                <div class="-mx-2 px-2 flex gap-2 overflow-x-auto snap-x snap-mandatory md:mx-0 md:px-0 md:flex-col md:overflow-visible md:snap-none"
+                     role="tablist"
+                     aria-label="Proof demonstrations">
+                    <% tabs.forEach((tab, i) => { %>
+                        <%~ stati.partials.highlightTab({
+                            id: tab.id,
+                            label: tab.label,
+                            active: i === 0
+                        }) %>
+                    <% }) %>
+                </div>
+            </aside>
 
-        <!-- Tabbed Interface -->
-        <div class="max-w-6xl mx-auto">
-            <!-- Tab Buttons -->
-            <div class="flex flex-wrap justify-center gap-3 mb-8" role="tablist">
-                <% tabs.forEach((tab, i) => { %>
-                    <%~ stati.partials.highlightTab({
-                        id: tab.id,
-                        label: tab.label,
-                        active: i === 0
-                    }) %>
-                <% }) %>
-            </div>
-
-            <!-- Tab Content -->
-            <div class="feature-content-wrapper bg-white/80 dark:bg-dark-800/60 backdrop-blur-sm rounded-2xl border border-gray-200 dark:border-dark-600/60 shadow-2xl shadow-gray-900/10 dark:shadow-black/50 overflow-hidden lg:h-192">
+            <div class="md:col-span-9 rounded-2xl border border-gray-200 dark:border-dark-600 bg-[var(--docs-surface-muted)] shadow-soft overflow-hidden min-h-[28rem]">
                 <%~ stati.partials.tabTypescript({ active: true }) %>
                 <%~ stati.partials.tabIsg %>
                 <%~ stati.partials.tabTemplates %>

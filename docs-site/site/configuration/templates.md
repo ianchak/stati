@@ -195,87 +195,87 @@ export default defineConfig({
     filters: {
       // Date and time filters
       formatDate: (date, options = {}) => {
-          const defaults = {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          };
-          return new Date(date).toLocaleDateString('en-US', {
-            ...defaults,
-            ...options,
-          });
-        },
-
-        timeAgo: (date) => {
-          const now = new Date();
-          const diffMs = now - new Date(date);
-          const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-          if (diffDays === 0) return 'Today';
-          if (diffDays === 1) return 'Yesterday';
-          if (diffDays < 7) return `${diffDays} days ago`;
-          if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-          return `${Math.floor(diffDays / 30)} months ago`;
-        },
-
-        // String manipulation filters
-        capitalize: (str) => {
-          return str.charAt(0).toUpperCase() + str.slice(1);
-        },
-
-        camelCase: (str) => {
-          return str.replace(/[-_\s]+(.)?/g, (_, c) => (c ? c.toUpperCase() : ''));
-        },
-
-        kebabCase: (str) => {
-          return str
-            .replace(/([a-z])([A-Z])/g, '$1-$2')
-            .replace(/[\s_]+/g, '-')
-            .toLowerCase();
-        },
-
-        // Content filters
-        excerpt: (content, length = 150) => {
-          // Remove HTML tags and truncate
-          const text = content.replace(/<[^>]*>/g, '');
-          return text.length > length ? text.substring(0, length).trim() + '...' : text;
-        },
-
-        readingTime: (content) => {
-          const wordsPerMinute = 200;
-          const words = content.trim().split(/\s+/).length;
-          const minutes = Math.ceil(words / wordsPerMinute);
-          return `${minutes} min read`;
-        },
-
-        // URL and path filters
-        absoluteUrl: (path, base) => {
-          if (path.startsWith('http')) return path;
-          return new URL(path, base || 'https://example.com').href;
-        },
-
-        // Array and object filters
-        sortBy: (array, key, direction = 'asc') => {
-          return [...array].sort((a, b) => {
-            const aVal = key.split('.').reduce((obj, k) => obj?.[k], a);
-            const bVal = key.split('.').reduce((obj, k) => obj?.[k], b);
-
-            if (direction === 'desc') {
-              return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
-            }
-            return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
-          });
-        },
-
-        groupBy: (array, key) => {
-          return array.reduce((groups, item) => {
-            const group = key.split('.').reduce((obj, k) => obj?.[k], item);
-            groups[group] = groups[group] || [];
-            groups[group].push(item);
-            return groups;
-          }, {});
-        },
+        const defaults = {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        };
+        return new Date(date).toLocaleDateString('en-US', {
+          ...defaults,
+          ...options,
+        });
       },
+
+      timeAgo: (date) => {
+        const now = new Date();
+        const diffMs = now - new Date(date);
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+        if (diffDays === 0) return 'Today';
+        if (diffDays === 1) return 'Yesterday';
+        if (diffDays < 7) return `${diffDays} days ago`;
+        if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+        return `${Math.floor(diffDays / 30)} months ago`;
+      },
+
+      // String manipulation filters
+      capitalize: (str) => {
+        return str.charAt(0).toUpperCase() + str.slice(1);
+      },
+
+      camelCase: (str) => {
+        return str.replace(/[-_\s]+(.)?/g, (_, c) => (c ? c.toUpperCase() : ''));
+      },
+
+      kebabCase: (str) => {
+        return str
+          .replace(/([a-z])([A-Z])/g, '$1-$2')
+          .replace(/[\s_]+/g, '-')
+          .toLowerCase();
+      },
+
+      // Content filters
+      excerpt: (content, length = 150) => {
+        // Remove HTML tags and truncate
+        const text = content.replace(/<[^>]*>/g, '');
+        return text.length > length ? text.substring(0, length).trim() + '...' : text;
+      },
+
+      readingTime: (content) => {
+        const wordsPerMinute = 200;
+        const words = content.trim().split(/\s+/).length;
+        const minutes = Math.ceil(words / wordsPerMinute);
+        return `${minutes} min read`;
+      },
+
+      // URL and path filters
+      absoluteUrl: (path, base) => {
+        if (path.startsWith('http')) return path;
+        return new URL(path, base || 'https://example.com').href;
+      },
+
+      // Array and object filters
+      sortBy: (array, key, direction = 'asc') => {
+        return [...array].sort((a, b) => {
+          const aVal = key.split('.').reduce((obj, k) => obj?.[k], a);
+          const bVal = key.split('.').reduce((obj, k) => obj?.[k], b);
+
+          if (direction === 'desc') {
+            return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+          }
+          return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+        });
+      },
+
+      groupBy: (array, key) => {
+        return array.reduce((groups, item) => {
+          const group = key.split('.').reduce((obj, k) => obj?.[k], item);
+          groups[group] = groups[group] || [];
+          groups[group].push(item);
+          return groups;
+        }, {});
+      },
+    },
   },
 });
 ```

@@ -473,12 +473,12 @@ const result = validateRSSConfig(config.rss);
 
 if (!result.valid) {
   console.error('RSS configuration errors:');
-  result.errors.forEach(error => console.error(`  - ${error}`));
+  result.errors.forEach((error) => console.error(`  - ${error}`));
 }
 
 if (result.warnings.length > 0) {
   console.warn('RSS configuration warnings:');
-  result.warnings.forEach(warning => console.warn(`  - ${warning}`));
+  result.warnings.forEach((warning) => console.warn(`  - ${warning}`));
 }
 ```
 

@@ -181,43 +181,15 @@
     background-color: color-mix(in srgb, var(--docs-surface-muted), var(--docs-cobalt) 10%);
   }
 
-  .sidebar-link > span:first-child {
-    flex-shrink: 0;
+  .sidebar-link__label {
+    display: block;
   }
 
   .sidebar-link.active {
     @apply font-semibold shadow-soft;
-    color: var(--docs-text-strong);
+    color: var(--docs-cobalt);
     background-color: var(--docs-surface);
-    border-color: color-mix(in srgb, var(--docs-border), var(--docs-cobalt) 16%);
-  }
-
-  .sidebar-link.active-getting-started {
-    @apply text-primary-700 dark:text-primary-200 border-primary-200 dark:border-primary-700;
-  }
-
-  .sidebar-link.active-core-concepts {
-    @apply text-primary-700 dark:text-primary-200 border-primary-200 dark:border-primary-700;
-  }
-
-  .sidebar-link.active-configuration {
-    @apply text-primary-700 dark:text-primary-200 border-primary-200 dark:border-primary-700;
-  }
-
-  .sidebar-link.active-cli {
-    @apply text-primary-700 dark:text-primary-200 border-primary-200 dark:border-primary-700;
-  }
-
-  .sidebar-link.active-api {
-    @apply text-primary-700 dark:text-primary-200 border-primary-200 dark:border-primary-700;
-  }
-
-  .sidebar-link.active-examples {
-    @apply text-primary-700 dark:text-primary-200 border-primary-200 dark:border-primary-700;
-  }
-
-  .sidebar-link.active-advanced {
-    @apply text-primary-700 dark:text-primary-200 border-primary-200 dark:border-primary-700;
+    border-color: color-mix(in srgb, var(--docs-border), var(--docs-cobalt) 24%);
   }
 
   .prose {
@@ -497,6 +469,25 @@
     text-align: right;
   }
 
+  .feature-tab {
+    transition-property: color, background-color, border-color, box-shadow, transform;
+    transition-duration: 150ms;
+    transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  .feature-content {
+    opacity: 0;
+    transform: translateY(0.375rem);
+    transition-property: opacity, transform;
+    transition-duration: 200ms;
+    transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  .feature-content.active {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
   .docs-build-path {
     @apply py-16 md:py-20 lg:py-24;
     background-color: var(--docs-surface);
@@ -717,51 +708,44 @@
     background-color: color-mix(in srgb, var(--docs-surface), transparent 12%);
   }
 
-  .gradient-text {
-    color: var(--docs-cobalt);
-  }
+  @media (prefers-reduced-motion: no-preference) {
+   .docs-hero__content,
+   .docs-hero-card,
+   .docs-hero__build-edge {
+     opacity: 0;
+   }
 
-  @keyframes pulse-slow {
-    0%,
-    100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.5;
-    }
-  }
+   .docs-hero__content {
+     transform: translateY(0.5rem);
+     animation: docs-hero-fade-up 140ms ease-out 0ms forwards;
+   }
 
-  .pulse-slow {
-    animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
+   .docs-hero-card:not(.docs-hero-card--output) {
+     transform: translateY(0.5rem);
+     animation: docs-hero-fade-up 140ms ease-out 120ms forwards;
+   }
 
-  .glass {
-    @apply bg-white/10 dark:bg-white/5 backdrop-blur-lg border border-white/20 dark:border-white/10;
+   .docs-hero-card--output {
+     transform: translateY(0.5rem);
+     animation: docs-hero-fade-up 140ms ease-out 240ms forwards;
+   }
+
+   .docs-hero__build-edge {
+     transform: scaleY(0.35);
+     transform-origin: top center;
+     animation: docs-hero-edge-in 120ms ease-out 400ms forwards;
+   }
   }
 }
 
 @layer utilities {
   ::selection {
-    background-color: color-mix(in srgb, var(--docs-cobalt), transparent 72%);
-    color: var(--docs-text-strong);
-  }
-
-  .animate-float {
-    animation: float 6s ease-in-out infinite;
-  }
-
-  @keyframes float {
-    0%,
-    100% {
-      transform: translateY(0px);
-    }
-    50% {
-      transform: translateY(-10px);
-    }
+   background-color: color-mix(in srgb, var(--docs-cobalt), transparent 72%);
+   color: var(--docs-text-strong);
   }
 
   .backdrop-blur-xs {
-    backdrop-filter: blur(2px);
+   backdrop-filter: blur(2px);
   }
 }
 
@@ -792,13 +776,46 @@
   }
 }
 
+@keyframes docs-hero-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes docs-hero-edge-in {
+  from {
+    opacity: 0;
+    transform: scaleY(0.35);
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
   @view-transition {
     navigation: none;
   }
 
-  .animate-float,
-  .pulse-slow {
+  .docs-hero__content,
+  .docs-hero-card,
+  .docs-hero__build-edge,
+  .feature-content,
+  .feature-tab,
+  ::view-transition-new(root) {
     animation: none;
+    transition: none;
+    transform: none;
+    opacity: 1;
   }
 }

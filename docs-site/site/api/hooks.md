@@ -48,8 +48,8 @@ export default defineConfig({
       if (!process.env.API_KEY) {
         throw new Error('API_KEY environment variable is required');
       }
-    }
-  }
+    },
+  },
 });
 ```
 
@@ -74,7 +74,7 @@ export default defineConfig({
       await generateSitemap(ctx.pages, ctx.config.site.baseUrl);
 
       // Generate RSS feed
-      await generateRSSFeed(ctx.pages.filter(p => p.frontMatter.type === 'post'));
+      await generateRSSFeed(ctx.pages.filter((p) => p.frontMatter.type === 'post'));
 
       // Deploy to CDN
       if (process.env.NODE_ENV === 'production') {
@@ -84,10 +84,10 @@ export default defineConfig({
       // Send notification
       await sendBuildNotification({
         status: 'success',
-        pageCount: ctx.pages.length
+        pageCount: ctx.pages.length,
       });
-    }
-  }
+    },
+  },
 });
 ```
 
@@ -117,8 +117,8 @@ export default defineConfig({
       if (ctx.page.url.startsWith('/blog/')) {
         ctx.page.frontMatter.section = 'blog';
       }
-    }
-  }
+    },
+  },
 });
 ```
 
@@ -144,10 +144,10 @@ export default defineConfig({
       await trackPageMetrics({
         url: ctx.page.url,
         title: ctx.page.frontMatter.title,
-        wordCount: wordCount
+        wordCount: wordCount,
       });
-    }
-  }
+    },
+  },
 });
 ```
 
@@ -159,8 +159,8 @@ Each hook receives a context object with different properties:
 
 ```typescript
 interface BuildContext {
-  config: StatiConfig;          // Build configuration
-  pages: PageModel[];           // All discovered pages
+  config: StatiConfig; // Build configuration
+  pages: PageModel[]; // All discovered pages
 }
 ```
 
@@ -168,8 +168,8 @@ interface BuildContext {
 
 ```typescript
 interface PageContext {
-  page: PageModel;             // Current page being processed
-  config: StatiConfig;         // Build configuration
+  page: PageModel; // Current page being processed
+  config: StatiConfig; // Build configuration
 }
 ```
 
@@ -190,7 +190,7 @@ export default defineConfig({
       sharedBuildData = {
         posts: await fetchBlogPosts(),
         authors: await fetchAuthors(),
-        buildId: generateBuildId()
+        buildId: generateBuildId(),
       };
     },
 
@@ -202,8 +202,8 @@ export default defineConfig({
       if (ctx.page.frontMatter.type === 'post') {
         ctx.page.frontMatter.section = 'blog';
       }
-    }
-  }
+    },
+  },
 });
 ```
 
@@ -228,8 +228,8 @@ export default defineConfig({
       if (process.env.NODE_ENV === 'production') {
         console.log(`Built production page: ${ctx.page.url}`);
       }
-    }
-  }
+    },
+  },
 });
 ```
 
@@ -260,8 +260,8 @@ export default defineConfig({
         }
         // Otherwise continue with default data
       }
-    }
-  }
+    },
+  },
 });
 ```
 
@@ -277,7 +277,7 @@ export default defineConfig({
       const [posts, authors, categories] = await Promise.all([
         fetchPosts(),
         fetchAuthors(),
-        fetchCategories()
+        fetchCategories(),
       ]);
 
       sharedData = { posts, authors, categories };
@@ -285,12 +285,9 @@ export default defineConfig({
 
     afterAll: async (ctx) => {
       // Parallel deployment tasks
-      await Promise.all([
-        uploadToS3(ctx.config.outDir),
-        purgeCloudflareCache()
-      ]);
-    }
-  }
+      await Promise.all([uploadToS3(ctx.config.outDir), purgeCloudflareCache()]);
+    },
+  },
 });
 ```
 
@@ -320,8 +317,8 @@ export default defineConfig({
       if (ctx.page.url === '/blog/') {
         ctx.page.frontMatter.recentPosts = publishedPosts.slice(0, 5);
       }
-    }
-  }
+    },
+  },
 });
 ```
 
@@ -337,7 +334,7 @@ function extractHeadings(html) {
     headings.push({
       level: parseInt(match[1]),
       text: match[2].trim(),
-      id: slugify(match[2])
+      id: slugify(match[2]),
     });
   }
 
@@ -359,14 +356,14 @@ function calculateReadingTime(content) {
 let allPosts = [];
 
 function intersection(arr1, arr2) {
-  return arr1.filter(item => arr2.includes(item));
+  return arr1.filter((item) => arr2.includes(item));
 }
 
 export default defineConfig({
   hooks: {
     beforeAll: async (ctx) => {
       // Store all posts for use in page hooks
-      allPosts = ctx.pages.filter(p => p.frontMatter.type === 'post');
+      allPosts = ctx.pages.filter((p) => p.frontMatter.type === 'post');
     },
 
     beforeRender: async (ctx) => {
@@ -376,18 +373,18 @@ export default defineConfig({
       const currentTags = ctx.page.frontMatter.tags || [];
 
       const relatedPosts = allPosts
-        .filter(p => p.url !== ctx.page.url)
-        .map(p => ({
+        .filter((p) => p.url !== ctx.page.url)
+        .map((p) => ({
           ...p,
-          score: intersection(currentTags, p.frontMatter.tags || []).length
+          score: intersection(currentTags, p.frontMatter.tags || []).length,
         }))
-        .filter(p => p.score > 0)
+        .filter((p) => p.score > 0)
         .sort((a, b) => b.score - a.score)
         .slice(0, 3);
 
       ctx.page.frontMatter.relatedPosts = relatedPosts;
-    }
-  }
+    },
+  },
 });
 ```
 

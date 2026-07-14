@@ -20,8 +20,8 @@ export default defineConfig({
   markdown: {
     // Array of markdown-it plugins (Stati auto-prepends 'markdown-it-')
     plugins: [
-      'footnote',                  // Plugin name only
-      ['prism', { options }],      // Plugin with options
+      'footnote', // Plugin name only
+      ['prism', { options }], // Plugin with options
     ],
 
     // Custom configuration function
@@ -95,12 +95,18 @@ export default defineConfig({
 export default defineConfig({
   markdown: {
     plugins: [
-      ['prism', {
-        defaultLanguage: 'javascript',
-      }],
-      ['external-links', {
-        externalTarget: '_blank',
-      }],
+      [
+        'prism',
+        {
+          defaultLanguage: 'javascript',
+        },
+      ],
+      [
+        'external-links',
+        {
+          externalTarget: '_blank',
+        },
+      ],
     ],
   },
 });
@@ -120,14 +126,14 @@ npm install markdown-it-external-links
 
 > **Built-in Features:** Stati has built-in TOC extraction and heading anchor generation (enabled by default). You don't need `markdown-it-anchor` or `markdown-it-toc-done-right` plugins.
 
-| Plugin | Package | Purpose |
-|--------|---------|---------|
-| `prism` | `@widgetbot/markdown-it-prism` | Syntax highlighting |
-| `footnote` | `markdown-it-footnote` | Footnote support |
-| `emoji` | `markdown-it-emoji` | Emoji shortcuts :smile: |
-| `external-links` | `markdown-it-external-links` | External link attributes |
-| `container` | `markdown-it-container` | Custom containers |
-| `attrs` | `markdown-it-attrs` | Add attributes to elements |
+| Plugin           | Package                        | Purpose                    |
+| ---------------- | ------------------------------ | -------------------------- |
+| `prism`          | `@widgetbot/markdown-it-prism` | Syntax highlighting        |
+| `footnote`       | `markdown-it-footnote`         | Footnote support           |
+| `emoji`          | `markdown-it-emoji`            | Emoji shortcuts :smile:    |
+| `external-links` | `markdown-it-external-links`   | External link attributes   |
+| `container`      | `markdown-it-container`        | Custom containers          |
+| `attrs`          | `markdown-it-attrs`            | Add attributes to elements |
 
 ### Example: Complete Plugin Setup
 
@@ -137,15 +143,21 @@ export default defineConfig({
     // Note: TOC and heading anchors are built-in (enabled by default)
     plugins: [
       // Syntax highlighting with Prism.js
-      ['prism', {
-        defaultLanguage: 'javascript',
-      }],
+      [
+        'prism',
+        {
+          defaultLanguage: 'javascript',
+        },
+      ],
 
       // Add target="_blank" to external links
-      ['external-links', {
-        externalTarget: '_blank',
-        internalDomains: ['stati.build'],
-      }],
+      [
+        'external-links',
+        {
+          externalTarget: '_blank',
+          internalDomains: ['stati.build'],
+        },
+      ],
 
       // Support for ::: container syntax
       ['container', 'warning'],
@@ -200,7 +212,8 @@ export default defineConfig({
       };
 
       // Customize link rendering
-      const defaultLinkOpen = md.renderer.rules.link_open ||
+      const defaultLinkOpen =
+        md.renderer.rules.link_open ||
         ((tokens, idx, options, env, self) => self.renderToken(tokens, idx, options));
 
       md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
@@ -270,9 +283,7 @@ npm install @widgetbot/markdown-it-prism prismjs
 ```javascript
 export default defineConfig({
   markdown: {
-    plugins: [
-      ['prism', { defaultLanguage: 'javascript' }],
-    ],
+    plugins: [['prism', { defaultLanguage: 'javascript' }]],
   },
 });
 ```
@@ -280,7 +291,7 @@ export default defineConfig({
 **Add to layout:**
 
 ```html
-<link rel="stylesheet" href="/path/to/prism.css">
+<link rel="stylesheet" href="/path/to/prism.css" />
 <script src="/path/to/prism.js"></script>
 ```
 
@@ -377,10 +388,13 @@ export default defineConfig({
       ['prism', { defaultLanguage: 'javascript' }],
 
       // External links
-      ['external-links', {
-        externalTarget: '_blank',
-        internalDomains: ['stati.build'],
-      }],
+      [
+        'external-links',
+        {
+          externalTarget: '_blank',
+          internalDomains: ['stati.build'],
+        },
+      ],
 
       // Custom containers
       ['container', 'warning'],
@@ -392,7 +406,8 @@ export default defineConfig({
 
     configure: (md) => {
       // Add custom CSS classes to links
-      const defaultLinkOpen = md.renderer.rules.link_open ||
+      const defaultLinkOpen =
+        md.renderer.rules.link_open ||
         ((tokens, idx, options, env, self) => self.renderToken(tokens, idx, options));
 
       md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
@@ -455,19 +470,19 @@ Build navigation from extracted headings:
 
 Stati generates URL-friendly anchor IDs from heading text:
 
-| Heading | Generated ID |
-|---------|--------------|
+| Heading              | Generated ID      |
+| -------------------- | ----------------- |
 | `## Getting Started` | `getting-started` |
-| `## API Reference` | `api-reference` |
-| `## What's New?` | `what-s-new` |
+| `## API Reference`   | `api-reference`   |
+| `## What's New?`     | `what-s-new`      |
 
 **Duplicate Handling**: When headings have the same text, IDs are numbered:
 
-| Heading | Generated ID |
-|---------|--------------|
-| `## Example` | `example` |
-| `## Example` | `example-1` |
-| `## Example` | `example-2` |
+| Heading      | Generated ID |
+| ------------ | ------------ |
+| `## Example` | `example`    |
+| `## Example` | `example-1`  |
+| `## Example` | `example-2`  |
 
 ## Next Steps
 
