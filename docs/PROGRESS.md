@@ -24,7 +24,7 @@
 
 | Milestone | Name | Tasks | MVT | Complete | Total | Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| M1 | Foundation and Design System | 001-004 | MVT_M1 | 0 | 5 | NOT STARTED |
+| M1 | Foundation and Design System | 001-004 | MVT_M1 | 2 | 5 | IN PROGRESS |
 | M2 | Composed Editorial Experience | 005-010 | MVT_M2 | 0 | 7 | NOT STARTED |
 | M3 | Runtime Performance and Motion | 011-015 | MVT_M3 | 0 | 6 | NOT STARTED |
 | M4 | Verification and Handoff | 016-020 | MVT_M4 | 0 | 6 | NOT STARTED |
@@ -33,9 +33,9 @@
 
 | Task ID | Title | File | Status | Review Status | Priority | Complexity | Dependencies |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| TASK_001 | Capture Reproducible Baseline | `TASK_001_capture_reproducible_baseline.md` | NOT STARTED | — | HIGH | S | None |
-| TASK_002 | Build Intentional Font Pipeline | `TASK_002_build_intentional_font_pipeline.md` | NOT STARTED | — | HIGH | M | TASK_001 |
-| TASK_003 | Establish Tokens, Type, and Syntax System | `TASK_003_establish_tokens_type_and_syntax_system.md` | NOT STARTED | — | HIGH | L | TASK_002 |
+| TASK_001 | Capture Reproducible Baseline | `TASK_001_capture_reproducible_baseline.md` | COMPLETE | PASSED | HIGH | S | None |
+| TASK_002 | Build Intentional Font Pipeline | `TASK_002_build_intentional_font_pipeline.md` | COMPLETE | PASSED | HIGH | M | TASK_001 |
+| TASK_003 | Establish Tokens, Type, and Syntax System | `TASK_003_establish_tokens_type_and_syntax_system.md` | IN REVIEW | — | HIGH | L | TASK_002 |
 | TASK_004 | Integrate and Validate Foundation | `TASK_004_integrate_and_validate_foundation.md` | NOT STARTED | — | HIGH | M | TASK_001, TASK_002, TASK_003 |
 | MVT_M1 | Foundation and Design System Manual Test | `MVT_M1_foundation_and_design_system.md` | NOT STARTED | — | — | 35 min | TASK_001-TASK_004 |
 
@@ -139,14 +139,29 @@ None yet.
 
 ## Subagent Tracking
 
-Last Subagent ID: SA-FINAL-20260713-001
+Last Subagent ID: SA-20260714-002
+
+## Review Tracking
+
+Last Review ID: RA-20260714-002
+
+| Task ID | Assigned To | Attempts | Review Failure Notes |
+| --- | --- | --- | --- |
+| TASK_001 | SA-20260713-002 | 1 | PASSED (RA-20260714-001) |
+| TASK_002 | SA-20260714-001 | 1 | PASSED (RA-20260714-002) |
+| TASK_003 | SA-20260714-002 | 1 |  |
 
 ## Agent Handoff
 
+### For Reviewer
+
 | Field | Value |
 | --- | --- |
-| Task | — |
-| Impl Agent | — |
-| Files Changed | — |
-| Tests Added | — |
-| Focus Areas | — |
+| Task | TASK_003 |
+| Impl Agent | SA-20260714-002 |
+| Files Changed | `docs-site/tailwind.config.js`, `docs-site/src/styles.css`, `docs-site/public/prism-stati.css` |
+| Tests Added | None |
+| Rework? | No |
+| Focus Areas | Token anchors in `:root`/dark theme vars, prose type scale clamps, and Prism surface/background parity with docs code surfaces |
+| Known Limitations | Full chrome/homepage layout cleanup and motion cleanup are handled in later tasks (TASK_004+) |
+| Gate Results | format:✅ lint:✅ typecheck:✅ test:✅ |

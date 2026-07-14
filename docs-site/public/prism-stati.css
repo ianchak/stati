@@ -5,10 +5,11 @@
 
 code[class*='language-'],
 pre[class*='language-'] {
-  color: #1e293b;
+  color: var(--docs-text-strong, #17202a);
   background: transparent;
-  font-family: 'JetBrains Mono', 'Fira Code', 'Fira Code Fallback', Menlo, Monaco, Consolas,
-    'Liberation Mono', 'Courier New', monospace;
+  font-family:
+    'Fira Code', 'Fira Code Fallback', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
   text-align: left;
   white-space: pre;
   word-spacing: normal;
@@ -26,7 +27,7 @@ pre[class*='language-'] {
 
 .dark code[class*='language-'],
 .dark pre[class*='language-'] {
-  color: #dbe7ff;
+  color: var(--docs-text-strong, #e7ecf2);
 }
 
 pre[class*='language-'] {
@@ -34,30 +35,30 @@ pre[class*='language-'] {
   padding: 1.2rem 1.25rem;
   overflow: auto;
   border-radius: 1rem;
-  border: 1px solid #d7e2f4;
-  background: linear-gradient(180deg, #f8fbff 0%, #eef4fd 100%);
+  border: 1px solid var(--docs-border, #c7d0dc);
+  background: var(--docs-surface, #fcfcfd);
 }
 
 .dark pre[class*='language-'] {
-  border-color: #273a59;
-  background: linear-gradient(180deg, #0f1b31 0%, #0a1426 100%);
+  border-color: var(--docs-border, #2d3d53);
+  background: var(--docs-surface, #101925);
 }
 
 :not(pre) > code[class*='language-'] {
   white-space: normal;
-  border-radius: 0.45rem;
-  border: 1px solid #cad8ef;
-  background: #eaf1fc;
-  color: #1e3a8a;
+  border-radius: 0.5rem;
+  border: 1px solid var(--docs-inline-code-border, #c7d0dc);
+  background: var(--docs-inline-code-bg, #e6ebf5);
+  color: var(--docs-inline-code-text, #233eae);
   padding: 0.14rem 0.4rem;
-  font-size: 0.86em;
+  font-size: 0.84em;
   font-weight: 600;
 }
 
 .dark :not(pre) > code[class*='language-'] {
-  border-color: #35507e;
-  background: #172742;
-  color: #c7ddff;
+  border-color: var(--docs-inline-code-border, #31425b);
+  background: var(--docs-inline-code-bg, #1c2a3d);
+  color: var(--docs-inline-code-text, #c6d0ff);
 }
 
 .token.comment,
@@ -245,11 +246,11 @@ pre[class*='language-'] {
 
 .token.mark,
 .token.highlight {
-  background: rgba(59, 130, 246, 0.16);
-  border-radius: 0.2rem;
+  background: rgba(41, 72, 200, 0.15);
+  border-radius: 0.5rem;
 }
 
 .dark .token.mark,
 .dark .token.highlight {
-  background: rgba(147, 197, 253, 0.22);
+  background: rgba(154, 174, 255, 0.25);
 }

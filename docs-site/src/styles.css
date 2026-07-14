@@ -4,40 +4,58 @@
 
 @layer base {
   html {
-    background-color: #f8fafc;
-    --docs-surface: #ffffff;
-    --docs-surface-muted: #f3f6fb;
-    --docs-border: #dbe3ef;
-    --docs-text-strong: #0f172a;
-    --docs-text-muted: #475569;
-    --docs-link: #1d4ed8;
-    --docs-link-hover: #1e40af;
-    --docs-inline-code-bg: #eaf0fb;
-    --docs-inline-code-border: #cdd9ef;
-    --docs-inline-code-text: #1e3a8a;
+    --docs-canvas: #f4f6f8;
+    --docs-surface: #fcfcfd;
+    --docs-surface-muted: #e9edf2;
+    --docs-border: #c7d0dc;
+    --docs-text-strong: #17202a;
+    --docs-text-muted: #4b5968;
+    --docs-cobalt: #2948c8;
+    --docs-cobalt-hover: #233eae;
+    --docs-cobalt-active: #1f358f;
+    --docs-focus: rgba(41, 72, 200, 0.34);
+    --docs-inline-code-bg: #e6ebf5;
+    --docs-inline-code-border: #c7d0dc;
+    --docs-inline-code-text: #233eae;
+    --docs-link: var(--docs-cobalt);
+    --docs-link-hover: var(--docs-cobalt-hover);
+    background-color: var(--docs-canvas);
   }
 
   html[data-theme='dark'],
   html.dark {
-    background-color: #020617;
-    --docs-surface: #0b1220;
-    --docs-surface-muted: #111b2f;
-    --docs-border: #22324f;
-    --docs-text-strong: #f8fafc;
-    --docs-text-muted: #cbd5e1;
-    --docs-link: #93c5fd;
-    --docs-link-hover: #bfdbfe;
-    --docs-inline-code-bg: #162238;
-    --docs-inline-code-border: #2f4467;
-    --docs-inline-code-text: #dbeafe;
+    --docs-canvas: #0b111b;
+    --docs-surface: #101925;
+    --docs-surface-muted: #162232;
+    --docs-border: #2d3d53;
+    --docs-text-strong: #e7ecf2;
+    --docs-text-muted: #aab5c3;
+    --docs-cobalt: #9aaeff;
+    --docs-cobalt-hover: #b2c0ff;
+    --docs-cobalt-active: #c6d0ff;
+    --docs-focus: rgba(154, 174, 255, 0.45);
+    --docs-inline-code-bg: #1c2a3d;
+    --docs-inline-code-border: #31425b;
+    --docs-inline-code-text: #c6d0ff;
+    --docs-link: var(--docs-cobalt);
+    --docs-link-hover: var(--docs-cobalt-hover);
+    background-color: var(--docs-canvas);
   }
 
   @font-face {
-    font-family: 'Inter';
-    src: url('/fonts/inter.woff2') format('woff2');
-    font-weight: 100 900;
+    font-family: 'IBM Plex Sans';
+    src:
+      local('IBM Plex Sans Var Regular'),
+      local('IBMPlexSansVar-Regular'),
+      url('/fonts/ibm-plex-sans-var.woff2') format('woff2');
+    font-weight: 100 700;
     font-style: normal;
+    font-stretch: 85% 100%;
     font-display: swap;
+    unicode-range:
+      U+0000, U+000D, U+0020-007E, U+00A0-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC,
+      U+2013-2014, U+2018-201A, U+201C-201E, U+2020-2022, U+2026, U+2030, U+2039-203A, U+2044,
+      U+20AC, U+2122, U+2212, U+FB01-FB02;
   }
 
   @font-face {
@@ -49,11 +67,11 @@
   }
 
   @font-face {
-    font-family: 'Inter Fallback';
+    font-family: 'IBM Plex Sans Fallback';
     src: local('Arial');
-    size-adjust: 107%;
-    ascent-override: 90%;
-    descent-override: 22%;
+    size-adjust: 101%;
+    ascent-override: 93%;
+    descent-override: 24%;
     line-gap-override: 0%;
   }
 
@@ -71,15 +89,16 @@
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-slate-100 dark:bg-slate-900;
+    background-color: var(--docs-surface-muted);
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-slate-300 dark:bg-slate-700 rounded-full;
+    @apply rounded-full;
+    background-color: var(--docs-border);
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-slate-400 dark:bg-slate-600;
+    background-color: color-mix(in srgb, var(--docs-border), var(--docs-cobalt) 20%);
   }
 
   #toc-nav::-webkit-scrollbar {
@@ -91,15 +110,18 @@
   }
 
   #toc-nav::-webkit-scrollbar-thumb {
-    @apply bg-slate-300 dark:bg-slate-700 rounded-full;
+    @apply rounded-full;
+    background-color: var(--docs-border);
   }
 
   #toc-nav::-webkit-scrollbar-thumb:hover {
-    @apply bg-slate-400 dark:bg-slate-600;
+    background-color: color-mix(in srgb, var(--docs-border), var(--docs-cobalt) 20%);
   }
 
   *:focus-visible {
-    @apply outline-none ring-2 ring-primary-500/40 ring-offset-2 ring-offset-white dark:ring-offset-dark-900 rounded-md;
+    outline: none;
+    box-shadow: 0 0 0 2px var(--docs-focus);
+    border-radius: 0.5rem;
   }
 
   html {
@@ -108,14 +130,8 @@
   }
 
   body {
-    @apply text-slate-700 dark:text-slate-200;
-    background-image:
-      radial-gradient(circle at 1px 1px, rgba(37, 99, 235, 0.07) 1px, transparent 0),
-      linear-gradient(to bottom, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.88));
-    background-size:
-      28px 28px,
-      100% 100%;
-    background-attachment: fixed;
+    color: var(--docs-text-muted);
+    background-color: var(--docs-canvas);
     font-feature-settings:
       'kern' 1,
       'liga' 1,
@@ -125,14 +141,11 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  .dark body {
-    background-image:
-      radial-gradient(circle at 1px 1px, rgba(147, 197, 253, 0.08) 1px, transparent 0),
-      linear-gradient(to bottom, rgba(2, 6, 23, 0.95), rgba(2, 8, 28, 0.92));
-  }
-
   kbd {
-    @apply rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300;
+    @apply rounded-lg border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide;
+    border-color: var(--docs-border);
+    background-color: var(--docs-surface);
+    color: var(--docs-text-muted);
   }
 }
 
@@ -199,40 +212,49 @@
   }
 
   .prose {
-    @apply min-w-0 leading-8 text-[17px] text-slate-700 dark:text-slate-300;
+    @apply min-w-0 text-[17px];
     max-width: 74ch;
+    line-height: 2rem;
+    color: var(--docs-text-muted);
   }
 
   .prose h1 {
-    @apply text-4xl lg:text-[2.9rem] font-extrabold tracking-tight mb-10 mt-0 text-slate-950 dark:text-white leading-tight;
+    @apply mb-10 mt-0 font-extrabold tracking-tight;
+    font-size: clamp(2.25rem, 4vw, 2.9rem);
+    line-height: 1.08;
+    color: var(--docs-text-strong);
   }
 
   .prose h2 {
-    @apply text-2xl lg:text-[2rem] font-bold tracking-tight mb-4 mt-14 text-slate-900 dark:text-slate-100 relative;
-  }
-
-  .prose h2::before {
-    @apply absolute -left-4 top-[0.35rem] w-1 h-8 bg-gradient-to-b from-primary-500 to-primary-600 rounded-full;
-    content: '';
+    @apply mb-4 mt-14 font-bold tracking-tight;
+    font-size: clamp(1.75rem, 3vw, 2rem);
+    line-height: 1.2;
+    color: var(--docs-text-strong);
   }
 
   .prose h3 {
-    @apply text-xl lg:text-2xl font-semibold mb-3 mt-10 text-slate-900 dark:text-slate-100;
+    @apply mb-3 mt-10 font-semibold;
+    font-size: clamp(1.25rem, 2vw, 1.5rem);
+    line-height: 1.32;
+    color: var(--docs-text-strong);
   }
 
   .prose h4 {
-    @apply text-lg lg:text-xl font-semibold mb-2 mt-8 text-slate-900 dark:text-slate-100;
+    @apply mb-2 mt-8 text-[1.125rem] font-semibold;
+    line-height: 1.4;
+    color: var(--docs-text-strong);
   }
 
   .prose h1 code,
   .prose h2 code,
   .prose h3 code,
   .prose h4 code {
-    @apply bg-transparent px-0 py-0 text-inherit text-[0.85em] font-mono;
+    @apply bg-transparent px-0 py-0 text-inherit text-[0.84em] font-mono;
   }
 
   .prose p {
-    @apply mb-6 text-slate-700 dark:text-slate-300;
+    @apply mb-6;
+    color: var(--docs-text-muted);
   }
 
   .prose ul,
@@ -241,23 +263,24 @@
   }
 
   .prose li {
-    @apply text-slate-700 dark:text-slate-300 m-0;
+    @apply m-0;
+    color: var(--docs-text-muted);
   }
 
   .prose li::marker {
-    @apply text-primary-600 dark:text-primary-400;
+    color: var(--docs-cobalt);
   }
 
   .prose code {
     background-color: var(--docs-inline-code-bg);
     border-color: var(--docs-inline-code-border);
     color: var(--docs-inline-code-text);
-    @apply border px-2.5 py-1 rounded-md text-[0.84em] font-semibold font-mono;
+    @apply rounded-lg border px-2.5 py-1 text-[0.84em] font-semibold font-mono;
   }
 
   .prose pre {
-    @apply relative mb-8 overflow-x-auto rounded-2xl border p-0 shadow-soft-lg max-w-full;
-    background: var(--docs-surface-muted);
+    @apply relative mb-8 max-w-full overflow-x-auto rounded-2xl border p-0 shadow-soft;
+    background: var(--docs-surface);
     border-color: var(--docs-border);
   }
 
@@ -272,30 +295,40 @@
   }
 
   .prose blockquote {
-    @apply mb-6 rounded-r-xl border-l-4 border-primary-500 bg-primary-50/60 dark:bg-primary-900/20 px-6 py-4 italic text-slate-700 dark:text-slate-300;
+    @apply mb-6 rounded-r-xl border-l-4 px-6 py-4 italic;
+    border-left-color: var(--docs-cobalt);
+    background-color: color-mix(in srgb, var(--docs-surface-muted), var(--docs-cobalt) 10%);
+    color: var(--docs-text-muted);
   }
 
   .prose th,
   .prose td {
-    @apply border-b border-slate-200 dark:border-slate-700 px-6 py-4 text-left;
+    @apply border-b px-6 py-4 text-left;
+    border-color: var(--docs-border);
   }
 
   .prose th {
-    @apply bg-slate-100/80 dark:bg-slate-800 font-semibold text-slate-900 dark:text-white;
+    @apply font-semibold;
+    background: var(--docs-surface-muted);
+    color: var(--docs-text-strong);
   }
 
   .prose td {
-    @apply text-slate-600 dark:text-slate-300;
+    color: var(--docs-text-muted);
   }
 
   .prose a {
     color: var(--docs-link);
-    @apply font-semibold no-underline relative;
-    transition: all 0.2s ease;
+    @apply relative font-semibold no-underline;
+    text-underline-offset: 0.2em;
+    transition:
+      color 0.2s ease,
+      text-decoration-color 0.2s ease;
   }
 
   .prose a::after {
-    @apply absolute bottom-0 left-0 h-[2px] w-full scale-x-0 origin-left bg-primary-500 transition-transform duration-200;
+    @apply absolute bottom-0 left-0 h-[2px] w-full origin-left scale-x-0 transition-transform duration-200;
+    background: var(--docs-cobalt);
     content: '';
   }
 
@@ -308,7 +341,7 @@
   }
 
   .prose table {
-    @apply table w-full border-collapse mb-8 rounded-xl overflow-hidden shadow-soft;
+    @apply mb-8 table w-full border-collapse overflow-hidden rounded-xl;
     background: var(--docs-surface);
     border: 1px solid var(--docs-border);
   }
@@ -325,23 +358,19 @@
   }
 
   .btn-primary {
-    @apply rounded-lg bg-primary-600 px-6 py-3 font-semibold text-white shadow-soft transition-all duration-200 hover:bg-primary-700 hover:shadow-soft-lg;
+    @apply rounded-xl bg-primary-600 px-6 py-3 font-semibold text-white shadow-soft transition-colors duration-200 hover:bg-primary-700;
   }
 
   .btn-secondary {
-    @apply rounded-lg border-2 border-primary-600 bg-white px-6 py-3 font-semibold text-primary-700 shadow-soft transition-all duration-200 hover:bg-primary-50 hover:shadow-soft-lg dark:border-primary-400 dark:bg-dark-800 dark:text-primary-300 dark:hover:bg-primary-900/20;
+    @apply rounded-xl border-2 border-primary-600 bg-white px-6 py-3 font-semibold text-primary-700 shadow-soft transition-colors duration-200 hover:bg-primary-50 dark:border-primary-400 dark:bg-dark-800 dark:text-primary-300 dark:hover:bg-primary-900/20;
   }
 
   .card {
-    @apply rounded-xl border border-slate-200/70 bg-white/85 p-6 shadow-soft backdrop-blur-sm transition-all duration-300 hover:shadow-soft-lg dark:border-slate-700/60 dark:bg-dark-800/70;
+    @apply rounded-xl border border-slate-200/70 bg-white/85 p-6 shadow-soft backdrop-blur-sm transition-shadow duration-300 hover:shadow-soft-lg dark:border-slate-700/60 dark:bg-dark-800/70;
   }
 
   .gradient-text {
-    @apply bg-gradient-to-r from-primary-600 to-primary-500 bg-clip-text text-transparent;
-  }
-
-  .dark .gradient-text {
-    @apply from-primary-400 to-primary-300;
+    color: var(--docs-cobalt);
   }
 
   @keyframes pulse-slow {
@@ -365,7 +394,8 @@
 
 @layer utilities {
   ::selection {
-    @apply bg-primary-200 dark:bg-primary-800 text-primary-900 dark:text-primary-100;
+    background-color: color-mix(in srgb, var(--docs-cobalt), transparent 72%);
+    color: var(--docs-text-strong);
   }
 
   .animate-float {
