@@ -768,6 +768,47 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
         throw error;
       }
 
+      // TypeScript watcher setup
+      // Start this before the initial build so bundle outputs already exist for auto-injection.
+      if (config.typescript?.enabled) {
+        try {
+          // Start TypeScript watchers for hot reload (one per bundle)
+          tsWatchers = await createTypeScriptWatcher({
+            projectRoot: process.cwd(),
+            config: config.typescript,
+            outDir: config.outDir || DEFAULT_OUT_DIR,
+            logger,
+            awaitInitialBuild: true,
+            onRebuild: (_results, compileTimeMs) => {
+              logger.info?.(`▸ TypeScript recompiled in ${compileTimeMs}ms`);
+              // Broadcast reload to WebSocket clients
+              if (wsServer && !disableWsReload) {
+                wsServer.clients.forEach((client: unknown) => {
+                  const ws = client as { readyState: number; send: (data: string) => void };
+                  if (ws.readyState === 1) {
+                    // WebSocket.OPEN
+                    ws.send(JSON.stringify({ type: 'reload' }));
+                  }
+                });
+              }
+            },
+          });
+        } catch (error) {
+          const tsError = error instanceof Error ? error : new Error(String(error));
+          // Prominent notification for TypeScript setup failure
+          console.log();
+          logger.error?.(`TypeScript setup failed: ${tsError.message}`);
+          logger.warning?.('──────────────────────────────────────────────────────────────');
+          logger.warning?.('!  TypeScript hot reload is DISABLED for this session.');
+          logger.warning?.(
+            "    Dev server will continue, but TypeScript changes won't auto-reload.",
+          );
+          logger.warning?.('    Fix your TypeScript configuration and restart the dev server.');
+          logger.warning?.('──────────────────────────────────────────────────────────────');
+          console.log();
+        }
+      }
+
       // Perform initial build
       await performInitialBuild(configPath, logger, setLastBuildError);
 
@@ -846,45 +887,6 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
           reject(error);
         });
       });
-
-      // TypeScript watcher setup (initial compilation is handled by performInitialBuild)
-      if (config.typescript?.enabled) {
-        try {
-          // Start TypeScript watchers for hot reload (one per bundle)
-          tsWatchers = await createTypeScriptWatcher({
-            projectRoot: process.cwd(),
-            config: config.typescript,
-            outDir: config.outDir || DEFAULT_OUT_DIR,
-            logger,
-            onRebuild: (_results, compileTimeMs) => {
-              logger.info?.(`▸ TypeScript recompiled in ${compileTimeMs}ms`);
-              // Broadcast reload to WebSocket clients
-              if (wsServer && !disableWsReload) {
-                wsServer.clients.forEach((client: unknown) => {
-                  const ws = client as { readyState: number; send: (data: string) => void };
-                  if (ws.readyState === 1) {
-                    // WebSocket.OPEN
-                    ws.send(JSON.stringify({ type: 'reload' }));
-                  }
-                });
-              }
-            },
-          });
-        } catch (error) {
-          const tsError = error instanceof Error ? error : new Error(String(error));
-          // Prominent notification for TypeScript setup failure
-          console.log();
-          logger.error?.(`TypeScript setup failed: ${tsError.message}`);
-          logger.warning?.('──────────────────────────────────────────────────────────────');
-          logger.warning?.('!  TypeScript hot reload is DISABLED for this session.');
-          logger.warning?.(
-            "    Dev server will continue, but TypeScript changes won't auto-reload.",
-          );
-          logger.warning?.('    Fix your TypeScript configuration and restart the dev server.');
-          logger.warning?.('──────────────────────────────────────────────────────────────');
-          console.log();
-        }
-      }
 
       // Set up file watching
       const watchPaths = [srcDir, staticDir].filter(Boolean);
