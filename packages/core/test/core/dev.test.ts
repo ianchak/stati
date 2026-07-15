@@ -512,16 +512,24 @@ describe('Development Server', () => {
       await devServer.start();
 
       const wsCtor = vi.mocked(WebSocketServer);
-      const wsInstance = wsCtor.mock.results[0]?.value as {
+      const wsResult = wsCtor.mock.results[0];
+      expect(wsResult).toBeDefined();
+      if (!wsResult) {
+        throw new Error('Expected WebSocketServer to be instantiated');
+      }
+      const wsInstance = wsResult.value as {
         clients: Set<{ readyState: number; send: (data: string) => void }>;
       };
       const send = vi.fn();
       wsInstance.clients.add({ readyState: 1, send });
 
-      const createWatcherArg = mockCreateTsWatcher.mock.calls[0]?.[0];
-      expect(createWatcherArg).toBeDefined();
-
-      createWatcherArg!.onRebuild([], 17);
+      const createWatcherCall = mockCreateTsWatcher.mock.calls[0];
+      expect(createWatcherCall).toBeDefined();
+      if (!createWatcherCall) {
+        throw new Error('Expected TypeScript watcher to be created');
+      }
+      const createWatcherArg = createWatcherCall[0];
+      createWatcherArg.onRebuild([], 17);
 
       expect(mockLogger.info).toHaveBeenCalledWith('▸ TypeScript recompiled in 17ms');
       expect(send).toHaveBeenCalledWith(JSON.stringify({ type: 'reload' }));
@@ -565,15 +573,24 @@ describe('Development Server', () => {
       await devServer.start();
 
       const wsCtor = vi.mocked(WebSocketServer);
-      const wsInstance = wsCtor.mock.results[0]?.value as {
+      const wsResult = wsCtor.mock.results[0];
+      expect(wsResult).toBeDefined();
+      if (!wsResult) {
+        throw new Error('Expected WebSocketServer to be instantiated');
+      }
+      const wsInstance = wsResult.value as {
         clients: Set<{ readyState: number; send: (data: string) => void }>;
       };
       const send = vi.fn();
       wsInstance.clients.add({ readyState: 1, send });
 
-      const createWatcherArg = mockCreateTsWatcher.mock.calls[0]?.[0];
-      expect(createWatcherArg).toBeDefined();
-      createWatcherArg!.onRebuild([], 22);
+      const createWatcherCall = mockCreateTsWatcher.mock.calls[0];
+      expect(createWatcherCall).toBeDefined();
+      if (!createWatcherCall) {
+        throw new Error('Expected TypeScript watcher to be created');
+      }
+      const createWatcherArg = createWatcherCall[0];
+      createWatcherArg.onRebuild([], 22);
 
       expect(mockLogger.info).toHaveBeenCalledWith('▸ TypeScript recompiled in 22ms');
       expect(send).not.toHaveBeenCalled();
