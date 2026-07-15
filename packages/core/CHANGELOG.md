@@ -1,5 +1,12 @@
 # @stati/core
 
+## 1.24.1
+
+### Patch Changes
+
+- 50988fe: Fix a dev-server startup regression where pages could render before TypeScript bundles were available.
+  In development mode, build now compiles TypeScript once when no bundles exist yet, ensuring scripts are injected on first load.
+
 ## 1.24.0
 
 ### Minor Changes
