@@ -46,7 +46,7 @@
     "gray-matter": "^4.0.3",
     "markdown-it": "^14.1.0",
     "open": "^10.1.0",
-    "ws": "^8.18.0"
+    "ws": "^8.21.0"
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
