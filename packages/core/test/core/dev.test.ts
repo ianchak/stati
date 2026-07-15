@@ -471,8 +471,50 @@ describe('Development Server', () => {
       expect(mockCreateTsWatcher).toHaveBeenCalledWith(
         expect.objectContaining({
           config: { enabled: true },
+          awaitInitialBuild: true,
         }),
       );
+
+      await devServer.stop();
+    });
+
+    it('should initialize TypeScript watcher before initial build', async () => {
+      const { createTypeScriptWatcher } = await import('../../src/core/utils/typescript.utils.js');
+      const mockCreateTsWatcher = vi.mocked(createTypeScriptWatcher);
+      mockCreateTsWatcher.mockResolvedValue([
+        {
+          dispose: vi.fn().mockResolvedValue(undefined),
+          watch: vi.fn().mockResolvedValue(undefined),
+          rebuild: vi.fn(),
+          serve: vi.fn(),
+          cancel: vi.fn(),
+        },
+      ]);
+
+      mockLoadConfig.mockResolvedValueOnce({
+        srcDir: 'site',
+        outDir: 'dist',
+        staticDir: 'public',
+        site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
+        typescript: {
+          enabled: true,
+        },
+      });
+
+      mockBuild.mockClear();
+
+      const devServer = await createDevServer({
+        port: 8105,
+      });
+
+      await devServer.start();
+
+      const watcherCallOrder = mockCreateTsWatcher.mock.invocationCallOrder[0];
+      const buildCallOrder = mockBuild.mock.invocationCallOrder[0];
+
+      expect(watcherCallOrder).toBeDefined();
+      expect(buildCallOrder).toBeDefined();
+      expect((watcherCallOrder ?? Number.MAX_SAFE_INTEGER) < (buildCallOrder ?? 0)).toBe(true);
 
       await devServer.stop();
     });

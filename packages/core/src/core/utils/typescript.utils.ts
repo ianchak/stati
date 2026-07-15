@@ -63,6 +63,11 @@ export interface WatchOptions {
   logger: Logger;
   /** Callback invoked when files are recompiled, receives results and compile time in ms */
   onRebuild: (results: CompiledBundleInfo[], compileTimeMs: number) => void;
+  /**
+   * Whether to wait for the initial watch build to finish for all bundles.
+   * Useful during dev-server startup to ensure bundle files exist before page rendering.
+   */
+  awaitInitialBuild?: boolean;
 }
 
 /**
@@ -324,13 +329,21 @@ export async function compileTypeScript(options: CompileOptions): Promise<Compil
 export async function createTypeScriptWatcher(
   options: WatchOptions,
 ): Promise<esbuild.BuildContext[]> {
-  const { projectRoot, config, logger, onRebuild, outDir: globalOutDir } = options;
+  const {
+    projectRoot,
+    config,
+    logger,
+    onRebuild,
+    outDir: globalOutDir,
+    awaitInitialBuild = false,
+  } = options;
   const resolved = resolveConfig(config, 'development');
   const outputDir = globalOutDir || DEFAULT_OUT_DIR;
   const outDir = path.join(projectRoot, outputDir, resolved.outDir);
 
   const contexts: esbuild.BuildContext[] = [];
   const latestResults: Map<string, CompiledBundleInfo> = new Map();
+  const initialBuildPromises: Promise<void>[] = [];
 
   for (const bundleConfig of resolved.bundles) {
     const entryPath = path.join(projectRoot, resolved.srcDir, bundleConfig.entryPoint);
@@ -343,10 +356,14 @@ export async function createTypeScriptWatcher(
       continue;
     }
 
-    // Track whether this is the initial build triggered by context.watch()
-    // We skip notifications for the initial build since files were just compiled
-    // by compileTypeScript() during the initial build phase
+    // Track whether this is the initial build triggered by context.watch().
+    // We skip reload notifications for this build to avoid a reload storm during startup.
     let isInitialBuild = true;
+    let resolveInitialBuild!: () => void;
+    const initialBuildPromise = new Promise<void>((resolve) => {
+      resolveInitialBuild = resolve;
+    });
+    initialBuildPromises.push(initialBuildPromise);
 
     const context = await esbuild.context({
       entryPoints: [entryPath],
@@ -391,10 +408,11 @@ export async function createTypeScriptWatcher(
 
                 latestResults.set(bundleConfig.bundleName, bundleResult);
 
-                // Skip notifications for the initial build triggered by context.watch()
-                // since files were already compiled during performInitialBuild()
+                // Skip notifications for the initial build triggered by context.watch().
+                // This avoids triggering a reload while startup priming is still in progress.
                 if (isInitialBuild) {
                   isInitialBuild = false;
+                  resolveInitialBuild();
                   return;
                 }
 
@@ -402,6 +420,12 @@ export async function createTypeScriptWatcher(
 
                 // Notify with all current results and compile time
                 onRebuild(Array.from(latestResults.values()), compileTime);
+                return;
+              }
+
+              if (isInitialBuild) {
+                isInitialBuild = false;
+                resolveInitialBuild();
               }
             });
           },
@@ -412,6 +436,10 @@ export async function createTypeScriptWatcher(
     // Start watching
     await context.watch();
     contexts.push(context);
+  }
+
+  if (awaitInitialBuild && initialBuildPromises.length > 0) {
+    await Promise.all(initialBuildPromises);
   }
 
   if (contexts.length > 0) {
