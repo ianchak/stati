@@ -478,6 +478,110 @@ describe('Development Server', () => {
       await devServer.stop();
     });
 
+    it('should broadcast reload when TypeScript watcher onRebuild fires', async () => {
+      const { createTypeScriptWatcher } = await import('../../src/core/utils/typescript.utils.js');
+      const { WebSocketServer } = await import('ws');
+
+      const mockCreateTsWatcher = vi.mocked(createTypeScriptWatcher);
+      mockCreateTsWatcher.mockResolvedValue([
+        {
+          dispose: vi.fn().mockResolvedValue(undefined),
+          watch: vi.fn().mockResolvedValue(undefined),
+          rebuild: vi.fn(),
+          serve: vi.fn(),
+          cancel: vi.fn(),
+        },
+      ]);
+
+      mockLoadConfig.mockResolvedValueOnce({
+        srcDir: 'site',
+        outDir: 'dist',
+        staticDir: 'public',
+        site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
+        typescript: {
+          enabled: true,
+        },
+      });
+
+      const mockLogger = createMockLogger();
+      const devServer = await createDevServer({
+        port: 8106,
+        logger: mockLogger,
+      });
+
+      await devServer.start();
+
+      const wsCtor = vi.mocked(WebSocketServer);
+      const wsInstance = wsCtor.mock.results[0]?.value as {
+        clients: Set<{ readyState: number; send: (data: string) => void }>;
+      };
+      const send = vi.fn();
+      wsInstance.clients.add({ readyState: 1, send });
+
+      const createWatcherArg = mockCreateTsWatcher.mock.calls[0]?.[0];
+      expect(createWatcherArg).toBeDefined();
+
+      createWatcherArg!.onRebuild([], 17);
+
+      expect(mockLogger.info).toHaveBeenCalledWith('▸ TypeScript recompiled in 17ms');
+      expect(send).toHaveBeenCalledWith(JSON.stringify({ type: 'reload' }));
+
+      await devServer.stop();
+    });
+
+    it('should skip TypeScript reload broadcast when ws reload is disabled', async () => {
+      const { createTypeScriptWatcher } = await import('../../src/core/utils/typescript.utils.js');
+      const { WebSocketServer } = await import('ws');
+
+      process.env.STATI_DEV_DISABLE_WS_RELOAD = '1';
+
+      const mockCreateTsWatcher = vi.mocked(createTypeScriptWatcher);
+      mockCreateTsWatcher.mockResolvedValue([
+        {
+          dispose: vi.fn().mockResolvedValue(undefined),
+          watch: vi.fn().mockResolvedValue(undefined),
+          rebuild: vi.fn(),
+          serve: vi.fn(),
+          cancel: vi.fn(),
+        },
+      ]);
+
+      mockLoadConfig.mockResolvedValueOnce({
+        srcDir: 'site',
+        outDir: 'dist',
+        staticDir: 'public',
+        site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
+        typescript: {
+          enabled: true,
+        },
+      });
+
+      const mockLogger = createMockLogger();
+      const devServer = await createDevServer({
+        port: 8107,
+        logger: mockLogger,
+      });
+
+      await devServer.start();
+
+      const wsCtor = vi.mocked(WebSocketServer);
+      const wsInstance = wsCtor.mock.results[0]?.value as {
+        clients: Set<{ readyState: number; send: (data: string) => void }>;
+      };
+      const send = vi.fn();
+      wsInstance.clients.add({ readyState: 1, send });
+
+      const createWatcherArg = mockCreateTsWatcher.mock.calls[0]?.[0];
+      expect(createWatcherArg).toBeDefined();
+      createWatcherArg!.onRebuild([], 22);
+
+      expect(mockLogger.info).toHaveBeenCalledWith('▸ TypeScript recompiled in 22ms');
+      expect(send).not.toHaveBeenCalled();
+
+      await devServer.stop();
+      delete process.env.STATI_DEV_DISABLE_WS_RELOAD;
+    });
+
     it('should initialize TypeScript watcher before initial build', async () => {
       const { createTypeScriptWatcher } = await import('../../src/core/utils/typescript.utils.js');
       const mockCreateTsWatcher = vi.mocked(createTypeScriptWatcher);

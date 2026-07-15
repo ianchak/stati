@@ -666,6 +666,60 @@ export const broken = {
       await Promise.all(contexts.map((c) => c.dispose()));
     });
 
+    it('should await initial build when awaitInitialBuild is enabled', async () => {
+      // Arrange
+      const srcDir = join(testDir, 'src');
+      mkdirSync(srcDir, { recursive: true });
+      writeFileSync(join(srcDir, 'main.ts'), 'console.log("Initial build");');
+
+      const onRebuild = vi.fn();
+
+      // Act
+      const contexts = await createTypeScriptWatcher({
+        projectRoot: testDir,
+        config: { enabled: true },
+        logger: mockLogger,
+        onRebuild,
+        outDir: 'dist',
+        awaitInitialBuild: true,
+      });
+
+      // Assert - awaitInitialBuild should ensure initial output is present before return
+      expect(existsSync(join(testDir, 'dist', '_assets', 'main.js'))).toBe(true);
+      // Initial build should not trigger reload callback
+      expect(onRebuild).not.toHaveBeenCalled();
+
+      await Promise.all(contexts.map((c) => c.dispose()));
+    });
+
+    it('should resolve awaitInitialBuild when initial watch build has errors', async () => {
+      // Arrange: invalid TS triggers error on initial watch build
+      const srcDir = join(testDir, 'src');
+      mkdirSync(srcDir, { recursive: true });
+      writeFileSync(join(srcDir, 'main.ts'), 'const broken: number = {;');
+
+      const onRebuild = vi.fn();
+
+      // Act - should resolve rather than hang
+      const contexts = await createTypeScriptWatcher({
+        projectRoot: testDir,
+        config: { enabled: true },
+        logger: mockLogger,
+        onRebuild,
+        outDir: 'dist',
+        awaitInitialBuild: true,
+      });
+
+      // Assert
+      expect(contexts).toHaveLength(1);
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.stringContaining("TypeScript error in 'main'"),
+      );
+      expect(onRebuild).not.toHaveBeenCalled();
+
+      await Promise.all(contexts.map((c) => c.dispose()));
+    });
+
     it('should generate source maps in development mode', async () => {
       // Arrange
       const srcDir = join(testDir, 'src');
