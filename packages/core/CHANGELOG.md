@@ -1,5 +1,11 @@
 # @stati/core
 
+## 1.24.3
+
+### Patch Changes
+
+- fc3b416: Fix page cache reuse when generated HTML is missing or rendering assets change.
+
 ## 1.24.2
 
 ### Patch Changes
