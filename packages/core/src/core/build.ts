@@ -38,6 +38,7 @@ import {
   updateCacheEntry,
   withBuildLock,
   computeNavigationHash,
+  computeContentHash,
   clearFileHashCache,
   clearTemplatePathCache,
 } from './isg/index.js';
@@ -448,6 +449,7 @@ async function processPagesWithCache(
     cacheKey: string;
     page: PageModel;
     existingEntry: CacheEntry | undefined;
+    renderInputsHash: string;
   }> = [];
 
   for (let i = 0; i < pages.length; i++) {
@@ -469,10 +471,27 @@ async function processPagesWithCache(
     const cacheKey = relativePath.startsWith('/') ? relativePath : `/${relativePath}`;
     const existingEntry = manifest.entries[cacheKey];
 
+    const bundlePaths = getBundlePathsForPage(page.url, compiledBundles);
+    const assets: StatiAssets = {
+      bundlePaths,
+      ...(config.search?.enabled === true &&
+        searchIndexFilename && {
+          searchIndexPath: `/${searchIndexFilename}`,
+        }),
+    };
+    const renderInputsHash = computeContentHash('', {
+      ...assets,
+      bundleAutoInject: config.typescript?.autoInject !== false,
+      searchAutoInject: config.search?.autoInjectMetaTag !== false,
+    });
+
     // Check if we should rebuild this page (considering ISG logic)
     const shouldRebuildStart = performance.now();
     const shouldRebuild =
-      options.force || (await shouldRebuildPage(page, existingEntry, config, buildTime));
+      options.force ||
+      config.isg?.enabled === false ||
+      !(await pathExists(outputPath)) ||
+      (await shouldRebuildPage(page, existingEntry, config, buildTime, renderInputsHash));
     const shouldRebuildTime = performance.now() - shouldRebuildStart;
     totalShouldRebuildTime += shouldRebuildTime;
 
@@ -509,18 +528,6 @@ async function processPagesWithCache(
     // Render markdown to HTML with TOC extraction
     const tocEnabled = config.markdown?.toc !== false;
     const { html: htmlContent, toc } = renderMarkdown(page.content, md, tocEnabled);
-
-    // Compute matched bundle paths for this page
-    const bundlePaths = getBundlePathsForPage(page.url, compiledBundles);
-
-    // Build assets object with bundle paths and search index path
-    const assets: StatiAssets = {
-      bundlePaths,
-      ...(config.search?.enabled === true &&
-        searchIndexFilename && {
-          searchIndexPath: `/${searchIndexFilename}`,
-        }),
-    };
 
     // Render with template
     const renderPageStart = performance.now();
@@ -584,7 +591,7 @@ async function processPagesWithCache(
     // In dev mode, batch writes for parallel execution to avoid Windows filesystem slowdown
     if (isDevMode) {
       pendingWrites.push({ outputPath, content: finalHtml });
-      pendingCacheUpdates.push({ cacheKey, page, existingEntry });
+      pendingCacheUpdates.push({ cacheKey, page, existingEntry, renderInputsHash });
     } else {
       // Production mode: write immediately
       const fileWriteStart = performance.now();
@@ -601,9 +608,16 @@ async function processPagesWithCache(
             page,
             config,
             buildTime,
+            false,
+            renderInputsHash,
           );
         } else {
-          manifest.entries[cacheKey] = await createCacheEntry(page, config, buildTime);
+          manifest.entries[cacheKey] = await createCacheEntry(
+            page,
+            config,
+            buildTime,
+            renderInputsHash,
+          );
         }
         totalCacheEntryTime += performance.now() - cacheEntryStart;
       }
@@ -639,7 +653,7 @@ async function processPagesWithCache(
     // This avoids expensive template dependency tracking on each incremental rebuild
     if (!options.skipCacheUpdate) {
       const cacheEntryStart = performance.now();
-      for (const { cacheKey, page, existingEntry } of pendingCacheUpdates) {
+      for (const { cacheKey, page, existingEntry, renderInputsHash } of pendingCacheUpdates) {
         if (existingEntry) {
           // Fast update: reuse existing deps, just update hashes and timestamp
           manifest.entries[cacheKey] = await updateCacheEntry(
@@ -648,9 +662,15 @@ async function processPagesWithCache(
             config,
             buildTime,
             true, // fastUpdate = true in dev mode
+            renderInputsHash,
           );
         } else {
-          manifest.entries[cacheKey] = await createCacheEntry(page, config, buildTime);
+          manifest.entries[cacheKey] = await createCacheEntry(
+            page,
+            config,
+            buildTime,
+            renderInputsHash,
+          );
         }
       }
       totalCacheEntryTime = performance.now() - cacheEntryStart;

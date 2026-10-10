@@ -75,6 +75,7 @@ function isValidCacheEntry(entry: CacheEntry): boolean {
  * @param entry - Existing cache entry, or undefined if not cached
  * @param config - Stati configuration
  * @param now - Current date/time
+ * @param renderInputsHash - Optional hash of asset URLs and injection settings
  * @returns True if the page should be rebuilt
  *
  * @example
@@ -90,7 +91,12 @@ export async function shouldRebuildPage(
   entry: CacheEntry | undefined,
   config: StatiConfig,
   now: Date,
+  renderInputsHash?: string,
 ): Promise<boolean> {
+  if (config.isg?.enabled === false) {
+    return true;
+  }
+
   // Always rebuild if no cache entry exists
   if (!entry) {
     return true;
@@ -151,7 +157,7 @@ export async function shouldRebuildPage(
       return true;
     }
 
-    const currentInputsHash = computeInputsHash(currentContentHash, depsHashes);
+    const currentInputsHash = computeInputsHash(currentContentHash, depsHashes, renderInputsHash);
 
     // If inputs changed, always rebuild
     if (currentInputsHash !== entry.inputsHash) {
@@ -258,6 +264,7 @@ export async function shouldRebuildPage(
  * @param page - The page model
  * @param config - Stati configuration
  * @param renderedAt - When the page was rendered
+ * @param renderInputsHash - Optional hash of asset URLs and injection settings
  * @returns New cache entry
  *
  * @example
@@ -269,6 +276,7 @@ export async function createCacheEntry(
   page: PageModel,
   config: StatiConfig,
   renderedAt: Date,
+  renderInputsHash?: string,
 ): Promise<CacheEntry> {
   const timings: Record<string, number> = {};
   let start = performance.now();
@@ -298,7 +306,7 @@ export async function createCacheEntry(
   }
   timings.depsHashes = performance.now() - start;
 
-  const inputsHash = computeInputsHash(contentHash, depsHashes);
+  const inputsHash = computeInputsHash(contentHash, depsHashes, renderInputsHash);
 
   // Extract tags from front matter
   let tags: string[] = [];
@@ -414,6 +422,7 @@ async function hasTemplateStructureChanged(entry: CacheEntry): Promise<boolean> 
  * @param config - Stati configuration
  * @param renderedAt - When the page was rendered
  * @param fastUpdate - If true, skip expensive dep tracking (dev mode optimization)
+ * @param renderInputsHash - Optional hash of asset URLs and injection settings
  * @returns Updated cache entry
  *
  * @example
@@ -427,6 +436,7 @@ export async function updateCacheEntry(
   config: StatiConfig,
   renderedAt: Date,
   fastUpdate = false,
+  renderInputsHash?: string,
 ): Promise<CacheEntry> {
   // In fast update mode (dev), reuse existing deps to avoid expensive tracking
   if (fastUpdate && entry.deps.length > 0) {
@@ -452,7 +462,7 @@ export async function updateCacheEntry(
         }
       }
 
-      const inputsHash = computeInputsHash(contentHash, depsHashes);
+      const inputsHash = computeInputsHash(contentHash, depsHashes, renderInputsHash);
 
       return {
         ...entry,
@@ -463,7 +473,7 @@ export async function updateCacheEntry(
   }
 
   // Full update - create new entry and preserve original publishedAt
-  const newEntry = await createCacheEntry(page, config, renderedAt);
+  const newEntry = await createCacheEntry(page, config, renderedAt, renderInputsHash);
 
   // Preserve original publishedAt if no new one is specified
   if (!newEntry.publishedAt && entry.publishedAt) {

@@ -250,6 +250,21 @@ describe('Hash Utilities', () => {
 
       expect(hash1).not.toBe(hash2);
     });
+
+    it('should invalidate legacy input hashes when render inputs are supplied', () => {
+      const legacyHash = computeInputsHash('content', ['template']);
+      const renderHash = computeContentHash('', { bundlePaths: [] });
+      expect(computeInputsHash('content', ['template'], renderHash)).not.toBe(legacyHash);
+      expect(computeInputsHash('content', ['template'], undefined)).toBe(legacyHash);
+    });
+
+    it('should include bundle URL order in render input hashes', () => {
+      const first = computeContentHash('', { bundlePaths: ['/first.js', '/second.js'] });
+      const reversed = computeContentHash('', { bundlePaths: ['/second.js', '/first.js'] });
+      expect(computeInputsHash('content', ['template'], first)).not.toBe(
+        computeInputsHash('content', ['template'], reversed),
+      );
+    });
   });
 
   describe('computeNavigationHash', () => {
