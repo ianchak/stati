@@ -14,15 +14,16 @@ explicitly asked. Stati is a TypeScript-first static site generator:
 Read **[Eta and components](./references/eta.md) before changing any template**.
 Read the other references that match the work; do not load everything by default.
 
-| Work                                                   | Required reference                                        |
-| ------------------------------------------------------ | --------------------------------------------------------- |
-| New site, commands, dev/preview, deployment, failures  | [Workflow and operations](./references/workflow.md)       |
-| Markdown, frontmatter, URLs, navigation, listings      | [Content and routing](./references/content.md)            |
-| Layouts, partials, props, filters, HTML attributes     | [Eta and components](./references/eta.md)                 |
-| Configuration, CSS, static assets, client bundles      | [Configuration and assets](./references/configuration.md) |
-| SEO, search, sitemap, robots, RSS, hooks, ISG, metrics | [Features and lifecycle](./references/features.md)        |
-| Complete starter and reusable patterns                 | [Recipes](./references/recipes.md)                        |
-| Official docs, source, tests, version discrepancies    | [Resource directory](./references/resources.md)           |
+| Work                                                   | Required reference                                         |
+| ------------------------------------------------------ | ---------------------------------------------------------- |
+| Installing, discovering, or invoking this skill        | [Installation and discovery](./references/installation.md) |
+| New site, commands, dev/preview, deployment, failures  | [Workflow and operations](./references/workflow.md)        |
+| Markdown, frontmatter, URLs, navigation, listings      | [Content and routing](./references/content.md)             |
+| Layouts, partials, props, filters, HTML attributes     | [Eta and components](./references/eta.md)                  |
+| Configuration, CSS, static assets, client bundles      | [Configuration and assets](./references/configuration.md)  |
+| SEO, search, sitemap, robots, RSS, hooks, ISG, metrics | [Features and lifecycle](./references/features.md)         |
+| Complete starter and reusable patterns                 | [Recipes](./references/recipes.md)                         |
+| Official docs, source, tests, version discrepancies    | [Resource directory](./references/resources.md)            |
 
 ## Workflow
 
@@ -101,12 +102,24 @@ Read the other references that match the work; do not load everything by default
 
 ## Portable use and maintenance
 
-Copy this **entire folder**, including references and assets, to a site's
-`.github/skills/stati/`. Compatible agents may instead use `.agents/skills/stati/`,
-`.claude/skills/stati/`, or their personal skill directory. Keep the folder named
-`stati`, matching frontmatter. Do not install duplicate copies in the same agent's
-discovery paths. Tool names are intentionally not hardcoded: use the host agent's
-file, shell, browser, and documentation tools.
+Copy this **entire folder**, including references, assets, scripts, and license,
+to the directory your **agent application** discovers:
+
+- **Claude Code (terminal or its VS Code extension):** `.claude/skills/stati/`.
+  Claude Code does not normally discover this repository's `.github/skills/`
+  directory as native project skills.
+- **GitHub Copilot in VS Code:** `.github/skills/stati/` or
+  `.claude/skills/stati/`. Using a Claude model in Copilot does not change the
+  host application's discovery rules.
+- For both of these applications, prefer **one copy** in `.claude/skills/stati/`.
+  Other agents may use `.agents/skills/`; verify their documented locations.
+
+Keep the folder named `stati`, matching frontmatter. Discovery makes the skill
+available, but does not guarantee automatic invocation for every relevant
+request. See [installation and discovery](./references/installation.md) for
+verification, explicit invocation, and an optional project instruction.
+Tool names are intentionally not hardcoded: use the host agent's file, shell,
+browser, and documentation tools.
 
 The bundled [starter](./assets/starter/) is a small plain-CSS authoring example,
 not a replacement for `create-stati`'s styling installers.
