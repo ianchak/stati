@@ -84,6 +84,21 @@ interface StatiConfig {
 
 ### Site Configuration
 
+Import `SiteConfig` from `@stati/core` or `@stati/core/types` to type the `site`
+metadata separately from the full `StatiConfig`:
+
+```typescript
+import { defineConfig } from '@stati/core';
+import type { SiteConfig } from '@stati/core';
+
+const site: SiteConfig = {
+  title: 'My Site',
+  baseUrl: 'https://example.com',
+};
+
+export default defineConfig({ site });
+```
+
 ```typescript
 interface SiteConfig {
   /** The site's title, used in templates and metadata (required) */
@@ -501,6 +516,7 @@ export { build, createDevServer, createPreviewServer, invalidate } from '@stati/
 
 // Configuration types
 export type {
+  SiteConfig,
   StatiConfig,
   PageModel,
   FrontMatter,
@@ -535,11 +551,7 @@ export type {
 } from '@stati/core';
 
 // RSS types
-export type {
-  RSSConfig,
-  RSSFeedConfig,
-  RSSGenerationResult,
-} from '@stati/core';
+export type { RSSConfig, RSSFeedConfig, RSSGenerationResult } from '@stati/core';
 ```
 
 Note: Types like `TemplateContext`, `CollectionData`, `StatiAssets`, `TocEntry`, and `CacheEntry` are used internally by the framework and are not exported from `@stati/core`. If you need these types for advanced use cases, they can be found in `packages/core/src/types/` but are not part of the public API.
