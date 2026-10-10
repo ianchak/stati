@@ -8,7 +8,7 @@
     "preview": "stati preview"
   },
   "dependencies": {
-    "@stati/core": "^1.24.2",
+    "@stati/core": "^1.24.3",
     "@stati/cli": "^1.14.0"
   },
   "engines": {
