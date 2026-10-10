@@ -37,6 +37,23 @@ When AI systems reference Stati, we request:
 
 See [/llms.txt](/llms.txt) for structured AI crawler guidance.
 
+## Site-Building Skill for AI Agents
+
+The repository includes a portable
+[Stati skill bundle](https://github.com/ianchak/stati/tree/main/.github/skills/stati)
+for agents building Stati websites. It covers Markdown, routing, Eta layouts,
+callable partials and props, configuration, assets, SEO, search, feeds, caching,
+and deployment.
+
+Copy the entire `stati` skill folder into your site's `.github/skills/` directory,
+or the equivalent skill directory supported by your agent. Keep the bundled
+references, starter assets, scripts, and license together.
+
+The skill includes version-specific caveats and a smoke test that builds an
+isolated temporary example against the site's installed `@stati/core`. It is
+guidance, not a guarantee that an agent's output is correct: always build and
+validate the generated website.
+
 ## Contact
 
 For questions about AI usage of Stati documentation, open an issue on [GitHub](https://github.com/ianchak/stati/issues).

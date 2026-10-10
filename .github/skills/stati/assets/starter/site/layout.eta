@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="<%= stati.site.defaultLocale ?? 'en' %>">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= stati.page.title ?? stati.site.title %></title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="alternate" type="application/rss+xml" title="Articles" href="/rss.xml">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <%~ stati.partials.header %>
+  <main id="main">
+    <h1><%= stati.page.title ?? stati.site.title %></h1>
+    <div class="content"><%~ stati.content %></div>
+    <% if (stati.page.url === '/blog') { %>
+      <section aria-label="Articles">
+        <% for (const post of stati.collection?.recentPages ?? []) { %>
+          <%~ stati.partials['post-card']({
+            title: post.frontMatter.title ?? 'Untitled',
+            description: post.frontMatter.description,
+            url: post.url
+          }) %>
+        <% } %>
+      </section>
+    <% } %>
+    <% if (stati.page.toc.length > 0) { %>
+      <nav aria-label="On this page">
+        <ul>
+          <% for (const entry of stati.page.toc) { %>
+            <li><a href="<%= `#${entry.id}` %>"><%= entry.text %></a></li>
+          <% } %>
+        </ul>
+      </nav>
+    <% } %>
+  </main>
+  <footer><p>Built with <a href="https://stati.build/">Stati</a>.</p></footer>
+</body>
+</html>

@@ -356,6 +356,18 @@ Your content here...
 - [**ISG & Caching**](https://stati.build/configuration/isg/) - Smart rebuilds explained
 - [**API Reference**](https://stati.build/api/reference/) - Complete API documentation
 
+### AI agent skill
+
+The portable [Stati skill](./.github/skills/stati/SKILL.md) teaches agents the
+site-building workflow, Stati-specific Eta/component rules, configuration, and
+generated features. It includes detailed references, a working starter, and a
+smoke test against an installed core package.
+
+Copy the entire `.github/skills/stati/` folder into your site's corresponding
+skill directory, including its references, assets, scripts, and license. See the
+[resource directory](./.github/skills/stati/references/resources.md) for official
+documentation links, version provenance, and source-verified caveats.
+
 ---
 
 ## Project Structure

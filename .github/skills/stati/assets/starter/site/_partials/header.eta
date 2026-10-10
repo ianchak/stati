@@ -1,0 +1,15 @@
+<header>
+  <a href="/"><%= stati.site.title %></a>
+  <nav aria-label="Main navigation">
+    <ul>
+      <% for (const node of stati.nav.getTree()) { %>
+        <li>
+          <a href="<%= node.url %>"
+            <% if (node.url === stati.page.url) { %>aria-current="page"<% } %>>
+            <%= node.title %>
+          </a>
+        </li>
+      <% } %>
+    </ul>
+  </nav>
+</header>
