@@ -29,11 +29,13 @@ Agent support (the `create-stati --agent-skill` skill bundle, `llms.txt`, the AI
 ## Operating Context
 
 - Built from the monorepo at `docs-site/`; content in `site/` (Markdown + Eta), client TypeScript in `src/`, static assets in `public/`.
-- Content sections: Getting Started, Core Concepts, Configuration, CLI, API Reference, Advanced, Examples, FAQ, Glossary, Information (AI & Content Policy). The site carries the full reference, so evaluators can judge depth before committing.
-- Homepage (`layout: home`) has a hero, feature list, tabbed highlights (Markdown, Routing, Templates, TypeScript, ISG), and a quick-start command.
+- Content sections, in sidebar order: Getting Started, Core Concepts, Configuration, CLI, API, Examples, Advanced, then FAQ, Glossary and AI & Content Policy. The header uses the same section names. The site carries the full reference, so evaluators can judge depth before committing. A docs-shell 404 page (`site/404.md`) catches dead links; it is excluded from search, the sitemap and RSS.
+- Homepage (`layout: home`, content in `site/index.md` front matter) runs: hero (positioning line, `npx create-stati` command with Copy, spec line, a `defineConfig` panel); a 25-feature inventory in four groups (Write, Build, Publish, Develop), each linking into the reference; three claims proven in code (small to learn, typed end to end, quick to rebuild, the last with an illustrative ISG rebuild log); this site's own config as proof; and a closing start section with the three commands from nothing to a running dev server.
 - Built-in Stati features in use: search index (client-side FlexSearch UI), sitemap, robots.txt, RSS feed (`feed.xml`), SEO structured data, ISG.
 - Deployed to Netlify at https://stati.build. Source: https://github.com/ianchak/stati. Packages: `@stati/core`, `@stati/cli`, `create-stati`.
-- Requires Node 22+ and npm 11.5.1+.
+- Stati requires Node 22+ and works with npm, pnpm, yarn or bun. npm 11.5.1+ is a maintainer requirement for OIDC publishing only, not a user prerequisite.
+- `create-stati` currently offers only the `blank` template and defaults TypeScript to off, so a default project gets `stati.config.js`; with TypeScript on it gets `stati.config.ts`. Docs must describe this as it is.
+- Netlify serves `404.html` for missing URLs; Stati's own `dev` and `preview` servers do not yet serve a custom 404 page.
 
 ## Capabilities and Constraints
 
@@ -52,7 +54,7 @@ Agent support (the `create-stati --agent-skill` skill bundle, `llms.txt`, the AI
 
 ## Evidence on Hand
 
-- Real: the documentation content itself, runnable code examples, the four starter templates (`examples/blank`, `blog`, `docs`, `news`), a build-metrics screenshot (`public/images/stati_build_metrics.jpg`), npm packages and CI/coverage/download badges in the root README.
+- Real: the documentation content itself, runnable code examples, the `blank` starter that `create-stati` scaffolds plus three example sites in the repo (`examples/blog`, `docs`, `news`), a build-metrics screenshot (`public/images/stati_build_metrics.jpg`), npm packages and CI/coverage/download badges in the root README.
 - Absent: no testimonials, named users or companies, adoption counts, case studies, press, or comparative benchmarks against other SSGs. Future work must not fabricate any of these; add them only when the maintainer supplies real ones.
 
 ## Product Principles
