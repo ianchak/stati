@@ -19,7 +19,9 @@ The interactive wizard will guide you through:
 1. **Project name** - What to call your site
 2. **Template** - Starting point (currently: blank)
 3. **CSS solution** - Plain CSS, Sass, or Tailwind
-4. **Git initialization** - Optional repository setup
+4. **TypeScript** - Optional TypeScript support
+5. **Agent skill** - Optional Stati skill for AI coding assistants
+6. **Git initialization** - Optional repository setup
 
 In less than 2 minutes, you'll have a complete static site ready to customize.
 
@@ -41,6 +43,8 @@ npx create-stati my-site --template=blank --styling=tailwind --git
 - `--no-git` - Skip git initialization (default: initializes Git)
 - `--no-install` - Skip dependency installation (default: installs dependencies)
 - `--package-manager <pm>` - Package manager to use (`npm` | `yarn` | `pnpm` | `bun`)
+- `--agent-skill [target]` - Install the Stati agent skill (`claude` | `github` | `agents`, default: `claude`)
+- `--no-agent-skill` - Skip agent skill installation
 - `--help`, `-h` - Show help message
 
 **Examples:**
@@ -57,6 +61,9 @@ npx create-stati my-portfolio --styling=tailwind --no-git --no-install
 
 # Sass with pnpm as package manager
 npx create-stati my-docs --styling=sass --package-manager=pnpm
+
+# Install the Stati agent skill for Claude Code / Copilot
+npx create-stati my-site --agent-skill
 
 # Full control with all options
 npx create-stati my-site --typescript --styling=tailwind --no-git --no-install --package-manager=yarn
@@ -78,6 +85,11 @@ When you run `npx create-stati`, you'll see a friendly wizard:
     Sass/SCSS
     Tailwind CSS
 ? Enable TypeScript support? (y/N)
+? Install the Stati agent skill for AI coding assistants? (Use arrow keys)
+  > .claude/skills (Claude Code, Copilot in VS Code)
+    .github/skills (GitHub Copilot)
+    .agents/skills
+    No
 ? Initialize a git repository? (Y/n)
 ? Install dependencies? (Y/n)
 ? Which package manager would you like to use? (Use arrow keys)
@@ -120,6 +132,20 @@ The bundle path is also available via `stati.assets.bundlePath` for advanced use
   <% } %>
 </head>
 ```
+
+---
+
+## Agent Skill
+
+create-stati can copy the [Stati agent skill](https://github.com/ianchak/stati/tree/main/.claude/skills/stati) into your project so AI coding assistants follow Stati's conventions (Eta templates, partials, configuration, and more).
+
+| Target             | Installed to            | Discovered by                          |
+| ------------------ | ----------------------- | -------------------------------------- |
+| `claude` (default) | `.claude/skills/stati/` | Claude Code, GitHub Copilot in VS Code |
+| `github`           | `.github/skills/stati/` | GitHub Copilot                         |
+| `agents`           | `.agents/skills/stati/` | Tools using the `.agents` convention   |
+
+In interactive mode you're asked where to install it. In non-interactive mode it is only installed when `--agent-skill` is passed. Invoke it in Claude Code with `/stati`.
 
 ---
 
@@ -386,4 +412,3 @@ You can customize this file to add features like SEO, sitemap, ISG caching, and 
 ## License
 
 MIT © [Imre Csige](https://github.com/ianchak)
-

@@ -5,6 +5,13 @@ import { mkdtemp, rm, access, readFile, writeFile, mkdir } from 'node:fs/promise
 import { createSite, ProjectScaffolder, detectAvailablePackageManagers } from '../src/create.js';
 import type { CreateOptions } from '../src/create.js';
 import { ExampleManager } from '../src/examples.js';
+import { copyAgentSkill } from '../src/agent-skill.js';
+
+// Wrap the real implementation so individual tests can force a failure
+vi.mock('../src/agent-skill.js', async (importOriginal) => {
+  const actual = (await importOriginal()) as typeof import('../src/agent-skill.js');
+  return { ...actual, copyAgentSkill: vi.fn(actual.copyAgentSkill) };
+});
 
 describe('create-stati scaffolding', () => {
   let tempDir: string;
@@ -51,6 +58,52 @@ describe('create-stati scaffolding', () => {
       expect(packageJson.name).toBe('test-blank');
       expect(packageJson.devDependencies).toHaveProperty('@stati/cli');
       expect(packageJson.devDependencies).toHaveProperty('@stati/core');
+    });
+
+    it('should install the agent skill when requested', async () => {
+      const projectDir = join(tempDir, 'test-skill');
+      const result = await createSite({
+        projectName: 'test-skill',
+        template: 'blank',
+        styling: 'css',
+        gitInit: false,
+        agentSkill: 'claude',
+        dir: projectDir,
+      });
+
+      expect(result.agentSkillDir).toBe('.claude/skills/stati');
+      await expect(
+        access(join(result.targetDir, '.claude', 'skills', 'stati', 'SKILL.md')),
+      ).resolves.not.toThrow();
+    });
+
+    it('should still create the site but not report the agent skill when copying fails', async () => {
+      vi.mocked(copyAgentSkill).mockRejectedValueOnce(new Error('skill missing'));
+      const projectDir = join(tempDir, 'test-skill-fail');
+      const result = await createSite({
+        projectName: 'test-skill-fail',
+        template: 'blank',
+        styling: 'css',
+        gitInit: false,
+        agentSkill: 'claude',
+        dir: projectDir,
+      });
+
+      expect(result.agentSkillDir).toBeUndefined();
+      await expect(access(join(result.targetDir, 'package.json'))).resolves.not.toThrow();
+    });
+
+    it('should not install the agent skill by default', async () => {
+      const projectDir = join(tempDir, 'test-no-skill');
+      const result = await createSite({
+        projectName: 'test-no-skill',
+        template: 'blank',
+        styling: 'css',
+        gitInit: false,
+        dir: projectDir,
+      });
+
+      await expect(access(join(result.targetDir, '.claude'))).rejects.toThrow();
     });
 
     it('should create a project with Sass styling', async () => {
