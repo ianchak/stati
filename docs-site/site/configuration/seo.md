@@ -16,7 +16,7 @@ seo:
     "proficiencyLevel": "Intermediate"
 ---
 
-# SEO Configuration
+# SEO & Sitemap
 
 Stati provides comprehensive SEO support with automatic metadata generation, sitemap creation, and robots.txt configuration. The SEO features are designed to work automatically with minimal configuration while offering granular control when needed.
 

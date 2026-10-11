@@ -16,7 +16,7 @@ seo:
     "proficiencyLevel": "Beginner"
 ---
 
-# Core Concepts in Stati
+# Core Concepts Overview
 
 Stati is built on several key concepts that work together to create a powerful yet simple static site generation experience. Understanding these concepts will help you make the most of Stati's features.
 

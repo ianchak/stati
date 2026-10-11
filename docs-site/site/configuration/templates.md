@@ -4,7 +4,7 @@ description: 'Configure custom template filters for the Eta template engine.'
 order: 3
 ---
 
-# Template Configuration
+# Template Settings
 
 Stati uses the [Eta template engine](https://eta.js.org/) to process templates and layouts. Most Eta settings are hardcoded for reliability, but you can define custom filters to extend template functionality.
 

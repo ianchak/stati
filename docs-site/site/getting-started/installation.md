@@ -9,7 +9,7 @@ order: 2
 ## Prerequisites
 
 - **Node.js** 22.0.0 or higher
-- **npm** 11.5.1 or higher (or yarn/pnpm equivalent)
+- **A package manager**: npm, pnpm, yarn or bun
 
 ## Interactive Scaffolder
 

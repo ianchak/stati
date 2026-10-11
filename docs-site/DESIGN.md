@@ -92,6 +92,7 @@ spacing:
   page: "80rem"
   shell: "96rem"
   prose: "72ch"
+  measure: "37rem"
   section: "5rem (7rem from 1024px)"
   gutter: "1rem (1.5rem from 640px)"
 components:
@@ -135,7 +136,7 @@ components:
     backgroundColor: "{colors.raised}"
     textColor: "{colors.muted}"
     rounded: "{rounded.md}"
-    height: "36px"
+    height: "36px (44px below 640px)"
     width: "224px"
   search-dialog:
     backgroundColor: "{colors.canvas}"
@@ -214,8 +215,9 @@ Code tokens use a restrained multi-hue set tuned for the sunken surface, each at
 - **Display** (800, clamp(2.4rem → 4.6rem), 1.02, stretch 116%): the homepage H1 only.
 - **Headline** (800, clamp(2rem → 3rem), 1.05, stretch 115%): homepage section headings. Docs page H1 (2.25rem, 2.75rem on desktop, 1.1) and H2 (1.5rem, ruled above with a hairline) use the same face at stretch 108%.
 - **Title** (700, 1.5rem, stretch 110%): claim headings on the homepage. Docs H3/H4 drop to Inter semibold (1.125rem / 1rem).
-- **Body** (400, 16px, 28px leading): prose in muted, capped at 72ch. Ledes run 18px on 32px.
-- **Label** (600, 14px): buttons, inventory group heads, footer column heads; sidebar section toggles at 13px.
+- **Body** (400, 16px, 28px leading): prose in muted. Running text (paragraphs and lists) is capped at 37rem, about 75 characters of Inter; code, tables, callouts and images use the full 72ch column. Ledes run 18px on 32px.
+- **Label** (600, 14px): buttons (including the hero Copy), inventory group heads, footer column heads.
+- **Small UI** (13px): sidebar section toggles, the "On this page" label (600, ink, sentence case) and TOC links, and search result snippets.
 - **Code** (Fira Code 400, 13px / 14px from 640px, 1.65): code panels and prose blocks.
 - **Data** (Fira Code 400, 12px): measured facts such as the hero spec line, the feature count, filename bars, the rebuild log.
 
@@ -226,7 +228,7 @@ Code tokens use a restrained multi-hue set tuned for the sunken surface, each at
 
 ## Layout
 
-A sticky 4rem header over a centered page. Marketing sections sit in an 80rem container; the docs shell widens to 96rem with a 16rem sticky sidebar (from 1024px), a prose column capped at 72ch, and a 15rem sticky "On this page" TOC (from 1280px). Gutters are 1rem, 1.5rem from 640px; docs content pads to 3rem on desktop.
+A sticky 4rem header over a centered page. Marketing sections sit in an 80rem container; the docs shell widens to 96rem with a 16rem sticky sidebar (from 1024px), a 72ch prose column whose running text holds a 37rem measure, and a 15rem sticky "On this page" TOC (from 1280px). Gutters are 1rem, 1.5rem from 640px; docs content pads to 3rem on desktop.
 
 Homepage sections stack full-bleed, separated by hairlines, with 5rem vertical padding (7rem on desktop; the closing call to action uses 6-8rem). Two-column compositions use asymmetric fractional grids (0.9fr/1.1fr in the hero, 5fr/7fr in the claims and dogfood rows) and collapse to one column below 1024px; claim text columns stick at 6rem while panels scroll. The feature inventory is a typographic index of 1, 2, then 4 columns (640px, 1280px) rather than cards. Anchors clear the header with 5.5rem scroll padding.
 
@@ -252,11 +254,13 @@ Compact, flat and confident.
 - **Shape:** gently rounded (8px).
 - **Primary:** accent fill, on-accent text, 14px semibold, 10px 16px padding; hover deepens to accent-ink. Used for the Copy action in the command line; one per view.
 - **Secondary:** canvas fill, 1px line-strong border, ink text; hover darkens the border to ink.
-- **Ghost / text:** muted text that turns ink on hover (GitHub link, icon buttons with a raised hover fill).
+- **Ghost / text:** muted text that turns ink on hover (GitHub link, icon buttons with a raised hover fill). Header icon buttons are 44px touch targets below 1024px and 36px above.
 - **Focus:** the global 2px accent outline at 2px offset, keyboard focus only. Colors transition in 150ms.
 
 ### Command Line
 The install command is the hero's primary action: a raised strip with a strong hairline, a faint `$` prompt, the command in 15px mono, and a compact primary Copy button, wrapped in corner ticks. Copy confirms with a "Copied" label in accent-ink, announced to screen readers.
+
+The closing start section uses a **command list**: one ticked code-panel frame holding the three commands from nothing to a running site (`npx create-stati my-site`, `cd my-site`, `npm run dev`), one per hairline-divided row, each with its own ghost Copy button. They are copied separately because pasting them together would feed the later lines into the scaffolder's prompts.
 
 ### Code Panel (signature)
 A `<figure>` framed in a hairline on sunken, with a filename bar (12px mono, faint) and a ghost Copy button separated by a hairline. Code is highlighted at build time by the `highlight` Eta filter, so no highlighter ships to the browser. In prose, code blocks use the same surface, radius and palette, with a Copy button that appears on hover or focus (always visible on touch).

@@ -2,11 +2,13 @@
 /**
  * Start Section (Homepage)
  *
- * Closing call to action: the install command again, plus next steps.
+ * Closing call to action: the three commands from nothing to a running dev
+ * server, each copied on its own (pasting all three at once would feed the
+ * later lines into the scaffolder's prompts), plus next steps.
  */
 
 // Pre-rendered on every page: render nothing where the homepage data is absent
-if (!stati.page.start || !stati.page.hero) { %><% return; } %>
+if (!stati.page.start) { %><% return; } %>
 <%
 const start = stati.page.start;
 %>
@@ -14,9 +16,16 @@ const start = stati.page.start;
     <div class="relative mx-auto max-w-2xl px-4 py-24 text-center sm:px-6 lg:py-32">
         <h2 id="start-title" class="font-display text-[clamp(2rem,1.4rem+2vw,3rem)] font-extrabold leading-[1.05] [font-stretch:115%]"><%= start.title %></h2>
         <p class="mx-auto mt-4 max-w-lg leading-7 text-muted"><%= start.text %></p>
-        <div class="mx-auto mt-9 max-w-sm text-left">
-            <%~ stati.partials.commandLine({ id: 'start-command', command: stati.page.hero.command }) %>
-        </div>
+        <ol class="ticks code-panel mx-auto mt-9 max-w-md divide-y divide-line text-left font-mono text-[15px]" aria-label="Commands to create and run a site">
+            <% start.commands.forEach(command => { %>
+            <li class="flex items-center gap-3 py-1.5 pl-4 pr-2">
+                <span class="select-none text-faint" aria-hidden="true">$</span>
+                <code class="flex-1 truncate text-ink"><%= command %></code>
+                <button type="button" class="copy-button" data-copy="<%= command %>" aria-label="<%= `Copy command: ${command}` %>"><span data-copy-label>Copy</span></button>
+            </li>
+            <% }) %>
+        </ol>
+        <p class="mt-4 text-sm text-muted"><%= start.result %></p>
         <ul class="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
             <% start.links.forEach(link => { %>
             <li><a href="<%= link.href %>" class="inline-flex items-center gap-1 font-medium text-accent-ink hover:underline hover:underline-offset-4"><%= link.text %><%~ stati.partials.icon({ name: 'arrow-right', size: 'xs' }) %></a></li>

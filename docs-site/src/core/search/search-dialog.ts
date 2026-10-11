@@ -107,6 +107,11 @@ function handleInputKeys(event: KeyboardEvent): void {
   if (!elements) return;
 
   switch (event.key) {
+    // A search input clears itself on the first Escape; close instead, as the hint says
+    case 'Escape':
+      event.preventDefault();
+      elements.dialog.close();
+      break;
     case 'ArrowDown':
       event.preventDefault();
       setActive(Math.min(activeIndex + 1, results.length - 1));

@@ -4,26 +4,26 @@ description: 'Stati is a TypeScript-first static site generator: Markdown and Et
 layout: home
 seo:
   structuredData:
-    "@context": "https://schema.org"
-    "@type": "SoftwareApplication"
-    "name": "Stati"
-    "alternateName": "Stati Static Site Generator"
-    "applicationCategory": "DeveloperApplication"
-    "applicationSubCategory": "Static Site Generator"
-    "description": "Stati is a TypeScript-first static site generator with Markdown and Eta templates, typed configuration, esbuild client bundles, and Incremental Static Generation."
-    "operatingSystem": "Cross-platform (Node.js 22+)"
-    "programmingLanguage": "TypeScript"
-    "url": "https://stati.build/"
-    "sameAs":
-      - "https://github.com/ianchak/stati"
-      - "https://www.npmjs.com/package/@stati/core"
-      - "https://www.npmjs.com/package/@stati/cli"
-      - "https://www.npmjs.com/package/create-stati"
-    "offers":
-      "@type": "Offer"
-      "price": "0"
-      "priceCurrency": "USD"
-    "license": "https://opensource.org/licenses/MIT"
+    '@context': 'https://schema.org'
+    '@type': 'SoftwareApplication'
+    'name': 'Stati'
+    'alternateName': 'Stati Static Site Generator'
+    'applicationCategory': 'DeveloperApplication'
+    'applicationSubCategory': 'Static Site Generator'
+    'description': 'Stati is a TypeScript-first static site generator with Markdown and Eta templates, typed configuration, esbuild client bundles, and Incremental Static Generation.'
+    'operatingSystem': 'Cross-platform (Node.js 22+)'
+    'programmingLanguage': 'TypeScript'
+    'url': 'https://stati.build/'
+    'sameAs':
+      - 'https://github.com/ianchak/stati'
+      - 'https://www.npmjs.com/package/@stati/core'
+      - 'https://www.npmjs.com/package/@stati/cli'
+      - 'https://www.npmjs.com/package/create-stati'
+    'offers':
+      '@type': 'Offer'
+      'price': '0'
+      'priceCurrency': 'USD'
+    'license': 'https://opensource.org/licenses/MIT'
 
 hero:
   title: 'Lightweight static sites. Everything built in.'
@@ -54,37 +54,137 @@ inventory:
   groups:
     - title: 'Write'
       items:
-        - { name: 'Markdown pipeline', text: 'markdown-it with plugins, heading anchors and a generated table of contents.', href: '/core-concepts/markdown' }
-        - { name: 'Front matter', text: 'Titles, tags, drafts, layouts and permalinks, per page.', href: '/core-concepts/markdown' }
-        - { name: 'Eta layouts', text: 'Layouts inherit by folder, with no wiring.', href: '/core-concepts/templates' }
-        - { name: 'Callable partials', text: 'Reusable components that take props.', href: '/api/templates' }
-        - { name: 'Filesystem routing', text: 'Folders become URLs; permalinks override.', href: '/core-concepts/routing' }
-        - { name: 'Navigation helpers', text: 'Menus and breadcrumbs from the page tree.', href: '/api/navigation' }
-        - { name: 'Custom filters', text: 'Your own template helpers, defined in config.', href: '/configuration/templates' }
+        - {
+            name: 'Markdown pipeline',
+            text: 'markdown-it with plugins, heading anchors and a generated table of contents.',
+            href: '/core-concepts/markdown',
+          }
+        - {
+            name: 'Front matter',
+            text: 'Titles, tags, drafts, layouts and permalinks, per page.',
+            href: '/core-concepts/markdown',
+          }
+        - {
+            name: 'Eta layouts',
+            text: 'Layouts inherit by folder, with no wiring.',
+            href: '/core-concepts/templates',
+          }
+        - {
+            name: 'Callable partials',
+            text: 'Reusable components that take props.',
+            href: '/api/templates',
+          }
+        - {
+            name: 'Filesystem routing',
+            text: 'Folders become URLs; permalinks override.',
+            href: '/core-concepts/routing',
+          }
+        - {
+            name: 'Navigation helpers',
+            text: 'Menus and breadcrumbs from the page tree.',
+            href: '/api/navigation',
+          }
+        - {
+            name: 'Custom filters',
+            text: 'Your own template helpers, defined in config.',
+            href: '/configuration/templates',
+          }
     - title: 'Build'
       items:
-        - { name: 'Typed configuration', text: 'defineConfig() with full editor completion.', href: '/configuration/file' }
-        - { name: 'TypeScript bundles', text: 'esbuild-compiled client code, injected per page.', href: '/configuration/typescript' }
-        - { name: 'Incremental Static Generation', text: 'A build cache with TTLs and age-based aging rules.', href: '/configuration/isg' }
-        - { name: 'Cache invalidation', text: 'Clear by tag, path or age from the CLI or API.', href: '/core-concepts/isg' }
-        - { name: 'Build hooks', text: 'Run code before and after the build or each page.', href: '/api/hooks' }
-        - { name: 'Tailwind or Sass', text: 'Pick plain CSS, Sass or Tailwind when you scaffold.', href: '/cli/scaffolder' }
-        - { name: 'Build metrics', text: 'Phase timings as JSON or an HTML report.', href: '/advanced/metrics' }
+        - {
+            name: 'Typed configuration',
+            text: 'defineConfig() with full editor completion.',
+            href: '/configuration/file',
+          }
+        - {
+            name: 'TypeScript bundles',
+            text: 'esbuild-compiled client code, injected per page.',
+            href: '/configuration/typescript',
+          }
+        - {
+            name: 'Incremental Static Generation',
+            text: 'A build cache with TTLs and age-based aging rules.',
+            href: '/configuration/isg',
+          }
+        - {
+            name: 'Cache invalidation',
+            text: 'Clear by tag, path or age from the CLI or API.',
+            href: '/core-concepts/isg',
+          }
+        - {
+            name: 'Build hooks',
+            text: 'Run code before and after the build or each page.',
+            href: '/api/hooks',
+          }
+        - {
+            name: 'Tailwind or Sass',
+            text: 'Pick plain CSS, Sass or Tailwind when you scaffold.',
+            href: '/cli/scaffolder',
+          }
+        - {
+            name: 'Build metrics',
+            text: 'Phase timings as JSON or an HTML report.',
+            href: '/advanced/metrics',
+          }
     - title: 'Publish'
       items:
-        - { name: 'Search index', text: 'A JSON index for client-side search, built with the site.', href: '/configuration/search' }
-        - { name: 'Sitemap', text: 'Priorities, filters and sitemap indexes.', href: '/configuration/seo' }
-        - { name: 'robots.txt', text: 'Per-agent rules generated from config.', href: '/configuration/seo' }
-        - { name: 'RSS feeds', text: 'One or many feeds with custom item mapping.', href: '/configuration/rss' }
-        - { name: 'SEO metadata', text: 'Meta tags, Open Graph and JSON-LD, injected for you.', href: '/configuration/seo' }
-        - { name: 'Static assets', text: 'Everything in public/ copied to the output.', href: '/core-concepts/static-assets' }
+        - {
+            name: 'Search index',
+            text: 'A JSON index for client-side search, built with the site.',
+            href: '/configuration/search',
+          }
+        - {
+            name: 'Sitemap',
+            text: 'Priorities, filters and sitemap indexes.',
+            href: '/configuration/seo',
+          }
+        - {
+            name: 'robots.txt',
+            text: 'Per-agent rules generated from config.',
+            href: '/configuration/seo',
+          }
+        - {
+            name: 'RSS feeds',
+            text: 'One or many feeds with custom item mapping.',
+            href: '/configuration/rss',
+          }
+        - {
+            name: 'SEO metadata',
+            text: 'Meta tags, Open Graph and JSON-LD, injected for you.',
+            href: '/configuration/seo',
+          }
+        - {
+            name: 'Static assets',
+            text: 'Everything in public/ copied to the output.',
+            href: '/core-concepts/static-assets',
+          }
     - title: 'Develop'
       items:
-        - { name: 'Dev server', text: 'Live reload backed by incremental rebuilds.', href: '/cli/development' }
-        - { name: 'Error overlay', text: 'Template and build errors shown in the browser.', href: '/api/error-handling' }
-        - { name: 'Preview server', text: 'Serve the production build locally.', href: '/cli/commands' }
-        - { name: 'Scaffolder', text: 'npx create-stati sets up a working project.', href: '/cli/scaffolder' }
-        - { name: 'Agent skill', text: 'Teach Claude Code or Copilot to build with Stati.', href: '/cli/scaffolder' }
+        - {
+            name: 'Dev server',
+            text: 'Live reload backed by incremental rebuilds.',
+            href: '/cli/development',
+          }
+        - {
+            name: 'Error overlay',
+            text: 'Template and build errors shown in the browser.',
+            href: '/api/error-handling',
+          }
+        - {
+            name: 'Preview server',
+            text: 'Serve the production build locally.',
+            href: '/cli/commands',
+          }
+        - {
+            name: 'Scaffolder',
+            text: 'npx create-stati sets up a working project.',
+            href: '/cli/scaffolder',
+          }
+        - {
+            name: 'Agent skill',
+            text: 'Teach Claude Code or Copilot to build with Stati.',
+            href: '/cli/scaffolder',
+          }
 
 claims:
   title: 'Small to learn, typed end to end, quick to rebuild'
@@ -149,11 +249,13 @@ claims:
           code: |
             isg: {
               enabled: true,
-              ttlSeconds: 300,            // new articles: 5 minutes
+              // New articles: every 5 minutes
+              ttlSeconds: 300,
               maxAgeCapDays: 30,
               aging: [
-                { untilDays: 1, ttlSeconds: 3600 },   // day-old: hourly
-                { untilDays: 7, ttlSeconds: 86400 },  // week-old: daily
+                // Then hourly, then daily
+                { untilDays: 1, ttlSeconds: 3600 },
+                { untilDays: 7, ttlSeconds: 86400 },
               ],
             },
         - file: 'terminal'
@@ -167,13 +269,17 @@ claims:
           - { path: '/news/launch-day/', status: 'rebuilt', reason: 'invalidated by tag:news' }
           - { path: '/news/roadmap/', status: 'rebuilt', reason: 'invalidated by tag:news' }
           - { path: '/blog/2025-recap/', status: 'cached', reason: 'aged: cached for a day' }
-          - { path: '/docs/setup/', status: 'rebuilt', reason: 'layout.eta changed' }
+          - { path: '/docs/setup/', status: 'rebuilt', reason: 'docs/layout.eta changed' }
           - { path: '/about/', status: 'rebuilt', reason: 'TTL expired' }
 
 dogfood:
   title: 'This site is the demo'
   text: 'stati.build is built with Stati and nothing else. The search on this page, the sitemap, the RSS feed and the per-page script bundles all come from the config below.'
-  link: { text: 'View the source on GitHub', href: 'https://github.com/ianchak/stati/tree/main/docs-site' }
+  link:
+    {
+      text: 'View the source on GitHub',
+      href: 'https://github.com/ianchak/stati/tree/main/docs-site',
+    }
   file: 'docs-site/stati.config.ts (excerpt)'
   code: |
     typescript: {
@@ -209,7 +315,12 @@ dogfood:
 
 start:
   title: 'Start your first Stati site'
-  text: 'The scaffolder asks for a project name, CSS, Sass or Tailwind, and whether to use TypeScript, then installs dependencies and leaves you with a site that builds and runs.'
+  text: 'The scaffolder asks a few questions, from CSS, Sass or Tailwind to TypeScript and git, then installs dependencies. Accept the defaults and you are three commands from a running site.'
+  commands:
+    - 'npx create-stati my-site'
+    - 'cd my-site'
+    - 'npm run dev'
+  result: 'The dev server runs on localhost:3000 by default and reloads the page every time you make changes.'
   links:
     - { text: 'Quick Start', href: '/getting-started/quick-start' }
     - { text: 'Installation', href: '/getting-started/installation' }

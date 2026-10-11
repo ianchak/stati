@@ -34,8 +34,8 @@ const isCurrent = (item) => item.match.some((prefix) => url === prefix || url.st
         </nav>
 
         <div class="ml-auto flex items-center gap-1">
-            <button type="button" class="search-trigger flex h-9 items-center gap-2 rounded-md text-sm text-muted transition-colors duration-150 hover:text-ink sm:w-56 sm:border sm:border-line sm:bg-raised sm:px-3 sm:hover:border-line-strong" data-search-open aria-haspopup="dialog" aria-controls="search-dialog">
-                <%~ stati.partials.icon({ name: 'search', size: 'sm', class: 'mx-2.5 sm:mx-0' }) %>
+            <button type="button" class="search-trigger flex h-11 items-center gap-2 rounded-md text-sm text-muted transition-colors duration-150 hover:text-ink sm:h-9 sm:w-56 sm:border sm:border-line sm:bg-raised sm:px-3 sm:hover:border-line-strong" data-search-open aria-haspopup="dialog" aria-controls="search-dialog">
+                <%~ stati.partials.icon({ name: 'search', size: 'sm', class: 'mx-3.5 sm:mx-0' }) %>
                 <span class="sr-only sm:not-sr-only">Search docs</span>
                 <kbd class="ml-auto hidden rounded border border-line bg-canvas px-1.5 font-mono text-xs text-faint sm:inline">/</kbd>
             </button>

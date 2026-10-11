@@ -16,7 +16,7 @@ seo:
     "proficiencyLevel": "Beginner"
 ---
 
-# Getting Started with Stati
+# Introduction to Stati
 
 **Stati** is an open-source, TypeScript-first static site generator for documentation, blogs, and content-heavy websites. You write pages in Markdown and layouts in Eta templates; Stati turns them into plain static HTML.
 

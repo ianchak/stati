@@ -188,7 +188,7 @@
   }
 
   .icon-button {
-    @apply inline-flex h-9 w-9 items-center justify-center rounded-md text-muted transition-colors duration-150 hover:bg-raised hover:text-ink;
+    @apply inline-flex h-11 w-11 items-center justify-center rounded-md lg:h-9 lg:w-9 text-muted transition-colors duration-150 hover:bg-raised hover:text-ink;
   }
 
   /* Buttons */
@@ -268,6 +268,14 @@
     --tw-prose-th-borders: rgb(var(--line-strong));
     --tw-prose-td-borders: rgb(var(--line));
     @apply min-w-0 text-base leading-7;
+  }
+
+  /*
+   * Running text keeps a readable measure (about 75 characters of Inter)
+   * while code, tables, callouts and images use the full 72ch column.
+   */
+  .prose > :where(p, ul, ol, dl):not(:where(.not-prose)) {
+    max-width: 37rem;
   }
 
   .prose :where(h1, h2):not(:where(.not-prose *)) {

@@ -4,7 +4,7 @@ description: 'Learn how to configure Stati with the stati.config.js (or stati.co
 order: 1
 ---
 
-# Configuration (`stati.config.ts`)
+# Configuration File (`stati.config.ts`)
 
 Stati is designed to work great out of the box, but it's also highly configurable. The `stati.config.js` file (or `stati.config.ts` for TypeScript projects) is where you customize every aspect of your site's behavior, from basic metadata to advanced build optimizations.
 

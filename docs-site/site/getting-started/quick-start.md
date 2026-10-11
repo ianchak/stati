@@ -4,14 +4,24 @@ description: 'Get up and running with Stati in minutes.'
 order: 4
 ---
 
-# Quick Start Guide
+# Quick Start
 
-This guide walks you through creating your first Stati site from scratch: content, templates, styling, and a production build.
+This guide takes you from nothing to a running Stati site, then through the first changes you'll make: content, layout, styling, config and a production build.
+
+## The short version
+
+```bash
+npx create-stati my-first-site
+cd my-first-site
+npm run dev
+```
+
+Press Enter to accept each default; the scaffolder installs dependencies for you. `npm run dev` then serves the site at [http://localhost:3000](http://localhost:3000) and reloads the browser whenever you make changes. The steps below explain each command.
 
 ## Prerequisites
 
-- Node.js 22+
-- npm 11.5.1 or higher
+- Node.js 22 or higher
+- npm, pnpm, yarn or bun
 - A text editor (VS Code recommended)
 
 ## Step 1: Create a New Project
@@ -22,14 +32,16 @@ Use the Stati scaffolder to create a new project:
 npx create-stati my-first-site
 ```
 
-The scaffolder will prompt you for:
+The scaffolder asks, in order:
 
-- **Template** - Choose from available starters (blank is the default)
+- **Project name** - Skipped when you pass one, as above
+- **Template** - Blank, a minimal starter (the only template for now)
 - **CSS solution** - Plain CSS, Sass/SCSS, or Tailwind CSS
-- **TypeScript** - Enable TypeScript support for your project
-- **Git initialization** - Initialize a git repository (enabled by default)
-- **Install dependencies** - Run package installation automatically (enabled by default)
-- **Package manager** - Choose npm, yarn, pnpm, or bun (if multiple are available)
+- **TypeScript** - Off by default; turn it on for a typed `stati.config.ts` and client TypeScript bundles
+- **Agent skill** - Optionally install the Stati skill for Claude Code or GitHub Copilot
+- **Git** - Initialize a git repository (on by default)
+- **Install dependencies** - Run the install for you (on by default)
+- **Package manager** - npm, yarn, pnpm or bun, when more than one is installed
 
 Navigate to your new project:
 
@@ -46,7 +58,7 @@ Your new project will have this structure:
 ```text
 my-first-site/
 ├── package.json          # Project dependencies and scripts
-├── stati.config.js       # Stati configuration
+├── stati.config.js       # Stati configuration (stati.config.ts with TypeScript)
 ├── public/               # Static assets
 │   ├── favicon.svg
 │   └── styles.css
@@ -69,9 +81,13 @@ The dev server will:
 - Watch for file changes in `site/` and `public/`
 - Automatically rebuild and reload the browser when you save changes
 
-Open your browser and navigate to the URL shown in the terminal.
+Open your browser and navigate to the URL shown in the terminal. Your site is running; the rest of this guide makes it yours.
 
-## Step 4: Edit Your First Page
+## Next: Make It Yours
+
+Work through these in order, or jump to the one you need.
+
+### Step 4: Edit Your First Page
 
 Open `site/index.md` in your text editor and modify it:
 
@@ -99,7 +115,7 @@ Ready to build something amazing!
 
 Save the file and watch your browser automatically refresh with the changes.
 
-## Step 5: Add a New Page
+### Step 5: Add a New Page
 
 Create a new page by adding `site/about.md`:
 
@@ -129,7 +145,7 @@ Feel free to reach out if you have any questions!
 
 Your new page will be available at [http://localhost:3000/about/](http://localhost:3000/about/)
 
-## Step 6: Customize the Layout
+### Step 6: Customize the Layout
 
 Edit `site/layout.eta` to add navigation:
 
@@ -139,7 +155,9 @@ Edit `site/layout.eta` to add navigation:
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title><%= stati.page.title ? `${stati.page.title} | ${stati.site.title}` : stati.site.title %></title>
+    <title>
+      <%= stati.page.title ? `${stati.page.title} | ${stati.site.title}` : stati.site.title %>
+    </title>
     <% if (stati.page.description) { %>
     <meta name="description" content="<%= stati.page.description %>" />
     <% } %>
@@ -164,7 +182,7 @@ Edit `site/layout.eta` to add navigation:
 </html>
 ```
 
-## Step 7: Add Some Styling
+### Step 7: Add Some Styling
 
 Edit `public/styles.css` to style your site:
 
@@ -208,7 +226,7 @@ footer {
 }
 ```
 
-## Step 8: Configure Your Site
+### Step 8: Configure Your Site
 
 Edit `stati.config.js` (or `stati.config.ts` for TypeScript projects) to customize your site settings:
 
@@ -242,7 +260,7 @@ export default defineConfig({
 });
 ```
 
-## Step 9: Build for Production
+### Step 9: Build for Production
 
 When you're ready to deploy, build your site:
 
@@ -252,7 +270,7 @@ npm run build
 
 This creates a `dist/` directory with your optimized site ready for deployment.
 
-## Step 10: Deploy Your Site
+### Step 10: Deploy Your Site
 
 You can deploy the `dist/` folder to any static hosting service:
 

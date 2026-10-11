@@ -4,7 +4,7 @@ description: 'Learn Stati by exploring examples and getting started templates.'
 order: 1
 ---
 
-# Examples & Templates
+# Examples Overview
 
 Learn Stati by exploring examples and real-world implementations. Currently, Stati provides a minimal template with a clear structure for getting started.
 

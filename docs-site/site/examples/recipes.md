@@ -4,7 +4,7 @@ description: 'Practical recipes and patterns for common Stati use cases.'
 order: 2
 ---
 
-# Recipe Collection
+# Recipes
 
 A curated collection of practical recipes and patterns for building sites with Stati. Each recipe solves a common use case with complete, copy-paste code examples.
 

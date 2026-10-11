@@ -59,6 +59,9 @@ export function buildBreadcrumb(url: string, pageTitle: string): string {
   return crumbs.join(' > ');
 }
 
+/** Private-use character that brackets inline code placeholders in stripMarkdown. */
+const CODE_MARK = '';
+
 /**
  * Strips Markdown syntax to extract plain text for search indexing.
  * Handles code blocks, links, images, emphasis, etc.
@@ -69,9 +72,20 @@ export function buildBreadcrumb(url: string, pageTitle: string): string {
 export function stripMarkdown(markdown: string): string {
   let text = markdown;
 
-  // Remove code blocks (fenced and indented)
+  // Remove fenced code blocks
   text = text.replace(/```[\s\S]*?```/g, ' ');
-  text = text.replace(/`[^`]+`/g, ' ');
+
+  // Keep inline code text (identifiers are what people search for), shielded
+  // from the emphasis and HTML stripping below and restored at the end
+  const inlineCode: string[] = [];
+  text = text.replace(/`([^`]+)`/g, (_match, code: string) => {
+    inlineCode.push(code);
+    return `${CODE_MARK}${inlineCode.length - 1}${CODE_MARK}`;
+  });
+
+  // Remove table delimiter rows and cell pipes
+  text = text.replace(/^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$/gm, '');
+  text = text.replace(/\s*\|\s*/g, ' ');
 
   // Remove images ![alt](url)
   text = text.replace(/!\[[^\]]*\]\([^)]*\)/g, ' ');
@@ -103,6 +117,12 @@ export function stripMarkdown(markdown: string): string {
   // Remove list markers
   text = text.replace(/^[\s]*[-*+]\s+/gm, '');
   text = text.replace(/^[\s]*\d+\.\s+/gm, '');
+
+  // Restore inline code
+  text = text.replace(
+    new RegExp(`${CODE_MARK}(\\d+)${CODE_MARK}`, 'g'),
+    (_match, index: string) => inlineCode[Number(index)] ?? '',
+  );
 
   // Normalize whitespace
   text = text.replace(/\s+/g, ' ').trim();

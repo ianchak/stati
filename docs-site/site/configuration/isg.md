@@ -4,13 +4,13 @@ description: 'Configure Incremental Static Generation (ISG) for intelligent cach
 order: 5
 ---
 
-# ISG Configuration
+# ISG Options
 
 Incremental Static Generation (ISG) is Stati's intelligent caching system that provides selective rebuilds by only regenerating content that has actually changed. Configure ISG to optimize your site's build workflow and deployment strategy.
 
 ## Configuration Options
 
-Enable and configure ISG in your `stati.config.js`:
+Enable and configure ISG in your `stati.config.ts` (or `stati.config.js`):
 
 ```javascript
 import { defineConfig } from '@stati/core';

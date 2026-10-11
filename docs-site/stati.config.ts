@@ -12,8 +12,8 @@ const DOCS_SECTIONS = [
   { path: '/getting-started', title: 'Getting Started' },
   { path: '/core-concepts', title: 'Core Concepts' },
   { path: '/configuration', title: 'Configuration' },
-  { path: '/cli', title: 'CLI & Tooling' },
-  { path: '/api', title: 'API Reference' },
+  { path: '/cli', title: 'CLI' },
+  { path: '/api', title: 'API' },
   { path: '/examples', title: 'Examples' },
   { path: '/advanced', title: 'Advanced' },
 ];
@@ -88,11 +88,13 @@ export default defineConfig({
   },
   search: {
     enabled: true,
+    exclude: ['/404'],
   },
   sitemap: {
     enabled: true,
     defaultPriority: 0.7,
     defaultChangeFreq: 'weekly',
+    excludePatterns: ['/404'],
     priorityRules: [
       { pattern: '/', priority: 1.0 },
       { pattern: '/getting-started/**', priority: 0.9 },
@@ -120,6 +122,7 @@ export default defineConfig({
         language: 'en-US',
         category: 'Documentation',
         maxItems: 30,
+        excludePatterns: ['/404'],
       },
     ],
   },
