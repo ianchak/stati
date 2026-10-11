@@ -53,6 +53,35 @@ describe('create-stati scaffolding', () => {
       expect(packageJson.devDependencies).toHaveProperty('@stati/core');
     });
 
+    it('should install the agent skill when requested', async () => {
+      const projectDir = join(tempDir, 'test-skill');
+      const result = await createSite({
+        projectName: 'test-skill',
+        template: 'blank',
+        styling: 'css',
+        gitInit: false,
+        agentSkill: 'claude',
+        dir: projectDir,
+      });
+
+      await expect(
+        access(join(result.targetDir, '.claude', 'skills', 'stati', 'SKILL.md')),
+      ).resolves.not.toThrow();
+    });
+
+    it('should not install the agent skill by default', async () => {
+      const projectDir = join(tempDir, 'test-no-skill');
+      const result = await createSite({
+        projectName: 'test-no-skill',
+        template: 'blank',
+        styling: 'css',
+        gitInit: false,
+        dir: projectDir,
+      });
+
+      await expect(access(join(result.targetDir, '.claude'))).rejects.toThrow();
+    });
+
     it('should create a project with Sass styling', async () => {
       const projectDir = join(tempDir, 'test-sass');
       const options: CreateOptions = {

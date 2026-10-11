@@ -7,6 +7,8 @@ import { writeProcessorFiles } from './utils/index.js';
 import type { StylingOption } from './css-processors.js';
 import { setupTypeScript } from './typescript-processor.js';
 import { isCommandAvailable, spawnProcess, log } from './utils/index.js';
+import { copyAgentSkill } from './agent-skill.js';
+import type { AgentSkillTarget } from './agent-skill.js';
 
 /**
  * Result of a dependency installation attempt
@@ -184,6 +186,7 @@ export interface CreateOptions {
   gitInit?: boolean;
   install?: boolean;
   packageManager?: PackageManager;
+  agentSkill?: AgentSkillTarget | false;
   dir?: string;
 }
 
@@ -286,12 +289,17 @@ export class ProjectScaffolder {
       // 6. Setup CSS preprocessing if requested
       await processStyling(targetDir, this.options.styling);
 
-      // 7. Initialize git (optional)
+      // 7. Install the Stati agent skill (optional)
+      if (this.options.agentSkill) {
+        await this.installAgentSkill(targetDir, this.options.agentSkill);
+      }
+
+      // 8. Initialize git (optional)
       if (this.options.gitInit) {
         await this.initializeGit(targetDir);
       }
 
-      // 8. Install dependencies (optional)
+      // 9. Install dependencies (optional)
       if (this.options.install) {
         await this.installDependencies(targetDir);
       }
@@ -329,6 +337,18 @@ export class ProjectScaffolder {
       } else {
         throw error;
       }
+    }
+  }
+
+  private async installAgentSkill(targetDir: string, target: AgentSkillTarget): Promise<void> {
+    try {
+      await copyAgentSkill(targetDir, target);
+    } catch (error) {
+      // The agent skill is optional, so we just warn instead of failing
+      log.warning(
+        'Failed to install Stati agent skill: ' +
+          (error instanceof Error ? error.message : 'Unknown error'),
+      );
     }
   }
 

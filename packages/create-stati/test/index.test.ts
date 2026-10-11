@@ -159,6 +159,46 @@ describe('create-stati CLI', () => {
 
       expect(result).toEqual({});
     });
+
+    it('should default --agent-skill to claude', async () => {
+      const result = await parseArgs(['test-project', '--agent-skill']);
+
+      expect(result).toEqual({ projectName: 'test-project', agentSkill: 'claude' });
+    });
+
+    it('should parse --agent-skill with = and space separators', async () => {
+      const result1 = await parseArgs(['test-project', '--agent-skill=github']);
+      const result2 = await parseArgs(['test-project', '--agent-skill', 'agents']);
+
+      expect(result1).toEqual({ projectName: 'test-project', agentSkill: 'github' });
+      expect(result2).toEqual({ projectName: 'test-project', agentSkill: 'agents' });
+    });
+
+    it('should not consume a project name following bare --agent-skill', async () => {
+      const result = await parseArgs(['--agent-skill', 'my-site']);
+
+      expect(result).toEqual({ projectName: 'my-site', agentSkill: 'claude' });
+    });
+
+    it('should parse --no-agent-skill flag', async () => {
+      const result = await parseArgs(['test-project', '--no-agent-skill']);
+
+      expect(result).toEqual({ projectName: 'test-project', agentSkill: false });
+    });
+
+    it('should exit with error for invalid agent skill target', async () => {
+      const mockExit = vi
+        .spyOn(process, 'exit')
+        .mockImplementation((code?: string | number | null | undefined) => {
+          throw new Error(`process.exit: ${code}`);
+        });
+
+      await expect(parseArgs(['test-project', '--agent-skill=cursor'])).rejects.toThrow(
+        'process.exit: 1',
+      );
+
+      mockExit.mockRestore();
+    });
   });
 
   describe('runCLI', () => {
@@ -283,6 +323,64 @@ describe('create-stati CLI', () => {
         gitInit: false,
         install: false,
       });
+    });
+
+    it('should prompt for agent skill in interactive mode and pass it to createSite', async () => {
+      mockInquirer.prompt.mockResolvedValueOnce({
+        styling: 'css',
+        typescript: false,
+        agentSkill: 'claude',
+        gitInit: false,
+        install: false,
+      });
+
+      await runCLI({ projectName: 'test-project', template: 'blank' });
+
+      const prompts = mockInquirer.prompt.mock.calls[0]?.[0];
+      expect(prompts?.some((p: { name: string }) => p.name === 'agentSkill')).toBe(true);
+      expect(mockCreateSite).toHaveBeenCalledWith(
+        expect.objectContaining({ agentSkill: 'claude' }),
+      );
+    });
+
+    it('should not pass agentSkill when user declines the prompt', async () => {
+      mockInquirer.prompt.mockResolvedValueOnce({
+        styling: 'css',
+        typescript: false,
+        agentSkill: false,
+        gitInit: false,
+        install: false,
+      });
+
+      await runCLI({ projectName: 'test-project', template: 'blank' });
+
+      expect(mockCreateSite.mock.calls[0]?.[0]).not.toHaveProperty('agentSkill');
+    });
+
+    it('should not prompt for agent skill in non-interactive mode', async () => {
+      mockInquirer.prompt.mockResolvedValueOnce({ gitInit: false, install: false });
+
+      await runCLI({ projectName: 'test-project', template: 'blank', styling: 'css' });
+
+      const prompts = mockInquirer.prompt.mock.calls[0]?.[0];
+      expect(prompts?.some((p: { name: string }) => p.name === 'agentSkill')).toBe(false);
+      expect(mockCreateSite.mock.calls[0]?.[0]).not.toHaveProperty('agentSkill');
+    });
+
+    it('should use --agent-skill flag without prompting for it', async () => {
+      await runCLI({
+        projectName: 'test-project',
+        template: 'blank',
+        styling: 'css',
+        gitInit: false,
+        install: false,
+        agentSkill: 'github',
+      });
+
+      expect(mockInquirer.prompt).not.toHaveBeenCalled();
+      expect(mockCreateSite).toHaveBeenCalledWith(
+        expect.objectContaining({ agentSkill: 'github' }),
+      );
     });
 
     it('should handle createSite errors gracefully', async () => {
