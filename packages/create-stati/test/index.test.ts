@@ -199,6 +199,26 @@ describe('create-stati CLI', () => {
 
       mockExit.mockRestore();
     });
+
+    it('should exit with error for invalid space-separated target after project name', async () => {
+      const mockExit = vi
+        .spyOn(process, 'exit')
+        .mockImplementation((code?: string | number | null | undefined) => {
+          throw new Error(`process.exit: ${code}`);
+        });
+
+      await expect(parseArgs(['test-project', '--agent-skill', 'cursor'])).rejects.toThrow(
+        'process.exit: 1',
+      );
+
+      mockExit.mockRestore();
+    });
+
+    it('should not consume a following flag as the agent skill target', async () => {
+      const result = await parseArgs(['test-project', '--agent-skill', '--no-git']);
+
+      expect(result).toEqual({ projectName: 'test-project', agentSkill: 'claude', gitInit: false });
+    });
   });
 
   describe('runCLI', () => {
@@ -438,6 +458,35 @@ describe('create-stati CLI', () => {
       });
 
       expect(mockCreateSite).toHaveBeenCalled();
+    });
+
+    it('should report agent skill installation only when createSite reports it', async () => {
+      const options = {
+        projectName: 'my-site',
+        template: 'blank' as const,
+        styling: 'css' as const,
+        gitInit: false,
+        install: false,
+        agentSkill: 'claude' as const,
+      };
+      // Local spy: restoreMocks undoes the file-level console.log spy between tests
+      const consoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const loggedSkillMessage = () =>
+        consoleLog.mock.calls.some(([msg]) => String(msg).includes('Stati agent skill installed'));
+
+      // Copy failed: requested but no agentSkillDir in the result
+      mockCreateSite.mockResolvedValueOnce({ projectName: 'my-site', targetDir: './my-site' });
+      await runCLI(options);
+      expect(loggedSkillMessage()).toBe(false);
+
+      consoleLog.mockClear();
+      mockCreateSite.mockResolvedValueOnce({
+        projectName: 'my-site',
+        targetDir: './my-site',
+        agentSkillDir: '.claude/skills/stati',
+      });
+      await runCLI(options);
+      expect(loggedSkillMessage()).toBe(true);
     });
 
     it('should validate project name in prompts', async () => {

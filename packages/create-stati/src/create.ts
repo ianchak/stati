@@ -191,6 +191,14 @@ export interface CreateOptions {
 }
 
 /**
+ * Outcome of optional scaffolding steps
+ */
+export interface ScaffoldResult {
+  /** Project-relative directory the agent skill was installed to, if it succeeded */
+  agentSkillDir?: string;
+}
+
+/**
  * Generate the appropriate config file based on options.
  * Returns TypeScript config when typescript is enabled, JavaScript otherwise.
  */
@@ -249,8 +257,9 @@ export class ProjectScaffolder {
     private examplesManager: ExampleManager,
   ) {}
 
-  async create(targetDir: string): Promise<void> {
+  async create(targetDir: string): Promise<ScaffoldResult> {
     let cleanupNeeded = false;
+    const result: ScaffoldResult = {};
 
     try {
       // 1. Validate and prepare directory
@@ -291,7 +300,10 @@ export class ProjectScaffolder {
 
       // 7. Install the Stati agent skill (optional)
       if (this.options.agentSkill) {
-        await this.installAgentSkill(targetDir, this.options.agentSkill);
+        const agentSkillDir = await this.installAgentSkill(targetDir, this.options.agentSkill);
+        if (agentSkillDir) {
+          result.agentSkillDir = agentSkillDir;
+        }
       }
 
       // 8. Initialize git (optional)
@@ -305,6 +317,7 @@ export class ProjectScaffolder {
       }
 
       // Success! (Don't display message here, let the caller handle it)
+      return result;
     } catch (error) {
       // Cleanup on failure
       if (cleanupNeeded) {
@@ -340,15 +353,24 @@ export class ProjectScaffolder {
     }
   }
 
-  private async installAgentSkill(targetDir: string, target: AgentSkillTarget): Promise<void> {
+  /**
+   * Install the Stati agent skill. Failures are logged as warnings, not thrown.
+   *
+   * @returns The project-relative skill directory, or undefined if installation failed
+   */
+  private async installAgentSkill(
+    targetDir: string,
+    target: AgentSkillTarget,
+  ): Promise<string | undefined> {
     try {
-      await copyAgentSkill(targetDir, target);
+      return await copyAgentSkill(targetDir, target);
     } catch (error) {
       // The agent skill is optional, so we just warn instead of failing
       log.warning(
         'Failed to install Stati agent skill: ' +
           (error instanceof Error ? error.message : 'Unknown error'),
       );
+      return undefined;
     }
   }
 
@@ -472,12 +494,12 @@ coverage/
 
 export async function createSite(
   options: CreateOptions,
-): Promise<{ targetDir: string; projectName: string }> {
+): Promise<{ targetDir: string; projectName: string } & ScaffoldResult> {
   const targetDir = options.dir ? resolve(options.dir) : resolve(options.projectName);
   const examplesManager = new ExampleManager();
   const scaffolder = new ProjectScaffolder(options, examplesManager);
 
-  await scaffolder.create(targetDir);
+  const result = await scaffolder.create(targetDir);
 
-  return { targetDir, projectName: options.projectName };
+  return { targetDir, projectName: options.projectName, ...result };
 }
