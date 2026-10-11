@@ -65,10 +65,10 @@ The foundation of your site configuration:
 ```javascript
 export default defineConfig({
   site: {
-    title: 'Stati Documentation', // Required
-    baseUrl: 'https://stati.build', // Required
-    description: 'Build static sites', // Optional
-    defaultLocale: 'en-US', // Optional
+    title: 'Stati Documentation',        // Required
+    baseUrl: 'https://stati.build',      // Required
+    description: 'Build static sites',   // Optional
+    defaultLocale: 'en-US',              // Optional
   },
 });
 ```
@@ -92,8 +92,8 @@ export default defineConfig({
   markdown: {
     // Plugin configuration - array of plugin names or [name, options] tuples
     plugins: [
-      'footnote', // markdown-it-footnote - Footnotes
-      ['container', { validate: () => true }], // markdown-it-container with options
+      'footnote',                          // markdown-it-footnote - Footnotes
+      ['container', { validate: () => true }],  // markdown-it-container with options
     ],
 
     // Custom markdown-it configuration function
@@ -173,7 +173,7 @@ export default defineConfig({
 
 Configure Incremental Static Generation for smart caching:
 
-````javascript
+```javascript
 export default defineConfig({
   isg: {
     // Enable ISG caching
@@ -211,7 +211,7 @@ aging: [
   { untilDays: 7, ttlSeconds: 86400 },    // 1 day cache for content 7+ days old
   { untilDays: 30, ttlSeconds: 604800 },  // 1 week cache for content 30+ days old
 ]
-````
+```
 
 ### Development Server
 
@@ -221,9 +221,9 @@ Configure the development server:
 export default defineConfig({
   dev: {
     // Server configuration
-    port: 3000, // Port for development server
+    port: 3000,        // Port for development server
     host: 'localhost', // Host to bind to
-    open: false, // Whether to open browser automatically
+    open: false,       // Whether to open browser automatically
   },
 });
 ```
@@ -242,9 +242,9 @@ Configure the preview server:
 export default defineConfig({
   preview: {
     // Server configuration
-    port: 4000, // Port for preview server
+    port: 4000,        // Port for preview server
     host: 'localhost', // Host to bind to
-    open: false, // Whether to open browser automatically
+    open: false,       // Whether to open browser automatically
   },
 });
 ```
@@ -306,14 +306,14 @@ export default defineConfig({
 ```typescript
 // BuildContext - passed to beforeAll and afterAll
 interface BuildContext {
-  config: StatiConfig; // The resolved configuration
-  pages: PageModel[]; // Array of all loaded pages
+  config: StatiConfig;  // The resolved configuration
+  pages: PageModel[];   // Array of all loaded pages
 }
 
 // PageContext - passed to beforeRender and afterRender
 interface PageContext {
-  page: PageModel; // The page being processed
-  config: StatiConfig; // The resolved configuration
+  page: PageModel;      // The page being processed
+  config: StatiConfig;  // The resolved configuration
 }
 ```
 
@@ -361,7 +361,7 @@ export default defineConfig({
 
      // Markdown processing
      markdown: {
-       plugins: ['footnote'], // markdown-it-footnote
+       plugins: ['footnote'],  // markdown-it-footnote
      },
    });
    ```
@@ -388,7 +388,7 @@ export default defineConfig({
 
    // config/markdown.js
    export const markdownConfig = {
-     plugins: ['footnote', 'emoji'], // Stati auto-prepends 'markdown-it-'
+     plugins: ['footnote', 'emoji'],  // Stati auto-prepends 'markdown-it-'
    };
 
    // stati.config.js

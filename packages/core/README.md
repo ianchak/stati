@@ -224,9 +224,9 @@ import { defineConfig } from '@stati/core';
 
 export default defineConfig({
   // Directory configuration
-  srcDir: 'site', // Content source (default: 'site')
-  outDir: 'dist', // Build output (default: 'dist')
-  staticDir: 'public', // Static assets (default: 'public')
+  srcDir: 'site',           // Content source (default: 'site')
+  outDir: 'dist',           // Build output (default: 'dist')
+  staticDir: 'public',      // Static assets (default: 'public')
 
   // Site metadata
   site: {
@@ -237,7 +237,7 @@ export default defineConfig({
 
   // Markdown processing
   markdown: {
-    toc: true, // TOC + heading anchors (default: true)
+    toc: true,                                      // TOC + heading anchors (default: true)
     plugins: [
       ['external-links', { externalTarget: '_blank' }], // External links in new tab
     ],
@@ -261,10 +261,10 @@ export default defineConfig({
 
   // Incremental Static Generation (enabled by default)
   isg: {
-    ttlSeconds: 86400, // Cache TTL: 24 hours (default: 21600 / 6 hours)
-    maxAgeCapDays: 30, // Max age for aging rules (default: 365)
+    ttlSeconds: 86400,        // Cache TTL: 24 hours (default: 21600 / 6 hours)
+    maxAgeCapDays: 30,        // Max age for aging rules (default: 365)
     aging: [
-      { untilDays: 7, ttlSeconds: 86400 }, // 1 day cache for week-old content
+      { untilDays: 7, ttlSeconds: 86400 },   // 1 day cache for week-old content
       { untilDays: 30, ttlSeconds: 604800 }, // 1 week cache for month-old content
     ],
   },
@@ -276,29 +276,33 @@ export default defineConfig({
       email: 'john@example.com',
       url: 'https://johndoe.com',
     },
-    debug: false, // Enable SEO debug logging
+    debug: false,             // Enable SEO debug logging
   },
 
   // Sitemap generation (opt-in)
   sitemap: {
-    enabled: true, // Generate sitemap.xml
-    defaultPriority: 0.5, // Default priority for pages
+    enabled: true,            // Generate sitemap.xml
+    defaultPriority: 0.5,     // Default priority for pages
     defaultChangeFreq: 'monthly',
     excludePatterns: ['/draft/**', '/admin/**'], // Exclude patterns
     priorityRules: [
-      { pattern: '/', priority: 1.0 }, // Homepage highest priority
-      { pattern: '/blog/**', priority: 0.8 }, // Blog posts high priority
-      { pattern: '/docs/**', priority: 0.7 }, // Documentation
+      { pattern: '/', priority: 1.0 },           // Homepage highest priority
+      { pattern: '/blog/**', priority: 0.8 },    // Blog posts high priority
+      { pattern: '/docs/**', priority: 0.7 },    // Documentation
     ],
   },
 
   // Robots.txt generation (opt-in)
   robots: {
-    enabled: true, // Generate robots.txt
+    enabled: true,            // Generate robots.txt
     disallow: ['/admin/', '/draft/', '/private/'], // Paths to block
-    crawlDelay: 10, // Crawl delay in seconds
-    sitemap: true, // Auto-include sitemap URL
-    customLines: ['# Custom directives', 'User-agent: GPTBot', 'Disallow: /'],
+    crawlDelay: 10,           // Crawl delay in seconds
+    sitemap: true,            // Auto-include sitemap URL
+    customLines: [
+      '# Custom directives',
+      'User-agent: GPTBot',
+      'Disallow: /',
+    ],
   },
 
   // Development server
@@ -571,15 +575,10 @@ Stati supports rich Markdown features out of the box:
 ```javascript
 export default defineConfig({
   markdown: {
-    toc: true, // TOC + heading anchors (built-in, default: true)
+    toc: true,                     // TOC + heading anchors (built-in, default: true)
     plugins: [
-      'footnote', // Footnote support
-      [
-        'abbr',
-        {
-          /* options */
-        },
-      ], // Abbreviations
+      'footnote',                  // Footnote support
+      ['abbr', { /* options */ }], // Abbreviations
     ],
   },
 });
@@ -606,7 +605,9 @@ Powered by [Eta](https://eta.js.org) for fast, flexible templates:
   </head>
   <body>
     <%~ include('_partials/header') %>
-    <main><%~ stati.content %></main>
+    <main>
+      <%~ stati.content %>
+    </main>
     <%~ include('_partials/footer') %>
   </body>
 </html>
@@ -627,14 +628,14 @@ Automatic navigation hierarchy based on your file structure:
 <!-- Show breadcrumbs -->
 <nav>
   <% stati.nav.getBreadcrumbs().forEach(crumb => { %>
-  <a href="<%= crumb.url %>"><%= crumb.title %></a>
+    <a href="<%= crumb.url %>"><%= crumb.title %></a>
   <% }) %>
 </nav>
 
 <!-- Show navigation tree -->
 <ul>
   <% stati.nav.tree.forEach(item => { %>
-  <li><a href="<%= item.url %>"><%= item.title %></a></li>
+    <li><a href="<%= item.url %>"><%= item.title %></a></li>
   <% }) %>
 </ul>
 ```
@@ -664,10 +665,10 @@ Smart caching for lightning-fast builds:
 ```javascript
 export default defineConfig({
   isg: {
-    ttlSeconds: 21600, // 6 hours default
+    ttlSeconds: 21600,     // 6 hours default
     aging: [
-      { untilDays: 7, ttlSeconds: 3600 }, // Recent: 1 hour
-      { untilDays: 30, ttlSeconds: 86400 }, // Month: 1 day
+      { untilDays: 7, ttlSeconds: 3600 },    // Recent: 1 hour
+      { untilDays: 30, ttlSeconds: 86400 },  // Month: 1 day
       // Older content uses default TTL
     ],
   },
@@ -707,7 +708,7 @@ export default defineConfig({
   },
   isg: {
     aging: [
-      { untilDays: 30, ttlSeconds: 3600 }, // Fresh posts: 1 hour
+      { untilDays: 30, ttlSeconds: 3600 },   // Fresh posts: 1 hour
       { untilDays: 365, ttlSeconds: 86400 }, // Year-old: 1 day
     ],
   },
@@ -787,3 +788,4 @@ npx create-stati my-site
 # Or use core directly
 npm install @stati/core
 ```
+

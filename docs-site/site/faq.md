@@ -4,34 +4,34 @@ description: 'Frequently asked questions about Stati, the TypeScript-first stati
 order: 99
 seo:
   structuredData:
-    '@context': 'https://schema.org'
-    '@type': 'FAQPage'
-    'mainEntity':
-      - '@type': 'Question'
-        'name': 'What is Stati?'
-        'acceptedAnswer':
-          '@type': 'Answer'
-          'text': 'Stati is a TypeScript-first static site generator for documentation, blogs, and content-heavy sites, with zero-config setup, fast esbuild bundling, and file-based routing.'
-      - '@type': 'Question'
-        'name': 'Does Stati support Incremental Static Generation (ISG)?'
-        'acceptedAnswer':
-          '@type': 'Answer'
-          'text': 'Yes. Stati includes built-in ISG so you can update specific pages without running a full rebuild. It uses intelligent caching with configurable TTL and invalidation strategies.'
-      - '@type': 'Question'
-        'name': 'What templating engine does Stati use?'
-        'acceptedAnswer':
-          '@type': 'Answer'
-          'text': 'Stati uses Eta, a fast and lightweight templating engine. Eta supports layouts, partials, filters, and async rendering.'
-      - '@type': 'Question'
-        'name': 'How does Stati handle SEO?'
-        'acceptedAnswer':
-          '@type': 'Answer'
-          'text': 'Stati automatically injects SEO metadata including title, description, canonical URLs, Open Graph tags, and Twitter Cards. You can also use the generateSEO() helper for manual control.'
-      - '@type': 'Question'
-        'name': 'Can I use TypeScript in my Stati project?'
-        'acceptedAnswer':
-          '@type': 'Answer'
-          'text': 'Yes. Stati is TypeScript-first. Your configuration file (stati.config.ts) is written in TypeScript, and client-side TypeScript is compiled automatically via esbuild.'
+    "@context": "https://schema.org"
+    "@type": "FAQPage"
+    "mainEntity":
+      - "@type": "Question"
+        "name": "What is Stati?"
+        "acceptedAnswer":
+          "@type": "Answer"
+          "text": "Stati is a TypeScript-first static site generator for documentation, blogs, and content-heavy sites, with zero-config setup, fast esbuild bundling, and file-based routing."
+      - "@type": "Question"
+        "name": "Does Stati support Incremental Static Generation (ISG)?"
+        "acceptedAnswer":
+          "@type": "Answer"
+          "text": "Yes. Stati includes built-in ISG so you can update specific pages without running a full rebuild. It uses intelligent caching with configurable TTL and invalidation strategies."
+      - "@type": "Question"
+        "name": "What templating engine does Stati use?"
+        "acceptedAnswer":
+          "@type": "Answer"
+          "text": "Stati uses Eta, a fast and lightweight templating engine. Eta supports layouts, partials, filters, and async rendering."
+      - "@type": "Question"
+        "name": "How does Stati handle SEO?"
+        "acceptedAnswer":
+          "@type": "Answer"
+          "text": "Stati automatically injects SEO metadata including title, description, canonical URLs, Open Graph tags, and Twitter Cards. You can also use the generateSEO() helper for manual control."
+      - "@type": "Question"
+        "name": "Can I use TypeScript in my Stati project?"
+        "acceptedAnswer":
+          "@type": "Answer"
+          "text": "Yes. Stati is TypeScript-first. Your configuration file (stati.config.ts) is written in TypeScript, and client-side TypeScript is compiled automatically via esbuild."
 ---
 
 # Stati FAQ

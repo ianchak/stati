@@ -35,8 +35,8 @@ export default defineConfig({
   },
   typescript: {
     enabled: true,
-    srcDir: 'src', // Source directory (default: 'src')
-    outDir: '_assets', // Output directory within dist (default: '_assets')
+    srcDir: 'src',           // Source directory (default: 'src')
+    outDir: '_assets',       // Output directory within dist (default: '_assets')
     // bundles defaults to [{ entryPoint: 'main.ts', bundleName: 'main' }]
     // hash and minify are automatic - true in production, false in development
   },
@@ -45,15 +45,15 @@ export default defineConfig({
 
 ## TypeScriptConfig Options
 
-| Option       | Type             | Default                                           | Description                                                                |
-| ------------ | ---------------- | ------------------------------------------------- | -------------------------------------------------------------------------- |
-| `enabled`    | `boolean`        | `false`                                           | Enable TypeScript compilation                                              |
-| `srcDir`     | `string`         | `'src'`                                           | Directory containing TypeScript source files                               |
-| `outDir`     | `string`         | `'_assets'`                                       | Output subdirectory within `dist/`                                         |
-| `bundles`    | `BundleConfig[]` | `[{ entryPoint: 'main.ts', bundleName: 'main' }]` | Array of bundle configurations (see [Multiple Bundles](#multiple-bundles)) |
-| `hash`       | `boolean`        | `true`                                            | Add content hash to filename (production only)                             |
-| `minify`     | `boolean`        | `true`                                            | Minify JavaScript output (production only)                                 |
-| `autoInject` | `boolean`        | `true`                                            | Automatically inject bundle script tags before `</body>`                   |
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `enabled` | `boolean` | `false` | Enable TypeScript compilation |
+| `srcDir` | `string` | `'src'` | Directory containing TypeScript source files |
+| `outDir` | `string` | `'_assets'` | Output subdirectory within `dist/` |
+| `bundles` | `BundleConfig[]` | `[{ entryPoint: 'main.ts', bundleName: 'main' }]` | Array of bundle configurations (see [Multiple Bundles](#multiple-bundles)) |
+| `hash` | `boolean` | `true` | Add content hash to filename (production only) |
+| `minify` | `boolean` | `true` | Minify JavaScript output (production only) |
+| `autoInject` | `boolean` | `true` | Automatically inject bundle script tags before `</body>` |
 
 > **Note:** Source maps, hashing, and minification are automatic based on build mode. The `hash` and `minify` options only apply to production builds - development mode always uses stable filenames and unminified output for easier debugging.
 
@@ -127,8 +127,8 @@ This is useful when you need to:
 
 If you need to access bundle paths in your templates (for example, to preload or customize placement), Stati provides them via `stati.assets`:
 
-| Property      | Type       | Description                                                                                |
-| ------------- | ---------- | ------------------------------------------------------------------------------------------ |
+| Property | Type | Description |
+|----------|------|-------------|
 | `bundlePaths` | `string[]` | Array of paths to matched JS bundles for this page (e.g., `['/_assets/main-a1b2c3d4.js']`) |
 
 Example for preloading:
@@ -153,12 +153,12 @@ Stati supports compiling multiple TypeScript bundles with per-page targeting. In
 
 Each bundle in the `bundles` array can have these properties:
 
-| Option       | Type       | Required | Description                                                                                                                                                                                |
-| ------------ | ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `entryPoint` | `string`   | Yes      | Entry point file name relative to `srcDir` (e.g., `'main.ts'`, `'features/playground.ts'`)                                                                                                 |
-| `bundleName` | `string`   | Yes      | Output bundle name (without extension). Final filename includes hash in production: `[bundleName]-[hash].js`                                                                               |
-| `include`    | `string[]` | No       | Glob patterns for pages that should include this bundle. Matches against page output path (e.g., `/docs/api/hooks.html`). **If omitted, bundle is included on ALL pages (global bundle).** |
-| `exclude`    | `string[]` | No       | Glob patterns for pages to exclude from this bundle. **Takes precedence over `include` patterns.**                                                                                         |
+| Option | Type | Required | Description |
+|--------|------|----------|-------------|
+| `entryPoint` | `string` | Yes | Entry point file name relative to `srcDir` (e.g., `'main.ts'`, `'features/playground.ts'`) |
+| `bundleName` | `string` | Yes | Output bundle name (without extension). Final filename includes hash in production: `[bundleName]-[hash].js` |
+| `include` | `string[]` | No | Glob patterns for pages that should include this bundle. Matches against page output path (e.g., `/docs/api/hooks.html`). **If omitted, bundle is included on ALL pages (global bundle).** |
+| `exclude` | `string[]` | No | Glob patterns for pages to exclude from this bundle. **Takes precedence over `include` patterns.** |
 
 ### Minimal Configuration (Default Bundle)
 
@@ -169,10 +169,10 @@ import { defineConfig } from '@stati/core';
 
 export default defineConfig({
   typescript: {
-    enabled: true,
+    enabled: true
     // Defaults to: bundles: [{ entryPoint: 'main.ts', bundleName: 'main' }]
     // Injects 'main' bundle on ALL pages
-  },
+  }
 });
 ```
 
@@ -191,14 +191,14 @@ export default defineConfig({
       // Core bundle - included on all pages (no include = global)
       {
         entryPoint: 'core.ts',
-        bundleName: 'core',
+        bundleName: 'core'
       },
 
       // Documentation-specific interactivity
       {
         entryPoint: 'docs.ts',
         bundleName: 'docs',
-        include: ['/docs/**', '/api/**'],
+        include: ['/docs/**', '/api/**']
       },
 
       // Code playground - only on specific pages
@@ -206,17 +206,17 @@ export default defineConfig({
         entryPoint: 'playground.ts',
         bundleName: 'playground',
         include: ['/examples/**', '/playground.html'],
-        exclude: ['/examples/simple/**'],
+        exclude: ['/examples/simple/**']
       },
 
       // Homepage animations
       {
         entryPoint: 'home.ts',
         bundleName: 'home',
-        include: ['/index.html', '/'],
-      },
-    ],
-  },
+        include: ['/index.html', '/']
+      }
+    ]
+  }
 });
 ```
 
@@ -224,12 +224,12 @@ export default defineConfig({
 
 Patterns use glob syntax (minimatch-compatible):
 
-| Pattern | Matches                      |
-| ------- | ---------------------------- |
-| `*`     | Any characters except `/`    |
-| `**`    | Any characters including `/` |
-| `?`     | A single character           |
-| `[abc]` | Any character in brackets    |
+| Pattern | Matches |
+|---------|---------|
+| `*` | Any characters except `/` |
+| `**` | Any characters including `/` |
+| `?` | A single character |
+| `[abc]` | Any character in brackets |
 
 Patterns match against the page's **output path** (the URL path), not the source file path:
 

@@ -8,7 +8,7 @@
  *   - name (required): Icon identifier (e.g., 'bolt', 'cog', 'code')
  *   - class (optional): Additional CSS classes
  *   - size (optional): Size preset - 'xs' | 'sm' | 'md' | 'lg' | 'xl' (default: 'md')
- *   - strokeWidth (optional): SVG stroke width (default: 1.5)
+ *   - strokeWidth (optional): SVG stroke width (default: 2)
  *
  * Usage:
  *   <%~ stati.partials.icon({ name: 'bolt', size: 'lg', class: 'text-primary-600' }) %>
@@ -81,7 +81,7 @@ const sizeClasses = {
 const name = stati.props.name;
 const iconPath = icons[name];
 const sizeClass = sizeClasses[stati.props.size || 'md'];
-const strokeWidth = stati.props.strokeWidth || 1.5;
+const strokeWidth = stati.props.strokeWidth || 2;
 const isFilled = name === 'github' || name === 'npm';
 %>
 <% if (iconPath) { %>

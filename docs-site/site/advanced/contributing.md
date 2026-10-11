@@ -148,12 +148,12 @@ The pipeline runs on Ubuntu with Node.js 22. Version commits from the publish wo
 
 Performance tests live in `packages/core/test/perf/` and measure build speed across scenarios:
 
-| Scenario    | Description                  | Baseline      |
-| ----------- | ---------------------------- | ------------- |
-| Cold Build  | Clean slate, no cache        | ~220ms median |
-| Warm Build  | No changes, high cache hit   | ~50ms median  |
-| Incremental | Single file change           | ~55ms median  |
-| Complex     | Nested components, 111 pages | ~280ms median |
+| Scenario | Description | Baseline |
+| -------- | ----------- | -------- |
+| Cold Build | Clean slate, no cache | ~220ms median |
+| Warm Build | No changes, high cache hit | ~50ms median |
+| Incremental | Single file change | ~55ms median |
+| Complex | Nested components, 111 pages | ~280ms median |
 
 Run benchmarks locally:
 
@@ -477,7 +477,7 @@ More detailed information.
 
 Links to related documentation.
 
-````text
+```text
 ### API Documentation
 
 Use TypeScript interfaces for API docs:

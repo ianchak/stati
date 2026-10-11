@@ -4,8 +4,6 @@
  * smooth scrolling and active section highlighting using IntersectionObserver.
  */
 
-import { prefersReducedMotion } from '../core/index.js';
-
 /** Selector for headings to track for scroll-spy */
 const HEADING_SELECTOR = 'h2[id], h3[id], h4[id], h5[id], h6[id]';
 
@@ -26,13 +24,13 @@ function updateActiveLink(activeId: string, links: HTMLAnchorElement[], tocNav: 
   // Remove active state from all links
   links.forEach((link) => {
     link.classList.remove(
-      'text-primary-700',
-      'dark:text-primary-300',
-      'border-primary-600',
-      'dark:border-primary-400',
+      'text-blue-600',
+      'dark:text-blue-400',
+      'border-blue-600',
+      'dark:border-blue-400',
       'font-medium',
-      'bg-primary-50/70',
-      'dark:bg-primary-900/20',
+      'bg-blue-50',
+      'dark:bg-blue-900/20',
     );
     link.classList.add('text-gray-600', 'dark:text-gray-300');
   });
@@ -42,19 +40,15 @@ function updateActiveLink(activeId: string, links: HTMLAnchorElement[], tocNav: 
   if (activeLink) {
     activeLink.classList.remove('text-gray-600', 'dark:text-gray-300');
     activeLink.classList.add(
-      'text-primary-700',
-      'dark:text-primary-300',
-      'border-primary-600',
-      'dark:border-primary-400',
+      'text-blue-600',
+      'dark:text-blue-400',
+      'border-blue-600',
+      'dark:border-blue-400',
       'font-medium',
-      'bg-primary-50/70',
-      'dark:bg-primary-900/20',
+      'bg-blue-50',
+      'dark:bg-blue-900/20',
     );
   }
-}
-
-function getScrollBehavior(): 'auto' | 'smooth' {
-  return prefersReducedMotion() ? 'auto' : 'smooth';
 }
 
 /**
@@ -78,9 +72,9 @@ export function initToc(): void {
       const targetElement = targetId ? document.getElementById(targetId) : null;
 
       if (targetElement) {
-        // Respect live reduced-motion preference when navigating to headings.
+        // Smooth scroll to the target
         targetElement.scrollIntoView({
-          behavior: getScrollBehavior(),
+          behavior: 'smooth',
           block: 'start',
         });
 
@@ -126,7 +120,7 @@ export function initToc(): void {
       // Smooth scroll to target after a brief delay to ensure page is loaded
       setTimeout(() => {
         targetElement.scrollIntoView({
-          behavior: getScrollBehavior(),
+          behavior: 'smooth',
           block: 'start',
         });
       }, 100);

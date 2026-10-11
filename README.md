@@ -54,7 +54,6 @@ my-site/
 ```
 
 **Write content:**
-
 ```markdown
 ---
 title: Welcome
@@ -66,7 +65,6 @@ This is my first page. It's just Markdown.
 ```
 
 **Pages are automatically routed:**
-
 - `site/index.md` → `/`
 - `site/blog/hello.md` → `/blog/hello/`
 - `site/about.md` → `/about/`
@@ -111,7 +109,6 @@ Customize layouts with [Eta templates](https://eta.js.org):
 ### Incremental Static Generation (ISG)
 
 Pages rebuild only when needed:
-
 - **Smart caching** - Only changed pages rebuild
 - **TTL-based refresh** - Control how long pages stay cached
 - **Tag-based invalidation** - Update related content together
@@ -132,7 +129,6 @@ stati invalidate "age:3months"
 SEO optimization works automatically with zero configuration. Stati analyzes your pages and injects SEO metadata during build.
 
 **What's included by default:**
-
 - Meta tags (title, description, keywords)
 - Open Graph tags for Facebook/LinkedIn
 - Twitter Cards
@@ -194,7 +190,6 @@ export default defineConfig({
 ```
 
 This is all you need! Stati automatically enables:
-
 - **ISG caching** with 6-hour TTL
 - **SEO auto-injection** for all pages
 - **Markdown processing** with standard features
@@ -208,9 +203,9 @@ import { defineConfig } from '@stati/core';
 
 export default defineConfig({
   // Directory configuration
-  srcDir: 'site', // Content source (default: 'site')
-  outDir: 'dist', // Build output (default: 'dist')
-  staticDir: 'public', // Static assets (default: 'public')
+  srcDir: 'site',           // Content source (default: 'site')
+  outDir: 'dist',           // Build output (default: 'dist')
+  staticDir: 'public',      // Static assets (default: 'public')
 
   // Site metadata
   site: {
@@ -240,10 +235,10 @@ export default defineConfig({
 
   // Incremental Static Generation (enabled by default)
   isg: {
-    ttlSeconds: 86400, // Cache TTL: 24 hours (default: 21600 / 6 hours)
-    maxAgeCapDays: 30, // Max age for aging rules (default: 365)
+    ttlSeconds: 86400,        // Cache TTL: 24 hours (default: 21600 / 6 hours)
+    maxAgeCapDays: 30,        // Max age for aging rules (default: 365)
     aging: [
-      { untilDays: 7, ttlSeconds: 86400 }, // 1 day cache for week-old content
+      { untilDays: 7, ttlSeconds: 86400 },   // 1 day cache for week-old content
       { untilDays: 30, ttlSeconds: 604800 }, // 1 week cache for month-old content
     ],
   },
@@ -255,7 +250,7 @@ export default defineConfig({
       email: 'john@example.com',
       url: 'https://johndoe.com',
     },
-    debug: false, // Enable SEO debug logging
+    debug: false,             // Enable SEO debug logging
   },
 
   // Sitemap generation (opt-in)
@@ -274,20 +269,20 @@ export default defineConfig({
   robots: {
     enabled: true,
     disallow: ['/admin/', '/draft/'],
-    sitemap: true, // Auto-include sitemap URL
+    sitemap: true,            // Auto-include sitemap URL
   },
 
   // Development server
   dev: {
     port: 3000,
     host: 'localhost',
-    open: false, // Auto-open browser (default: false)
+    open: false,              // Auto-open browser (default: false)
   },
 
   // TypeScript compilation (opt-in)
   typescript: {
-    enabled: true, // Enable TypeScript compilation
-    srcDir: 'src', // Source directory (default: 'src')
+    enabled: true,            // Enable TypeScript compilation
+    srcDir: 'src',            // Source directory (default: 'src')
     // If bundles omitted, defaults to [{ entryPoint: 'main.ts', bundleName: 'main' }]
     // hash and minify are automatic based on build mode
   },
@@ -388,7 +383,6 @@ Each package can be used independently or together for the complete Stati experi
 ## Contributing
 
 We welcome contributions! See [CONTRIBUTING.md](./CONTRIBUTING.md) for:
-
 - Development setup
 - Coding guidelines
 - Testing requirements

@@ -273,11 +273,11 @@ Access site configuration in Eta templates:
 
 <!-- Locale -->
 <html lang="<%= stati.site.defaultLocale || 'en' %>">
-  <!-- Author from SEO config (if configured) -->
-  <% if (stati.page.author) { %>
+
+<!-- Author from SEO config (if configured) -->
+<% if (stati.page.author) { %>
   <meta name="author" content="<%= stati.page.author.name %>" />
-  <% } %>
-</html>
+<% } %>
 ```
 
 ## Environment-Specific Configuration
@@ -288,7 +288,10 @@ Configure different metadata for different environments:
 export default defineConfig({
   site: {
     title: 'My Site',
-    baseUrl: process.env.NODE_ENV === 'production' ? 'https://mysite.com' : 'http://localhost:3000',
+    baseUrl:
+      process.env.NODE_ENV === 'production'
+        ? 'https://mysite.com'
+        : 'http://localhost:3000',
     defaultLocale: 'en-US',
   },
   seo: {

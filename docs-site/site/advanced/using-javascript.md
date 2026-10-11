@@ -195,62 +195,61 @@ Create `public/js/theme-switcher.js`:
 
 ```javascript
 // Theme switcher with localStorage persistence
-(function () {
-  const STORAGE_KEY = 'stati-theme';
-  const DARK_CLASS = 'dark';
+(function() {
+    const STORAGE_KEY = 'stati-theme';
+    const DARK_CLASS = 'dark';
 
-  // Get saved theme or default to light
-  function getTheme() {
-    return localStorage.getItem(STORAGE_KEY) || 'light';
-  }
+    // Get saved theme or default to light
+    function getTheme() {
+        return localStorage.getItem(STORAGE_KEY) || 'light';
+    }
 
-  // Save theme preference
-  function saveTheme(theme) {
-    localStorage.setItem(STORAGE_KEY, theme);
-  }
+    // Save theme preference
+    function saveTheme(theme) {
+        localStorage.setItem(STORAGE_KEY, theme);
+    }
 
-  // Apply theme to document
-  function applyTheme(theme) {
-    if (theme === 'dark') {
-      document.documentElement.classList.add(DARK_CLASS);
+    // Apply theme to document
+    function applyTheme(theme) {
+        if (theme === 'dark') {
+            document.documentElement.classList.add(DARK_CLASS);
+        } else {
+            document.documentElement.classList.remove(DARK_CLASS);
+        }
+    }
+
+    // Toggle between themes
+    function toggleTheme() {
+        const currentTheme = getTheme();
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        saveTheme(newTheme);
+        applyTheme(newTheme);
+        return newTheme;
+    }
+
+    // Initialize theme on page load
+    function init() {
+        const theme = getTheme();
+        applyTheme(theme);
+
+        // Set up toggle button
+        const toggleBtn = document.getElementById('theme-toggle');
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', () => {
+                const newTheme = toggleTheme();
+                toggleBtn.setAttribute('aria-label',
+                    `Switch to ${newTheme === 'light' ? 'dark' : 'light'} mode`
+                );
+            });
+        }
+    }
+
+    // Run on DOM ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
     } else {
-      document.documentElement.classList.remove(DARK_CLASS);
+        init();
     }
-  }
-
-  // Toggle between themes
-  function toggleTheme() {
-    const currentTheme = getTheme();
-    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-    saveTheme(newTheme);
-    applyTheme(newTheme);
-    return newTheme;
-  }
-
-  // Initialize theme on page load
-  function init() {
-    const theme = getTheme();
-    applyTheme(theme);
-
-    // Set up toggle button
-    const toggleBtn = document.getElementById('theme-toggle');
-    if (toggleBtn) {
-      toggleBtn.addEventListener('click', () => {
-        const newTheme = toggleTheme();
-        toggleBtn.setAttribute(
-          'aria-label',
-          `Switch to ${newTheme === 'light' ? 'dark' : 'light'} mode`,
-        );
-      });
-    }
-  }
-
-  // Run on DOM ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
 })();
 ```
 
@@ -288,65 +287,61 @@ Create `public/js/search.js`:
 ```javascript
 // Client-side search using Fuse.js
 class SiteSearch {
-  constructor(searchIndex) {
-    this.fuse = new Fuse(searchIndex, {
-      keys: ['title', 'description', 'content'],
-      threshold: 0.3,
-      includeMatches: true,
-      minMatchCharLength: 2,
-    });
-  }
-
-  search(query) {
-    if (!query || query.trim().length < 2) {
-      return [];
-    }
-    return this.fuse.search(query).slice(0, 10);
-  }
-
-  renderResults(results, container) {
-    if (results.length === 0) {
-      container.innerHTML = '<p class="no-results">No results found</p>';
-      return;
+    constructor(searchIndex) {
+        this.fuse = new Fuse(searchIndex, {
+            keys: ['title', 'description', 'content'],
+            threshold: 0.3,
+            includeMatches: true,
+            minMatchCharLength: 2
+        });
     }
 
-    const html = results
-      .map(
-        (result) => `
+    search(query) {
+        if (!query || query.trim().length < 2) {
+            return [];
+        }
+        return this.fuse.search(query).slice(0, 10);
+    }
+
+    renderResults(results, container) {
+        if (results.length === 0) {
+            container.innerHTML = '<p class="no-results">No results found</p>';
+            return;
+        }
+
+        const html = results.map(result => `
             <article class="search-result">
                 <h3><a href="${result.item.url}">${result.item.title}</a></h3>
                 <p>${result.item.description}</p>
             </article>
-        `,
-      )
-      .join('');
+        `).join('');
 
-    container.innerHTML = html;
-  }
+        container.innerHTML = html;
+    }
 }
 
 // Initialize search when DOM is ready
 document.addEventListener('DOMContentLoaded', async () => {
-  const searchInput = document.getElementById('search-input');
-  const searchResults = document.getElementById('search-results');
+    const searchInput = document.getElementById('search-input');
+    const searchResults = document.getElementById('search-results');
 
-  if (!searchInput || !searchResults) return;
+    if (!searchInput || !searchResults) return;
 
-  // Load search index
-  const response = await fetch('/search-index.json');
-  const searchIndex = await response.json();
+    // Load search index
+    const response = await fetch('/search-index.json');
+    const searchIndex = await response.json();
 
-  const search = new SiteSearch(searchIndex);
+    const search = new SiteSearch(searchIndex);
 
-  // Handle search input
-  let debounceTimer;
-  searchInput.addEventListener('input', (e) => {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
-      const results = search.search(e.target.value);
-      search.renderResults(results, searchResults);
-    }, 300);
-  });
+    // Handle search input
+    let debounceTimer;
+    searchInput.addEventListener('input', (e) => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            const results = search.search(e.target.value);
+            search.renderResults(results, searchResults);
+        }, 300);
+    });
 });
 ```
 
@@ -357,31 +352,31 @@ Create `public/js/modules/utils.js`:
 ```javascript
 // Utility functions module
 export function formatDate(date, locale = 'en-US') {
-  return new Date(date).toLocaleDateString(locale, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+    return new Date(date).toLocaleDateString(locale, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
 }
 
 export function debounce(func, wait) {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
     };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
 }
 
 export function slugify(text) {
-  return text
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/[\s_-]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+    return text
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/[\s_-]+/g, '-')
+        .replace(/^-+|-+$/g, '');
 }
 ```
 
@@ -392,39 +387,41 @@ Create `public/js/main.js`:
 import { formatDate, debounce, slugify } from './modules/utils.js';
 
 class StatiApp {
-  constructor() {
-    this.init();
-  }
-
-  init() {
-    this.setupDateFormatting();
-    this.setupSearch();
-    this.setupNavigation();
-  }
-
-  setupDateFormatting() {
-    document.querySelectorAll('[data-timestamp]').forEach((el) => {
-      const timestamp = el.dataset.timestamp;
-      el.textContent = formatDate(timestamp);
-    });
-  }
-
-  setupSearch() {
-    const searchInput = document.getElementById('search');
-    if (searchInput) {
-      searchInput.addEventListener('input', debounce(this.handleSearch.bind(this), 300));
+    constructor() {
+        this.init();
     }
-  }
 
-  handleSearch(event) {
-    const query = event.target.value;
-    console.log('Searching for:', query);
-    // Implement search logic
-  }
+    init() {
+        this.setupDateFormatting();
+        this.setupSearch();
+        this.setupNavigation();
+    }
 
-  setupNavigation() {
-    // Add active states, smooth scrolling, etc.
-  }
+    setupDateFormatting() {
+        document.querySelectorAll('[data-timestamp]').forEach(el => {
+            const timestamp = el.dataset.timestamp;
+            el.textContent = formatDate(timestamp);
+        });
+    }
+
+    setupSearch() {
+        const searchInput = document.getElementById('search');
+        if (searchInput) {
+            searchInput.addEventListener('input',
+                debounce(this.handleSearch.bind(this), 300)
+            );
+        }
+    }
+
+    handleSearch(event) {
+        const query = event.target.value;
+        console.log('Searching for:', query);
+        // Implement search logic
+    }
+
+    setupNavigation() {
+        // Add active states, smooth scrolling, etc.
+    }
 }
 
 // Initialize app
@@ -539,7 +536,7 @@ class Navigation {
 
   private highlightCurrentPage(): void {
     const currentPath = window.location.pathname;
-    this.menu?.querySelectorAll('a').forEach((link) => {
+    this.menu?.querySelectorAll('a').forEach(link => {
       if (link.getAttribute('href') === currentPath) {
         link.classList.add('active');
         this.state.activeItem = currentPath;
@@ -580,12 +577,12 @@ For advanced use cases like preloading, access the bundle paths in templates:
 
 Stati automatically adjusts behavior based on build mode:
 
-| Feature      | Development (`stati dev`) | Production (`stati build`)    |
-| ------------ | ------------------------- | ----------------------------- |
-| Filenames    | Stable (`bundle.js`)      | Hashed (`bundle-a1b2c3d4.js`) |
-| Source maps  | ✅ Enabled                | ❌ Disabled                   |
-| Minification | ❌ Disabled               | ✅ Enabled                    |
-| Watch mode   | ✅ Hot reload             | N/A                           |
+| Feature | Development (`stati dev`) | Production (`stati build`) |
+|---------|---------------------------|----------------------------|
+| Filenames | Stable (`bundle.js`) | Hashed (`bundle-a1b2c3d4.js`) |
+| Source maps | ✅ Enabled | ❌ Disabled |
+| Minification | ❌ Disabled | ✅ Enabled |
+| Watch mode | ✅ Hot reload | N/A |
 
 ### TypeScript Advantages
 
@@ -639,30 +636,30 @@ import { defineConfig } from '@stati/core';
 let sharedData = {};
 
 export default defineConfig({
-  site: {
-    title: 'My Stati Site',
-    baseUrl: 'https://example.com',
-  },
-  hooks: {
-    // Fetch data before building
-    beforeAll: async (ctx) => {
-      console.log('Fetching external data...');
-
-      // Fetch from API
-      const response = await fetch('https://api.example.com/products');
-      const products = await response.json();
-
-      // Store in module-level state
-      sharedData.products = products;
-
-      console.log(`Loaded ${products.length} products`);
+    site: {
+        title: 'My Stati Site',
+        baseUrl: 'https://example.com'
     },
+    hooks: {
+        // Fetch data before building
+        beforeAll: async (ctx) => {
+            console.log('Fetching external data...');
 
-    beforeRender: async (ctx) => {
-      // Add shared data to page frontmatter
-      ctx.page.frontMatter.products = sharedData.products;
-    },
-  },
+            // Fetch from API
+            const response = await fetch('https://api.example.com/products');
+            const products = await response.json();
+
+            // Store in module-level state
+            sharedData.products = products;
+
+            console.log(`Loaded ${products.length} products`);
+        },
+
+        beforeRender: async (ctx) => {
+            // Add shared data to page frontmatter
+            ctx.page.frontMatter.products = sharedData.products;
+        }
+    }
 });
 ```
 
@@ -685,19 +682,19 @@ Access the data in your templates:
 
 ```javascript
 export default defineConfig({
-  hooks: {
-    beforeRender: async (ctx) => {
-      // Calculate reading time for blog posts
-      if (ctx.page.url.startsWith('/blog/')) {
-        const wordCount = ctx.page.content.split(/\s+/).length;
-        const readingTime = Math.ceil(wordCount / 200); // 200 words per minute
+    hooks: {
+        beforeRender: async (ctx) => {
+            // Calculate reading time for blog posts
+            if (ctx.page.url.startsWith('/blog/')) {
+                const wordCount = ctx.page.content.split(/\s+/).length;
+                const readingTime = Math.ceil(wordCount / 200); // 200 words per minute
 
-        // Add to page front matter
-        ctx.page.frontMatter.readingTime = readingTime;
-        ctx.page.frontMatter.wordCount = wordCount;
-      }
-    },
-  },
+                // Add to page front matter
+                ctx.page.frontMatter.readingTime = readingTime;
+                ctx.page.frontMatter.wordCount = wordCount;
+            }
+        }
+    }
 });
 ```
 
@@ -715,27 +712,27 @@ Use in your template:
 
 ```javascript
 export default defineConfig({
-  hooks: {
-    beforeRender: async (ctx) => {
-      if (ctx.page.url.startsWith('/blog/')) {
-        // Get all blog posts
-        const blogPosts = ctx.pages
-          .filter((p) => p.url.startsWith('/blog/') && p.url !== ctx.page.url)
-          .sort((a, b) => new Date(b.frontMatter.date) - new Date(a.frontMatter.date));
+    hooks: {
+        beforeRender: async (ctx) => {
+            if (ctx.page.url.startsWith('/blog/')) {
+                // Get all blog posts
+                const blogPosts = ctx.pages
+                    .filter(p => p.url.startsWith('/blog/') && p.url !== ctx.page.url)
+                    .sort((a, b) => new Date(b.frontMatter.date) - new Date(a.frontMatter.date));
 
-        // Find related posts by tags
-        const currentTags = ctx.page.frontMatter.tags || [];
-        const relatedPosts = blogPosts
-          .filter((post) => {
-            const postTags = post.frontMatter.tags || [];
-            return postTags.some((tag) => currentTags.includes(tag));
-          })
-          .slice(0, 3);
+                // Find related posts by tags
+                const currentTags = ctx.page.frontMatter.tags || [];
+                const relatedPosts = blogPosts
+                    .filter(post => {
+                        const postTags = post.frontMatter.tags || [];
+                        return postTags.some(tag => currentTags.includes(tag));
+                    })
+                    .slice(0, 3);
 
-        ctx.page.frontMatter.relatedPosts = relatedPosts;
-      }
-    },
-  },
+                ctx.page.frontMatter.relatedPosts = relatedPosts;
+            }
+        }
+    }
 });
 ```
 
@@ -765,27 +762,27 @@ import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 export default defineConfig({
-  hooks: {
-    afterAll: async (ctx) => {
-      console.log('Generating search index...');
+    hooks: {
+        afterAll: async (ctx) => {
+            console.log('Generating search index...');
 
-      // Create search index from all pages
-      const searchIndex = ctx.pages.map((page) => ({
-        title: page.frontMatter.title || 'Untitled',
-        description: page.frontMatter.description || '',
-        url: page.url,
-        content: page.content
-          .replace(/<[^>]*>/g, '') // Strip HTML
-          .substring(0, 500), // First 500 chars
-      }));
+            // Create search index from all pages
+            const searchIndex = ctx.pages.map(page => ({
+                title: page.frontMatter.title || 'Untitled',
+                description: page.frontMatter.description || '',
+                url: page.url,
+                content: page.content
+                    .replace(/<[^>]*>/g, '') // Strip HTML
+                    .substring(0, 500) // First 500 chars
+            }));
 
-      // Write to public directory
-      const indexPath = join(ctx.config.outDir, 'search-index.json');
-      await writeFile(indexPath, JSON.stringify(searchIndex, null, 2));
+            // Write to public directory
+            const indexPath = join(ctx.config.outDir, 'search-index.json');
+            await writeFile(indexPath, JSON.stringify(searchIndex, null, 2));
 
-      console.log(`Generated search index with ${searchIndex.length} entries`);
-    },
-  },
+            console.log(`Generated search index with ${searchIndex.length} entries`);
+        }
+    }
 });
 ```
 
@@ -796,14 +793,14 @@ import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 export default defineConfig({
-  hooks: {
-    beforeAll: async (ctx) => {
-      // Fetch content from headless CMS
-      const cmsContent = await fetchFromCMS();
+    hooks: {
+        beforeAll: async (ctx) => {
+            // Fetch content from headless CMS
+            const cmsContent = await fetchFromCMS();
 
-      // Generate markdown files
-      for (const item of cmsContent) {
-        const markdown = `---
+            // Generate markdown files
+            for (const item of cmsContent) {
+                const markdown = `---
 title: ${item.title}
 date: ${item.date}
 author: ${item.author}
@@ -812,22 +809,26 @@ author: ${item.author}
 ${item.content}
 `;
 
-        const filePath = join(ctx.config.siteDir, 'blog', `${item.slug}.md`);
-        await writeFile(filePath, markdown);
-      }
+                const filePath = join(
+                    ctx.config.siteDir,
+                    'blog',
+                    `${item.slug}.md`
+                );
+                await writeFile(filePath, markdown);
+            }
 
-      console.log(`Generated ${cmsContent.length} posts from CMS`);
-    },
-  },
+            console.log(`Generated ${cmsContent.length} posts from CMS`);
+        }
+    }
 });
 
 async function fetchFromCMS() {
-  const response = await fetch('https://cms.example.com/api/posts', {
-    headers: {
-      Authorization: `Bearer ${process.env.CMS_TOKEN}`,
-    },
-  });
-  return response.json();
+    const response = await fetch('https://cms.example.com/api/posts', {
+        headers: {
+            'Authorization': `Bearer ${process.env.CMS_TOKEN}`
+        }
+    });
+    return response.json();
 }
 ```
 
@@ -854,12 +855,12 @@ async function fetchFromCMS() {
 
 ### Quick Reference Table
 
-| Method             | Best For                                            | Performance                   | Complexity | Runs At              |
-| ------------------ | --------------------------------------------------- | ----------------------------- | ---------- | -------------------- |
-| **Inline Scripts** | Small UI enhancements, page-specific logic          | Good (inline)                 | Low        | Runtime (browser)    |
-| **External Files** | Simple reusable scripts, no bundling needed         | Good (cached)                 | Low        | Runtime (browser)    |
-| **TypeScript**     | Type-safe code, modern development, production apps | Excellent (bundled, minified) | Medium     | Runtime (browser)    |
-| **Build Hooks**    | Data fetching, content generation, SEO              | Excellent (build-time)        | High       | Build time (Node.js) |
+| Method | Best For | Performance | Complexity | Runs At |
+|--------|----------|-------------|------------|---------|
+| **Inline Scripts** | Small UI enhancements, page-specific logic | Good (inline) | Low | Runtime (browser) |
+| **External Files** | Simple reusable scripts, no bundling needed | Good (cached) | Low | Runtime (browser) |
+| **TypeScript** | Type-safe code, modern development, production apps | Excellent (bundled, minified) | Medium | Runtime (browser) |
+| **Build Hooks** | Data fetching, content generation, SEO | Excellent (build-time) | High | Build time (Node.js) |
 
 ### When to Use Each Method
 
@@ -921,9 +922,10 @@ async function fetchFromCMS() {
    ```javascript
    // Calculate at build time instead of runtime
    hooks: {
-     beforeRender: async (ctx) => {
-       ctx.page.frontMatter.processedData = expensiveCalculation(ctx.page.content);
-     };
+       beforeRender: async (ctx) => {
+           ctx.page.frontMatter.processedData =
+               expensiveCalculation(ctx.page.content);
+       }
    }
    ```
 
@@ -948,23 +950,23 @@ async function fetchFromCMS() {
 
    ```javascript
    // Use descriptive names
-   public / js / theme - switcher.js; // Good
-   public / js / script.js; // Bad
+   public/js/theme-switcher.js    // Good
+   public/js/script.js            // Bad
    ```
 
 3. **Document your build hooks:**
 
    ```javascript
    export default defineConfig({
-     hooks: {
-       /**
-        * Fetches latest blog posts from external API
-        * and generates static pages at build time
-        */
-       beforeAll: async (ctx) => {
-         // Implementation
-       },
-     },
+       hooks: {
+           /**
+            * Fetches latest blog posts from external API
+            * and generates static pages at build time
+            */
+           beforeAll: async (ctx) => {
+               // Implementation
+           }
+       }
    });
    ```
 
@@ -974,9 +976,9 @@ async function fetchFromCMS() {
 
    ```javascript
    function sanitize(html) {
-     const div = document.createElement('div');
-     div.textContent = html;
-     return div.innerHTML;
+       const div = document.createElement('div');
+       div.textContent = html;
+       return div.innerHTML;
    }
    ```
 
@@ -1009,8 +1011,8 @@ async function fetchFromCMS() {
        beforeRender: async (ctx) => {
          // Add validated data to pages as needed
          ctx.page.frontMatter.externalData = validatedData;
-       },
-     },
+       }
+     }
    });
    ```
 
@@ -1026,22 +1028,23 @@ import { defineConfig } from '@stati/core';
 let blogPosts: any[] = [];
 
 export default defineConfig({
-  typescript: {
-    enabled: true, // Your TypeScript bundle is auto-injected
-  },
-  hooks: {
-    beforeAll: async (ctx) => {
-      // Fetch blog posts at build time
-      blogPosts = await fetchBlogPosts();
+    typescript: {
+        enabled: true, // Your TypeScript bundle is auto-injected
     },
-    beforeRender: async (ctx) => {
-      // Add shared data to page frontmatter
-      ctx.page.frontMatter.blogPosts = blogPosts;
+    hooks: {
+        beforeAll: async (ctx) => {
+            // Fetch blog posts at build time
+            blogPosts = await fetchBlogPosts();
+        },
+        beforeRender: async (ctx) => {
+            // Add shared data to page frontmatter
+            ctx.page.frontMatter.blogPosts = blogPosts;
 
-      // Calculate reading time
-      ctx.page.frontMatter.readingTime = calculateReadingTime(ctx.page.content);
-    },
-  },
+            // Calculate reading time
+            ctx.page.frontMatter.readingTime =
+                calculateReadingTime(ctx.page.content);
+        }
+    }
 });
 ```
 
@@ -1051,8 +1054,8 @@ import { initTheme } from './theme';
 import { initSearch } from './search';
 
 document.addEventListener('DOMContentLoaded', () => {
-  initTheme(); // Theme switching logic
-  initSearch(); // Client-side search
+    initTheme();    // Theme switching logic
+    initSearch();   // Client-side search
 });
 ```
 

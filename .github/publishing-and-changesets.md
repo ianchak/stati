@@ -144,8 +144,8 @@ Generated changesets follow this structure:
 
 ```markdown
 ---
-'@stati/core': patch
-'@stati/cli': patch
+"@stati/core": patch
+"@stati/cli": patch
 ---
 
 Add markdown syntax highlighting
@@ -158,7 +158,7 @@ in markdown files using Prism.js integration.
 
 ```markdown
 ---
-'@stati/core': major
+"@stati/core": major
 ---
 
 Redesign configuration API
@@ -436,8 +436,8 @@ touch .changeset/my-feature-change.md
 
 ```markdown
 ---
-'@stati/core': minor
-'@stati/cli': patch
+"@stati/core": minor
+"@stati/cli": patch
 ---
 
 Add new feature with CLI integration
@@ -458,7 +458,7 @@ Detailed description of changes...
 
 ```markdown
 ---
-'@stati/core': minor
+"@stati/core": minor
 ---
 
 Add support for custom markdown plugins
@@ -491,7 +491,7 @@ Edit the changeset file to change the version bump type:
 
 ```markdown
 ---
-'@stati/core': major # Changed from minor
+"@stati/core": major  # Changed from minor
 ---
 ```
 

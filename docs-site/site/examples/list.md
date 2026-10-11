@@ -12,18 +12,11 @@ Learn Stati by exploring examples and real-world implementations. Currently, Sta
 
 ### Blank Template
 
-A minimal Stati site demonstrating core concepts and best practices:
+A minimal Stati site demonstrating core concepts:
 
 - **Location:** [`examples/blank/`](https://github.com/ianchak/stati/tree/main/examples/blank)
-- **Features:** HTML5 semantic structure, accessibility features (skip links, ARIA landmarks), SEO-friendly meta tags, minimal CSS reset and typography
-- **Best for:** Getting started, understanding Stati fundamentals, learning best practices
-
-**Key Features:**
-
-- **Semantic HTML5** - Proper document structure with meaningful elements
-- **Accessibility** - Skip-to-main-content links and ARIA roles for screen readers
-- **SEO Ready** - Meta tags for description, canonical URLs, and proper viewport configuration
-- **CSS Foundation** - Basic typography and styling reset
+- **Features:** Basic site structure, simple layout, example content
+- **Best for:** Getting started, understanding Stati fundamentals
 
 **Key Files:**
 
@@ -31,9 +24,9 @@ A minimal Stati site demonstrating core concepts and best practices:
 examples/blank/
 ├── site/
 │   ├── index.md          # Homepage with front-matter
-│   └── layout.eta        # Main layout template with SEO & accessibility features
+│   └── layout.eta        # Main layout template
 ├── public/
-│   ├── styles.css        # CSS reset and base typography
+│   ├── styles.css        # Basic styling
 │   └── favicon.svg       # Site icon
 ├── stati.config.js       # Configuration example
 └── package.json          # Scripts and dependencies

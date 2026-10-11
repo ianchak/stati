@@ -58,17 +58,17 @@ export default defineConfig({
 
 ### Option Reference
 
-| Option              | Type       | Default           | Description                                                   |
-| ------------------- | ---------- | ----------------- | ------------------------------------------------------------- |
-| `enabled`           | `boolean`  | `false`           | Enable search index generation                                |
-| `indexName`         | `string`   | `'search-index'`  | Base filename for the search index (without extension)        |
-| `hashFilename`      | `boolean`  | `true`            | Include content hash in filename for cache busting            |
-| `maxContentLength`  | `number`   | `1000`            | Maximum content length per section (in characters)            |
-| `maxPreviewLength`  | `number`   | `500`             | Maximum preview length for page-level entries (in characters) |
-| `headingLevels`     | `number[]` | `[2, 3, 4, 5, 6]` | Heading levels to include in the index                        |
-| `exclude`           | `string[]` | `[]`              | Glob patterns for pages to exclude                            |
-| `includeHomePage`   | `boolean`  | `false`           | Include the home page in the search index                     |
-| `autoInjectMetaTag` | `boolean`  | `true`            | Auto-inject search index meta tag into HTML                   |
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `enabled` | `boolean` | `false` | Enable search index generation |
+| `indexName` | `string` | `'search-index'` | Base filename for the search index (without extension) |
+| `hashFilename` | `boolean` | `true` | Include content hash in filename for cache busting |
+| `maxContentLength` | `number` | `1000` | Maximum content length per section (in characters) |
+| `maxPreviewLength` | `number` | `500` | Maximum preview length for page-level entries (in characters) |
+| `headingLevels` | `number[]` | `[2, 3, 4, 5, 6]` | Heading levels to include in the index |
+| `exclude` | `string[]` | `[]` | Glob patterns for pages to exclude |
+| `includeHomePage` | `boolean` | `false` | Include the home page in the search index |
+| `autoInjectMetaTag` | `boolean` | `true` | Auto-inject search index meta tag into HTML |
 
 ## Content Filtering
 
@@ -136,17 +136,17 @@ The generated search index is a JSON file with the following structure:
 
 ### Document Fields
 
-| Field        | Type       | Description                                               |
-| ------------ | ---------- | --------------------------------------------------------- |
-| `id`         | `string`   | Unique identifier (page URL + section anchor)             |
-| `url`        | `string`   | Page URL path                                             |
-| `anchor`     | `string`   | Section anchor (heading ID), empty for page-level entries |
-| `title`      | `string`   | Page title from frontmatter                               |
-| `heading`    | `string`   | Section heading text                                      |
-| `level`      | `number`   | Heading level (1 for page title, 2-6 for headings)        |
-| `content`    | `string`   | Text content of the section (stripped of markdown)        |
-| `breadcrumb` | `string`   | Breadcrumb path for display                               |
-| `tags`       | `string[]` | Optional tags from frontmatter                            |
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `string` | Unique identifier (page URL + section anchor) |
+| `url` | `string` | Page URL path |
+| `anchor` | `string` | Section anchor (heading ID), empty for page-level entries |
+| `title` | `string` | Page title from frontmatter |
+| `heading` | `string` | Section heading text |
+| `level` | `number` | Heading level (1 for page title, 2-6 for headings) |
+| `content` | `string` | Text content of the section (stripped of markdown) |
+| `breadcrumb` | `string` | Breadcrumb path for display |
+| `tags` | `string[]` | Optional tags from frontmatter |
 
 ## Template Access
 
@@ -165,7 +165,7 @@ Access the search index path in your templates via `stati.assets.searchIndexPath
 When `autoInjectMetaTag` is enabled (default), Stati automatically injects a meta tag into your HTML:
 
 ```html
-<meta name="stati:search-index" content="/search-index-a1b2c3d4.json" />
+<meta name="stati:search-index" content="/search-index-a1b2c3d4.json">
 ```
 
 This allows client-side JavaScript to discover the search index location:
@@ -198,11 +198,10 @@ async function loadSearchIndex() {
 // Simple search function
 function search(index, query) {
   const lowerQuery = query.toLowerCase();
-  return index.documents.filter(
-    (doc) =>
-      doc.title.toLowerCase().includes(lowerQuery) ||
-      doc.heading.toLowerCase().includes(lowerQuery) ||
-      doc.content.toLowerCase().includes(lowerQuery),
+  return index.documents.filter(doc =>
+    doc.title.toLowerCase().includes(lowerQuery) ||
+    doc.heading.toLowerCase().includes(lowerQuery) ||
+    doc.content.toLowerCase().includes(lowerQuery)
   );
 }
 

@@ -2,7 +2,7 @@
 /**
  * Section Header Component
  *
- * Consistent section header with solid title and subtitle.
+ * Consistent section header with gradient title and subtitle.
  *
  * Props:
  *   - title (required): Section title
@@ -26,7 +26,7 @@ const alignClass = align === 'center' ? 'text-center' : 'text-left';
 const subtitleMaxWidth = align === 'center' ? 'max-w-3xl mx-auto' : 'max-w-3xl';
 %>
 <div class="<%= stati.propValue(alignClass, 'mb-16', stati.props.class) %>">
-  <h2 class="text-4xl lg:text-5xl font-bold mb-4 text-docs-text-strong">
+  <h2 class="text-4xl lg:text-5xl font-bold mb-4 bg-gradient-to-r from-gray-900 via-primary-700 to-gray-900 dark:from-gray-100 dark:via-primary-400 dark:to-gray-100 bg-clip-text text-transparent">
     <%= stati.props.title %>
   </h2>
   <% if (stati.props.subtitle) { %>

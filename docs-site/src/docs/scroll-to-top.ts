@@ -3,8 +3,6 @@
  * Shows/hides a button based on scroll position and scrolls to top on click.
  */
 
-import { prefersReducedMotion } from '../core/index.js';
-
 /** Scroll threshold in pixels before showing the button */
 const SCROLL_THRESHOLD = 300;
 
@@ -31,9 +29,6 @@ export function initScrollToTop(): void {
 
   // Smooth scroll to top on click
   scrollToTopBtn.addEventListener('click', () => {
-    window.scrollTo({
-      top: 0,
-      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
-    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 }

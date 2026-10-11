@@ -39,8 +39,8 @@ Stati follows these key principles:
 export default {
   srcDir: 123, // ❌ Error: srcDir must be a string
   isg: {
-    ttlSeconds: 'invalid', // ❌ Error: ISGConfigurationError - ttlSeconds must be a number
-  },
+    ttlSeconds: 'invalid' // ❌ Error: ISGConfigurationError - ttlSeconds must be a number
+  }
 };
 ```
 
@@ -120,8 +120,8 @@ export default defineConfig({
   hooks: {
     beforeRender: async (ctx) => {
       throw new Error('Hook failed'); // ❌ Will stop the build
-    },
-  },
+    }
+  }
 });
 ```
 
@@ -147,7 +147,7 @@ class TemplateError extends Error {
     filePath?: string,
     line?: number,
     column?: number,
-    template?: string,
+    template?: string
   ) {
     super(message);
     this.name = 'TemplateError';
@@ -169,7 +169,7 @@ class ISGConfigurationError extends Error {
     public readonly code: ISGValidationError,
     public readonly field: string,
     public readonly value: unknown,
-    message: string,
+    message: string
   ) {
     super(message);
     this.name = 'ISGConfigurationError';
@@ -182,7 +182,7 @@ enum ISGValidationError {
   INVALID_AGING_RULE = 'ISG_INVALID_AGING_RULE',
   DUPLICATE_AGING_RULE = 'ISG_DUPLICATE_AGING_RULE',
   UNSORTED_AGING_RULES = 'ISG_UNSORTED_AGING_RULES',
-  AGING_RULE_EXCEEDS_CAP = 'ISG_AGING_RULE_EXCEEDS_CAP',
+  AGING_RULE_EXCEEDS_CAP = 'ISG_AGING_RULE_EXCEEDS_CAP'
 }
 ```
 
@@ -194,7 +194,7 @@ enum ISGValidationError {
 class CircularDependencyError extends Error {
   constructor(
     public readonly dependencyChain: string[],
-    message: string,
+    message: string
   ) {
     super(message);
     this.name = 'CircularDependencyError';
@@ -211,7 +211,7 @@ class DuplicateBundleNameError extends Error {
   constructor(duplicates: string[]) {
     super(
       `Duplicate bundleName(s) found in configuration: ${duplicates.join(', ')}. ` +
-        'Each bundle must have a unique bundleName.',
+        'Each bundle must have a unique bundleName.'
     );
     this.name = 'DuplicateBundleNameError';
   }
@@ -229,17 +229,17 @@ When template rendering fails, Stati uses a built-in fallback that generates min
 ```html
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>${escapeHtml(title)}</title>
-    ${description ? `
-    <meta name="description" content="${escapeHtml(description)}" />
-    ` : ''}
-  </head>
-  <body>
-    <main>${body}</main>
-  </body>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(title)}</title>
+  ${description ? `<meta name="description" content="${escapeHtml(description)}">` : ''}
+</head>
+<body>
+  <main>
+    ${body}
+  </main>
+</body>
 </html>
 ```
 
@@ -351,8 +351,10 @@ export default defineConfig({
   // Configuration with TypeScript validation
   site: {
     title: 'My Site',
-    baseUrl: process.env.NODE_ENV === 'production' ? 'https://mysite.com' : 'http://localhost:3000',
-  },
+    baseUrl: process.env.NODE_ENV === 'production'
+      ? 'https://mysite.com'
+      : 'http://localhost:3000'
+  }
 });
 ```
 
@@ -370,8 +372,8 @@ export default defineConfig({
         // Decide whether to continue or fail
         throw error; // Re-throw to stop build
       }
-    },
-  },
+    }
+  }
 });
 ```
 

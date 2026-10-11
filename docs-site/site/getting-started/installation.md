@@ -44,15 +44,15 @@ This will:
 
 Here are the available options:
 
-| Argument               | Description                                                                |
-| ---------------------- | -------------------------------------------------------------------------- |
-| `[project-name]`       | Sets the project directory name.                                           |
-| `--styling`            | Sets the styling solution (`css`, `sass`, or `tailwind`).                  |
-| `--typescript`, `--ts` | Enables TypeScript support with esbuild compilation.                       |
-| `--no-git`             | Skips Git initialization (default: initializes Git).                       |
-| `--no-install`         | Skips dependency installation (default: installs dependencies).            |
-| `--package-manager`    | Specifies the package manager to use (`npm`, `yarn`, `pnpm`, or `bun`).    |
-| `--template`           | Specifies a project template to use (currently only `blank` is available). |
+| Argument | Description |
+| --- | --- |
+| `[project-name]` | Sets the project directory name. |
+| `--styling` | Sets the styling solution (`css`, `sass`, or `tailwind`). |
+| `--typescript`, `--ts` | Enables TypeScript support with esbuild compilation. |
+| `--no-git` | Skips Git initialization (default: initializes Git). |
+| `--no-install` | Skips dependency installation (default: installs dependencies). |
+| `--package-manager` | Specifies the package manager to use (`npm`, `yarn`, `pnpm`, or `bun`). |
+| `--template` | Specifies a project template to use (currently only `blank` is available). |
 
 ### TypeScript Quick Start
 

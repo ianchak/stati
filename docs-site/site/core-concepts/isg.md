@@ -25,7 +25,7 @@ Unlike traditional static site generators that rebuild everything, Stati only re
 
 Stati automatically tracks relationships between files:
 
-````text
+```text
 blog/index.md depends on:
 ├── blog/post-1.md
 ├── blog/post-2.md
@@ -57,7 +57,7 @@ Stati maintains a cache manifest at `.stati/cache/manifest.json`:
     }
   }
 }
-````
+```
 
 ### Build Process
 
@@ -89,10 +89,10 @@ export default defineConfig({
 
     // Progressive TTL increases based on content age
     aging: [
-      { untilDays: 7, ttlSeconds: 21600 }, // 6 hours for week-old content
-      { untilDays: 30, ttlSeconds: 86400 }, // 24 hours for month-old content
+      { untilDays: 7, ttlSeconds: 21600 },   // 6 hours for week-old content
+      { untilDays: 30, ttlSeconds: 86400 },  // 24 hours for month-old content
       { untilDays: 90, ttlSeconds: 259200 }, // 3 days for 3-month-old content
-      { untilDays: 365, ttlSeconds: 604800 }, // 7 days for year-old content
+      { untilDays: 365, ttlSeconds: 604800 } // 7 days for year-old content
     ],
   },
 });
@@ -158,8 +158,8 @@ export default defineConfig({
 
     // Age-based TTL adjustments apply to all content
     aging: [
-      { untilDays: 7, ttlSeconds: 1800 }, // 30 minutes for fresh content
-      { untilDays: 30, ttlSeconds: 3600 }, // 1 hour for week-old content
+      { untilDays: 7, ttlSeconds: 1800 },   // 30 minutes for fresh content
+      { untilDays: 30, ttlSeconds: 3600 },  // 1 hour for week-old content
       { untilDays: 90, ttlSeconds: 86400 }, // 24 hours for month-old content
     ],
   },
@@ -174,10 +174,10 @@ The aging configuration uses a simple array format:
 export default defineConfig({
   isg: {
     aging: [
-      { untilDays: 7, ttlSeconds: 21600 }, // 6 hours for week-old content
-      { untilDays: 30, ttlSeconds: 86400 }, // 24 hours for month-old content
+      { untilDays: 7, ttlSeconds: 21600 },   // 6 hours for week-old content
+      { untilDays: 30, ttlSeconds: 86400 },  // 24 hours for month-old content
       { untilDays: 90, ttlSeconds: 259200 }, // 3 days for 3-month-old content
-      { untilDays: 365, ttlSeconds: 604800 }, // 7 days for year-old content
+      { untilDays: 365, ttlSeconds: 604800 } // 7 days for year-old content
     ],
   },
 });
@@ -246,12 +246,12 @@ The `.stati/cache/` directory stores build cache data between runs:
 
 **Hosting Considerations:**
 
-| Environment                  | Cache Behavior        | Setup Required              |
-| ---------------------------- | --------------------- | --------------------------- |
-| Traditional servers          | Persists on disk      | None                        |
-| CI/CD pipelines              | Lost between runs     | Cache `.stati/` directory   |
-| Serverless (Vercel, Netlify) | Ephemeral filesystems | Use platform cache features |
-| Docker containers            | Lost on rebuild       | Mount volume for `.stati/`  |
+| Environment                  | Cache Behavior         | Setup Required              |
+| ---------------------------- | ---------------------- | --------------------------- |
+| Traditional servers          | Persists on disk       | None                        |
+| CI/CD pipelines              | Lost between runs      | Cache `.stati/` directory   |
+| Serverless (Vercel, Netlify) | Ephemeral filesystems  | Use platform cache features |
+| Docker containers            | Lost on rebuild        | Mount volume for `.stati/`  |
 
 **CI/CD Cache Examples:**
 

@@ -24,13 +24,13 @@ Each navigation node has the following structure:
 
 ```typescript
 interface NavNode {
-  title: string; // Display title
-  url: string; // URL path
-  path: string; // File system path
-  order?: number; // Sort order (from frontmatter)
-  publishedAt?: Date; // Publication date
-  children?: NavNode[]; // Child nodes (for collections)
-  isCollection?: boolean; // True if this represents a directory
+  title: string;              // Display title
+  url: string;                // URL path
+  path: string;               // File system path
+  order?: number;             // Sort order (from frontmatter)
+  publishedAt?: Date;         // Publication date
+  children?: NavNode[];       // Child nodes (for collections)
+  isCollection?: boolean;     // True if this represents a directory
 }
 ```
 
@@ -48,7 +48,7 @@ Direct access to the full navigation tree.
 <!-- Display top-level navigation -->
 <nav>
   <% stati.nav.tree.forEach(node => { %>
-  <a href="<%= node.url %>"><%= node.title %></a>
+    <a href="<%= node.url %>"><%= node.title %></a>
   <% }) %>
 </nav>
 ```
@@ -73,7 +73,7 @@ getTree(): NavNode[]
 <% const navigation = stati.nav.getTree() %>
 <ul>
   <% navigation.forEach(item => { %>
-  <li><a href="<%= item.url %>"><%= item.title %></a></li>
+    <li><a href="<%= item.url %>"><%= item.title %></a></li>
   <% }) %>
 </ul>
 ```
@@ -99,9 +99,10 @@ findNode(path: string): NavNode | undefined
 **Example:**
 
 ```html
-<% const docsNode = stati.nav.findNode('/docs') %> <% if (docsNode) { %>
-<h3><%= docsNode.title %></h3>
-<p>This section has <%= docsNode.children?.length || 0 %> pages</p>
+<% const docsNode = stati.nav.findNode('/docs') %>
+<% if (docsNode) { %>
+  <h3><%= docsNode.title %></h3>
+  <p>This section has <%= docsNode.children?.length || 0 %> pages</p>
 <% } %>
 ```
 
@@ -131,9 +132,9 @@ getChildren(path: string): NavNode[]
   <h2>Documentation</h2>
   <ul>
     <% stati.nav.getChildren('/docs').forEach(page => { %>
-    <li>
-      <a href="<%= page.url %>"><%= page.title %></a>
-    </li>
+      <li>
+        <a href="<%= page.url %>"><%= page.title %></a>
+      </li>
     <% }) %>
   </ul>
 </div>
@@ -145,20 +146,26 @@ getChildren(path: string): NavNode[]
 <!-- _partials/sidebar.eta -->
 <aside class="sidebar">
   <% function renderSection(path, title) { %>
-  <div class="sidebar-section">
-    <h3><%= title %></h3>
-    <ul>
-      <% stati.nav.getChildren(path).forEach(item => { %>
-      <li>
-        <a href="<%= item.url %>" class="<%= stati.page.url === item.url ? 'active' : '' %>">
-          <%= item.title %>
-        </a>
-      </li>
-      <% }) %>
-    </ul>
-  </div>
-  <% } %> <%~ renderSection('/getting-started', 'Getting Started') %> <%~
-  renderSection('/core-concepts', 'Core Concepts') %> <%~ renderSection('/api', 'API Reference') %>
+    <div class="sidebar-section">
+      <h3><%= title %></h3>
+      <ul>
+        <% stati.nav.getChildren(path).forEach(item => { %>
+          <li>
+            <a
+              href="<%= item.url %>"
+              class="<%= stati.page.url === item.url ? 'active' : '' %>"
+            >
+              <%= item.title %>
+            </a>
+          </li>
+        <% }) %>
+      </ul>
+    </div>
+  <% } %>
+
+  <%~ renderSection('/getting-started', 'Getting Started') %>
+  <%~ renderSection('/core-concepts', 'Core Concepts') %>
+  <%~ renderSection('/api', 'API Reference') %>
 </aside>
 ```
 
@@ -184,8 +191,11 @@ getParent(path?: string): NavNode | undefined
 
 ```html
 <!-- Show "Back to Parent" link -->
-<% const parent = stati.nav.getParent() %> <% if (parent) { %>
-<a href="<%= parent.url %>" class="back-link"> ← Back to <%= parent.title %> </a>
+<% const parent = stati.nav.getParent() %>
+<% if (parent) { %>
+  <a href="<%= parent.url %>" class="back-link">
+    ← Back to <%= parent.title %>
+  </a>
 <% } %>
 ```
 
@@ -216,9 +226,9 @@ getSiblings(path?: string, includeSelf?: boolean): NavNode[]
   <h3>Related Pages</h3>
   <ul>
     <% stati.nav.getSiblings().forEach(sibling => { %>
-    <li>
-      <a href="<%= sibling.url %>"><%= sibling.title %></a>
-    </li>
+      <li>
+        <a href="<%= sibling.url %>"><%= sibling.title %></a>
+      </li>
     <% }) %>
   </ul>
 </div>
@@ -228,16 +238,24 @@ getSiblings(path?: string, includeSelf?: boolean): NavNode[]
 
 ```html
 <!-- Previous/Next page navigation -->
-<% const siblings = stati.nav.getSiblings(undefined, true); const currentIndex =
-siblings.findIndex(s => s.url === stati.page.url); const prevPage = currentIndex > 0 ?
-siblings[currentIndex - 1] : null; const nextPage = currentIndex < siblings.length - 1 ?
-siblings[currentIndex + 1] : null; %>
+<%
+  const siblings = stati.nav.getSiblings(undefined, true);
+  const currentIndex = siblings.findIndex(s => s.url === stati.page.url);
+  const prevPage = currentIndex > 0 ? siblings[currentIndex - 1] : null;
+  const nextPage = currentIndex < siblings.length - 1 ? siblings[currentIndex + 1] : null;
+%>
 
 <nav class="page-navigation">
   <% if (prevPage) { %>
-  <a href="<%= prevPage.url %>" class="prev"> ← <%= prevPage.title %> </a>
-  <% } %> <% if (nextPage) { %>
-  <a href="<%= nextPage.url %>" class="next"> <%= nextPage.title %> → </a>
+    <a href="<%= prevPage.url %>" class="prev">
+      ← <%= prevPage.title %>
+    </a>
+  <% } %>
+
+  <% if (nextPage) { %>
+    <a href="<%= nextPage.url %>" class="next">
+      <%= nextPage.title %> →
+    </a>
   <% } %>
 </nav>
 ```
@@ -264,17 +282,18 @@ getSubtree(path: string): NavNode[]
 
 ```html
 <!-- Render a specific section's navigation tree -->
-<% const blogTree = stati.nav.getSubtree('/blog') %> <% if (blogTree.length > 0) { %>
-<div class="blog-nav">
-  <h3><%= blogTree[0].title %></h3>
-  <% if (blogTree[0].children) { %>
-  <ul>
-    <% blogTree[0].children.forEach(post => { %>
-    <li><a href="<%= post.url %>"><%= post.title %></a></li>
-    <% }) %>
-  </ul>
-  <% } %>
-</div>
+<% const blogTree = stati.nav.getSubtree('/blog') %>
+<% if (blogTree.length > 0) { %>
+  <div class="blog-nav">
+    <h3><%= blogTree[0].title %></h3>
+    <% if (blogTree[0].children) { %>
+      <ul>
+        <% blogTree[0].children.forEach(post => { %>
+          <li><a href="<%= post.url %>"><%= post.title %></a></li>
+        <% }) %>
+      </ul>
+    <% } %>
+  </div>
 <% } %>
 ```
 
@@ -304,13 +323,13 @@ getBreadcrumbs(path?: string): NavNode[]
   <ol>
     <li><a href="/">Home</a></li>
     <% stati.nav.getBreadcrumbs().forEach((crumb, index, array) => { %>
-    <li>
-      <% if (index === array.length - 1) { %>
-      <span aria-current="page"><%= crumb.title %></span>
-      <% } else { %>
-      <a href="<%= crumb.url %>"><%= crumb.title %></a>
-      <% } %>
-    </li>
+      <li>
+        <% if (index === array.length - 1) { %>
+          <span aria-current="page"><%= crumb.title %></span>
+        <% } else { %>
+          <a href="<%= crumb.url %>"><%= crumb.title %></a>
+        <% } %>
+      </li>
     <% }) %>
   </ol>
 </nav>
@@ -334,17 +353,19 @@ getCurrentNode(): NavNode | undefined
 
 ```html
 <!-- Show current page's metadata -->
-<% const currentNode = stati.nav.getCurrentNode() %> <% if (currentNode) { %>
-<div class="page-meta">
-  <h1><%= currentNode.title %></h1>
-  <% if (currentNode.publishedAt) { %>
-  <time datetime="<%= currentNode.publishedAt.toISOString() %>">
-    <%= currentNode.publishedAt.toLocaleDateString() %>
-  </time>
-  <% } %> <% if (currentNode.children && currentNode.children.length > 0) { %>
-  <p>This section contains <%= currentNode.children.length %> pages</p>
-  <% } %>
-</div>
+<% const currentNode = stati.nav.getCurrentNode() %>
+<% if (currentNode) { %>
+  <div class="page-meta">
+    <h1><%= currentNode.title %></h1>
+    <% if (currentNode.publishedAt) { %>
+      <time datetime="<%= currentNode.publishedAt.toISOString() %>">
+        <%= currentNode.publishedAt.toLocaleDateString() %>
+      </time>
+    <% } %>
+    <% if (currentNode.children && currentNode.children.length > 0) { %>
+      <p>This section contains <%= currentNode.children.length %> pages</p>
+    <% } %>
+  </div>
 <% } %>
 ```
 
@@ -363,16 +384,16 @@ Direct access to the current page's navigation node with all its properties and 
 ```html
 <!-- Show children of current page -->
 <% if (stati.page.navNode?.children) { %>
-<div class="child-pages">
-  <h2>In This Section</h2>
-  <ul>
-    <% stati.page.navNode.children.forEach(child => { %>
-    <li>
-      <a href="<%= child.url %>"><%= child.title %></a>
-    </li>
-    <% }) %>
-  </ul>
-</div>
+  <div class="child-pages">
+    <h2>In This Section</h2>
+    <ul>
+      <% stati.page.navNode.children.forEach(child => { %>
+        <li>
+          <a href="<%= child.url %>"><%= child.title %></a>
+        </li>
+      <% }) %>
+    </ul>
+  </div>
 <% } %>
 ```
 
@@ -385,39 +406,50 @@ Direct access to the current page's navigation node with all its properties and 
 ```html
 <!-- _partials/nested-nav.eta -->
 <% function renderNavTree(nodes, level = 0) { %>
-<ul class="<%= stati.propValue(`nav-level-${level}`) %>">
-  <% nodes.forEach(node => { %>
-  <li>
-    <a href="<%= node.url %>" class="<%= stati.page.url === node.url ? 'active' : '' %>">
-      <%= node.title %>
-    </a>
-    <% if (node.children && node.children.length > 0) { %> <%~ renderNavTree(node.children, level +
-    1) %> <% } %>
-  </li>
-  <% }) %>
-</ul>
+  <ul class="<%= stati.propValue(`nav-level-${level}`) %>">
+    <% nodes.forEach(node => { %>
+      <li>
+        <a
+          href="<%= node.url %>"
+          class="<%= stati.page.url === node.url ? 'active' : '' %>"
+        >
+          <%= node.title %>
+        </a>
+        <% if (node.children && node.children.length > 0) { %>
+          <%~ renderNavTree(node.children, level + 1) %>
+        <% } %>
+      </li>
+    <% }) %>
+  </ul>
 <% } %>
 
-<nav class="site-navigation"><%~ renderNavTree(stati.nav.tree) %></nav>
+<nav class="site-navigation">
+  <%~ renderNavTree(stati.nav.tree) %>
+</nav>
 ```
 
 ### Section Navigation with Active State
 
 ```html
 <!-- Show navigation for current section only -->
-<% const parent = stati.nav.getParent() %> <% if (parent?.children) { %>
-<nav class="section-nav">
-  <h2><%= parent.title %></h2>
-  <ul>
-    <% parent.children.forEach(page => { %>
-    <li>
-      <a href="<%= page.url %>" class="<%= stati.page.url === page.url ? 'active' : '' %>">
-        <%= page.title %>
-      </a>
-    </li>
-    <% }) %>
-  </ul>
-</nav>
+<% const parent = stati.nav.getParent() %>
+
+<% if (parent?.children) { %>
+  <nav class="section-nav">
+    <h2><%= parent.title %></h2>
+    <ul>
+      <% parent.children.forEach(page => { %>
+        <li>
+          <a
+            href="<%= page.url %>"
+            class="<%= stati.page.url === page.url ? 'active' : '' %>"
+          >
+            <%= page.title %>
+          </a>
+        </li>
+      <% }) %>
+    </ul>
+  </nav>
 <% } %>
 ```
 
@@ -425,26 +457,27 @@ Direct access to the current page's navigation node with all its properties and 
 
 ```html
 <!-- Generate TOC for a section -->
-<% const section = stati.nav.findNode('/docs') %> <% if (section?.children) { %>
-<aside class="toc">
-  <h2>Documentation</h2>
-  <nav>
-    <% section.children.forEach(subsection => { %>
-    <div class="toc-section">
-      <a href="<%= subsection.url %>"><%= subsection.title %></a>
-      <% if (subsection.children) { %>
-      <ul>
-        <% subsection.children.forEach(page => { %>
-        <li>
-          <a href="<%= page.url %>"><%= page.title %></a>
-        </li>
-        <% }) %>
-      </ul>
-      <% } %>
-    </div>
-    <% }) %>
-  </nav>
-</aside>
+<% const section = stati.nav.findNode('/docs') %>
+<% if (section?.children) { %>
+  <aside class="toc">
+    <h2>Documentation</h2>
+    <nav>
+      <% section.children.forEach(subsection => { %>
+        <div class="toc-section">
+          <a href="<%= subsection.url %>"><%= subsection.title %></a>
+          <% if (subsection.children) { %>
+            <ul>
+              <% subsection.children.forEach(page => { %>
+                <li>
+                  <a href="<%= page.url %>"><%= page.title %></a>
+                </li>
+              <% }) %>
+            </ul>
+          <% } %>
+        </div>
+      <% }) %>
+    </nav>
+  </aside>
 <% } %>
 ```
 
@@ -456,29 +489,32 @@ Direct access to the current page's navigation node with all its properties and 
 
 <aside class="sidebar">
   <% if (parent) { %>
-  <div class="sidebar-section">
-    <h3><%= parent.title %></h3>
-    <ul>
-      <% stati.nav.getSiblings(undefined, true).forEach(page => { %>
-      <li>
-        <a href="<%= page.url %>" class="<%= stati.page.url === page.url ? 'active' : '' %>">
-          <%= page.title %>
-        </a>
-
-        <!-- Show children if this is the current page -->
-        <% if (page.url === stati.page.url && page.children) { %>
-        <ul class="subsection">
-          <% page.children.forEach(child => { %>
+    <div class="sidebar-section">
+      <h3><%= parent.title %></h3>
+      <ul>
+        <% stati.nav.getSiblings(undefined, true).forEach(page => { %>
           <li>
-            <a href="<%= child.url %>"><%= child.title %></a>
+            <a
+              href="<%= page.url %>"
+              class="<%= stati.page.url === page.url ? 'active' : '' %>"
+            >
+              <%= page.title %>
+            </a>
+
+            <!-- Show children if this is the current page -->
+            <% if (page.url === stati.page.url && page.children) { %>
+              <ul class="subsection">
+                <% page.children.forEach(child => { %>
+                  <li>
+                    <a href="<%= child.url %>"><%= child.title %></a>
+                  </li>
+                <% }) %>
+              </ul>
+            <% } %>
           </li>
-          <% }) %>
-        </ul>
-        <% } %>
-      </li>
-      <% }) %>
-    </ul>
-  </div>
+        <% }) %>
+      </ul>
+    </div>
   <% } %>
 </aside>
 ```

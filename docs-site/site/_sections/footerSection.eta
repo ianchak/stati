@@ -7,15 +7,17 @@
  * Props:
  *   - title (required): Section title
  *   - icon (required): Icon name for the section header
- *   - links (required): Array of { href, text, external? } objects
+ *   - color (required): Tailwind color name (e.g., 'primary', 'emerald', 'purple')
+ *   - links (required): Array of { href, text, color?, external? } objects
  *
  * Usage:
  *   <%~ stati.partials.footerSection({
  *     title: 'Documentation',
  *     icon: 'book',
+ *     color: 'primary',
  *     links: [
- *       { href: '/core-concepts/overview/', text: 'Core Concepts' },
- *       { href: '/api/reference/', text: 'API Reference' }
+ *       { href: '/core-concepts/overview/', text: 'Core Concepts', color: 'emerald' },
+ *       { href: '/api/reference/', text: 'API Reference', color: 'red' }
  *     ]
  *   }) %>
  */
@@ -23,24 +25,27 @@
 // Guard for standalone rendering - this partial is only used as a callable
 if (!stati.props) { %><% return; } %>
 <%
-const { title, icon, links } = stati.props;
+const { title, icon, color, links } = stati.props;
 %>
 <div>
     <div class="flex items-center space-x-2 mb-6">
-        <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-primary-500/10 dark:bg-primary-400/20">
-            <%~ stati.partials.icon({ name: icon, size: 'sm', class: 'text-primary-600 dark:text-primary-400', strokeWidth: 1.5 }) %>
+        <div class="<%= stati.propValue('flex items-center justify-center w-8 h-8 rounded-lg', `bg-${color}-500/10 dark:bg-${color}-400/20`) %>">
+            <%~ stati.partials.icon({ name: icon, size: 'sm', class: `text-${color}-600 dark:text-${color}-400` }) %>
         </div>
         <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
             <%= title %>
         </h3>
     </div>
     <ul class="space-y-3 text-sm">
-        <% links.forEach(link => { %>
+        <% links.forEach(link => {
+            const linkColor = link.color || color;
+        %>
         <li>
             <%~ stati.partials.link({
                 href: link.href,
                 text: link.text,
-                showDot: false,
+                color: linkColor,
+                showDot: true,
                 external: link.external
             }) %>
         </li>

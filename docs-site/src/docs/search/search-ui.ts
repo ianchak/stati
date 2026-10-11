@@ -49,19 +49,15 @@ export function initSearchUI(): void {
   initDesktopSearch();
   initMobileSearch();
 
-  // Global "/" and Cmd/Ctrl+K shortcuts to open the search modal
+  // Global "/" shortcut to focus search (desktop) or open modal (mobile)
   document.addEventListener('keydown', (e) => {
-    const isMetaShortcut = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k';
-
-    if (isMetaShortcut) {
-      e.preventDefault();
-      openMobileSearch();
-      return;
-    }
-
     if (e.key === '/' && !isInputFocused()) {
       e.preventDefault();
-      openMobileSearch();
+      if (window.innerWidth < 1024 && mobileModal) {
+        openMobileSearch();
+      } else if (searchInput) {
+        searchInput.focus();
+      }
     }
   });
 
@@ -135,10 +131,11 @@ function initMobileSearch(): void {
     return;
   }
 
-  // Search open buttons: mobile button + header trigger (desktop)
-  ['mobile-search-btn', 'search-trigger'].forEach((id) => {
-    document.getElementById(id)?.addEventListener('click', openMobileSearch);
-  });
+  // Mobile search button
+  const mobileSearchBtn = document.getElementById('mobile-search-btn');
+  if (mobileSearchBtn) {
+    mobileSearchBtn.addEventListener('click', openMobileSearch);
+  }
 
   // Close modal handlers
   mobileModal.querySelectorAll('[data-close-modal]').forEach((el) => {
