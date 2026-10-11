@@ -18,15 +18,39 @@ seo:
 
 # Getting Started with Stati
 
-**Stati** is an open-source, TypeScript-first static site generator for documentation, blogs, and content-heavy websites. It features zero-config setup, fast esbuild bundling, file-based routing, and a developer-first workflow.
+**Stati** is an open-source, TypeScript-first static site generator for documentation, blogs, and content-heavy websites. You write pages in Markdown and layouts in Eta templates; Stati turns them into plain static HTML.
+
+## A site in two files
+
+A page is a Markdown file with front matter:
+
+```markdown
+---
+title: Hello, Stati
+---
+
+# Hello, Stati
+
+This page becomes `/hello/`.
+```
+
+Save it as `site/hello.md`, add a layout at `site/layout.eta`, and run `npx stati build`. The output in `dist/` is static HTML with no client-side framework.
+
+```html
+<!doctype html>
+<html lang="en">
+  <head><title><%= stati.page.title %></title></head>
+  <body><%~ stati.content %></body>
+</html>
+```
 
 ## What makes Stati different?
 
-- **TypeScript-first**: Full type safety for configuration, plus built-in esbuild compilation for your client-side TypeScript
-- **Modern tooling**: esbuild-powered bundling for development and production builds
-- **ISG support**: Incremental Static Generation with intelligent caching
-- **Minimal dependencies**: Focused and lightweight
-- **Developer experience**: Hot reload, smart tooling, and great debugging
+- **Small and simple**: Markdown plus Eta templates, nine runtime dependencies in `@stati/core`, and no framework runtime in the browser.
+- **TypeScript-first**: `defineConfig()` gives you a typed `stati.config.ts`, and client-side TypeScript is compiled with esbuild and injected only on the pages that need it.
+- **Incremental Static Generation**: a build cache with TTLs, age-based aging rules, and invalidation by tag, path or age (`stati invalidate "tag:news"`).
+- **Built in, not bolted on**: search index, sitemap, robots.txt, RSS feeds, SEO metadata, build hooks and build metrics ship with Stati.
+- **Fast feedback**: a dev server with live reload, incremental rebuilds and an in-browser error overlay.
 
 ## Quick Overview
 

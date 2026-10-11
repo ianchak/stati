@@ -91,6 +91,8 @@ export default [
         HTMLTextAreaElement: 'readonly',
         HTMLTemplateElement: 'readonly',
         HTMLLIElement: 'readonly',
+        HTMLUListElement: 'readonly',
+        HTMLDialogElement: 'readonly',
         DocumentFragment: 'readonly',
         Node: 'readonly',
         NodeListOf: 'readonly',

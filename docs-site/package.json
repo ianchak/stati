@@ -50,8 +50,6 @@
     "node": ">=22.0.0"
   },
   "dependencies": {
-    "@tsparticles/engine": "3.9.1",
-    "@tsparticles/slim": "3.9.1",
     "flexsearch": "0.8.212"
   }
 }

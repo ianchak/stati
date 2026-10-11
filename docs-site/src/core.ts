@@ -1,11 +1,13 @@
 /**
  * Core bundle - shared functionality for all pages.
- * Includes theme toggling and mobile menu.
+ * Theme toggle, mobile menu, copy buttons, and the search dialog.
  */
 
-import { initTheme, initMobileMenu } from './core/index.js';
+import { initTheme, initMobileMenu, initCopy, initSearchDialog } from './core/index.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   initMobileMenu();
+  initCopy();
+  initSearchDialog();
 });

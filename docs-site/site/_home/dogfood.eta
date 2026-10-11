@@ -1,0 +1,28 @@
+<%
+/**
+ * Dogfood Section (Homepage)
+ *
+ * Proof that this site is built with Stati: an excerpt of its real config.
+ */
+
+// Pre-rendered on every page: render nothing where the homepage data is absent
+if (!stati.page.dogfood) { %><% return; } %>
+<%
+const dogfood = stati.page.dogfood;
+%>
+<section class="border-b border-line bg-raised" aria-labelledby="dogfood-title">
+    <div class="mx-auto grid max-w-page grid-cols-1 gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-14 lg:py-24">
+        <div>
+            <h2 id="dogfood-title" class="font-display text-[clamp(1.75rem,1.3rem+1.4vw,2.5rem)] font-extrabold leading-[1.08] [font-stretch:115%]"><%= dogfood.title %></h2>
+            <p class="mt-4 max-w-md leading-7 text-muted"><%= dogfood.text %></p>
+            <a href="<%= dogfood.link.href %>" class="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-accent-ink hover:underline hover:underline-offset-4" target="_blank" rel="noopener noreferrer">
+                <%= dogfood.link.text %>
+                <%~ stati.partials.icon({ name: 'external', size: 'sm' }) %>
+                <span class="sr-only">(opens in a new tab)</span>
+            </a>
+        </div>
+        <div class="min-w-0">
+            <%~ stati.partials.codePanel({ id: 'dogfood-config', file: dogfood.file, lang: 'typescript', code: dogfood.code, class: 'bg-canvas' }) %>
+        </div>
+    </div>
+</section>

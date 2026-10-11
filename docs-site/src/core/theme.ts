@@ -1,110 +1,56 @@
 /**
- * Theme toggle functionality for dark/light mode.
- * Handles toggling, localStorage persistence, and system preference detection.
+ * Theme toggle for dark/light mode.
  *
- * Note: The FOUC prevention script remains inline in themeInit.eta and runs
- * synchronously before first paint. This module handles the toggle button
- * and system preference changes after the page has loaded.
+ * The no-flash bootstrap runs inline in themeInit.eta before first paint.
+ * This module wires the toggle button (aria-pressed = dark theme on),
+ * persists explicit choices, and follows the system setting otherwise.
  *
  * Storage key: 'stati-theme' (values: 'light' | 'dark')
- * DOM: Sets both data-theme attribute and 'dark' class on <html>
+ * DOM: sets both the data-theme attribute and the 'dark' class on <html>
  */
 
 type Theme = 'light' | 'dark';
 
 const STORAGE_KEY = 'stati-theme';
+const SYSTEM_QUERY = '(prefers-color-scheme: dark)';
 
-/** Stored reference to the system theme change handler for cleanup */
-let systemThemeHandler: ((e: { matches: boolean }) => void) | null = null;
-
-/**
- * Removes the system theme change listener if it exists.
- */
-function removeSystemThemeListener(): void {
-  if (systemThemeHandler) {
-    window
-      .matchMedia('(prefers-color-scheme: dark)')
-      .removeEventListener('change', systemThemeHandler);
-    systemThemeHandler = null;
+function readStoredTheme(): Theme | null {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored === 'light' || stored === 'dark' ? stored : null;
+  } catch {
+    return null;
   }
 }
 
-/**
- * Gets the system's preferred color scheme.
- */
-function getSystemPreference(): Theme {
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+function storeTheme(theme: Theme): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, theme);
+  } catch {
+    // Storage unavailable (private mode); the choice lasts for this page only
+  }
 }
 
-/**
- * Gets the stored theme preference from localStorage.
- */
-function getStoredTheme(): Theme | null {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  return stored === 'light' || stored === 'dark' ? stored : null;
-}
-
-/**
- * Applies the specified theme to the document.
- * Sets both data-theme attribute (for CSS) and dark class (for Tailwind).
- */
 function applyTheme(theme: Theme): void {
-  document.documentElement.setAttribute('data-theme', theme);
-  if (theme === 'dark') {
-    document.documentElement.classList.add('dark');
-  } else {
-    document.documentElement.classList.remove('dark');
-  }
+  const root = document.documentElement;
+  root.setAttribute('data-theme', theme);
+  root.classList.toggle('dark', theme === 'dark');
+  document
+    .querySelectorAll<HTMLElement>('#theme-toggle')
+    .forEach((button) => button.setAttribute('aria-pressed', String(theme === 'dark')));
 }
 
-/**
- * Toggles the current theme and persists the preference.
- * Also removes the system theme listener since user now has an explicit preference.
- */
-function toggleTheme(): Theme {
-  const currentTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
-  const newTheme: Theme = currentTheme === 'dark' ? 'light' : 'dark';
-
-  applyTheme(newTheme);
-  localStorage.setItem(STORAGE_KEY, newTheme);
-
-  // Remove system theme listener since user has set a preference
-  removeSystemThemeListener();
-
-  return newTheme;
-}
-
-/**
- * Initializes the theme toggle functionality.
- * Sets up click handlers for both desktop and mobile toggle buttons,
- * and listens for system preference changes.
- */
 export function initTheme(): void {
-  const themeToggleBtn = document.getElementById('theme-toggle');
-  const themeToggleMobileBtn = document.getElementById('theme-toggle-mobile');
+  const system = window.matchMedia(SYSTEM_QUERY);
+  applyTheme(readStoredTheme() ?? (system.matches ? 'dark' : 'light'));
 
-  // Check for saved theme preference or default to system preference
-  const savedTheme = getStoredTheme();
+  system.addEventListener('change', (event) => {
+    if (!readStoredTheme()) applyTheme(event.matches ? 'dark' : 'light');
+  });
 
-  if (savedTheme) {
-    // User has a saved preference
-    applyTheme(savedTheme);
-  } else {
-    // No saved preference - use system preference
-    applyTheme(getSystemPreference());
-
-    // Listen for system theme changes when no preference is saved
-    const systemMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    systemThemeHandler = (e: { matches: boolean }) => {
-      // Only apply system theme if user hasn't set a preference
-      if (!getStoredTheme()) {
-        applyTheme(e.matches ? 'dark' : 'light');
-      }
-    };
-    systemMediaQuery.addEventListener('change', systemThemeHandler);
-  }
-
-  // Bind click handlers
-  themeToggleBtn?.addEventListener('click', toggleTheme);
-  themeToggleMobileBtn?.addEventListener('click', toggleTheme);
+  document.getElementById('theme-toggle')?.addEventListener('click', () => {
+    const next: Theme = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
+    applyTheme(next);
+    storeTheme(next);
+  });
 }

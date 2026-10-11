@@ -1,57 +1,69 @@
 /**
- * Mobile menu functionality for header navigation.
- * Handles opening/closing the mobile navigation menu.
+ * Mobile menu.
+ *
+ * One header button (#menu-button) controls whichever panel its
+ * aria-controls names: the docs sidebar drawer on docs pages, or the compact
+ * nav panel on the homepage. Handles aria-expanded, Escape, outside clicks,
+ * focus return, and keeps the closed drawer out of the tab order.
  */
 
-interface MobileMenuElements {
-  menuBtn: HTMLElement | null;
-  mobileNav: HTMLElement | null;
-}
+const DESKTOP_QUERY = '(min-width: 1024px)';
 
-/**
- * Gets the mobile menu DOM elements.
- */
-function getElements(): MobileMenuElements {
-  return {
-    menuBtn: document.getElementById('mobile-menu-btn'),
-    mobileNav: document.getElementById('mobile-nav'),
-  };
-}
-
-/**
- * Closes the mobile menu.
- */
-function closeMenu(elements: MobileMenuElements): void {
-  elements.mobileNav?.classList.add('hidden');
-}
-
-/**
- * Initializes the mobile menu functionality.
- * Sets up toggle behavior, outside click handling, and resize handling.
- */
 export function initMobileMenu(): void {
-  const elements = getElements();
-  const { menuBtn, mobileNav } = elements;
+  const button = document.getElementById('menu-button');
+  const panelId = button?.getAttribute('aria-controls');
+  const panel = panelId ? document.getElementById(panelId) : null;
+  if (!button || !panel) return;
 
-  if (!menuBtn || !mobileNav) return;
+  const isDrawer = panel.id === 'sidebar';
+  const backdrop = document.getElementById('sidebar-backdrop');
+  const desktop = window.matchMedia(DESKTOP_QUERY);
+  const openIcon = button.querySelector<HTMLElement>('[data-menu-icon="open"]');
+  const closeIcon = button.querySelector<HTMLElement>('[data-menu-icon="close"]');
 
-  // Toggle menu on button click
-  menuBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    mobileNav.classList.toggle('hidden');
+  const isOpen = (): boolean => button.getAttribute('aria-expanded') === 'true';
+
+  const setOpen = (open: boolean, returnFocus = false): void => {
+    button.setAttribute('aria-expanded', String(open));
+    button.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+    if (openIcon) openIcon.hidden = open;
+    if (closeIcon) closeIcon.hidden = !open;
+
+    if (isDrawer) {
+      panel.dataset.open = String(open);
+      panel.inert = !open && !desktop.matches;
+      if (backdrop) backdrop.hidden = !open;
+      document.documentElement.style.overflow = open ? 'hidden' : '';
+    } else {
+      panel.hidden = !open;
+    }
+
+    if (open) {
+      panel
+        .querySelector<HTMLElement>('[aria-current="page"], a, summary')
+        ?.focus({ preventScroll: true });
+    } else if (returnFocus) {
+      button.focus();
+    }
+  };
+
+  // Closed drawer must not be reachable by keyboard on small screens
+  if (isDrawer) panel.inert = !desktop.matches;
+
+  button.addEventListener('click', () => setOpen(!isOpen()));
+  backdrop?.addEventListener('click', () => setOpen(false));
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && isOpen()) setOpen(false, true);
   });
 
-  // Close when clicking outside
-  document.addEventListener('click', (e) => {
-    if (!mobileNav.contains(e.target as Node) && !menuBtn.contains(e.target as Node)) {
-      closeMenu(elements);
-    }
+  document.addEventListener('click', (event) => {
+    const target = event.target as Node;
+    if (isOpen() && !panel.contains(target) && !button.contains(target)) setOpen(false);
   });
 
-  // Close on desktop resize
-  window.addEventListener('resize', () => {
-    if (window.innerWidth >= 1024) {
-      closeMenu(elements);
-    }
+  desktop.addEventListener('change', () => {
+    setOpen(false);
+    if (isDrawer) panel.inert = !desktop.matches;
   });
 }

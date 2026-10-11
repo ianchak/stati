@@ -1,13 +1,12 @@
 /**
  * Documentation bundle - functionality specific to docs pages.
- * Includes sidebar navigation, table of contents, scroll-to-top, and search.
+ * Table of contents scroll-spy and sidebar positioning. Sidebar sections are
+ * native <details> elements and need no script.
  */
 
-import { initSidebar, initToc, initScrollToTop, initSearchUI } from './docs/index.js';
+import { initToc, revealCurrentSidebarLink } from './docs/index.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-  initSidebar();
+  revealCurrentSidebarLink();
   initToc();
-  initScrollToTop();
-  initSearchUI();
 });

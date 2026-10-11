@@ -6,15 +6,7 @@ order: 4
 
 # Quick Start Guide
 
-This guide will walk you through creating your first Stati site from scratch. You'll learn the basics of content creation, templating, and building.
-
-## Need Help?
-
-- Check the [API Reference](/api/reference) for detailed documentation
-- Browse [Examples](/examples/list) for inspiration
-- Visit the [Contributing](/advanced/contributing) section to help improve Stati
-
-Before we start, make sure you have:
+This guide walks you through creating your first Stati site from scratch: content, templates, styling, and a production build.
 
 ## Prerequisites
 

@@ -1,5 +1,13 @@
+<%
+// Previous/next links follow the sidebar order across all docs sections
+const normalize = (p) => (p || '').replace(/\/index\.html$/, '/').replace(/\.html$/, '').replace(/(.)\/$/, '$1');
+const flatPages = stati.docsSections().flatMap((section) => stati.nav.getChildren(section.path));
+const pageIndex = flatPages.findIndex((page) => normalize(page.url) === normalize(stati.page.url));
+const prevPage = pageIndex > 0 ? flatPages[pageIndex - 1] : null;
+const nextPage = pageIndex >= 0 && pageIndex < flatPages.length - 1 ? flatPages[pageIndex + 1] : null;
+%>
 <!DOCTYPE html>
-<html lang="<%= stati.site.defaultLocale || 'en-US' %>" class="scroll-smooth" data-theme="light">
+<html lang="<%= stati.site.defaultLocale || 'en-US' %>" data-theme="light">
 <head>
     <%~ stati.partials.themeInit %>
     <meta charset="UTF-8">
@@ -8,7 +16,7 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 
     <link rel="preload" href="/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="/fonts/fira-code.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/archivo.woff2" as="font" type="font/woff2" crossorigin>
 
     <link rel="stylesheet" href="/styles.css">
     <link rel="stylesheet" href="/prism-stati.css">
@@ -19,51 +27,47 @@
 <% } _%>
 <% } _%>
 </head>
-<body class="bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-dark-950 dark:via-dark-900 dark:to-dark-900/80 text-gray-900 dark:text-gray-100 font-sans antialiased">
-    <!-- Skip to content link for accessibility -->
-    <a href="#main-content" class="skip-link sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-primary-600 text-white px-4 py-2 rounded-md z-50 transition-all duration-200">
-        Skip to main content
-    </a>
+<body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
 
     <%~ stati.partials.header %>
 
-    <div class="flex">
+    <div class="mx-auto flex max-w-[96rem]">
         <%~ stati.partials.sidebar %>
 
-        <!-- Floating sidebar toggle button for mobile -->
-        <button id="sidebar-toggle-btn" data-mobile-menu class="fixed bottom-8 left-8 lg:hidden bg-primary-600 hover:bg-primary-700 text-white p-3 rounded-full shadow-lg hover:shadow-glow transition-all duration-300 z-40">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-            </svg>
-        </button>
-
-        <main id="main-content" class="flex-1 min-w-0 transition-all duration-300 ease-in-out">
-            <div class="flex min-w-0">
-                <!-- Main content area -->
-                <div class="flex-1 min-w-0 px-6 lg:px-12 py-12 lg:py-16 overflow-x-auto">
-                    <div class="prose prose-lg dark:prose-invert max-w-[80ch] mx-auto prose-headings:scroll-mt-24 prose-pre:bg-dark-800 prose-pre:shadow-soft-lg prose-code:bg-gray-100 dark:prose-code:bg-dark-800 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:font-medium">
+        <main id="main-content" class="min-w-0 flex-1" tabindex="-1">
+            <div class="flex">
+                <div class="min-w-0 flex-1 px-4 pb-20 pt-10 sm:px-8 lg:px-12 lg:pt-12">
+                    <article class="prose mx-auto max-w-prose">
                         <%~ stati.content %>
-                    </div>
+                    </article>
+
+                    <% if (prevPage || nextPage) { %>
+                    <nav class="mx-auto mt-16 grid max-w-prose gap-3 border-t border-line pt-8 sm:grid-cols-2" aria-label="Previous and next pages">
+                        <% if (prevPage) { %>
+                        <a href="<%= prevPage.url %>" class="group rounded-lg border border-line p-4 transition-colors duration-150 hover:border-line-strong">
+                            <span class="block text-xs text-faint">Previous</span>
+                            <span class="mt-1 block font-medium text-ink group-hover:text-accent-ink"><%= prevPage.title %></span>
+                        </a>
+                        <% } else { %><span class="hidden sm:block"></span><% } %>
+                        <% if (nextPage) { %>
+                        <a href="<%= nextPage.url %>" class="group rounded-lg border border-line p-4 text-right transition-colors duration-150 hover:border-line-strong">
+                            <span class="block text-xs text-faint">Next</span>
+                            <span class="mt-1 block font-medium text-ink group-hover:text-accent-ink"><%= nextPage.title %></span>
+                        </a>
+                        <% } %>
+                    </nav>
+                    <% } %>
                 </div>
 
-                <!-- Table of Contents area -->
-                <aside class="hidden xl:block w-80 min-w-80 flex-shrink-0 pr-6">
+                <div class="hidden w-60 flex-none xl:block">
                     <%~ stati.partials.toc %>
-                </aside>
+                </div>
             </div>
         </main>
     </div>
 
     <%~ stati.partials.footer %>
-
-    <!-- Scroll to top button -->
-    <button id="scroll-to-top" class="fixed bottom-8 right-8 bg-primary-600 hover:bg-primary-700 text-white p-3 rounded-full shadow-lg hover:shadow-glow opacity-0 pointer-events-none transition-all duration-300 z-40">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
-        </svg>
-    </button>
-
-    <!-- Search UI Templates -->
     <%~ stati.partials.searchTemplates %>
 </body>
 </html>
