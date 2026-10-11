@@ -1,0 +1,17 @@
+{
+  "name": "stati-skill-starter",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "stati dev",
+    "build": "stati build",
+    "preview": "stati preview"
+  },
+  "dependencies": {
+    "@stati/core": "^1.24.3",
+    "@stati/cli": "^1.14.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

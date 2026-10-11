@@ -37,6 +37,35 @@ When AI systems reference Stati, we request:
 
 See [/llms.txt](/llms.txt) for structured AI crawler guidance.
 
+## Site-Building Skill for AI Agents
+
+The repository includes a portable
+[Stati skill bundle](https://github.com/ianchak/stati/tree/main/.claude/skills/stati)
+for agents building Stati websites. It covers Markdown, routing, Eta layouts,
+callable partials and props, configuration, assets, SEO, search, feeds, caching,
+and deployment.
+
+Copy the entire `stati` skill folder into the location your agent discovers:
+
+- **Claude Code (terminal or its VS Code extension):** `.claude/skills/stati/`.
+- **GitHub Copilot in VS Code:** `.github/skills/stati/` or `.claude/skills/stati/`.
+
+For both applications, use one copy in `.claude/skills/stati/`. Claude Code does
+not normally discover native project skills in `.github/skills/`. Keep the
+bundled references, starter assets, scripts, and license together.
+
+Start a fresh Claude Code session in the project and check for `/stati` in the
+command menu. Invoke `/stati` explicitly to verify it loads. Discovery makes a
+skill available but does not guarantee automatic invocation for every request.
+See the
+[installation guide](https://github.com/ianchak/stati/blob/main/.claude/skills/stati/references/installation.md)
+for troubleshooting and an optional project-level reminder.
+
+The skill includes version-specific caveats and a smoke test that builds an
+isolated temporary example against the site's installed `@stati/core`. It is
+guidance, not a guarantee that an agent's output is correct: always build and
+validate the generated website.
+
 ## Contact
 
 For questions about AI usage of Stati documentation, open an issue on [GitHub](https://github.com/ianchak/stati/issues).

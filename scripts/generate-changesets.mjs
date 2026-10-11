@@ -37,6 +37,7 @@ const WORKSPACE_ROOT_FILES = [
 // Files that should not trigger changesets on their own
 const NON_PACKAGE_FILES = [
   '.github/',
+  '.claude/',
   'docs-site/',
   'scripts/',
   '.changeset/',
@@ -185,6 +186,11 @@ function determineAffectedPackages(commit) {
 
       // Examples folder affects create-stati package (templates are bundled)
       if (file.startsWith('examples/')) {
+        packages.add('create-stati');
+      }
+
+      // The Stati agent skill is bundled into create-stati
+      if (file.startsWith('.claude/skills/stati/')) {
         packages.add('create-stati');
       }
 

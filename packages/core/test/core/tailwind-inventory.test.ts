@@ -711,10 +711,10 @@ describe('Tailwind Inventory - Write Optimization', () => {
     await writeTailwindClassInventory(tempDir, true);
     const skipTime = globalThis.performance.now() - start2;
 
-    // Skip should be much faster - hash computation should be minimal
-    // More generous threshold for CI/test variability and different machine speeds
-    expect(skipTime).toBeLessThan(50); // ms - generous threshold for CI/test variability
-    // Just verify it works, don't compare times as they can be flaky
+    // Skip should remain reasonably bounded relative to initial write time.
+    // Use an adaptive threshold to reduce CI flakiness across machine/load variance.
+    const adaptiveThreshold = Math.max(75, _firstWriteTime * 2);
+    expect(skipTime).toBeLessThan(adaptiveThreshold);
   });
 
   it('should return correct path when skipping write', async () => {

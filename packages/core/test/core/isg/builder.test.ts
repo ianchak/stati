@@ -1065,10 +1065,11 @@ describe('ISG Build Integration', () => {
       );
 
       expect(mockComputeContentHash).toHaveBeenCalledWith(mockPage.content, mockPage.frontMatter);
-      expect(mockComputeInputsHash).toHaveBeenCalledWith('new_content_hash', [
-        'layout_hash_123',
-        'header_hash_456',
-      ]);
+      expect(mockComputeInputsHash).toHaveBeenCalledWith(
+        'new_content_hash',
+        ['layout_hash_123', 'header_hash_456'],
+        undefined,
+      );
       expect(result.inputsHash).toBe('new_combined_hash');
 
       vi.doUnmock('node:fs/promises');
@@ -1097,7 +1098,7 @@ describe('ISG Build Integration', () => {
       );
 
       // Should only include non-null hashes
-      expect(mockComputeInputsHash).toHaveBeenCalledWith('content123', ['layout_hash']);
+      expect(mockComputeInputsHash).toHaveBeenCalledWith('content123', ['layout_hash'], undefined);
       expect(result.inputsHash).toBe('partial_hash');
 
       vi.doUnmock('node:fs/promises');

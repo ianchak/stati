@@ -3,6 +3,7 @@ import inquirer from 'inquirer';
 import { createSite, detectAvailablePackageManagers, ALLOWED_PACKAGE_MANAGERS } from './create.js';
 import type { CreateOptions, PackageManager } from './create.js';
 import { log } from './utils/index.js';
+import { AGENT_SKILL_TARGETS, isValidAgentSkillTarget } from './agent-skill.js';
 
 /**
  * Validate that a string is a valid package manager
@@ -28,6 +29,8 @@ Options:
   --no-git                 Skip git initialization (default: initializes Git)
   --no-install             Skip dependency installation (default: installs dependencies)
   --package-manager <pm>   Package manager to use (npm|yarn|pnpm|bun)
+  --agent-skill [target]   Install the Stati agent skill (claude|github|agents, default: claude)
+  --no-agent-skill         Skip agent skill installation
   --help, -h               Show this help message
 
 Examples:
@@ -36,6 +39,7 @@ Examples:
   create-stati my-app --typescript
   create-stati my-app --template=blank --styling=tailwind --package-manager=pnpm
   create-stati my-app --no-install --no-git
+  create-stati my-app --agent-skill=github
 `);
     return null;
   }
@@ -67,6 +71,32 @@ Examples:
           break;
         case 'no-install':
           options.install = false;
+          break;
+        case 'agent-skill': {
+          let target = value;
+          if (target === undefined) {
+            // Target is optional. Consume the next positional argument if it's a valid
+            // target, or if the project name is already known (so it can only be a target).
+            const next = args[i + 1];
+            if (next && !next.startsWith('-') && (isValidAgentSkillTarget(next) || projectName)) {
+              target = next;
+              i++;
+            } else {
+              target = 'claude';
+            }
+          }
+          if (isValidAgentSkillTarget(target)) {
+            options.agentSkill = target;
+          } else {
+            log.error(
+              `Invalid agent skill target: '${target}'. Allowed values: ${AGENT_SKILL_TARGETS.join(', ')}`,
+            );
+            process.exit(1);
+          }
+          break;
+        }
+        case 'no-agent-skill':
+          options.agentSkill = false;
           break;
         case 'package-manager': {
           const pmValue = value || args[++i];
@@ -175,6 +205,22 @@ export async function runCLI(cliOptions?: Partial<CreateOptions> | null): Promis
     });
   }
 
+  // Agent skill prompt (only in interactive mode, like TypeScript)
+  if (options.agentSkill === undefined && hasRequiredPrompts) {
+    prompts.push({
+      name: 'agentSkill',
+      type: 'list',
+      message: 'Install the Stati agent skill for AI coding assistants?',
+      choices: [
+        { name: '.claude/skills (Claude Code, Copilot in VS Code)', value: 'claude' },
+        { name: '.github/skills (GitHub Copilot)', value: 'github' },
+        { name: '.agents/skills', value: 'agents' },
+        { name: 'No', value: false },
+      ],
+      default: 'claude',
+    });
+  }
+
   if (options.gitInit === undefined) {
     prompts.push({
       name: 'gitInit',
@@ -246,6 +292,11 @@ export async function runCLI(cliOptions?: Partial<CreateOptions> | null): Promis
     ...(options.packageManager && { packageManager: options.packageManager }),
   };
 
+  const agentSkill = options.agentSkill ?? answers.agentSkill;
+  if (agentSkill) {
+    createOptions.agentSkill = agentSkill;
+  }
+
   log.newline();
   log.info('Creating Stati project...');
 
@@ -264,6 +315,9 @@ export async function runCLI(cliOptions?: Partial<CreateOptions> | null): Promis
       log.step('npm install');
     }
     log.step(devCommand);
+    if (result.agentSkillDir) {
+      log.muted(`\nStati agent skill installed in ${result.agentSkillDir} (invoke with /stati)`);
+    }
     log.newline();
     log.status('Happy building with Stati!');
   } catch (error) {

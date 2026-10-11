@@ -70,7 +70,7 @@ export interface ISGConfig {
 export interface CacheEntry {
   /** Output path of the rendered page */
   readonly path: string;
-  /** Hash of page content and all dependencies */
+  /** Hash of page content, template dependencies, and rendering asset inputs */
   readonly inputsHash: string;
   /** Array of file paths this page depends on (templates, partials) */
   readonly deps: readonly string[];

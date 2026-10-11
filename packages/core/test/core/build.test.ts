@@ -979,7 +979,7 @@ describe('build.ts', () => {
       mockAutoInjectBundles.mockImplementation((html) => html);
     });
 
-    it('should detect existing bundles in development mode when TypeScript is enabled', async () => {
+    it('should detect existing bundles in development mode and skip compilation when bundles exist', async () => {
       const configWithTypeScript: StatiConfig = {
         ...mockConfig,
         typescript: {
@@ -987,6 +987,13 @@ describe('build.ts', () => {
         },
       };
 
+      mockDetectExistingBundles.mockResolvedValue([
+        {
+          filename: 'main.js',
+          path: '/_assets/main.js',
+          config: { entryPoint: 'main.ts', bundleName: 'main' },
+        },
+      ]);
       mockLoadConfig.mockResolvedValue(configWithTypeScript);
 
       await build();
@@ -998,6 +1005,38 @@ describe('build.ts', () => {
         }),
       );
       expect(mockCompileTypeScript).not.toHaveBeenCalled();
+    });
+
+    it('should compile TypeScript once in development mode when no existing bundles are found', async () => {
+      const configWithTypeScript: StatiConfig = {
+        ...mockConfig,
+        typescript: {
+          enabled: true,
+        },
+      };
+
+      mockDetectExistingBundles.mockResolvedValue([]);
+      mockCompileTypeScript.mockResolvedValue([
+        {
+          filename: 'main.js',
+          path: '/_assets/main.js',
+          config: { entryPoint: 'main.ts', bundleName: 'main' },
+        },
+      ]);
+      mockLoadConfig.mockResolvedValue(configWithTypeScript);
+
+      await build();
+
+      expect(mockCompileTypeScript).toHaveBeenCalledWith(
+        expect.objectContaining({
+          mode: 'development',
+          config: { enabled: true },
+        }),
+      );
+      expect(mockAutoInjectBundles).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.arrayContaining(['/_assets/main.js']),
+      );
     });
 
     it('should not compile TypeScript when disabled', async () => {

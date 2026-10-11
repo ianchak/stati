@@ -1,6 +1,6 @@
 {
   "name": "@stati/core",
-  "version": "1.24.0",
+  "version": "1.24.3",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -10,12 +10,12 @@
       "default": "./dist/index.js"
     },
     "./types": {
-      "types": "./dist/types.d.ts",
-      "default": "./dist/types.js"
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/types/index.js"
     },
     "./config": {
-      "types": "./dist/config/index.d.ts",
-      "default": "./dist/config/index.js"
+      "types": "./dist/config/loader.d.ts",
+      "default": "./dist/config/loader.js"
     }
   },
   "files": [

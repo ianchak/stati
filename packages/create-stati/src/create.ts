@@ -7,6 +7,8 @@ import { writeProcessorFiles } from './utils/index.js';
 import type { StylingOption } from './css-processors.js';
 import { setupTypeScript } from './typescript-processor.js';
 import { isCommandAvailable, spawnProcess, log } from './utils/index.js';
+import { copyAgentSkill } from './agent-skill.js';
+import type { AgentSkillTarget } from './agent-skill.js';
 
 /**
  * Result of a dependency installation attempt
@@ -184,7 +186,16 @@ export interface CreateOptions {
   gitInit?: boolean;
   install?: boolean;
   packageManager?: PackageManager;
+  agentSkill?: AgentSkillTarget | false;
   dir?: string;
+}
+
+/**
+ * Outcome of optional scaffolding steps
+ */
+export interface ScaffoldResult {
+  /** Project-relative directory the agent skill was installed to, if it succeeded */
+  agentSkillDir?: string;
 }
 
 /**
@@ -246,8 +257,9 @@ export class ProjectScaffolder {
     private examplesManager: ExampleManager,
   ) {}
 
-  async create(targetDir: string): Promise<void> {
+  async create(targetDir: string): Promise<ScaffoldResult> {
     let cleanupNeeded = false;
+    const result: ScaffoldResult = {};
 
     try {
       // 1. Validate and prepare directory
@@ -286,17 +298,26 @@ export class ProjectScaffolder {
       // 6. Setup CSS preprocessing if requested
       await processStyling(targetDir, this.options.styling);
 
-      // 7. Initialize git (optional)
+      // 7. Install the Stati agent skill (optional)
+      if (this.options.agentSkill) {
+        const agentSkillDir = await this.installAgentSkill(targetDir, this.options.agentSkill);
+        if (agentSkillDir) {
+          result.agentSkillDir = agentSkillDir;
+        }
+      }
+
+      // 8. Initialize git (optional)
       if (this.options.gitInit) {
         await this.initializeGit(targetDir);
       }
 
-      // 8. Install dependencies (optional)
+      // 9. Install dependencies (optional)
       if (this.options.install) {
         await this.installDependencies(targetDir);
       }
 
       // Success! (Don't display message here, let the caller handle it)
+      return result;
     } catch (error) {
       // Cleanup on failure
       if (cleanupNeeded) {
@@ -329,6 +350,27 @@ export class ProjectScaffolder {
       } else {
         throw error;
       }
+    }
+  }
+
+  /**
+   * Install the Stati agent skill. Failures are logged as warnings, not thrown.
+   *
+   * @returns The project-relative skill directory, or undefined if installation failed
+   */
+  private async installAgentSkill(
+    targetDir: string,
+    target: AgentSkillTarget,
+  ): Promise<string | undefined> {
+    try {
+      return await copyAgentSkill(targetDir, target);
+    } catch (error) {
+      // The agent skill is optional, so we just warn instead of failing
+      log.warning(
+        'Failed to install Stati agent skill: ' +
+          (error instanceof Error ? error.message : 'Unknown error'),
+      );
+      return undefined;
     }
   }
 
@@ -452,12 +494,12 @@ coverage/
 
 export async function createSite(
   options: CreateOptions,
-): Promise<{ targetDir: string; projectName: string }> {
+): Promise<{ targetDir: string; projectName: string } & ScaffoldResult> {
   const targetDir = options.dir ? resolve(options.dir) : resolve(options.projectName);
   const examplesManager = new ExampleManager();
   const scaffolder = new ProjectScaffolder(options, examplesManager);
 
-  await scaffolder.create(targetDir);
+  const result = await scaffolder.create(targetDir);
 
-  return { targetDir, projectName: options.projectName };
+  return { targetDir, projectName: options.projectName, ...result };
 }

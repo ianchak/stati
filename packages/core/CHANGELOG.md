@@ -1,5 +1,26 @@
 # @stati/core
 
+## 1.24.3
+
+### Patch Changes
+
+- fc3b416: Fix page cache reuse when generated HTML is missing or rendering assets change.
+
+## 1.24.2
+
+### Patch Changes
+
+- a15ba0f: Fix importing `SiteConfig` from `@stati/core` by exporting it from the package root.
+  Correct the `@stati/core/types` and `@stati/core/config` export mappings to point to
+  the declarations and JavaScript files emitted by the build.
+
+## 1.24.1
+
+### Patch Changes
+
+- 50988fe: Fix a dev-server startup regression where pages could render before TypeScript bundles were available.
+  In development mode, build now compiles TypeScript once when no bundles exist yet, ensuring scripts are injected on first load.
+
 ## 1.24.0
 
 ### Minor Changes

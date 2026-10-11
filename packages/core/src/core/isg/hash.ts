@@ -122,6 +122,7 @@ export async function computeFileHash(filePath: string): Promise<string | null> 
  *
  * @param contentHash - Hash of the page content and front matter
  * @param depsHashes - Array of dependency file hashes
+ * @param renderInputsHash - Optional hash of asset URLs and injection settings used during rendering
  * @returns Combined SHA-256 hash as a hex string
  *
  * @example
@@ -131,11 +132,19 @@ export async function computeFileHash(filePath: string): Promise<string | null> 
  * const inputsHash = computeInputsHash(contentHash, depsHashes);
  * ```
  */
-export function computeInputsHash(contentHash: string, depsHashes: string[]): string {
+export function computeInputsHash(
+  contentHash: string,
+  depsHashes: string[],
+  renderInputsHash?: string,
+): string {
   // Sort dependency hashes for consistency
   const sortedDepsHashes = [...depsHashes].sort();
 
-  return createSha256Hash([contentHash, ...sortedDepsHashes]);
+  return createSha256Hash([
+    contentHash,
+    ...sortedDepsHashes,
+    ...(renderInputsHash ? [renderInputsHash] : []),
+  ]);
 }
 
 /**

@@ -27,6 +27,7 @@ Running the scaffolder will:
 - Copy the blank starter template files into that directory
 - Update `package.json` with your project name and Stati metadata
 - Set up optional styling scripts based on the chosen styling option
+- Optionally install the Stati agent skill for AI coding assistants
 - Initialize a Git repository by default (use `--no-git` to skip)
 - Install dependencies by default (use `--no-install` to skip)
 
@@ -41,9 +42,10 @@ The scaffolder will prompt you for:
 1. **Project name** - Name for your new Stati site
 2. **Styling solution** - Choose between CSS, Sass, or Tailwind CSS
 3. **TypeScript support** - Whether to enable TypeScript compilation
-4. **Git initialization** - Whether to initialize a Git repository
-5. **Dependency installation** - Whether to install dependencies automatically
-6. **Package manager** - Which package manager to use (if multiple are detected)
+4. **Agent skill** - Where to install the Stati agent skill, if at all
+5. **Git initialization** - Whether to initialize a Git repository
+6. **Dependency installation** - Whether to install dependencies automatically
+7. **Package manager** - Which package manager to use (if multiple are detected)
 
 ## Command Line Options
 
@@ -57,7 +59,26 @@ Options:
   --no-git                 Skip git initialization (default: initializes Git)
   --no-install             Skip dependency installation (default: installs dependencies)
   --package-manager <pm>   Package manager to use (npm|yarn|pnpm|bun)
+  --agent-skill [target]   Install the Stati agent skill (claude|github|agents, default: claude)
+  --no-agent-skill         Skip agent skill installation
   --help, -h               Show help message
+```
+
+## Agent Skill
+
+The scaffolder can copy the Stati agent skill into your project. The skill teaches AI coding assistants Stati's conventions for content, Eta templates, partials, configuration, and deployment.
+
+| Target             | Installed to            | Discovered by                          |
+| ------------------ | ----------------------- | -------------------------------------- |
+| `claude` (default) | `.claude/skills/stati/` | Claude Code, GitHub Copilot in VS Code |
+| `github`           | `.github/skills/stati/` | GitHub Copilot                         |
+| `agents`           | `.agents/skills/stati/` | Tools using the `.agents` convention   |
+
+In interactive mode you choose a target (or skip) when prompted. In non-interactive mode the skill is only installed when `--agent-skill` is passed. In Claude Code, invoke it with `/stati`.
+
+```bash
+npm create stati my-site --agent-skill
+npm create stati my-site --agent-skill=github
 ```
 
 ## Project Templates
@@ -192,6 +213,22 @@ my-site/
 ```
 
 The `typecheck` script is added to `package.json` for validating your TypeScript code.
+
+### With the Agent Skill
+
+When using `--agent-skill` (default target `claude`), the full skill bundle is copied:
+
+```text
+my-site/
+├── .claude/
+│   └── skills/
+│       └── stati/
+│           ├── SKILL.md      # Skill entry point
+│           ├── references/   # Task-specific guidance
+│           ├── assets/       # Starter files and examples
+│           └── scripts/      # Helper scripts
+└── ...
+```
 
 ## Requirements
 

@@ -159,6 +159,66 @@ describe('create-stati CLI', () => {
 
       expect(result).toEqual({});
     });
+
+    it('should default --agent-skill to claude', async () => {
+      const result = await parseArgs(['test-project', '--agent-skill']);
+
+      expect(result).toEqual({ projectName: 'test-project', agentSkill: 'claude' });
+    });
+
+    it('should parse --agent-skill with = and space separators', async () => {
+      const result1 = await parseArgs(['test-project', '--agent-skill=github']);
+      const result2 = await parseArgs(['test-project', '--agent-skill', 'agents']);
+
+      expect(result1).toEqual({ projectName: 'test-project', agentSkill: 'github' });
+      expect(result2).toEqual({ projectName: 'test-project', agentSkill: 'agents' });
+    });
+
+    it('should not consume a project name following bare --agent-skill', async () => {
+      const result = await parseArgs(['--agent-skill', 'my-site']);
+
+      expect(result).toEqual({ projectName: 'my-site', agentSkill: 'claude' });
+    });
+
+    it('should parse --no-agent-skill flag', async () => {
+      const result = await parseArgs(['test-project', '--no-agent-skill']);
+
+      expect(result).toEqual({ projectName: 'test-project', agentSkill: false });
+    });
+
+    it('should exit with error for invalid agent skill target', async () => {
+      const mockExit = vi
+        .spyOn(process, 'exit')
+        .mockImplementation((code?: string | number | null | undefined) => {
+          throw new Error(`process.exit: ${code}`);
+        });
+
+      await expect(parseArgs(['test-project', '--agent-skill=cursor'])).rejects.toThrow(
+        'process.exit: 1',
+      );
+
+      mockExit.mockRestore();
+    });
+
+    it('should exit with error for invalid space-separated target after project name', async () => {
+      const mockExit = vi
+        .spyOn(process, 'exit')
+        .mockImplementation((code?: string | number | null | undefined) => {
+          throw new Error(`process.exit: ${code}`);
+        });
+
+      await expect(parseArgs(['test-project', '--agent-skill', 'cursor'])).rejects.toThrow(
+        'process.exit: 1',
+      );
+
+      mockExit.mockRestore();
+    });
+
+    it('should not consume a following flag as the agent skill target', async () => {
+      const result = await parseArgs(['test-project', '--agent-skill', '--no-git']);
+
+      expect(result).toEqual({ projectName: 'test-project', agentSkill: 'claude', gitInit: false });
+    });
   });
 
   describe('runCLI', () => {
@@ -285,6 +345,64 @@ describe('create-stati CLI', () => {
       });
     });
 
+    it('should prompt for agent skill in interactive mode and pass it to createSite', async () => {
+      mockInquirer.prompt.mockResolvedValueOnce({
+        styling: 'css',
+        typescript: false,
+        agentSkill: 'claude',
+        gitInit: false,
+        install: false,
+      });
+
+      await runCLI({ projectName: 'test-project', template: 'blank' });
+
+      const prompts = mockInquirer.prompt.mock.calls[0]?.[0];
+      expect(prompts?.some((p: { name: string }) => p.name === 'agentSkill')).toBe(true);
+      expect(mockCreateSite).toHaveBeenCalledWith(
+        expect.objectContaining({ agentSkill: 'claude' }),
+      );
+    });
+
+    it('should not pass agentSkill when user declines the prompt', async () => {
+      mockInquirer.prompt.mockResolvedValueOnce({
+        styling: 'css',
+        typescript: false,
+        agentSkill: false,
+        gitInit: false,
+        install: false,
+      });
+
+      await runCLI({ projectName: 'test-project', template: 'blank' });
+
+      expect(mockCreateSite.mock.calls[0]?.[0]).not.toHaveProperty('agentSkill');
+    });
+
+    it('should not prompt for agent skill in non-interactive mode', async () => {
+      mockInquirer.prompt.mockResolvedValueOnce({ gitInit: false, install: false });
+
+      await runCLI({ projectName: 'test-project', template: 'blank', styling: 'css' });
+
+      const prompts = mockInquirer.prompt.mock.calls[0]?.[0];
+      expect(prompts?.some((p: { name: string }) => p.name === 'agentSkill')).toBe(false);
+      expect(mockCreateSite.mock.calls[0]?.[0]).not.toHaveProperty('agentSkill');
+    });
+
+    it('should use --agent-skill flag without prompting for it', async () => {
+      await runCLI({
+        projectName: 'test-project',
+        template: 'blank',
+        styling: 'css',
+        gitInit: false,
+        install: false,
+        agentSkill: 'github',
+      });
+
+      expect(mockInquirer.prompt).not.toHaveBeenCalled();
+      expect(mockCreateSite).toHaveBeenCalledWith(
+        expect.objectContaining({ agentSkill: 'github' }),
+      );
+    });
+
     it('should handle createSite errors gracefully', async () => {
       const mockExit = vi
         .spyOn(process, 'exit')
@@ -340,6 +458,35 @@ describe('create-stati CLI', () => {
       });
 
       expect(mockCreateSite).toHaveBeenCalled();
+    });
+
+    it('should report agent skill installation only when createSite reports it', async () => {
+      const options = {
+        projectName: 'my-site',
+        template: 'blank' as const,
+        styling: 'css' as const,
+        gitInit: false,
+        install: false,
+        agentSkill: 'claude' as const,
+      };
+      // Local spy: restoreMocks undoes the file-level console.log spy between tests
+      const consoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const loggedSkillMessage = () =>
+        consoleLog.mock.calls.some(([msg]) => String(msg).includes('Stati agent skill installed'));
+
+      // Copy failed: requested but no agentSkillDir in the result
+      mockCreateSite.mockResolvedValueOnce({ projectName: 'my-site', targetDir: './my-site' });
+      await runCLI(options);
+      expect(loggedSkillMessage()).toBe(false);
+
+      consoleLog.mockClear();
+      mockCreateSite.mockResolvedValueOnce({
+        projectName: 'my-site',
+        targetDir: './my-site',
+        agentSkillDir: '.claude/skills/stati',
+      });
+      await runCLI(options);
+      expect(loggedSkillMessage()).toBe(true);
     });
 
     it('should validate project name in prompts', async () => {
