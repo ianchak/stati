@@ -33,7 +33,7 @@ in the actual site according to its conventions.
 From a project with `@stati/core` installed:
 
 ```sh
-node .github/skills/stati/scripts/smoke-test.mjs
+node .claude/skills/stati/scripts/smoke-test.mjs
 ```
 
 Use the equivalent local path if this bundle is installed elsewhere.

@@ -358,19 +358,20 @@ Your content here...
 
 ### AI agent skill
 
-The portable [Stati skill](./.github/skills/stati/SKILL.md) teaches agents the
+The portable [Stati skill](./.claude/skills/stati/SKILL.md) teaches agents the
 site-building workflow, Stati-specific Eta/component rules, configuration, and
 generated features. It includes detailed references, a working starter, and a
 smoke test against an installed core package.
 
-Copy the entire `.github/skills/stati/` bundle, including its references, assets,
-scripts, and license. **For Claude Code, install it in `.claude/skills/stati/`,
-not `.github/skills/stati/`.** Copilot in VS Code supports both locations; use a
+Copy the entire `.claude/skills/stati/` bundle, including its references, assets,
+scripts, and license, or let `create-stati --agent-skill` install it for you.
+**For Claude Code, install it in `.claude/skills/stati/`, not
+`.github/skills/stati/`.** Copilot in VS Code supports both locations; use a
 single `.claude/skills/stati/` copy when sharing the skill between them.
-See [installation and discovery](./.github/skills/stati/references/installation.md)
+See [installation and discovery](./.claude/skills/stati/references/installation.md)
 for verification and explicit `/stati` invocation. Automatic discovery does not
 guarantee automatic use on every request. See the
-[resource directory](./.github/skills/stati/references/resources.md) for official
+[resource directory](./.claude/skills/stati/references/resources.md) for official
 documentation links, version provenance, and source-verified caveats.
 
 ---

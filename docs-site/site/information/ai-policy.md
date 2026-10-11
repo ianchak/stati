@@ -40,7 +40,7 @@ See [/llms.txt](/llms.txt) for structured AI crawler guidance.
 ## Site-Building Skill for AI Agents
 
 The repository includes a portable
-[Stati skill bundle](https://github.com/ianchak/stati/tree/main/.github/skills/stati)
+[Stati skill bundle](https://github.com/ianchak/stati/tree/main/.claude/skills/stati)
 for agents building Stati websites. It covers Markdown, routing, Eta layouts,
 callable partials and props, configuration, assets, SEO, search, feeds, caching,
 and deployment.
@@ -58,7 +58,7 @@ Start a fresh Claude Code session in the project and check for `/stati` in the
 command menu. Invoke `/stati` explicitly to verify it loads. Discovery makes a
 skill available but does not guarantee automatic invocation for every request.
 See the
-[installation guide](https://github.com/ianchak/stati/blob/main/.github/skills/stati/references/installation.md)
+[installation guide](https://github.com/ianchak/stati/blob/main/.claude/skills/stati/references/installation.md)
 for troubleshooting and an optional project-level reminder.
 
 The skill includes version-specific caveats and a smoke test that builds an

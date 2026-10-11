@@ -23,7 +23,7 @@
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "build": "npm run clean && tsc -p tsconfig.json && npm run copy-templates && npm run copy-skill",
     "copy-templates": "node -e \"const fs=require('fs-extra');fs.copySync('../../examples','dist/templates',{filter:(src)=>!src.includes('node_modules')&&!src.includes('.stati')&&!src.includes('dist')});\"",
-    "copy-skill": "node -e \"require('fs-extra').copySync('../../.github/skills/stati','dist/skills/stati');\"",
+    "copy-skill": "node -e \"require('fs-extra').copySync('../../.claude/skills/stati','dist/skills/stati');\"",
     "dev": "tsc -p tsconfig.json --watch",
     "test": "vitest run"
   },

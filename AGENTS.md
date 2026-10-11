@@ -15,6 +15,7 @@ Edit this file, not the tool-specific ones, when guidance changes.
 - `packages/cli/src/cli.ts` wires yargs commands to core while `packages/cli/src/logger.ts` creates the colored logger contract used across builds.
 - `packages/create-stati/src/create.ts` scaffolds from `examples/`; its build step copies templates into `dist/templates`.
 - `examples/*` double as integration fixtures and `docs-site/` hosts the real documentation built with Stati.
+- `.claude/skills/stati/` is the Stati agent skill for people building sites with Stati. It is read by Claude Code and Copilot, and `create-stati --agent-skill` bundles and installs it, so changes to it ship with `create-stati`.
 
 ## Build + test workflow
 
@@ -242,6 +243,6 @@ Full details live in `.github/publishing-and-changesets.md`. The essentials for 
 - Versioning is handled by Changesets. Never hand-edit package `version` fields or `CHANGELOG.md` files; CI does that on `main` via `npx changeset version`.
 - Changesets in `.changeset/*.md` are generated from conventional commits (`npm run changeset:generate`, or the changeset bot on PRs). Create one manually with `npm run changeset` when needed.
 - Package detection is path-based: `packages/core/` → `@stati/core`, `packages/cli/` → `@stati/cli`, `packages/create-stati/` → `create-stati`. Root `package.json`, `package-lock.json`, `tsconfig.base.json`, `vitest.config.ts`, and `eslint.config.mjs` affect all packages.
-- Changes under `.github/`, `docs-site/`, `examples/`, and root docs do not trigger a release. PRs that need no release get the `skip-changeset` label.
+- `examples/` and `.claude/skills/stati/` are bundled into `create-stati`, so changes there release it. Changes under `.github/`, the rest of `.claude/`, `docs-site/`, `scripts/`, and root docs do not trigger a release. PRs that need no release get the `skip-changeset` label.
 - Check pending releases with `npm run changeset:status` or `npm run changeset:dry-run`.
 - Publishing runs from `.github/workflows/publish.yml` after CI passes on `main`, using npm OIDC trusted publishing (npm 11.5.1+). Don't add npm tokens or secrets.

@@ -137,7 +137,7 @@ The bundle path is also available via `stati.assets.bundlePath` for advanced use
 
 ## Agent Skill
 
-create-stati can copy the [Stati agent skill](https://github.com/ianchak/stati/tree/main/.github/skills/stati) into your project so AI coding assistants follow Stati's conventions (Eta templates, partials, configuration, and more).
+create-stati can copy the [Stati agent skill](https://github.com/ianchak/stati/tree/main/.claude/skills/stati) into your project so AI coding assistants follow Stati's conventions (Eta templates, partials, configuration, and more).
 
 | Target             | Installed to            | Discovered by                          |
 | ------------------ | ----------------------- | -------------------------------------- |

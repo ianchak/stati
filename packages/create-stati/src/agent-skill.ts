@@ -34,14 +34,14 @@ export function isValidAgentSkillTarget(value: string): value is AgentSkillTarge
 /**
  * Resolve the directory containing the bundled Stati skill.
  * In published package: the skill is copied to dist/skills/stati during build.
- * In development: fall back to the monorepo's .github/skills/stati.
+ * In development: fall back to the monorepo's .claude/skills/stati.
  */
 export function getSkillSourceDir(): string {
   const publishedSkillDir = join(__dirname, 'skills', 'stati');
   if (existsSync(publishedSkillDir)) {
     return publishedSkillDir;
   }
-  return join(__dirname, '..', '..', '..', '.github', 'skills', 'stati');
+  return join(__dirname, '..', '..', '..', '.claude', 'skills', 'stati');
 }
 
 /**

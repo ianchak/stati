@@ -106,8 +106,8 @@ Copy this **entire folder**, including references, assets, scripts, and license,
 to the directory your **agent application** discovers:
 
 - **Claude Code (terminal or its VS Code extension):** `.claude/skills/stati/`.
-  Claude Code does not normally discover this repository's `.github/skills/`
-  directory as native project skills.
+  Claude Code does not normally discover `.github/skills/` as native project
+  skills.
 - **GitHub Copilot in VS Code:** `.github/skills/stati/` or
   `.claude/skills/stati/`. Using a Claude model in Copilot does not change the
   host application's discovery rules.

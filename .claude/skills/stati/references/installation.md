@@ -6,8 +6,9 @@ Claude model selected in GitHub Copilot are different applications.
 
 ## Choose the correct directory
 
-This repository distributes its bundle in `.github/skills/stati/`. That is the
-source location, not a universal installation destination.
+This repository distributes its bundle in `.claude/skills/stati/`, which both
+Claude Code and Copilot in VS Code discover. Other applications may need a
+different installation destination.
 
 | Application                                          | Project installation                                                         | Personal installation                                                               |
 | ---------------------------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
