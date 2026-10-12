@@ -17,8 +17,14 @@ Learn Stati by exploring examples and real-world implementations. Currently, Sta
 A minimal Stati site demonstrating core concepts:
 
 - **Location:** [`examples/blank/`](https://github.com/ianchak/stati/tree/main/examples/blank)
-- **Features:** Basic site structure, simple layout, example content
+- **Features:** A layout with header and footer, a homepage that walks you through the project, and one stylesheet with light and dark themes
 - **Best for:** Getting started, understanding Stati fundamentals
+
+<figure>
+  <img class="dark:hidden" src="/images/blank-template-light.webp" alt="The blank starter's homepage: a header with the site name, a large Welcome to your Stati site heading, and a numbered list of getting-started steps." width="1120" height="716" loading="lazy" />
+  <img class="hidden dark:block" src="/images/blank-template-dark.webp" alt="The blank starter's homepage in its dark theme: a header with the site name, a large Welcome to your Stati site heading, and a numbered list of getting-started steps." width="1120" height="716" loading="lazy" />
+  <figcaption>The blank starter homepage, in the theme that matches your system setting.</figcaption>
+</figure>
 
 **Key Files:**
 
@@ -28,71 +34,21 @@ examples/blank/
 │   ├── index.md          # Homepage with front-matter
 │   └── layout.eta        # Main layout template
 ├── public/
-│   ├── styles.css        # Basic styling
+│   ├── styles.css        # Light and dark theme from CSS custom properties
 │   └── favicon.svg       # Site icon
 ├── stati.config.js       # Configuration example
 └── package.json          # Scripts and dependencies
 ```
 
-**Try it locally:**
+**Start from it:**
+
+The scaffolder copies this template into a new project:
 
 ```bash
-# Clone the Stati repository
-git clone https://github.com/ianchak/stati.git
-cd stati
-
-# Install dependencies and build
-npm install
-npm run build
-
-# Run the blank example
-cd examples/blank
-npm install
-npm run dev
+npx create-stati my-site
 ```
 
-## Creating your own
-
-Use the scaffolder to create a new Stati project:
-
-```bash
-# Interactive setup
-npm create stati my-site
-
-# Available options:
-# - Template: blank (only option currently)
-# - Styling: CSS, Sass, or Tailwind CSS
-# - Git initialization
-# - Dependency installation (automatic or manual)
-# - Package manager selection (npm, yarn, pnpm, bun)
-```
-
-### Manual setup
-
-Create a minimal Stati site manually:
-
-```bash
-mkdir my-site && cd my-site
-npm init -y
-npm install --save-dev @stati/cli @stati/core
-
-# Create basic structure
-mkdir site public
-echo '# Hello Stati' > site/index.md
-```
-
-Create `stati.config.js`:
-
-```javascript
-import { defineConfig } from '@stati/core';
-
-export default defineConfig({
-  site: {
-    title: 'My Stati Site',
-    baseUrl: 'https://example.com',
-  },
-});
-```
+The [quick start](/getting-started/quick-start) walks through the prompts and the first edits. To set up a project without the scaffolder, see [Manual installation](/getting-started/installation#manual-installation).
 
 ## Learning resources
 

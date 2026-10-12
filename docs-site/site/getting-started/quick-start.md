@@ -88,6 +88,12 @@ The dev server will:
 
 Open your browser and navigate to the URL shown in the terminal. Your site is running; the rest of this guide makes it yours.
 
+<figure>
+  <img class="dark:hidden" src="/images/blank-template-light.webp" alt="The blank starter's homepage: a header with the site name, a large Welcome to your Stati site heading, and a numbered list of getting-started steps." width="1120" height="716" loading="lazy" />
+  <img class="hidden dark:block" src="/images/blank-template-dark.webp" alt="The blank starter's homepage in its dark theme: a header with the site name, a large Welcome to your Stati site heading, and a numbered list of getting-started steps." width="1120" height="716" loading="lazy" />
+  <figcaption>The starter homepage. It follows the visitor&#39;s light or dark system setting.</figcaption>
+</figure>
+
 ## Next: Make it yours
 
 Work through these in order, or jump to the one you need.
@@ -148,88 +154,40 @@ I chose Stati because:
 Feel free to reach out if you have any questions!
 ```
 
-Your new page will be available at [http://localhost:3000/about/](http://localhost:3000/about/)
+Your new page will be available at [http://localhost:3000/about](http://localhost:3000/about)
 
-### Step 6: Customize the layout
+### Step 6: Add the page to the navigation
 
-Edit `site/layout.eta` to add navigation:
+`site/layout.eta` wraps every page. Its header already has a navigation with a Home link; add one for your About page:
 
 ```html
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>
-      <%= stati.page.title ? `${stati.page.title} | ${stati.site.title}` : stati.site.title %>
-    </title>
-    <% if (stati.page.description) { %>
-    <meta name="description" content="<%= stati.page.description %>" />
-    <% } %>
-    <link rel="stylesheet" href="/styles.css" />
-  </head>
-  <body>
-    <nav>
-      <a href="/">Home</a>
-      <a href="/about/">About</a>
-    </nav>
-
-    <main>
-      <% if (stati.page.title) { %>
-      <h1><%= stati.page.title %></h1>
-      <% } %> <%~ stati.content %>
-    </main>
-
-    <footer>
-      <p>&copy; 2024 My Stati Site</p>
-    </footer>
-  </body>
-</html>
+<nav aria-label="Main">
+  <a href="/" aria-current="<%= stati.page.url === '/' ? 'page' : 'false' %>">Home</a>
+  <a href="/about" aria-current="<%= stati.page.url === '/about' ? 'page' : 'false' %>">About</a>
+</nav>
 ```
 
-### Step 7: Add some styling
+`aria-current="page"` tells screen readers which page is open, and the stylesheet highlights that link. The whole attribute value is one expression on purpose: Eta templates can't mix static text and `<%= %>` inside an attribute (see [Templates](/core-concepts/templates)).
 
-Edit `public/styles.css` to style your site:
+### Step 7: Change the colors
+
+The colors and fonts are custom properties at the top of `public/styles.css`, with a second set for the dark theme. Change the accent in both to restyle links, focus rings and text selection across the site:
 
 ```css
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  line-height: 1.6;
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
-  background: #fff;
-  color: #333;
+:root {
+  --accent: #0f766e;
+  --accent-ink: #115e59;
 }
 
-nav {
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #eee;
-}
-
-nav a {
-  margin-right: 1rem;
-  text-decoration: none;
-  color: #0066cc;
-  font-weight: 500;
-}
-
-nav a:hover {
-  text-decoration: underline;
-}
-
-main {
-  margin-bottom: 3rem;
-}
-
-footer {
-  text-align: center;
-  color: #666;
-  border-top: 1px solid #eee;
-  padding-top: 1rem;
+@media (prefers-color-scheme: dark) {
+  :root {
+    --accent: #2dd4bf;
+    --accent-ink: #5eead4;
+  }
 }
 ```
+
+Edit the values in place rather than adding a second `:root` block. If you chose Sass, the same properties are in `src/styles.scss`, where `$primary-color` sets the light accent. With Tailwind, `src/styles.css` styles the starter with `@apply` and Tailwind's own palette, so swap the `blue-*` classes there instead.
 
 ### Step 8: Configure your site
 

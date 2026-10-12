@@ -95,7 +95,8 @@ Currently, Stati provides one template:
 **What's included:**
 
 - Basic site structure (`site/`, `public/`)
-- Example homepage and layout
+- A homepage that walks through the project, and a layout with header, navigation and footer
+- One stylesheet with light and dark themes; colors and fonts are CSS custom properties
 - Configuration file with sensible defaults
 - Package.json with development scripts
 
@@ -105,12 +106,12 @@ Choose your preferred styling approach:
 
 ### CSS (default)
 
-- Basic CSS file in `public/styles.css`
+- One CSS file in `public/styles.css`, themed by custom properties at the top
 - No preprocessing or build step required
 
 ### Sass
 
-- Creates `src/styles.scss` for SCSS source
+- Creates `src/styles.scss` from the starter stylesheet, with `$primary-color`, `$font-stack` and a breakpoint as Sass variables
 - SCSS support with build scripts
 - Automatic compilation during development and build
 - Scripts added: `build:css`, `watch:css`
@@ -119,7 +120,7 @@ Choose your preferred styling approach:
 ### Tailwind CSS
 
 - Generates `tailwind.config.js` with content paths for `site/**/*.{md,eta,html}` and `.stati/tailwind-classes.html`
-- Creates source stylesheet at `src/styles.css` compiled directly to `dist/styles.css`
+- Creates source stylesheet at `src/styles.css` compiled directly to `dist/styles.css`; it rebuilds the starter's look with `@apply`, Tailwind's slate and blue palette and `dark:` variants
 - Scripts added: `build:css`
 - Modified scripts:
   - `dev`: Uses Stati's built-in Tailwind integration (single process)
