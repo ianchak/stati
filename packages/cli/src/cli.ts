@@ -17,7 +17,7 @@ import type { BuildOptions, DevServerOptions, PreviewServerOptions } from '@stat
 import { log } from './colors.js';
 import { createLogger } from './logger.js';
 import { watchTailwindCSS } from './tailwind.js';
-import { parseServerAddress } from './server-address.js';
+import { parseServerAddress } from './utils/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

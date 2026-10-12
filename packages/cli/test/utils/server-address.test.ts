@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseServerAddress } from '../src/server-address.js';
+import { parseServerAddress } from '../../src/utils/server-address.utils.js';
 
 describe('parseServerAddress', () => {
   it('should split a hostname URL into host and port', () => {
