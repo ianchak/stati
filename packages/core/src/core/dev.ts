@@ -883,15 +883,23 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
       }
 
       // Start HTTP server
-      await new Promise<void>((resolve, reject) => {
-        httpServer!.listen(port, host, () => {
-          resolve();
-        });
+      try {
+        await new Promise<void>((resolve, reject) => {
+          httpServer!.listen(port, host, () => {
+            resolve();
+          });
 
-        httpServer!.on('error', (error: unknown) => {
-          reject(toPortUnavailableError(error, port, host, 'dev.port'));
+          httpServer!.on('error', (error: unknown) => {
+            reject(toPortUnavailableError(error, port, host, 'dev.port'));
+          });
         });
-      });
+      } catch (error) {
+        // Release the lock and watchers acquired above so a failed start doesn't leak them.
+        // The HTTP server never started listening, so there is nothing to close.
+        httpServer = null;
+        await devServer.stop();
+        throw error;
+      }
 
       // Set up file watching
       const watchPaths = [srcDir, staticDir].filter(Boolean);

@@ -28,17 +28,21 @@ vi.mock('ws', () => ({
   }),
 }));
 
+// Set listenError to simulate the HTTP server failing to bind after the port probe passed
+let listenError: (Error & { code?: string }) | null = null;
 vi.mock('http', () => ({
   createServer: vi.fn((handler: (req: IncomingMessage, res: ServerResponse) => void) => {
     capturedRequestHandler = handler;
     return {
       listen: vi.fn((port: number, host: string, callback?: () => void) => {
-        if (callback) callback();
+        if (callback && !listenError) callback();
       }),
       close: vi.fn((callback?: () => void) => {
         if (callback) callback();
       }),
-      on: vi.fn(),
+      on: vi.fn((event: string, handler: (error: unknown) => void) => {
+        if (event === 'error' && listenError) handler(listenError);
+      }),
     };
   }),
 }));
@@ -193,6 +197,7 @@ describe('Development Server', () => {
     vi.clearAllMocks();
     capturedRequestHandler = null;
     probeError = null;
+    listenError = null;
     mockDiscoverOutputCssFiles.mockResolvedValue([]);
     vi.mocked(fsUtils.pathExists).mockResolvedValue(true);
 
@@ -304,6 +309,19 @@ describe('Development Server', () => {
     );
     expect(mockInvalidate).not.toHaveBeenCalled();
     expect(mockBuild).not.toHaveBeenCalled();
+  });
+
+  it('should release the lock when the port is taken between the probe and listen', async () => {
+    listenError = Object.assign(new Error('listen EADDRINUSE'), { code: 'EADDRINUSE' });
+    const { DevServerLockManager } = await import('../../src/core/isg/index.js');
+    const releaseLockSpy = vi.spyOn(DevServerLockManager.prototype, 'releaseLock');
+
+    const devServer = await createDevServer({ port: 3000, logger: createMockLogger() });
+
+    await expect(devServer.start()).rejects.toThrow('Port 3000 is already in use on localhost.');
+    expect(releaseLockSpy).toHaveBeenCalledTimes(1);
+
+    releaseLockSpy.mockRestore();
   });
 
   it('should handle build errors during initial startup', async () => {

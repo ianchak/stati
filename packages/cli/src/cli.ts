@@ -17,6 +17,7 @@ import type { BuildOptions, DevServerOptions, PreviewServerOptions } from '@stat
 import { log } from './colors.js';
 import { createLogger } from './logger.js';
 import { watchTailwindCSS } from './tailwind.js';
+import { parseServerAddress } from './server-address.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -29,19 +30,6 @@ function getCliVersion(): string {
   } catch {
     return 'unknown';
   }
-}
-
-/**
- * Splits a server URL like `http://localhost:3000` into host and port.
- * Splits on the last colon so bare IPv6 hosts (e.g. `::1`) are kept intact.
- */
-function parseServerAddress(url: string): { host: string; port: number } {
-  const address = url.replace(/^https?:\/\//, '');
-  const separatorIndex = address.lastIndexOf(':');
-  return {
-    host: address.slice(0, separatorIndex),
-    port: Number(address.slice(separatorIndex + 1)),
-  };
 }
 
 const cli = yargs(hideBin(process.argv))

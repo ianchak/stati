@@ -8,17 +8,21 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 let capturedRequestHandler: ((req: IncomingMessage, res: ServerResponse) => void) | null = null;
 
 // Mock dependencies
+// Set listenError to simulate the HTTP server failing to bind after the port probe passed
+let listenError: (Error & { code?: string }) | null = null;
 vi.mock('http', () => ({
   createServer: vi.fn((handler: (req: IncomingMessage, res: ServerResponse) => void) => {
     capturedRequestHandler = handler;
     return {
       listen: vi.fn((port: number, host: string, callback?: () => void) => {
-        if (callback) callback();
+        if (callback && !listenError) callback();
       }),
       close: vi.fn((callback?: () => void) => {
         if (callback) callback();
       }),
-      on: vi.fn(),
+      on: vi.fn((event: string, handler: (error: unknown) => void) => {
+        if (event === 'error' && listenError) handler(listenError);
+      }),
     };
   }),
 }));
@@ -80,6 +84,7 @@ describe('Preview Server', () => {
     vi.clearAllMocks();
     capturedRequestHandler = null;
     probeError = null;
+    listenError = null;
 
     // Ensure mocks return valid data
     mockLoadConfig.mockResolvedValue({
@@ -131,6 +136,16 @@ describe('Preview Server', () => {
 
     await expect(previewServer.start()).rejects.toThrow(
       'Port 4000 is already in use on localhost. Stop the process using it, or choose another port with --port or `preview.port` in your Stati config.',
+    );
+  });
+
+  it('should map listen errors to a clear error when the port is taken after the probe', async () => {
+    listenError = Object.assign(new Error('listen EADDRINUSE'), { code: 'EADDRINUSE' });
+
+    const previewServer = await createPreviewServer();
+
+    await expect(previewServer.start()).rejects.toThrow(
+      'Port 4000 is already in use on localhost.',
     );
   });
 
