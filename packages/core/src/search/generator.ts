@@ -95,14 +95,17 @@ const CODE_MARK = '';
 export function stripMarkdown(markdown: string): string {
   let text = markdown;
 
-  // Remove fenced code blocks
-  text = text.replace(/```[\s\S]*?```/g, ' ');
+  // Remove fenced code blocks. Fences sit at the start of a line, so inline
+  // spans written with three or more backticks are left for the step below.
+  text = text.replace(/^[ \t>]*(`{3,}|~{3,})[^\n]*\n[\s\S]*?^[ \t>]*\1[`~]*[ \t]*$/gm, ' ');
 
   // Keep inline code text (identifiers are what people search for), shielded
-  // from the emphasis and HTML stripping below and restored at the end
+  // from the emphasis and HTML stripping below and restored at the end.
+  // A span closes on a backtick run of the same length as its opener, so
+  // ``a `b` c`` is one span; one padding space on each side is dropped.
   const inlineCode: string[] = [];
-  text = text.replace(/`([^`]+)`/g, (_match, code: string) => {
-    inlineCode.push(code);
+  text = text.replace(/(`+)([\s\S]*?[^`])\1(?!`)/g, (_match, _fence: string, code: string) => {
+    inlineCode.push(/^ [\s\S]* $/.test(code) && code.trim() ? code.slice(1, -1) : code);
     return `${CODE_MARK}${inlineCode.length - 1}${CODE_MARK}`;
   });
 

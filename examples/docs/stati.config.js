@@ -53,7 +53,8 @@ export default defineConfig({
 
   hooks: docs.hooks,
 
-  // Builds dist/search-index.json, which the search dialog loads on first use.
+  // Builds dist/search-index-<hash>.json, which the search dialog finds via an
+  // injected meta tag and loads on first use.
   search: {
     enabled: true,
     exclude: ['/404'],

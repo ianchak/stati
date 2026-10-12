@@ -23,7 +23,8 @@ export function initCopy(): void {
       ? (document.getElementById(targetId)?.textContent ?? '')
       : (button.dataset.copy ?? '');
 
-    void copy(button, text.trim());
+    const target = targetId ? document.getElementById(targetId) : null;
+    void copy(button, text.trim(), target);
   });
 }
 
@@ -41,7 +42,11 @@ function addCodeBlockButton(pre: HTMLPreElement, index: number): void {
   pre.appendChild(button);
 }
 
-async function copy(button: HTMLButtonElement, text: string): Promise<void> {
+async function copy(
+  button: HTMLButtonElement,
+  text: string,
+  target: HTMLElement | null,
+): Promise<void> {
   const label = button.querySelector<HTMLElement>('[data-copy-label]') ?? button;
   const original = label.dataset.original ?? label.textContent ?? 'Copy';
   label.dataset.original = original;
@@ -53,14 +58,31 @@ async function copy(button: HTMLButtonElement, text: string): Promise<void> {
     ok = false;
   }
 
-  label.textContent = ok ? 'Copied' : 'Press Ctrl+C';
+  // Without clipboard access, select the text so the keyboard shortcut works
+  if (!ok && target) selectContents(target);
+
+  label.textContent = ok ? 'Copied' : target ? 'Press Ctrl+C' : 'Copy failed';
   button.dataset.copied = String(ok);
-  announce(ok ? 'Copied to clipboard' : 'Copy failed. Select the text and copy it manually.');
+  announce(
+    ok
+      ? 'Copied to clipboard'
+      : target
+        ? 'Copy failed. The text is selected; press Ctrl+C to copy it.'
+        : 'Copy failed. Select the text and copy it manually.',
+  );
 
   window.setTimeout(() => {
     label.textContent = original;
     delete button.dataset.copied;
   }, RESET_MS);
+}
+
+function selectContents(element: HTMLElement): void {
+  const range = document.createRange();
+  range.selectNodeContents(element);
+  const selection = window.getSelection();
+  selection?.removeAllRanges();
+  selection?.addRange(range);
 }
 
 function announce(message: string): void {

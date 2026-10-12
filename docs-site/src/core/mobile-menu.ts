@@ -24,6 +24,8 @@ export function initMobileMenu(): void {
   const isOpen = (): boolean => button.getAttribute('aria-expanded') === 'true';
 
   const setOpen = (open: boolean, returnFocus = false): void => {
+    // Focus left inside a closing panel would be stranded in inert/hidden content
+    const focusInPanel = panel.contains(document.activeElement);
     button.setAttribute('aria-expanded', String(open));
     button.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
     if (openIcon) openIcon.hidden = open;
@@ -42,7 +44,7 @@ export function initMobileMenu(): void {
       panel
         .querySelector<HTMLElement>('[aria-current="page"], a, summary')
         ?.focus({ preventScroll: true });
-    } else if (returnFocus) {
+    } else if (returnFocus || focusInPanel) {
       button.focus();
     }
   };
@@ -51,7 +53,7 @@ export function initMobileMenu(): void {
   if (isDrawer) panel.inert = !desktop.matches;
 
   button.addEventListener('click', () => setOpen(!isOpen()));
-  backdrop?.addEventListener('click', () => setOpen(false));
+  backdrop?.addEventListener('click', () => setOpen(false, true));
 
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && isOpen()) setOpen(false, true);

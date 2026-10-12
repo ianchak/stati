@@ -32,7 +32,7 @@ title: Hello, Stati
 
 # Hello, Stati
 
-This page becomes `/hello/`.
+This page becomes `/hello`.
 ```
 
 Save it as `site/hello.md`, add a layout at `site/layout.eta`, and run `npx stati build`. The output in `dist/` is static HTML with no client-side framework.

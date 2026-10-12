@@ -122,7 +122,7 @@ export default defineConfig({
         language: 'en-US',
         category: 'Documentation',
         maxItems: 30,
-        excludePatterns: ['/404'],
+        excludePatterns: ['**/404.md'],
       },
     ],
   },

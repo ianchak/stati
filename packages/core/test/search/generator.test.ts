@@ -46,6 +46,11 @@ describe('stripMarkdown', () => {
     expect(stripMarkdown(markdown)).toBe('Set max_age_days and call <%~ include() %> here');
   });
 
+  it('keeps inline code that uses longer backtick delimiters', () => {
+    const markdown = 'Wrap it as `` `code` `` or ```a `` b``` in text';
+    expect(stripMarkdown(markdown)).toBe('Wrap it as `code` or a `` b in text');
+  });
+
   it('removes table pipes and delimiter rows', () => {
     const markdown = '| Option | Type |\n| --- | :---: |\n| `ttlSeconds` | number |';
     expect(stripMarkdown(markdown)).toBe('Option Type ttlSeconds number');
