@@ -33,6 +33,8 @@ import {
   refreshCssOutputWatcher,
   normalizePathForComparison,
   isPathWithinDirectory,
+  assertPortAvailable,
+  toPortUnavailableError,
 } from './utils/index.js';
 import { setEnv, getEnv } from '../env.js';
 import {
@@ -759,6 +761,9 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
     url,
 
     async start(): Promise<void> {
+      // Fail fast if the port is taken, before acquiring the lock or running the initial build
+      await assertPortAvailable(port, host, 'dev.port');
+
       // Acquire dev server lock to prevent multiple dev servers in the same directory
       try {
         await devLock.acquireLock();
@@ -884,7 +889,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
         });
 
         httpServer!.on('error', (error: unknown) => {
-          reject(error);
+          reject(toPortUnavailableError(error, port, host, 'dev.port'));
         });
       });
 

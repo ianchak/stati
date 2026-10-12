@@ -23,6 +23,26 @@ vi.mock('http', () => ({
   }),
 }));
 
+// Port availability probe; set probeError to simulate an occupied port
+let probeError: (Error & { code?: string }) | null = null;
+vi.mock('net', () => ({
+  createServer: vi.fn(() => {
+    const handlers: Record<string, (arg?: unknown) => void> = {};
+    return {
+      once: vi.fn((event: string, handler: (arg?: unknown) => void) => {
+        handlers[event] = handler;
+      }),
+      listen: vi.fn(() => {
+        if (probeError) handlers.error?.(probeError);
+        else handlers.listening?.();
+      }),
+      close: vi.fn((callback?: () => void) => {
+        if (callback) callback();
+      }),
+    };
+  }),
+}));
+
 vi.mock('open', () => ({
   default: vi.fn().mockResolvedValue(undefined),
 }));
@@ -59,6 +79,7 @@ describe('Preview Server', () => {
     consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.clearAllMocks();
     capturedRequestHandler = null;
+    probeError = null;
 
     // Ensure mocks return valid data
     mockLoadConfig.mockResolvedValue({
@@ -101,6 +122,16 @@ describe('Preview Server', () => {
 
     await expect(previewServer.start()).resolves.toBeUndefined();
     await expect(previewServer.stop()).resolves.toBeUndefined();
+  });
+
+  it('should fail with a clear error when the port is in use', async () => {
+    probeError = Object.assign(new Error('listen EADDRINUSE'), { code: 'EADDRINUSE' });
+
+    const previewServer = await createPreviewServer();
+
+    await expect(previewServer.start()).rejects.toThrow(
+      'Port 4000 is already in use on localhost. Stop the process using it, or choose another port with --port or `preview.port` in your Stati config.',
+    );
   });
 
   it('should load configuration correctly', async () => {
@@ -247,9 +278,11 @@ describe('Preview Server', () => {
       const { isPathWithinDirectory } = await import('../../src/core/utils/paths.utils.js');
       vi.mocked(isPathWithinDirectory).mockReturnValue(true);
 
-      // Mock readFile to throw an error for non-existent files
-      const { readFile } = await import('fs/promises');
-      vi.mocked(readFile).mockRejectedValueOnce(new Error('ENOENT'));
+      // Mock stat to throw for non-existent files so the pretty URL resolver reports not found
+      const { stat } = await import('fs/promises');
+      vi.mocked(stat).mockRejectedValueOnce(
+        Object.assign(new Error('ENOENT: no such file or directory'), { code: 'ENOENT' }),
+      );
 
       const previewServer = await createPreviewServer();
       await previewServer.start();

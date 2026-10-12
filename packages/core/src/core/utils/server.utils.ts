@@ -1,5 +1,83 @@
 import { join } from 'node:path';
 import { stat } from 'node:fs/promises';
+import { createServer } from 'node:net';
+
+/**
+ * Error codes for which a port is considered unavailable
+ */
+export type PortUnavailableCode = 'EADDRINUSE' | 'EACCES';
+
+/**
+ * Thrown when a server cannot bind to its configured port.
+ * The message is user-facing and explains how to pick a different port.
+ */
+export class PortUnavailableError extends Error {
+  readonly port: number;
+  readonly host: string;
+  readonly code: PortUnavailableCode;
+
+  constructor(port: number, host: string, code: PortUnavailableCode, configKey?: string) {
+    const reason =
+      code === 'EADDRINUSE'
+        ? `Port ${port} is already in use on ${host}. Stop the process using it, or choose another port`
+        : `Permission denied to use port ${port} on ${host}. Choose another port`;
+    const hint = configKey ? ` with --port or \`${configKey}\` in your Stati config.` : '.';
+
+    super(`${reason}${hint}`);
+    this.name = 'PortUnavailableError';
+    this.port = port;
+    this.host = host;
+    this.code = code;
+  }
+}
+
+/**
+ * Converts a server `listen` error into a {@link PortUnavailableError} when the
+ * failure is caused by the port being taken or restricted. Other errors are returned as-is.
+ *
+ * @param error - Error emitted by `server.listen()`
+ * @param port - Port the server tried to bind to
+ * @param host - Host the server tried to bind to
+ * @param configKey - Config key users can set to change the port (e.g. `dev.port`)
+ * @returns A PortUnavailableError or the original error
+ */
+export function toPortUnavailableError(
+  error: unknown,
+  port: number,
+  host: string,
+  configKey?: string,
+): unknown {
+  const code = (error as { code?: unknown } | null | undefined)?.code;
+  if (code === 'EADDRINUSE' || code === 'EACCES') {
+    return new PortUnavailableError(port, host, code, configKey);
+  }
+  return error;
+}
+
+/**
+ * Verifies that a port can be bound on the given host by briefly listening on it.
+ * Use this before expensive startup work so an occupied port fails fast.
+ *
+ * @param port - Port to check
+ * @param host - Host to bind to
+ * @param configKey - Config key users can set to change the port (e.g. `dev.port`)
+ * @throws {PortUnavailableError} When the port is in use or not permitted
+ */
+export function assertPortAvailable(port: number, host: string, configKey?: string): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    const probe = createServer();
+
+    probe.once('error', (error) => {
+      reject(toPortUnavailableError(error, port, host, configKey));
+    });
+
+    probe.once('listening', () => {
+      probe.close(() => resolve());
+    });
+
+    probe.listen(port, host);
+  });
+}
 
 /**
  * Result of attempting to resolve a pretty URL path
