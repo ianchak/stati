@@ -28,17 +28,41 @@ vi.mock('ws', () => ({
   }),
 }));
 
+// Set listenError to simulate the HTTP server failing to bind after the port probe passed
+let listenError: (Error & { code?: string }) | null = null;
 vi.mock('http', () => ({
   createServer: vi.fn((handler: (req: IncomingMessage, res: ServerResponse) => void) => {
     capturedRequestHandler = handler;
     return {
       listen: vi.fn((port: number, host: string, callback?: () => void) => {
-        if (callback) callback();
+        if (callback && !listenError) callback();
       }),
       close: vi.fn((callback?: () => void) => {
         if (callback) callback();
       }),
-      on: vi.fn(),
+      on: vi.fn((event: string, handler: (error: unknown) => void) => {
+        if (event === 'error' && listenError) handler(listenError);
+      }),
+    };
+  }),
+}));
+
+// Port availability probe; set probeError to simulate an occupied port
+let probeError: (Error & { code?: string }) | null = null;
+vi.mock('net', () => ({
+  createServer: vi.fn(() => {
+    const handlers: Record<string, (arg?: unknown) => void> = {};
+    return {
+      once: vi.fn((event: string, handler: (arg?: unknown) => void) => {
+        handlers[event] = handler;
+      }),
+      listen: vi.fn(() => {
+        if (probeError) handlers.error?.(probeError);
+        else handlers.listening?.();
+      }),
+      close: vi.fn((callback?: () => void) => {
+        if (callback) callback();
+      }),
     };
   }),
 }));
@@ -172,6 +196,8 @@ describe('Development Server', () => {
     consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.clearAllMocks();
     capturedRequestHandler = null;
+    probeError = null;
+    listenError = null;
     mockDiscoverOutputCssFiles.mockResolvedValue([]);
     vi.mocked(fsUtils.pathExists).mockResolvedValue(true);
 
@@ -271,6 +297,31 @@ describe('Development Server', () => {
     expect(mockLogger.status).toHaveBeenCalledWith('Clearing cache for fresh development build...');
 
     await devServer.stop();
+  });
+
+  it('should fail fast with a clear error when the port is in use', async () => {
+    probeError = Object.assign(new Error('listen EADDRINUSE'), { code: 'EADDRINUSE' });
+
+    const devServer = await createDevServer({ port: 3000, logger: createMockLogger() });
+
+    await expect(devServer.start()).rejects.toThrow(
+      'Port 3000 is already in use on localhost. Stop the process using it, or choose another port with --port or `dev.port` in your Stati config.',
+    );
+    expect(mockInvalidate).not.toHaveBeenCalled();
+    expect(mockBuild).not.toHaveBeenCalled();
+  });
+
+  it('should release the lock when the port is taken between the probe and listen', async () => {
+    listenError = Object.assign(new Error('listen EADDRINUSE'), { code: 'EADDRINUSE' });
+    const { DevServerLockManager } = await import('../../src/core/isg/index.js');
+    const releaseLockSpy = vi.spyOn(DevServerLockManager.prototype, 'releaseLock');
+
+    const devServer = await createDevServer({ port: 3000, logger: createMockLogger() });
+
+    await expect(devServer.start()).rejects.toThrow('Port 3000 is already in use on localhost.');
+    expect(releaseLockSpy).toHaveBeenCalledTimes(1);
+
+    releaseLockSpy.mockRestore();
   });
 
   it('should handle build errors during initial startup', async () => {

@@ -1,7 +1,78 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { mkdir, writeFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
-import { resolvePrettyUrl, mergeServerOptions } from '../../src/core/utils/server.utils.js';
+import { createServer, type Server } from 'node:net';
+import {
+  resolvePrettyUrl,
+  mergeServerOptions,
+  assertPortAvailable,
+  toPortUnavailableError,
+  PortUnavailableError,
+} from '../../src/core/utils/server.utils.js';
+
+describe('assertPortAvailable', () => {
+  const host = '127.0.0.1';
+  let blocker: Server | null = null;
+
+  afterAll(async () => {
+    if (blocker) {
+      await new Promise<void>((resolve) => blocker!.close(() => resolve()));
+    }
+  });
+
+  async function occupyRandomPort(): Promise<number> {
+    blocker = createServer();
+    await new Promise<void>((resolve) => blocker!.listen(0, host, resolve));
+    const address = blocker.address();
+    if (!address || typeof address === 'string') throw new Error('Unexpected server address');
+    return address.port;
+  }
+
+  it('should resolve when the port is free and release it afterwards', async () => {
+    const probe = createServer();
+    await new Promise<void>((resolve) => probe.listen(0, host, resolve));
+    const address = probe.address();
+    if (!address || typeof address === 'string') throw new Error('Unexpected server address');
+    await new Promise<void>((resolve) => probe.close(() => resolve()));
+
+    await expect(assertPortAvailable(address.port, host)).resolves.toBeUndefined();
+    // Port must be released so the real server can bind to it
+    await expect(assertPortAvailable(address.port, host)).resolves.toBeUndefined();
+  });
+
+  it('should reject with PortUnavailableError when the port is in use', async () => {
+    const port = await occupyRandomPort();
+
+    const error = await assertPortAvailable(port, host, 'dev.port').catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(PortUnavailableError);
+    expect(error).toMatchObject({ port, host, code: 'EADDRINUSE' });
+    expect((error as Error).message).toBe(
+      `Port ${port} is already in use on ${host}. Stop the process using it, or choose another port with --port or \`dev.port\` in your Stati config.`,
+    );
+  });
+});
+
+describe('toPortUnavailableError', () => {
+  it('should convert EACCES errors', () => {
+    const error = toPortUnavailableError(
+      Object.assign(new Error('listen EACCES'), { code: 'EACCES' }),
+      80,
+      'localhost',
+    );
+
+    expect(error).toBeInstanceOf(PortUnavailableError);
+    expect((error as Error).message).toBe(
+      'Permission denied to use port 80 on localhost. Choose another port.',
+    );
+  });
+
+  it('should return unrelated errors unchanged', () => {
+    const original = Object.assign(new Error('getaddrinfo ENOTFOUND'), { code: 'ENOTFOUND' });
+
+    expect(toPortUnavailableError(original, 3000, 'nope.invalid')).toBe(original);
+  });
+});
 
 describe('mergeServerOptions', () => {
   const defaults = {

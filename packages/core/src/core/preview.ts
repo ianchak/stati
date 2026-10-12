@@ -9,6 +9,8 @@ import {
   createFallbackLogger,
   mergeServerOptions,
   isPathWithinDirectory,
+  assertPortAvailable,
+  toPortUnavailableError,
 } from './utils/index.js';
 import { DEFAULT_PREVIEW_PORT, DEFAULT_DEV_HOST } from '../constants.js';
 
@@ -159,6 +161,8 @@ export async function createPreviewServer(
     url,
 
     async start(): Promise<void> {
+      await assertPortAvailable(port, host, 'preview.port');
+
       // Create HTTP server
       httpServer = createServer(async (req, res) => {
         const requestPath = req.url || '/';
@@ -189,7 +193,7 @@ export async function createPreviewServer(
         });
 
         httpServer!.on('error', (error: unknown) => {
-          reject(error);
+          reject(toPortUnavailableError(error, port, host, 'preview.port'));
         });
       });
 

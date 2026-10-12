@@ -17,6 +17,7 @@ import type { BuildOptions, DevServerOptions, PreviewServerOptions } from '@stat
 import { log } from './colors.js';
 import { createLogger } from './logger.js';
 import { watchTailwindCSS } from './tailwind.js';
+import { parseServerAddress } from './utils/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -186,13 +187,11 @@ const cli = yargs(hideBin(process.argv))
       y
         .option('port', {
           type: 'number',
-          description: 'Port to run the dev server on',
-          default: 3000,
+          description: 'Port to run the dev server on (overrides dev.port, default: 3000)',
         })
         .option('host', {
           type: 'string',
-          description: 'Host to bind the dev server to',
-          default: 'localhost',
+          description: 'Host to bind the dev server to (overrides dev.host, default: localhost)',
         })
         .option('open', {
           type: 'boolean',
@@ -216,9 +215,10 @@ const cli = yargs(hideBin(process.argv))
           default: false,
         }),
     async (argv) => {
+      // Only pass port/host when given so config values (dev.port/dev.host) apply otherwise
       const devOptions: DevServerOptions = {
-        port: argv.port as number,
-        host: argv.host as string,
+        ...(argv.port !== undefined && { port: argv.port }),
+        ...(argv.host !== undefined && { host: argv.host }),
         ...(argv.open !== undefined && { open: argv.open }),
         ...(argv.config && { configPath: argv.config as string }),
       };
@@ -232,10 +232,14 @@ const cli = yargs(hideBin(process.argv))
         // Show decorative startup banner
         log.startupBanner('Development Server', getCliVersion(), getStatiVersion());
 
+        // Create the server first so the info box shows host/port resolved from config
+        const devServer = await createDevServer(devOptions);
+        const devAddress = parseServerAddress(devServer.url);
+
         // Show command info box with all options
         log.commandInfo('dev', [
-          { name: 'Host', value: argv.host as string, isDefault: argv.host === 'localhost' },
-          { name: 'Port', value: argv.port as number, isDefault: argv.port === 3000 },
+          { name: 'Host', value: devAddress.host, isDefault: argv.host === undefined },
+          { name: 'Port', value: devAddress.port, isDefault: argv.port === undefined },
           { name: 'Open', value: !!argv.open, isDefault: !argv.open },
           { name: 'Config', value: (argv.config as string) || '', isDefault: !argv.config },
           {
@@ -245,7 +249,6 @@ const cli = yargs(hideBin(process.argv))
           },
         ]);
 
-        const devServer = await createDevServer(devOptions);
         await devServer.start();
 
         // Start Tailwind watcher if configured (after dev server is running)
@@ -315,13 +318,12 @@ const cli = yargs(hideBin(process.argv))
       y
         .option('port', {
           type: 'number',
-          description: 'Port to run the preview server on',
-          default: 4000,
+          description: 'Port to run the preview server on (overrides preview.port, default: 4000)',
         })
         .option('host', {
           type: 'string',
-          description: 'Host to bind the preview server to',
-          default: 'localhost',
+          description:
+            'Host to bind the preview server to (overrides preview.host, default: localhost)',
         })
         .option('open', {
           type: 'boolean',
@@ -332,9 +334,10 @@ const cli = yargs(hideBin(process.argv))
           description: 'Path to config file',
         }),
     async (argv) => {
+      // Only pass port/host when given so config values (preview.port/preview.host) apply otherwise
       const previewOptions: PreviewServerOptions = {
-        port: argv.port as number,
-        host: argv.host as string,
+        ...(argv.port !== undefined && { port: argv.port }),
+        ...(argv.host !== undefined && { host: argv.host }),
         ...(argv.open !== undefined && { open: argv.open }),
         ...(argv.config && { configPath: argv.config as string }),
       };
@@ -348,15 +351,18 @@ const cli = yargs(hideBin(process.argv))
         // Show decorative startup banner
         log.startupBanner('Preview Server', getCliVersion(), getStatiVersion());
 
+        // Create the server first so the info box shows host/port resolved from config
+        const previewServer = await createPreviewServer(previewOptions);
+        const previewAddress = parseServerAddress(previewServer.url);
+
         // Show command info box with all options
         log.commandInfo('preview', [
-          { name: 'Host', value: argv.host as string, isDefault: argv.host === 'localhost' },
-          { name: 'Port', value: argv.port as number, isDefault: argv.port === 4000 },
+          { name: 'Host', value: previewAddress.host, isDefault: argv.host === undefined },
+          { name: 'Port', value: previewAddress.port, isDefault: argv.port === undefined },
           { name: 'Open', value: !!argv.open, isDefault: !argv.open },
           { name: 'Config', value: (argv.config as string) || '', isDefault: !argv.config },
         ]);
 
-        const previewServer = await createPreviewServer(previewOptions);
         await previewServer.start();
 
         // Handle graceful shutdown

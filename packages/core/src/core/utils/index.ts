@@ -72,11 +72,18 @@ export { TemplateError, parseEtaError, createTemplateError } from './template-er
 export { createNavigationHelpers } from './navigation-helpers.utils.js';
 
 // Server utilities
-export { resolvePrettyUrl, mergeServerOptions } from './server.utils.js';
+export {
+  resolvePrettyUrl,
+  mergeServerOptions,
+  assertPortAvailable,
+  toPortUnavailableError,
+  PortUnavailableError,
+} from './server.utils.js';
 export type {
   PrettyUrlResult,
   MergedServerOptions,
   MergeServerOptionsParams,
+  PortUnavailableCode,
 } from './server.utils.js';
 
 // Error overlay utilities

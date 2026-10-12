@@ -33,6 +33,8 @@ import {
   refreshCssOutputWatcher,
   normalizePathForComparison,
   isPathWithinDirectory,
+  assertPortAvailable,
+  toPortUnavailableError,
 } from './utils/index.js';
 import { setEnv, getEnv } from '../env.js';
 import {
@@ -759,6 +761,9 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
     url,
 
     async start(): Promise<void> {
+      // Fail fast if the port is taken, before acquiring the lock or running the initial build
+      await assertPortAvailable(port, host, 'dev.port');
+
       // Acquire dev server lock to prevent multiple dev servers in the same directory
       try {
         await devLock.acquireLock();
@@ -878,15 +883,23 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
       }
 
       // Start HTTP server
-      await new Promise<void>((resolve, reject) => {
-        httpServer!.listen(port, host, () => {
-          resolve();
-        });
+      try {
+        await new Promise<void>((resolve, reject) => {
+          httpServer!.listen(port, host, () => {
+            resolve();
+          });
 
-        httpServer!.on('error', (error: unknown) => {
-          reject(error);
+          httpServer!.on('error', (error: unknown) => {
+            reject(toPortUnavailableError(error, port, host, 'dev.port'));
+          });
         });
-      });
+      } catch (error) {
+        // Release the lock and watchers acquired above so a failed start doesn't leak them.
+        // The HTTP server never started listening, so there is nothing to close.
+        httpServer = null;
+        await devServer.stop();
+        throw error;
+      }
 
       // Set up file watching
       const watchPaths = [srcDir, staticDir].filter(Boolean);
