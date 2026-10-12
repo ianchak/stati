@@ -1,14 +1,16 @@
 ---
-title: 'Site Metadata'
+title: 'Site metadata'
 description: 'Configure site title, URL, and SEO metadata for your Stati site.'
 order: 2
+seo:
+  title: 'Site metadata configuration'
 ---
 
-# Site Metadata Configuration
+# Site metadata
 
 Stati provides a streamlined approach to site metadata and SEO. The `site` configuration object contains essential site information, while SEO metadata is managed separately through page frontmatter and the SEO configuration system.
 
-## Site Configuration
+## Site configuration
 
 The `site` object contains essential properties that define your site's identity:
 
@@ -26,7 +28,7 @@ export default defineConfig({
 });
 ```
 
-### Available Properties
+### Available properties
 
 #### `title` (required)
 
@@ -110,7 +112,7 @@ The site description appears in:
 - `<meta property="og:description">` (Open Graph)
 - `<meta name="twitter:description">` (Twitter Cards)
 
-## Author Configuration
+## Author configuration
 
 Author information is configured through the `seo.defaultAuthor` property, not the `site` object:
 
@@ -145,11 +147,11 @@ seo:
 # Post Content
 ```
 
-## SEO Metadata
+## SEO metadata
 
 Stati manages SEO metadata through page frontmatter and the SEO configuration system. See the [SEO Configuration](./seo.md) guide for details.
 
-### Page-Level SEO
+### Page-level SEO
 
 SEO metadata is defined in page frontmatter. The `title` and `description` fields can be at the root level, while other SEO fields must be nested under the `seo` key:
 
@@ -171,11 +173,11 @@ seo:
 
 **Note:** The `tags` frontmatter field (at root level) is used as a fallback for keywords if `seo.keywords` is not specified.
 
-### SEO Tag Injection
+### SEO tag injection
 
 Stati offers **two approaches** for injecting SEO tags into your pages:
 
-#### 1. Automatic Injection (Default)
+#### 1. Automatic injection (default)
 
 By default, Stati **automatically injects SEO tags** during the build process. No template code required:
 
@@ -215,7 +217,7 @@ Stati's build system automatically:
 </html>
 ```
 
-#### 2. Manual Injection with `generateSEO()`
+#### 2. Manual injection with `generateSEO()`
 
 For **explicit control over tag placement**, use the `generateSEO()` helper in templates:
 
@@ -258,9 +260,9 @@ export default defineConfig({
 });
 ```
 
-See [SEO API Reference](../api/seo.md) for complete `generateSEO()` documentation.
+See [SEO API](../api/seo.md) for complete `generateSEO()` documentation.
 
-## Template Usage
+## Template usage
 
 Access site configuration in Eta templates:
 
@@ -280,7 +282,7 @@ Access site configuration in Eta templates:
 <% } %>
 ```
 
-## Environment-Specific Configuration
+## Environment-specific configuration
 
 Configure different metadata for different environments:
 
@@ -302,7 +304,7 @@ export default defineConfig({
 });
 ```
 
-## Sitemap and Robots.txt
+## Sitemap and robots.txt
 
 Configure automated sitemap and robots.txt generation:
 
@@ -333,7 +335,7 @@ export default defineConfig({
 
 See [SEO Configuration](./seo.md) for complete sitemap and robots.txt options.
 
-## RSS Feeds
+## RSS feeds
 
 Configure RSS feeds for your content:
 
@@ -359,9 +361,9 @@ export default defineConfig({
 
 See [RSS Configuration](./rss.md) for complete RSS feed options.
 
-## Validation and Testing
+## Validation and testing
 
-### Metadata Validation
+### Metadata validation
 
 Test your metadata using external validation tools:
 
@@ -370,7 +372,7 @@ Test your metadata using external validation tools:
 - [LinkedIn Post Inspector](https://www.linkedin.com/post-inspector/)
 - [Google Rich Results Test](https://search.google.com/test/rich-results)
 
-### SEO Debugging
+### SEO debugging
 
 Enable SEO debug logging:
 
@@ -386,23 +388,23 @@ export default defineConfig({
 });
 ```
 
-## Best Practices
+## Best practices
 
-### Site Configuration
+### Site configuration
 
 1. **Use HTTPS:** Always use HTTPS URLs for `baseUrl` in production
 2. **No Trailing Slashes:** Don't include trailing slashes in `baseUrl`
 3. **Consistent Title:** Use a clear, descriptive site title
 4. **Proper Locale:** Set `defaultLocale` if building multilingual sites
 
-### SEO Metadata
+### SEO metadata
 
 1. **Unique Titles:** Every page should have a unique, descriptive title (50-60 chars)
 2. **Meta Descriptions:** Write compelling descriptions under 160 characters
 3. **Author Attribution:** Set `seo.defaultAuthor` for blogs and content sites
 4. **Canonical URLs:** Use `baseUrl` consistently for canonical links
 
-### Per-Page Frontmatter
+### Per-page frontmatter
 
 1. **Required Fields:** Always include `title` and `description` in frontmatter
 2. **Keywords:** Use `seo.keywords` or the `tags` field (which acts as fallback)
@@ -416,7 +418,7 @@ export default defineConfig({
 3. **Monitor SEO:** Track how your pages appear in search results
 4. **Use Debug Mode:** Enable `seo.debug` during development
 
-## Related Configuration
+## Related configuration
 
 - [SEO Configuration](./seo.md) - Complete SEO setup including Open Graph and Twitter Cards
 - [RSS Configuration](./rss.md) - RSS feed generation

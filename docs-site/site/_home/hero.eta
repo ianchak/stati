@@ -29,7 +29,7 @@ const hero = stati.page.hero;
 
             <div class="reveal mt-5 flex flex-wrap items-center gap-3" style="--delay: 220ms">
                 <a href="/getting-started/quick-start" class="btn btn-secondary">
-                    Read the Quick Start
+                    Read the quick start
                     <%~ stati.partials.icon({ name: 'arrow-right', size: 'sm' }) %>
                 </a>
                 <a href="https://github.com/ianchak/stati" class="btn text-muted hover:text-ink" target="_blank" rel="noopener noreferrer">

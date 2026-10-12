@@ -7,7 +7,7 @@
  */
 
 const suggestions = [
-  { href: '/getting-started/quick-start', text: 'Quick Start' },
+  { href: '/getting-started/quick-start', text: 'Quick start' },
   { href: '/configuration/file', text: 'Configuration file' },
   { href: '/core-concepts/isg', text: 'Incremental Static Generation' },
   { href: '/core-concepts/templates', text: 'Templates & layouts' },

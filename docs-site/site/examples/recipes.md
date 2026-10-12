@@ -2,15 +2,17 @@
 title: 'Recipes'
 description: 'Practical recipes and patterns for common Stati use cases.'
 order: 2
+seo:
+  title: 'Stati recipes'
 ---
 
 # Recipes
 
 A curated collection of practical recipes and patterns for building sites with Stati. Each recipe solves a common use case with complete, copy-paste code examples.
 
-## Content Management
+## Content management
 
-### Dynamic Navigation Menu
+### Dynamic navigation menu
 
 Automatically generate navigation from your content structure using Stati's built-in navigation:
 
@@ -38,7 +40,7 @@ Automatically generate navigation from your content structure using Stati's buil
 </nav>
 ```
 
-### Section-Specific Navigation
+### Section-specific navigation
 
 Use `stati.page.navNode` to show the current page's child pages:
 
@@ -87,7 +89,7 @@ Common navigation patterns made easy:
 - **Any section's children** - Use `stati.nav.getChildren('/path')`
 - **Current page's siblings** - Use `stati.nav.getSiblings()`
 
-### Table of Contents (In-Page Navigation)
+### Table of contents (in-page navigation)
 
 Stati automatically extracts headings (h2-h6) and makes them available via `stati.page.toc`:
 
@@ -237,7 +239,7 @@ Here are practical examples:
 </aside>
 ```
 
-### Prev/Next Navigation Using Siblings
+### Prev/Next navigation using siblings
 
 ```html
 <!-- _partials/page-nav.eta -->
@@ -268,7 +270,7 @@ Here are practical examples:
 <% } %>
 ```
 
-### Collection Index Pages
+### Collection index pages
 
 Use collection data provided to index pages to list and filter content:
 
@@ -327,7 +329,7 @@ Use collection data provided to index pages to list and filter content:
 </div>
 ```
 
-### Related Posts
+### Related posts
 
 Find related posts based on shared tags using collection data:
 
@@ -371,7 +373,7 @@ Find related posts based on shared tags using collection data:
 <% } %>
 ```
 
-### Custom Filters in Templates
+### Custom filters in templates
 
 Add reusable template filters via Eta configuration:
 
@@ -451,7 +453,7 @@ Use filters in templates:
 </article>
 ```
 
-### Breadcrumb Navigation
+### Breadcrumb navigation
 
 Stati provides `stati.nav.getBreadcrumbs()` which uses the navigation tree for accurate titles:
 
@@ -475,9 +477,9 @@ Stati provides `stati.nav.getBreadcrumbs()` which uses the navigation tree for a
 </nav>
 ```
 
-## SEO & Metadata
+## SEO & metadata
 
-### Leveraging Built-in SEO
+### Leveraging built-in SEO
 
 Stati provides automatic SEO tag injection. Configure it in your config:
 
@@ -540,7 +542,7 @@ seo:
 ---
 ```
 
-### Custom Structured Data
+### Custom structured data
 
 Add structured data using build hooks:
 
@@ -575,9 +577,9 @@ export default defineConfig({
 });
 ```
 
-## Advanced Patterns
+## Advanced patterns
 
-### Build-time Data Fetching
+### Build-time data fetching
 
 Fetch external data during build using hooks:
 
@@ -601,7 +603,7 @@ export default defineConfig({
 });
 ```
 
-### Dynamic Class Names with propValue
+### Dynamic class names with propValue
 
 Use `stati.propValue()` for clean dynamic class generation:
 
@@ -628,7 +630,7 @@ Use `stati.propValue()` for clean dynamic class generation:
 </div>
 ```
 
-### ISG Cache Invalidation Strategies
+### ISG cache invalidation strategies
 
 Configure intelligent caching with aging rules:
 
@@ -679,7 +681,7 @@ stati invalidate "glob:/blog/**"
 stati invalidate "age:3months"
 ```
 
-### Performance Monitoring
+### Performance monitoring
 
 Track build performance with hooks:
 
@@ -708,7 +710,7 @@ export default defineConfig({
 });
 ```
 
-### Environment-Specific Configuration
+### Environment-specific configuration
 
 Use environment variables for different build targets:
 
@@ -738,7 +740,7 @@ export default defineConfig({
 });
 ```
 
-### Markdown Extensions
+### Markdown extensions
 
 Add custom markdown processing with plugins and the configure function:
 
@@ -802,9 +804,9 @@ export default defineConfig({
 });
 ```
 
-## Development Workflow
+## Development workflow
 
-### Custom Build Scripts
+### Custom build scripts
 
 ```json
 {
@@ -821,7 +823,7 @@ export default defineConfig({
 }
 ```
 
-### Git Hooks for Cache Management
+### Git hooks for cache management
 
 ```bash
 # .husky/post-merge

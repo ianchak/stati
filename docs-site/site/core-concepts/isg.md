@@ -4,7 +4,7 @@ description: 'Learn about Incremental Static Generation and build caching.'
 order: 5
 ---
 
-# Incremental Static Generation (ISG)
+# Incremental Static Generation
 
 Incremental Static Generation is one of Stati's most powerful features. It intelligently tracks dependencies, caches build outputs, and only regenerates what has actually changed. This reduces build times, especially for large sites.
 
@@ -19,9 +19,9 @@ ISG is a build optimization strategy that:
 
 Unlike traditional static site generators that rebuild everything, Stati only rebuilds what needs to be updated.
 
-## How ISG Works
+## How ISG works
 
-### Dependency Tracking
+### Dependency tracking
 
 Stati automatically tracks relationships between files:
 
@@ -38,9 +38,9 @@ When post-1.md changes:
 ✅ Rebuild blog/ (depends on post-1.md)
 ❌ Skip blog/post-2/ (no changes)
 ❌ Skip about/ (unrelated)
-```text
+```
 
-### Cache Manifest
+### Cache manifest
 
 Stati maintains a cache manifest at `.stati/cache/manifest.json`:
 
@@ -59,7 +59,7 @@ Stati maintains a cache manifest at `.stati/cache/manifest.json`:
 }
 ```
 
-### Build Process
+### Build process
 
 1. **Content Discovery** - Find all content files
 2. **Dependency Analysis** - Map relationships between files
@@ -69,7 +69,7 @@ Stati maintains a cache manifest at `.stati/cache/manifest.json`:
 
 ## Configuration
 
-### Basic ISG Setup
+### Basic ISG setup
 
 Configure ISG in `stati.config.js`:
 
@@ -98,9 +98,9 @@ export default defineConfig({
 });
 ```
 
-## Cache Management
+## Cache management
 
-### Manual Invalidation
+### Manual invalidation
 
 Use the CLI to invalidate specific content:
 
@@ -121,7 +121,7 @@ stati invalidate
 stati invalidate "path:/blog/ tag:navigation age:30days"
 ```
 
-### Programmatic Invalidation
+### Programmatic invalidation
 
 Use the invalidate function programmatically in your build scripts or applications:
 
@@ -144,9 +144,9 @@ await invalidate('path:/blog/ tag:navigation age:30days');
 await invalidate();
 ```
 
-### Cache Configuration
+### Cache configuration
 
-#### Basic Time-based Caching
+#### Basic time-based caching
 
 ISG uses a single global configuration approach. All content shares the same TTL and aging settings:
 
@@ -166,7 +166,7 @@ export default defineConfig({
 });
 ```
 
-## Aging Configuration
+## Aging configuration
 
 The aging configuration uses a simple array format:
 
@@ -183,7 +183,7 @@ export default defineConfig({
 });
 ```
 
-### Age Format for Invalidation
+### Age format for invalidation
 
 When invalidating by age, use these formats:
 
@@ -202,9 +202,9 @@ stati invalidate age:1year
 
 This means `age:3months` goes back exactly 3 calendar months (e.g., from Oct 1st to Jul 1st), not approximately 90 days.
 
-## Build Efficiency
+## Build efficiency
 
-### How ISG Helps
+### How ISG helps
 
 ```text
 Traditional SSG (full rebuild):
@@ -217,7 +217,7 @@ Stati with ISG (incremental):
 └── Layout change: Only pages using that layout
 ```
 
-### Development Experience
+### Development experience
 
 During development, ISG provides fast feedback:
 
@@ -227,9 +227,9 @@ During development, ISG provides fast feedback:
 
 This means most edits during development result in significantly faster rebuilds compared to full site regeneration.
 
-## Cache Storage
+## Cache storage
 
-### Cache Directory Structure
+### Cache directory structure
 
 ```text
 .stati/
@@ -237,7 +237,7 @@ This means most edits during development result in significantly faster rebuilds
     └── manifest.json       # Cache metadata and entries
 ```
 
-### Cache Persistence
+### Cache persistence
 
 The `.stati/cache/` directory stores build cache data between runs:
 
@@ -271,9 +271,9 @@ cache:
 
 For platforms with ephemeral filesystems, the first build will always be a full build. Subsequent builds within the same deployment or cached CI run will benefit from ISG.
 
-## Monitoring and Debugging
+## Monitoring and debugging
 
-### Build Output
+### Build output
 
 Stati reports cache performance during builds, showing how many pages were generated vs cached and the cache hit rate. Use the `--metrics` flag for detailed build performance data.
 

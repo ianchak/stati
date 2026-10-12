@@ -11,7 +11,7 @@ order: 2
 - **Node.js** 22.0.0 or higher
 - **A package manager**: npm, pnpm, yarn or bun
 
-## Interactive Scaffolder
+## Interactive scaffolder
 
 The easiest way to get started with Stati is using the `create-stati` interactive scaffolder.
 
@@ -23,12 +23,12 @@ This command will launch an interactive setup wizard that guides you through cre
 
 - **Project name**: The directory for your new site.
 - **Styling solution**: Choose between plain CSS, Sass, or Tailwind CSS.
-- **TypeScript**: Optionally enable TypeScript support with esbuild compilation.
+- **TypeScript**: On by default, with a typed `stati.config.ts` and esbuild-compiled client code. Answer no for a JavaScript project.
 - **Git initialization**: Optionally initialize a new Git repository.
 - **Dependency installation**: Choose whether to install dependencies automatically.
 - **Package manager**: Select your preferred package manager (npm, yarn, pnpm, or bun) if multiple are available.
 
-### Command-Line Options
+### Command-line options
 
 You can also pass command-line arguments to pre-configure the scaffolder and skip some interactive prompts.
 
@@ -48,18 +48,19 @@ Here are the available options:
 | --- | --- |
 | `[project-name]` | Sets the project directory name. |
 | `--styling` | Sets the styling solution (`css`, `sass`, or `tailwind`). |
-| `--typescript`, `--ts` | Enables TypeScript support with esbuild compilation. |
+| `--typescript`, `--ts` | Uses TypeScript (the default). |
+| `--no-typescript`, `--no-ts` | Uses JavaScript instead of TypeScript. |
 | `--no-git` | Skips Git initialization (default: initializes Git). |
 | `--no-install` | Skips dependency installation (default: installs dependencies). |
 | `--package-manager` | Specifies the package manager to use (`npm`, `yarn`, `pnpm`, or `bun`). |
 | `--template` | Specifies a project template to use (currently only `blank` is available). |
 
-### TypeScript Quick Start
+### TypeScript by default
 
-Create a Stati project with TypeScript enabled:
+New projects use TypeScript unless you opt out:
 
 ```bash
-npx create-stati my-ts-site --typescript
+npx create-stati my-site
 ```
 
 This creates a project with:
@@ -70,9 +71,11 @@ This creates a project with:
 
 Stati compiles your TypeScript files from `src/` using esbuild. Run `npm run typecheck` to validate your TypeScript code. Learn more in the [TypeScript configuration guide](/configuration/typescript).
 
+For a JavaScript project instead, pass `--no-typescript` (you get `stati.config.js` and no `src/` entry point).
+
 > **Tip:** If you choose Tailwind CSS, the scaffolder sets up Stati's built-in Tailwind integration in the dev script. This runs both the dev server and Tailwind watcher in a single process - no need for separate build scripts or process managers!
 
-## Manual Installation
+## Manual installation
 
 If you prefer to set up Stati manually:
 
@@ -135,8 +138,8 @@ npm run preview
 
 Your site should be available at `http://localhost:3000`.
 
-## Next Steps
+## Next steps
 
 - Learn about the [Project Structure](/getting-started/project-structure)
-- Follow the [Quick Start Guide](/getting-started/quick-start)
-- Explore [Core Concepts](/core-concepts/overview)
+- Follow the [quick start](/getting-started/quick-start)
+- Explore [core concepts](/core-concepts/overview)

@@ -1,10 +1,12 @@
 ---
-title: 'Quick Start'
+title: 'Quick start'
 description: 'Get up and running with Stati in minutes.'
 order: 4
+seo:
+  title: 'Stati quick start'
 ---
 
-# Quick Start
+# Quick start
 
 This guide takes you from nothing to a running Stati site, then through the first changes you'll make: content, layout, styling, config and a production build.
 
@@ -24,7 +26,7 @@ Press Enter to accept each default; the scaffolder installs dependencies for you
 - npm, pnpm, yarn or bun
 - A text editor (VS Code recommended)
 
-## Step 1: Create a New Project
+## Step 1: Create a new project
 
 Use the Stati scaffolder to create a new project:
 
@@ -37,7 +39,7 @@ The scaffolder asks, in order:
 - **Project name** - Skipped when you pass one, as above
 - **Template** - Blank, a minimal starter (the only template for now)
 - **CSS solution** - Plain CSS, Sass/SCSS, or Tailwind CSS
-- **TypeScript** - Off by default; turn it on for a typed `stati.config.ts` and client TypeScript bundles
+- **TypeScript** - On by default, for a typed `stati.config.ts` and client TypeScript bundles; answer no for JavaScript
 - **Agent skill** - Optionally install the Stati skill for Claude Code or GitHub Copilot
 - **Git** - Initialize a git repository (on by default)
 - **Install dependencies** - Run the install for you (on by default)
@@ -51,14 +53,17 @@ cd my-first-site
 
 > **Note:** If you chose to install dependencies during scaffolding, they're already installed. Otherwise, run `npm install` before continuing.
 
-## Step 2: Explore the Project Structure
+## Step 2: Explore the project structure
 
 Your new project will have this structure:
 
 ```text
 my-first-site/
 ├── package.json          # Project dependencies and scripts
-├── stati.config.js       # Stati configuration (stati.config.ts with TypeScript)
+├── stati.config.ts       # Stati configuration (stati.config.js for JavaScript projects)
+├── tsconfig.json         # TypeScript compiler configuration
+├── src/
+│   └── main.ts           # Client TypeScript entry point
 ├── public/               # Static assets
 │   ├── favicon.svg
 │   └── styles.css
@@ -67,7 +72,7 @@ my-first-site/
     └── layout.eta        # Base layout template
 ```
 
-## Step 3: Start the Development Server
+## Step 3: Start the development server
 
 Start the development server to see your site:
 
@@ -83,11 +88,11 @@ The dev server will:
 
 Open your browser and navigate to the URL shown in the terminal. Your site is running; the rest of this guide makes it yours.
 
-## Next: Make It Yours
+## Next: Make it yours
 
 Work through these in order, or jump to the one you need.
 
-### Step 4: Edit Your First Page
+### Step 4: Edit your first page
 
 Open `site/index.md` in your text editor and modify it:
 
@@ -115,7 +120,7 @@ Ready to build something amazing!
 
 Save the file and watch your browser automatically refresh with the changes.
 
-### Step 5: Add a New Page
+### Step 5: Add a new page
 
 Create a new page by adding `site/about.md`:
 
@@ -145,7 +150,7 @@ Feel free to reach out if you have any questions!
 
 Your new page will be available at [http://localhost:3000/about/](http://localhost:3000/about/)
 
-### Step 6: Customize the Layout
+### Step 6: Customize the layout
 
 Edit `site/layout.eta` to add navigation:
 
@@ -182,7 +187,7 @@ Edit `site/layout.eta` to add navigation:
 </html>
 ```
 
-### Step 7: Add Some Styling
+### Step 7: Add some styling
 
 Edit `public/styles.css` to style your site:
 
@@ -226,11 +231,11 @@ footer {
 }
 ```
 
-### Step 8: Configure Your Site
+### Step 8: Configure your site
 
-Edit `stati.config.js` (or `stati.config.ts` for TypeScript projects) to customize your site settings:
+Edit `stati.config.ts` (or `stati.config.js` for JavaScript projects) to customize your site settings:
 
-```javascript
+```typescript
 import { defineConfig } from '@stati/core';
 
 export default defineConfig({
@@ -260,7 +265,7 @@ export default defineConfig({
 });
 ```
 
-### Step 9: Build for Production
+### Step 9: Build for production
 
 When you're ready to deploy, build your site:
 
@@ -270,7 +275,7 @@ npm run build
 
 This creates a `dist/` directory with your optimized site ready for deployment.
 
-### Step 10: Deploy Your Site
+### Step 10: Deploy your site
 
 You can deploy the `dist/` folder to any static hosting service:
 
@@ -283,26 +288,26 @@ You can deploy the `dist/` folder to any static hosting service:
 
 Now that you have a working Stati site, explore these topics:
 
-### Learn Core Concepts
+### Learn core concepts
 
 - [Filesystem-based Routing](/core-concepts/routing)
 - [Templates & Layouts](/core-concepts/templates)
 - [Markdown Pipeline](/core-concepts/markdown)
 - [Incremental Static Generation](/core-concepts/isg)
 
-### Advanced Configuration
+### Advanced configuration
 
 - [Site Metadata](/configuration/site-metadata)
 - [Template Settings](/configuration/templates)
 - [Markdown Configuration](/configuration/markdown)
 
-### Examples and Learning Resources
+### Examples and learning resources
 
 - [Available Examples](/examples/list) - Explore currently implemented templates
 - [Configuration Reference](/configuration/file) - Detailed configuration options
 
-## Need Help?
+## Need help?
 
-- Check the [API Reference](/api/reference) for detailed documentation
+- Check the [API overview](/api/reference) for detailed documentation
 - Browse [Examples](/examples/list) for inspiration
 - Visit the [Contributing](/advanced/contributing) section to help improve Stati

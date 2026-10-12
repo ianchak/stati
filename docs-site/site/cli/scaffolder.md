@@ -2,13 +2,15 @@
 title: 'Scaffolder'
 description: 'Interactive scaffolding tool to quickly set up new Stati projects.'
 order: 2
+seo:
+  title: 'Scaffolder (create-stati)'
 ---
 
-# Scaffolder (create-stati)
+# Scaffolder
 
 The `create-stati` package provides an interactive scaffolding tool to quickly set up new Stati projects with styling options.
 
-## Quick Start
+## Quick start
 
 ```bash
 # Interactive setup
@@ -17,8 +19,8 @@ npm create stati my-site
 # Non-interactive with options
 npm create stati my-site --template=blank --styling=tailwind
 
-# With TypeScript support
-npm create stati my-site --typescript
+# JavaScript instead of TypeScript
+npm create stati my-site --no-typescript
 ```
 
 Running the scaffolder will:
@@ -35,19 +37,19 @@ Running the scaffolder will:
 >
 > **Non-Interactive Mode:** When all required options are provided via CLI flags, dependencies are installed automatically by default using `npm`. Use `--package-manager` to specify a different package manager (yarn, pnpm, or bun).
 
-## Interactive Setup
+## Interactive setup
 
 The scaffolder will prompt you for:
 
 1. **Project name** - Name for your new Stati site
 2. **Styling solution** - Choose between CSS, Sass, or Tailwind CSS
-3. **TypeScript support** - Whether to enable TypeScript compilation
+3. **TypeScript** - On by default; answer no for a JavaScript project
 4. **Agent skill** - Where to install the Stati agent skill, if at all
 5. **Git initialization** - Whether to initialize a Git repository
 6. **Dependency installation** - Whether to install dependencies automatically
 7. **Package manager** - Which package manager to use (if multiple are detected)
 
-## Command Line Options
+## Command line options
 
 ```bash
 npx create-stati <project-name> [options]
@@ -55,7 +57,8 @@ npx create-stati <project-name> [options]
 Options:
   --template <name>        Template to use (currently: blank)
   --styling <type>         CSS solution (css|sass|tailwind)
-  --typescript, --ts       Enable TypeScript support
+  --typescript, --ts       Use TypeScript (default)
+  --no-typescript, --no-ts Use JavaScript instead of TypeScript
   --no-git                 Skip git initialization (default: initializes Git)
   --no-install             Skip dependency installation (default: installs dependencies)
   --package-manager <pm>   Package manager to use (npm|yarn|pnpm|bun)
@@ -64,7 +67,7 @@ Options:
   --help, -h               Show help message
 ```
 
-## Agent Skill
+## Agent skill
 
 The scaffolder can copy the Stati agent skill into your project. The skill teaches AI coding assistants Stati's conventions for content, Eta templates, partials, configuration, and deployment.
 
@@ -81,9 +84,9 @@ npm create stati my-site --agent-skill
 npm create stati my-site --agent-skill=github
 ```
 
-## Project Templates
+## Project templates
 
-### Blank Template
+### Blank template
 
 Currently, Stati provides one template:
 
@@ -96,11 +99,11 @@ Currently, Stati provides one template:
 - Configuration file with sensible defaults
 - Package.json with development scripts
 
-## Styling Solutions
+## Styling solutions
 
 Choose your preferred styling approach:
 
-### CSS (Default)
+### CSS (default)
 
 - Basic CSS file in `public/styles.css`
 - No preprocessing or build step required
@@ -122,7 +125,7 @@ Choose your preferred styling approach:
   - `dev`: Uses Stati's built-in Tailwind integration (single process)
   - `build`: Runs Stati build, then CSS compilation
 
-## Post-Creation Setup
+## Post-creation setup
 
 After creating your site:
 
@@ -132,7 +135,7 @@ npm install  # Skip if you installed dependencies during setup
 npm run dev
 ```
 
-## Package Scripts
+## Package scripts
 
 All created projects include these base scripts:
 
@@ -151,9 +154,9 @@ All created projects include these base scripts:
 
 > **Note:** When using Sass or Tailwind CSS, the `build` and `dev` scripts are automatically modified to include CSS compilation steps. See the [Styling Solutions](#styling-solutions) section for details.
 
-## Generated Project Structure
+## Generated project structure
 
-### Plain CSS (Default)
+### Plain CSS (default)
 
 ```text
 my-site/
@@ -163,7 +166,10 @@ my-site/
 ├── public/
 │   ├── styles.css        # Stylesheet
 │   └── favicon.svg       # Site icon
-├── stati.config.js       # Stati configuration
+├── src/
+│   └── main.ts           # Client TypeScript entry point
+├── stati.config.ts       # Stati configuration
+├── tsconfig.json         # TypeScript compiler configuration
 ├── package.json          # Node.js project file
 └── README.md            # Getting started guide
 ```
@@ -178,7 +184,7 @@ my-site/
 │   └── styles.scss       # Sass source file
 ├── public/
 │   └── favicon.svg       # Site icon
-├── stati.config.js
+├── stati.config.ts
 └── package.json          # Includes sass scripts
 ```
 
@@ -193,28 +199,25 @@ my-site/
 ├── public/
 │   └── favicon.svg       # Site icon
 ├── tailwind.config.js    # Tailwind configuration
-├── stati.config.js
+├── stati.config.ts
 └── package.json          # Includes Tailwind scripts
-```
-
-### With TypeScript Enabled
-
-When using `--typescript`, additional files are created:
-
-```text
-my-site/
-├── src/
-│   └── main.ts           # TypeScript entry point
-├── site/
-│   └── ...
-├── stati.config.ts       # TypeScript configuration (replaces .js)
-├── tsconfig.json         # TypeScript compiler configuration
-└── ...
 ```
 
 The `typecheck` script is added to `package.json` for validating your TypeScript code.
 
-### With the Agent Skill
+### With JavaScript
+
+With `--no-typescript` (or answering no to the TypeScript prompt), the project has no `src/main.ts`, `tsconfig.json` or `typecheck` script, and the config is plain JavaScript:
+
+```text
+my-site/
+├── site/
+│   └── ...
+├── stati.config.js       # Stati configuration
+└── ...
+```
+
+### With the agent skill
 
 When using `--agent-skill` (default target `claude`), the full skill bundle is copied:
 
@@ -235,10 +238,10 @@ my-site/
 - Node.js 22+
 - npm, yarn, pnpm, or bun
 
-## Next Steps
+## Next steps
 
 - Start the development server: `npm run dev`
 - Add content to the `site/` directory
 - Customize the layout in `site/layout.eta`
-- Configure your site in `stati.config.js` (or `stati.config.ts` for TypeScript projects)
+- Configure your site in `stati.config.ts` (or `stati.config.js` for JavaScript projects)
 - Learn more about [TypeScript support](/configuration/typescript)

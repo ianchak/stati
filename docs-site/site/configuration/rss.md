@@ -1,10 +1,12 @@
 ---
-title: RSS Feed Configuration
+title: 'RSS feeds'
 description: Learn how to configure and generate RSS feeds for your Stati site
 order: 6
+seo:
+  title: 'RSS feed configuration'
 ---
 
-# RSS Feed Configuration
+# RSS feeds
 
 Stati supports automatic RSS feed generation for your content. RSS feeds allow visitors to subscribe to your content and receive updates in their feed readers.
 
@@ -18,7 +20,7 @@ RSS feed generation in Stati:
 - **Highly customizable**: Field mappings, content filtering, and custom metadata
 - **Works out of the box**: Minimal configuration required
 
-## Basic Configuration
+## Basic configuration
 
 Enable RSS feed generation in your `stati.config.ts`:
 
@@ -45,9 +47,9 @@ export default defineConfig({
 
 This minimal configuration will generate a `feed.xml` file containing all your pages.
 
-## Content Filtering
+## Content filtering
 
-### Filter by Directory
+### Filter by directory
 
 Use `contentPatterns` to include only specific content:
 
@@ -65,7 +67,7 @@ rss: {
 }
 ```
 
-### Exclude Patterns
+### Exclude patterns
 
 Use `excludePatterns` to exclude specific content:
 
@@ -83,7 +85,7 @@ rss: {
 }
 ```
 
-### Custom Filter Function
+### Custom filter function
 
 For fine-grained control, use a custom filter function:
 
@@ -101,7 +103,7 @@ rss: {
 }
 ```
 
-## Multiple Feeds
+## Multiple feeds
 
 You can create multiple feeds targeting different content:
 
@@ -132,7 +134,7 @@ rss: {
 }
 ```
 
-## Feed Metadata
+## Feed metadata
 
 Customize your feed with optional metadata:
 
@@ -165,9 +167,9 @@ Customize your feed with optional metadata:
 }
 ```
 
-## Sorting and Limiting
+## Sorting and limiting
 
-### Sort Order
+### Sort order
 
 Control the order of items in your feed:
 
@@ -180,7 +182,7 @@ Control the order of items in your feed:
 }
 ```
 
-### Custom Sort Function
+### Custom sort function
 
 ```typescript
 {
@@ -197,7 +199,7 @@ Control the order of items in your feed:
 }
 ```
 
-### Limit Items
+### Limit items
 
 Limit the number of items in a feed:
 
@@ -210,11 +212,11 @@ Limit the number of items in a feed:
 }
 ```
 
-## Field Mapping
+## Field mapping
 
 Customize how page data maps to RSS feed items:
 
-### Default Mapping
+### Default mapping
 
 By default, Stati uses these frontmatter fields:
 
@@ -223,7 +225,7 @@ By default, Stati uses these frontmatter fields:
 - `publishedAt` or `date` → RSS item pubDate
 - `tags` → RSS item categories
 
-### Custom Field Names
+### Custom field names
 
 Map to different frontmatter fields:
 
@@ -242,7 +244,7 @@ Map to different frontmatter fields:
 }
 ```
 
-### Field Mapping Functions
+### Field mapping functions
 
 Use functions for custom transformations:
 
@@ -273,7 +275,7 @@ Use functions for custom transformations:
 }
 ```
 
-## Include Full Content
+## Include full content
 
 Include the full HTML content in feed items:
 
@@ -288,9 +290,9 @@ Include the full HTML content in feed items:
 }
 ```
 
-## Advanced Features
+## Advanced features
 
-### Custom Namespaces
+### Custom namespaces
 
 Add custom XML namespaces for RSS extensions:
 
@@ -306,7 +308,7 @@ Add custom XML namespaces for RSS extensions:
 }
 ```
 
-### Custom Item Elements
+### Custom item elements
 
 Add custom XML elements to each item:
 
@@ -323,7 +325,7 @@ Add custom XML elements to each item:
 }
 ```
 
-### Enclosures (Media Files)
+### Enclosures (media files)
 
 Add enclosures for podcasts or other media:
 
@@ -345,9 +347,9 @@ Add enclosures for podcasts or other media:
 }
 ```
 
-## Real-World Examples
+## Real-world examples
 
-### Blog Feed
+### Blog feed
 
 ```typescript
 rss: {
@@ -372,7 +374,7 @@ rss: {
 }
 ```
 
-### News Site with Multiple Feeds
+### News site with multiple feeds
 
 ```typescript
 rss: {
@@ -402,7 +404,7 @@ rss: {
 }
 ```
 
-### Podcast Feed
+### Podcast feed
 
 ```typescript
 rss: {
@@ -434,11 +436,11 @@ rss: {
 }
 ```
 
-## Configuration Validation
+## Configuration validation
 
 Stati automatically validates your RSS configuration during the build process. If there are any errors, the build will display them and continue without generating the problematic feeds.
 
-### Automatic Validation
+### Automatic validation
 
 Validation happens automatically when you run a production build:
 
@@ -462,7 +464,7 @@ export default defineConfig({
 });
 ```
 
-### Manual Validation
+### Manual validation
 
 You can also validate RSS configuration programmatically:
 
@@ -482,7 +484,7 @@ if (result.warnings.length > 0) {
 }
 ```
 
-### Validation Rules
+### Validation rules
 
 **Errors** (will prevent feed generation):
 
@@ -502,9 +504,9 @@ if (result.warnings.length > 0) {
 - TTL set to 0 (no caching)
 - Empty content patterns array
 
-For more details on validation, see the [RSS API Reference](../api/rss.md#rssvalidationresult).
+For more details on validation, see the [RSS API](../api/rss.md#rssvalidationresult).
 
-## Development vs Production
+## Development vs production
 
 **Important**: RSS feeds are **only generated in production builds**, not in development mode.
 
@@ -520,7 +522,7 @@ This is by design to avoid unnecessary regeneration during development. When you
 
 ## Troubleshooting
 
-### Feed Not Generated
+### Feed not generated
 
 If your feed isn't being generated:
 
@@ -530,7 +532,7 @@ If your feed isn't being generated:
 4. **Check validation errors**: Look for validation errors in the build output
 5. **Check content patterns**: If using `contentPatterns`, ensure they match your content
 
-### Empty Feed
+### Empty feed
 
 If your feed is empty:
 
@@ -547,7 +549,7 @@ If your feed has XML errors:
 2. **Check custom elements**: Ensure custom elements use valid XML tag names
 3. **Validate feed**: Use an RSS validator to check your feed
 
-## Best Practices
+## Best practices
 
 1. **Use clear titles**: Make feed titles descriptive and unique
 2. **Provide good descriptions**: Write clear descriptions for both feeds and items
@@ -558,7 +560,7 @@ If your feed has XML errors:
 7. **Test feeds**: Validate generated feeds with RSS validators
 8. **Link in HTML**: Add `<link>` tags in your HTML to advertise feeds
 
-## Next Steps
+## Next steps
 
 - Learn about [SEO configuration](/configuration/seo)
 - Configure [Sitemap generation](/configuration/seo)

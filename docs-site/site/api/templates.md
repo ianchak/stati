@@ -1,14 +1,16 @@
 ---
-title: 'Template API'
+title: 'Templates'
 description: 'Complete reference for Stati template context, built-in helpers, and partial templates.'
 order: 1
+seo:
+  title: 'Template API'
 ---
 
-# Stati Template API
+# Templates
 
 Stati templates have access to a rich context object and built-in helpers for building dynamic pages. This reference covers all template-specific APIs.
 
-## Template Context (`stati`)
+## Template context (`stati`)
 
 Every Eta template receives a `TemplateContext` object with site metadata, front matter, and rendered content. The runtime context includes additional properties not present in the TypeScript type definition:
 
@@ -91,7 +93,7 @@ The runtime `TemplateContext` includes several properties added dynamically that
 
 This distinction exists because TypeScript's type system cannot fully express the dynamic context merging that happens at runtime. The TypeScript definition provides the minimum guaranteed contract, while the actual runtime context is richer.
 
-## Built-in Helpers
+## Built-in helpers
 
 ### `stati.propValue(...args)`
 
@@ -152,7 +154,7 @@ stati.propValue(...args: PropValueArg[]): string
 
 For more details on Eta template limitations and best practices, see [Template Configuration](/configuration/templates).
 
-## Text Processing Utilities
+## Text processing utilities
 
 Common text processing patterns for templates:
 
@@ -187,11 +189,11 @@ function stripHtml(html) {
 <meta name="description" content="<%= truncate(stripHtml(stati.content), 160) %>">
 ```
 
-## Partial Templates
+## Partial templates
 
 Partials are reusable templates from underscore-prefixed directories (e.g., `_partials/`, `_components/`, `_layouts/`), available as callable functions in `stati.partials`.
 
-### Basic Usage
+### Basic usage
 
 ```eta
 <!-- Without props (pre-rendered) -->
@@ -207,7 +209,7 @@ Partials are reusable templates from underscore-prefixed directories (e.g., `_pa
 <% } %>
 ```
 
-### Defining Partials
+### Defining partials
 
 ```eta
 <!-- site/_partials/card.eta or site/_components/card.eta -->
@@ -218,7 +220,7 @@ Partials are reusable templates from underscore-prefixed directories (e.g., `_pa
 </article>
 ```
 
-### Props vs Context
+### Props vs context
 
 - Props passed to partials are available as `stati.props` within the partial
 - Partials also have full access to `stati.page`, `stati.site`, `stati.content`, etc.
@@ -230,7 +232,7 @@ Partials are reusable templates from underscore-prefixed directories (e.g., `_pa
 <%= stati.props?.author || stati.page.author || stati.site.author %>
 ```
 
-## Custom Filters
+## Custom filters
 
 Register custom Eta filters in your configuration for reusable transformations:
 
@@ -257,7 +259,7 @@ Use filters in templates by calling them as functions from the `stati` context:
 <h1><%= stati.uppercase(stati.page.title) %></h1>
 ```
 
-## Related Documentation
+## Related documentation
 
 - [TypeScript Types](/api/types) - Full type definitions for template context
 - [Build Hooks](/api/hooks) - Customize rendering with lifecycle hooks

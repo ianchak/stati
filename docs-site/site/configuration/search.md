@@ -1,10 +1,12 @@
 ---
-title: Search Index Configuration
+title: 'Search'
 description: Learn how to configure and generate a search index for your Stati site
 order: 7
+seo:
+  title: 'Search index configuration'
 ---
 
-# Search Index Configuration
+# Search
 
 Stati can generate a JSON search index at build time, enabling client-side search functionality for your static site.
 
@@ -18,7 +20,7 @@ Search index generation in Stati:
 - **Auto-discovery**: Automatically injects a meta tag for client-side discovery
 - **Configurable**: Control heading levels, content length, and exclusions
 
-## Basic Configuration
+## Basic configuration
 
 Enable search index generation in your `stati.config.ts`:
 
@@ -34,9 +36,9 @@ export default defineConfig({
 
 This generates a `search-index-[hash].json` file in your output directory containing all your pages.
 
-## Configuration Options
+## Configuration options
 
-### Full Configuration Example
+### Full configuration example
 
 ```typescript
 import { defineConfig } from '@stati/core';
@@ -56,7 +58,7 @@ export default defineConfig({
 });
 ```
 
-### Option Reference
+### Option reference
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
@@ -70,9 +72,9 @@ export default defineConfig({
 | `includeHomePage` | `boolean` | `false` | Include the home page in the search index |
 | `autoInjectMetaTag` | `boolean` | `true` | Auto-inject search index meta tag into HTML |
 
-## Content Filtering
+## Content filtering
 
-### Exclude Pages
+### Exclude pages
 
 Use `exclude` patterns to exclude specific content from the search index:
 
@@ -87,7 +89,7 @@ search: {
 }
 ```
 
-### Include Home Page
+### Include home page
 
 By default, the home page is excluded from the search index. To include it:
 
@@ -98,7 +100,7 @@ search: {
 }
 ```
 
-### Control Heading Levels
+### Control heading levels
 
 Specify which heading levels to index:
 
@@ -109,7 +111,7 @@ search: {
 }
 ```
 
-## Search Index Structure
+## Search index structure
 
 The generated search index is a JSON file with the following structure:
 
@@ -134,7 +136,7 @@ The generated search index is a JSON file with the following structure:
 }
 ```
 
-### Document Fields
+### Document fields
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -148,7 +150,7 @@ The generated search index is a JSON file with the following structure:
 | `breadcrumb` | `string` | Breadcrumb path for display |
 | `tags` | `string[]` | Optional tags from frontmatter |
 
-## Template Access
+## Template access
 
 Access the search index path in your templates via `stati.assets.searchIndexPath`:
 
@@ -160,7 +162,7 @@ Access the search index path in your templates via `stati.assets.searchIndexPath
 <% } %>
 ```
 
-## Auto-Injected Meta Tag
+## Auto-injected meta tag
 
 When `autoInjectMetaTag` is enabled (default), Stati automatically injects a meta tag into your HTML:
 
@@ -181,7 +183,7 @@ if (searchIndexPath) {
 }
 ```
 
-## Implementing Client-Side Search
+## Implementing client-side search
 
 Here's a basic example of implementing client-side search using the generated index:
 
@@ -212,7 +214,7 @@ const results = search(index, 'installation');
 
 For production use, consider using a client-side search library like [Fuse.js](https://www.fusejs.io/) or [Lunr.js](https://lunrjs.com/) for better search capabilities including fuzzy matching and relevance scoring.
 
-## Cache Busting
+## Cache busting
 
 When `hashFilename` is enabled (default), the search index filename includes a hash:
 
@@ -231,9 +233,9 @@ search: {
 }
 ```
 
-## Performance Considerations
+## Performance considerations
 
-### Content Length
+### Content length
 
 The `maxContentLength` and `maxPreviewLength` options control how much text is included in the index:
 
@@ -247,7 +249,7 @@ search: {
 
 Smaller values result in a smaller index file but less context for search results.
 
-### Heading Levels
+### Heading levels
 
 Limiting heading levels reduces the number of documents in the index:
 
@@ -258,7 +260,7 @@ search: {
 }
 ```
 
-### Excluding Content
+### Excluding content
 
 Exclude non-essential pages to keep the index focused:
 
@@ -273,6 +275,6 @@ search: {
 }
 ```
 
-## Draft Pages
+## Draft pages
 
 Draft pages (pages with `draft: true` in frontmatter) are automatically excluded from the search index, regardless of other configuration settings.

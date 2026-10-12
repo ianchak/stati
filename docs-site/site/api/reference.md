@@ -1,106 +1,92 @@
 ---
-title: 'API Reference'
-description: 'Complete Stati API reference index - templates, hooks, navigation, and more.'
+title: 'Overview'
+description: 'Every public Stati API on one page: config, programmatic build and servers, hooks, the template context, SEO, RSS and types, with links to the full reference.'
 order: 0
+seo:
+  title: 'Stati API overview'
 ---
 
-# Stati API Reference
+# Overview
 
-Stati provides comprehensive APIs for building dynamic static sites. This page serves as an index to all available API documentation.
+Stati's whole public surface fits on one page. Everything below is exported from `@stati/core` or available in templates as `stati`. Each section links to its full reference.
 
-## Template APIs
+## Configuration
 
-### [Template API](/api/templates)
+```typescript
+import { defineConfig } from '@stati/core';
 
-Complete reference for Stati template context, built-in helpers, and partial templates. Learn how to work with `stati.propValue()`, template context objects, custom filters, and reusable partials.
+export default defineConfig({
+  site: { title: 'My site', baseUrl: 'https://example.com' },
+});
+```
 
-**Key Topics:**
+| Export             | Signature                                |
+| ------------------ | ---------------------------------------- |
+| `defineConfig`     | `(config: StatiConfig) => StatiConfig`   |
+| `loadConfig`       | `(cwd?: string) => Promise<StatiConfig>` |
+| `clearConfigCache` | `() => void`                             |
 
-- Template context (`stati` object)
-- Built-in helpers (`propValue`, `generateSEO`)
-- Partial templates and component patterns
-- Custom filter registration
+Every config section is covered under [Configuration](/configuration/file).
 
-### [Navigation API](/api/navigation)
+## Build and servers
 
-Comprehensive guide to Stati's navigation system and helper methods. Learn how to query and traverse the automatically-generated navigation tree.
+The same functions the `stati` CLI calls, for use in your own scripts.
 
-**Key Topics:**
+| Export                | Signature                                                           |
+| --------------------- | ------------------------------------------------------------------- |
+| `build`               | `(options?: BuildOptions) => Promise<BuildResult>`                  |
+| `createDevServer`     | `(options?: DevServerOptions) => Promise<DevServer>`                |
+| `createPreviewServer` | `(options?: PreviewServerOptions) => Promise<PreviewServer>`        |
+| `invalidate`          | `(query?: string) => Promise<InvalidationResult>`                   |
+| `setEnv`, `getEnv`    | Set or read the environment (`development`, `production` or `test`) |
 
-- Navigation structure (`NavNode` interface)
-- Helper methods (`findNode`, `getBreadcrumbs`, `getSiblings`, etc.)
-- Current page context
-- Common navigation patterns
+Dev and preview servers expose `start()`, `stop()` and `url`. `invalidate` accepts the same queries as the CLI, such as `tag:news`, `path:/blog/*` or `age:3months`. See [CLI commands](/cli/commands) and [ISG](/core-concepts/isg).
 
-## Build & Configuration APIs
+## Build hooks
 
-### [Build Hooks](/api/hooks)
+Defined under `hooks` in your config. Each can be async.
 
-Lifecycle hooks for customizing the build process. Inject custom logic before and after builds, or modify pages during rendering.
+| Hook           | Receives       | Runs                           |
+| -------------- | -------------- | ------------------------------ |
+| `beforeAll`    | `BuildContext` | Once, before any page renders  |
+| `beforeRender` | `PageContext`  | Before each page renders       |
+| `afterRender`  | `PageContext`  | After each page renders        |
+| `afterAll`     | `BuildContext` | Once, after the build finishes |
 
-**Key Topics:**
+Full reference: [Build hooks](/api/hooks).
 
-- `beforeAll` and `afterAll` hooks
-- `beforeRender` and `afterRender` hooks
-- Hook context objects
-- Practical use cases
+## Template context
 
-### [TypeScript Types](/api/types)
+Every Eta template and partial receives a `stati` object.
 
-Full TypeScript type definitions for Stati's configuration, template context, and programmatic APIs.
+| Member                     | What it holds                                                                                                                            |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `stati.site`               | Site config (`title`, `baseUrl`, `defaultLocale`, …)                                                                                     |
+| `stati.page`               | The current page: `url`, `path` and every front matter field                                                                             |
+| `stati.content`            | The rendered Markdown body                                                                                                               |
+| `stati.partials`           | Partials from `_`-prefixed folders, renderable or callable with props                                                                    |
+| `stati.nav`                | The navigation tree and helpers: `findNode`, `getChildren`, `getParent`, `getSiblings`, `getSubtree`, `getBreadcrumbs`, `getCurrentNode` |
+| `stati.collection`         | Pages in the current collection, on index pages                                                                                          |
+| `stati.assets`             | Bundle paths when TypeScript bundles are enabled                                                                                         |
+| `stati.propValue(...)`     | Builds space-separated attribute values from strings, arrays and objects                                                                 |
+| `stati.generateSEO(tags?)` | Renders SEO tags for manual placement                                                                                                    |
+| `stati.generator.version`  | The Stati version that built the page                                                                                                    |
+| `stati.<filter>(...)`      | Your custom filters from `eta.filters`                                                                                                   |
 
-**Key Topics:**
+Full reference: [Templates](/api/templates) and [Navigation](/api/navigation).
 
-- Configuration types (`StatiConfig`, `SiteConfig`, etc.)
-- Template context types (`TemplateContext`, `NavNode`, etc.)
-- Build and hook types
-- Type-safe configuration with `defineConfig`
+## SEO, sitemap and robots.txt
 
-## Feature APIs
+Generated automatically from config. The underlying functions are exported for custom pipelines: `generateSEO`, `generateSEOMetadata`, `generateOpenGraphTags`, `generateTwitterCardTags`, `generateSitemap`, `generateSitemapXml`, `generateRobotsTxt`, `autoInjectSEO` and `validateSEOMetadata`. See [SEO](/api/seo).
 
-### [SEO API](/api/seo)
+## RSS
 
-Automatic SEO meta tag generation for Open Graph, Twitter Cards, and Schema.org markup.
+`generateRSSFeed`, `generateRSSFeeds`, `validateRSSConfig` and `validateRSSFeedConfig`. Feeds are normally configured under `rss` and written during the build. See [RSS](/api/rss).
 
-**Key Topics:**
+## Types
 
-- `generateSEO()` template helper
-- Configurable SEO defaults
-- Page-level SEO overrides
-- Automatic sitemap and robots.txt generation
+The types you will reach for most: `StatiConfig`, `SiteConfig`, `BuildContext`, `PageContext`, `PageModel`, `FrontMatter`, `NavNode`, `BuildHooks`, `ISGConfig`, `AgingRule`, `BundleConfig`, `SEOConfig`, `SitemapConfig`, `RSSConfig`, `BuildOptions` and `BuildResult`. See [Types](/api/types).
 
-### [RSS API](/api/rss)
+## Errors
 
-RSS feed generation for blogs and content collections.
-
-**Key Topics:**
-
-- RSS feed configuration
-- Content filtering and sorting
-- Custom feed metadata
-- Multiple feed support
-
-### [Error Handling](/api/error-handling)
-
-Error handling patterns and debugging tools in Stati.
-
-**Key Topics:**
-
-- Development error overlay
-- Error handling in hooks
-- Build error recovery
-- TypeScript error diagnostics
-
-## Quick Links
-
-### Getting Started
-
-- [Quick Start Guide](/getting-started/quick-start) - Build your first Stati site
-- [Core Concepts](/core-concepts/overview) - Understand Stati's architecture
-- [Configuration Guide](/configuration/file) - Configure your site
-
-### Advanced Usage
-
-- [Advanced Topics](/advanced/topics) - Performance, SEO, and deployment
-- [Examples](/examples/list) - Real-world templates and patterns
-- [Contributing](/advanced/contributing) - Help improve Stati
+Build and template errors are reported through the logger and, during `stati dev`, an in-browser overlay. See [Error handling](/api/error-handling).

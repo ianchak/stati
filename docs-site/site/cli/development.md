@@ -1,10 +1,12 @@
 ---
-title: 'Development'
+title: 'Dev server'
 description: 'Learn how to use Stati development server for hot reloading, debugging, and efficient development workflows.'
 order: 3
+seo:
+  title: 'Stati dev server'
 ---
 
-# Development Server
+# Dev server
 
 Stati's development server pairs incremental builds with live reload so you can preview content changes instantly.
 
@@ -61,7 +63,7 @@ This logic lives in `handleTemplateChange` inside `packages/core/src/core/dev.ts
 
 Static files inside `public` are part of the watch list. When assets change they are recopied into `dist/` during the rebuild, so image and favicon updates appear on the next refresh.
 
-## Tailwind CSS Integration
+## Tailwind CSS integration
 
 Stati includes built-in Tailwind CSS support for the development server. When you provide `--tailwind-input` and `--tailwind-output` flags, Stati automatically starts a Tailwind CSS watcher alongside the dev server:
 

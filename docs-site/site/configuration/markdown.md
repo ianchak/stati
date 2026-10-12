@@ -1,14 +1,16 @@
 ---
-title: 'Markdown Config'
+title: 'Markdown'
 description: 'Configure markdown-it plugins and customize markdown rendering.'
 order: 4
+seo:
+  title: 'Markdown configuration'
 ---
 
-# Markdown Configuration
+# Markdown
 
 Stati uses [markdown-it](https://github.com/markdown-it/markdown-it) as its markdown processor. The engine is configured with sensible defaults, and you can extend it with plugins or customize rendering behavior.
 
-## Configuration Options
+## Configuration options
 
 Stati provides two options for markdown customization:
 
@@ -63,7 +65,7 @@ When disabled, `stati.page.toc` will be an empty array and headings will not hav
 
 See [Table of Contents (TOC)](#table-of-contents-toc) for template usage examples.
 
-## Default Settings
+## Default settings
 
 Stati creates markdown-it with these hardcoded settings (not configurable):
 
@@ -73,11 +75,11 @@ Stati creates markdown-it with these hardcoded settings (not configurable):
 
 These defaults provide a good balance of functionality and security for most use cases.
 
-## Markdown Plugins
+## Markdown plugins
 
 The `plugins` option accepts an array of markdown-it plugins. Stati automatically prepends `markdown-it-` to plugin names.
 
-### Plugin Format
+### Plugin format
 
 **Simple plugin** (string):
 
@@ -106,7 +108,7 @@ export default defineConfig({
 });
 ```
 
-### Plugin Installation
+### Plugin installation
 
 Plugins must be installed as npm dependencies:
 
@@ -116,7 +118,7 @@ npm install @widgetbot/markdown-it-prism
 npm install markdown-it-external-links
 ```
 
-### Common Plugins
+### Common plugins
 
 > **Built-in Features:** Stati has built-in TOC extraction and heading anchor generation (enabled by default). You don't need `markdown-it-anchor` or `markdown-it-toc-done-right` plugins.
 
@@ -129,7 +131,7 @@ npm install markdown-it-external-links
 | `container` | `markdown-it-container` | Custom containers |
 | `attrs` | `markdown-it-attrs` | Add attributes to elements |
 
-### Example: Complete Plugin Setup
+### Example: Complete plugin setup
 
 ```javascript
 export default defineConfig({
@@ -161,11 +163,11 @@ export default defineConfig({
 });
 ```
 
-## Custom Configuration
+## Custom configuration
 
 The `configure` option accepts a function that receives the markdown-it instance. This runs **after** plugins are loaded, allowing you to override plugin behavior.
 
-### Basic Customization
+### Basic customization
 
 ```javascript
 export default defineConfig({
@@ -184,7 +186,7 @@ export default defineConfig({
 });
 ```
 
-### Custom Renderer Rules
+### Custom renderer rules
 
 Customize how specific markdown elements are rendered:
 
@@ -221,7 +223,7 @@ export default defineConfig({
 });
 ```
 
-### Custom Block Syntax
+### Custom block syntax
 
 Create custom container syntax:
 
@@ -251,11 +253,11 @@ This is a helpful tip
 :::
 ```
 
-## Syntax Highlighting
+## Syntax highlighting
 
 Stati doesn't provide built-in syntax highlighting. You have two options:
 
-### Option 1: Client-Side (Recommended)
+### Option 1: Client-side (recommended)
 
 Use the `markdown-it-prism` plugin with Prism.js:
 
@@ -287,7 +289,7 @@ export default defineConfig({
 **Pros:** Simple setup, many themes available, works well for static sites
 **Cons:** Requires JavaScript, flash of unstyled code before JS loads
 
-### Option 2: Server-Side
+### Option 2: Server-side
 
 Use any server-side highlighter in the `configure` function:
 
@@ -316,7 +318,7 @@ export default defineConfig({
 **Pros:** No JavaScript required, no flash of unstyled code
 **Cons:** More complex setup, increases build time
 
-## Front Matter
+## Front matter
 
 Stati automatically parses YAML front matter from markdown files using `gray-matter`. This is not configurable.
 
@@ -342,15 +344,15 @@ All front matter fields are available in templates:
 <time><%= new Date(stati.page.date).toLocaleDateString() %></time>
 ```
 
-## Best Practices
+## Best practices
 
-### Plugin Selection
+### Plugin selection
 
 1. **Install only what you need** - Each plugin adds processing overhead
 2. **Check compatibility** - Ensure plugins work with your markdown-it version
 3. **Test thoroughly** - Some plugins may conflict with each other
 
-### Custom Rendering
+### Custom rendering
 
 1. **Use configure for overrides** - The configure function runs after plugins
 2. **Preserve defaults** - Store default renderer before overriding
@@ -362,7 +364,7 @@ All front matter fields are available in templates:
 2. **Cache compiled results** - Stati caches in production automatically
 3. **Optimize images** - Large images slow down markdown parsing
 
-## Complete Example
+## Complete example
 
 A production-ready markdown configuration:
 
@@ -415,11 +417,11 @@ export default defineConfig({
 });
 ```
 
-## Table of Contents (TOC)
+## Table of contents (TOC)
 
 Stati automatically extracts Table of Contents data from markdown headings and makes it available in templates via `stati.page.toc`.
 
-### TOC Entry Structure
+### TOC entry structure
 
 Each TOC entry contains:
 
@@ -434,7 +436,7 @@ interface TocEntry {
 }
 ```
 
-### Template Usage
+### Template usage
 
 Build navigation from extracted headings:
 
@@ -451,7 +453,7 @@ Build navigation from extracted headings:
 </nav>
 ```
 
-### Generated Anchor IDs
+### Generated anchor IDs
 
 Stati generates URL-friendly anchor IDs from heading text:
 
@@ -469,7 +471,7 @@ Stati generates URL-friendly anchor IDs from heading text:
 | `## Example` | `example-1` |
 | `## Example` | `example-2` |
 
-## Next Steps
+## Next steps
 
 - Learn about [Templates & Layouts](/core-concepts/templates) for rendering markdown
 - Explore [Markdown concepts](/core-concepts/markdown) for content authoring

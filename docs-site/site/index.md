@@ -41,7 +41,13 @@ hero:
       site: { title: 'Field Notes', baseUrl: 'https://example.com' },
       typescript: {
         enabled: true,
-        bundles: [{ entryPoint: 'search.ts', include: ['/docs/**'] }],
+        bundles: [
+          {
+            entryPoint: 'search.ts',
+            bundleName: 'search',
+            include: ['/docs/**'],
+          },
+        ],
       },
       isg: { enabled: true, ttlSeconds: 21600 },
       search: { enabled: true },
@@ -62,7 +68,7 @@ inventory:
         - {
             name: 'Front matter',
             text: 'Titles, tags, drafts, layouts and permalinks, per page.',
-            href: '/core-concepts/markdown',
+            href: '/core-concepts/markdown#front-matter',
           }
         - {
             name: 'Eta layouts',
@@ -119,7 +125,7 @@ inventory:
         - {
             name: 'Tailwind or Sass',
             text: 'Pick plain CSS, Sass or Tailwind when you scaffold.',
-            href: '/cli/scaffolder',
+            href: '/cli/scaffolder#styling-solutions',
           }
         - {
             name: 'Build metrics',
@@ -136,12 +142,12 @@ inventory:
         - {
             name: 'Sitemap',
             text: 'Priorities, filters and sitemap indexes.',
-            href: '/configuration/seo',
+            href: '/configuration/seo#sitemap-configuration',
           }
         - {
             name: 'robots.txt',
             text: 'Per-agent rules generated from config.',
-            href: '/configuration/seo',
+            href: '/configuration/seo#robots-txt-configuration',
           }
         - {
             name: 'RSS feeds',
@@ -183,7 +189,7 @@ inventory:
         - {
             name: 'Agent skill',
             text: 'Teach Claude Code or Copilot to build with Stati.',
-            href: '/cli/scaffolder',
+            href: '/cli/scaffolder#agent-skill',
           }
 
 claims:
@@ -221,7 +227,7 @@ claims:
       text: 'Configuration is a typed object, so your editor completes every option. Client code is TypeScript too: Stati compiles it with esbuild, hashes it for production, and injects each bundle only on the pages that match.'
       link: { text: 'TypeScript bundles', href: '/configuration/typescript' }
       panels:
-        - file: 'stati.config.ts'
+        - file: 'stati.config.ts (excerpt)'
           lang: 'typescript'
           code: |
             export default defineConfig({
@@ -244,7 +250,7 @@ claims:
       text: 'Incremental Static Generation keeps a build cache. A page is rebuilt when its content or templates change, or when its TTL runs out, and aging rules cache older pages for longer. Clear anything on demand by tag, path or age.'
       link: { text: 'Incremental Static Generation', href: '/core-concepts/isg' }
       panels:
-        - file: 'stati.config.ts'
+        - file: 'stati.config.ts (excerpt)'
           lang: 'typescript'
           code: |
             isg: {
@@ -274,7 +280,7 @@ claims:
 
 dogfood:
   title: 'This site is the demo'
-  text: 'stati.build is built with Stati and nothing else. The search on this page, the sitemap, the RSS feed and the per-page script bundles all come from the config below.'
+  text: 'stati.build is built with Stati, plus Tailwind for CSS, Prism for code highlighting and FlexSearch behind the search box. The search index, sitemap, robots.txt, RSS feed and per-page script bundles all come from the config below.'
   link:
     {
       text: 'View the source on GitHub',
@@ -287,6 +293,11 @@ dogfood:
       bundles: [
         { entryPoint: 'core.ts', bundleName: 'core' },
         {
+          entryPoint: 'home.ts',
+          bundleName: 'home',
+          include: ['/index.html', '/'],
+        },
+        {
           entryPoint: 'docs.ts',
           bundleName: 'docs',
           exclude: ['/index.html', '/'],
@@ -294,7 +305,7 @@ dogfood:
       ],
     },
     isg: { enabled: true, ttlSeconds: 86400, maxAgeCapDays: 30 },
-    search: { enabled: true },
+    search: { enabled: true, exclude: ['/404'] },
     sitemap: {
       enabled: true,
       defaultPriority: 0.7,
@@ -315,14 +326,14 @@ dogfood:
 
 start:
   title: 'Start your first Stati site'
-  text: 'The scaffolder asks a few questions, from CSS, Sass or Tailwind to TypeScript and git, then installs dependencies. Accept the defaults and you are three commands from a running site.'
+  text: 'The scaffolder asks a few questions, from CSS, Sass or Tailwind to TypeScript and git, then installs dependencies. Accept the defaults for a TypeScript project like the one above, three commands from a running site.'
   commands:
     - 'npx create-stati my-site'
     - 'cd my-site'
     - 'npm run dev'
   result: 'The dev server runs on localhost:3000 by default and reloads the page every time you make changes.'
   links:
-    - { text: 'Quick Start', href: '/getting-started/quick-start' }
+    - { text: 'Quick start', href: '/getting-started/quick-start' }
     - { text: 'Installation', href: '/getting-started/installation' }
     - { text: 'Example sites', href: '/examples/list' }
 ---

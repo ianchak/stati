@@ -154,6 +154,28 @@ describe('create-stati CLI', () => {
       );
     });
 
+    it('should parse --no-typescript flag as JavaScript', async () => {
+      const result = await parseArgs(['test-project', '--no-typescript']);
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          projectName: 'test-project',
+          typescript: false,
+        }),
+      );
+    });
+
+    it('should parse --no-ts flag as JavaScript', async () => {
+      const result = await parseArgs(['test-project', '--no-ts']);
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          projectName: 'test-project',
+          typescript: false,
+        }),
+      );
+    });
+
     it('should return empty object for no arguments', async () => {
       const result = await parseArgs([]);
 
@@ -339,10 +361,39 @@ describe('create-stati CLI', () => {
         projectName: 'test-project',
         template: 'blank',
         styling: 'css',
-        typescript: false, // TypeScript defaults to false in non-interactive mode
+        typescript: true, // TypeScript is the default in non-interactive mode
         gitInit: false,
         install: false,
       });
+    });
+
+    it('should default the TypeScript prompt to yes', async () => {
+      mockInquirer.prompt.mockResolvedValueOnce({
+        styling: 'css',
+        typescript: true,
+        gitInit: false,
+        install: false,
+      });
+
+      await runCLI({ projectName: 'test-project', template: 'blank' });
+
+      const prompts = mockInquirer.prompt.mock.calls[0]?.[0];
+      const tsPrompt = prompts?.find((p: { name: string }) => p.name === 'typescript');
+      expect(tsPrompt).toEqual(expect.objectContaining({ type: 'confirm', default: true }));
+    });
+
+    it('should not prompt for TypeScript when --no-typescript is passed', async () => {
+      mockInquirer.prompt.mockResolvedValueOnce({
+        styling: 'css',
+        gitInit: false,
+        install: false,
+      });
+
+      await runCLI({ projectName: 'test-project', template: 'blank', typescript: false });
+
+      const prompts = mockInquirer.prompt.mock.calls[0]?.[0];
+      expect(prompts?.some((p: { name: string }) => p.name === 'typescript')).toBe(false);
+      expect(mockCreateSite).toHaveBeenCalledWith(expect.objectContaining({ typescript: false }));
     });
 
     it('should prompt for agent skill in interactive mode and pass it to createSite', async () => {

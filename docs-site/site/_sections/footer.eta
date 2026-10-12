@@ -11,16 +11,16 @@ const columns = [
     title: 'Documentation',
     links: [
       { href: '/getting-started/introduction', text: 'Introduction' },
-      { href: '/getting-started/quick-start', text: 'Quick Start' },
-      { href: '/core-concepts/overview', text: 'Core Concepts' },
+      { href: '/getting-started/quick-start', text: 'Quick start' },
+      { href: '/core-concepts/overview', text: 'Core concepts' },
       { href: '/configuration/file', text: 'Configuration' },
     ],
   },
   {
     title: 'Reference',
     links: [
-      { href: '/api/reference', text: 'API Reference' },
-      { href: '/cli/commands', text: 'CLI Commands' },
+      { href: '/api/reference', text: 'API overview' },
+      { href: '/cli/commands', text: 'CLI commands' },
       { href: '/faq', text: 'FAQ' },
       { href: '/glossary', text: 'Glossary' },
     ],
@@ -32,7 +32,7 @@ const columns = [
       { href: 'https://www.npmjs.com/package/@stati/core', text: 'npm', external: true },
       { href: 'https://github.com/ianchak/stati/issues', text: 'Issues', external: true },
       { href: '/feed.xml', text: 'RSS feed' },
-      { href: '/information/ai-policy', text: 'AI & Content Policy' },
+      { href: '/information/ai-policy', text: 'AI and content policy' },
     ],
   },
 ];

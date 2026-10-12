@@ -16,7 +16,7 @@ const claims = stati.page.claims;
     <div class="mx-auto max-w-page px-4 py-20 sm:px-6 lg:py-28">
         <h2 id="claims-title" class="max-w-3xl font-display text-[clamp(2rem,1.4rem+2vw,3rem)] font-extrabold leading-[1.05] [font-stretch:115%]"><%= claims.title %></h2>
 
-        <div class="mt-14 divide-y divide-line border-y border-line">
+        <div class="mt-14 divide-y divide-line border-t border-line">
             <% claims.items.forEach(claim => { %>
             <article id="<%= `claim-${claim.id}` %>" class="grid grid-cols-1 gap-8 py-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-14 lg:py-16" aria-labelledby="<%= `claim-${claim.id}-title` %>">
                 <div class="lg:sticky lg:top-24 lg:self-start">
@@ -47,8 +47,11 @@ const claims = stati.page.claims;
                             <tbody>
                                 <% claim.log.rows.forEach(row => { %>
                                 <tr class="log-row border-b border-line last:border-0" data-status="<%= row.status %>">
-                                    <td class="py-2 pl-4 pr-2 text-ink sm:pl-5"><%= row.path %></td>
-                                    <td class="whitespace-nowrap px-2 py-2">
+                                    <td class="py-2 pl-4 pr-2 text-ink sm:pl-5">
+                                        <%= row.path %>
+                                        <span class="mt-0.5 block font-sans text-xs text-muted sm:hidden"><%= row.reason %></span>
+                                    </td>
+                                    <td class="whitespace-nowrap px-2 py-2 align-top sm:align-middle">
                                         <span class="<%= stati.propValue('inline-flex items-center gap-2', row.status === 'rebuilt' ? 'text-ink' : 'text-faint') %>">
                                             <span class="<%= stati.propValue('h-1.5 w-1.5 flex-none', row.status === 'rebuilt' ? 'bg-ink' : 'rounded-full border border-current') %>" aria-hidden="true"></span>
                                             <%= row.status %>

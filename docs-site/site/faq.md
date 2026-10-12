@@ -1,8 +1,9 @@
 ---
-title: 'Stati FAQ'
+title: 'FAQ'
 description: 'Frequently asked questions about Stati, the TypeScript-first static site generator.'
 order: 99
 seo:
+  title: 'Stati FAQ'
   structuredData:
     "@context": "https://schema.org"
     "@type": "FAQPage"
@@ -34,7 +35,7 @@ seo:
           "text": "Yes. Stati is TypeScript-first. Your configuration file (stati.config.ts) is written in TypeScript, and client-side TypeScript is compiled automatically via esbuild."
 ---
 
-# Stati FAQ
+# FAQ
 
 Frequently asked questions about Stati, the TypeScript-first static site generator.
 
@@ -87,8 +88,8 @@ Yes. Stati is TypeScript-first:
 - Client-side TypeScript compiled with esbuild
 - Multiple bundle targets with include/exclude patterns
 
-## Related Resources
+## Related resources
 
 - [Glossary](/glossary) – Definitions of key terms used in Stati
-- [Core Concepts](/core-concepts/overview) – Deep dive into Stati's architecture
+- [Core concepts](/core-concepts/overview) – Deep dive into Stati's architecture
 - [Configuration](/configuration/file) – Full configuration reference

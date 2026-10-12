@@ -34,7 +34,7 @@ Agent support (the `create-stati --agent-skill` skill bundle, `llms.txt`, the AI
 - Built-in Stati features in use: search index (client-side FlexSearch UI), sitemap, robots.txt, RSS feed (`feed.xml`), SEO structured data, ISG.
 - Deployed to Netlify at https://stati.build. Source: https://github.com/ianchak/stati. Packages: `@stati/core`, `@stati/cli`, `create-stati`.
 - Stati requires Node 22+ and works with npm, pnpm, yarn or bun. npm 11.5.1+ is a maintainer requirement for OIDC publishing only, not a user prerequisite.
-- `create-stati` currently offers only the `blank` template and defaults TypeScript to off, so a default project gets `stati.config.js`; with TypeScript on it gets `stati.config.ts`. Docs must describe this as it is.
+- `create-stati` currently offers only the `blank` template and defaults TypeScript to on, so a default project gets `stati.config.ts`, `tsconfig.json` and `src/main.ts`; `--no-typescript` (or answering no) gives `stati.config.js`. Docs must describe this as it is.
 - Netlify serves `404.html` for missing URLs; Stati's own `dev` and `preview` servers do not yet serve a custom 404 page.
 
 ## Capabilities and Constraints

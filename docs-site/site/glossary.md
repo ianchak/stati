@@ -2,13 +2,15 @@
 title: 'Glossary'
 description: 'Definitions of key terms and concepts used in Stati documentation.'
 order: 98
+seo:
+  title: 'Stati glossary'
 ---
 
-# Stati Glossary
+# Glossary
 
 Key terms and concepts used throughout Stati documentation.
 
-## Filesystem-based Routing
+## Filesystem-based routing
 
 Stati maps your directory structure in `site/` directly to URL paths. A file at `site/docs/intro.md` becomes `/docs/intro/`.
 
@@ -16,7 +18,7 @@ Stati maps your directory structure in `site/` directly to URL paths. A file at 
 
 A build optimization that caches rendered pages and only rebuilds when content changes or TTL expires. Configured via `isg` in `stati.config.ts`.
 
-## Eta Templates
+## Eta templates
 
 Stati's templating engine. Eta files (`.eta`) support layouts, partials, filters, and embedded JavaScript. The main layout is typically `layout.eta`.
 
@@ -24,7 +26,7 @@ Stati's templating engine. Eta files (`.eta`) support layouts, partials, filters
 
 A reusable template wrapper that provides consistent structure (header, footer, navigation). Pages specify their layout via frontmatter: `layout: layout.eta`.
 
-## Layout Inheritance
+## Layout inheritance
 
 Stati's hierarchical layout system where more specific layouts **override** parent directory layouts. A `layout.eta` in a subdirectory completely replaces the root layout for pages in that directory. For example, `site/blog/layout.eta` overrides `site/layout.eta` for all pages under `/blog/`. Section layouts must be complete HTML documents.
 
@@ -32,7 +34,7 @@ Stati's hierarchical layout system where more specific layouts **override** pare
 
 Reusable template fragments stored in underscore-prefixed directories (e.g., `_partials/`, `_components/`). Include them via `stati.partials.header`. Stati uses a **flat namespace** for partials - the file name becomes the partial name regardless of subdirectory.
 
-## Callable Partials
+## Callable partials
 
 An advanced partial usage pattern that allows passing data to partials like function arguments. Instead of just `<%~ stati.partials.header %>`, you can call:
 
@@ -63,11 +65,11 @@ Data is accessed inside the partial via `stati.props`. Callable partials enable 
 
 YAML metadata at the top of Markdown files. Controls title, description, layout, order, and SEO settings.
 
-## Hierarchical Partials
+## Hierarchical partials
 
 Partials are discovered **upward** from the current page's directory to the root. A page can access partials from its own directory and all parent directories, but **not** from child directories. For example, a root layout can only access `site/_partials/`, while a blog layout can access both `site/_partials/` AND `site/blog/_partials/`. More specific partials (deeper in hierarchy) override less specific ones with the same name.
 
-## Template Context (`stati`)
+## Template context (`stati`)
 
 The object passed to every Eta template containing:
 
@@ -77,7 +79,7 @@ The object passed to every Eta template containing:
 - `stati.nav` – Navigation helpers and tree
 - `stati.partials` – Partial templates accessible as properties (rendered markup) or callable functions (with props)
 
-## SEO Metadata
+## SEO metadata
 
 Automatically generated HTML tags for search engines and social sharing. Includes title, description, canonical, Open Graph, Twitter Cards, and JSON-LD structured data.
 
@@ -89,7 +91,7 @@ The TypeScript configuration file at your project root. Defines site metadata, M
 
 A helper function from `@stati/core` that provides type-safe configuration. Wraps your Stati config object for IntelliSense and type checking.
 
-## Build Hooks
+## Build hooks
 
 Extension points (`beforeAll`, `afterAll`, `beforeRender`, `afterRender`) that let you inject custom logic at various stages of the build process.
 
@@ -97,15 +99,15 @@ Extension points (`beforeAll`, `afterAll`, `beforeRender`, `afterRender`) that l
 
 The underlying JavaScript bundler that powers Stati's TypeScript compilation. Provides near-instant build times for client-side code.
 
-## Development Server
+## Development server
 
 Stati's local server (`stati dev`) with hot reload, file watching, and incremental builds for efficient development.
 
-## TTL (Time To Live)
+## TTL (time to live)
 
 The duration in seconds that cached content remains valid before requiring a rebuild. Configured via `isg.ttlSeconds`.
 
-## Cache Invalidation
+## Cache invalidation
 
 The process of marking cached entries as stale using `stati invalidate` with patterns like `tag:`, `path:`, `glob:`, or `age:`.
 
@@ -113,7 +115,7 @@ The process of marking cached entries as stale using `stati invalidate` with pat
 
 A page marked with `draft: true` in frontmatter, excluded from production builds unless `--include-drafts` is used.
 
-## Dynamic Attribute Values
+## Dynamic attribute values
 
 A templating pattern required when embedding dynamic content in HTML attributes. Eta doesn't support partial interpolation like mixing static and dynamic text in attributes. Instead, use template literals for the entire attribute value, or use `stati.propValue()` for space-separated values like multiple CSS classes. See [Dynamic Attribute Values](/core-concepts/templates#dynamic-attribute-values) in the templates documentation.
 
@@ -121,7 +123,7 @@ A templating pattern required when embedding dynamic content in HTML attributes.
 
 A group of pages in a directory, often with shared layout and navigation (e.g., blog posts, documentation sections).
 
-## Eta Filters
+## Eta filters
 
 Custom functions registered in `stati.config.ts` under `eta.filters` that transform values in templates (e.g., date formatting, slugify).
 
@@ -146,7 +148,7 @@ A navigation tree node containing `title`, `url`, `path`, `order`, `publishedAt`
 
 An XML file listing all site URLs with metadata, auto-generated during production builds when `sitemap.enabled` is true.
 
-## RSS Feed
+## RSS feed
 
 An XML file for content syndication, configured via `rss.feeds` with content patterns, filters, and item mapping.
 
@@ -154,7 +156,7 @@ An XML file for content syndication, configured via `rss.feeds` with content pat
 
 The interactive CLI tool that creates new Stati projects with styling options, TypeScript support, and Git initialization.
 
-## Related Resources
+## Related resources
 
 - [FAQ](/faq) – Frequently asked questions about Stati
-- [Core Concepts](/core-concepts/overview) – Deep dive into Stati's architecture
+- [Core concepts](/core-concepts/overview) – Deep dive into Stati's architecture

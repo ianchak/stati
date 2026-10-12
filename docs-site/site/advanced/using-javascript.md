@@ -1,15 +1,17 @@
 ---
-title: 'Using JavaScript in Stati'
+title: 'Using JavaScript'
 description: 'Learn four powerful ways to add JavaScript functionality to your Stati site: inline scripts, external files, built-in TypeScript compilation, and build hooks.'
 layout: layout.eta
 order: 4
+seo:
+  title: 'Using JavaScript in Stati'
 ---
 
-# Using JavaScript in Stati
+# Using JavaScript
 
 Stati is a static site generator, but that doesn't mean your sites have to be purely static. You can add interactivity and dynamic behavior using JavaScript in four main ways: inline scripts in templates, external JavaScript files, built-in TypeScript compilation (recommended for substantial client-side code), and build-time JavaScript via hooks.
 
-## Table of Contents
+## Table of contents
 
 - [Method 1: Inline Scripts in Templates](#method-1-inline-scripts-in-templates)
 - [Method 2: External JavaScript Files](#method-2-external-javascript-files)
@@ -19,17 +21,17 @@ Stati is a static site generator, but that doesn't mean your sites have to be pu
 
 ---
 
-## Method 1: Inline Scripts in Templates
+## Method 1: Inline scripts in templates
 
 The most straightforward way to add JavaScript is by including inline `<script>` tags directly in your Eta templates. This is ideal for small, page-specific scripts that enhance the user experience.
 
-### When to Use
+### When to use
 
 - **Small interactive features**: Scroll-to-top buttons, mobile navigation toggles, etc.
 - **Page-specific behavior**: Form validation, animations specific to one page
 - **Quick enhancements**: When you don't need a separate file
 
-### Example: Scroll to Top Button
+### Example: Scroll to top button
 
 In your `layout.eta` template:
 
@@ -72,7 +74,7 @@ In your `layout.eta` template:
 </html>
 ```
 
-### Example: Mobile Navigation Toggle
+### Example: Mobile navigation toggle
 
 ```eta
 <!-- Header with mobile menu -->
@@ -112,7 +114,7 @@ In your `layout.eta` template:
 </script>
 ```
 
-### Example: Loading External Libraries
+### Example: Loading external libraries
 
 You can also use inline scripts to initialize external libraries:
 
@@ -144,7 +146,7 @@ You can also use inline scripts to initialize external libraries:
 </body>
 ```
 
-### Inline Script Advantages
+### Inline script advantages
 
 - ✅ Simple and direct
 - ✅ No build step required
@@ -152,7 +154,7 @@ You can also use inline scripts to initialize external libraries:
 - ✅ Perfect for small scripts
 - ✅ Can use Eta template variables in scripts
 
-### Inline Script Considerations
+### Inline script considerations
 
 - ⚠️ Can clutter templates if scripts get large
 - ⚠️ Not easily reusable across pages
@@ -161,11 +163,11 @@ You can also use inline scripts to initialize external libraries:
 
 ---
 
-## Method 2: External JavaScript Files
+## Method 2: External JavaScript files
 
 For larger scripts or reusable functionality, place your JavaScript in separate files within the `public/` directory. Stati will copy these files to your build output automatically.
 
-### When to Use External Files
+### When to use external files
 
 - **Large scripts**: Any JavaScript over 20-30 lines
 - **Reusable functionality**: Code used across multiple pages
@@ -173,7 +175,7 @@ For larger scripts or reusable functionality, place your JavaScript in separate 
 - **Module-based code**: When you want to use ES modules
 - **Separation of concerns**: Keep templates clean and focused
 
-### File Structure
+### File structure
 
 ```text
 my-stati-site/
@@ -189,7 +191,7 @@ my-stati-site/
     └── index.md
 ```
 
-### Example: Theme Switcher
+### Example: Theme switcher
 
 Create `public/js/theme-switcher.js`:
 
@@ -280,7 +282,7 @@ Include in your `layout.eta`:
 </html>
 ```
 
-### Example: Search Functionality
+### Example: Search functionality
 
 Create `public/js/search.js`:
 
@@ -345,7 +347,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 ```
 
-### Example: Using ES Modules
+### Example: Using ES modules
 
 Create `public/js/modules/utils.js`:
 
@@ -434,7 +436,7 @@ Include in your template with module type:
 <script type="module" src="/js/main.js"></script>
 ```
 
-### External File Advantages
+### External file advantages
 
 - ✅ Clean separation of concerns
 - ✅ Reusable across multiple pages
@@ -443,7 +445,7 @@ Include in your template with module type:
 - ✅ Easier to test and debug
 - ✅ Can be minified and bundled
 
-### External File Considerations
+### External file considerations
 
 - ⚠️ Requires separate HTTP request (can be mitigated with HTTP/2 or bundling)
 - ⚠️ Cannot directly access Eta template variables
@@ -451,11 +453,11 @@ Include in your template with module type:
 
 ---
 
-## Method 3: Built-in TypeScript Compilation
+## Method 3: Built-in TypeScript compilation
 
 For modern, type-safe client-side code, Stati provides built-in TypeScript compilation powered by [esbuild](https://esbuild.github.io/). This is the **recommended approach** for any substantial client-side functionality.
 
-### When to Use Built-in TypeScript
+### When to use built-in TypeScript
 
 - **Type safety**: Catch errors at build time, not runtime
 - **Modern development**: Full IDE support with IntelliSense
@@ -463,12 +465,12 @@ For modern, type-safe client-side code, Stati provides built-in TypeScript compi
 - **Hot reload**: Instant updates during development
 - **Bundle management**: Automatic script injection into HTML
 
-### Quick Setup
+### Quick setup
 
-Create a new project with TypeScript:
+New projects use TypeScript by default:
 
 ```bash
-npx create-stati my-site --typescript
+npx create-stati my-site
 ```
 
 Or enable TypeScript in an existing project by adding to your `stati.config.ts`:
@@ -487,7 +489,7 @@ export default defineConfig({
 });
 ```
 
-### Project Structure
+### Project structure
 
 ```text
 my-site/
@@ -500,7 +502,7 @@ my-site/
 └── tsconfig.json
 ```
 
-### Example: Interactive Navigation
+### Example: Interactive navigation
 
 Create `src/main.ts`:
 
@@ -551,7 +553,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 ```
 
-### Automatic Bundle Injection
+### Automatic bundle injection
 
 Stati **automatically injects** your compiled bundle into every page before `</body>`. No template changes needed:
 
@@ -573,7 +575,7 @@ For advanced use cases like preloading, access the bundle paths in templates:
 </head>
 ```
 
-### Development vs Production
+### Development vs production
 
 Stati automatically adjusts behavior based on build mode:
 
@@ -584,7 +586,7 @@ Stati automatically adjusts behavior based on build mode:
 | Minification | ❌ Disabled | ✅ Enabled |
 | Watch mode | ✅ Hot reload | N/A |
 
-### TypeScript Advantages
+### TypeScript advantages
 
 - ✅ Type safety with full IDE support
 - ✅ Automatic bundling and optimization
@@ -593,20 +595,20 @@ Stati automatically adjusts behavior based on build mode:
 - ✅ No manual script tag management
 - ✅ Modern ES module output
 
-### TypeScript Considerations
+### TypeScript considerations
 
-- ⚠️ Requires initial setup (`--typescript` flag or config)
+- ⚠️ Projects created with `--no-typescript` need the `typescript` config block added by hand
 - ⚠️ Run `npm run typecheck` to catch type errors (esbuild doesn't type-check)
 
 > Stati supports [multiple bundles](/configuration/typescript/#multiple-bundles) with per-page targeting for advanced use cases. For full configuration options, see the [TypeScript Configuration Guide](/configuration/typescript).
 
 ---
 
-## Method 4: Build Hooks (Build-Time JavaScript)
+## Method 4: Build hooks (build-time JavaScript)
 
 The most powerful way to use JavaScript in Stati is through build hooks in your `stati.config.js`. These hooks run during the build process and can modify content, fetch data, generate files, and more.
 
-### When to Use Build Hooks
+### When to use build hooks
 
 - **Data fetching**: Load data from APIs at build time
 - **Content transformation**: Process markdown, images, etc.
@@ -614,7 +616,7 @@ The most powerful way to use JavaScript in Stati is through build hooks in your 
 - **Integration with external services**: CMS, analytics, databases
 - **Build-time calculations**: Reading time, related posts, etc.
 
-### Hook Types
+### Hook types
 
 Stati provides four main hooks:
 
@@ -625,7 +627,7 @@ Stati provides four main hooks:
 
 > **Important:** Hook contexts (`BuildContext` and `PageContext`) don't include shared state properties. To share data between hooks, use module-level variables as shown in the examples below. Data can then be added to `ctx.page.frontMatter` in `beforeRender` to make it available in templates.
 
-### Example: Fetch Data at Build Time
+### Example: Fetch data at build time
 
 In your `stati.config.js`:
 
@@ -678,7 +680,7 @@ Access the data in your templates:
 </div>
 ```
 
-### Example: Calculate Reading Time
+### Example: Calculate reading time
 
 ```javascript
 export default defineConfig({
@@ -708,7 +710,7 @@ Use in your template:
 <% } %>
 ```
 
-### Example: Generate Related Posts
+### Example: Generate related posts
 
 ```javascript
 export default defineConfig({
@@ -755,7 +757,7 @@ Display related posts:
 <% } %>
 ```
 
-### Example: Generate Search Index
+### Example: Generate search index
 
 ```javascript
 import { writeFile } from 'node:fs/promises';
@@ -832,7 +834,7 @@ async function fetchFromCMS() {
 }
 ```
 
-### Build Hook Advantages
+### Build hook advantages
 
 - ✅ Most powerful option
 - ✅ Can fetch and process data at build time
@@ -842,7 +844,7 @@ async function fetchFromCMS() {
 - ✅ Better performance (no runtime data fetching)
 - ✅ Better SEO (content is in the HTML)
 
-### Build Hook Considerations
+### Build hook considerations
 
 - ⚠️ Runs at build time, not runtime
 - ⚠️ Changes require rebuilding
@@ -851,9 +853,9 @@ async function fetchFromCMS() {
 
 ---
 
-## Comparison & Best Practices
+## Comparison & best practices
 
-### Quick Reference Table
+### Quick reference table
 
 | Method | Best For | Performance | Complexity | Runs At |
 |--------|----------|-------------|------------|---------|
@@ -862,7 +864,7 @@ async function fetchFromCMS() {
 | **TypeScript** | Type-safe code, modern development, production apps | Excellent (bundled, minified) | Medium | Runtime (browser) |
 | **Build Hooks** | Data fetching, content generation, SEO | Excellent (build-time) | High | Build time (Node.js) |
 
-### When to Use Each Method
+### When to use each method
 
 **Use Inline Scripts when:**
 
@@ -893,7 +895,7 @@ async function fetchFromCMS() {
 - Need access to all pages/content
 - Want to optimize performance
 
-### Best Practices
+### Best practices
 
 #### Performance
 
@@ -1016,7 +1018,7 @@ async function fetchFromCMS() {
    });
    ```
 
-### Combining Methods
+### Combining methods
 
 You can (and should) use multiple methods together. Here's an example that combines TypeScript for client-side code with build hooks for data fetching:
 

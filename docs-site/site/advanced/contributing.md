@@ -2,13 +2,15 @@
 title: 'Contributing'
 description: 'Learn how to contribute to Stati development, report issues, and help improve the project.'
 order: 3
+seo:
+  title: 'Contributing to Stati'
 ---
 
-# Contributing to Stati
+# Contributing
 
 Stati is an open-source project and we welcome contributions from the community! Whether you're fixing bugs, adding features, improving documentation, or helping with testing, there are many ways to get involved.
 
-## Quick Start
+## Quick start
 
 1. **Fork the repository** on GitHub
 2. **Clone your fork** locally
@@ -17,7 +19,7 @@ Stati is an open-source project and we welcome contributions from the community!
 5. **Make your changes** and add tests
 6. **Submit a pull request**
 
-## Development Setup
+## Development setup
 
 ### Prerequisites
 
@@ -25,7 +27,7 @@ Stati is an open-source project and we welcome contributions from the community!
 - **npm** 11.5.1 or higher
 - **Git** for version control
 
-### Local Development
+### Local development
 
 ```bash
 # Clone the repository
@@ -47,7 +49,7 @@ npm run typecheck
 
 ```
 
-### Project Structure
+### Project structure
 
 ```text
 stati/
@@ -73,7 +75,7 @@ stati/
 └── package.json           # Root package.json
 ```
 
-### Monorepo Workflow
+### Monorepo workflow
 
 Stati uses a monorepo structure with multiple packages:
 
@@ -96,9 +98,9 @@ npm install
 npm run dev
 ```
 
-## Making Changes
+## Making changes
 
-### Code Style
+### Code style
 
 Stati uses strict TypeScript and follows these conventions:
 
@@ -133,7 +135,7 @@ npm test -- packages/core/src/__tests__/build.test.ts
 npm test -- --watch
 ```
 
-### CI Pipeline
+### CI pipeline
 
 Every push and pull request triggers the CI workflow (`.github/workflows/ci.yml`):
 
@@ -144,7 +146,7 @@ Every push and pull request triggers the CI workflow (`.github/workflows/ci.yml`
 
 The pipeline runs on Ubuntu with Node.js 22. Version commits from the publish workflow are automatically skipped.
 
-### Performance Benchmarks
+### Performance benchmarks
 
 Performance tests live in `packages/core/test/perf/` and measure build speed across scenarios:
 
@@ -166,7 +168,7 @@ npx vitest run packages/core/test/perf
 
 Baselines are defined in `perf/baselines/benchmark.json` with a 30% tolerance. Tests validate median duration and cache hit rates.
 
-### Build Metrics System
+### Build metrics system
 
 Stati includes a metrics system for debugging performance issues. Enable it via CLI:
 
@@ -186,9 +188,9 @@ stati build --metrics --metrics-detailed # Include per-page timings
 
 Metrics are written to `.stati/metrics/` as JSON files with timestamps. Use these to diagnose slow builds or cache inefficiencies.
 
-## Contributing Guidelines
+## Contributing guidelines
 
-### Pull Request Process
+### Pull request process
 
 1. **Create an Issue** first for significant changes
 2. **Fork and Branch** from `main`
@@ -197,7 +199,7 @@ Metrics are written to `.stati/metrics/` as JSON files with timestamps. Use thes
 5. **Test Thoroughly** across packages
 6. **Submit PR** with clear description
 
-### PR Template
+### PR template
 
 ```markdown
 ## Description
@@ -226,7 +228,7 @@ Brief description of changes
 - [ ] No breaking changes (or properly documented)
 ```
 
-### Commit Messages
+### Commit messages
 
 We use [Conventional Commits](https://www.conventionalcommits.org/):
 
@@ -251,9 +253,9 @@ refactor(templates): improve Eta helper organization
 - `perf` - Performance improvements
 - `chore` - Maintenance tasks
 
-## Development Guidelines
+## Development guidelines
 
-### TypeScript Standards
+### TypeScript standards
 
 ```typescript
 // Use strict TypeScript
@@ -282,7 +284,7 @@ export async function build(config: StatiConfig, options: BuildOptions = {}): Pr
 }
 ```
 
-### Error Handling
+### Error handling
 
 Stati uses domain-specific error classes rather than a generic error class. Each error type captures relevant context for debugging:
 
@@ -330,7 +332,7 @@ export class DuplicateBundleNameError extends Error {
 - Provide actionable error messages that explain what went wrong and how to fix it
 - Use error codes (enums) for structured error identification where appropriate
 
-### Performance Considerations
+### Performance considerations
 
 Stati uses several patterns to optimize build performance:
 
@@ -398,7 +400,7 @@ await Promise.all(pendingWrites.map((w) => writeFile(w.outputPath, w.content, 'u
 - Batch I/O operations with `Promise.all` for parallel execution
 - Normalize paths before using as cache keys (`/` not `\`)
 
-## Release Process
+## Release process
 
 ### Versioning
 
@@ -439,14 +441,14 @@ Add ISG aging algorithm for cache TTL management
 
 ## Documentation
 
-### Writing Style
+### Writing style
 
 - **Clear and concise** explanations
 - **Code examples** for every concept
 - **Step-by-step** instructions
 - **Real-world** use cases
 
-### Documentation Structure
+### Documentation structure
 
 ````markdown
 # Page Title
@@ -461,24 +463,23 @@ Explanation with code example:
 // Code example
 const example = 'value';
 ```
-````
 
 ### Subsection
 
 More detailed information.
 
-## Best Practices
+## Best practices
 
 - Tip 1
 - Tip 2
 - Tip 3
 
-## Next Steps
+## Next steps
 
 Links to related documentation.
+````
 
-```text
-### API Documentation
+### API documentation
 
 Use TypeScript interfaces for API docs:
 
@@ -496,16 +497,16 @@ export interface StatiConfig {
   /** Template engine settings */
   templates?: TemplateConfig;
 }
-````
+```
 
 ## Community
 
-### Getting Help
+### Getting help
 
 - **GitHub Discussions** - Ask questions and share ideas
 - **GitHub Issues** - Report bugs and request features
 
-### Code of Conduct
+### Code of conduct
 
 We follow the [Contributor Covenant](https://www.contributor-covenant.org/):
 
@@ -522,14 +523,14 @@ Contributors are recognized in:
 - **Contributors** section in README
 - **All Contributors** bot acknowledgment
 
-## Getting Started Contributing
+## Getting started contributing
 
 1. **Browse Issues** - Look for "good first issue" labels
 2. **Join Discussions** - Introduce yourself and ask questions
 3. **Start Small** - Fix typos, add tests, improve docs
 4. **Ask for Help** - Don't hesitate to ask for guidance
 
-### Good First Issues
+### Good first issues
 
 - Documentation improvements
 - Test coverage additions

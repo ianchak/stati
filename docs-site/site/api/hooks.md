@@ -1,14 +1,14 @@
 ---
-title: 'Build Hooks'
+title: 'Build hooks'
 description: 'Learn how to use build hooks to customize the Stati build process.'
 order: 2
 ---
 
-# Build Hooks
+# Build hooks
 
 Build hooks allow you to inject custom logic at various stages of the Stati build process. They provide powerful extension points for preprocessing content, integrating external services, generating additional files, and customizing the build pipeline.
 
-## Hook Lifecycle
+## Hook lifecycle
 
 Stati executes hooks in the following order:
 
@@ -22,7 +22,7 @@ Stati executes hooks in the following order:
 7. afterAll     → Called once at build end
 ```
 
-## Hook Types
+## Hook types
 
 ### `beforeAll`
 
@@ -151,11 +151,11 @@ export default defineConfig({
 });
 ```
 
-## Hook Context
+## Hook context
 
 Each hook receives a context object with different properties:
 
-### `beforeAll` and `afterAll` Context
+### `beforeAll` and `afterAll` context
 
 ```typescript
 interface BuildContext {
@@ -164,7 +164,7 @@ interface BuildContext {
 }
 ```
 
-### `beforeRender` and `afterRender` Context
+### `beforeRender` and `afterRender` context
 
 ```typescript
 interface PageContext {
@@ -173,9 +173,9 @@ interface PageContext {
 }
 ```
 
-## Advanced Hook Patterns
+## Advanced hook patterns
 
-### External State Management
+### External state management
 
 Since hook contexts don't support shared state, use module-level state or external storage for sharing data between hooks:
 
@@ -207,7 +207,7 @@ export default defineConfig({
 });
 ```
 
-### Conditional Hook Execution
+### Conditional hook execution
 
 ```javascript
 export default defineConfig({
@@ -233,7 +233,7 @@ export default defineConfig({
 });
 ```
 
-### Error Handling in Hooks
+### Error handling in hooks
 
 ```javascript
 let fallbackData = null;
@@ -265,7 +265,7 @@ export default defineConfig({
 });
 ```
 
-### Async Hook Patterns
+### Async hook patterns
 
 ```javascript
 let sharedData = {};
@@ -294,9 +294,9 @@ export default defineConfig({
 });
 ```
 
-## Hook Utilities
+## Hook utilities
 
-### Page Filtering Helpers
+### Page filtering helpers
 
 ```javascript
 const isPost = (page) => page.frontMatter.type === 'post';
@@ -325,7 +325,7 @@ export default defineConfig({
 });
 ```
 
-### Content Processing Helpers
+### Content processing helpers
 
 ```javascript
 function extractHeadings(html) {
@@ -351,9 +351,9 @@ function calculateReadingTime(content) {
 }
 ```
 
-## Real-World Examples
+## Real-world examples
 
-### Blog with Related Posts
+### Blog with related posts
 
 ```javascript
 let allPosts = [];

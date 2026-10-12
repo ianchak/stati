@@ -1,14 +1,16 @@
 ---
-title: 'ISG Options'
+title: 'ISG'
 description: 'Configure Incremental Static Generation (ISG) for intelligent caching and selective rebuilds.'
 order: 5
+seo:
+  title: 'ISG configuration'
 ---
 
-# ISG Options
+# ISG
 
 Incremental Static Generation (ISG) is Stati's intelligent caching system that provides selective rebuilds by only regenerating content that has actually changed. Configure ISG to optimize your site's build workflow and deployment strategy.
 
-## Configuration Options
+## Configuration options
 
 Enable and configure ISG in your `stati.config.ts` (or `stati.config.js`):
 
@@ -28,7 +30,7 @@ export default defineConfig({
 });
 ```
 
-### Available Options
+### Available options
 
 | Option          | Type        | Default | Description                                           |
 | --------------- | ----------- | ------- | ----------------------------------------------------- |
@@ -37,7 +39,7 @@ export default defineConfig({
 | `maxAgeCapDays` | number      | `365`   | Maximum age in days for applying aging rules (1 year) |
 | `aging`         | AgingRule[] | `[]`    | Array of aging rules for progressive cache extension  |
 
-## TTL (Time To Live)
+## TTL (time to live)
 
 Setting `isg.enabled: false` renders every page on every build, regardless of
 existing cache entries. With caching enabled, a page is rebuilt if its HTML output
@@ -56,7 +58,7 @@ export default defineConfig({
 });
 ```
 
-### Common TTL Values
+### Common TTL values
 
 | Duration  | Seconds | Use Case                      |
 | --------- | ------- | ----------------------------- |
@@ -66,11 +68,11 @@ export default defineConfig({
 | 24 hours  | 86400   | Static documentation          |
 | 1 week    | 604800  | Rarely changing content       |
 
-## Aging Rules
+## Aging rules
 
 Aging rules allow you to progressively extend cache TTL based on content age. This is useful for keeping recent content fresh while caching older content longer.
 
-### How Aging Rules Work
+### How aging rules work
 
 Each aging rule specifies:
 
@@ -92,7 +94,7 @@ export default defineConfig({
 });
 ```
 
-### Practical Examples
+### Practical examples
 
 **News Site (Keep Recent Content Fresh):**
 
@@ -144,7 +146,7 @@ export default defineConfig({
 });
 ```
 
-## Maximum Age Cap
+## Maximum age cap
 
 The `maxAgeCapDays` option limits how old content can be before aging rules stop applying:
 
@@ -164,11 +166,11 @@ export default defineConfig({
 
 Content older than `maxAgeCapDays` will continue to use the last applicable aging rule's TTL.
 
-## Cache Invalidation
+## Cache invalidation
 
-Stati provides cache invalidation through the `stati invalidate` CLI command. See [CLI Commands](/cli/commands) for full documentation.
+Stati provides cache invalidation through the `stati invalidate` CLI command. See [CLI commands](/cli/commands) for full documentation.
 
-### Invalidation Patterns
+### Invalidation patterns
 
 | Pattern        | Example            | Description                                    |
 | -------------- | ------------------ | ---------------------------------------------- |
@@ -178,7 +180,7 @@ Stati provides cache invalidation through the `stati invalidate` CLI command. Se
 | `age:duration` | `age:1week`        | Invalidate entries rendered within time window |
 | (empty)        | `stati invalidate` | Clear entire cache                             |
 
-### CLI Examples
+### CLI examples
 
 ```bash
 # Clear all cache
@@ -203,7 +205,7 @@ stati invalidate "tag:blog age:1week"
 stati invalidate "tag:my blog" "path:/my path"
 ```
 
-### Age-Based Invalidation
+### Age-based invalidation
 
 The `age:` pattern uses exact calendar arithmetic for precise time calculations:
 
@@ -216,7 +218,7 @@ The `age:` pattern uses exact calendar arithmetic for precise time calculations:
 
 **Note:** Months and years use exact calendar arithmetic (accounting for varying month lengths and leap years), not approximate day counts.
 
-## Build Command Options
+## Build command options
 
 ISG can be controlled via CLI flags:
 
@@ -231,9 +233,9 @@ stati build --force
 stati build --clean
 ```
 
-## How ISG Works
+## How ISG works
 
-### Cache Manifest
+### Cache manifest
 
 ISG maintains a cache manifest at `.stati/cache/manifest.json` that tracks:
 
@@ -244,7 +246,7 @@ ISG maintains a cache manifest at `.stati/cache/manifest.json` that tracks:
 - **ttlSeconds**: Effective TTL for this page
 - **publishedAt**: ISO date when content was originally published (from front matter)
 
-### Rebuild Decision Logic
+### Rebuild decision logic
 
 A page is rebuilt if:
 
@@ -254,7 +256,7 @@ A page is rebuilt if:
 4. Page's TTL has expired
 5. Page matches an invalidation query
 
-### Template Dependency Tracking
+### Template dependency tracking
 
 ISG automatically tracks template dependencies:
 
@@ -262,7 +264,7 @@ ISG automatically tracks template dependencies:
 - Included partials (`<%~ include() %>` or `<%- include() %>`)
 - Changes to any dependency invalidate affected pages
 
-### Tag Extraction
+### Tag extraction
 
 Tags are extracted from the `tags` array in page front matter:
 
@@ -275,30 +277,30 @@ tags: [blog, tutorial, javascript]
 
 Only values in the `tags` array become searchable tags for invalidation. Individual properties like `category` are not automatically converted to tags.
 
-## Best Practices
+## Best practices
 
-### Cache Strategy
+### Cache strategy
 
 1. **Appropriate TTL**: Use shorter TTL (5-60 minutes) for frequently changing content, longer TTL (6-24 hours) for stable content
 2. **Aging Rules**: Define 2-4 aging rules that progressively extend TTL as content ages
 3. **Max Age Cap**: Set `maxAgeCapDays` to prevent indefinite cache growth (typically 30-365 days)
 4. **Tag Organization**: Use consistent, hierarchical tags in front matter for efficient invalidation
 
-### Development Workflow
+### Development workflow
 
 1. **Dev Mode**: Cache is cleared at dev server startup, then ISG is used for incremental rebuilds during watch mode
 2. **Test Builds**: Use `stati build` locally to test ISG behavior
 3. **Selective Invalidation**: Use `stati invalidate` with specific patterns during testing
 4. **Cache Inspection**: Review `.stati/cache/manifest.json` to understand cache state
 
-### Production Deployment
+### Production deployment
 
 1. **Persistent Cache**: Keep `.stati/cache/` in CI/CD between builds for efficient rebuilds
 2. **Invalidation Strategy**: Define clear invalidation patterns for content updates
 3. **Monitoring**: Track build times to measure ISG effectiveness
 4. **Cache Cleanup**: Periodically clear stale cache entries with `age:` invalidation
 
-### Build Tips
+### Build tips
 
 1. **Enable ISG**: ISG can reduce build times for incremental updates
 2. **Template Organization**: Keep partials small and focused to minimize invalidation scope
@@ -307,21 +309,21 @@ Only values in the `tags` array become searchable tags for invalidation. Individ
 
 ## Troubleshooting
 
-### Cache Not Working
+### Cache not working
 
 - Verify `isg.enabled: true` in config
 - Check that `.stati/cache/` directory exists
 - Review build output for cache hit/miss messages
 - Try `stati build --clean` to reset cache
 
-### Unexpected Rebuilds
+### Unexpected rebuilds
 
 - Check `inputsHash` in manifest for changed dependencies
 - Verify template partials aren't changing unintentionally
 - Review TTL settings - may be too short
 - Ensure file timestamps are stable in CI/CD
 
-### Invalidation Not Working
+### Invalidation not working
 
 - Verify tag names match front matter exactly (case-sensitive)
 - Check path patterns use correct syntax (`path:/prefix`, `glob:pattern/**`)

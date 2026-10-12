@@ -110,6 +110,17 @@
     text-rendering: optimizeLegibility;
   }
 
+  /* Code reads character for character: no Fira Code ligatures such as => */
+  code,
+  kbd,
+  samp,
+  pre {
+    font-feature-settings:
+      'liga' 0,
+      'calt' 0;
+    font-variant-ligatures: none;
+  }
+
   h1,
   h2,
   h3,

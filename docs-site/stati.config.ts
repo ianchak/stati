@@ -9,8 +9,8 @@ import 'prismjs/components/prism-markup-templating.js';
 import 'prismjs/components/prism-ejs.js';
 
 const DOCS_SECTIONS = [
-  { path: '/getting-started', title: 'Getting Started' },
-  { path: '/core-concepts', title: 'Core Concepts' },
+  { path: '/getting-started', title: 'Getting started' },
+  { path: '/core-concepts', title: 'Core concepts' },
   { path: '/configuration', title: 'Configuration' },
   { path: '/cli', title: 'CLI' },
   { path: '/api', title: 'API' },

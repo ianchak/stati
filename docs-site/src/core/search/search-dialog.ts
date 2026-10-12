@@ -208,7 +208,7 @@ function renderOption(doc: SearchDocument, query: string, index: number): HTMLLI
   if (heading) heading.innerHTML = highlight(doc.heading || doc.title, query);
 
   const breadcrumb = li.querySelector('[data-result-breadcrumb]');
-  if (breadcrumb) breadcrumb.textContent = doc.breadcrumb;
+  if (breadcrumb) breadcrumb.textContent = toSentenceCase(doc.breadcrumb);
 
   const snippet = li.querySelector('[data-result-snippet]');
   if (snippet) {
@@ -236,6 +236,24 @@ function setActive(index: number, scroll = true): void {
   }
 }
 
+/**
+ * Puts section crumbs in the sidebar's sentence case ("Getting Started" becomes
+ * "Getting started"). Acronyms and the page title, the last crumb, are kept.
+ */
+function toSentenceCase(breadcrumb: string): string {
+  const crumbs = breadcrumb.split(' > ');
+  return crumbs
+    .map((crumb, i) =>
+      i === crumbs.length - 1
+        ? crumb
+        : crumb.replace(
+            /(?!^)\b([A-Z])([a-z]+)\b/g,
+            (_, first: string, rest: string) => first.toLowerCase() + rest,
+          ),
+    )
+    .join(' > ');
+}
+
 /** Strips Markdown table pipes, rules and heading marks from indexed text. */
 function cleanText(text: string): string {
   return text
@@ -243,7 +261,7 @@ function cleanText(text: string): string {
     .replace(/\s*\|\s*/g, ' · ')
     .replace(/(^|\s)#{1,6}\s/g, ' ')
     .replace(/`/g, '')
-    .replace(/(\s·)+/g, ' ·')
+    .replace(/(\s*·)+/g, ' ·')
     .replace(/^\s*·\s*|\s*·\s*$/g, '')
     .replace(/\s{2,}/g, ' ')
     .trim();

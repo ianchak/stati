@@ -3,6 +3,7 @@ title: 'Introduction'
 description: 'Learn how to get started with Stati, the TypeScript-first static site generator.'
 order: 1
 seo:
+  title: 'Introduction to Stati'
   structuredData:
     "@context": "https://schema.org"
     "@type": "TechArticle"
@@ -16,7 +17,7 @@ seo:
     "proficiencyLevel": "Beginner"
 ---
 
-# Introduction to Stati
+# Introduction
 
 **Stati** is an open-source, TypeScript-first static site generator for documentation, blogs, and content-heavy websites. You write pages in Markdown and layouts in Eta templates; Stati turns them into plain static HTML.
 
@@ -52,11 +53,11 @@ Save it as `site/hello.md`, add a layout at `site/layout.eta`, and run `npx stat
 - **Built in, not bolted on**: search index, sitemap, robots.txt, RSS feeds, SEO metadata, build hooks and build metrics ship with Stati.
 - **Fast feedback**: a dev server with live reload, incremental rebuilds and an in-browser error overlay.
 
-## Quick Overview
+## Quick overview
 
 1. **[Installation](/getting-started/installation)** - Install Stati and create your first site
 2. **[Project Structure](/getting-started/project-structure)** - Understanding how Stati organizes your files
-3. **[Quick Start Guide](/getting-started/quick-start)** - Build your first site step by step
+3. **[Quick start](/getting-started/quick-start)** - Build your first site step by step
 
 ## Philosophy
 
@@ -69,9 +70,9 @@ Stati follows these core principles:
 
 Ready to get started? Head over to the [Installation guide](/getting-started/installation).
 
-## Related Topics
+## Related topics
 
 - [Installation](/getting-started/installation) – Install Stati and set up your environment
 - [Project Structure](/getting-started/project-structure) – Understanding how Stati organizes files
-- [Quick Start Guide](/getting-started/quick-start) – Build your first site step by step
-- [Core Concepts](/core-concepts/overview) – Deep dive into Stati's architecture
+- [Quick start](/getting-started/quick-start) – Build your first site step by step
+- [Core concepts](/core-concepts/overview) – Deep dive into Stati's architecture

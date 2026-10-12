@@ -1,16 +1,18 @@
 ---
-title: 'Overview'
+title: 'Example sites'
 description: 'Learn Stati by exploring examples and getting started templates.'
 order: 1
+seo:
+  title: 'Stati example sites'
 ---
 
-# Examples Overview
+# Example sites
 
 Learn Stati by exploring examples and real-world implementations. Currently, Stati provides a minimal template with a clear structure for getting started.
 
-## Available Examples
+## Available examples
 
-### Blank Template
+### Blank template
 
 A minimal Stati site demonstrating core concepts:
 
@@ -49,7 +51,7 @@ npm install
 npm run dev
 ```
 
-## Creating Your Own
+## Creating your own
 
 Use the scaffolder to create a new Stati project:
 
@@ -65,7 +67,7 @@ npm create stati my-site
 # - Package manager selection (npm, yarn, pnpm, bun)
 ```
 
-### Manual Setup
+### Manual setup
 
 Create a minimal Stati site manually:
 
@@ -92,19 +94,19 @@ export default defineConfig({
 });
 ```
 
-## Learning Resources
+## Learning resources
 
-- **Getting Started Guide** - [/getting-started/installation](/getting-started/installation)
+- **Getting started** - [/getting-started/installation](/getting-started/installation)
 - **Configuration Reference** - [/configuration/file](/configuration/file)
-- **CLI Commands** - [/cli/commands](/cli/commands)
+- **CLI commands** - [/cli/commands](/cli/commands)
 
-## Community Examples
+## Community examples
 
 As the Stati community grows, we'll showcase community-built examples here.
 
-## Development Patterns
+## Development patterns
 
-### Content Organization
+### Content organization
 
 ```text
 site/
@@ -116,7 +118,7 @@ site/
 └── layout.eta            # Site layout
 ```
 
-### Template Hierarchy
+### Template hierarchy
 
 ```text
 site/
@@ -129,7 +131,7 @@ site/
     └── guide.md          # Uses docs layout
 ```
 
-## Need Help?
+## Need help?
 
 - **Documentation** - Browse the full [Stati documentation](/)
 - **GitHub Issues** - [Report bugs or request features](https://github.com/ianchak/stati/issues)

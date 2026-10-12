@@ -25,7 +25,8 @@ Usage:
 Options:
   --template <name>        Template to use (blank)
   --styling <type>         CSS solution (css|sass|tailwind)
-  --typescript, --ts       Enable TypeScript support
+  --typescript, --ts       Use TypeScript (default)
+  --no-typescript, --no-ts Use JavaScript instead of TypeScript
   --no-git                 Skip git initialization (default: initializes Git)
   --no-install             Skip dependency installation (default: installs dependencies)
   --package-manager <pm>   Package manager to use (npm|yarn|pnpm|bun)
@@ -36,7 +37,7 @@ Options:
 Examples:
   create-stati my-site
   create-stati my-blog --styling=sass
-  create-stati my-app --typescript
+  create-stati my-app --no-typescript
   create-stati my-app --template=blank --styling=tailwind --package-manager=pnpm
   create-stati my-app --no-install --no-git
   create-stati my-app --agent-skill=github
@@ -65,6 +66,10 @@ Examples:
         case 'typescript':
         case 'ts':
           options.typescript = true;
+          break;
+        case 'no-typescript':
+        case 'no-ts':
+          options.typescript = false;
           break;
         case 'no-git':
           options.gitInit = false;
@@ -195,13 +200,13 @@ export async function runCLI(cliOptions?: Partial<CreateOptions> | null): Promis
   const hasRequiredPrompts = prompts.length > 0;
 
   // TypeScript prompt (only if not specified via flag AND we're in interactive mode)
-  // In non-interactive mode (all required options provided), default to false for backward compatibility
+  // In non-interactive mode (all required options provided), TypeScript is on unless --no-typescript is passed
   if (options.typescript === undefined && hasRequiredPrompts) {
     prompts.push({
       name: 'typescript',
       type: 'confirm',
-      message: 'Enable TypeScript support?',
-      default: false,
+      message: 'Use TypeScript?',
+      default: true,
     });
   }
 
@@ -281,7 +286,7 @@ export async function runCLI(cliOptions?: Partial<CreateOptions> | null): Promis
     projectName: options.projectName || answers.name?.trim() || 'my-stati-site',
     template: options.template || answers.template || 'blank',
     styling: options.styling || answers.styling || 'css',
-    typescript: options.typescript ?? answers.typescript ?? false,
+    typescript: options.typescript ?? answers.typescript ?? true,
     gitInit:
       options.gitInit !== undefined
         ? options.gitInit

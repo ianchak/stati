@@ -1,16 +1,18 @@
 ---
-title: 'Stati Configuration File'
+title: 'Configuration file'
 description: 'Learn how to configure Stati with the stati.config.js (or stati.config.ts) file and available options.'
 order: 1
+seo:
+  title: 'Stati configuration file'
 ---
 
-# Configuration File (`stati.config.ts`)
+# Configuration file
 
 Stati is designed to work great out of the box, but it's also highly configurable. The `stati.config.js` file (or `stati.config.ts` for TypeScript projects) is where you customize every aspect of your site's behavior, from basic metadata to advanced build optimizations.
 
-## Configuration File
+## Configuration file
 
-### Basic Setup
+### Basic setup
 
 Create `stati.config.js` in your project root:
 
@@ -26,7 +28,7 @@ export default defineConfig({
 });
 ```
 
-### TypeScript Configuration
+### TypeScript configuration
 
 For full type safety, use `stati.config.ts`:
 
@@ -56,9 +58,9 @@ const config: StatiConfig = {
 export default defineConfig(config);
 ```
 
-## Configuration Sections
+## Configuration sections
 
-### Site Metadata
+### Site metadata
 
 The foundation of your site configuration:
 
@@ -83,7 +85,7 @@ export default defineConfig({
 - `defaultLocale` (string) - Default locale for internationalization (e.g., 'en-US', 'fr-FR')
 - `description` (string) - Default site description for meta tags (used as fallback when page has no description)
 
-### Markdown Configuration
+### Markdown configuration
 
 Configure markdown processing with plugins and custom renderer modifications:
 
@@ -119,7 +121,7 @@ export default defineConfig({
 - `configure` (function) - Function that receives the markdown-it instance for custom configuration
 - `toc` (boolean) - Enable/disable TOC extraction and heading anchor generation (default: `true`)
 
-### Template Configuration
+### Template configuration
 
 Configure the Eta template engine:
 
@@ -169,7 +171,7 @@ export default defineConfig({
 <span><%= stati.upper(stati.slug(stati.page.title)) %></span>
 ```
 
-### ISG Configuration
+### ISG configuration
 
 Configure Incremental Static Generation for smart caching:
 
@@ -193,6 +195,7 @@ export default defineConfig({
     ],
   },
 });
+```
 
 **Available Options:**
 
@@ -213,7 +216,7 @@ aging: [
 ]
 ```
 
-### Development Server
+### Development server
 
 Configure the development server:
 
@@ -234,7 +237,7 @@ export default defineConfig({
 - `host` (string) - Host to bind to (default: 'localhost')
 - `open` (boolean) - Whether to open browser automatically (default: false)
 
-### Preview Server
+### Preview server
 
 Configure the preview server:
 
@@ -257,9 +260,9 @@ export default defineConfig({
 
 > **Note:** CLI options (e.g., `stati dev --port 8080` or `stati preview --port 8080`) take precedence over config file settings.
 
-## Advanced Configuration
+## Advanced configuration
 
-### Build Hooks
+### Build hooks
 
 Add custom logic at various stages of the build process:
 
@@ -317,7 +320,7 @@ interface PageContext {
 }
 ```
 
-### Multiple Configuration Files
+### Multiple configuration files
 
 You can split configuration across multiple files:
 
@@ -344,9 +347,9 @@ export default defineConfig({
 });
 ```
 
-## Best Practices
+## Best practices
 
-### Configuration Organization
+### Configuration organization
 
 1. **Keep it readable**
 
@@ -401,7 +404,7 @@ export default defineConfig({
    });
    ```
 
-## Multi-Environment Configuration
+## Multi-environment configuration
 
 Configure different settings for development, staging, and production:
 
@@ -461,7 +464,7 @@ export default defineConfig({
 });
 ```
 
-## Configuration Reference
+## Configuration reference
 
 For detailed information about specific configuration options, see:
 

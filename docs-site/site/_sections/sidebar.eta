@@ -16,7 +16,7 @@ const current = normalize(stati.page.url);
 const reference = [
   { url: '/faq', title: 'FAQ' },
   { url: '/glossary', title: 'Glossary' },
-  { url: '/information/ai-policy', title: 'AI & Content Policy' },
+  { url: '/information/ai-policy', title: 'AI and content policy' },
 ];
 %>
 <aside id="sidebar" class="fixed bottom-0 left-0 top-header z-40 w-[min(20rem,85vw)] -translate-x-full overflow-y-auto overscroll-contain border-r border-line bg-canvas transition-transform duration-200 ease-out data-[open=true]:translate-x-0 lg:sticky lg:z-auto lg:h-[calc(100vh-4rem)] lg:w-64 lg:flex-none lg:translate-x-0 lg:transition-none" aria-label="Documentation">

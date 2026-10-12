@@ -26,15 +26,15 @@ const total = inventory.groups.reduce((sum, group) => sum + group.items.length, 
                 <h3 class="border-b border-ink pb-3 text-sm font-semibold text-ink">
                     <%= group.title %>
                 </h3>
-                <ul>
+                <ul class="grid grid-cols-2 gap-x-4 sm:block">
                     <% group.items.forEach(item => { %>
                     <li class="border-b border-line">
-                        <a href="<%= item.href %>" class="group block py-3.5">
+                        <a href="<%= item.href %>" class="group block py-3 sm:py-3.5">
                             <span class="flex items-center justify-between gap-3 font-medium text-ink group-hover:text-accent-ink">
                                 <%= item.name %>
                                 <%~ stati.partials.icon({ name: 'arrow-right', size: 'xs', class: 'flex-none text-faint opacity-40 transition-[opacity,transform] duration-150 group-hover:translate-x-0.5 group-hover:text-accent-ink group-hover:opacity-100 group-focus-visible:opacity-100 [@media(hover:none)]:opacity-100' }) %>
                             </span>
-                            <span class="mt-1 block text-sm leading-6 text-muted"><%= item.text %></span>
+                            <span class="sr-only text-sm leading-6 text-muted sm:not-sr-only sm:mt-1 sm:block"><%= item.text %></span>
                         </a>
                     </li>
                     <% }) %>

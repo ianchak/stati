@@ -28,6 +28,7 @@ Recognized scaffolder flags:
 | `--template blank`                       | Checked version's only available scaffold template |
 | `--styling css\|sass\|tailwind`          | Styling installer choice                           |
 | `--typescript`, `--ts`                   | TS config/client scaffold and typecheck tooling    |
+| `--no-typescript`, `--no-ts`             | JavaScript scaffold (newer versions default to TS) |
 | `--no-git`                               | Skip Git initialization                            |
 | `--no-install`                           | Skip dependency installation                       |
 | `--package-manager npm\|yarn\|pnpm\|bun` | Choose installer                                   |

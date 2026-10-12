@@ -28,6 +28,25 @@ export function generateContentHash(content: string): string {
 }
 
 /**
+ * URL segments that read as acronyms and stay uppercase in breadcrumbs.
+ */
+const BREADCRUMB_ACRONYMS = new Set([
+  'ai',
+  'api',
+  'cli',
+  'css',
+  'faq',
+  'html',
+  'isg',
+  'json',
+  'rss',
+  'seo',
+  'ui',
+  'url',
+  'xml',
+]);
+
+/**
  * Builds a breadcrumb string from a URL path.
  *
  * @param url - Page URL path (e.g., '/getting-started/installation')
@@ -45,11 +64,15 @@ export function buildBreadcrumb(url: string, pageTitle: string): string {
     return pageTitle;
   }
 
-  // Convert slug segments to title case
+  // Convert slug segments to title case, keeping known acronyms uppercase
   const crumbs = segments.slice(0, -1).map((segment) =>
     segment
       .split('-')
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .map((word) =>
+        BREADCRUMB_ACRONYMS.has(word.toLowerCase())
+          ? word.toUpperCase()
+          : word.charAt(0).toUpperCase() + word.slice(1),
+      )
       .join(' '),
   );
 

@@ -1,14 +1,16 @@
 ---
-title: 'Template Settings'
+title: 'Templates'
 description: 'Configure custom template filters for the Eta template engine.'
 order: 3
+seo:
+  title: 'Template configuration'
 ---
 
-# Template Settings
+# Templates
 
 Stati uses the [Eta template engine](https://eta.js.org/) to process templates and layouts. Most Eta settings are hardcoded for reliability, but you can define custom filters to extend template functionality.
 
-## Configuration Options
+## Configuration options
 
 Stati's template engine configuration is minimal by design. The only configurable option is `eta.filters`:
 
@@ -27,11 +29,11 @@ export default defineConfig({
 });
 ```
 
-## Custom Filters
+## Custom filters
 
 Filters are functions that transform values in templates. They're useful for formatting dates, manipulating strings, or performing calculations.
 
-### Defining Filters
+### Defining filters
 
 ```javascript
 export default defineConfig({
@@ -91,7 +93,7 @@ export default defineConfig({
 });
 ```
 
-### Using Custom Filters
+### Using custom filters
 
 Access filters directly from the `stati` context:
 
@@ -113,7 +115,7 @@ Access filters directly from the `stati` context:
 <!-- Result: 3 days ago -->
 ```
 
-## Hardcoded Settings
+## Hardcoded settings
 
 The following Eta settings are hardcoded and cannot be configured:
 
@@ -123,9 +125,9 @@ The following Eta settings are hardcoded and cannot be configured:
 - **Caching**: Enabled in production, disabled in development
 - **File extension**: Always `.eta`
 
-## Advanced: Custom Filter Patterns
+## Advanced: Custom filter patterns
 
-### Chaining Filters
+### Chaining filters
 
 You can combine filters for complex transformations:
 
@@ -140,7 +142,7 @@ const titleSlug = (title) => stati.slugify(stati.lowercase(title));
 <a href="/posts/<%= titleSlug(stati.page.title) %>/"><%= stati.page.title %></a>
 ```
 
-### Conditional Filters
+### Conditional filters
 
 Apply filters based on conditions:
 
@@ -157,7 +159,7 @@ const displayDate = (date, format = 'short') => {
 <time><%= displayDate(stati.page.date, 'relative') %></time>
 ```
 
-### Filters with External Dependencies
+### Filters with external dependencies
 
 Import utilities in your config file for use in filters:
 
@@ -185,7 +187,7 @@ export default defineConfig({
 });
 ```
 
-## Filter Examples
+## Filter examples
 
 Here are practical filter examples you can use in your project:
 
@@ -280,7 +282,7 @@ export default defineConfig({
 });
 ```
 
-## Using Filters in Templates
+## Using filters in templates
 
 Once defined, filters are available directly in the `stati` context:
 
@@ -304,15 +306,15 @@ const postsByTag = stati.groupBy(posts, 'category');
 %>
 ```
 
-## TypeScript Bundle Access
+## TypeScript bundle access
 
 When TypeScript is enabled, Stati provides access to compiled bundle paths via `stati.assets.bundlePaths`. This is useful for preloading, custom script placement, or conditional rendering.
 
-### Auto-Injection (Default Behavior)
+### Auto-injection (default behavior)
 
 By default, Stati **automatically injects** all matched bundle scripts before the closing `</body>` tag. You don't need to add script tags manually - they're handled for you during both development and production builds.
 
-### Accessing Bundle Paths
+### Accessing bundle paths
 
 If you need to access bundle paths in your templates (for example, to preload modules or customize their placement), use `stati.assets.bundlePaths`:
 
@@ -327,7 +329,7 @@ If you need to access bundle paths in your templates (for example, to preload mo
 </head>
 ```
 
-### Conditional Rendering
+### Conditional rendering
 
 Check if any bundles are available before rendering:
 
@@ -345,7 +347,7 @@ Check if any bundles are available before rendering:
 <% } %>
 ```
 
-### Bundle Paths Array
+### Bundle paths array
 
 The `bundlePaths` array contains paths to all bundles matched for the current page based on your TypeScript configuration:
 
@@ -364,7 +366,7 @@ The `bundlePaths` array contains paths to all bundles matched for the current pa
 
 For more details on configuring multiple bundles, see [TypeScript Support](/configuration/typescript).
 
-## Best Practices
+## Best practices
 
 1. **Keep filters simple**: Each filter should do one thing well
 2. **Handle edge cases**: Check for null, undefined, and invalid inputs
@@ -372,7 +374,7 @@ For more details on configuring multiple bundles, see [TypeScript Support](/conf
 4. **Avoid side effects**: Filters should be pure functions
 5. **Document complex filters**: Add comments for non-obvious logic
 
-## Next Steps
+## Next steps
 
 - See [Templates & Layouts](/core-concepts/templates) for template usage
 - Learn about [built-in helpers](/api/templates) like `stati.propValue()`

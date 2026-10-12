@@ -159,7 +159,12 @@ describe('buildBreadcrumb', () => {
   });
 
   it('handles deep nesting', () => {
-    expect(buildBreadcrumb('/api/hooks/use-state', 'useState')).toBe('Api > Hooks > useState');
+    expect(buildBreadcrumb('/api/hooks/use-state', 'useState')).toBe('API > Hooks > useState');
+  });
+
+  it('keeps known acronyms uppercase', () => {
+    expect(buildBreadcrumb('/cli/commands', 'Commands')).toBe('CLI > Commands');
+    expect(buildBreadcrumb('/seo-guides/basics', 'Basics')).toBe('SEO Guides > Basics');
   });
 });
 
