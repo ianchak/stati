@@ -66,7 +66,7 @@ describe('CSSProcessor', () => {
       await mkdir(join(tempDir, 'public'), { recursive: true });
       await writeFile(
         join(tempDir, 'public', 'styles.css'),
-        'body { margin: 0; color: #007bff; background: #6c757d; }',
+        'body { margin: 0; color: #2563eb; background: #475569; }',
       );
     });
 
@@ -79,9 +79,9 @@ describe('CSSProcessor', () => {
       const scssContent = await readFile(join(tempDir, 'src', 'styles.scss'), 'utf-8');
 
       // Verify SCSS has variables and enhanced features
-      expect(scssContent).toContain('$primary-color: #007bff;');
-      expect(scssContent).toContain('$secondary-color: #6c757d;');
-      expect(scssContent).toContain('$font-stack: -apple-system');
+      expect(scssContent).toContain('$primary-color: #2563eb;');
+      expect(scssContent).toContain('$secondary-color: #475569;');
+      expect(scssContent).toContain('$font-stack: ui-sans-serif');
       expect(scssContent).toContain('@mixin responsive($breakpoint)');
       expect(scssContent).toContain('$primary-color'); // Variables are used
       expect(scssContent).toContain('$secondary-color');

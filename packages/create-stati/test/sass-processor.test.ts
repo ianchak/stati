@@ -6,9 +6,9 @@ describe('sass-processor', () => {
   describe('setupSass', () => {
     const sampleCSS = `body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  color: #007bff;
-  background: #6c757d;
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  color: #2563eb;
+  background: #475569;
 }
 
 @media (min-width: 768px) {
@@ -35,9 +35,9 @@ describe('sass-processor', () => {
       const scssContent = result.files.get('src/styles.scss');
 
       // Should have variable declarations
-      expect(scssContent).toContain('$primary-color: #007bff;');
-      expect(scssContent).toContain('$secondary-color: #6c757d;');
-      expect(scssContent).toContain('$font-stack: -apple-system');
+      expect(scssContent).toContain('$primary-color: #2563eb;');
+      expect(scssContent).toContain('$secondary-color: #475569;');
+      expect(scssContent).toContain('$font-stack: ui-sans-serif');
       expect(scssContent).toContain('$breakpoint-tablet: 768px;');
 
       // Should have mixins
@@ -82,8 +82,8 @@ describe('sass-processor', () => {
       const scssContent = result.files.get('src/styles.scss');
 
       // Should still have variable declarations
-      expect(scssContent).toContain('$primary-color: #007bff;');
-      expect(scssContent).toContain('$secondary-color: #6c757d;');
+      expect(scssContent).toContain('$primary-color: #2563eb;');
+      expect(scssContent).toContain('$secondary-color: #475569;');
 
       // Original CSS should be in the enhanced styles section
       expect(scssContent).toContain('body { margin: 0; padding: 10px; }');
@@ -94,20 +94,20 @@ describe('sass-processor', () => {
       const scssContent = result.files.get('src/styles.scss');
 
       // Should still have variable declarations and mixins
-      expect(scssContent).toContain('$primary-color: #007bff;');
+      expect(scssContent).toContain('$primary-color: #2563eb;');
       expect(scssContent).toContain('@mixin responsive($breakpoint)');
     });
 
     it('should replace multiple occurrences of color values', () => {
       const cssWithMultipleColors = `
-.primary { color: #007bff; }
-.secondary { color: #6c757d; }
-.highlight { background: #007bff; border-color: #007bff; }
+.primary { color: #2563eb; }
+.secondary { color: #475569; }
+.highlight { background: #2563eb; border-color: #2563eb; }
 `;
       const result = setupSass(cssWithMultipleColors);
       const scssContent = result.files.get('src/styles.scss');
 
-      // Count occurrences of the variable (should replace all #007bff occurrences)
+      // Count occurrences of the variable (should replace all #2563eb occurrences)
       const matches = scssContent?.match(/\$primary-color/g) || [];
       // 1 declaration + 3 usages (color, background, border-color)
       expect(matches.length).toBeGreaterThanOrEqual(4);

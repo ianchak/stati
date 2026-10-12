@@ -7,6 +7,10 @@
 import { DEPENDENCY_VERSIONS } from './constants.js';
 import type { ProcessorResultWithDeletions } from './types.js';
 
+/** Font stack used by the blank template's stylesheet */
+const FONT_STACK =
+  "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
+
 /**
  * Generate Sass setup files and dependencies.
  * Returns all files and configuration needed for Sass support.
@@ -51,16 +55,17 @@ export function setupSass(existingCSS: string): ProcessorResultWithDeletions {
  * @returns SCSS content with variables and mixins
  */
 function generateScssContent(existingCSS: string): string {
+  // Interpolate (#{...}) so the variables also work inside CSS custom properties
   const enhancedCSS = existingCSS
-    .replace(/#007bff/g, '$primary-color')
-    .replace(/#6c757d/g, '$secondary-color')
+    .replace(/#2563eb/gi, '#{$primary-color}')
+    .replace(/#475569/gi, '#{$secondary-color}')
     .replace(/768px/g, '$breakpoint-tablet')
-    .replace(/-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif/g, '$font-stack');
+    .replaceAll(FONT_STACK, '#{$font-stack}');
 
   return `// Variables
-$primary-color: #007bff;
-$secondary-color: #6c757d;
-$font-stack: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+$primary-color: #2563eb;
+$secondary-color: #475569;
+$font-stack: ${FONT_STACK};
 $breakpoint-tablet: 768px;
 
 // Mixins
