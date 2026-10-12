@@ -1,5 +1,11 @@
 # create-stati
 
+## 1.14.2
+
+### Patch Changes
+
+- 4b0bd14: Align the CLI and scaffolded starter dependencies with the latest Stati package versions (`@stati/core` 1.24.5, `@stati/cli` 1.14.2).
+
 ## 1.14.1
 
 ### Patch Changes
