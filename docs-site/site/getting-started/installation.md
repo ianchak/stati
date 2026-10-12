@@ -53,7 +53,7 @@ Here are the available options:
 | `--no-git` | Skips Git initialization (default: initializes Git). |
 | `--no-install` | Skips dependency installation (default: installs dependencies). |
 | `--package-manager` | Specifies the package manager to use (`npm`, `yarn`, `pnpm`, or `bun`). |
-| `--template` | Specifies a project template to use (currently only `blank` is available). |
+| `--template` | Specifies a project template to use (`blank` or `blog`). |
 
 ### TypeScript by default
 

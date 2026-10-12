@@ -208,6 +208,32 @@ describe('create-stati CLI', () => {
       expect(result).toEqual({ projectName: 'test-project', agentSkill: false });
     });
 
+    it('should parse --template=blog', async () => {
+      const result = await parseArgs(['my-blog', '--template=blog']);
+
+      expect(result).toEqual({ projectName: 'my-blog', template: 'blog' });
+    });
+
+    it('should parse a space-separated template name', async () => {
+      const result = await parseArgs(['my-blog', '--template', 'blog']);
+
+      expect(result).toEqual({ projectName: 'my-blog', template: 'blog' });
+    });
+
+    it('should exit with error for an unknown template', async () => {
+      const mockExit = vi
+        .spyOn(process, 'exit')
+        .mockImplementation((code?: string | number | null | undefined) => {
+          throw new Error(`process.exit: ${code}`);
+        });
+
+      await expect(parseArgs(['test-project', '--template=docs'])).rejects.toThrow(
+        'process.exit: 1',
+      );
+
+      mockExit.mockRestore();
+    });
+
     it('should exit with error for invalid agent skill target', async () => {
       const mockExit = vi
         .spyOn(process, 'exit')

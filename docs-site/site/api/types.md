@@ -570,8 +570,8 @@ export interface CreateOptions {
   /** Name of the project to create */
   projectName: string;
 
-  /** Template to use (currently only 'blank' is supported) */
-  template: 'blank';
+  /** Template to use */
+  template: 'blank' | 'blog';
 
   /** CSS solution to use */
   styling: 'css' | 'sass' | 'tailwind';

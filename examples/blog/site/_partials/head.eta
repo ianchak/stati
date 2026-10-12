@@ -1,0 +1,17 @@
+<%
+  /* Shared <head>. Stati's SEO auto-injection adds the description, canonical URL,
+     Open Graph, Twitter and JSON-LD tags; see the seo block in stati.config.js. */
+  const isHome = stati.page.url === '/';
+  const pageTitle = isHome || !stati.page.title ? stati.site.title : `${stati.page.title} · ${stati.site.title}`;
+%>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= pageTitle %></title>
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0f1513" media="(prefers-color-scheme: dark)" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="preload" href="/fonts/young-serif.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="alternate" type="application/rss+xml" title="<%= `${stati.site.title} (RSS)` %>" href="/feed.xml" />
+</head>

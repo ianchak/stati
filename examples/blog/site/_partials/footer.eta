@@ -1,0 +1,12 @@
+<footer class="site-footer">
+  <div class="wrapper">
+    <div class="footer-inner">
+      <p>&copy; <%= new Date().getFullYear() %> <a href="<%= stati.site.author?.url ?? '/about' %>"><%= stati.site.author?.name ?? stati.site.title %></a></p>
+      <p>
+        <a href="/feed.xml">RSS feed</a>
+        <span aria-hidden="true">·</span>
+        Built with <a href="https://stati.build">Stati</a>
+      </p>
+    </div>
+  </div>
+</footer>

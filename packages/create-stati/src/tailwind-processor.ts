@@ -5,12 +5,15 @@
  */
 
 import { DEPENDENCY_VERSIONS } from './constants.js';
-import type { ProcessorResult } from './types.js';
+import type { ProcessorResultWithDeletions } from './types.js';
 
 /**
  * Generate Tailwind CSS setup files and dependencies.
  * Returns all files and configuration needed for Tailwind support.
  *
+ * @param templateCSS - The template's own stylesheet. When given, it is carried over
+ *   below the Tailwind directives (and public/styles.css is removed) instead of
+ *   replacing the template's design with Tailwind starter styles.
  * @returns Processor result with files, dependencies, and scripts
  *
  * @example
@@ -21,11 +24,14 @@ import type { ProcessorResult } from './types.js';
  * // tailwindSetup.scripts contains: { 'build:css': '...', dev: '...', build: '...' }
  * ```
  */
-export function setupTailwind(): ProcessorResult {
+export function setupTailwind(templateCSS?: string): ProcessorResultWithDeletions {
   return {
     files: new Map([
       ['tailwind.config.js', generateTailwindConfig()],
-      ['src/styles.css', generateTailwindCSS()],
+      [
+        'src/styles.css',
+        templateCSS === undefined ? generateTailwindCSS() : wrapTemplateCSS(templateCSS),
+      ],
     ]),
     devDependencies: {
       tailwindcss: DEPENDENCY_VERSIONS.tailwindcss,
@@ -37,7 +43,23 @@ export function setupTailwind(): ProcessorResult {
       build: 'stati build && npm run build:css',
       dev: 'stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css',
     },
+    ...(templateCSS !== undefined && { filesToDelete: ['public/styles.css'] }),
   };
+}
+
+/**
+ * Put Tailwind's directives above a template's own stylesheet.
+ * The template styles stay unlayered, so they win over Tailwind's preflight
+ * while utility classes remain available in templates.
+ */
+function wrapTemplateCSS(templateCSS: string): string {
+  return `@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* The template's styles follow. Tailwind utilities can be used in templates alongside them. */
+
+${templateCSS}`;
 }
 
 /**

@@ -19,6 +19,9 @@ npm create stati my-site
 # Non-interactive with options
 npm create stati my-site --template=blank --styling=tailwind
 
+# A ready-to-write blog
+npm create stati my-blog --template=blog
+
 # JavaScript instead of TypeScript
 npm create stati my-site --no-typescript
 ```
@@ -26,7 +29,7 @@ npm create stati my-site --no-typescript
 Running the scaffolder will:
 
 - Create a new project directory
-- Copy the blank starter template files into that directory
+- Copy the chosen template's files into that directory
 - Update `package.json` with your project name and Stati metadata
 - Set up optional styling scripts based on the chosen styling option
 - Optionally install the Stati agent skill for AI coding assistants
@@ -55,7 +58,7 @@ The scaffolder will prompt you for:
 npx create-stati <project-name> [options]
 
 Options:
-  --template <name>        Template to use (currently: blank)
+  --template <name>        Template to use (blank|blog)
   --styling <type>         CSS solution (css|sass|tailwind)
   --typescript, --ts       Use TypeScript (default)
   --no-typescript, --no-ts Use JavaScript instead of TypeScript
@@ -86,11 +89,12 @@ npm create stati my-site --agent-skill=github
 
 ## Project templates
 
-### Blank template
-
-Currently, Stati provides one template:
+Stati provides two templates:
 
 - **blank** - Minimal starter with basic structure and example content
+- **blog** - A complete blog with posts, tags, an archive, an RSS feed and SEO metadata
+
+### Blank template
 
 **What's included:**
 
@@ -99,6 +103,22 @@ Currently, Stati provides one template:
 - One stylesheet with light and dark themes; colors and fonts are CSS custom properties
 - Configuration file with sensible defaults
 - Package.json with development scripts
+
+### Blog template
+
+A blog that works on first run. Its sample posts explain how each part of it works, so you can read them, then replace them with your own.
+
+**What's included:**
+
+- Markdown posts in `site/posts/`, listed newest first on the home page
+- A tags page and a yearly archive, plus newer, older and related posts under every post
+- An RSS feed, a sitemap and `robots.txt`
+- Open Graph and Twitter tags, and `BlogPosting` structured data on every post
+- Drafts that stay out of the build until you publish them, and a 404 page
+- Light and dark themes with a self-hosted display face, styled from custom properties
+- `helpers/blog.js`, which builds the post index in the `beforeAll` hook and exposes it to templates as filters such as `stati.blogPosts()` and `stati.blogTags()`
+
+The blog template ships its own `stati.config.js` with the feed, sitemap and SEO settings. With TypeScript it becomes `stati.config.ts`; with Sass or Tailwind its stylesheet is carried over into `src/` so the design stays intact.
 
 ## Styling solutions
 
@@ -111,7 +131,7 @@ Choose your preferred styling approach:
 
 ### Sass
 
-- Creates `src/styles.scss` from the starter stylesheet, with `$primary-color`, `$font-stack` and a breakpoint as Sass variables
+- Creates `src/styles.scss` from the template's stylesheet, with `$primary-color`, `$font-stack` and a breakpoint as Sass variables
 - SCSS support with build scripts
 - Automatic compilation during development and build
 - Scripts added: `build:css`, `watch:css`
@@ -120,7 +140,7 @@ Choose your preferred styling approach:
 ### Tailwind CSS
 
 - Generates `tailwind.config.js` with content paths for `site/**/*.{md,eta,html}` and `.stati/tailwind-classes.html`
-- Creates source stylesheet at `src/styles.css` compiled directly to `dist/styles.css`; it rebuilds the starter's look with `@apply`, Tailwind's slate and blue palette and `dark:` variants
+- Creates source stylesheet at `src/styles.css` compiled directly to `dist/styles.css`; for the blank template it rebuilds the starter's look with `@apply`, Tailwind's slate and blue palette and `dark:` variants, and for the blog template it keeps the blog's own stylesheet below the Tailwind directives
 - Scripts added: `build:css`
 - Modified scripts:
   - `dev`: Uses Stati's built-in Tailwind integration (single process)

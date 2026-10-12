@@ -17,7 +17,7 @@ npx create-stati
 The interactive wizard will guide you through:
 
 1. **Project name** - What to call your site
-2. **Template** - Starting point (currently: blank)
+2. **Template** - Starting point: blank, or a complete blog
 3. **CSS solution** - Plain CSS, Sass, or Tailwind
 4. **TypeScript** - On by default; answer no for a JavaScript project
 5. **Agent skill** - Optional Stati skill for AI coding assistants
@@ -37,7 +37,7 @@ npx create-stati my-site --template=blank --styling=tailwind --git
 
 **Available flags:**
 
-- `--template <name>` - Template to use (currently: `blank`)
+- `--template <name>` - Template to use (`blank` | `blog`)
 - `--styling <type>` - CSS solution (`css` | `sass` | `tailwind`)
 - `--typescript`, `--ts` - Use TypeScript (default)
 - `--no-typescript`, `--no-ts` - Use JavaScript instead of TypeScript
@@ -147,6 +147,18 @@ create-stati can copy the [Stati agent skill](https://github.com/ianchak/stati/t
 | `agents`           | `.agents/skills/stati/` | Tools using the `.agents` convention   |
 
 In interactive mode you're asked where to install it. In non-interactive mode it is only installed when `--agent-skill` is passed. Invoke it in Claude Code with `/stati`.
+
+---
+
+## The Blog Template
+
+A complete blog that works on first run: Markdown posts, a tags page, a yearly archive, newer, older and related posts, an RSS feed, a sitemap, `robots.txt`, Open Graph and `BlogPosting` metadata, drafts and a 404 page. The sample posts explain how each part works.
+
+```bash
+npx create-stati my-blog --template=blog
+```
+
+The blog ships its own `stati.config.js`; with TypeScript it becomes `stati.config.ts`, and with Sass or Tailwind its stylesheet moves into `src/` so the design stays intact.
 
 ---
 

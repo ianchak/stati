@@ -37,7 +37,7 @@ npx create-stati my-first-site
 The scaffolder asks, in order:
 
 - **Project name** - Skipped when you pass one, as above
-- **Template** - Blank, a minimal starter (the only template for now)
+- **Template** - Blank, a minimal starter, or Blog, a complete blog with tags, an archive and an RSS feed
 - **CSS solution** - Plain CSS, Sass/SCSS, or Tailwind CSS
 - **TypeScript** - On by default, for a typed `stati.config.ts` and client TypeScript bundles; answer no for JavaScript
 - **Agent skill** - Optionally install the Stati skill for Claude Code or GitHub Copilot

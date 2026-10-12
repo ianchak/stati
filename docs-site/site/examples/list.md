@@ -8,7 +8,7 @@ seo:
 
 # Example sites
 
-Learn Stati by exploring examples and real-world implementations. Currently, Stati provides a minimal template with a clear structure for getting started.
+Learn Stati by exploring examples and real-world implementations. Stati provides two starter templates: a minimal one for any kind of site, and a complete blog.
 
 ## Available examples
 
@@ -49,6 +49,40 @@ npx create-stati my-site
 ```
 
 The [quick start](/getting-started/quick-start) walks through the prompts and the first edits. To set up a project without the scaffolder, see [Manual installation](/getting-started/installation#manual-installation).
+
+### Blog template
+
+A complete blog, ready to write in:
+
+- **Location:** [`examples/blog/`](https://github.com/ianchak/stati/tree/main/examples/blog)
+- **Features:** Posts with tags, a yearly archive, newer, older and related posts, an RSS feed, a sitemap, `robots.txt`, Open Graph and `BlogPosting` metadata, drafts and a 404 page. The sample posts explain how each part works.
+- **Best for:** Starting a personal or team blog, and seeing how hooks and filters share data across pages
+
+<figure>
+  <img class="dark:hidden" src="/images/blog-template-light.webp" alt="The blog starter's homepage: the blog name and navigation, a large Hi, this is your new blog heading in a serif display face, and a dated list of posts with descriptions." width="1120" height="716" loading="lazy" />
+  <img class="hidden dark:block" src="/images/blog-template-dark.webp" alt="The blog starter's homepage in its dark theme: the blog name and navigation, a large Hi, this is your new blog heading in a serif display face, and a dated list of posts with descriptions." width="1120" height="716" loading="lazy" />
+  <figcaption>The blog starter homepage, in the theme that matches your system setting.</figcaption>
+</figure>
+
+**Key Files:**
+
+```text
+examples/blog/
+├── helpers/blog.js       # Post index, listing filters and article SEO
+├── site/
+│   ├── _partials/        # Head, header, footer, post lists, tag links
+│   ├── posts/            # One Markdown file per post, plus the post layout
+│   ├── layout.eta        # Layout for home, archive, tags, about and 404
+│   └── *.md              # Home, archive, tags, about and 404 pages
+├── public/               # Styles, self-hosted font, ornament, social card
+└── stati.config.js       # Name, author, header links, feed, sitemap, SEO
+```
+
+**Start from it:**
+
+```bash
+npx create-stati my-blog --template=blog
+```
 
 ## Learning resources
 

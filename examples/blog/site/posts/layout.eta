@@ -1,0 +1,78 @@
+<%
+  /* Layout for every post in site/posts/. Shares head, header and footer with
+     site/layout.eta through the partials in site/_partials/. */
+  const url = stati.page.url;
+  const tags = Array.isArray(stati.page.tags) ? stati.page.tags : [];
+  const published = stati.page.publishedAt ?? stati.page.date;
+  const updated = stati.page.updated;
+  const { newer, older } = stati.adjacentPosts(url);
+  const related = stati.relatedPosts(url, 3);
+  const author = stati.site.author;
+%>
+<!DOCTYPE html>
+<html lang="<%= stati.site.defaultLocale || 'en' %>">
+  <%~ stati.partials.head %>
+  <body>
+    <a href="#main" class="skip-link">Skip to content</a>
+    <%~ stati.partials.header %>
+
+    <main id="main" class="wrapper">
+      <article class="post">
+        <header class="post-header">
+          <h1 style="<%= `view-transition-name: post${url.replace(/[^a-z0-9]+/gi, '-')}` %>"><%= stati.page.title %></h1>
+          <div class="post-meta">
+            <% if (published) { %>
+              <time datetime="<%= stati.isoDate(published) %>"><%= stati.formatDate(published, 'long') %></time>
+            <% } %>
+            <% if (updated) { %>
+              <span>Updated <time datetime="<%= stati.isoDate(updated) %>"><%= stati.formatDate(updated, 'long') %></time></span>
+            <% } %>
+            <% if (stati.page.draft) { %><span class="draft-label">Draft</span><% } %>
+            <%~ stati.partials['tag-links']({ tags, label: 'Tags for this post' }) %>
+          </div>
+        </header>
+
+        <div class="prose post-body"><%~ stati.content %></div>
+
+        <footer class="post-footer">
+          <div class="end-mark" aria-hidden="true"></div>
+          <% if (author) { %>
+          <section class="author-note" aria-label="About the author">
+            <p>
+              <strong><a href="<%= author.url ?? '/about' %>"><%= author.name %></a></strong>
+              <% if (author.bio) { %><%= author.bio %><% } %>
+            </p>
+            <p class="subscribe">New posts arrive in your reader through the <a href="/feed.xml">RSS feed</a>.</p>
+          </section>
+          <% } %>
+        </footer>
+      </article>
+
+      <% if (newer || older) { %>
+      <nav class="post-pager" aria-label="Newer and older posts">
+        <% if (newer) { %>
+          <a class="pager-newer" href="<%= newer.url %>" rel="prev">
+            <span class="pager-label">Newer</span>
+            <span class="pager-title"><%= newer.title %></span>
+          </a>
+        <% } %>
+        <% if (older) { %>
+          <a class="pager-older" href="<%= older.url %>" rel="next">
+            <span class="pager-label">Older</span>
+            <span class="pager-title"><%= older.title %></span>
+          </a>
+        <% } %>
+      </nav>
+      <% } %>
+
+      <% if (related.length > 0) { %>
+      <section class="listing related" aria-labelledby="related-heading">
+        <h2 id="related-heading" class="listing-heading">Related posts</h2>
+        <%~ stati.partials['post-list']({ posts: related }) %>
+      </section>
+      <% } %>
+    </main>
+
+    <%~ stati.partials.footer %>
+  </body>
+</html>

@@ -76,5 +76,20 @@ describe('tailwind-processor', () => {
       expect(result1.devDependencies).toEqual(result2.devDependencies);
       expect(result1.scripts).toEqual(result2.scripts);
     });
+
+    it('should carry a template stylesheet over below the Tailwind directives', () => {
+      const templateCSS = ':root {\n  --accent: #0f7b6c;\n}\n';
+      const result = setupTailwind(templateCSS);
+
+      const cssContent = result.files.get('src/styles.css');
+      expect(cssContent).toMatch(/^@tailwind base;\n@tailwind components;\n@tailwind utilities;/);
+      expect(cssContent).toContain(templateCSS);
+      expect(cssContent).not.toContain('@layer components');
+      expect(result.filesToDelete).toEqual(['public/styles.css']);
+    });
+
+    it('should not delete anything when generating starter styles', () => {
+      expect(setupTailwind().filesToDelete).toBeUndefined();
+    });
   });
 });

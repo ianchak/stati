@@ -1,0 +1,28 @@
+<%
+  /* A dated list of posts.
+     Props:
+       posts         array from stati.blogPosts() (required)
+       descriptions  true shows each post's description under its title
+       dateStyle     'short' (default), 'long' or 'day' (no year, for lists grouped by year)
+       transition    true animates the title into the post page (only where each post is listed once) */
+  if (!stati.props || !stati.props.posts) { return; }
+  const dateStyle = stati.props.dateStyle ?? 'short';
+%>
+<ol class="post-list" role="list">
+  <% for (const post of stati.props.posts) { %>
+  <li class="post-row">
+    <time datetime="<%= stati.isoDate(post.date) %>"><%= post.date ? stati.formatDate(post.date, dateStyle) : 'Undated' %></time>
+    <div>
+      <% if (stati.props.transition) { %>
+      <a class="post-row-title" href="<%= post.url %>" style="<%= `view-transition-name: post${post.url.replace(/[^a-z0-9]+/gi, '-')}` %>"><%= post.title %></a>
+      <% } else { %>
+      <a class="post-row-title" href="<%= post.url %>"><%= post.title %></a>
+      <% } %>
+      <% if (post.draft) { %><span class="draft-label">Draft</span><% } %>
+      <% if (stati.props.descriptions && post.description) { %>
+      <p><%= post.description %></p>
+      <% } %>
+    </div>
+  </li>
+  <% } %>
+</ol>

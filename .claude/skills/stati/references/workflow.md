@@ -25,7 +25,7 @@ Recognized scaffolder flags:
 
 | Flag                                     | Meaning                                            |
 | ---------------------------------------- | -------------------------------------------------- |
-| `--template blank`                       | Checked version's only available scaffold template |
+| `--template blank\|blog`                 | Minimal starter, or a complete blog                |
 | `--styling css\|sass\|tailwind`          | Styling installer choice                           |
 | `--typescript`, `--ts`                   | TS config/client scaffold and typecheck tooling    |
 | `--no-typescript`, `--no-ts`             | JavaScript scaffold (newer versions default to TS) |

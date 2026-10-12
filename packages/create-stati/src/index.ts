@@ -4,6 +4,7 @@ import { createSite, detectAvailablePackageManagers, ALLOWED_PACKAGE_MANAGERS } 
 import type { CreateOptions, PackageManager } from './create.js';
 import { log } from './utils/index.js';
 import { AGENT_SKILL_TARGETS, isValidAgentSkillTarget } from './agent-skill.js';
+import { TEMPLATE_NAMES, isValidTemplate } from './examples.js';
 
 /**
  * Validate that a string is a valid package manager
@@ -23,7 +24,7 @@ Usage:
   create-stati [project-name] [options]
 
 Options:
-  --template <name>        Template to use (blank)
+  --template <name>        Template to use (blank|blog)
   --styling <type>         CSS solution (css|sass|tailwind)
   --typescript, --ts       Use TypeScript (default)
   --no-typescript, --no-ts Use JavaScript instead of TypeScript
@@ -36,7 +37,8 @@ Options:
 
 Examples:
   create-stati my-site
-  create-stati my-blog --styling=sass
+  create-stati my-blog --template=blog
+  create-stati my-site --styling=sass
   create-stati my-app --no-typescript
   create-stati my-app --template=blank --styling=tailwind --package-manager=pnpm
   create-stati my-app --no-install --no-git
@@ -57,9 +59,18 @@ Examples:
       const [key, value] = arg.substring(2).split('=');
 
       switch (key) {
-        case 'template':
-          options.template = (value || args[++i]) as 'blank';
+        case 'template': {
+          const templateValue = value || args[++i];
+          if (isValidTemplate(templateValue)) {
+            options.template = templateValue;
+          } else {
+            log.error(
+              `Invalid template: '${templateValue ?? ''}'. Allowed values: ${TEMPLATE_NAMES.join(', ')}`,
+            );
+            process.exit(1);
+          }
           break;
+        }
         case 'styling':
           options.styling = (value || args[++i]) as 'css' | 'sass' | 'tailwind';
           break;
@@ -175,6 +186,11 @@ export async function runCLI(cliOptions?: Partial<CreateOptions> | null): Promis
           name: 'Blank - Minimal starter template',
           value: 'blank',
           short: 'Blank',
+        },
+        {
+          name: 'Blog - Posts, tags, archive, RSS feed and SEO, ready to write',
+          value: 'blog',
+          short: 'Blog',
         },
       ],
       default: 'blank',
