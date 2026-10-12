@@ -1,0 +1,20 @@
+<%
+  /* Previous and next pages in sidebar order, across sections. */
+  const { prev, next } = stati.docsPager(stati.page.url);
+%>
+<% if (prev || next) { %>
+<nav class="pager" aria-label="Previous and next pages">
+  <% if (prev) { %>
+  <a class="pager-link pager-prev" href="<%= prev.url %>" rel="prev">
+    <span class="pager-hint"><%~ stati.partials.icon({ name: 'arrow-left', size: 14 }) %> Previous</span>
+    <span class="pager-title"><%= prev.title %></span>
+  </a>
+  <% } %>
+  <% if (next) { %>
+  <a class="pager-link pager-next" href="<%= next.url %>" rel="next">
+    <span class="pager-hint">Next <%~ stati.partials.icon({ name: 'arrow-right', size: 14 }) %></span>
+    <span class="pager-title"><%= next.title %></span>
+  </a>
+  <% } %>
+</nav>
+<% } %>

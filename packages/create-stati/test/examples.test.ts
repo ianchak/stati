@@ -39,9 +39,17 @@ describe('ExampleManager', () => {
     it('should list the blog template with its own config and styles', async () => {
       const examples = await exampleManager.getAvailableExamples();
 
-      expect(examples.map((example) => example.name)).toEqual(['blank', 'blog']);
+      expect(examples.map((example) => example.name)).toEqual(['blank', 'blog', 'docs']);
       expect(examples[1]).toEqual(
         expect.objectContaining({ name: 'blog', ownConfig: true, ownStyles: true }),
+      );
+    });
+
+    it('should list the docs template with its own config and styles', async () => {
+      const examples = await exampleManager.getAvailableExamples();
+
+      expect(examples[2]).toEqual(
+        expect.objectContaining({ name: 'docs', ownConfig: true, ownStyles: true }),
       );
     });
 
@@ -61,7 +69,8 @@ describe('ExampleManager', () => {
     it('should accept known template names only', () => {
       expect(isValidTemplate('blank')).toBe(true);
       expect(isValidTemplate('blog')).toBe(true);
-      expect(isValidTemplate('docs')).toBe(false);
+      expect(isValidTemplate('docs')).toBe(true);
+      expect(isValidTemplate('portfolio')).toBe(false);
       expect(isValidTemplate('toString')).toBe(false);
       expect(isValidTemplate(undefined)).toBe(false);
     });

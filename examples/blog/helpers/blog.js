@@ -1,9 +1,10 @@
 /**
  * Blog helpers for Stati.
  *
- * Stati renders one page at a time, so a page cannot see its siblings on its
- * own. This module builds an index of every post in the `beforeAll` hook and
- * exposes it to templates as filters (`stati.blogPosts()`, `stati.blogTags()`,
+ * Templates can read the navigation tree as `stati.nav`, but its nodes only
+ * carry a title, URL, order and date. Listings also need each post's
+ * description, tags and draft state, so this module builds an index of every
+ * post in the `beforeAll` hook and exposes it to templates as filters (`stati.blogPosts()`, `stati.blogTags()`,
  * and so on). The same hook fills in article SEO metadata.
  *
  * You normally only edit `stati.config.js`. Change this file when you want

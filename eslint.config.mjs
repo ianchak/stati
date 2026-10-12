@@ -103,6 +103,27 @@ export default [
       },
     },
   },
+  // Browser globals for client-side scripts shipped by the starter templates
+  {
+    files: ['examples/*/public/**/*.js'],
+    languageOptions: {
+      globals: {
+        document: 'readonly',
+        window: 'readonly',
+        navigator: 'readonly',
+        localStorage: 'readonly',
+        fetch: 'readonly',
+        requestAnimationFrame: 'readonly',
+        cancelAnimationFrame: 'readonly',
+        Element: 'readonly',
+        HTMLElement: 'readonly',
+        HTMLAnchorElement: 'readonly',
+        HTMLDialogElement: 'readonly',
+        HTMLInputElement: 'readonly',
+        HTMLUListElement: 'readonly',
+      },
+    },
+  },
   // More restrictive for tests - only error/warn allowed
   {
     files: ['**/*.test.{ts,tsx,js}', '**/__tests__/**/*.{ts,tsx,js}'],

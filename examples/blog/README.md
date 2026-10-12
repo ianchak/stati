@@ -73,7 +73,7 @@ It appears on the home page, in the archive, under its tags and in the feed. Add
 
 ## How listings work
 
-Stati renders one page at a time, so `helpers/blog.js` builds an index of every post in the `beforeAll` hook and hands it to templates as filters: `stati.blogPosts()`, `stati.blogTags()`, `stati.postsByYear()`, `stati.adjacentPosts(url)`, `stati.relatedPosts(url)`, `stati.tagUrl(name)` and `stati.formatDate(date)`. A page asks for a generated list with `listing: latest`, `archive` or `tags` in its front matter.
+Templates can read Stati's navigation tree as `stati.nav`, but its nodes only carry a title, URL, order and date. Listings also need descriptions and tags, so `helpers/blog.js` builds an index of every post in the `beforeAll` hook and hands it to templates as filters: `stati.blogPosts()`, `stati.blogTags()`, `stati.postsByYear()`, `stati.adjacentPosts(url)`, `stati.relatedPosts(url)`, `stati.tagUrl(name)` and `stati.formatDate(date)`. A page asks for a generated list with `listing: latest`, `archive` or `tags` in its front matter.
 
 ## Before you deploy
 

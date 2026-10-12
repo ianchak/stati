@@ -571,7 +571,7 @@ export interface CreateOptions {
   projectName: string;
 
   /** Template to use */
-  template: 'blank' | 'blog';
+  template: 'blank' | 'blog' | 'docs';
 
   /** CSS solution to use */
   styling: 'css' | 'sass' | 'tailwind';

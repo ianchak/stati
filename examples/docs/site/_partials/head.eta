@@ -1,0 +1,29 @@
+<%
+  /* Shared <head>. Stati's SEO auto-injection adds the description, canonical URL,
+     Open Graph, Twitter and JSON-LD tags, and search adds the stati:search-index
+     meta tag that public/scripts/docs.js reads. */
+  const isHome = stati.page.url === '/';
+  const pageTitle = isHome || !stati.page.title ? stati.site.title : `${stati.page.title} · ${stati.site.title}`;
+%>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= pageTitle %></title>
+  <script>
+    /* Apply the saved theme before the first paint, so a dark page never flashes light. */
+    (function () {
+      var root = document.documentElement;
+      root.classList.add('js');
+      try {
+        var theme = localStorage.getItem('theme');
+        if (theme === 'light' || theme === 'dark') root.dataset.theme = theme;
+      } catch (e) {}
+    })();
+  </script>
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0b1120" media="(prefers-color-scheme: dark)" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="preload" href="/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="/styles.css" />
+  <script type="module" src="/scripts/docs.js"></script>
+</head>

@@ -54,6 +54,23 @@ export const TEMPLATES = {
     ownConfig: true,
     ownStyles: true,
   },
+  docs: {
+    name: 'docs',
+    title: 'Docs Template',
+    description:
+      'A complete documentation site with a sidebar, search, an on-page table of contents and SEO metadata',
+    features: [
+      'Sidebar built from folders, ordered by front matter, with previous/next links and breadcrumbs',
+      'Ctrl+K search over the built-in search index',
+      'On-page table of contents with scroll tracking',
+      'Build-time syntax highlighting with copy buttons',
+      'Light and dark themes, sitemap, robots.txt and SEO metadata',
+    ],
+    difficulty: 'beginner',
+    estimatedSetupTime: '5 minutes',
+    ownConfig: true,
+    ownStyles: true,
+  },
 } satisfies Record<string, ExampleMetadata>;
 
 export type TemplateName = keyof typeof TEMPLATES;

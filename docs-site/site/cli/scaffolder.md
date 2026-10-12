@@ -22,6 +22,9 @@ npm create stati my-site --template=blank --styling=tailwind
 # A ready-to-write blog
 npm create stati my-blog --template=blog
 
+# A complete documentation site
+npm create stati my-docs --template=docs
+
 # JavaScript instead of TypeScript
 npm create stati my-site --no-typescript
 ```
@@ -58,7 +61,7 @@ The scaffolder will prompt you for:
 npx create-stati <project-name> [options]
 
 Options:
-  --template <name>        Template to use (blank|blog)
+  --template <name>        Template to use (blank|blog|docs)
   --styling <type>         CSS solution (css|sass|tailwind)
   --typescript, --ts       Use TypeScript (default)
   --no-typescript, --no-ts Use JavaScript instead of TypeScript
@@ -89,10 +92,11 @@ npm create stati my-site --agent-skill=github
 
 ## Project templates
 
-Stati provides two templates:
+Stati provides three templates:
 
 - **blank** - Minimal starter with basic structure and example content
 - **blog** - A complete blog with posts, tags, an archive, an RSS feed and SEO metadata
+- **docs** - A complete documentation site with a sidebar, search, an on-page table of contents and SEO metadata
 
 ### Blank template
 
@@ -120,6 +124,25 @@ A blog that works on first run. Its sample posts explain how each part of it wor
 
 The blog template ships its own `stati.config.js` with the feed, sitemap and SEO settings. With TypeScript it becomes `stati.config.ts`; with Sass or Tailwind its stylesheet is carried over into `src/` so the design stays intact.
 
+### Docs template
+
+A documentation site that works on first run. Its sample pages explain how each part of it works, so you can read them, then replace them with your own.
+
+**What's included:**
+
+- A sidebar built from your folders: each top-level folder in `site/` is a section, each Markdown file a page, ordered by `order` in its front matter
+- Search over Stati's search index, opened with <kbd>Ctrl</kbd> <kbd>K</kbd>, <kbd>⌘</kbd> <kbd>K</kbd> or <kbd>/</kbd>, with results that link to headings
+- An on-page table of contents that highlights the section in view, previous and next links, and breadcrumbs
+- Section overview pages and a home page that lists every section
+- Code blocks highlighted at build time with `markdown-it-prism`, with a language label and a copy button
+- Light and dark themes with a toggle, a mobile navigation drawer, and self-hosted Inter
+- A sitemap, `robots.txt`, Open Graph and Twitter tags, and breadcrumb structured data
+- Drafts that stay out of the build until you publish them, and a 404 page
+- `helpers/docs.js`, which groups pages into sections in the `beforeAll` hook and exposes them to templates as filters such as `stati.docsSections()` and `stati.docsPager()`
+- `public/scripts/docs.js`, a dependency-free script for search, the theme toggle, the drawer and copy buttons; pages read fine without it
+
+Like the blog, the docs template ships its own `stati.config.js`, which becomes `stati.config.ts` with TypeScript, and its stylesheet is carried over into `src/` with Sass or Tailwind.
+
 ## Styling solutions
 
 Choose your preferred styling approach:
@@ -140,7 +163,7 @@ Choose your preferred styling approach:
 ### Tailwind CSS
 
 - Generates `tailwind.config.js` with content paths for `site/**/*.{md,eta,html}` and `.stati/tailwind-classes.html`
-- Creates source stylesheet at `src/styles.css` compiled directly to `dist/styles.css`; for the blank template it rebuilds the starter's look with `@apply`, Tailwind's slate and blue palette and `dark:` variants, and for the blog template it keeps the blog's own stylesheet below the Tailwind directives
+- Creates source stylesheet at `src/styles.css` compiled directly to `dist/styles.css`; for the blank template it rebuilds the starter's look with `@apply`, Tailwind's slate and blue palette and `dark:` variants, and for the blog and docs templates it keeps the template's own stylesheet below the Tailwind directives
 - Scripts added: `build:css`
 - Modified scripts:
   - `dev`: Uses Stati's built-in Tailwind integration (single process)

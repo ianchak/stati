@@ -25,7 +25,7 @@ Recognized scaffolder flags:
 
 | Flag                                     | Meaning                                            |
 | ---------------------------------------- | -------------------------------------------------- |
-| `--template blank\|blog`                 | Minimal starter, or a complete blog                |
+| `--template blank\|blog\|docs`           | Minimal starter, a complete blog, or a docs site   |
 | `--styling css\|sass\|tailwind`          | Styling installer choice                           |
 | `--typescript`, `--ts`                   | TS config/client scaffold and typecheck tooling    |
 | `--no-typescript`, `--no-ts`             | JavaScript scaffold (newer versions default to TS) |
@@ -42,8 +42,8 @@ manager; examples here use npm.
 Do not scaffold over an existing project or replace its package manifest.
 Scaffolding can prompt, install dependencies, and initialize Git by default.
 In automation, use explicit options and `--no-install`/`--no-git` where required
-by the user's intent. Do not assume advertised blog/docs starters exist as
-scaffolder template names in this version.
+by the user's intent. Template names vary by version: check `--help` before
+passing `--template blog` or `--template docs` to an older scaffolder.
 
 Typical site:
 

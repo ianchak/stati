@@ -214,6 +214,12 @@ describe('create-stati CLI', () => {
       expect(result).toEqual({ projectName: 'my-blog', template: 'blog' });
     });
 
+    it('should parse --template=docs', async () => {
+      const result = await parseArgs(['my-docs', '--template=docs']);
+
+      expect(result).toEqual({ projectName: 'my-docs', template: 'docs' });
+    });
+
     it('should parse a space-separated template name', async () => {
       const result = await parseArgs(['my-blog', '--template', 'blog']);
 
@@ -227,7 +233,7 @@ describe('create-stati CLI', () => {
           throw new Error(`process.exit: ${code}`);
         });
 
-      await expect(parseArgs(['test-project', '--template=docs'])).rejects.toThrow(
+      await expect(parseArgs(['test-project', '--template=portfolio'])).rejects.toThrow(
         'process.exit: 1',
       );
 

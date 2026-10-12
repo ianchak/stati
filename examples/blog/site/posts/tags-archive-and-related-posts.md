@@ -5,7 +5,7 @@ publishedAt: '2026-10-05'
 tags: ['structure', 'guides']
 ---
 
-Stati renders one page at a time, and a page cannot see the others on its own. Listings need that view, so the starter builds it once per build in `helpers/blog.js` and hands it to the templates.
+Every template can read Stati's navigation tree through `stati.nav`, but its entries only carry a title, address, order and date. Listings also need each post's description and tags, so the starter builds that view once per build in `helpers/blog.js` and hands it to the templates.
 
 ## The post index
 

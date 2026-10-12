@@ -17,7 +17,7 @@ npx create-stati
 The interactive wizard will guide you through:
 
 1. **Project name** - What to call your site
-2. **Template** - Starting point: blank, or a complete blog
+2. **Template** - Starting point: blank, a complete blog, or a complete docs site
 3. **CSS solution** - Plain CSS, Sass, or Tailwind
 4. **TypeScript** - On by default; answer no for a JavaScript project
 5. **Agent skill** - Optional Stati skill for AI coding assistants
@@ -37,7 +37,7 @@ npx create-stati my-site --template=blank --styling=tailwind --git
 
 **Available flags:**
 
-- `--template <name>` - Template to use (`blank` | `blog`)
+- `--template <name>` - Template to use (`blank` | `blog` | `docs`)
 - `--styling <type>` - CSS solution (`css` | `sass` | `tailwind`)
 - `--typescript`, `--ts` - Use TypeScript (default)
 - `--no-typescript`, `--no-ts` - Use JavaScript instead of TypeScript
@@ -159,6 +159,18 @@ npx create-stati my-blog --template=blog
 ```
 
 The blog ships its own `stati.config.js`; with TypeScript it becomes `stati.config.ts`, and with Sass or Tailwind its stylesheet moves into `src/` so the design stays intact.
+
+---
+
+## The Docs Template
+
+A complete documentation site that works on first run: a sidebar built from your folders, Ctrl+K search, an on-page table of contents, previous and next links, breadcrumbs, build-time syntax highlighting with copy buttons, light and dark themes, a mobile drawer, a sitemap, `robots.txt`, link previews, drafts and a 404 page. The sample pages explain how each part works.
+
+```bash
+npx create-stati my-docs --template=docs
+```
+
+Like the blog, it ships its own `stati.config.js`; with TypeScript it becomes `stati.config.ts`, and with Sass or Tailwind its stylesheet moves into `src/` so the design stays intact.
 
 ---
 
