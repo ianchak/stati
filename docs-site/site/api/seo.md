@@ -1,11 +1,13 @@
 ---
-title: 'SEO API'
+title: 'SEO'
 description: 'Complete API reference for Stati SEO functions, types, and configuration interfaces'
 layout: layout.eta
 order: 6
+seo:
+  title: 'SEO API'
 ---
 
-# SEO API Reference
+# SEO
 
 Complete reference for Stati's SEO API including functions, types, and configuration interfaces.
 
@@ -543,7 +545,7 @@ if (shouldAutoInject(config, page)) {
 
 ---
 
-### Utility Functions
+### Utility functions
 
 #### `escapeHtml()`
 
@@ -811,7 +813,7 @@ type ChangeFrequency =
 
 ---
 
-## Configuration Interfaces
+## Configuration interfaces
 
 ### `SEOConfig`
 
@@ -1190,7 +1192,7 @@ interface RobotsTxtConfig {
 
 ---
 
-## Complete Configuration Example
+## Complete configuration example
 
 ```typescript
 // stati.config.ts
@@ -1234,8 +1236,8 @@ export default defineConfig({
 });
 ```
 
-## See Also
+## See also
 
 - [SEO Configuration Guide](/configuration/seo) - User-friendly configuration guide
 - [SEO Usage Scenarios](/advanced/seo-usage-scenarios) - Usage strategies for different project needs
-- [Core Concepts: ISG](/core-concepts/isg) - How SEO integrates with ISG caching
+- [Incremental Static Generation](/core-concepts/isg) - How SEO integrates with ISG caching

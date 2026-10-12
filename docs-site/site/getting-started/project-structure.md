@@ -1,14 +1,16 @@
 ---
-title: 'Project Structure'
+title: 'Project structure'
 description: 'Understanding how Stati organizes your files and directories.'
 order: 3
+seo:
+  title: 'Stati project structure'
 ---
 
-# Project Structure
+# Project structure
 
 Stati organizes your files in a clean and structured way, designed for simplicity and flexibility.
 
-## Example Structure
+## Example structure
 
 ```text
 my-stati-site/
@@ -25,7 +27,7 @@ my-stati-site/
         └── footer.eta
 ```
 
-### With TypeScript Enabled
+### With TypeScript enabled
 
 When you create a project with `--typescript`, you get additional files:
 
@@ -42,7 +44,7 @@ my-stati-site/
     └── ...
 ```
 
-## Key Directories
+## Key directories
 
 ### `site/`
 
@@ -73,7 +75,7 @@ Directories starting with `_` are excluded from routing, so you can organize you
 - **`_components/footer.eta`** - Site footer
 - **`_navigation/sidebar.eta`** - Navigation sidebar
 
-## Configuration Files
+## Configuration files
 
 ### `stati.config.js` (or `stati.config.ts`)
 
@@ -118,7 +120,7 @@ Standard Node.js package file with your dependencies and build scripts.
 }
 ```
 
-## Template Files
+## Template files
 
 ### Layouts
 
@@ -127,12 +129,12 @@ Standard Node.js package file with your dependencies and build scripts.
 
 You can also use page specific layouts if you want, by referring to the layouts name in the front matter of your page. For example: `layout: home` refers to `home.eta`
 
-### Content Files
+### Content files
 
 - **`.md` files** - Markdown content with front matter
 - **`.eta` files** - Raw template files (rare, usually for complex pages)
 
-## Advanced Structure
+## Advanced structure
 
 For larger sites, you might organize content like this:
 
@@ -161,9 +163,9 @@ site/
     └── nav.eta
 ```
 
-## Special Files and Directories
+## Special files and directories
 
-### Directories Starting with `_`
+### Directories starting with `_`
 
 - **Excluded from routing** - Contents won't generate pages
 - **Used for partials and utilities** - Templates can be included via `stati.partials`
@@ -171,7 +173,7 @@ site/
 
 > **Note:** Individual files starting with `_` (like `_draft.md`) are NOT automatically excluded. Use `draft: true` in frontmatter to exclude drafts.
 
-### Template Inheritance
+### Template inheritance
 
 Layouts and partials cascade down the directory tree:
 
@@ -179,13 +181,13 @@ Layouts and partials cascade down the directory tree:
 2. `site/blog/layout.eta` (override for /blog pages)
 3. `site/blog/tutorials/layout.eta` (override for /blog/tutorials pages)
 
-### Index Files
+### Index files
 
 - **`index.md`** - Becomes the directory's homepage
 - **`site/blog/index.md`** → `/blog/`
 - **No index file** → 404 (add an `index.md` to make the directory accessible)
 
-## Build Output
+## Build output
 
 When you run `stati build`, the output structure mirrors your site structure:
 
@@ -200,7 +202,7 @@ dist/
 └── styles.css
 ```
 
-## Next Steps
+## Next steps
 
 - Learn about [Templates & Layouts](/core-concepts/templates)
 - Understand [Filesystem-based Routing](/core-concepts/routing)

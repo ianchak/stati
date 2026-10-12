@@ -1,9 +1,10 @@
 ---
-title: SEO Usage Scenarios
+title: 'SEO scenarios'
 description: Learn different strategies for using SEO features in your Stati project, from automatic to fully custom control
 layout: layout.eta
 order: 2
 seo:
+  title: 'SEO usage scenarios'
   structuredData:
     "@context": "https://schema.org"
     "@type": "TechArticle"
@@ -16,7 +17,7 @@ seo:
     "proficiencyLevel": "Intermediate"
 ---
 
-# SEO Usage Scenarios
+# SEO scenarios
 
 This guide covers five different approaches to using Stati's SEO features, from zero-configuration automatic injection to full custom control. Choose the approach that best fits your project's requirements.
 
@@ -53,7 +54,7 @@ export default defineConfig({
 });
 ```
 
-### How It Works
+### How it works
 
 With automatic SEO, a simple page template like this:
 
@@ -99,7 +100,7 @@ Gets these SEO tags automatically injected:
 
 **Note:** The title uses only the page title from frontmatter or config fallbacks. For custom title formats like "Page | Site", use manual templating (see Scenario 3 or 5). Description and other optional meta tags are only generated if specified in frontmatter or config.
 
-### Optional: Enable Sitemap
+### Optional: Enable sitemap
 
 Add sitemap generation to your configuration:
 
@@ -115,7 +116,7 @@ export default defineConfig({
 });
 ```
 
-### When to Use
+### When to use
 
 - New projects that need SEO quickly
 - Projects with simple SEO requirements
@@ -132,7 +133,7 @@ export default defineConfig({
 
 Keep automatic injection enabled and enhance SEO through configuration and frontmatter. This approach provides granular control over SEO metadata on a per-page basis without touching template code.
 
-### Global Configuration
+### Global configuration
 
 ```typescript
 // stati.config.ts
@@ -167,7 +168,7 @@ export default defineConfig({
 });
 ```
 
-### Per-Page Enhancement
+### Per-page enhancement
 
 Add SEO frontmatter to high-value pages:
 
@@ -211,7 +212,7 @@ sitemap:
 Your content here...
 ```
 
-### Sitemap Control
+### Sitemap control
 
 For pages you want to exclude or deprioritize:
 
@@ -232,7 +233,7 @@ sitemap:
 ---
 ```
 
-### When to Use
+### When to use
 
 - Projects where SEO needs vary by page
 - Content-heavy sites (blogs, documentation)
@@ -242,7 +243,7 @@ sitemap:
 
 ---
 
-## Scenario 3: Hybrid Mode
+## Scenario 3: Hybrid mode
 
 **Best for:** Projects that need custom control over specific tags while automating the rest. This is the recommended approach for projects with advanced SEO requirements.
 
@@ -250,7 +251,7 @@ sitemap:
 
 Keep auto-injection enabled but manually override specific SEO tags when needed. Stati detects existing tags and skips auto-generating them. This gives you fine-grained control where you need it while maintaining automatic fallbacks everywhere else.
 
-### Example 1: Custom Title, Auto-Generate Rest
+### Example 1: Custom title, auto-generate rest
 
 ```html
 <!-- site/layout.eta -->
@@ -273,7 +274,7 @@ Keep auto-injection enabled but manually override specific SEO tags when needed.
 - Your custom title is used
 - All other SEO tags are auto-generated (description, canonical, OG, Twitter, etc.)
 
-### Example 2: Custom OG Image, Manual OG Tags
+### Example 2: Custom OG image, manual OG tags
 
 ```html
 <!-- site/layout.eta -->
@@ -299,7 +300,7 @@ Keep auto-injection enabled but manually override specific SEO tags when needed.
 
 **Important:** Open Graph tags are a **group**. If you add **any** `og:*` tag manually, Stati skips auto-generating **all** Open Graph tags. The same applies to Twitter Card tags.
 
-### Example 3: Conditional Custom Tags
+### Example 3: Conditional custom tags
 
 ```html
 <!-- site/layout.eta -->
@@ -324,7 +325,7 @@ Keep auto-injection enabled but manually override specific SEO tags when needed.
 </html>
 ```
 
-### Example 4: Dynamic OG Images
+### Example 4: Dynamic OG images
 
 ```html
 <!-- site/layout.eta -->
@@ -349,7 +350,7 @@ Keep auto-injection enabled but manually override specific SEO tags when needed.
 </html>
 ```
 
-### Tag Groups
+### Tag groups
 
 Understanding tag groups is critical for hybrid mode:
 
@@ -359,7 +360,7 @@ Understanding tag groups is critical for hybrid mode:
 | **Twitter Cards** | If **any** `twitter:*` tag exists, **all** Twitter tags are skipped |
 | **Individual Tags** | Title, description, keywords, author, robots, canonical are independent |
 
-### When to Use
+### When to use
 
 - Projects with varying SEO requirements across sections
 - Sites that need custom logic for certain pages
@@ -369,7 +370,7 @@ Understanding tag groups is critical for hybrid mode:
 
 ---
 
-## Scenario 4: Selective Manual Control
+## Scenario 4: Selective manual control
 
 **Best for:** Projects that want explicit control over which tags are generated.
 
@@ -394,7 +395,7 @@ export default defineConfig({
 });
 ```
 
-### Example 1: Generate Only Title and Description
+### Example 1: Generate only title and description
 
 ```html
 <!-- site/layout.eta -->
@@ -414,7 +415,7 @@ export default defineConfig({
 </html>
 ```
 
-### Example 2: Generate Basic SEO + Custom Social
+### Example 2: Generate basic SEO + custom social
 
 ```html
 <!-- site/layout.eta -->
@@ -440,7 +441,7 @@ export default defineConfig({
 </html>
 ```
 
-### Example 3: Generate Multiple Tag Types
+### Example 3: Generate multiple tag types
 
 ```html
 <!-- site/layout.eta -->
@@ -459,7 +460,7 @@ export default defineConfig({
 </html>
 ```
 
-### Available Tag Types
+### Available tag types
 
 - `title` - Page title tag
 - `description` - Meta description tag
@@ -471,7 +472,7 @@ export default defineConfig({
 - `twitter` - All Twitter Card tags
 - `structuredData` - JSON-LD structured data script tag
 
-### When to Use
+### When to use
 
 - Projects that need explicit control over tag generation
 - Sites with strict SEO governance
@@ -481,7 +482,7 @@ export default defineConfig({
 
 ---
 
-## Scenario 5: Full Custom Control
+## Scenario 5: Full custom control
 
 **Best for:** Projects with complex custom SEO requirements or specific SEO systems.
 
@@ -500,7 +501,7 @@ export default defineConfig({
 });
 ```
 
-### Manual Implementation
+### Manual implementation
 
 ```html
 <!-- site/layout.eta -->
@@ -578,7 +579,7 @@ export default defineConfig({
 </html>
 ```
 
-### When to Use
+### When to use
 
 - Projects with highly specific SEO requirements
 - Sites with custom SEO validation logic
@@ -605,7 +606,7 @@ export default defineConfig({
 
 ---
 
-## Comparison Table
+## Comparison table
 
 | Feature | Scenario 1: Automatic | Scenario 2: Enhanced | Scenario 3: Hybrid | Scenario 4: Selective | Scenario 5: Full Custom |
 |---------|----------------------|---------------------|-------------------|----------------------|------------------------|
@@ -620,7 +621,7 @@ export default defineConfig({
 
 ---
 
-## Testing & Validation
+## Testing & validation
 
 ### Checklist
 
@@ -638,7 +639,7 @@ After implementing SEO, validate your setup:
 - **Validate structured data** - use [Google Rich Results Test](https://search.google.com/test/rich-results)
 - **Test social sharing** - use [Facebook Debugger](https://developers.facebook.com/tools/debug/) and [Twitter Card Validator](https://cards-dev.twitter.com/validator)
 
-### Validation Tools
+### Validation tools
 
 **HTML & SEO:**
 
@@ -657,7 +658,7 @@ After implementing SEO, validate your setup:
 - [Google Search Console](https://search.google.com/search-console)
 - [Bing Webmaster Tools](https://www.bing.com/webmasters)
 
-### Common Issues
+### Common issues
 
 **Issue:** Open Graph tags not generated
 
@@ -684,7 +685,7 @@ export default defineConfig({
 
 ---
 
-## Recommended Approach
+## Recommended approach
 
 For most projects, we recommend **Scenario 3: Hybrid Mode** because it offers:
 
@@ -696,10 +697,10 @@ For most projects, we recommend **Scenario 3: Hybrid Mode** because it offers:
 
 Start with Scenario 1 (Automatic) and move to Scenario 3 (Hybrid) as your SEO requirements evolve.
 
-## Next Steps
+## Next steps
 
 - [SEO Configuration Guide](/configuration/seo) - Complete SEO configuration reference
-- [SEO API Reference](/api/seo) - Detailed API documentation
+- [SEO API](/api/seo) - Detailed API documentation
 
 ---
 

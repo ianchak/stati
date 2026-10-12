@@ -1,16 +1,18 @@
 ---
-title: 'TypeScript Types'
+title: 'Types'
 description: 'Reference for TypeScript type definitions in Stati.'
 order: 5
+seo:
+  title: 'TypeScript types'
 ---
 
-# TypeScript Types
+# Types
 
 Stati is built with TypeScript-first design, providing comprehensive type definitions for type-safe development and excellent IntelliSense support in your editor.
 
-## Core Types
+## Core types
 
-### Configuration Types
+### Configuration types
 
 Main configuration interface for Stati:
 
@@ -82,7 +84,7 @@ interface StatiConfig {
 }
 ```
 
-### Site Configuration
+### Site configuration
 
 Import `SiteConfig` from `@stati/core` or `@stati/core/types` to type the `site`
 metadata separately from the full `StatiConfig`:
@@ -115,7 +117,7 @@ interface SiteConfig {
 }
 ```
 
-### SEO Configuration
+### SEO configuration
 
 ```typescript
 interface SEOConfig {
@@ -141,7 +143,7 @@ interface AuthorConfig {
 }
 ```
 
-### Build Hooks
+### Build hooks
 
 ```typescript
 interface BuildHooks {
@@ -175,7 +177,7 @@ interface PageContext {
 }
 ```
 
-### Build Statistics
+### Build statistics
 
 ```typescript
 interface BuildStats {
@@ -199,9 +201,9 @@ interface BuildStats {
 }
 ```
 
-## Content Types
+## Content types
 
-### PageModel Interface
+### PageModel interface
 
 Core page object representing a content file during build:
 
@@ -227,7 +229,7 @@ interface PageModel {
 }
 ```
 
-### FrontMatter Interface
+### FrontMatter interface
 
 Front matter metadata extracted from content files:
 
@@ -277,7 +279,7 @@ interface FrontMatter {
 }
 ```
 
-### TocEntry Interface
+### TocEntry interface
 
 Table of contents entry extracted from page headings (available in template context via `stati.page.toc`):
 
@@ -294,9 +296,9 @@ interface TocEntry {
 }
 ```
 
-## Template Types
+## Template types
 
-### TemplateContext Interface
+### TemplateContext interface
 
 The context object passed to Eta templates during rendering:
 
@@ -360,9 +362,9 @@ interface TemplateContext {
 }
 ```
 
-## ISG Types
+## ISG types
 
-### ISG Configuration
+### ISG configuration
 
 ```typescript
 interface ISGConfig {
@@ -414,7 +416,7 @@ interface CacheEntry {
 }
 ```
 
-### TypeScript Configuration
+### TypeScript configuration
 
 ```typescript
 interface TypeScriptConfig {
@@ -469,7 +471,7 @@ interface BundleConfig {
 
 > **Note:** Source maps, hashing, and minification are automatic based on build mode. In development, source maps are enabled and hash/minify are disabled. In production, source maps are disabled and hash/minify default to true but can be set to false for debugging.
 
-### StatiAssets Interface
+### StatiAssets interface
 
 Available in templates when TypeScript is enabled. Script tags are **automatically injected** into your HTML during build - no template changes required!
 
@@ -494,18 +496,18 @@ For advanced use cases like preloading, access via `stati.assets`:
 <% } %>
 ```
 
-## Utility Types
+## Utility types
 
-### Configuration Helper
+### Configuration helper
 
 ```typescript
 /** Helper function for type-safe configuration */
 declare function defineConfig(config: StatiConfig): StatiConfig;
 ```
 
-## Module Exports
+## Module exports
 
-### Core Package
+### Core package
 
 The `@stati/core` package exports the following types and functions:
 
@@ -556,11 +558,11 @@ export type { RSSConfig, RSSFeedConfig, RSSGenerationResult } from '@stati/core'
 
 Note: Types like `TemplateContext`, `CollectionData`, `StatiAssets`, `TocEntry`, and `CacheEntry` are used internally by the framework and are not exported from `@stati/core`. If you need these types for advanced use cases, they can be found in `packages/core/src/types/` but are not part of the public API.
 
-### CLI Package
+### CLI package
 
 The `@stati/cli` package provides the `stati` command-line interface as a binary. It does not export any programmatic API - use `@stati/core` functions directly if you need to build programmatically.
 
-### Create-Stati Package
+### `create-stati` package
 
 ```typescript
 // From create-stati
@@ -568,8 +570,8 @@ export interface CreateOptions {
   /** Name of the project to create */
   projectName: string;
 
-  /** Template to use (currently only 'blank' is supported) */
-  template: 'blank';
+  /** Template to use */
+  template: 'blank' | 'blog' | 'docs';
 
   /** CSS solution to use */
   styling: 'css' | 'sass' | 'tailwind';
@@ -593,9 +595,9 @@ export interface CreateOptions {
 export function createSite(options: CreateOptions): Promise<void>;
 ```
 
-## Usage Examples
+## Usage examples
 
-### Type-Safe Configuration
+### Type-safe configuration
 
 ```typescript
 import { defineConfig, type StatiConfig } from '@stati/core';
@@ -624,7 +626,7 @@ const config: StatiConfig = defineConfig({
 export default config;
 ```
 
-### Using Build Hooks
+### Using build hooks
 
 ```typescript
 import { defineConfig } from '@stati/core';

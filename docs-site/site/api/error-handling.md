@@ -1,14 +1,14 @@
 ---
-title: 'Error Handling'
+title: 'Error handling'
 description: 'Learn how Stati handles errors during build and development.'
 order: 3
 ---
 
-# Error Handling
+# Error handling
 
 Stati implements a comprehensive error handling strategy designed to provide graceful failures, clear error messages, and robust recovery mechanisms. Understanding how Stati handles errors helps you debug issues and build more resilient sites.
 
-## Error Handling Philosophy
+## Error handling philosophy
 
 Stati follows these key principles:
 
@@ -17,9 +17,9 @@ Stati follows these key principles:
 3. **Fail Fast** - Configuration errors are caught early in the build process
 4. **Recovery Mechanisms** - Built-in fallbacks ensure partial builds can succeed
 
-## Error Categories
+## Error categories
 
-### Configuration Errors
+### Configuration errors
 
 **When they occur**: During configuration loading and validation
 
@@ -44,7 +44,7 @@ export default {
 };
 ```
 
-### Content Loading Errors
+### Content loading errors
 
 **When they occur**: During content discovery and front matter parsing
 
@@ -61,7 +61,7 @@ export default {
 - Empty content directory (handled gracefully)
 - Content directory not found (build fails)
 
-### Template Rendering Errors
+### Template rendering errors
 
 **When they occur**: During template processing and HTML generation
 
@@ -90,7 +90,7 @@ export default {
 <% } %>
 ```
 
-### File System Errors
+### File system errors
 
 **When they occur**: During output file writing and static asset copying
 
@@ -103,7 +103,7 @@ export default {
 - File system corruption
 - Directory creation failures
 
-### Build Hook Errors
+### Build hook errors
 
 **When they occur**: During execution of user-defined build hooks
 
@@ -125,11 +125,11 @@ export default defineConfig({
 });
 ```
 
-## Error Classes
+## Error classes
 
 Stati uses domain-specific error classes that capture relevant context for debugging. Each error type includes structured information to help identify and resolve issues quickly.
 
-### Template Errors
+### Template errors
 
 ```typescript
 class TemplateError extends Error {
@@ -161,7 +161,7 @@ class TemplateError extends Error {
 
 **Thrown when**: Template syntax errors, missing templates, or template rendering failures occur.
 
-### ISG Configuration Errors
+### ISG configuration errors
 
 ```typescript
 class ISGConfigurationError extends Error {
@@ -188,7 +188,7 @@ enum ISGValidationError {
 
 **Thrown when**: ISG configuration validation fails (invalid TTL, aging rules, etc.).
 
-### Circular Dependency Errors
+### Circular dependency errors
 
 ```typescript
 class CircularDependencyError extends Error {
@@ -204,7 +204,7 @@ class CircularDependencyError extends Error {
 
 **Thrown when**: Template dependencies form a circular reference.
 
-### Bundle Configuration Errors
+### Bundle configuration errors
 
 ```typescript
 class DuplicateBundleNameError extends Error {
@@ -220,9 +220,9 @@ class DuplicateBundleNameError extends Error {
 
 **Thrown when**: TypeScript bundle configurations contain duplicate bundle names.
 
-## Fallback Mechanisms
+## Fallback mechanisms
 
-### Template Fallback
+### Template fallback
 
 When template rendering fails, Stati uses a built-in fallback that generates minimal valid HTML:
 
@@ -250,13 +250,13 @@ The fallback template:
 - Renders the markdown-processed body content
 - Provides a minimal but valid HTML structure
 
-### Navigation Fallback
+### Navigation fallback
 
 Stati builds navigation from the page structure during the content loading phase. If no pages are found or the pages array is empty, navigation will be an empty array. However, if navigation building encounters an error (such as corrupted page data), the build will fail rather than providing a fallback, as navigation is critical to site structure
 
-## Error Reporting
+## Error reporting
 
-### Console Output
+### Console output
 
 Stati uses colored console output:
 
@@ -264,7 +264,7 @@ Stati uses colored console output:
 - **🟡 Warnings**: Yellow text, logged to stdout
 - **ℹ️ Info**: Standard text, logged to stdout
 
-### Error Context
+### Error context
 
 Error messages include relevant context:
 
@@ -273,7 +273,7 @@ Error rendering layout /blog/layout.eta for page /blog/my-post/:
 Template syntax error: Unexpected token 'if' at line 15
 ```
 
-### Build Statistics
+### Build statistics
 
 Build statistics are tracked and returned from the build function:
 
@@ -294,9 +294,9 @@ interface BuildStats {
 }
 ```
 
-## Debugging Approaches
+## Debugging approaches
 
-### 1. Isolate the Problem
+### 1. Isolate the problem
 
 **Build with subset of content:**
 
@@ -313,11 +313,11 @@ stati build
 node -e "console.log(require('./stati.config.js'))"
 ```
 
-### 2. Check Build Output
+### 2. Check build output
 
 Examine build output for error messages and stack traces. Stati provides detailed error information including file paths and line numbers when available.
 
-### 3. Common Error Scenarios
+### 3. Common error scenarios
 
 **Build fails immediately:**
 
@@ -337,9 +337,9 @@ Examine build output for error messages and stack traces. Stati provides detaile
 - ✅ Check template data availability
 - ✅ Review template file permissions
 
-## Best Practices
+## Best practices
 
-### 1. Validate Configuration
+### 1. Validate configuration
 
 Test your configuration in development:
 
@@ -358,7 +358,7 @@ export default defineConfig({
 });
 ```
 
-### 2. Handle Hook Errors Gracefully
+### 2. Handle hook errors gracefully
 
 ```javascript
 export default defineConfig({
@@ -377,7 +377,7 @@ export default defineConfig({
 });
 ```
 
-### 4. Test Content Incrementally
+### 4. Test content incrementally
 
 **Gradual rollout approach:**
 
@@ -386,7 +386,7 @@ export default defineConfig({
 3. Monitor build output for errors
 4. Fix issues before expanding content
 
-### 4. Use Consistent Front Matter
+### 4. Use consistent front matter
 
 **Establish a schema:**
 
@@ -400,9 +400,9 @@ tags: string[] (optional)
 ---
 ```
 
-## Recovery Strategies
+## Recovery strategies
 
-### Partial Build Success
+### Partial build success
 
 Stati attempts to build as many pages as possible:
 
@@ -410,7 +410,7 @@ Stati attempts to build as many pages as possible:
 - ✅ Deploy partial updates while fixing issues
 - ✅ Maintain site functionality during updates
 
-### Build Interruption Recovery
+### Build interruption recovery
 
 If a build is interrupted:
 
@@ -418,7 +418,7 @@ If a build is interrupted:
 - **Atomic operations**: Static assets copied atomically
 - **Clean state**: Subsequent builds resume cleanly
 
-### Cache-Related Issues
+### Cache-related issues
 
 **Clear cache when encountering:**
 
@@ -433,16 +433,16 @@ stati build --force
 stati build --clean --force
 ```
 
-## Development Workflow
+## Development workflow
 
-### 1. Start with Clean Build
+### 1. Start with clean build
 
 ```bash
 # Ensure clean starting point
 stati build --clean
 ```
 
-### 2. Monitor Development Server
+### 2. Monitor development server
 
 ```bash
 # Watch for errors in development
@@ -451,14 +451,14 @@ stati dev
 
 The development server provides an error overlay in the browser when build errors occur, making it easy to identify and fix issues without checking terminal output.
 
-### 3. Test Production Build
+### 3. Test production build
 
 ```bash
 # Test production build before deployment
 NODE_ENV=production stati build
 ```
 
-### 4. Validate Output
+### 4. Validate output
 
 ```bash
 # Check generated files

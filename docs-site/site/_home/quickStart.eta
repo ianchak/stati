@@ -1,79 +1,35 @@
 <%
 /**
- * Quick Start Section (Homepage)
+ * Start Section (Homepage)
  *
- * Terminal-style quick start commands.
- * Uses sectionHeader and button components.
+ * Closing call to action: the three commands from nothing to a running dev
+ * server, each copied on its own (pasting all three at once would feed the
+ * later lines into the scaffolder's prompts), plus next steps.
  */
+
+// Pre-rendered on every page: render nothing where the homepage data is absent
+if (!stati.page.start) { %><% return; } %>
+<%
+const start = stati.page.start;
 %>
-<!-- Quick Start Section -->
-<section class="py-20 lg:py-24 bg-gradient-to-b from-gray-50 to-white dark:from-dark-900 dark:to-dark-950 relative overflow-hidden">
-    <!-- Decorative background elements -->
-    <div class="absolute inset-0 overflow-hidden pointer-events-none">
-        <div class="absolute top-1/4 -left-16 w-72 h-72 bg-emerald-300/15 dark:bg-emerald-800/10 rounded-full blur-3xl"></div>
-        <div class="absolute bottom-1/4 -right-16 w-64 h-64 bg-cyan-300/12 dark:bg-cyan-800/8 rounded-full blur-3xl"></div>
-    </div>
-
-    <div class="relative max-w-6xl mx-auto px-6 lg:px-8">
-        <%~ stati.partials.sectionHeader({
-            title: stati.page.quickStart?.title || 'Get Started',
-            subtitle: stati.page.quickStart?.subtitle
-        }) %>
-
-        <!-- Terminal Window -->
-        <div class="relative bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-dark-950 dark:via-dark-900 dark:to-dark-950 rounded-2xl shadow-2xl shadow-gray-900/10 dark:shadow-black/50 border border-gray-200/70 dark:border-dark-600/50 overflow-hidden backdrop-blur-sm">
-            <!-- Terminal Header -->
-            <div class="flex items-center justify-between px-6 py-4 bg-gray-100/60 dark:bg-dark-800/50 border-b border-gray-200/60 dark:border-dark-600/50">
-                <div class="flex items-center space-x-2">
-                    <div class="w-3 h-3 bg-red-500 rounded-full"></div>
-                    <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                    <div class="w-3 h-3 bg-green-500 rounded-full"></div>
-                </div>
-                <div class="text-gray-500 dark:text-gray-500 text-sm font-mono">terminal</div>
-                <div class="w-16"></div>
-            </div>
-
-            <!-- Terminal Content -->
-            <div class="p-6 lg:p-8 font-mono text-sm lg:text-base leading-relaxed">
-                <% for (let command of (stati.page.quickStart?.commands || [])) { %>
-                <% if (command.comment) { %>
-                <div class="flex items-center mb-3">
-                    <span class="text-gray-500 dark:text-gray-400"># <%= command.comment %></span>
-                </div>
-                <% } %>
-                <div class="flex items-start mb-6">
-                    <span class="text-emerald-600 dark:text-emerald-400 mr-3 select-none">$</span>
-                    <div class="flex-1 text-gray-800 dark:text-gray-200">
-                        <% if (command.parts) { %>
-                        <% for (let i = 0; i < command.parts.length; i++) { %>
-                        <% let part = command.parts[i]; %>
-                        <span class="<%= stati.propValue(`text-${part.color}-600 dark:text-${part.color}-400`) %>"><%= part.text %></span><% if (i < command.parts.length - 1) { %> <% } %>
-                        <% } %>
-                        <% } else { %>
-                        <%= command.text %>
-                        <% } %>
-                    </div>
-                </div>
-                <% } %>
-
-                <!-- Terminal cursor -->
-                <div class="flex items-center">
-                    <span class="text-emerald-600 dark:text-emerald-400 mr-3">$</span>
-                    <div class="w-2 h-5 bg-emerald-600 dark:bg-emerald-400 animate-pulse"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Bottom CTA -->
-        <% if (stati.page.quickStart?.link) { %>
-        <div class="text-center mt-12">
-            <%~ stati.partials.button({
-                href: stati.page.quickStart.link.url,
-                text: stati.page.quickStart.link.text,
-                variant: 'secondary',
-                icon: 'arrow-right'
-            }) %>
-        </div>
-        <% } %>
+<section class="relative overflow-hidden" aria-labelledby="start-title">
+    <div class="relative mx-auto max-w-2xl px-4 py-24 text-center sm:px-6 lg:py-32">
+        <h2 id="start-title" class="font-display text-[clamp(2rem,1.4rem+2vw,3rem)] font-extrabold leading-[1.05] [font-stretch:115%]"><%= start.title %></h2>
+        <p class="mx-auto mt-4 max-w-lg leading-7 text-muted"><%= start.text %></p>
+        <ol class="ticks code-panel mx-auto mt-9 max-w-md divide-y divide-line text-left font-mono text-[15px]" aria-label="Commands to create and run a site">
+            <% start.commands.forEach(command => { %>
+            <li class="flex items-center gap-3 py-1.5 pl-4 pr-2">
+                <span class="select-none text-faint" aria-hidden="true">$</span>
+                <code class="flex-1 truncate text-ink"><%= command %></code>
+                <button type="button" class="copy-button" data-copy="<%= command %>" aria-label="<%= `Copy command: ${command}` %>"><span data-copy-label>Copy</span></button>
+            </li>
+            <% }) %>
+        </ol>
+        <p class="mt-4 text-sm text-muted"><%= start.result %></p>
+        <ul class="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
+            <% start.links.forEach(link => { %>
+            <li><a href="<%= link.href %>" class="inline-flex items-center gap-1 font-medium text-accent-ink hover:underline hover:underline-offset-4"><%= link.text %><%~ stati.partials.icon({ name: 'arrow-right', size: 'xs' }) %></a></li>
+            <% }) %>
+        </ul>
     </div>
 </section>

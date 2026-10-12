@@ -28,6 +28,25 @@ export function generateContentHash(content: string): string {
 }
 
 /**
+ * URL segments that read as acronyms and stay uppercase in breadcrumbs.
+ */
+const BREADCRUMB_ACRONYMS = new Set([
+  'ai',
+  'api',
+  'cli',
+  'css',
+  'faq',
+  'html',
+  'isg',
+  'json',
+  'rss',
+  'seo',
+  'ui',
+  'url',
+  'xml',
+]);
+
+/**
  * Builds a breadcrumb string from a URL path.
  *
  * @param url - Page URL path (e.g., '/getting-started/installation')
@@ -45,11 +64,15 @@ export function buildBreadcrumb(url: string, pageTitle: string): string {
     return pageTitle;
   }
 
-  // Convert slug segments to title case
+  // Convert slug segments to title case, keeping known acronyms uppercase
   const crumbs = segments.slice(0, -1).map((segment) =>
     segment
       .split('-')
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .map((word) =>
+        BREADCRUMB_ACRONYMS.has(word.toLowerCase())
+          ? word.toUpperCase()
+          : word.charAt(0).toUpperCase() + word.slice(1),
+      )
       .join(' '),
   );
 
@@ -58,6 +81,9 @@ export function buildBreadcrumb(url: string, pageTitle: string): string {
 
   return crumbs.join(' > ');
 }
+
+/** Private-use character that brackets inline code placeholders in stripMarkdown. */
+const CODE_MARK = '';
 
 /**
  * Strips Markdown syntax to extract plain text for search indexing.
@@ -69,9 +95,23 @@ export function buildBreadcrumb(url: string, pageTitle: string): string {
 export function stripMarkdown(markdown: string): string {
   let text = markdown;
 
-  // Remove code blocks (fenced and indented)
-  text = text.replace(/```[\s\S]*?```/g, ' ');
-  text = text.replace(/`[^`]+`/g, ' ');
+  // Remove fenced code blocks. Fences sit at the start of a line, so inline
+  // spans written with three or more backticks are left for the step below.
+  text = text.replace(/^[ \t>]*(`{3,}|~{3,})[^\n]*\n[\s\S]*?^[ \t>]*\1[`~]*[ \t]*$/gm, ' ');
+
+  // Keep inline code text (identifiers are what people search for), shielded
+  // from the emphasis and HTML stripping below and restored at the end.
+  // A span closes on a backtick run of the same length as its opener, so
+  // ``a `b` c`` is one span; one padding space on each side is dropped.
+  const inlineCode: string[] = [];
+  text = text.replace(/(`+)([\s\S]*?[^`])\1(?!`)/g, (_match, _fence: string, code: string) => {
+    inlineCode.push(/^ [\s\S]* $/.test(code) && code.trim() ? code.slice(1, -1) : code);
+    return `${CODE_MARK}${inlineCode.length - 1}${CODE_MARK}`;
+  });
+
+  // Remove table delimiter rows and cell pipes
+  text = text.replace(/^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$/gm, '');
+  text = text.replace(/\s*\|\s*/g, ' ');
 
   // Remove images ![alt](url)
   text = text.replace(/!\[[^\]]*\]\([^)]*\)/g, ' ');
@@ -103,6 +143,12 @@ export function stripMarkdown(markdown: string): string {
   // Remove list markers
   text = text.replace(/^[\s]*[-*+]\s+/gm, '');
   text = text.replace(/^[\s]*\d+\.\s+/gm, '');
+
+  // Restore inline code
+  text = text.replace(
+    new RegExp(`${CODE_MARK}(\\d+)${CODE_MARK}`, 'g'),
+    (_match, index: string) => inlineCode[Number(index)] ?? '',
+  );
 
   // Normalize whitespace
   text = text.replace(/\s+/g, ' ').trim();

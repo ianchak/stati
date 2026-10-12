@@ -1,4 +1,22 @@
 import { defineConfig } from '@stati/core';
+import Prism from 'prismjs';
+// Languages used by the build-time highlighter for code in Eta templates.
+// Imported directly: Prism's loadLanguages() relies on require.resolve.
+import 'prismjs/components/prism-typescript.js';
+import 'prismjs/components/prism-bash.js';
+import 'prismjs/components/prism-markdown.js';
+import 'prismjs/components/prism-markup-templating.js';
+import 'prismjs/components/prism-ejs.js';
+
+const DOCS_SECTIONS = [
+  { path: '/getting-started', title: 'Getting started' },
+  { path: '/core-concepts', title: 'Core concepts' },
+  { path: '/configuration', title: 'Configuration' },
+  { path: '/cli', title: 'CLI' },
+  { path: '/api', title: 'API' },
+  { path: '/examples', title: 'Examples' },
+  { path: '/advanced', title: 'Advanced' },
+];
 
 export default defineConfig({
   site: {
@@ -33,6 +51,14 @@ export default defineConfig({
           .toLowerCase()
           .replace(/\s+/g, '-')
           .replace(/[^\w-]/g, ''),
+      // Ordered docs sections shared by the sidebar and the previous/next pager
+      docsSections: () => DOCS_SECTIONS,
+      // Syntax-highlights code at build time so templates ship no highlighter
+      highlight: (code: unknown, lang: unknown) => {
+        const source = String(code).replace(/^\n+|\s+$/g, '');
+        const grammar = Prism.languages[String(lang)];
+        return grammar ? Prism.highlight(source, grammar, String(lang)) : escapeHtml(source);
+      },
     },
   },
   typescript: {
@@ -62,11 +88,13 @@ export default defineConfig({
   },
   search: {
     enabled: true,
+    exclude: ['/404'],
   },
   sitemap: {
     enabled: true,
     defaultPriority: 0.7,
     defaultChangeFreq: 'weekly',
+    excludePatterns: ['/404'],
     priorityRules: [
       { pattern: '/', priority: 1.0 },
       { pattern: '/getting-started/**', priority: 0.9 },
@@ -94,7 +122,12 @@ export default defineConfig({
         language: 'en-US',
         category: 'Documentation',
         maxItems: 30,
+        excludePatterns: ['**/404.md'],
       },
     ],
   },
 });
+
+function escapeHtml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}

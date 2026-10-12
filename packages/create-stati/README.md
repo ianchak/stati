@@ -17,9 +17,9 @@ npx create-stati
 The interactive wizard will guide you through:
 
 1. **Project name** - What to call your site
-2. **Template** - Starting point (currently: blank)
+2. **Template** - Starting point: blank, a complete blog, or a complete docs site
 3. **CSS solution** - Plain CSS, Sass, or Tailwind
-4. **TypeScript** - Optional TypeScript support
+4. **TypeScript** - On by default; answer no for a JavaScript project
 5. **Agent skill** - Optional Stati skill for AI coding assistants
 6. **Git initialization** - Optional repository setup
 
@@ -37,9 +37,10 @@ npx create-stati my-site --template=blank --styling=tailwind --git
 
 **Available flags:**
 
-- `--template <name>` - Template to use (currently: `blank`)
+- `--template <name>` - Template to use (`blank` | `blog` | `docs`)
 - `--styling <type>` - CSS solution (`css` | `sass` | `tailwind`)
-- `--typescript`, `--ts` - Enable TypeScript support
+- `--typescript`, `--ts` - Use TypeScript (default)
+- `--no-typescript`, `--no-ts` - Use JavaScript instead of TypeScript
 - `--no-git` - Skip git initialization (default: initializes Git)
 - `--no-install` - Skip dependency installation (default: installs dependencies)
 - `--package-manager <pm>` - Package manager to use (`npm` | `yarn` | `pnpm` | `bun`)
@@ -53,8 +54,8 @@ npx create-stati my-site --template=blank --styling=tailwind --git
 # Plain CSS (Git initialized by default)
 npx create-stati my-blog --styling=css
 
-# TypeScript with Tailwind
-npx create-stati my-app --typescript --styling=tailwind
+# JavaScript instead of TypeScript, with Tailwind
+npx create-stati my-app --no-typescript --styling=tailwind
 
 # Tailwind without Git and skip install
 npx create-stati my-portfolio --styling=tailwind --no-git --no-install
@@ -84,7 +85,7 @@ When you run `npx create-stati`, you'll see a friendly wizard:
   > Plain CSS (recommended for beginners)
     Sass/SCSS
     Tailwind CSS
-? Enable TypeScript support? (y/N)
+? Use TypeScript? (Y/n)
 ? Install the Stati agent skill for AI coding assistants? (Use arrow keys)
   > .claude/skills (Claude Code, Copilot in VS Code)
     .github/skills (GitHub Copilot)
@@ -107,7 +108,7 @@ Each choice is explained, so you can make the right decision for your project.
 
 ## TypeScript Support
 
-When TypeScript is enabled (via `--typescript` flag or interactive prompt), your project will include:
+TypeScript is on by default. Unless you pass `--no-typescript` or answer no at the prompt, your project will include:
 
 - **`stati.config.ts`** - TypeScript configuration file with full type safety
 - **`tsconfig.json`** - TypeScript compiler configuration optimized for browser targets
@@ -146,6 +147,30 @@ create-stati can copy the [Stati agent skill](https://github.com/ianchak/stati/t
 | `agents`           | `.agents/skills/stati/` | Tools using the `.agents` convention   |
 
 In interactive mode you're asked where to install it. In non-interactive mode it is only installed when `--agent-skill` is passed. Invoke it in Claude Code with `/stati`.
+
+---
+
+## The Blog Template
+
+A complete blog that works on first run: Markdown posts, a tags page, a yearly archive, newer, older and related posts, an RSS feed, a sitemap, `robots.txt`, Open Graph and `BlogPosting` metadata, drafts and a 404 page. The sample posts explain how each part works.
+
+```bash
+npx create-stati my-blog --template=blog
+```
+
+The blog ships its own `stati.config.js`; with TypeScript it becomes `stati.config.ts`, and with Sass or Tailwind its stylesheet moves into `src/` so the design stays intact.
+
+---
+
+## The Docs Template
+
+A complete documentation site that works on first run: a sidebar built from your folders, Ctrl+K search, an on-page table of contents, previous and next links, breadcrumbs, build-time syntax highlighting with copy buttons, light and dark themes, a mobile drawer, a sitemap, `robots.txt`, link previews, drafts and a 404 page. The sample pages explain how each part works.
+
+```bash
+npx create-stati my-docs --template=docs
+```
+
+Like the blog, it ships its own `stati.config.js`; with TypeScript it becomes `stati.config.ts`, and with Sass or Tailwind its stylesheet moves into `src/` so the design stays intact.
 
 ---
 

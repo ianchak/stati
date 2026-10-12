@@ -1,14 +1,14 @@
 ---
-title: 'Markdown Pipeline'
+title: 'Markdown pipeline'
 description: 'Learn how Stati processes and renders Markdown content with advanced features.'
 order: 4
 ---
 
-# Markdown Pipeline
+# Markdown pipeline
 
 Stati uses Markdown-It as its core markdown processor, enhanced with carefully selected plugins and customization options. The pipeline is designed to be extensible and developer-friendly while supporting modern markdown features.
 
-## Core Features
+## Core features
 
 ### Standard Markdown
 
@@ -44,12 +44,11 @@ function hello() {
 ```
 ````
 
-```text
-### Front Matter
+### Front matter
 
 Every markdown file can include YAML front matter:
 
-```markdown
+````markdown
 ---
 title: 'My Page Title'
 description: 'A brief description for SEO'
@@ -63,7 +62,7 @@ layout: 'post'
 # Your content starts here...
 ````
 
-### Syntax Highlighting
+### Syntax highlighting
 
 Code blocks in markdown are rendered with language class attributes. To add syntax highlighting, you need to include a client-side library like Prism.js or Highlight.js in your templates.
 
@@ -119,9 +118,9 @@ npm run build
 ```
 ````
 
-## Enhanced Features
+## Enhanced features
 
-### Table Support
+### Table support
 
 Create tables using standard markdown table syntax:
 
@@ -143,7 +142,7 @@ Renders as:
 | esbuild        | ✅ Integrated  | ⚠️ Optional |
 | Simplicity     | ✅ Minimal     | 📦 Varies   |
 
-### Task Lists
+### Task lists
 
 Create interactive checkboxes:
 
@@ -168,7 +167,7 @@ Visit https://stati.build for more information.
 Contact us at hello@stati.build for support.
 ```
 
-### Typography Enhancements
+### Typography enhancements
 
 Smart quotes, em-dashes, and ellipses:
 
@@ -178,9 +177,9 @@ En-dash (--) and em-dash (---)
 Ellipsis (...)
 ```
 
-## Markdown Configuration
+## Markdown configuration
 
-### Base Configuration
+### Base configuration
 
 Stati uses Markdown-It with the following default configuration:
 
@@ -212,7 +211,7 @@ npm install markdown-it-footnote markdown-it-mark
 
 ## Configuration
 
-### Basic Configuration
+### Basic configuration
 
 Configure markdown processing in `stati.config.js`:
 
@@ -247,7 +246,7 @@ export default defineConfig({
 
 > **Note:** HTML tags, linkify, and typographer are enabled by default in Stati and cannot be disabled. TOC extraction and heading anchors are also built-in.
 
-### Advanced Configuration
+### Advanced configuration
 
 ```javascript
 export default defineConfig({
@@ -275,9 +274,9 @@ export default defineConfig({
 });
 ```
 
-## Custom Plugins
+## Custom plugins
 
-### Creating a Plugin
+### Creating a plugin
 
 ```javascript
 // plugins/custom-alerts.js
@@ -314,7 +313,7 @@ export default defineConfig({
 });
 ```
 
-### Using Custom Alerts
+### Using custom alerts
 
 ```markdown
 > [!NOTE]
@@ -327,9 +326,9 @@ export default defineConfig({
 > This is a tip alert.
 ```
 
-## Content Processing
+## Content processing
 
-### Front Matter Processing
+### Front matter processing
 
 Front matter is parsed and made available to templates:
 
@@ -366,7 +365,7 @@ Access in templates:
 </article>
 ```
 
-### Content Excerpts
+### Content excerpts
 
 Stati does not currently provide built-in excerpt support. To create excerpts, you can:
 
@@ -393,9 +392,9 @@ Access in templates:
 <p class="excerpt"><%= stati.page.excerpt %></p>
 ```
 
-## Performance Optimization
+## Performance optimization
 
-### Build-time Processing
+### Build-time processing
 
 All markdown processing happens at build time, not at runtime. This means:
 

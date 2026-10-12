@@ -1,18 +1,18 @@
 ---
-title: 'Templates & Layouts'
+title: 'Templates and layouts'
 description: 'Learn how to create dynamic templates and layouts using Eta template engine.'
 order: 3
 ---
 
-# Templates & Layouts
+# Templates and layouts
 
 Stati uses Eta as its templating engine, providing a powerful yet familiar syntax for creating dynamic layouts and templates. Combined with Stati's layout inheritance system, you can create flexible and maintainable site designs.
 
-## Template Engine: Eta
+## Template engine: Eta
 
 Eta is a fast, lightweight templating engine with a syntax similar to EJS but with better performance and TypeScript support.
 
-### Dynamic Attribute Values
+### Dynamic attribute values
 
 > Eta requires every HTML attribute value to be fully resolved by the time it is rendered. You cannot splice template expressions into the middle of a static value (for example `class="bg-<%= color %>-500"`).
 
@@ -43,7 +43,7 @@ For more complex combinations, prefer the `stati.propValue()` helper provided by
 data-id="<%= `item-${id}` %>"
 ```
 
-### Basic Syntax
+### Basic syntax
 
 ```eta
 <!-- Variables -->
@@ -71,7 +71,7 @@ data-id="<%= `item-${id}` %>"
 <%/* This is a comment */%>
 ```
 
-### Available Data
+### Available data
 
 In your templates, you have access to:
 
@@ -100,9 +100,9 @@ In your templates, you have access to:
 <%= stati.partials.header %> <!-- Partial templates -->
 ```
 
-## Layout System
+## Layout system
 
-### Layout Inheritance
+### Layout inheritance
 
 Stati supports hierarchical layouts where more specific layouts **override** parent directory layouts:
 
@@ -117,7 +117,7 @@ site/
         └── my-post.md
 ```
 
-### Template Resolution Order
+### Template resolution order
 
 Stati looks for templates in this order:
 
@@ -142,7 +142,7 @@ title: 'My Post'
 
 The first match wins, providing maximum flexibility while maintaining sensible defaults.
 
-### Root Layout Example
+### Root layout example
 
 `site/layout.eta`:
 
@@ -183,7 +183,7 @@ The first match wins, providing maximum flexibility while maintaining sensible d
 </html>
 ```
 
-### Section Layout Example
+### Section layout example
 
 Section layouts **completely replace** the root layout for pages in that directory and its subdirectories. They must be complete HTML documents (or include another complete layout via partials).
 
@@ -238,11 +238,11 @@ Section layouts **completely replace** the root layout for pages in that directo
 
 > **Note:** To share common structure (header, footer, meta tags) between layouts, extract them into partials and include them in each layout.
 
-## Partial Templates
+## Partial templates
 
 Partials are reusable template components stored in `_` (underscore) prefixed directories.
 
-### Partial Discovery Rules
+### Partial discovery rules
 
 Stati uses a strict convention for partial auto-discovery:
 
@@ -266,7 +266,7 @@ site/
     └── ignored.eta
 ```
 
-### Creating Partials
+### Creating partials
 
 `site/_partials/header.eta`:
 
@@ -290,7 +290,7 @@ site/
 </header>
 ```
 
-### Using Partials
+### Using partials
 
 Partials are automatically available in templates:
 
@@ -301,11 +301,11 @@ Partials are automatically available in templates:
 <%~ stati.partials.sidebar %>
 ```
 
-### Passing Data to Partials
+### Passing data to partials
 
 Partials can accept custom data, making them reusable like components. This is perfect for cards, buttons, or any content that varies slightly each time you use it.
 
-#### Basic Usage
+#### Basic usage
 
 ```eta
 <!-- Simple: no data needed -->
@@ -334,7 +334,7 @@ Partials can accept custom data, making them reusable like components. This is p
 - Access passed data inside the partial via `stati.props.propertyName`
 - All Stati data remains available: `stati.site`, `stati.page`, `stati.content`, etc.
 
-#### Creating a Reusable Partial
+#### Creating a reusable partial
 
 Let's create a card component that accepts custom data.
 
@@ -379,7 +379,7 @@ Let's create a card component that accepts custom data.
 </div>
 ```
 
-#### Accessing Data Inside Partials
+#### Accessing data inside partials
 
 Inside your partials, any data you pass is available via `stati.props`:
 
@@ -397,7 +397,7 @@ Inside your partials, any data you pass is available via `stati.props`:
 </section>
 ```
 
-#### Mixing Custom and Site Data
+#### Mixing custom and site data
 
 You can combine data passed to the partial with Stati's global data:
 
@@ -430,7 +430,7 @@ You can combine data passed to the partial with Stati's global data:
 - Use `stati.page` for the current page's information
 - Provide sensible defaults with `||` for optional properties
 
-### Hierarchical Partials
+### Hierarchical partials
 
 Partials are discovered **upward** from the current page's directory to the root. A page can access partials from its own directory and all parent directories, but **not** from child directories.
 
@@ -454,9 +454,9 @@ site/
 - Blog layout (`site/blog/layout.eta`) can access both `site/_partials/` AND `site/blog/_partials/`
 - More specific partials (deeper in hierarchy) override less specific ones with the same name
 
-## Template Data and Context
+## Template data and context
 
-### Front Matter Integration
+### Front matter integration
 
 Front matter from your markdown files is available in templates:
 
@@ -500,9 +500,9 @@ Template usage:
 </article>
 ```
 
-## Custom Filters and Helpers
+## Custom filters and helpers
 
-### Date Formatting
+### Date formatting
 
 ```eta
 <!-- Format dates -->
@@ -532,7 +532,7 @@ const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 </span>
 ```
 
-### Text Processing
+### Text processing
 
 ```eta
 <!-- Truncate text -->
@@ -556,9 +556,9 @@ function slugify(text) {
 <a href="/tags/<%= slugify(tag) %>/" class="tag-link">#<%= tag %></a>
 ```
 
-## Performance Considerations
+## Performance considerations
 
-### Template Caching
+### Template caching
 
 Stati automatically caches compiled templates, but you can optimize further:
 
@@ -567,7 +567,7 @@ Stati automatically caches compiled templates, but you can optimize further:
 3. **Use front matter for data that doesn't change**
 4. **Cache expensive computations in build process**
 
-### Best Practices
+### Best practices
 
 1. **Separate logic from presentation**
    - Use front matter for data
@@ -584,9 +584,9 @@ Stati automatically caches compiled templates, but you can optimize further:
    - Use conditionals to skip unnecessary work
    - Cache computed values when possible
 
-## Generator Information
+## Generator information
 
-### Displaying Version Information
+### Displaying version information
 
 You can access Stati's version information in templates using `stati.generator.version`. This is useful for attribution, debugging, or technical information display:
 

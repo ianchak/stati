@@ -1,28 +1,32 @@
 ---
-title: 'Quick Start'
+title: 'Quick start'
 description: 'Get up and running with Stati in minutes.'
 order: 4
+seo:
+  title: 'Stati quick start'
 ---
 
-# Quick Start Guide
+# Quick start
 
-This guide will walk you through creating your first Stati site from scratch. You'll learn the basics of content creation, templating, and building.
+This guide takes you from nothing to a running Stati site, then through the first changes you'll make: content, layout, styling, config and a production build.
 
-## Need Help?
+## The short version
 
-- Check the [API Reference](/api/reference) for detailed documentation
-- Browse [Examples](/examples/list) for inspiration
-- Visit the [Contributing](/advanced/contributing) section to help improve Stati
+```bash
+npx create-stati my-first-site
+cd my-first-site
+npm run dev
+```
 
-Before we start, make sure you have:
+Press Enter to accept each default; the scaffolder installs dependencies for you. `npm run dev` then serves the site at [http://localhost:3000](http://localhost:3000) and reloads the browser whenever you make changes. The steps below explain each command.
 
 ## Prerequisites
 
-- Node.js 22+
-- npm 11.5.1 or higher
+- Node.js 22 or higher
+- npm, pnpm, yarn or bun
 - A text editor (VS Code recommended)
 
-## Step 1: Create a New Project
+## Step 1: Create a new project
 
 Use the Stati scaffolder to create a new project:
 
@@ -30,14 +34,16 @@ Use the Stati scaffolder to create a new project:
 npx create-stati my-first-site
 ```
 
-The scaffolder will prompt you for:
+The scaffolder asks, in order:
 
-- **Template** - Choose from available starters (blank is the default)
+- **Project name** - Skipped when you pass one, as above
+- **Template** - Blank, a minimal starter; Blog, a complete blog with tags, an archive and an RSS feed; or Docs, a complete documentation site with a sidebar, search and a table of contents
 - **CSS solution** - Plain CSS, Sass/SCSS, or Tailwind CSS
-- **TypeScript** - Enable TypeScript support for your project
-- **Git initialization** - Initialize a git repository (enabled by default)
-- **Install dependencies** - Run package installation automatically (enabled by default)
-- **Package manager** - Choose npm, yarn, pnpm, or bun (if multiple are available)
+- **TypeScript** - On by default, for a typed `stati.config.ts` and client TypeScript bundles; answer no for JavaScript
+- **Agent skill** - Optionally install the Stati skill for Claude Code or GitHub Copilot
+- **Git** - Initialize a git repository (on by default)
+- **Install dependencies** - Run the install for you (on by default)
+- **Package manager** - npm, yarn, pnpm or bun, when more than one is installed
 
 Navigate to your new project:
 
@@ -47,14 +53,17 @@ cd my-first-site
 
 > **Note:** If you chose to install dependencies during scaffolding, they're already installed. Otherwise, run `npm install` before continuing.
 
-## Step 2: Explore the Project Structure
+## Step 2: Explore the project structure
 
 Your new project will have this structure:
 
 ```text
 my-first-site/
 ├── package.json          # Project dependencies and scripts
-├── stati.config.js       # Stati configuration
+├── stati.config.ts       # Stati configuration (stati.config.js for JavaScript projects)
+├── tsconfig.json         # TypeScript compiler configuration
+├── src/
+│   └── main.ts           # Client TypeScript entry point
 ├── public/               # Static assets
 │   ├── favicon.svg
 │   └── styles.css
@@ -63,7 +72,7 @@ my-first-site/
     └── layout.eta        # Base layout template
 ```
 
-## Step 3: Start the Development Server
+## Step 3: Start the development server
 
 Start the development server to see your site:
 
@@ -77,9 +86,19 @@ The dev server will:
 - Watch for file changes in `site/` and `public/`
 - Automatically rebuild and reload the browser when you save changes
 
-Open your browser and navigate to the URL shown in the terminal.
+Open your browser and navigate to the URL shown in the terminal. Your site is running; the rest of this guide makes it yours.
 
-## Step 4: Edit Your First Page
+<figure>
+  <img class="dark:hidden" src="/images/blank-template-light.webp" alt="The blank starter's homepage: a header with the site name, a large Welcome to your Stati site heading, and a numbered list of getting-started steps." width="1120" height="716" loading="lazy" />
+  <img class="hidden dark:block" src="/images/blank-template-dark.webp" alt="The blank starter's homepage in its dark theme: a header with the site name, a large Welcome to your Stati site heading, and a numbered list of getting-started steps." width="1120" height="716" loading="lazy" />
+  <figcaption>The starter homepage. It follows the visitor&#39;s light or dark system setting.</figcaption>
+</figure>
+
+## Next: Make it yours
+
+Work through these in order, or jump to the one you need.
+
+### Step 4: Edit your first page
 
 Open `site/index.md` in your text editor and modify it:
 
@@ -107,7 +126,7 @@ Ready to build something amazing!
 
 Save the file and watch your browser automatically refresh with the changes.
 
-## Step 5: Add a New Page
+### Step 5: Add a new page
 
 Create a new page by adding `site/about.md`:
 
@@ -135,92 +154,46 @@ I chose Stati because:
 Feel free to reach out if you have any questions!
 ```
 
-Your new page will be available at [http://localhost:3000/about/](http://localhost:3000/about/)
+Your new page will be available at [http://localhost:3000/about](http://localhost:3000/about)
 
-## Step 6: Customize the Layout
+### Step 6: Add the page to the navigation
 
-Edit `site/layout.eta` to add navigation:
+`site/layout.eta` wraps every page. Its header already has a navigation with a Home link; add one for your About page:
 
 ```html
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title><%= stati.page.title ? `${stati.page.title} | ${stati.site.title}` : stati.site.title %></title>
-    <% if (stati.page.description) { %>
-    <meta name="description" content="<%= stati.page.description %>" />
-    <% } %>
-    <link rel="stylesheet" href="/styles.css" />
-  </head>
-  <body>
-    <nav>
-      <a href="/">Home</a>
-      <a href="/about/">About</a>
-    </nav>
-
-    <main>
-      <% if (stati.page.title) { %>
-      <h1><%= stati.page.title %></h1>
-      <% } %> <%~ stati.content %>
-    </main>
-
-    <footer>
-      <p>&copy; 2024 My Stati Site</p>
-    </footer>
-  </body>
-</html>
+<nav aria-label="Main">
+  <a href="/" aria-current="<%= stati.page.url === '/' ? 'page' : 'false' %>">Home</a>
+  <a href="/about" aria-current="<%= stati.page.url === '/about' ? 'page' : 'false' %>">About</a>
+</nav>
 ```
 
-## Step 7: Add Some Styling
+`aria-current="page"` tells screen readers which page is open, and the stylesheet highlights that link. The whole attribute value is one expression on purpose: Eta templates can't mix static text and `<%= %>` inside an attribute (see [Templates](/core-concepts/templates)).
 
-Edit `public/styles.css` to style your site:
+### Step 7: Change the colors
+
+The colors and fonts are custom properties at the top of `public/styles.css`, with a second set for the dark theme. Change the accent in both to restyle links, focus rings and text selection across the site:
 
 ```css
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  line-height: 1.6;
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
-  background: #fff;
-  color: #333;
+:root {
+  --accent: #0f766e;
+  --accent-ink: #115e59;
 }
 
-nav {
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #eee;
-}
-
-nav a {
-  margin-right: 1rem;
-  text-decoration: none;
-  color: #0066cc;
-  font-weight: 500;
-}
-
-nav a:hover {
-  text-decoration: underline;
-}
-
-main {
-  margin-bottom: 3rem;
-}
-
-footer {
-  text-align: center;
-  color: #666;
-  border-top: 1px solid #eee;
-  padding-top: 1rem;
+@media (prefers-color-scheme: dark) {
+  :root {
+    --accent: #2dd4bf;
+    --accent-ink: #5eead4;
+  }
 }
 ```
 
-## Step 8: Configure Your Site
+Edit the values in place rather than adding a second `:root` block. If you chose Sass, the same properties are in `src/styles.scss`, where `$primary-color` sets the light accent. With Tailwind, `src/styles.css` styles the starter with `@apply` and Tailwind's own palette, so swap the `blue-*` classes there instead.
 
-Edit `stati.config.js` (or `stati.config.ts` for TypeScript projects) to customize your site settings:
+### Step 8: Configure your site
 
-```javascript
+Edit `stati.config.ts` (or `stati.config.js` for JavaScript projects) to customize your site settings:
+
+```typescript
 import { defineConfig } from '@stati/core';
 
 export default defineConfig({
@@ -250,7 +223,7 @@ export default defineConfig({
 });
 ```
 
-## Step 9: Build for Production
+### Step 9: Build for production
 
 When you're ready to deploy, build your site:
 
@@ -260,7 +233,7 @@ npm run build
 
 This creates a `dist/` directory with your optimized site ready for deployment.
 
-## Step 10: Deploy Your Site
+### Step 10: Deploy your site
 
 You can deploy the `dist/` folder to any static hosting service:
 
@@ -273,26 +246,26 @@ You can deploy the `dist/` folder to any static hosting service:
 
 Now that you have a working Stati site, explore these topics:
 
-### Learn Core Concepts
+### Learn core concepts
 
 - [Filesystem-based Routing](/core-concepts/routing)
 - [Templates & Layouts](/core-concepts/templates)
 - [Markdown Pipeline](/core-concepts/markdown)
 - [Incremental Static Generation](/core-concepts/isg)
 
-### Advanced Configuration
+### Advanced configuration
 
 - [Site Metadata](/configuration/site-metadata)
 - [Template Settings](/configuration/templates)
 - [Markdown Configuration](/configuration/markdown)
 
-### Examples and Learning Resources
+### Examples and learning resources
 
 - [Available Examples](/examples/list) - Explore currently implemented templates
 - [Configuration Reference](/configuration/file) - Detailed configuration options
 
-## Need Help?
+## Need help?
 
-- Check the [API Reference](/api/reference) for detailed documentation
+- Check the [API overview](/api/reference) for detailed documentation
 - Browse [Examples](/examples/list) for inspiration
 - Visit the [Contributing](/advanced/contributing) section to help improve Stati

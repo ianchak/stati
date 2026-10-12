@@ -4,6 +4,7 @@ import { createSite, detectAvailablePackageManagers, ALLOWED_PACKAGE_MANAGERS } 
 import type { CreateOptions, PackageManager } from './create.js';
 import { log } from './utils/index.js';
 import { AGENT_SKILL_TARGETS, isValidAgentSkillTarget } from './agent-skill.js';
+import { TEMPLATE_NAMES, isValidTemplate } from './examples.js';
 
 /**
  * Validate that a string is a valid package manager
@@ -23,9 +24,10 @@ Usage:
   create-stati [project-name] [options]
 
 Options:
-  --template <name>        Template to use (blank)
+  --template <name>        Template to use (blank|blog|docs)
   --styling <type>         CSS solution (css|sass|tailwind)
-  --typescript, --ts       Enable TypeScript support
+  --typescript, --ts       Use TypeScript (default)
+  --no-typescript, --no-ts Use JavaScript instead of TypeScript
   --no-git                 Skip git initialization (default: initializes Git)
   --no-install             Skip dependency installation (default: installs dependencies)
   --package-manager <pm>   Package manager to use (npm|yarn|pnpm|bun)
@@ -35,8 +37,10 @@ Options:
 
 Examples:
   create-stati my-site
-  create-stati my-blog --styling=sass
-  create-stati my-app --typescript
+  create-stati my-blog --template=blog
+  create-stati my-docs --template=docs
+  create-stati my-site --styling=sass
+  create-stati my-app --no-typescript
   create-stati my-app --template=blank --styling=tailwind --package-manager=pnpm
   create-stati my-app --no-install --no-git
   create-stati my-app --agent-skill=github
@@ -56,15 +60,28 @@ Examples:
       const [key, value] = arg.substring(2).split('=');
 
       switch (key) {
-        case 'template':
-          options.template = (value || args[++i]) as 'blank';
+        case 'template': {
+          const templateValue = value || args[++i];
+          if (isValidTemplate(templateValue)) {
+            options.template = templateValue;
+          } else {
+            log.error(
+              `Invalid template: '${templateValue ?? ''}'. Allowed values: ${TEMPLATE_NAMES.join(', ')}`,
+            );
+            process.exit(1);
+          }
           break;
+        }
         case 'styling':
           options.styling = (value || args[++i]) as 'css' | 'sass' | 'tailwind';
           break;
         case 'typescript':
         case 'ts':
           options.typescript = true;
+          break;
+        case 'no-typescript':
+        case 'no-ts':
+          options.typescript = false;
           break;
         case 'no-git':
           options.gitInit = false;
@@ -171,6 +188,16 @@ export async function runCLI(cliOptions?: Partial<CreateOptions> | null): Promis
           value: 'blank',
           short: 'Blank',
         },
+        {
+          name: 'Blog - Posts, tags, archive, RSS feed and SEO, ready to write',
+          value: 'blog',
+          short: 'Blog',
+        },
+        {
+          name: 'Docs - Sidebar, search, table of contents and SEO, ready to document',
+          value: 'docs',
+          short: 'Docs',
+        },
       ],
       default: 'blank',
     });
@@ -195,13 +222,13 @@ export async function runCLI(cliOptions?: Partial<CreateOptions> | null): Promis
   const hasRequiredPrompts = prompts.length > 0;
 
   // TypeScript prompt (only if not specified via flag AND we're in interactive mode)
-  // In non-interactive mode (all required options provided), default to false for backward compatibility
+  // In non-interactive mode (all required options provided), TypeScript is on unless --no-typescript is passed
   if (options.typescript === undefined && hasRequiredPrompts) {
     prompts.push({
       name: 'typescript',
       type: 'confirm',
-      message: 'Enable TypeScript support?',
-      default: false,
+      message: 'Use TypeScript?',
+      default: true,
     });
   }
 
@@ -281,7 +308,7 @@ export async function runCLI(cliOptions?: Partial<CreateOptions> | null): Promis
     projectName: options.projectName || answers.name?.trim() || 'my-stati-site',
     template: options.template || answers.template || 'blank',
     styling: options.styling || answers.styling || 'css',
-    typescript: options.typescript ?? answers.typescript ?? false,
+    typescript: options.typescript ?? answers.typescript ?? true,
     gitInit:
       options.gitInit !== undefined
         ? options.gitInit

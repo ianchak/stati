@@ -36,9 +36,24 @@ describe('stripMarkdown', () => {
     expect(stripMarkdown(markdown)).toBe('Before After');
   });
 
-  it('removes inline code', () => {
+  it('keeps inline code text without backticks', () => {
     const markdown = 'Use `const` to declare constants';
-    expect(stripMarkdown(markdown)).toBe('Use to declare constants');
+    expect(stripMarkdown(markdown)).toBe('Use const to declare constants');
+  });
+
+  it('protects inline code from emphasis and HTML stripping', () => {
+    const markdown = 'Set `max_age_days` and call `<%~ include() %>` here';
+    expect(stripMarkdown(markdown)).toBe('Set max_age_days and call <%~ include() %> here');
+  });
+
+  it('keeps inline code that uses longer backtick delimiters', () => {
+    const markdown = 'Wrap it as `` `code` `` or ```a `` b``` in text';
+    expect(stripMarkdown(markdown)).toBe('Wrap it as `code` or a `` b in text');
+  });
+
+  it('removes table pipes and delimiter rows', () => {
+    const markdown = '| Option | Type |\n| --- | :---: |\n| `ttlSeconds` | number |';
+    expect(stripMarkdown(markdown)).toBe('Option Type ttlSeconds number');
   });
 
   it('removes images', () => {
@@ -149,7 +164,12 @@ describe('buildBreadcrumb', () => {
   });
 
   it('handles deep nesting', () => {
-    expect(buildBreadcrumb('/api/hooks/use-state', 'useState')).toBe('Api > Hooks > useState');
+    expect(buildBreadcrumb('/api/hooks/use-state', 'useState')).toBe('API > Hooks > useState');
+  });
+
+  it('keeps known acronyms uppercase', () => {
+    expect(buildBreadcrumb('/cli/commands', 'Commands')).toBe('CLI > Commands');
+    expect(buildBreadcrumb('/seo-guides/basics', 'Basics')).toBe('SEO Guides > Basics');
   });
 });
 

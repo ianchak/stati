@@ -1,0 +1,6 @@
+<footer class="site-footer">
+  <div class="footer-inner">
+    <p>&copy; <%= new Date().getFullYear() %> <%= stati.site.title %>.<% if (stati.site.footer) { %> <%= stati.site.footer %><% } %></p>
+    <p>Built with <a href="https://stati.build">Stati</a></p>
+  </div>
+</footer>

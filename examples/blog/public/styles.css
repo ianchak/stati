@@ -1,0 +1,747 @@
+/*
+ * Styles for the Stati blog starter.
+ *
+ * Restyle the whole blog from the custom properties in :root.
+ * The display face (Young Serif) is self-hosted from /fonts; prose uses the
+ * reading serif already installed on the visitor's device.
+ */
+
+@font-face {
+  font-family: 'Young Serif';
+  src: url('/fonts/young-serif.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: light dark;
+
+  --font-display: 'Young Serif', Charter, 'Sitka Text', Cambria, Georgia, serif;
+  --font-text: Charter, 'Bitstream Charter', 'Sitka Text', Cambria, Georgia, serif;
+  --font-ui:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+
+  --paper: #ffffff;
+  --ink: #1b1f1d;
+  --muted: #545d58;
+  --faint: #67716b;
+  --line: #e4e8e6;
+  --line-strong: #cdd4d0;
+  --accent: #0f7b6c;
+  --accent-strong: #0a5d52;
+  --wash: #edf5f3;
+  --code: #f4f7f6;
+
+  --measure: 42.5rem;
+  --gutter: 1.25rem;
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #0f1513;
+    --ink: #e8eeeb;
+    --muted: #a9b5af;
+    --faint: #8e9b94;
+    --line: #232e2a;
+    --line-strong: #34433d;
+    --accent: #5fc8b3;
+    --accent-strong: #8fdccb;
+    --wash: #15302a;
+    --code: #151d1a;
+  }
+}
+
+/* Base */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--paper);
+  -webkit-text-size-adjust: 100%;
+  scrollbar-color: var(--line-strong) var(--paper);
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  margin: 0;
+  font-family: var(--font-text);
+  font-size: 1.125rem;
+  line-height: 1.7;
+  color: var(--ink);
+  caret-color: var(--accent);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 24%, transparent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+a {
+  color: var(--accent);
+  text-decoration-line: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  transition:
+    color 160ms var(--ease-out),
+    text-decoration-color 160ms var(--ease-out),
+    text-decoration-thickness 160ms var(--ease-out);
+}
+
+a:hover {
+  color: var(--accent-strong);
+  text-decoration-color: currentColor;
+  text-decoration-thickness: 2px;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 1.2;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+img,
+svg,
+video {
+  max-width: 100%;
+  height: auto;
+}
+
+code,
+kbd,
+pre {
+  font-family: var(--font-mono);
+}
+
+.skip-link {
+  position: absolute;
+  top: -4rem;
+  left: var(--gutter);
+  z-index: 10;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--paper);
+  font-family: var(--font-ui);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  top: 1rem;
+}
+
+/* Frame */
+
+.wrapper {
+  width: 100%;
+  max-width: calc(var(--measure) + var(--gutter) * 2);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.site-header .wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
+  padding-block: 2.25rem 0;
+}
+
+.wordmark {
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  line-height: 1.2;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.wordmark:hover {
+  color: var(--accent);
+}
+
+.site-header ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.375rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.site-header nav a {
+  font-family: var(--font-ui);
+  font-size: 0.9375rem;
+  color: var(--muted);
+  text-decoration-color: transparent;
+}
+
+.site-header nav a:hover {
+  color: var(--ink);
+  text-decoration-color: var(--line-strong);
+  text-decoration-thickness: 1px;
+}
+
+.site-header nav a[aria-current='page'] {
+  color: var(--ink);
+  text-decoration-color: var(--accent);
+  text-decoration-thickness: 2px;
+}
+
+.site-header nav .feed-link {
+  color: var(--accent);
+}
+
+.feed-link svg {
+  margin-right: 0.3rem;
+  vertical-align: -0.05em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.feed-link svg circle {
+  fill: currentColor;
+  stroke: none;
+}
+
+main {
+  flex: 1;
+  padding-block: 4rem 6rem;
+}
+
+.site-footer {
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  color: var(--faint);
+}
+
+.footer-inner {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.25rem 1.5rem;
+  padding-block: 1.75rem 2.5rem;
+  border-top: 1px solid var(--line);
+}
+
+.site-footer p {
+  margin: 0;
+}
+
+.site-footer a {
+  color: var(--muted);
+}
+
+/* Page and post headers */
+
+.page-header h1,
+.post-header h1 {
+  font-size: clamp(2.125rem, 1.55rem + 2.4vw, 2.875rem);
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+}
+
+.page-header + .prose {
+  margin-top: 1.25rem;
+}
+
+.page-header + .prose > p:first-child {
+  font-size: 1.25rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.post-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 1.25rem;
+  margin-top: 1rem;
+  font-family: var(--font-ui);
+  font-size: 0.9375rem;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.post-body {
+  margin-top: 2.5rem;
+}
+
+/* Drop cap on the first paragraph of every post */
+.post-body > p:first-child::first-letter {
+  float: left;
+  margin: 0.1em 0.12em 0 -0.02em;
+  font-family: var(--font-display);
+  font-size: 3.55em;
+  line-height: 0.78;
+  color: var(--accent);
+}
+
+/* Tags and labels */
+
+.tag-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.875rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tag-links a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.tag-links a::before {
+  content: '#';
+  margin-right: 0.0625rem;
+  color: var(--accent);
+}
+
+.tag-links a:hover {
+  color: var(--accent);
+}
+
+.draft-label {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.0625rem 0.5rem;
+  border-radius: 999px;
+  background: var(--wash);
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--accent-strong);
+  vertical-align: 0.15em;
+}
+
+.post-meta .draft-label {
+  margin-left: 0;
+}
+
+/* Prose: everything your Markdown renders into */
+
+.prose > * {
+  margin-block: 0;
+}
+
+.prose > * + * {
+  margin-top: 1.25em;
+}
+
+.prose h2 {
+  margin-top: 2.25em;
+  font-size: 1.625rem;
+  line-height: 1.25;
+}
+
+.prose h3 {
+  margin-top: 2em;
+  font-size: 1.25rem;
+}
+
+.prose h4 {
+  margin-top: 1.75em;
+  font-family: var(--font-ui);
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.prose h2 + *,
+.prose h3 + *,
+.prose h4 + * {
+  margin-top: 0.625em;
+}
+
+.prose :is(h2, h3, h4) {
+  scroll-margin-top: 1.5rem;
+}
+
+.prose strong {
+  font-weight: 700;
+}
+
+.prose ul,
+.prose ol {
+  padding-left: 1.375em;
+}
+
+.prose ul {
+  list-style: disc;
+}
+
+.prose ol {
+  list-style: decimal;
+}
+
+.prose li + li {
+  margin-top: 0.375em;
+}
+
+.prose li::marker {
+  color: var(--accent);
+}
+
+.prose ol li::marker {
+  font-family: var(--font-ui);
+  font-size: 0.9em;
+  font-variant-numeric: tabular-nums;
+}
+
+.prose :not(pre) > code {
+  padding: 0.125em 0.35em;
+  border-radius: 4px;
+  background: var(--wash);
+  font-size: 0.85em;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.prose pre {
+  overflow-x: auto;
+  padding: 1.125rem 1.25rem;
+  border-radius: 8px;
+  background: var(--code);
+  font-size: 0.875rem;
+  line-height: 1.7;
+  color: var(--ink);
+  tab-size: 2;
+}
+
+.prose blockquote {
+  position: relative;
+  margin-inline: 0;
+  padding-left: 1.75rem;
+  font-style: italic;
+  color: var(--muted);
+}
+
+.prose blockquote::before {
+  content: '\201C';
+  position: absolute;
+  top: -0.1em;
+  left: -0.125rem;
+  font-family: var(--font-display);
+  font-size: 2.75em;
+  font-style: normal;
+  line-height: 1;
+  color: var(--accent);
+}
+
+.prose blockquote > * + * {
+  margin-top: 0.75em;
+}
+
+.prose blockquote p {
+  margin: 0;
+}
+
+/* Section break: Markdown's --- renders as the leaf ornament */
+.prose hr,
+.end-mark {
+  height: 2rem;
+  margin-block: 2.75em;
+  border: 0;
+  background: var(--accent);
+  -webkit-mask: url('/images/fleuron.svg') center / contain no-repeat;
+  mask: url('/images/fleuron.svg') center / contain no-repeat;
+}
+
+.prose img {
+  display: block;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.prose figure {
+  margin-inline: 0;
+}
+
+.prose figcaption {
+  margin-top: 0.625rem;
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  color: var(--faint);
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-ui);
+  font-size: 0.9375rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.prose th,
+.prose td {
+  padding: 0.5rem 1rem 0.5rem 0;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.prose th {
+  border-bottom-color: var(--line-strong);
+  font-weight: 650;
+}
+
+/* Post lists: home, archive, tags, related */
+
+.listing {
+  margin-top: 3.5rem;
+}
+
+.listing-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  font-size: 1.375rem;
+}
+
+.listing-heading .count {
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  color: var(--faint);
+}
+
+.listing-heading .hash {
+  margin-right: 0.0625rem;
+  color: var(--accent);
+}
+
+.post-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.post-row {
+  display: grid;
+  grid-template-columns: 7.25rem 1fr;
+  gap: 0.25rem 1.5rem;
+  padding-block: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.post-row:last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+.post-row time {
+  padding-top: 0.3rem;
+  font-family: var(--font-ui);
+  font-size: 0.9375rem;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.post-row-title {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  line-height: 1.35;
+  color: var(--ink);
+  text-decoration-color: transparent;
+}
+
+.post-row-title:hover {
+  color: var(--accent);
+  text-decoration-color: currentColor;
+  text-decoration-thickness: 1px;
+}
+
+.post-row p {
+  margin: 0.25rem 0 0;
+  font-size: 1rem;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.more {
+  margin: 1.25rem 0 0;
+  font-family: var(--font-ui);
+  font-size: 0.9375rem;
+}
+
+.empty {
+  color: var(--muted);
+}
+
+.tag-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem 1.5rem;
+  margin: 2.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tag-cloud a {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  color: var(--ink);
+  text-decoration-color: var(--line-strong);
+}
+
+.tag-cloud a::before {
+  content: '#';
+  color: var(--accent);
+}
+
+.tag-cloud a:hover {
+  color: var(--accent);
+}
+
+.tag-cloud .count {
+  margin-left: 0.25rem;
+  font-family: var(--font-ui);
+  font-size: 0.8125rem;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.tag-section {
+  scroll-margin-top: 1.5rem;
+}
+
+.tag-section:target .listing-heading {
+  color: var(--accent);
+}
+
+/* End of a post */
+
+.listing > .end-mark {
+  margin-block: 3rem 0;
+}
+
+.post-footer .end-mark {
+  margin-block: 3.5rem 2.5rem;
+}
+
+.author-note {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.author-note p {
+  margin: 0;
+}
+
+.author-note p + p {
+  margin-top: 0.5rem;
+}
+
+.author-note strong a {
+  margin-right: 0.25rem;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.post-pager {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-top: 3.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line);
+}
+
+.post-pager a {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  text-decoration: none;
+}
+
+.pager-older {
+  grid-column: 2;
+  text-align: right;
+}
+
+.pager-label {
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  color: var(--faint);
+}
+
+.pager-title {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  line-height: 1.35;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+.post-pager a:hover .pager-title {
+  color: var(--accent);
+}
+
+/* Small screens */
+
+@media (max-width: 34rem) {
+  main {
+    padding-block: 3rem 4.5rem;
+  }
+
+  .post-row {
+    grid-template-columns: 1fr;
+  }
+
+  .post-row time {
+    padding-top: 0;
+    font-size: 0.875rem;
+  }
+
+  .post-pager {
+    grid-template-columns: 1fr;
+  }
+
+  .pager-older {
+    grid-column: 1;
+    text-align: left;
+  }
+}
+
+/* Page transitions: a post's title glides from the list into its page.
+   Browsers without cross-document view transitions simply navigate. */
+
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition {
+    navigation: auto;
+  }
+
+  ::view-transition-group(*) {
+    animation-duration: 320ms;
+    animation-timing-function: var(--ease-out);
+  }
+}

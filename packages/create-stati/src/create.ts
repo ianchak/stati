@@ -1,6 +1,7 @@
-import { mkdir, rm, access, stat, writeFile } from 'node:fs/promises';
+import { mkdir, rm, access, stat, writeFile, readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
-import { ExampleManager } from './examples.js';
+import { ExampleManager, TEMPLATES } from './examples.js';
+import type { TemplateName } from './examples.js';
 import { PackageJsonModifier } from './package-json.js';
 import { processStyling } from './css-processors.js';
 import { writeProcessorFiles } from './utils/index.js';
@@ -180,7 +181,7 @@ function getInstallErrorSuggestion(error: Error, packageManager: string): string
 
 export interface CreateOptions {
   projectName: string;
-  template: 'blank';
+  template: TemplateName;
   styling: StylingOption;
   typescript?: boolean;
   gitInit?: boolean;
@@ -213,6 +214,30 @@ function generateConfigFile(options: CreateOptions): { filename: string; content
   return {
     filename: 'stati.config.js',
     content: generateJavaScriptConfig(options),
+  };
+}
+
+/**
+ * Adapt a config file shipped by the template (see `ExampleMetadata.ownConfig`).
+ * The JavaScript config is kept as-is; for TypeScript projects it becomes
+ * stati.config.ts with client-side TypeScript bundling enabled.
+ */
+export function adaptTemplateConfig(
+  content: string,
+  typescript: boolean | undefined,
+): { filename: string; content: string } {
+  if (!typescript) {
+    return { filename: 'stati.config.js', content };
+  }
+
+  const closing = /\n\}\);\s*$/;
+  if (!closing.test(content)) {
+    throw new Error('Template config must end with the closing "});" of defineConfig()');
+  }
+
+  return {
+    filename: 'stati.config.ts',
+    content: content.replace(closing, '\n\n  typescript: {\n    enabled: true,\n  },\n});\n'),
   };
 }
 
@@ -270,9 +295,11 @@ export class ProjectScaffolder {
       await this.examplesManager.copyExample(this.options.template, targetDir);
 
       // 3. Generate and write config file (stati.config.ts or stati.config.js)
-      const configFile = generateConfigFile(this.options);
-      // Remove template config file if we're writing a different one (e.g., TS replacing JS)
       const templateConfigPath = join(targetDir, 'stati.config.js');
+      const configFile = TEMPLATES[this.options.template].ownConfig
+        ? adaptTemplateConfig(await readFile(templateConfigPath, 'utf-8'), this.options.typescript)
+        : generateConfigFile(this.options);
+      // Remove template config file if we're writing a different one (e.g., TS replacing JS)
       if (configFile.filename !== 'stati.config.js') {
         try {
           await rm(templateConfigPath);
@@ -296,7 +323,9 @@ export class ProjectScaffolder {
       await packageModifier.modifyPackageJson(targetDir);
 
       // 6. Setup CSS preprocessing if requested
-      await processStyling(targetDir, this.options.styling);
+      await processStyling(targetDir, this.options.styling, {
+        keepTemplateStyles: TEMPLATES[this.options.template].ownStyles,
+      });
 
       // 7. Install the Stati agent skill (optional)
       if (this.options.agentSkill) {

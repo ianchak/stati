@@ -2,13 +2,15 @@
 title: 'Scaffolder'
 description: 'Interactive scaffolding tool to quickly set up new Stati projects.'
 order: 2
+seo:
+  title: 'Scaffolder (create-stati)'
 ---
 
-# Scaffolder (create-stati)
+# Scaffolder
 
 The `create-stati` package provides an interactive scaffolding tool to quickly set up new Stati projects with styling options.
 
-## Quick Start
+## Quick start
 
 ```bash
 # Interactive setup
@@ -17,14 +19,20 @@ npm create stati my-site
 # Non-interactive with options
 npm create stati my-site --template=blank --styling=tailwind
 
-# With TypeScript support
-npm create stati my-site --typescript
+# A ready-to-write blog
+npm create stati my-blog --template=blog
+
+# A complete documentation site
+npm create stati my-docs --template=docs
+
+# JavaScript instead of TypeScript
+npm create stati my-site --no-typescript
 ```
 
 Running the scaffolder will:
 
 - Create a new project directory
-- Copy the blank starter template files into that directory
+- Copy the chosen template's files into that directory
 - Update `package.json` with your project name and Stati metadata
 - Set up optional styling scripts based on the chosen styling option
 - Optionally install the Stati agent skill for AI coding assistants
@@ -35,27 +43,28 @@ Running the scaffolder will:
 >
 > **Non-Interactive Mode:** When all required options are provided via CLI flags, dependencies are installed automatically by default using `npm`. Use `--package-manager` to specify a different package manager (yarn, pnpm, or bun).
 
-## Interactive Setup
+## Interactive setup
 
 The scaffolder will prompt you for:
 
 1. **Project name** - Name for your new Stati site
 2. **Styling solution** - Choose between CSS, Sass, or Tailwind CSS
-3. **TypeScript support** - Whether to enable TypeScript compilation
+3. **TypeScript** - On by default; answer no for a JavaScript project
 4. **Agent skill** - Where to install the Stati agent skill, if at all
 5. **Git initialization** - Whether to initialize a Git repository
 6. **Dependency installation** - Whether to install dependencies automatically
 7. **Package manager** - Which package manager to use (if multiple are detected)
 
-## Command Line Options
+## Command line options
 
 ```bash
 npx create-stati <project-name> [options]
 
 Options:
-  --template <name>        Template to use (currently: blank)
+  --template <name>        Template to use (blank|blog|docs)
   --styling <type>         CSS solution (css|sass|tailwind)
-  --typescript, --ts       Enable TypeScript support
+  --typescript, --ts       Use TypeScript (default)
+  --no-typescript, --no-ts Use JavaScript instead of TypeScript
   --no-git                 Skip git initialization (default: initializes Git)
   --no-install             Skip dependency installation (default: installs dependencies)
   --package-manager <pm>   Package manager to use (npm|yarn|pnpm|bun)
@@ -64,7 +73,7 @@ Options:
   --help, -h               Show help message
 ```
 
-## Agent Skill
+## Agent skill
 
 The scaffolder can copy the Stati agent skill into your project. The skill teaches AI coding assistants Stati's conventions for content, Eta templates, partials, configuration, and deployment.
 
@@ -81,33 +90,71 @@ npm create stati my-site --agent-skill
 npm create stati my-site --agent-skill=github
 ```
 
-## Project Templates
+## Project templates
 
-### Blank Template
-
-Currently, Stati provides one template:
+Stati provides three templates:
 
 - **blank** - Minimal starter with basic structure and example content
+- **blog** - A complete blog with posts, tags, an archive, an RSS feed and SEO metadata
+- **docs** - A complete documentation site with a sidebar, search, an on-page table of contents and SEO metadata
+
+### Blank template
 
 **What's included:**
 
 - Basic site structure (`site/`, `public/`)
-- Example homepage and layout
+- A homepage that walks through the project, and a layout with header, navigation and footer
+- One stylesheet with light and dark themes; colors and fonts are CSS custom properties
 - Configuration file with sensible defaults
 - Package.json with development scripts
 
-## Styling Solutions
+### Blog template
+
+A blog that works on first run. Its sample posts explain how each part of it works, so you can read them, then replace them with your own.
+
+**What's included:**
+
+- Markdown posts in `site/posts/`, listed newest first on the home page
+- A tags page and a yearly archive, plus newer, older and related posts under every post
+- An RSS feed, a sitemap and `robots.txt`
+- Open Graph and Twitter tags, and `BlogPosting` structured data on every post
+- Drafts that stay out of the build until you publish them, and a 404 page
+- Light and dark themes with a self-hosted display face, styled from custom properties
+- `helpers/blog.js`, which builds the post index in the `beforeAll` hook and exposes it to templates as filters such as `stati.blogPosts()` and `stati.blogTags()`
+
+The blog template ships its own `stati.config.js` with the feed, sitemap and SEO settings. With TypeScript it becomes `stati.config.ts`; with Sass or Tailwind its stylesheet is carried over into `src/` so the design stays intact.
+
+### Docs template
+
+A documentation site that works on first run. Its sample pages explain how each part of it works, so you can read them, then replace them with your own.
+
+**What's included:**
+
+- A sidebar built from your folders: each top-level folder in `site/` is a section, each Markdown file a page, ordered by `order` in its front matter
+- Search over Stati's search index, opened with <kbd>Ctrl</kbd> <kbd>K</kbd>, <kbd>⌘</kbd> <kbd>K</kbd> or <kbd>/</kbd>, with results that link to headings
+- An on-page table of contents that highlights the section in view, previous and next links, and breadcrumbs
+- Section overview pages and a home page that lists every section
+- Code blocks highlighted at build time with `markdown-it-prism`, with a language label and a copy button
+- Light and dark themes with a toggle, a mobile navigation drawer, and self-hosted Inter
+- A sitemap, `robots.txt`, Open Graph and Twitter tags, and breadcrumb structured data
+- Drafts that stay out of the build until you publish them, and a 404 page
+- `helpers/docs.js`, which groups pages into sections in the `beforeAll` hook and exposes them to templates as filters such as `stati.docsSections()` and `stati.docsPager()`
+- `public/scripts/docs.js`, a dependency-free script for search, the theme toggle, the drawer and copy buttons; pages read fine without it
+
+Like the blog, the docs template ships its own `stati.config.js`, which becomes `stati.config.ts` with TypeScript, and its stylesheet is carried over into `src/` with Sass or Tailwind.
+
+## Styling solutions
 
 Choose your preferred styling approach:
 
-### CSS (Default)
+### CSS (default)
 
-- Basic CSS file in `public/styles.css`
+- One CSS file in `public/styles.css`, themed by custom properties at the top
 - No preprocessing or build step required
 
 ### Sass
 
-- Creates `src/styles.scss` for SCSS source
+- Creates `src/styles.scss` from the template's stylesheet, with `$primary-color`, `$font-stack` and a breakpoint as Sass variables
 - SCSS support with build scripts
 - Automatic compilation during development and build
 - Scripts added: `build:css`, `watch:css`
@@ -116,13 +163,13 @@ Choose your preferred styling approach:
 ### Tailwind CSS
 
 - Generates `tailwind.config.js` with content paths for `site/**/*.{md,eta,html}` and `.stati/tailwind-classes.html`
-- Creates source stylesheet at `src/styles.css` compiled directly to `dist/styles.css`
+- Creates source stylesheet at `src/styles.css` compiled directly to `dist/styles.css`; for the blank template it rebuilds the starter's look with `@apply`, Tailwind's slate and blue palette and `dark:` variants, and for the blog and docs templates it keeps the template's own stylesheet below the Tailwind directives
 - Scripts added: `build:css`
 - Modified scripts:
   - `dev`: Uses Stati's built-in Tailwind integration (single process)
   - `build`: Runs Stati build, then CSS compilation
 
-## Post-Creation Setup
+## Post-creation setup
 
 After creating your site:
 
@@ -132,7 +179,7 @@ npm install  # Skip if you installed dependencies during setup
 npm run dev
 ```
 
-## Package Scripts
+## Package scripts
 
 All created projects include these base scripts:
 
@@ -151,9 +198,9 @@ All created projects include these base scripts:
 
 > **Note:** When using Sass or Tailwind CSS, the `build` and `dev` scripts are automatically modified to include CSS compilation steps. See the [Styling Solutions](#styling-solutions) section for details.
 
-## Generated Project Structure
+## Generated project structure
 
-### Plain CSS (Default)
+### Plain CSS (default)
 
 ```text
 my-site/
@@ -163,7 +210,10 @@ my-site/
 ├── public/
 │   ├── styles.css        # Stylesheet
 │   └── favicon.svg       # Site icon
-├── stati.config.js       # Stati configuration
+├── src/
+│   └── main.ts           # Client TypeScript entry point
+├── stati.config.ts       # Stati configuration
+├── tsconfig.json         # TypeScript compiler configuration
 ├── package.json          # Node.js project file
 └── README.md            # Getting started guide
 ```
@@ -178,7 +228,7 @@ my-site/
 │   └── styles.scss       # Sass source file
 ├── public/
 │   └── favicon.svg       # Site icon
-├── stati.config.js
+├── stati.config.ts
 └── package.json          # Includes sass scripts
 ```
 
@@ -193,28 +243,25 @@ my-site/
 ├── public/
 │   └── favicon.svg       # Site icon
 ├── tailwind.config.js    # Tailwind configuration
-├── stati.config.js
+├── stati.config.ts
 └── package.json          # Includes Tailwind scripts
-```
-
-### With TypeScript Enabled
-
-When using `--typescript`, additional files are created:
-
-```text
-my-site/
-├── src/
-│   └── main.ts           # TypeScript entry point
-├── site/
-│   └── ...
-├── stati.config.ts       # TypeScript configuration (replaces .js)
-├── tsconfig.json         # TypeScript compiler configuration
-└── ...
 ```
 
 The `typecheck` script is added to `package.json` for validating your TypeScript code.
 
-### With the Agent Skill
+### With JavaScript
+
+With `--no-typescript` (or answering no to the TypeScript prompt), the project has no `src/main.ts`, `tsconfig.json` or `typecheck` script, and the config is plain JavaScript:
+
+```text
+my-site/
+├── site/
+│   └── ...
+├── stati.config.js       # Stati configuration
+└── ...
+```
+
+### With the agent skill
 
 When using `--agent-skill` (default target `claude`), the full skill bundle is copied:
 
@@ -235,10 +282,10 @@ my-site/
 - Node.js 22+
 - npm, yarn, pnpm, or bun
 
-## Next Steps
+## Next steps
 
 - Start the development server: `npm run dev`
 - Add content to the `site/` directory
 - Customize the layout in `site/layout.eta`
-- Configure your site in `stati.config.js` (or `stati.config.ts` for TypeScript projects)
+- Configure your site in `stati.config.ts` (or `stati.config.js` for JavaScript projects)
 - Learn more about [TypeScript support](/configuration/typescript)

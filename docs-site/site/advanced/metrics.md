@@ -1,13 +1,16 @@
 ---
-title: Build Performance Metrics
+title: 'Build metrics'
 description: Measure and analyze Stati build performance with the metrics system
+order: 6
+seo:
+  title: 'Build performance metrics'
 ---
 
-# Build Performance Metrics
+# Build metrics
 
 Stati includes a built-in performance metrics system that helps you understand and optimize your site's build performance. This guide explains how to use it.
 
-## Quick Start
+## Quick start
 
 Enable metrics collection with the `--metrics` flag:
 
@@ -21,7 +24,7 @@ This will:
 2. Track cache hit/miss rates
 3. Save a detailed JSON file to `.stati/metrics/`
 
-## CLI Options
+## CLI options
 
 ### `--metrics`
 
@@ -80,9 +83,9 @@ You can combine all flags for the most comprehensive output:
 stati build --metrics --metrics-detailed --metrics-html
 ```
 
-## Understanding the Output
+## Understanding the output
 
-### JSON Output
+### JSON output
 
 Metrics are saved to `.stati/metrics/build-<timestamp>.json`:
 
@@ -133,9 +136,9 @@ Metrics are saved to `.stati/metrics/build-<timestamp>.json`:
 }
 ```
 
-## Key Metrics Explained
+## Key metrics explained
 
-### Cache Hit Rate
+### Cache hit rate
 
 The cache hit rate (`isg.cacheHitRate`) shows what percentage of pages were served from cache without re-rendering:
 
@@ -149,7 +152,7 @@ A consistently low cache hit rate might indicate:
 - Content files are being modified unnecessarily
 - Template changes are triggering full rebuilds
 
-### Phase Breakdown
+### Phase breakdown
 
 The `phases` object shows how long each build phase took:
 
@@ -196,7 +199,7 @@ The `counts` object tracks quantities processed during the build:
 | `templatesLoaded` | Total templates loaded across all rendered pages |
 | `markdownFilesProcessed` | Number of markdown files processed |
 
-#### Templates Loaded
+#### Templates loaded
 
 The `templatesLoaded` counter tracks the total number of Eta templates (layouts and partials) loaded during the build. This is an **accumulated total** across all rendered pages - if 5 pages each load 4 templates, `templatesLoaded` will be 20.
 
@@ -214,7 +217,7 @@ When using `--metrics-detailed`, per-page template counts are also available in 
 
 Note that cached pages don't have a `templatesLoaded` property since no templates are rendered for them.
 
-### Memory Usage
+### Memory usage
 
 - `peakRssBytes`: Maximum resident set size during build
 - `heapUsedBytes`: V8 heap usage at the end of the build
@@ -225,7 +228,7 @@ High memory usage might indicate:
 - Memory-intensive templates
 - Large static assets being processed
 
-## Using Metrics in CI
+## Using metrics in CI
 
 Enable metrics in CI to track build performance over time:
 
@@ -243,7 +246,7 @@ Enable metrics in CI to track build performance over time:
     path: .stati/metrics/
 ```
 
-### Regression Detection
+### Regression detection
 
 Compare metrics between builds to detect regressions:
 
@@ -260,7 +263,7 @@ stati build --metrics --metrics-file current.json
 jq -r '.totals.durationMs' baseline.json current.json
 ```
 
-## Programmatic Access
+## Programmatic access
 
 Access metrics programmatically in Node.js:
 

@@ -2,7 +2,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { mkdtemp, rm, access, readFile, writeFile, mkdir } from 'node:fs/promises';
-import { createSite, ProjectScaffolder, detectAvailablePackageManagers } from '../src/create.js';
+import {
+  createSite,
+  ProjectScaffolder,
+  detectAvailablePackageManagers,
+  adaptTemplateConfig,
+} from '../src/create.js';
 import type { CreateOptions } from '../src/create.js';
 import { ExampleManager } from '../src/examples.js';
 import { copyAgentSkill } from '../src/agent-skill.js';
@@ -477,6 +482,219 @@ describe('create-stati scaffolding', () => {
       await expect(createSite(options)).rejects.toThrow('SECURITY');
 
       consoleWarnSpy.mockRestore();
+    });
+  });
+
+  describe('blog template', () => {
+    it('should keep the blog config, helpers and styles in a JavaScript project', async () => {
+      const projectDir = join(tempDir, 'test-blog-js');
+      const result = await createSite({
+        projectName: 'test-blog-js',
+        template: 'blog',
+        styling: 'css',
+        typescript: false,
+        gitInit: false,
+        dir: projectDir,
+      });
+
+      const config = await readFile(join(result.targetDir, 'stati.config.js'), 'utf-8');
+      expect(config).toContain("import { createBlog } from './helpers/blog.js';");
+      expect(config).toContain('rss:');
+      expect(config).not.toContain('typescript:');
+      await expect(access(join(result.targetDir, 'stati.config.ts'))).rejects.toThrow();
+      await expect(access(join(result.targetDir, 'helpers', 'blog.js'))).resolves.not.toThrow();
+      await expect(
+        access(join(result.targetDir, 'site', 'posts', 'layout.eta')),
+      ).resolves.not.toThrow();
+      await expect(
+        access(join(result.targetDir, 'public', 'fonts', 'young-serif.woff2')),
+      ).resolves.not.toThrow();
+
+      const styles = await readFile(join(result.targetDir, 'public', 'styles.css'), 'utf-8');
+      expect(styles).toContain("font-family: 'Young Serif'");
+
+      const packageJson = JSON.parse(
+        await readFile(join(result.targetDir, 'package.json'), 'utf-8'),
+      );
+      expect(packageJson.name).toBe('test-blog-js');
+      expect(packageJson.scripts).toHaveProperty('build:drafts');
+    });
+
+    it('should convert the blog config to TypeScript and enable bundling', async () => {
+      const projectDir = join(tempDir, 'test-blog-ts');
+      const result = await createSite({
+        projectName: 'test-blog-ts',
+        template: 'blog',
+        styling: 'css',
+        typescript: true,
+        gitInit: false,
+        dir: projectDir,
+      });
+
+      await expect(access(join(result.targetDir, 'stati.config.js'))).rejects.toThrow();
+      const config = await readFile(join(result.targetDir, 'stati.config.ts'), 'utf-8');
+      expect(config).toContain("import { createBlog } from './helpers/blog.js';");
+      expect(config).toMatch(/ {2}typescript: \{\n {4}enabled: true,\n {2}\},\n\}\);\n$/);
+      await expect(access(join(result.targetDir, 'tsconfig.json'))).resolves.not.toThrow();
+    });
+
+    it('should keep the blog design when Tailwind is chosen', async () => {
+      const projectDir = join(tempDir, 'test-blog-tailwind');
+      const result = await createSite({
+        projectName: 'test-blog-tailwind',
+        template: 'blog',
+        styling: 'tailwind',
+        typescript: false,
+        gitInit: false,
+        dir: projectDir,
+      });
+
+      const css = await readFile(join(result.targetDir, 'src', 'styles.css'), 'utf-8');
+      expect(css).toContain('@tailwind base;');
+      expect(css).toContain("font-family: 'Young Serif'");
+      await expect(access(join(result.targetDir, 'public', 'styles.css'))).rejects.toThrow();
+    });
+
+    it('should keep the blog design when Sass is chosen', async () => {
+      const projectDir = join(tempDir, 'test-blog-sass');
+      const result = await createSite({
+        projectName: 'test-blog-sass',
+        template: 'blog',
+        styling: 'sass',
+        typescript: false,
+        gitInit: false,
+        dir: projectDir,
+      });
+
+      const scss = await readFile(join(result.targetDir, 'src', 'styles.scss'), 'utf-8');
+      expect(scss).toContain("font-family: 'Young Serif'");
+      await expect(access(join(result.targetDir, 'public', 'styles.css'))).rejects.toThrow();
+    });
+  });
+
+  describe('docs template', () => {
+    it('should keep the docs config, helpers, scripts and styles in a JavaScript project', async () => {
+      const projectDir = join(tempDir, 'test-docs-js');
+      const result = await createSite({
+        projectName: 'test-docs-js',
+        template: 'docs',
+        styling: 'css',
+        typescript: false,
+        gitInit: false,
+        dir: projectDir,
+      });
+
+      const config = await readFile(join(result.targetDir, 'stati.config.js'), 'utf-8');
+      expect(config).toContain("import { createDocs } from './helpers/docs.js';");
+      expect(config).toContain('search:');
+      expect(config).not.toContain('typescript:');
+      await expect(access(join(result.targetDir, 'stati.config.ts'))).rejects.toThrow();
+      await expect(access(join(result.targetDir, 'helpers', 'docs.js'))).resolves.not.toThrow();
+      await expect(access(join(result.targetDir, 'site', 'home.eta'))).resolves.not.toThrow();
+      await expect(
+        access(join(result.targetDir, 'site', '_partials', 'sidebar.eta')),
+      ).resolves.not.toThrow();
+      await expect(
+        access(join(result.targetDir, 'site', 'getting-started', 'index.md')),
+      ).resolves.not.toThrow();
+      await expect(
+        access(join(result.targetDir, 'public', 'scripts', 'docs.js')),
+      ).resolves.not.toThrow();
+      await expect(
+        access(join(result.targetDir, 'public', 'fonts', 'inter-latin.woff2')),
+      ).resolves.not.toThrow();
+
+      const styles = await readFile(join(result.targetDir, 'public', 'styles.css'), 'utf-8');
+      expect(styles).toContain("font-family: 'Inter'");
+
+      const packageJson = JSON.parse(
+        await readFile(join(result.targetDir, 'package.json'), 'utf-8'),
+      );
+      expect(packageJson.name).toBe('test-docs-js');
+      expect(packageJson.devDependencies).toHaveProperty('markdown-it-prism');
+      expect(packageJson.scripts).toHaveProperty('build:drafts');
+    });
+
+    it('should convert the docs config to TypeScript and enable bundling', async () => {
+      const projectDir = join(tempDir, 'test-docs-ts');
+      const result = await createSite({
+        projectName: 'test-docs-ts',
+        template: 'docs',
+        styling: 'css',
+        typescript: true,
+        gitInit: false,
+        dir: projectDir,
+      });
+
+      await expect(access(join(result.targetDir, 'stati.config.js'))).rejects.toThrow();
+      const config = await readFile(join(result.targetDir, 'stati.config.ts'), 'utf-8');
+      expect(config).toContain("import { createDocs } from './helpers/docs.js';");
+      expect(config).toMatch(/ {2}typescript: \{\n {4}enabled: true,\n {2}\},\n\}\);\n$/);
+      await expect(access(join(result.targetDir, 'tsconfig.json'))).resolves.not.toThrow();
+    });
+
+    it('should keep the docs design when Tailwind is chosen', async () => {
+      const projectDir = join(tempDir, 'test-docs-tailwind');
+      const result = await createSite({
+        projectName: 'test-docs-tailwind',
+        template: 'docs',
+        styling: 'tailwind',
+        typescript: false,
+        gitInit: false,
+        dir: projectDir,
+      });
+
+      const css = await readFile(join(result.targetDir, 'src', 'styles.css'), 'utf-8');
+      expect(css).toContain('@tailwind base;');
+      expect(css).toContain("font-family: 'Inter'");
+      await expect(access(join(result.targetDir, 'public', 'styles.css'))).rejects.toThrow();
+      await expect(
+        access(join(result.targetDir, 'public', 'scripts', 'docs.js')),
+      ).resolves.not.toThrow();
+    });
+
+    it('should keep the docs design when Sass is chosen', async () => {
+      const projectDir = join(tempDir, 'test-docs-sass');
+      const result = await createSite({
+        projectName: 'test-docs-sass',
+        template: 'docs',
+        styling: 'sass',
+        typescript: false,
+        gitInit: false,
+        dir: projectDir,
+      });
+
+      const scss = await readFile(join(result.targetDir, 'src', 'styles.scss'), 'utf-8');
+      expect(scss).toContain("font-family: 'Inter'");
+      expect(scss).toContain('--accent: #{$primary-color};');
+      await expect(access(join(result.targetDir, 'public', 'styles.css'))).rejects.toThrow();
+    });
+  });
+
+  describe('adaptTemplateConfig', () => {
+    const config =
+      "import { defineConfig } from '@stati/core';\n\nexport default defineConfig({\n  site: { title: 'Blog' },\n});\n";
+
+    it('should keep a JavaScript config unchanged', () => {
+      expect(adaptTemplateConfig(config, false)).toEqual({
+        filename: 'stati.config.js',
+        content: config,
+      });
+    });
+
+    it('should enable TypeScript bundling in a stati.config.ts', () => {
+      const result = adaptTemplateConfig(config, true);
+
+      expect(result.filename).toBe('stati.config.ts');
+      expect(result.content).toBe(
+        "import { defineConfig } from '@stati/core';\n\nexport default defineConfig({\n  site: { title: 'Blog' },\n\n  typescript: {\n    enabled: true,\n  },\n});\n",
+      );
+    });
+
+    it('should refuse a config it cannot adapt', () => {
+      expect(() => adaptTemplateConfig('export default {};\n', true)).toThrow(
+        'Template config must end',
+      );
     });
   });
 

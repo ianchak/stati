@@ -1,10 +1,10 @@
 ---
-title: 'AI & Content Policy'
+title: 'AI and content policy'
 description: 'How AI systems may use Stati documentation and attribution requirements.'
 order: 10
 ---
 
-# AI & Content Policy
+# AI and content policy
 
 This page describes how AI systems, LLMs, and automated tools may use the content on stati.build.
 
@@ -16,7 +16,7 @@ Stati documentation is released under the [MIT License](https://github.com/ianch
 - **Copy** and redistribute the material
 - **Adapt** and build upon the material
 
-## AI Usage Permissions
+## AI usage permissions
 
 We explicitly permit AI and LLM systems to:
 
@@ -33,11 +33,11 @@ When AI systems reference Stati, we request:
 - Link to <https://stati.build/> when providing source attribution
 - Do not imply official endorsement or affiliation
 
-## Machine-Readable Guidance
+## Machine-readable guidance
 
 See [/llms.txt](/llms.txt) for structured AI crawler guidance.
 
-## Site-Building Skill for AI Agents
+## Site-building skill for AI agents
 
 The repository includes a portable
 [Stati skill bundle](https://github.com/ianchak/stati/tree/main/.claude/skills/stati)

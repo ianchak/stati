@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { mkdtemp, rm, writeFile, mkdir, access, readFile } from 'node:fs/promises';
-import { ExampleManager } from '../src/examples.js';
+import { ExampleManager, TEMPLATE_NAMES, isValidTemplate } from '../src/examples.js';
 
 describe('ExampleManager', () => {
   let tempDir: string;
@@ -20,10 +20,9 @@ describe('ExampleManager', () => {
   });
 
   describe('getAvailableExamples', () => {
-    it('should return blank template metadata', async () => {
+    it('should return blank template metadata first', async () => {
       const examples = await exampleManager.getAvailableExamples();
 
-      expect(examples).toHaveLength(1);
       expect(examples[0]).toEqual({
         name: 'blank',
         title: 'Blank Template',
@@ -32,7 +31,48 @@ describe('ExampleManager', () => {
         features: ['Minimal CSS reset', 'Accessibility features', 'SEO-friendly structure'],
         difficulty: 'beginner',
         estimatedSetupTime: '2 minutes',
+        ownConfig: false,
+        ownStyles: false,
       });
+    });
+
+    it('should list the blog template with its own config and styles', async () => {
+      const examples = await exampleManager.getAvailableExamples();
+
+      expect(examples.map((example) => example.name)).toEqual(['blank', 'blog', 'docs']);
+      expect(examples[1]).toEqual(
+        expect.objectContaining({ name: 'blog', ownConfig: true, ownStyles: true }),
+      );
+    });
+
+    it('should list the docs template with its own config and styles', async () => {
+      const examples = await exampleManager.getAvailableExamples();
+
+      expect(examples[2]).toEqual(
+        expect.objectContaining({ name: 'docs', ownConfig: true, ownStyles: true }),
+      );
+    });
+
+    it('should ship every listed template in the examples directory', async () => {
+      for (const name of TEMPLATE_NAMES) {
+        const target = join(tempDir, `copy-${name}`);
+        await exampleManager.copyExample(name, target);
+        await expect(access(join(target, 'stati.config.js'))).resolves.not.toThrow();
+        await expect(access(join(target, 'site', 'layout.eta'))).resolves.not.toThrow();
+        await expect(access(join(target, 'site', 'index.md'))).resolves.not.toThrow();
+        await expect(access(join(target, 'public', 'styles.css'))).resolves.not.toThrow();
+      }
+    });
+  });
+
+  describe('isValidTemplate', () => {
+    it('should accept known template names only', () => {
+      expect(isValidTemplate('blank')).toBe(true);
+      expect(isValidTemplate('blog')).toBe(true);
+      expect(isValidTemplate('docs')).toBe(true);
+      expect(isValidTemplate('portfolio')).toBe(false);
+      expect(isValidTemplate('toString')).toBe(false);
+      expect(isValidTemplate(undefined)).toBe(false);
     });
   });
 

@@ -1,0 +1,85 @@
+<%
+  /* Layout for every page outside site/posts/ (posts use site/posts/layout.eta).
+     A page can add a generated list under its Markdown by setting `listing` in its
+     front matter: 'latest' (home), 'archive' or 'tags'. */
+  const listing = stati.page.listing;
+  const heading = stati.page.heading ?? stati.page.title;
+%>
+<!DOCTYPE html>
+<html lang="<%= stati.site.defaultLocale || 'en' %>">
+  <%~ stati.partials.head %>
+  <body>
+    <a href="#main" class="skip-link">Skip to content</a>
+    <%~ stati.partials.header %>
+
+    <main id="main" class="wrapper">
+      <header class="page-header">
+        <h1><%= heading %></h1>
+      </header>
+
+      <div class="prose"><%~ stati.content %></div>
+
+      <% if (listing === 'latest') { %>
+        <%
+          const all = stati.blogPosts();
+          const limit = stati.page.listingLimit ?? stati.site.homePostCount ?? 8;
+        %>
+        <section class="listing" aria-labelledby="latest-heading">
+          <h2 id="latest-heading" class="listing-heading">Latest posts</h2>
+          <% if (all.length === 0) { %>
+            <p class="empty">No posts yet. Add a Markdown file to <code>site/posts/</code> and it appears here.</p>
+          <% } else { %>
+            <%~ stati.partials['post-list']({ posts: all.slice(0, limit), descriptions: true, transition: true }) %>
+            <% if (all.length > limit) { %>
+              <p class="more"><a href="/archive">All <%= all.length %> posts in the archive</a></p>
+            <% } %>
+            <div class="end-mark" aria-hidden="true"></div>
+          <% } %>
+        </section>
+      <% } %>
+
+      <% if (listing === 'archive') { %>
+        <% const years = stati.postsByYear(); %>
+        <% if (years.length === 0) { %>
+          <p class="empty">Nothing in the archive yet.</p>
+        <% } %>
+        <% for (const group of years) { %>
+          <section class="listing year" aria-labelledby="<%= `year-${group.year}` %>">
+            <h2 id="<%= `year-${group.year}` %>" class="listing-heading">
+              <%= group.year %>
+              <span class="count"><%= group.posts.length === 1 ? '1 post' : `${group.posts.length} posts` %></span>
+            </h2>
+            <%~ stati.partials['post-list']({ posts: group.posts, dateStyle: group.year === 'Undated' ? 'short' : 'day', transition: true }) %>
+          </section>
+        <% } %>
+      <% } %>
+
+      <% if (listing === 'tags') { %>
+        <% const tags = stati.blogTags(); %>
+        <% if (tags.length === 0) { %>
+          <p class="empty">No tags yet. Add <code>tags: ['example']</code> to a post's front matter.</p>
+        <% } else { %>
+          <ul class="tag-cloud" role="list" aria-label="All tags">
+            <% for (const tag of tags) { %>
+              <li>
+                <a href="<%= `#${tag.slug}` %>"><%= tag.name %></a>
+                <span class="count"><%= tag.posts.length %></span>
+              </li>
+            <% } %>
+          </ul>
+          <% for (const tag of tags) { %>
+            <section class="listing tag-section" id="<%= tag.slug %>" aria-labelledby="<%= `tag-${tag.slug}` %>">
+              <h2 id="<%= `tag-${tag.slug}` %>" class="listing-heading">
+                <span><span class="hash" aria-hidden="true">#</span><%= tag.name %></span>
+                <span class="count"><%= tag.posts.length === 1 ? '1 post' : `${tag.posts.length} posts` %></span>
+              </h2>
+              <%~ stati.partials['post-list']({ posts: tag.posts }) %>
+            </section>
+          <% } %>
+        <% } %>
+      <% } %>
+    </main>
+
+    <%~ stati.partials.footer %>
+  </body>
+</html>

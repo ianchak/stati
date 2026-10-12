@@ -1,19 +1,21 @@
 ---
-title: 'TypeScript Support'
+title: 'TypeScript'
 description: 'Configure TypeScript compilation for your Stati site with esbuild-powered builds.'
 order: 8
+seo:
+  title: 'TypeScript configuration'
 ---
 
-# TypeScript Support
+# TypeScript
 
 Stati provides first-class TypeScript support for your site's client-side code. Using [esbuild](https://esbuild.github.io/) under the hood, Stati compiles your TypeScript to optimized JavaScript bundles with near-instant build times.
 
-## Quick Start
+## Quick start
 
-Create a new Stati project with TypeScript enabled:
+New projects from `create-stati` use TypeScript by default:
 
 ```bash
-npx create-stati my-site --typescript
+npx create-stati my-site
 ```
 
 This creates a project with:
@@ -43,7 +45,7 @@ export default defineConfig({
 });
 ```
 
-## TypeScriptConfig Options
+## TypeScriptConfig options
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
@@ -57,7 +59,7 @@ export default defineConfig({
 
 > **Note:** Source maps, hashing, and minification are automatic based on build mode. The `hash` and `minify` options only apply to production builds - development mode always uses stable filenames and unminified output for easier debugging.
 
-## Development vs Production
+## Development vs production
 
 Stati automatically adjusts TypeScript settings based on the build mode:
 
@@ -76,7 +78,7 @@ Stati automatically adjusts TypeScript settings based on the build mode:
 
 The `hash` and `minify` options only take effect in production builds. Set them to `false` if you need to debug production output.
 
-## Automatic Bundle Injection
+## Automatic bundle injection
 
 When TypeScript is enabled, Stati **automatically injects** script tags into your HTML output before the closing `</body>` tag during both `stati dev` and `stati build`. No template modifications required!
 
@@ -88,7 +90,7 @@ Your compiled bundles are seamlessly added to every page (or specific pages if u
 </body>
 ```
 
-### Disabling Auto-Injection
+### Disabling auto-injection
 
 If you need manual control over script placement, disable auto-injection:
 
@@ -123,7 +125,7 @@ This is useful when you need to:
 - Add custom attributes to script tags (e.g., `defer`, `async`)
 - Conditionally include scripts based on template logic
 
-### Accessing Bundle Info in Templates
+### Accessing bundle info in templates
 
 If you need to access bundle paths in your templates (for example, to preload or customize placement), Stati provides them via `stati.assets`:
 
@@ -145,11 +147,11 @@ Example for preloading:
 
 > **Note:** Script tags are auto-injected, so you don't need to add them manually. Stati also prevents duplicate injection if a bundle path already exists in your HTML.
 
-## Multiple Bundles
+## Multiple bundles
 
 Stati supports compiling multiple TypeScript bundles with per-page targeting. Instead of shipping a single bundle to all pages, you can define an array of bundles, each with its own entry point and glob-based patterns to control which pages receive which bundles.
 
-### BundleConfig Options
+### BundleConfig options
 
 Each bundle in the `bundles` array can have these properties:
 
@@ -160,7 +162,7 @@ Each bundle in the `bundles` array can have these properties:
 | `include` | `string[]` | No | Glob patterns for pages that should include this bundle. Matches against page output path (e.g., `/docs/api/hooks.html`). **If omitted, bundle is included on ALL pages (global bundle).** |
 | `exclude` | `string[]` | No | Glob patterns for pages to exclude from this bundle. **Takes precedence over `include` patterns.** |
 
-### Minimal Configuration (Default Bundle)
+### Minimal configuration (default bundle)
 
 If you don't specify a `bundles` array, Stati defaults to a single global bundle:
 
@@ -176,7 +178,7 @@ export default defineConfig({
 });
 ```
 
-### Custom Multiple Bundles
+### Custom multiple bundles
 
 Define multiple bundles with targeted page injection:
 
@@ -220,7 +222,7 @@ export default defineConfig({
 });
 ```
 
-### Pattern Matching
+### Pattern matching
 
 Patterns use glob syntax (minimatch-compatible):
 
@@ -236,7 +238,7 @@ Patterns match against the page's **output path** (the URL path), not the source
 - Source: `site/docs/api/hooks.md`
 - Output path: `/docs/api/hooks.html`
 
-### Matching Logic
+### Matching logic
 
 For each page, Stati determines which bundles to inject:
 
@@ -260,7 +262,7 @@ Bundle 'home':      include=['/index.html'] → NO MATCH
 Result: ['core', 'docs'] scripts injected
 ```
 
-### Use Cases
+### Use cases
 
 Multiple bundles are ideal for:
 
@@ -271,7 +273,7 @@ Multiple bundles are ideal for:
 
 This approach avoids shipping unused JavaScript to pages that don't need it.
 
-## Project Structure
+## Project structure
 
 A TypeScript-enabled Stati project typically looks like:
 
@@ -294,7 +296,7 @@ my-site/
 └── tsconfig.json
 ```
 
-## Type Checking
+## Type checking
 
 Run the TypeScript compiler to check for type errors:
 
@@ -304,7 +306,7 @@ npm run typecheck
 
 This runs `tsc --noEmit` to validate your TypeScript without generating output (esbuild handles compilation).
 
-## Example: Adding Interactivity
+## Example: Adding interactivity
 
 Here's a simple example of adding interactivity to your site:
 
@@ -334,7 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 ```
 
-### Shared Code Between Bundles
+### Shared code between bundles
 
 For code shared between bundles, use standard ES module imports. esbuild will bundle all imports into each output file:
 

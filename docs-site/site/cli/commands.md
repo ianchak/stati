@@ -2,22 +2,24 @@
 title: 'Commands'
 description: 'Learn about Stati command-line interface and available commands.'
 order: 1
+seo:
+  title: 'Stati CLI commands'
 ---
 
-# CLI Commands
+# Commands
 
 Stati provides a simple and powerful command-line interface for building, developing, and managing your static sites. The CLI is designed to be intuitive while providing advanced options for complex workflows.
 
 ## Requirements
 
 - Node.js 22 or higher
-- npm 11.5.1 or higher
+- npm, pnpm, yarn or bun
 
-## Running Stati Commands
+## Running Stati commands
 
 When you install `@stati/cli` as a dev dependency (the recommended approach), the `stati` binary is available in your project's `node_modules/.bin` directory. There are three ways to run Stati commands:
 
-### Using npm Scripts (Recommended)
+### Using npm scripts (recommended)
 
 Define commands in your `package.json` scripts section:
 
@@ -52,7 +54,7 @@ npx stati build --clean
 npx stati invalidate "tag:blog"
 ```
 
-### Global Installation (Optional)
+### Global installation (optional)
 
 If you prefer using `stati` directly without `npm run` or `npx`, install the CLI globally:
 
@@ -69,7 +71,7 @@ stati build
 
 > **Note:** The examples below show commands as `stati <command>` for brevity. Use whichever method suits your workflow - the commands and options are identical.
 
-## Available Commands
+## Available commands
 
 ### `stati dev`
 
@@ -226,9 +228,9 @@ stati invalidate age:1week
 stati invalidate
 ```
 
-## Advanced Usage
+## Advanced usage
 
-### Environment Configuration
+### Environment configuration
 
 Use environment-specific configuration:
 
@@ -243,7 +245,7 @@ NODE_ENV=production stati build --config stati.staging.js
 SITE_URL=https://staging.example.com stati build
 ```
 
-### CI/CD Integration
+### CI/CD integration
 
 **GitHub Actions:**
 
@@ -300,7 +302,7 @@ jobs:
 }
 ```
 
-## Global Options
+## Global options
 
 Most commands support these options:
 
@@ -308,7 +310,7 @@ Most commands support these options:
 - `--help` - Show command help
 - `--version` - Show version information
 
-### Version Information
+### Version information
 
 ```bash
 # Show Stati CLI version
@@ -320,9 +322,9 @@ stati build --help
 stati dev --help
 ```
 
-## Configuration Options
+## Configuration options
 
-### Configuration Files
+### Configuration files
 
 Stati uses project-specific configuration files:
 
@@ -337,9 +339,9 @@ stati.config.js   # JavaScript config
 stati.config.mjs  # ES Module config
 ```
 
-## Development Workflows
+## Development workflows
 
-### Hot Reload
+### Hot reload
 
 The development server automatically rebuilds affected pages and refreshes the browser. Terminal output shows the changed path and how long the rebuild took:
 
@@ -352,7 +354,7 @@ $ stati dev
 
 Template or partial changes invalidate dependent pages in the cache before the rebuild so those pages always render with the latest layout.
 
-### Preview Builds
+### Preview builds
 
 Preview production builds locally:
 
@@ -373,9 +375,9 @@ stati build && python -m http.server 8080 --directory dist
 - The terminal logs which file triggered the rebuild (for example, `⚡ site/docs/api.md rebuilt in 92ms`).
 - Run `stati build --clean` to regenerate everything from scratch if cached output looks stale.
 
-## Scripting and Automation
+## Scripting and automation
 
-### npm Scripts
+### npm scripts
 
 Common npm script patterns:
 
@@ -393,7 +395,7 @@ Common npm script patterns:
 }
 ```
 
-### Bash Scripts
+### Bash scripts
 
 ```bash
 #!/bin/bash
@@ -447,9 +449,9 @@ invalidate-all:
   stati invalidate
 ```
 
-## Error Handling
+## Error handling
 
-### Common Issues
+### Common issues
 
 **Port already in use:**
 
@@ -475,7 +477,7 @@ stati build --clean
 stati build --clean
 ```
 
-## Exit Codes
+## Exit codes
 
 Stati uses conventional exit codes:
 

@@ -1,20 +1,20 @@
 ---
-title: 'Advanced Topics'
+title: 'Advanced topics'
 description: 'Explore advanced Stati features including performance optimization, SEO, and complex deployment scenarios.'
 order: 1
 ---
 
-# Advanced Topics
+# Advanced topics
 
 This section covers advanced Stati features and patterns for building high-performance, production-ready static sites. These topics are designed for users who want to push Stati to its limits and implement sophisticated site architectures.
 
-## Build Optimization
+## Build optimization
 
-### Build Caching with ISG
+### Build caching with ISG
 
 Stati uses **Incremental Static Generation (ISG)** for smart caching and selective rebuilds. For comprehensive ISG configuration, see the [ISG documentation](/core-concepts/isg).
 
-#### Build Options for Performance
+#### Build options for performance
 
 ```javascript
 // Force rebuild to clear all caches
@@ -24,15 +24,15 @@ await build({ force: true, clean: true });
 await build({ force: false });
 ```
 
-### Template Performance
+### Template performance
 
-#### Eta Template Optimization
+#### Eta template optimization
 
 Stati uses the Eta template engine with built-in performance features and automatic template caching via ISG.
 
 For detailed template configuration and `propValue` utility documentation, see [Template Configuration](/configuration/templates).
 
-#### Static Asset Optimization
+#### Static asset optimization
 
 ```javascript
 export default defineConfig({
@@ -48,7 +48,7 @@ export default defineConfig({
 });
 ```
 
-## SEO and Metadata
+## SEO and metadata
 
 Stati includes built-in support for SEO optimization, sitemap generation, and robots.txt creation. For comprehensive documentation on these features, see:
 
@@ -58,9 +58,9 @@ Stati includes built-in support for SEO optimization, sitemap generation, and ro
 
 These built-in features handle sitemap.xml and robots.txt generation automatically based on your configuration.
 
-## Development and Deployment
+## Development and deployment
 
-### Environment-Based Configuration
+### Environment-based configuration
 
 ```javascript
 // stati.config.js - Environment-specific setup
@@ -98,15 +98,15 @@ export default defineConfig({
 });
 ```
 
-For comprehensive development server and ISG configuration options, see the [Configuration Guide](/configuration/file).
+For comprehensive development server and ISG configuration options, see the [configuration file guide](/configuration/file).
 
-## Markdown Processing
+## Markdown processing
 
 For detailed markdown configuration including custom plugins and renderer modifications, see the [Markdown Configuration](/configuration/markdown) documentation.
 
-## Error Handling and Build Hooks
+## Error handling and build hooks
 
-### Development Error Handling
+### Development error handling
 
 Stati provides error overlays during development to help with debugging:
 
@@ -135,13 +135,13 @@ export default defineConfig({
 });
 ```
 
-### Cache Management and Invalidation
+### Cache management and invalidation
 
 For detailed cache management, see the [ISG documentation](/core-concepts/isg) which covers all invalidation features and query syntax.
 
-## Template Engine Features
+## Template engine features
 
-### Advanced Template Context
+### Advanced template context
 
 Every template receives the `stati` object with comprehensive page and site data:
 
@@ -169,4 +169,4 @@ These advanced topics showcase Stati's core capabilities for building sophistica
 - **Developer-Friendly** error handling and development workflow
 - **TypeScript-First** configuration with full type safety
 
-For specific implementation details, refer to the [API Reference](/api/reference) or explore the [Configuration Guide](/configuration/file) for complete setup instructions.
+For specific implementation details, refer to the [API overview](/api/reference) or explore the [configuration file guide](/configuration/file) for complete setup instructions.

@@ -2,125 +2,67 @@
 /**
  * Header Section
  *
- * Site navigation header with logo, navigation links, theme toggle, and mobile menu.
- * Uses the icon component for SVG icons.
+ * Sticky site header: wordmark, primary navigation, search trigger, GitHub,
+ * theme toggle, and the mobile menu button. On docs pages the mobile menu
+ * opens the sidebar drawer; on the homepage it opens the compact nav panel.
  */
+
+const url = stati.page.url || '/';
+const isHome = url === '/' || url === '/index.html';
+
+const navItems = [
+  { href: '/getting-started/introduction', label: 'Docs', match: ['/getting-started', '/core-concepts', '/advanced', '/faq', '/glossary', '/information'] },
+  { href: '/configuration/file', label: 'Configuration', match: ['/configuration'] },
+  { href: '/cli/commands', label: 'CLI', match: ['/cli'] },
+  { href: '/api/reference', label: 'API', match: ['/api'] },
+  { href: '/examples/list', label: 'Examples', match: ['/examples'] },
+];
+
+const isCurrent = (item) => item.match.some((prefix) => url === prefix || url.startsWith(`${prefix}/`));
 %>
-<header class="bg-white/80 dark:bg-dark-900/80 backdrop-blur-lg border-b border-gray-200/50 dark:border-dark-700/50 sticky top-0 z-50">
-    <div class="w-full px-6 lg:px-8">
-        <div class="flex items-center justify-between h-18">
-            <!-- Left side: Logo and brand -->
-            <div class="flex items-center">
-                <a href="/" class="flex items-center space-x-3 group">
-                    <span class="inline-flex items-center justify-center w-12 h-12 bg-primary-500/10 dark:bg-primary-400/20 rounded-lg hover:scale-105 transition-transform duration-200">
-                        <%~ stati.partials.icon({ name: 'bolt', size: 'xl', class: 'text-primary-600 dark:text-primary-400' }) %>
-                    </span>
-                    <div>
-                        <span class="text-2xl font-bold bg-gradient-to-r from-primary-700 to-primary-500 dark:from-primary-400 dark:to-primary-300 bg-clip-text text-transparent">Stati</span>
-                        <span class="block text-sm text-gray-500 dark:text-gray-400 font-medium -mt-1">Documentation</span>
-                    </div>
-                </a>
-            </div>
+<header id="site-header" class="sticky top-0 z-50 border-b border-line bg-canvas">
+    <div class="mx-auto flex h-header max-w-[96rem] items-center gap-4 px-4 sm:px-6">
+        <a href="/" class="flex items-center gap-2 rounded-md" aria-label="Stati home">
+            <svg class="h-6 w-6 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            <span class="font-display text-xl font-extrabold">Stati</span>
+        </a>
 
-            <!-- Right side: Navigation and controls -->
-            <div class="flex items-center space-x-4">
-                <!-- Navigation -->
-                <nav class="hidden lg:flex items-center space-x-1">
-                    <a href="/getting-started/introduction" class="nav-link px-4 py-2 rounded-lg text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-gray-100/60 dark:hover:bg-dark-700/60 transition-all duration-200 font-medium">
-                        Getting Started
-                    </a>
-                    <a href="/core-concepts/overview" class="nav-link px-4 py-2 rounded-lg text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-gray-100/60 dark:hover:bg-dark-700/60 transition-all duration-200 font-medium">
-                        Core Concepts
-                    </a>
-                    <a href="/api/reference" class="nav-link px-4 py-2 rounded-lg text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-gray-100/60 dark:hover:bg-dark-700/60 transition-all duration-200 font-medium">
-                        API Reference
-                    </a>
-                    <a href="/examples/list" class="nav-link px-4 py-2 rounded-lg text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-gray-100/60 dark:hover:bg-dark-700/60 transition-all duration-200 font-medium">
-                        Examples
-                    </a>
-                </nav>
+        <nav class="ml-4 hidden items-center gap-1 lg:flex" aria-label="Main">
+            <% navItems.forEach(item => { %>
+            <a href="<%= item.href %>" class="nav-item"<% if (isCurrent(item)) { %> aria-current="page"<% } %>><%= item.label %></a>
+            <% }) %>
+        </nav>
 
-                <!-- External links and controls -->
-                <div class="hidden lg:flex items-center space-x-2">
-                    <!-- Theme toggle button -->
-                    <button id="theme-toggle"
-                            class="p-2.5 rounded-lg text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-dark-700 transition-all duration-200 group"
-                            title="Toggle theme"
-                            aria-label="Toggle dark mode">
-                        <!-- Sun icon (visible in dark mode) -->
-                        <span class="hidden dark:block group-hover:scale-110 transition-transform duration-200">
-                            <%~ stati.partials.icon({ name: 'sun', size: 'md' }) %>
-                        </span>
-                        <!-- Moon icon (visible in light mode) -->
-                        <span class="block dark:hidden group-hover:scale-110 transition-transform duration-200">
-                            <%~ stati.partials.icon({ name: 'moon', size: 'md' }) %>
-                        </span>
-                    </button>
+        <div class="ml-auto flex items-center gap-1">
+            <button type="button" class="search-trigger flex h-11 items-center gap-2 rounded-md text-sm text-muted transition-colors duration-150 hover:text-ink sm:h-9 sm:w-56 sm:border sm:border-line sm:bg-raised sm:px-3 sm:hover:border-line-strong" data-search-open aria-haspopup="dialog" aria-controls="search-dialog">
+                <%~ stati.partials.icon({ name: 'search', size: 'sm', class: 'mx-3.5 sm:mx-0' }) %>
+                <span class="sr-only sm:not-sr-only">Search docs</span>
+                <kbd class="ml-auto hidden rounded border border-line bg-canvas px-1.5 font-mono text-xs text-faint sm:inline">/</kbd>
+            </button>
 
-                    <a href="https://github.com/ianchak/stati"
-                       class="p-2.5 rounded-lg text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-dark-700 transition-all duration-200 group"
-                       target="_blank"
-                       rel="noopener noreferrer"
-                       title="View on GitHub">
-                        <span class="group-hover:scale-110 transition-transform duration-200 block">
-                            <%~ stati.partials.icon({ name: 'github', size: 'md' }) %>
-                        </span>
-                    </a>
-                </div>
+            <a href="https://github.com/ianchak/stati" class="icon-button" target="_blank" rel="noopener noreferrer" aria-label="Stati on GitHub (opens in a new tab)">
+                <%~ stati.partials.icon({ name: 'github', size: 'md' }) %>
+            </a>
 
-                <!-- Mobile search button -->
-                <button id="mobile-search-btn" class="lg:hidden p-2.5 rounded-lg text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white hover:bg-gray-100/80 dark:hover:bg-dark-700/80 transition-all duration-200 backdrop-blur-sm" aria-label="Search documentation">
-                    <%~ stati.partials.icon({ name: 'search', size: 'lg' }) %>
-                </button>
+            <button type="button" id="theme-toggle" class="icon-button" aria-pressed="false" aria-label="Dark theme">
+                <span class="dark:hidden"><%~ stati.partials.icon({ name: 'moon', size: 'md' }) %></span>
+                <span class="hidden dark:inline"><%~ stati.partials.icon({ name: 'sun', size: 'md' }) %></span>
+            </button>
 
-                <!-- Mobile menu button -->
-                <button id="mobile-menu-btn" class="lg:hidden p-2.5 rounded-lg text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white hover:bg-gray-100/80 dark:hover:bg-dark-700/80 transition-all duration-200 backdrop-blur-sm">
-                    <%~ stati.partials.icon({ name: 'menu', size: 'lg' }) %>
-                </button>
-            </div>
+            <button type="button" id="menu-button" class="icon-button lg:hidden" aria-expanded="false" aria-controls="<%= isHome ? 'mobile-nav' : 'sidebar' %>" aria-label="Open menu">
+                <span data-menu-icon="open"><%~ stati.partials.icon({ name: 'menu', size: 'md' }) %></span>
+                <span data-menu-icon="close" hidden><%~ stati.partials.icon({ name: 'close', size: 'md' }) %></span>
+            </button>
         </div>
     </div>
 
-    <!-- Mobile Navigation Menu -->
-    <div id="mobile-nav" class="hidden lg:hidden absolute top-full left-0 right-0 border-t border-gray-200/50 dark:border-dark-700/50 bg-white/95 dark:bg-dark-900/95 backdrop-blur-lg shadow-lg">
-        <nav class="px-6 py-4 space-y-2">
-            <a href="/getting-started/introduction" class="block px-4 py-3 rounded-lg text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-gray-100/60 dark:hover:bg-dark-700/60 transition-all duration-200 font-medium">
-                Getting Started
-            </a>
-            <a href="/core-concepts/overview" class="block px-4 py-3 rounded-lg text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-gray-100/60 dark:hover:bg-dark-700/60 transition-all duration-200 font-medium">
-                Core Concepts
-            </a>
-            <a href="/api/reference" class="block px-4 py-3 rounded-lg text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-gray-100/60 dark:hover:bg-dark-700/60 transition-all duration-200 font-medium">
-                API Reference
-            </a>
-            <a href="/examples/list" class="block px-4 py-3 rounded-lg text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 hover:bg-gray-100/60 dark:hover:bg-dark-700/60 transition-all duration-200 font-medium">
-                Examples
-            </a>
-            <div class="border-t border-gray-200/50 dark:border-dark-700/50 my-2 pt-2">
-                <!-- Theme toggle for mobile -->
-                <button id="theme-toggle-mobile"
-                        class="flex items-center gap-3 w-full px-4 py-3 rounded-lg text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white hover:bg-gray-100/60 dark:hover:bg-dark-700/60 transition-all duration-200 font-medium"
-                        aria-label="Toggle dark mode">
-                    <!-- Sun icon (visible in dark mode) -->
-                    <span class="hidden dark:block">
-                        <%~ stati.partials.icon({ name: 'sun', size: 'md' }) %>
-                    </span>
-                    <!-- Moon icon (visible in light mode) -->
-                    <span class="block dark:hidden">
-                        <%~ stati.partials.icon({ name: 'moon', size: 'md' }) %>
-                    </span>
-                    <span class="hidden dark:block">Light Mode</span>
-                    <span class="block dark:hidden">Dark Mode</span>
-                </button>
-
-                <a href="https://github.com/ianchak/stati"
-                   class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white hover:bg-gray-100/60 dark:hover:bg-dark-700/60 transition-all duration-200 font-medium"
-                   target="_blank"
-                   rel="noopener noreferrer">
-                    <%~ stati.partials.icon({ name: 'github', size: 'md' }) %>
-                    View on GitHub
-                </a>
-            </div>
-        </nav>
-    </div>
+    <% if (isHome) { %>
+    <nav id="mobile-nav" class="border-t border-line bg-canvas px-4 py-3 lg:hidden" aria-label="Main" hidden>
+        <ul class="grid gap-1">
+            <% navItems.forEach(item => { %>
+            <li><a href="<%= item.href %>" class="block rounded-md px-3 py-2.5 text-base font-medium text-ink hover:bg-raised"><%= item.label %></a></li>
+            <% }) %>
+        </ul>
+    </nav>
+    <% } %>
 </header>

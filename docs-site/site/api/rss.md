@@ -1,10 +1,12 @@
 ---
-title: RSS Feed Generation
+title: 'RSS'
 description: API reference for RSS feed generation in Stati
 order: 6
+seo:
+  title: 'RSS API'
 ---
 
-# RSS Feed Generation API
+# RSS
 
 This document provides a reference for RSS feed generation in Stati.
 
@@ -412,9 +414,9 @@ for (const result of results) {
 }
 ```
 
-## Usage Examples
+## Usage examples
 
-### Basic Feed
+### Basic feed
 
 ```typescript
 export default defineConfig({
@@ -435,7 +437,7 @@ export default defineConfig({
 });
 ```
 
-### Multiple Feeds
+### Multiple feeds
 
 ```typescript
 export default defineConfig({
@@ -464,7 +466,7 @@ export default defineConfig({
 });
 ```
 
-### Custom Field Mapping
+### Custom field mapping
 
 ```typescript
 export default defineConfig({
@@ -494,7 +496,7 @@ export default defineConfig({
 });
 ```
 
-## See Also
+## See also
 
 - [RSS Configuration Guide](/configuration/rss)
 - [SEO Configuration](/api/seo)

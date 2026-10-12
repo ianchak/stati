@@ -13,6 +13,73 @@ export interface ExampleMetadata {
   features: string[];
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   estimatedSetupTime: string;
+  /**
+   * The template ships a stati.config.js that the generated project must keep
+   * (hooks, filters, feeds). The scaffolder adapts it instead of replacing it.
+   */
+  ownConfig: boolean;
+  /**
+   * The template's stylesheet is its design, so styling processors carry it over
+   * instead of replacing it with their own starter styles.
+   */
+  ownStyles: boolean;
+}
+
+/** Templates create-stati can scaffold, in the order they are offered. */
+export const TEMPLATES = {
+  blank: {
+    name: 'blank',
+    title: 'Blank Template',
+    description:
+      'A minimal starter template with basic CSS, semantic HTML, and essential meta tags',
+    features: ['Minimal CSS reset', 'Accessibility features', 'SEO-friendly structure'],
+    difficulty: 'beginner',
+    estimatedSetupTime: '2 minutes',
+    ownConfig: false,
+    ownStyles: false,
+  },
+  blog: {
+    name: 'blog',
+    title: 'Blog Template',
+    description:
+      'A complete blog with posts, tags, a yearly archive, an RSS feed, a sitemap and SEO metadata',
+    features: [
+      'Posts with tags, archive, newer/older and related posts',
+      'RSS feed, sitemap and robots.txt',
+      'Open Graph, Twitter cards and BlogPosting structured data',
+      'Light and dark themes with self-hosted display type',
+    ],
+    difficulty: 'beginner',
+    estimatedSetupTime: '5 minutes',
+    ownConfig: true,
+    ownStyles: true,
+  },
+  docs: {
+    name: 'docs',
+    title: 'Docs Template',
+    description:
+      'A complete documentation site with a sidebar, search, an on-page table of contents and SEO metadata',
+    features: [
+      'Sidebar built from folders, ordered by front matter, with previous/next links and breadcrumbs',
+      'Ctrl+K search over the built-in search index',
+      'On-page table of contents with scroll tracking',
+      'Build-time syntax highlighting with copy buttons',
+      'Light and dark themes, sitemap, robots.txt and SEO metadata',
+    ],
+    difficulty: 'beginner',
+    estimatedSetupTime: '5 minutes',
+    ownConfig: true,
+    ownStyles: true,
+  },
+} satisfies Record<string, ExampleMetadata>;
+
+export type TemplateName = keyof typeof TEMPLATES;
+
+export const TEMPLATE_NAMES = Object.keys(TEMPLATES) as TemplateName[];
+
+/** Type guard for user-supplied template names. */
+export function isValidTemplate(value: unknown): value is TemplateName {
+  return typeof value === 'string' && Object.hasOwn(TEMPLATES, value);
 }
 
 export class ExampleManager {
@@ -33,19 +100,10 @@ export class ExampleManager {
   }
 
   async getAvailableExamples(): Promise<ExampleMetadata[]> {
-    // For now, return hardcoded blank template metadata
-    // In the future this could scan the examples directory
-    return [
-      {
-        name: 'blank',
-        title: 'Blank Template',
-        description:
-          'A minimal starter template with basic CSS, semantic HTML, and essential meta tags',
-        features: ['Minimal CSS reset', 'Accessibility features', 'SEO-friendly structure'],
-        difficulty: 'beginner',
-        estimatedSetupTime: '2 minutes',
-      },
-    ];
+    return TEMPLATE_NAMES.map((name) => ({
+      ...TEMPLATES[name],
+      features: [...TEMPLATES[name].features],
+    }));
   }
 
   async copyExample(exampleName: string, targetDir: string): Promise<void> {

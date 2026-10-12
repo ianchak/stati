@@ -21,7 +21,8 @@
     "clean:cache": "node -e \"require('node:fs').rmSync('.stati',{recursive:true,force:true})\"",
     "clean": "npm run clean:dist && npm run clean:cache",
     "build:css": "tailwindcss -i src/styles.css -o dist/styles.css --minify",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit && npm run check:snippets",
+    "check:snippets": "node scripts/check-snippets.mjs"
   },
   "keywords": [
     "static-site",
@@ -50,8 +51,6 @@
     "node": ">=22.0.0"
   },
   "dependencies": {
-    "@tsparticles/engine": "3.9.1",
-    "@tsparticles/slim": "3.9.1",
     "flexsearch": "0.8.212"
   }
 }

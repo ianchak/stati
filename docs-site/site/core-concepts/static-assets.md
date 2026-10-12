@@ -1,16 +1,16 @@
 ---
-title: 'Static Assets'
+title: 'Static assets'
 description: 'Learn how to manage static files, images, and integrate TypeScript and Tailwind CSS.'
 order: 6
 ---
 
-# Static Assets
+# Static assets
 
 ## Overview
 
 Stati handles static assets and provides built-in TypeScript compilation. CSS processing (Sass, PostCSS, Tailwind) is configured at the project level using standard tooling, with optional CLI integration for Tailwind during development.
 
-## Static Assets (`public/`)
+## Static assets (`public/`)
 
 Files in the `public/` directory are copied directly to the output without processing:
 
@@ -33,7 +33,7 @@ Use the `public/` directory for:
 - Pre-built CSS stylesheets
 - Any assets that don't need processing
 
-## TypeScript Compilation (`src/`)
+## TypeScript compilation (`src/`)
 
 When TypeScript compilation is enabled, Stati uses esbuild to compile TypeScript from the `src/` directory:
 
@@ -47,7 +47,7 @@ src/
 
 Your compiled bundles are automatically injected into pages before the closing `</body>` tag. Stati supports multiple bundles with per-page targeting via include/exclude patterns, so you can ship only the JavaScript each page needs. For full TypeScript configuration options, see the [TypeScript Configuration Guide](/configuration/typescript).
 
-## CSS Processing
+## CSS processing
 
 Stati does not include a built-in CSS preprocessor. Instead, CSS processing is configured at the project level using standard tools like Sass, PostCSS, or Tailwind CSS.
 
@@ -76,7 +76,7 @@ body {
 </head>
 ```
 
-### Sass/SCSS Projects
+### Sass/SCSS projects
 
 When you select Sass during project scaffolding, `create-stati` configures npm scripts to compile SCSS:
 
@@ -94,7 +94,7 @@ npm run build:css   # Compile SCSS only
 
 The scaffolder creates an `src/styles.scss` file with your SCSS source and sets up the build pipeline.
 
-## Tailwind CSS Integration
+## Tailwind CSS integration
 
 Stati provides automatic support for dynamic Tailwind classes when using the `stati.propValue()` helper function. This ensures that dynamically-generated classes (like `from-${color}-50`) are properly included in your CSS build.
 
@@ -138,7 +138,7 @@ module.exports = {
 
 > **Note**: The `.stati/tailwind-classes.html` file is automatically generated during build and dev server startup. It contains all dynamic Tailwind classes used in your templates via `stati.propValue()`.
 
-### Dynamic Classes with propValue
+### Dynamic classes with propValue
 
 When using template variables to build Tailwind classes, use `stati.propValue()` to ensure they're tracked:
 
@@ -165,7 +165,7 @@ The `propValue()` function:
 - Works with strings, arrays, and objects (like the classnames library)
 - Splits space-separated strings and tracks each class individually
 
-### Usage in Templates
+### Usage in templates
 
 ```eta
 <!DOCTYPE html>
@@ -207,7 +207,7 @@ The `propValue()` function:
 </html>
 ```
 
-### Development with Built-in Watcher
+### Development with built-in watcher
 
 Stati's development server includes integrated Tailwind CSS support. Simply pass the input and output file paths:
 
@@ -234,9 +234,9 @@ This starts both the Stati dev server and Tailwind watcher in a single process. 
 
 See the [Development Server](/cli/development) documentation for more details on Tailwind integration.
 
-## Images and Media
+## Images and media
 
-### Responsive Images
+### Responsive images
 
 ```eta
 <!-- Basic responsive image -->
@@ -266,9 +266,9 @@ See the [Development Server](/cli/development) documentation for more details on
 
 **Note**: Stati copies images from your `public/` directory as-is. For image optimization, you'll need to optimize images before placing them in your project or use external tools in your build process.
 
-## Web Fonts
+## Web fonts
 
-### Google Fonts
+### Google fonts
 
 ```css
 /* Import in CSS */
@@ -288,7 +288,7 @@ See the [Development Server](/cli/development) documentation for more details on
 </head>
 ```
 
-### Self-hosted Fonts
+### Self-hosted fonts
 
 Place font files in your `public/` directory and reference them in your CSS:
 

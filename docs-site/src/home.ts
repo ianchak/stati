@@ -1,11 +1,9 @@
 /**
- * Homepage bundle - functionality specific to the homepage.
- * Includes tabs for the highlights/features section and particles animation.
+ * Homepage bundle - the ISG rebuild log playback.
  */
 
-import { initTabs, initParticles } from './home/index.js';
+import { initRebuildLog } from './home/index.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-  initTabs();
-  initParticles();
+  initRebuildLog();
 });

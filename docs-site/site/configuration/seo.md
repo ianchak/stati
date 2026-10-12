@@ -1,9 +1,10 @@
 ---
-title: 'SEO & Sitemap'
+title: 'SEO and sitemap'
 description: Complete guide to SEO metadata generation, sitemap, and robots.txt configuration in Stati
 layout: layout.eta
 order: 6
 seo:
+  title: 'SEO and sitemap configuration'
   structuredData:
     "@context": "https://schema.org"
     "@type": "TechArticle"
@@ -16,22 +17,22 @@ seo:
     "proficiencyLevel": "Intermediate"
 ---
 
-# SEO Configuration
+# SEO and sitemap
 
 Stati provides comprehensive SEO support with automatic metadata generation, sitemap creation, and robots.txt configuration. The SEO features are designed to work automatically with minimal configuration while offering granular control when needed.
 
-## Automatic SEO Injection
+## Automatic SEO injection
 
 By default, Stati automatically injects SEO metadata into all pages during build. This requires **zero configuration** and works out of the box.
 
-### How It Works
+### How it works
 
 1. Stati analyzes your rendered HTML before writing it to disk
 2. Detects any existing SEO tags in the `<head>` section
 3. Generates missing SEO metadata based on page content and configuration
 4. Injects the generated tags before `</head>`
 
-### What Gets Generated
+### What gets generated
 
 When auto-injection is enabled (default), Stati automatically generates:
 
@@ -45,7 +46,7 @@ When auto-injection is enabled (default), Stati automatically generates:
 - **Twitter Card tags** - For Twitter sharing
 - **Structured Data** - JSON-LD schema when configured in frontmatter
 
-### Disabling Auto-Injection
+### Disabling auto-injection
 
 To disable automatic SEO injection globally:
 
@@ -60,11 +61,11 @@ export default defineConfig({
 });
 ```
 
-## Manual SEO Generation
+## Manual SEO generation
 
 For complete control, you can manually generate SEO tags in your templates using the `stati.generateSEO()` helper.
 
-### Basic Usage
+### Basic usage
 
 Generate all SEO tags:
 
@@ -75,7 +76,7 @@ Generate all SEO tags:
 </head>
 ```
 
-### Selective Generation
+### Selective generation
 
 Generate only specific SEO tags using tag type strings:
 
@@ -87,7 +88,7 @@ Generate only specific SEO tags using tag type strings:
 </head>
 ```
 
-### Available Tag Types
+### Available tag types
 
 - `'title'` or `SEOTagType.Title` - Title tag
 - `'description'` or `SEOTagType.Description` - Meta description
@@ -99,7 +100,7 @@ Generate only specific SEO tags using tag type strings:
 - `'twitter'` or `SEOTagType.Twitter` - All Twitter Card tags
 - `'structuredData'` or `SEOTagType.StructuredData` - JSON-LD structured data
 
-## SEO Configuration Options
+## SEO configuration options
 
 Configure SEO behavior in your `stati.config.ts`:
 
@@ -125,11 +126,11 @@ export default defineConfig({
 });
 ```
 
-## Frontmatter SEO Fields
+## Frontmatter SEO fields
 
 Customize SEO metadata for individual pages using frontmatter:
 
-### Basic SEO Fields
+### Basic SEO fields
 
 ```markdown
 ---
@@ -139,7 +140,7 @@ order: 6
 ---
 ```
 
-### Open Graph Configuration
+### Open Graph configuration
 
 ```markdown
 ---
@@ -165,7 +166,7 @@ seo:
 ---
 ```
 
-### Twitter Card Configuration
+### Twitter card configuration
 
 ```markdown
 ---
@@ -182,7 +183,7 @@ seo:
 ---
 ```
 
-### Structured Data (Schema.org)
+### Structured data (Schema.org)
 
 ```markdown
 ---
@@ -204,7 +205,7 @@ seo:
 ---
 ```
 
-### Robots Configuration
+### Robots configuration
 
 ```markdown
 ---
@@ -222,13 +223,13 @@ seo:
 ---
 ```
 
-## Sitemap Configuration
+## Sitemap configuration
 
 Stati can automatically generate XML sitemaps for your site.
 
 > **Production Only**: Sitemaps are only generated during production builds (`stati build`). They are skipped in development mode to improve build performance.
 
-### Enable Sitemap Generation
+### Enable sitemap generation
 
 ```typescript
 // stati.config.ts
@@ -244,7 +245,7 @@ export default defineConfig({
 });
 ```
 
-### Advanced Sitemap Options
+### Advanced sitemap options
 
 ```typescript
 // stati.config.ts
@@ -306,7 +307,7 @@ export default defineConfig({
 });
 ```
 
-### Per-Page Sitemap Configuration
+### Per-page sitemap configuration
 
 Control sitemap behavior for individual pages using frontmatter:
 
@@ -321,7 +322,7 @@ sitemap:
 ---
 ```
 
-### Change Frequency Values
+### Change frequency values
 
 - `always` - Changes on every access
 - `hourly` - Changes hourly
@@ -331,13 +332,13 @@ sitemap:
 - `yearly` - Changes yearly (good for static content)
 - `never` - Archived content that never changes
 
-## Robots.txt Configuration
+## robots.txt configuration
 
 Generate a `robots.txt` file to control search engine crawling.
 
 > **Production Only**: The robots.txt file is only generated during production builds (`stati build`). It is skipped in development mode to improve build performance.
 
-### Enable Robots.txt
+### Enable robots.txt
 
 ```typescript
 // stati.config.ts
@@ -350,7 +351,7 @@ export default defineConfig({
 });
 ```
 
-### Advanced Robots.txt Options
+### Advanced robots.txt options
 
 ```typescript
 // stati.config.ts
@@ -400,7 +401,7 @@ export default defineConfig({
 });
 ```
 
-### Example robots.txt Output
+### Example robots.txt output
 
 With the above configuration, Stati generates:
 
@@ -425,11 +426,11 @@ User-agent: AnotherBot
 Disallow: /restricted/
 ```
 
-## SEO Tag Types
+## SEO tag types
 
 Stati supports nine types of SEO tags. Understanding these helps with selective generation and granular override.
 
-### Tag Type Groups
+### Tag type groups
 
 Some tag types are **grouped**, meaning if you manually add any tag from a group, Stati skips auto-generating **all** tags in that group:
 
@@ -438,7 +439,7 @@ Some tag types are **grouped**, meaning if you manually add any tag from a group
 
 This prevents duplicate or conflicting tags.
 
-### Individual Tag Types
+### Individual tag types
 
 1. **Title** - `<title>` tag
 2. **Description** - `<meta name="description">`
@@ -450,9 +451,9 @@ This prevents duplicate or conflicting tags.
 8. **Twitter** - All `<meta name="twitter:*">` tags (grouped)
 9. **StructuredData** - `<script type="application/ld+json">` (JSON-LD)
 
-## Best Practices
+## Best practices
 
-### 1. Use Meaningful Titles
+### 1. Use meaningful titles
 
 ```markdown
 ---
@@ -461,11 +462,11 @@ description: Learn how to optimize your static site for search engines with Stat
 ---
 ```
 
-### 2. Write Compelling Descriptions
+### 2. Write compelling descriptions
 
 Keep descriptions between 50-160 characters for optimal search result display.
 
-### 3. Set Priorities Wisely
+### 3. Set priorities wisely
 
 Use sitemap priority to indicate relative importance within your site:
 
@@ -475,11 +476,11 @@ Use sitemap priority to indicate relative importance within your site:
 - **0.3** - Less important pages
 - **0.1** - Rarely accessed pages
 
-### 4. Use Appropriate Change Frequencies
+### 4. Use appropriate change frequencies
 
 Match change frequency to actual update patterns to help search engines crawl efficiently.
 
-### 5. Include Open Graph Images
+### 5. Include Open Graph images
 
 Always include Open Graph images for better social media sharing:
 
@@ -497,7 +498,7 @@ seo:
 
 Recommended dimensions: **1200 x 630 pixels** (not enforced by Stati).
 
-### 6. Use Structured Data
+### 6. Use structured data
 
 Add structured data for rich search results:
 
@@ -515,7 +516,7 @@ seo:
 ---
 ```
 
-### 7. Test Your SEO
+### 7. Test your SEO
 
 Use these tools to validate your SEO implementation:
 
@@ -586,7 +587,7 @@ For large sites (10,000+ pages):
 - Consider using `sitemap.filter` to exclude unnecessary pages from sitemap
 - Use `generateIndex: true` to create a sitemap index when splitting is needed
 
-## Next Steps
+## Next steps
 
 - [SEO Usage Scenarios](/advanced/seo-usage-scenarios) - Learn different approaches to using SEO in your project
-- [API Reference](/api/seo) - Detailed API documentation for SEO functions and types
+- [SEO API](/api/seo) - Detailed API documentation for SEO functions and types

@@ -1,14 +1,16 @@
 ---
-title: 'Filesystem Routing'
+title: 'Routing'
 description: 'Learn how Stati uses filesystem-based routing to generate URLs from your content.'
 order: 2
+seo:
+  title: 'Filesystem routing in Stati'
 ---
 
-# Filesystem-based Routing
+# Routing
 
 Stati uses filesystem-based routing, which means the structure of your `site/` directory directly determines the URLs of your website. This approach is intuitive, predictable, and doesn't require complex routing configuration.
 
-## Basic Routing
+## Basic routing
 
 ### Files to URLs
 
@@ -25,7 +27,7 @@ site/
     └── second-post.md     → /blog/second-post
 ```
 
-### Directory Structure
+### Directory structure
 
 Every directory can have its own `index.md` file, which becomes the homepage for that section:
 
@@ -40,7 +42,7 @@ site/
 │       └── reference.md  → /docs/api/reference
 ```
 
-## URL Generation Rules
+## URL generation rules
 
 ### Clean URLs
 
@@ -61,7 +63,7 @@ blog/my-post.md → /blog/my-post
 - `site/blog/index.md` becomes `/blog/` (trailing slash)
 - `site/blog/post.md` becomes `/blog/post` (no trailing slash)
 
-### Important: No Automatic Slug Transformation
+### Important: No automatic slug transformation
 
 **Stati preserves filenames exactly as written** (minus the `.md` extension). There is NO automatic:
 
@@ -85,7 +87,7 @@ my post.md → /my post (space in URL - breaks)
 post!.md → /post! (special chars - problematic)
 ```
 
-### Filename Best Practices
+### Filename best practices
 
 To ensure clean, working URLs:
 
@@ -94,9 +96,9 @@ To ensure clean, working URLs:
 3. **Avoid special characters**: Use only letters, numbers, and hyphens
 4. **Keep names descriptive but concise**: `getting-started.md` not `getting_started_with_our_platform.md`
 
-## Nested Routing
+## Nested routing
 
-### Deep Nesting
+### Deep nesting
 
 Stati supports unlimited nesting levels:
 
@@ -108,7 +110,7 @@ site/
             └── customization.md → /docs/guides/advanced/customization
 ```
 
-### Section Organization
+### Section organization
 
 Organize content by topic, date, or any logical structure:
 
@@ -125,13 +127,13 @@ site/
 │           └── old-post.md → /blog/2023/archive/old-post
 ```
 
-## Special Files and Directories
+## Special files and directories
 
-### Files and Directories Excluded from Routing
+### Files and directories excluded from routing
 
 Stati excludes certain files and directories from URL generation:
 
-#### **Directories Starting with `_` (Underscore)**
+#### **Directories starting with `_` (underscore)**
 
 **Critical Rule**: Any **directory** starting with `_` (and all files within it) is excluded from routing. Individual files starting with `_` are NOT automatically excluded:
 
@@ -158,7 +160,7 @@ site/
 
 > **Tip:** To exclude individual files, use `draft: true` in frontmatter instead of filename prefixes.
 
-#### **Non-Markdown Files**
+#### **Non-Markdown files**
 
 Only `.md` files become pages. All other file types are automatically excluded:
 
@@ -176,7 +178,7 @@ site/
 
 **Note:** `README.md` files ARE routed because they are markdown files. Don't place README files in your `site/` directory, keep them in your project root or other non-site directories.
 
-#### **Use Cases for Underscore Exclusion**
+#### **Use cases for underscore exclusion**
 
 **Partial Templates:**
 
@@ -221,7 +223,7 @@ _assets/                # Source assets (pre-processing)
 
 This convention allows you to organize helper files, templates, and components without creating unwanted routes, keeping your URL structure clean and intentional.
 
-### Layout Files
+### Layout files
 
 `layout.eta` files are special template files that don't generate routes but define the layout for their directory and subdirectories:
 
@@ -235,9 +237,9 @@ site/
 │   └── post.md         → /blog/post (uses blog layout)
 ```
 
-## Dynamic Content Organization
+## Dynamic content organization
 
-### Date-based Organization
+### Date-based organization
 
 For blogs and news sites, organize by date:
 
@@ -253,7 +255,7 @@ site/
     │       └── 14-valentine.md → /blog/2024/02/14-valentine
 ```
 
-### Category-based Organization
+### Category-based organization
 
 For documentation or portfolio sites:
 
@@ -268,7 +270,7 @@ site/
 │       └── react-native.md → /projects/mobile-apps/react-native
 ```
 
-## Front Matter URL Override
+## Front matter URL override
 
 You can completely override the automatic URL generation using the `permalink` field in front matter:
 
@@ -311,9 +313,9 @@ permalink: '/docs/auth'
 ---
 ```
 
-## Working with the Router
+## Working with the router
 
-### Link Generation
+### Link generation
 
 When linking between pages, use absolute paths from the site root. Match your link URLs to how Stati generates them:
 
@@ -326,7 +328,7 @@ Visit the [API documentation](/api/reference) to learn more.
 Visit the [Blog homepage](/blog/) to see all posts.
 ```
 
-### Navigation Helpers
+### Navigation helpers
 
 In templates, you can access routing information:
 
@@ -371,9 +373,9 @@ The `getBreadcrumbs()` method returns an array of `NavNode` objects from the roo
 
 See the [Navigation API](/api/navigation) for more details on breadcrumb customization.
 
-## Best Practices
+## Best practices
 
-### URL Structure Design
+### URL structure design
 
 1. **Keep URLs short and descriptive**
    - Good: `/docs/getting-started/`
@@ -389,7 +391,7 @@ See the [Navigation API](/api/navigation) for more details on breadcrumb customi
    - Use logical nesting levels
    - Consider your site's navigation structure
 
-### File Organization
+### File organization
 
 1. **Use meaningful directory names**
 
@@ -416,7 +418,7 @@ See the [Navigation API](/api/navigation) for more details on breadcrumb customi
    - Use it to introduce the section and link to subsections
    - Make it the navigation hub for that area
 
-### SEO Considerations
+### SEO considerations
 
 1. **Descriptive URLs help SEO**
    - `/blog/how-to-optimize-website-performance` is better than `/blog/post-123`
@@ -429,9 +431,9 @@ See the [Navigation API](/api/navigation) for more details on breadcrumb customi
    - `/contact` is cleaner than `/contact.html`
    - Stati automatically handles trailing slashes: index pages get them (`/blog/`), non-index pages don't (`/about`)
 
-## Advanced Routing Patterns
+## Advanced routing patterns
 
-### Multi-language Sites
+### Multi-language sites
 
 Organize content by language:
 
@@ -448,7 +450,7 @@ site/
     └── apropos.md → /fr/apropos
 ```
 
-### API Documentation
+### API documentation
 
 Structure API docs logically:
 

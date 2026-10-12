@@ -1,10 +1,12 @@
 ---
-title: Navigation API
+title: 'Navigation'
 description: Complete guide to Stati's navigation system and helper methods
 order: 4
+seo:
+  title: 'Navigation API'
 ---
 
-# Navigation API Reference
+# Navigation
 
 Stati automatically generates a hierarchical navigation structure from your content and provides powerful helper methods to query and traverse it in templates.
 
@@ -16,9 +18,9 @@ The navigation system is available in all templates via the `stati.nav` object, 
 - **Helper methods** for querying and traversing
 - **Current page context** via `stati.page.navNode`
 
-## Navigation Structure
+## Navigation structure
 
-### NavNode Interface
+### NavNode interface
 
 Each navigation node has the following structure:
 
@@ -34,7 +36,7 @@ interface NavNode {
 }
 ```
 
-## Navigation Helpers
+## Navigation helpers
 
 ### `stati.nav.tree`
 
@@ -371,7 +373,7 @@ getCurrentNode(): NavNode | undefined
 
 ---
 
-## Current Page Context
+## Current page context
 
 ### `stati.page.navNode`
 
@@ -399,9 +401,9 @@ Direct access to the current page's navigation node with all its properties and 
 
 ---
 
-## Common Patterns
+## Common patterns
 
-### Multi-level Nested Navigation
+### Multi-level nested navigation
 
 ```html
 <!-- _partials/nested-nav.eta -->
@@ -428,7 +430,7 @@ Direct access to the current page's navigation node with all its properties and 
 </nav>
 ```
 
-### Section Navigation with Active State
+### Section navigation with active state
 
 ```html
 <!-- Show navigation for current section only -->
@@ -453,7 +455,7 @@ Direct access to the current page's navigation node with all its properties and 
 <% } %>
 ```
 
-### Table of Contents for Collection
+### Table of contents for collection
 
 ```html
 <!-- Generate TOC for a section -->
@@ -481,7 +483,7 @@ Direct access to the current page's navigation node with all its properties and 
 <% } %>
 ```
 
-### Smart Sidebar (Current Section Only)
+### Smart sidebar (current section only)
 
 ```html
 <!-- _partials/smart-sidebar.eta -->
@@ -521,8 +523,8 @@ Direct access to the current page's navigation node with all its properties and 
 
 ---
 
-## See Also
+## See also
 
 - [Template Data and Context](/core-concepts/templates/#template-data-and-context)
-- [Template API Reference](/api/reference)
+- [API overview](/api/reference)
 - [Routing System](/core-concepts/routing)

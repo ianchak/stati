@@ -1,0 +1,30 @@
+{
+  "name": "my-stati-blog",
+  "version": "1.0.0",
+  "description": "A blog built with Stati",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "stati dev",
+    "build": "stati build",
+    "build:drafts": "stati build --include-drafts",
+    "preview": "stati preview",
+    "clean:dist": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "clean:cache": "node -e \"require('node:fs').rmSync('.stati',{recursive:true,force:true})\"",
+    "clean": "npm run clean:dist && npm run clean:cache"
+  },
+  "keywords": [
+    "static-site",
+    "stati",
+    "blog"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@stati/cli": "^1.14.0",
+    "@stati/core": "^1.24.3"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}
