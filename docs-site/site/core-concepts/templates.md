@@ -142,6 +142,8 @@ title: 'My Post'
 
 The first match wins, providing maximum flexibility while maintaining sensible defaults.
 
+Index pages of a [collection](#collections) check for an `index.eta` in each directory before its `layout.eta`, so a listing page can have its own layout.
+
 ### Root layout example
 
 `site/layout.eta`:
@@ -499,6 +501,79 @@ Template usage:
     </div>
 </article>
 ```
+
+## Collections
+
+A folder of pages with an `index.md` is a collection. When Stati renders that index page, it hands the template `stati.collection`: the pages in the folder, already sorted by date and grouped by tag. Blog listings, archives and tag clouds need no hook or filter.
+
+```text
+site/
+├── index.md             # Root collection: every top-level page
+└── blog/
+    ├── index.md         # Blog collection: every page under /blog
+    ├── index.eta        # Optional layout used only for blog/index.md
+    ├── hello-world.md
+    └── 2025/
+        └── recap.md
+```
+
+### Collection data
+
+| Property                  | What it holds                                                                        |
+| ------------------------- | ------------------------------------------------------------------------------------ |
+| `pages`                   | Every page in the collection, at any depth, excluding the index page itself          |
+| `children`                | Only the pages one level down (`hello-world`, not `2025/recap`)                      |
+| `recentPages`             | `pages` sorted by `publishedAt`, newest first; undated pages follow, sorted by title |
+| `pagesByTag`              | An object mapping each front matter tag to the pages that carry it                   |
+| `metadata.totalPages`     | The number of entries in `pages`                                                     |
+| `metadata.hasChildren`    | Whether `children` is non-empty                                                      |
+| `metadata.collectionPath` | The index page's URL, such as `/blog`                                                |
+| `metadata.collectionName` | The folder name, such as `blog`, or `Home` for the root                              |
+
+Each entry is a page model, not a template context. Read front matter through `frontMatter`, and use `url` for links:
+
+```eta
+<% const posts = stati.collection?.recentPages ?? []; %>
+<ul class="post-list">
+  <% posts.forEach(post => { %>
+  <li>
+    <a href="<%= post.url %>"><%= post.frontMatter.title %></a>
+    <% if (post.publishedAt) { %>
+    <time datetime="<%= post.publishedAt.toISOString() %>">
+      <%= post.publishedAt.toLocaleDateString('en-US', { dateStyle: 'medium' }) %>
+    </time>
+    <% } %>
+  </li>
+  <% }) %>
+</ul>
+```
+
+A tag list with counts comes straight from `pagesByTag`:
+
+```eta
+<% const byTag = stati.collection?.pagesByTag ?? {}; %>
+<% Object.keys(byTag).sort().forEach(tag => { %>
+<a href="<%= `#tag-${tag}` %>"><%= tag %> (<%= byTag[tag].length %>)</a>
+<% }) %>
+```
+
+### Rules to know
+
+- **Dates:** `recentPages` sorts on `publishedAt` from front matter. Quote the value (`publishedAt: '2025-03-01'`); an unquoted YAML date is not picked up. The `date` field is not used for sorting.
+- **The root collection is shallow:** `site/index.md` collects only top-level pages, such as `/about`, not the pages inside `blog/`. Other collections include every depth.
+- **Index pages only:** `stati.collection` is set on index pages. Pages at the top level of the site also receive the root collection. Other pages get `undefined`, so guard with `stati.collection?.` in shared layouts.
+- **Drafts:** pages with `draft: true` are left out unless you build with `--include-drafts`.
+- **Index layouts:** an `index.eta` next to an index page is used for that page ahead of `layout.eta`, so the listing can have its own template while the posts keep the folder layout.
+
+To list a folder's pages from somewhere else, such as the latest posts on the home page, use the [navigation helpers](/api/navigation). `stati.nav.getChildren()` works on any page, and its nodes come sorted by `order`, then by `publishedAt`, newest first:
+
+```eta
+<% stati.nav.getChildren('/blog').slice(0, 5).forEach(post => { %>
+<a href="<%= post.url %>"><%= post.title %></a>
+<% }) %>
+```
+
+Nav nodes carry only `title`, `url`, `order` and `publishedAt`, not other front matter such as `description` or `tags`. When a list needs those outside its index page, build it once in a [`beforeAll` hook](/api/hooks#beforeall) and expose it through a [custom filter](/configuration/templates#custom-filters). The blog starter does this in `helpers/blog.js`. See [Example sites](/examples/list#blog-template).
 
 ## Custom filters and helpers
 

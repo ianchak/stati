@@ -121,7 +121,7 @@ A templating pattern required when embedding dynamic content in HTML attributes.
 
 ## Collection
 
-A group of pages in a directory, often with shared layout and navigation (e.g., blog posts, documentation sections).
+A folder of pages with an `index.md`, often with shared layout and navigation (e.g., blog posts, documentation sections). Its index page receives `stati.collection` with the pages sorted by date and grouped by tag. See [Collections](/core-concepts/templates#collections).
 
 ## Eta filters
 

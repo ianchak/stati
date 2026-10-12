@@ -77,8 +77,13 @@ inventory:
           }
         - {
             name: 'Callable partials',
-            text: 'Reusable components that take props.',
+            text: 'Reusable components that take props, scoped by folder.',
             href: '/api/templates',
+          }
+        - {
+            name: 'Collections',
+            text: 'Index pages get their pages, newest first and grouped by tag.',
+            href: '/core-concepts/templates#collections',
           }
         - {
             name: 'Filesystem routing',
@@ -104,7 +109,7 @@ inventory:
           }
         - {
             name: 'TypeScript bundles',
-            text: 'esbuild-compiled client code, injected per page.',
+            text: 'esbuild-compiled client code, hashed, minified and injected per page.',
             href: '/configuration/typescript',
           }
         - {
@@ -124,8 +129,13 @@ inventory:
           }
         - {
             name: 'Tailwind or Sass',
-            text: 'Pick plain CSS, Sass or Tailwind when you scaffold.',
-            href: '/cli/scaffolder#styling-solutions',
+            text: 'Pick one when you scaffold; Tailwind watches alongside dev.',
+            href: '/cli/development#tailwind-css-integration',
+          }
+        - {
+            name: 'Programmatic API',
+            text: 'Run builds, servers and invalidation from your own scripts.',
+            href: '/api/reference#build-and-servers',
           }
         - {
             name: 'Build metrics',
@@ -156,7 +166,7 @@ inventory:
           }
         - {
             name: 'SEO metadata',
-            text: 'Meta tags, Open Graph and JSON-LD, injected for you.',
+            text: 'Meta tags, Open Graph, Twitter cards and JSON-LD, injected for you.',
             href: '/configuration/seo',
           }
         - {
@@ -185,6 +195,11 @@ inventory:
             name: 'Scaffolder',
             text: 'npx create-stati sets up a working project.',
             href: '/cli/scaffolder',
+          }
+        - {
+            name: 'Starter templates',
+            text: 'Blank, blog or a full docs site, each working on first run.',
+            href: '/examples/list',
           }
         - {
             name: 'Agent skill',
