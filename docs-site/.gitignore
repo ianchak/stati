@@ -31,3 +31,7 @@ yarn-error.log*
 # Coverage
 coverage/
 .nyc_output/
+
+# Local design notes
+/DESIGN.md
+/PRODUCT.md
