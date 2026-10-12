@@ -36,8 +36,8 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@stati/cli": "1.14.0",
-    "@stati/core": "1.24.3",
+    "@stati/cli": "1.14.1",
+    "@stati/core": "1.24.4",
     "@tailwindcss/typography": "0.5.19",
     "autoprefixer": "10.4.21",
     "markdown-it-external-links": "0.0.6",
