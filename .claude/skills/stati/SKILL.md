@@ -1,12 +1,14 @@
 ---
 name: stati
-description: 'Build, extend, debug, and deploy websites with Stati, the TypeScript-first static site generator at stati.build. Use for Stati SSG projects, create-stati scaffolding, stati.config.ts or stati.config.js, Markdown/frontmatter, Eta .eta layouts, stati.partials components and props, collections, navigation, Tailwind/Sass, client TypeScript bundles, SEO, search, sitemap, robots, RSS, ISG caching, build hooks, and dev/preview errors. Enforces Stati-specific template rules instead of assuming generic Eta, EJS, Astro, or Eleventy behavior.'
+description: 'Build, extend, debug, and deploy websites with Stati, the TypeScript-first static site generator at stati.build. Use for Stati SSG projects, create-stati scaffolding, stati.config.ts or stati.config.js, Markdown/frontmatter, Eta .eta layouts, stati.partials components and props, collections, navigation, Tailwind/Sass, client TypeScript bundles, SEO, search, sitemap, robots, RSS, ISG caching, build hooks, and dev/preview errors. Also use when explaining, documenting, or reviewing what a Stati feature does, including Stati docs, examples, starter templates, and feature lists. Enforces Stati-specific template rules instead of assuming generic Eta, EJS, Astro, or Eleventy behavior.'
 ---
 
 # Building websites with Stati
 
 Use this skill to deliver working Stati sites, not to modify the generator unless
-explicitly asked. Stati is a TypeScript-first static site generator:
+explicitly asked. It is also the reference for explaining, documenting, or
+reviewing how a Stati feature behaves: the references record behavior checked
+against source and tests, including where the official docs overstate it. Stati is a TypeScript-first static site generator:
 <https://stati.build/>. This bundle is not a claim of official endorsement.
 
 ## Load the right references

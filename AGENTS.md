@@ -16,6 +16,7 @@ Edit this file, not the tool-specific ones, when guidance changes.
 - `packages/create-stati/src/create.ts` scaffolds from `examples/`; its build step copies templates into `dist/templates`.
 - `examples/*` double as integration fixtures and `docs-site/` hosts the real documentation built with Stati.
 - `.claude/skills/stati/` is the Stati agent skill for people building sites with Stati. It is read by Claude Code and Copilot, and `create-stati --agent-skill` bundles and installs it, so changes to it ship with `create-stati`.
+- Load that skill in this repo too, before writing or reviewing anything that describes how Stati behaves: `docs-site/` pages, the homepage feature list, `examples/`, recipes and starter templates. Its references record behavior verified against source and tests, including known gaps between the docs and the code. When the docs and the skill disagree, check the source, then fix whichever is wrong.
 
 ## Build + test workflow
 

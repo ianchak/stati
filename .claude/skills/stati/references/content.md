@@ -192,6 +192,15 @@ The checked implementation's child-page parent collection lookup has URL
 trailing-slash sensitivity. Guard `stati.collection`; do not rely on every post
 having a parent collection. Navigation helpers are often the better sidebar API.
 
+To list a section from another page, such as the latest posts on the home page,
+use `stati.nav.getChildren('/blog')`; the root collection cannot do it. Nodes
+arrive in nav order (numeric `order`, then newest `publishedAt`), so a plain
+`.slice(0, 5)` gives the latest posts when posts set no `order`. Posts in
+subfolders come back as `isCollection` nodes with nested `children`, not a flat
+list. Nodes carry no `description`, `tags`, or other frontmatter; when a listing
+outside its index page needs those, build the data in `beforeAll` and expose it
+through an `eta.filters` function.
+
 Tags only aggregate data. They do not create `/tags/<tag>` pages. Pagination,
 author archives, language variants, CMS-driven pages, and date archives require
 explicit content generation or authored Markdown plus layouts/hooks. Generate
