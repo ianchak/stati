@@ -1,5 +1,61 @@
 # create-stati
 
+## 1.14.0
+
+### Minor Changes
+
+- 2ac2a9b: Add a blog template
+
+  `create-stati my-blog --template blog` scaffolds a complete blog that
+  works on first run. Its sample posts explain how each part works.
+  - Markdown posts with tags, a yearly archive, newer/older links and
+    related posts, built from a post index in `helpers/blog.js` that is
+    exposed to templates as filters such as `stati.blogPosts()`.
+  - RSS feed, sitemap, `robots.txt`, Open Graph and Twitter tags, and
+    `BlogPosting` structured data.
+  - Drafts, a 404 page, a default link-preview image, and light and dark
+    themes with a self-hosted display face.
+
+  The scaffolder now keeps a template's own config and styles:
+  - The blog's `stati.config.js` is kept, and becomes `stati.config.ts`
+    with `typescript.enabled` for TypeScript projects.
+  - With Tailwind or Sass the blog's stylesheet moves into `src/` instead
+    of being replaced by the blank starter's styles.
+  - Unknown `--template` values are rejected with the list of templates,
+    and the interactive prompt offers Blog.
+  - The bundled agent skill lists the new template.
+
+- 1486c8a: Add a docs template
+
+  `create-stati my-docs --template=docs` scaffolds a complete
+  documentation site that works on first run. Its sample pages explain how
+  each part works.
+  - A sidebar built from folders: each top-level folder is a section and
+    each Markdown file a page, ordered by `order` in front matter, with
+    section overview pages, previous/next links and breadcrumbs. The
+    grouping lives in `helpers/docs.js` and reaches templates as filters
+    such as `stati.docsSections()`.
+  - Ctrl/Cmd+K search over Stati's search index, an on-page table of
+    contents that tracks the section in view, heading links, and code
+    blocks highlighted at build time with a copy button.
+  - Light and dark themes with a toggle, a mobile navigation drawer,
+    self-hosted Inter, a sitemap, `robots.txt`, link previews and
+    breadcrumb structured data, drafts and a 404 page.
+
+  The interactive prompt offers Docs, and the bundled agent skill lists
+  the new template.
+
+- 392d0cd: Make TypeScript the default for new projects
+
+  The TypeScript prompt now defaults to yes, and non-interactive runs
+  create a TypeScript project unless told otherwise. A default project
+  gets `stati.config.ts`, `tsconfig.json` and `src/main.ts`.
+  - Added `--no-typescript` (alias `--no-ts`) to scaffold a JavaScript
+    project with `stati.config.js`.
+  - Scripts that pass every option and relied on the old JavaScript
+    default should add `--no-typescript`.
+  - The bundled agent skill lists the new flag.
+
 ## 1.13.0
 
 ### Minor Changes
