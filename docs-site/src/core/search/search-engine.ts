@@ -72,7 +72,13 @@ async function ensureIndexLoaded(): Promise<void> {
 
     isLoaded = true;
     console.debug(`[Search] Indexed ${data.documentCount} documents`);
-  })();
+  })().catch((error: unknown) => {
+    // Forget the failed load so reopening search can retry it
+    loadingPromise = null;
+    flexIndex = null;
+    documentStore.clear();
+    throw error;
+  });
 
   return loadingPromise;
 }
