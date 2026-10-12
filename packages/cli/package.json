@@ -1,6 +1,6 @@
 {
   "name": "@stati/cli",
-  "version": "1.14.1",
+  "version": "1.14.2",
   "type": "module",
   "bin": {
     "stati": "./dist/cli.js"
