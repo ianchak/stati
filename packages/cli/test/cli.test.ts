@@ -131,7 +131,7 @@ describe('CLI', () => {
       const { build } = await import('@stati/core');
 
       // Test that build can be called with proper options
-      await (build as ReturnType<typeof vi.fn>)({
+      await vi.mocked(build)({
         force: false,
         clean: false,
         includeDrafts: false,
@@ -154,7 +154,7 @@ describe('CLI', () => {
       const { build } = await import('@stati/core');
 
       // Test that cliVersion and coreVersion can be passed to build
-      await (build as ReturnType<typeof vi.fn>)({
+      await vi.mocked(build)({
         force: false,
         clean: false,
         includeDrafts: false,
@@ -173,7 +173,7 @@ describe('CLI', () => {
     it('should pass force flag correctly', async () => {
       const { build } = await import('@stati/core');
 
-      await (build as ReturnType<typeof vi.fn>)({
+      await vi.mocked(build)({
         force: true,
         clean: false,
         includeDrafts: false,
@@ -189,7 +189,7 @@ describe('CLI', () => {
     it('should pass clean flag correctly', async () => {
       const { build } = await import('@stati/core');
 
-      await (build as ReturnType<typeof vi.fn>)({
+      await vi.mocked(build)({
         force: false,
         clean: true,
         includeDrafts: false,
@@ -205,7 +205,7 @@ describe('CLI', () => {
     it('should pass include-drafts flag correctly', async () => {
       const { build } = await import('@stati/core');
 
-      await (build as ReturnType<typeof vi.fn>)({
+      await vi.mocked(build)({
         force: false,
         clean: false,
         includeDrafts: true,
@@ -229,7 +229,7 @@ describe('CLI', () => {
         open: false,
       };
 
-      await (createDevServer as ReturnType<typeof vi.fn>)(mockDevOptions);
+      await vi.mocked(createDevServer)(mockDevOptions);
 
       expect(createDevServer).toHaveBeenCalledWith(mockDevOptions);
     });
@@ -246,7 +246,7 @@ describe('CLI', () => {
         open: false,
       };
 
-      await (createPreviewServer as ReturnType<typeof vi.fn>)(mockPreviewOptions);
+      await vi.mocked(createPreviewServer)(mockPreviewOptions);
 
       expect(createPreviewServer).toHaveBeenCalledWith(mockPreviewOptions);
     });
@@ -269,9 +269,7 @@ describe('CLI', () => {
 
       (createPreviewServer as ReturnType<typeof vi.fn>).mockResolvedValueOnce(mockServer);
 
-      const previewServer = await (createPreviewServer as ReturnType<typeof vi.fn>)(
-        mockPreviewOptions,
-      );
+      const previewServer = await vi.mocked(createPreviewServer)(mockPreviewOptions);
 
       expect(createPreviewServer).toHaveBeenCalledWith(mockPreviewOptions);
       expect(previewServer.url).toBe('http://localhost:4000');
@@ -282,7 +280,7 @@ describe('CLI', () => {
     it('should call invalidate function', async () => {
       const { invalidate } = await import('@stati/core');
 
-      await (invalidate as ReturnType<typeof vi.fn>)();
+      await vi.mocked(invalidate)();
 
       expect(invalidate).toHaveBeenCalled();
     });
@@ -328,7 +326,7 @@ describe('CLI', () => {
     it('should pass metrics options to build when enabled', async () => {
       const { build } = await import('@stati/core');
 
-      await (build as ReturnType<typeof vi.fn>)({
+      await vi.mocked(build)({
         force: false,
         clean: false,
         includeDrafts: false,
@@ -353,7 +351,7 @@ describe('CLI', () => {
     it('should pass detailed metrics option when enabled', async () => {
       const { build } = await import('@stati/core');
 
-      await (build as ReturnType<typeof vi.fn>)({
+      await vi.mocked(build)({
         force: false,
         clean: false,
         includeDrafts: false,
@@ -376,7 +374,7 @@ describe('CLI', () => {
     it('should not include metrics option when metrics is disabled', async () => {
       const { build } = await import('@stati/core');
 
-      await (build as ReturnType<typeof vi.fn>)({
+      await vi.mocked(build)({
         force: false,
         clean: false,
         includeDrafts: false,
@@ -394,7 +392,7 @@ describe('CLI', () => {
     it('should pass configPath option correctly', async () => {
       const { build } = await import('@stati/core');
 
-      await (build as ReturnType<typeof vi.fn>)({
+      await vi.mocked(build)({
         force: false,
         clean: false,
         includeDrafts: false,
@@ -440,7 +438,7 @@ describe('CLI', () => {
         },
       };
 
-      await (writeMetrics as ReturnType<typeof vi.fn>)(mockMetrics, {
+      await vi.mocked(writeMetrics)(mockMetrics as unknown as Parameters<typeof writeMetrics>[0], {
         cacheDir: '.stati',
       });
 
@@ -452,7 +450,7 @@ describe('CLI', () => {
     it('should call invalidate function', async () => {
       const { invalidate } = await import('@stati/core');
 
-      await (invalidate as ReturnType<typeof vi.fn>)();
+      await vi.mocked(invalidate)();
 
       expect(invalidate).toHaveBeenCalled();
     });
@@ -460,7 +458,7 @@ describe('CLI', () => {
     it('should pass query to invalidate when provided', async () => {
       const { invalidate } = await import('@stati/core');
 
-      await (invalidate as ReturnType<typeof vi.fn>)('tag:news');
+      await vi.mocked(invalidate)('tag:news');
 
       expect(invalidate).toHaveBeenCalledWith('tag:news');
     });

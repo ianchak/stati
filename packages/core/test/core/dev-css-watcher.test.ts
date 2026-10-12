@@ -30,7 +30,7 @@ vi.mock('fast-glob', () => ({
 }));
 
 vi.mock('ws', () => ({
-  WebSocketServer: vi.fn(() => {
+  WebSocketServer: vi.fn(function () {
     const wsServer = {
       on: vi.fn(),
       close: vi.fn(),

@@ -38,13 +38,13 @@
   "devDependencies": {
     "@stati/cli": "1.14.1",
     "@stati/core": "1.24.4",
-    "@tailwindcss/typography": "0.5.19",
-    "autoprefixer": "10.4.21",
+    "@tailwindcss/typography": "0.5.20",
+    "autoprefixer": "10.6.1",
     "markdown-it-external-links": "0.0.6",
     "markdown-it-prism": "3.0.0",
-    "postcss": "8.5.16",
+    "postcss": "8.5.29",
     "prismjs": "1.30.0",
-    "tailwindcss": "3.4.17",
+    "tailwindcss": "3.4.19",
     "typescript": "5.9.3"
   },
   "engines": {

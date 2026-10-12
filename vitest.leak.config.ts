@@ -12,11 +12,7 @@ export default defineConfig({
     globals: false,
     include: ['packages/core/test/perf/dev-server-leak.test.ts'],
     pool: 'forks',
-    poolOptions: {
-      forks: {
-        execArgv: ['--expose-gc'],
-      },
-    },
+    execArgv: ['--expose-gc'],
   },
   esbuild: {
     target: 'node18',

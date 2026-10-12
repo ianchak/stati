@@ -64,7 +64,7 @@ describe('templates.ts', () => {
     content: '# Test content',
   };
 
-  let mockEtaInstance: Partial<Eta> & {
+  let mockEtaInstance: Omit<Partial<Eta>, 'renderAsync'> & {
     renderAsync: ReturnType<typeof vi.fn>;
     filters: Record<string, unknown>;
   };
@@ -80,7 +80,9 @@ describe('templates.ts', () => {
       renderAsync: vi.fn(),
       filters: {},
     };
-    MockEta.mockReturnValue(mockEtaInstance);
+    MockEta.mockImplementation(function () {
+      return mockEtaInstance;
+    });
     mockGlob.mockResolvedValue([]);
   });
 

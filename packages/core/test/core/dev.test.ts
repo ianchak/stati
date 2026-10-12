@@ -17,13 +17,15 @@ let capturedRequestHandler: ((req: IncomingMessage, res: ServerResponse) => void
 
 // Mock dependencies
 vi.mock('ws', () => ({
-  WebSocketServer: vi.fn(() => ({
-    on: vi.fn(),
-    close: vi.fn((callback?: () => void) => {
-      if (callback) callback();
-    }),
-    clients: new Set(),
-  })),
+  WebSocketServer: vi.fn(function () {
+    return {
+      on: vi.fn(),
+      close: vi.fn((callback?: () => void) => {
+        if (callback) callback();
+      }),
+      clients: new Set(),
+    };
+  }),
 }));
 
 vi.mock('http', () => ({

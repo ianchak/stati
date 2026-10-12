@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from 'vitest';
 import { log, colors } from '../src/colors.js';
 
 describe('colors', () => {
-  let consoleLogSpy: ReturnType<typeof vi.spyOn>;
+  let consoleLogSpy: MockInstance<typeof console.log>;
   let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
   const originalEnv = process.env;
@@ -681,7 +681,7 @@ describe('colors', () => {
   });
 
   describe('progress bar methods', () => {
-    let stdoutWriteSpy: ReturnType<typeof vi.spyOn>;
+    let stdoutWriteSpy: MockInstance<(...args: unknown[]) => boolean>;
 
     beforeEach(() => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1014,7 +1014,7 @@ describe('colors', () => {
   });
 
   describe('slowest pages formatting', () => {
-    let stdoutWriteSpy: ReturnType<typeof vi.spyOn>;
+    let stdoutWriteSpy: MockInstance<(...args: unknown[]) => boolean>;
 
     beforeEach(() => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1148,7 +1148,7 @@ describe('colors', () => {
   });
 
   describe('progress bar edge cases', () => {
-    let stdoutWriteSpy: ReturnType<typeof vi.spyOn>;
+    let stdoutWriteSpy: MockInstance<(...args: unknown[]) => boolean>;
 
     beforeEach(() => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
