@@ -19,6 +19,7 @@ import {
   resolveSrcDir,
   createTemplateError,
   createValidatingPartialsProxy,
+  createValidatingContextProxy,
   propValue,
   wrapPartialsAsCallable,
   createNavigationHelpers,
@@ -267,6 +268,9 @@ export function createTemplateEngine(config: StatiConfig): Eta {
     cache: useCache,
     cacheFilepaths: useCache,
     varName: 'stati',
+    // Debug mode wraps runtime errors with the template path and line number,
+    // which the dev error overlay uses to point at the failing line
+    debug: isDevelopment(),
   });
 
   if (isDevelopment()) {
@@ -364,6 +368,9 @@ export async function renderPage(
     generateSEO: (tags?: string[]) => generateSEO({ page, config, site: config.site }, tags),
     propValue,
     assets, // TypeScript bundle assets (available when typescript.enabled is true)
+    // Set by callable partials invoked with props; always present so that
+    // stati.props?.x works under the dev-mode context validation
+    props: undefined,
   };
 
   // Render partials and store their content
@@ -396,10 +403,10 @@ export async function renderPage(
           baseContext,
         );
 
-        const partialContext = {
+        const partialContext = createValidatingContextProxy({
           ...baseContext,
           partials: createValidatingPartialsProxy(callablePartials), // Include both previous and current pass partials with validation
-        };
+        });
 
         const renderedContent = await eta.renderAsync(partialPath, partialContext);
         passRenderedPartials[partialName] = renderedContent;
@@ -456,10 +463,10 @@ export async function renderPage(
   // Wrap final rendered partials as callable before passing to layout context
   const callablePartials = wrapPartialsAsCallable(eta, renderedPartials, partialPaths, baseContext);
 
-  const context = {
+  const context = createValidatingContextProxy({
     ...baseContext,
     partials: createValidatingPartialsProxy(callablePartials), // Add rendered partials with validation
-  };
+  });
 
   try {
     if (!layoutPath) {

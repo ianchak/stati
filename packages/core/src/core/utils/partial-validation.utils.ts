@@ -1,5 +1,7 @@
 import { isProduction } from '../../env.js';
 import { type CallablePartial } from './callable-partials.utils.js';
+import { isPassthroughProperty } from './context-validation.utils.js';
+import { findSimilarNames } from './similarity.utils.js';
 
 /**
  * Creates inline error overlay HTML for missing partials
@@ -45,55 +47,6 @@ function createInlineErrorOverlay(partialName: string, suggestions: string[]): s
 }
 
 /**
- * Finds similar partial names to suggest when a partial is not found
- */
-function findSimilarPartialNames(targetName: string, availableNames: string[]): string[] {
-  if (availableNames.length === 0) return [];
-
-  // Simple similarity check based on common prefixes and substrings
-  const target = targetName.toLowerCase();
-
-  const suggestions = availableNames
-    .map((name) => {
-      const candidate = name.toLowerCase();
-      let score = 0;
-
-      // Exact match gets highest score
-      if (candidate === target) return { name, score: 1000 };
-
-      // Check if one is contained in the other
-      if (candidate.includes(target) || target.includes(candidate)) {
-        score += 100;
-      }
-
-      // Check common prefix length
-      let prefixLen = 0;
-      for (let i = 0; i < Math.min(target.length, candidate.length); i++) {
-        if (target[i] === candidate[i]) {
-          prefixLen++;
-        } else {
-          break;
-        }
-      }
-      score += prefixLen * 10;
-
-      // Check common characters
-      const targetChars = new Set(target);
-      const candidateChars = new Set(candidate);
-      const commonChars = [...targetChars].filter((char) => candidateChars.has(char));
-      score += commonChars.length;
-
-      return { name, score };
-    })
-    .filter((item) => item.score > 0) // Only include items with some similarity
-    .sort((a, b) => b.score - a.score) // Sort by score descending
-    .slice(0, 3) // Top 3 suggestions
-    .map((item) => item.name);
-
-  return suggestions;
-}
-
-/**
  * Creates a development-mode Proxy for the partials object that throws errors
  * when accessing non-existent partials instead of returning undefined.
  *
@@ -116,36 +69,17 @@ export function createValidatingPartialsProxy<T extends string | CallablePartial
 
   return new Proxy(partials, {
     get(target, prop, receiver) {
-      // Allow normal object operations
-      if (typeof prop === 'symbol') {
-        return Reflect.get(target, prop, receiver);
-      }
-
       const propName = String(prop);
 
-      // Check if the property exists
-      if (propName in target) {
-        return target[propName];
-      }
-
-      // Special case: allow accessing length, toString, etc.
-      // Also handle test framework inspection properties
-      if (
-        propName in Object.prototype ||
-        propName === 'length' ||
-        propName === 'constructor' ||
-        propName === 'then' || // Promise detection
-        propName === '$$typeof' || // React inspection
-        propName === 'nodeType' || // DOM node detection
-        propName === 'asymmetricMatch' || // Jest/Vitest matcher
-        propName === 'toJSON' // JSON serialization
-      ) {
+      // Return existing partials, and let symbols, prototype methods, and
+      // serializer/test-tooling probes resolve normally
+      if (propName in target || isPassthroughProperty(prop)) {
         return Reflect.get(target, prop, receiver);
       }
 
       // Property doesn't exist - return error overlay HTML instead of throwing
       const availablePartials = Object.keys(target);
-      const suggestions = findSimilarPartialNames(propName, availablePartials);
+      const suggestions = findSimilarNames(propName, availablePartials);
 
       // In development, render an inline error overlay
       const errorHtml = createInlineErrorOverlay(propName, suggestions);

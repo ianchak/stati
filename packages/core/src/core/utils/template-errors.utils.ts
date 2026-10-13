@@ -1,6 +1,7 @@
 import { readFile } from 'fs/promises';
 import { pathExists } from './fs.utils.js';
 import type { ErrorDetails } from './error-overlay.utils.js';
+import { parseUnknownPropertyMessage } from './context-validation.utils.js';
 
 /**
  * Enhanced template error that includes file context and suggestions.
@@ -10,6 +11,8 @@ export class TemplateError extends Error {
   public readonly line?: number;
   public readonly column?: number;
   public readonly template?: string;
+  /** Error-specific suggestions shown before the generic ones in the overlay */
+  public readonly suggestions?: string[];
   public readonly context?: {
     before?: string[];
     after?: string[];
@@ -21,6 +24,7 @@ export class TemplateError extends Error {
     line?: number,
     column?: number,
     template?: string,
+    suggestions?: string[],
   ) {
     super(message);
     this.name = 'TemplateError';
@@ -28,13 +32,14 @@ export class TemplateError extends Error {
     if (line !== undefined) this.line = line;
     if (column !== undefined) this.column = column;
     if (template !== undefined) this.template = template;
+    if (suggestions !== undefined) this.suggestions = suggestions;
   }
 
   /**
    * Converts this template error to ErrorDetails for the overlay.
    */
   async toErrorDetails(): Promise<ErrorDetails> {
-    const suggestions: string[] = [];
+    const suggestions: string[] = [...(this.suggestions ?? [])];
     const message = this.message.toLowerCase();
 
     // Add specific suggestions based on error type
@@ -104,25 +109,82 @@ export class TemplateError extends Error {
 }
 
 /**
+ * Header that Eta's debug mode prepends to runtime errors:
+ * `<path>:<line>` (or `line <line>` without a path), a numbered excerpt of the
+ * template, then a blank line and the original message.
+ */
+const ETA_RUNTIME_ERROR_HEADER = /^(?:(.+):(\d+)|line (\d+))\n(?:(?: >> | {4})\d+\|[^\n]*\n)+\n/;
+
+/**
+ * Root template context properties, used to suggest `stati.<name>` when a
+ * template references one without the `stati.` prefix.
+ */
+const CONTEXT_ROOT_NAMES = new Set([
+  'site',
+  'page',
+  'content',
+  'nav',
+  'partials',
+  'collection',
+  'props',
+  'assets',
+  'generator',
+  'generateSEO',
+  'propValue',
+]);
+
+function getReferenceErrorSuggestions(message: string): string[] {
+  const name = message.match(/^(\S+) is not defined$/)?.[1];
+  if (name === 'it') {
+    return ['Stati templates use "stati" instead of Eta\'s default "it", e.g. stati.page.title'];
+  }
+  if (name && CONTEXT_ROOT_NAMES.has(name)) {
+    return [`Did you mean "stati.${name}"?`];
+  }
+  return [];
+}
+
+/**
  * Parses Eta template errors to extract file location information.
  */
 export function parseEtaError(error: Error, templatePath?: string): TemplateError {
   let filePath = templatePath;
   let line: number | undefined;
   let column: number | undefined;
+  let message = error.message;
 
-  // Try to parse error location from Eta error messages
-  const message = error.message;
+  // Eta's debug mode wraps runtime errors in a header with the template path and
+  // line. A partial rendered inside another template is wrapped once per level,
+  // so unwrap them all and keep the innermost location.
+  let header = message.match(ETA_RUNTIME_ERROR_HEADER);
+  while (header) {
+    if (header[1] !== undefined) {
+      filePath = header[1];
+    }
+    line = parseInt(header[2] ?? header[3] ?? '', 10);
+    column = undefined;
+    message = message.slice(header[0].length);
+    header = message.match(ETA_RUNTIME_ERROR_HEADER);
+  }
 
-  // Eta syntax errors often include line/column info
-  const locationMatch = message.match(/at line (\d+), column (\d+)/i);
+  // Eta syntax errors report "at line N col N"
+  const locationMatch = message.match(/at line (\d+),? col(?:umn)? (\d+)/i);
   if (locationMatch && locationMatch[1] && locationMatch[2]) {
     line = parseInt(locationMatch[1], 10);
     column = parseInt(locationMatch[2], 10);
   }
 
+  let suggestions: string[] = [];
+  const unknownProperty = parseUnknownPropertyMessage(message);
+  if (unknownProperty) {
+    message = unknownProperty.message;
+    suggestions = unknownProperty.suggestions;
+  } else if (error.name === 'ReferenceError') {
+    suggestions = getReferenceErrorSuggestions(message);
+  }
+
   // Try to extract file path from stack trace if not provided
-  if (!filePath && error.stack) {
+  if (!filePath && line === undefined && error.stack) {
     const stackLines = error.stack.split('\n');
     for (const stackLine of stackLines) {
       const fileMatch = stackLine.match(/at.*\(([^)]+\.eta):(\d+):(\d+)\)/);
@@ -135,7 +197,7 @@ export function parseEtaError(error: Error, templatePath?: string): TemplateErro
     }
   }
 
-  return new TemplateError(message, filePath, line, column);
+  return new TemplateError(message, filePath, line, column, undefined, suggestions);
 }
 
 /**
