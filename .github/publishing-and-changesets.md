@@ -45,22 +45,24 @@ Stati uses the Conventional Commits specification to automatically determine ver
 
 ### Breaking Changes
 
-Breaking changes trigger a major version bump and can be indicated in two ways:
+Breaking changes trigger a major version bump. Mark them with an exclamation mark after the type:
 
-1. **Exclamation mark** after the type:
+```text
+feat!: redesigned template API
+```
 
-   ```text
-   feat!: redesigned template API
-   ```
+Do not use a `BREAKING CHANGE:` footer. Commit messages are single-line (see below), and the `commit-msg` hook rejects the footer.
 
-2. **BREAKING CHANGE** in the commit body:
+### Single-line Commit Messages
 
-   ```text
-   feat: add new configuration system
+Commit messages are a subject line only. The changeset generator reads `git log` line by line, so each body line would be treated as a separate commit: the body gets cut from the changeset, and a body line like `fix: ...` creates a spurious one.
 
-   BREAKING CHANGE: Configuration format has changed.
-   Old configs must be migrated to the new structure.
-   ```
+The `.husky/commit-msg` hook (`scripts/check-commit-msg.mjs`) enforces this. After the subject it allows only:
+
+- Trailers with a hyphenated key, such as `Co-Authored-By: ...` or `Signed-off-by: ...`
+- GitHub closing keywords, such as `Closes #123`
+
+Release (`RELEASING: ...`), merge, revert, and `fixup!`/`squash!`/`amend!` commits are exempt. Put the details of a change in the PR description.
 
 ### Examples
 
@@ -149,10 +151,9 @@ Generated changesets follow this structure:
 ---
 
 Add markdown syntax highlighting
-
-Implements syntax highlighting for code blocks
-in markdown files using Prism.js integration.
 ```
+
+Edit the generated file to add detail for the changelog when the subject alone isn't enough.
 
 **Breaking Change Example:**
 
@@ -483,7 +484,7 @@ Stati follows semantic versioning (semver) strictly:
 
 - `feat` commits → minor bump
 - `fix` commits → patch bump
-- `feat!` or `BREAKING CHANGE` → major bump
+- `feat!` (or any `type!`) → major bump
 
 **Manual Override:**
 
@@ -583,7 +584,7 @@ This command:
 **Solutions:**
 
 - Edit the changeset file to correct version type
-- Use `feat!:` or `BREAKING CHANGE` for major bumps
+- Use `feat!:` (or any `type!:`) for major bumps
 - Review conventional commit format
 
 ### OIDC Authentication Failed
@@ -615,7 +616,7 @@ This command:
 1. **Use conventional commits** for automatic changeset generation
 2. **Review generated changesets** before merging PRs
 3. **Edit descriptions** to be user-friendly
-4. **Mark breaking changes** explicitly with `!` or `BREAKING CHANGE`
+4. **Mark breaking changes** explicitly with `!`
 5. **Skip changesets** only for non-functional changes
 
 ### For Maintainers

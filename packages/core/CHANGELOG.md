@@ -1,5 +1,11 @@
 # @stati/core
 
+## 1.26.0
+
+### Minor Changes
+
+- enforce single-line commit messages with trailers
+
 ## 1.25.0
 
 ### Minor Changes
