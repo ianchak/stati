@@ -92,9 +92,9 @@ stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css --ta
 ## Browser feedback
 
 - Successful rebuilds simply reload the page.
-- When a build error occurs, Stati renders an HTML overlay describing the failure (using `createErrorOverlay`). Template errors show the template file, the failing line, and the code around it.
+- When a build error occurs, Stati serves an error overlay in place of the page you requested. See [Error overlay](/api/error-handling#error-overlay) for what it shows.
 - A template that reads a `stati.*` property that does not exist, such as `stati.paeg` or a misspelled filter, fails with a "Did you mean ...?" suggestion instead of rendering `undefined`. See [Unknown template properties](/api/error-handling#unknown-template-properties).
-- Closing the overlay or fixing the error clears the message on the next successful rebuild.
+- The overlay stays connected to the dev server. Fix the error and save, and the page reloads on the next successful rebuild. The header shows whether the connection is live, and **Refresh** (or `Ctrl+R` / `Cmd+R`) reloads by hand.
 
 ## Stopping the server
 

@@ -294,11 +294,35 @@ Stati builds navigation from the page structure during the content loading phase
 
 ### Console output
 
-Stati uses colored console output:
+The CLI marks each message with a colored glyph. The message text itself stays in your terminal's default color; only informational messages are tinted blue.
 
-- **🔴 Errors**: Red text, logged to stderr
-- **🟡 Warnings**: Yellow text, logged to stdout
-- **ℹ️ Info**: Standard text, logged to stdout
+| Level   | Glyph | ASCII glyph | Glyph color | Stream |
+| ------- | ----- | ----------- | ----------- | ------ |
+| Error   | `×`   | `ERR`       | Red         | stderr |
+| Warning | `!`   | `WARN`      | Amber       | stderr |
+| Success | `✓`   | `OK`        | Green       | stdout |
+| Info    | none  | none        | Blue text   | stdout |
+
+Color is turned off when `NO_COLOR` is set or stdout is not a terminal (for example when output is piped to a file or CI log), and forced on with `FORCE_COLOR`. Set `STATI_ASCII_ICONS=1` to use the ASCII glyphs in terminals that can't display Unicode.
+
+### Error overlay
+
+During `stati dev`, a failed build is also reported in the browser: Stati serves an error overlay, rendered by `createErrorOverlay`, in place of the page you requested. It shows:
+
+- a heading for the kind of failure (template, build, Markdown or configuration) and a timestamp
+- the error message
+- the file, line and column when known, and the route you requested
+- for template errors, the lines around the failing line, with that line highlighted
+- suggestions for fixing it, starting with error-specific hints such as "Did you mean ...?"
+- the stack trace, with frames from `node_modules` and Node internals dimmed
+
+The overlay follows your system's light or dark setting. It reloads by itself after the next successful rebuild; see [Browser feedback](/cli/development#browser-feedback).
+
+<figure>
+  <img class="dark:hidden" src="/images/error-overlay-light.webp" alt="The Stati error overlay for a template error: a header with the Stati mark, a Watching for changes status and a Refresh button; the heading Template rendering failed; the message Unknown property stati.generatr; the file, line 48 and route; and the template code with line 48 highlighted." width="1120" height="716" loading="lazy" />
+  <img class="hidden dark:block" src="/images/error-overlay-dark.webp" alt="The Stati error overlay in its dark theme: the heading Template rendering failed, the message Unknown property stati.generatr, the file, line and route, and the template code with the failing line highlighted." width="1120" height="716" loading="lazy" />
+  <figcaption>A misspelled <code>stati.generator</code> in a footer partial, as the overlay reports it.</figcaption>
+</figure>
 
 ### Error context
 
@@ -483,7 +507,7 @@ stati build --clean
 stati dev
 ```
 
-The development server provides an error overlay in the browser when build errors occur, making it easy to identify and fix issues without checking terminal output.
+The development server provides an [error overlay](#error-overlay) in the browser when build errors occur, making it easy to identify and fix issues without checking terminal output.
 
 ### 3. Test production build
 

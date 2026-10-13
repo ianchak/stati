@@ -27,6 +27,11 @@ const ERROR_HEADLINES: Record<ErrorDetails['type'], string> = {
 
 const BOLT_PATH = 'M13 10V3L4 14h7v7l9-11h-7z';
 
+/** Inline favicon, so the overlay never requests the site's own favicon. */
+const FAVICON_HREF = `data:image/svg+xml,${encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${BOLT_PATH}"/></svg>`,
+)}`;
+
 const OVERLAY_STYLES = `
     :root {
       --canvas: 255 255 255;
@@ -245,6 +250,8 @@ const OVERLAY_STYLES = `
       border: 1px solid rgb(var(--on-accent) / 0.4);
       border-radius: 4px;
       font-family: var(--font-mono);
+      font-feature-settings: normal;
+      font-variant-ligatures: none;
       font-size: 0.75rem;
       font-weight: 400;
       line-height: 1.4;
@@ -297,6 +304,8 @@ const OVERLAY_STYLES = `
 
     .meta-time {
       font-family: var(--font-mono);
+      font-feature-settings: normal;
+      font-variant-ligatures: none;
       font-size: 0.75rem;
       font-variant-numeric: tabular-nums;
       color: rgb(var(--faint));
@@ -320,9 +329,10 @@ const OVERLAY_STYLES = `
 
     .message-text {
       font-family: var(--font-mono);
+      font-feature-settings: normal;
+      font-variant-ligatures: none;
       font-size: 0.875rem;
       line-height: 1.65;
-      font-variant-ligatures: none;
       white-space: pre-wrap;
       overflow-wrap: anywhere;
       color: rgb(var(--ink));
@@ -347,6 +357,8 @@ const OVERLAY_STYLES = `
     .fact dd {
       margin-top: 0.125rem;
       font-family: var(--font-mono);
+      font-feature-settings: normal;
+      font-variant-ligatures: none;
       font-size: 0.8125rem;
       font-variant-numeric: tabular-nums;
       overflow-wrap: anywhere;
@@ -392,6 +404,8 @@ const OVERLAY_STYLES = `
       border-bottom: 1px solid rgb(var(--line));
       background-color: rgb(var(--canvas));
       font-family: var(--font-mono);
+      font-feature-settings: normal;
+      font-variant-ligatures: none;
       font-size: 0.75rem;
       line-height: 1.5;
       color: rgb(var(--faint));
@@ -411,9 +425,10 @@ const OVERLAY_STYLES = `
       overflow-x: auto;
       padding: 0.75rem 0;
       font-family: var(--font-mono);
+      font-feature-settings: normal;
+      font-variant-ligatures: none;
       font-size: 0.8125rem;
       line-height: 1.65;
-      font-variant-ligatures: none;
       tab-size: 2;
     }
 
@@ -515,6 +530,8 @@ const OVERLAY_STYLES = `
 
     .stack-count {
       font-family: var(--font-mono);
+      font-feature-settings: normal;
+      font-variant-ligatures: none;
       font-size: 0.75rem;
       font-variant-numeric: tabular-nums;
       color: rgb(var(--faint));
@@ -532,9 +549,10 @@ const OVERLAY_STYLES = `
       border-radius: 8px;
       background-color: rgb(var(--sunken));
       font-family: var(--font-mono);
+      font-feature-settings: normal;
+      font-variant-ligatures: none;
       font-size: 0.8125rem;
       line-height: 1.65;
-      font-variant-ligatures: none;
       white-space: pre;
       color: rgb(var(--muted));
     }
@@ -729,6 +747,7 @@ export function createErrorOverlay(error: ErrorDetails, requestPath: string): st
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="${FAVICON_HREF}">
   <title>Stati Development Error</title>
   <style>${OVERLAY_STYLES}
   </style>
