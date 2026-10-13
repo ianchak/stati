@@ -190,7 +190,7 @@ npx vitest run packages/core/test/perf
 # Benchmarks use 100 generated pages with warmup runs
 ```
 
-Baselines are defined in `perf/baselines/benchmark.json` with a 30% tolerance. Tests validate median duration and cache hit rates.
+Baselines are defined in `perf/baselines/benchmark.json`. Each benchmark passes if its median over 7 runs stays within 30% of the baseline or 40ms above it, whichever is larger, so fast benchmarks are not failed by CI runner noise. Cache hit rates are validated too.
 
 ---
 

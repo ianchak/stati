@@ -144,6 +144,21 @@ function extractPerfResults(benchmarkSummary, metrics) {
   return results;
 }
 
+// Maximum allowed duration for a threshold. A percentage tolerance alone is too tight for
+// small baselines (30% of 50ms is 15ms, well within CI runner noise), so `minHeadroomMs`
+// guarantees an absolute amount of slack on top of the baseline.
+function getMaxAllowed(threshold) {
+  const byTolerance = threshold.medianMs * (1 + threshold.tolerance);
+  const byHeadroom = threshold.medianMs + (threshold.minHeadroomMs ?? 0);
+  return Math.max(byTolerance, byHeadroom);
+}
+
+// Format the allowance rule for a threshold
+function formatTolerance(threshold) {
+  const pct = `${(threshold.tolerance * 100).toFixed(0)}%`;
+  return threshold.minHeadroomMs ? `${pct} or +${threshold.minHeadroomMs}ms` : pct;
+}
+
 // Compare results against baseline
 function compareWithBaseline(results, baseline) {
   const comparison = {
@@ -159,7 +174,7 @@ function compareWithBaseline(results, baseline) {
   // Cold build comparison
   if (results.coldBuild && thresholds.coldBuild) {
     const threshold = thresholds.coldBuild;
-    const maxAllowed = threshold.medianMs * (1 + threshold.tolerance);
+    const maxAllowed = getMaxAllowed(threshold);
     const actual = results.coldBuild.medianMs;
     const status = actual <= maxAllowed ? 'pass' : 'fail';
     const change = ((actual - threshold.medianMs) / threshold.medianMs) * 100;
@@ -178,7 +193,7 @@ function compareWithBaseline(results, baseline) {
   // Warm build comparison
   if (results.warmBuild && thresholds.warmBuild) {
     const threshold = thresholds.warmBuild;
-    const maxAllowed = threshold.medianMs * (1 + threshold.tolerance);
+    const maxAllowed = getMaxAllowed(threshold);
     const actual = results.warmBuild.medianMs;
     const status = actual <= maxAllowed ? 'pass' : 'fail';
     const change = ((actual - threshold.medianMs) / threshold.medianMs) * 100;
@@ -202,7 +217,7 @@ function compareWithBaseline(results, baseline) {
   // Incremental build comparison
   if (results.incrementalBuild && thresholds.incrementalBuild) {
     const threshold = thresholds.incrementalBuild;
-    const maxAllowed = threshold.medianMs * (1 + threshold.tolerance);
+    const maxAllowed = getMaxAllowed(threshold);
     const actual = results.incrementalBuild.medianMs;
     const status = actual <= maxAllowed ? 'pass' : 'fail';
     const change = ((actual - threshold.medianMs) / threshold.medianMs) * 100;
@@ -221,7 +236,7 @@ function compareWithBaseline(results, baseline) {
   // Complex build comparison
   if (results.complexBuild && thresholds.complexBuild) {
     const threshold = thresholds.complexBuild;
-    const maxAllowed = threshold.medianMs * (1 + threshold.tolerance);
+    const maxAllowed = getMaxAllowed(threshold);
     const actual = results.complexBuild.medianMs;
     const status = actual <= maxAllowed ? 'pass' : 'fail';
     const change = ((actual - threshold.medianMs) / threshold.medianMs) * 100;
@@ -335,17 +350,17 @@ function generateReport(metricsOrSummary, comparison, baseline) {
 
   const t = baseline.thresholds;
   lines.push(
-    `| Cold Build | ${formatDuration(t.coldBuild.medianMs * (1 + t.coldBuild.tolerance))} | ${(t.coldBuild.tolerance * 100).toFixed(0)}% |`,
+    `| Cold Build | ${formatDuration(getMaxAllowed(t.coldBuild))} | ${formatTolerance(t.coldBuild)} |`,
   );
   lines.push(
-    `| Warm Build | ${formatDuration(t.warmBuild.medianMs * (1 + t.warmBuild.tolerance))} | ${(t.warmBuild.tolerance * 100).toFixed(0)}% |`,
+    `| Warm Build | ${formatDuration(getMaxAllowed(t.warmBuild))} | ${formatTolerance(t.warmBuild)} |`,
   );
   lines.push(
-    `| Incremental Build | ${formatDuration(t.incrementalBuild.medianMs * (1 + t.incrementalBuild.tolerance))} | ${(t.incrementalBuild.tolerance * 100).toFixed(0)}% |`,
+    `| Incremental Build | ${formatDuration(getMaxAllowed(t.incrementalBuild))} | ${formatTolerance(t.incrementalBuild)} |`,
   );
   if (t.complexBuild) {
     lines.push(
-      `| Complex Build | ${formatDuration(t.complexBuild.medianMs * (1 + t.complexBuild.tolerance))} | ${(t.complexBuild.tolerance * 100).toFixed(0)}% |`,
+      `| Complex Build | ${formatDuration(getMaxAllowed(t.complexBuild))} | ${formatTolerance(t.complexBuild)} |`,
     );
   }
 
