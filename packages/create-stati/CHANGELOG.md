@@ -1,5 +1,11 @@
 # create-stati
 
+## 1.15.0
+
+### Minor Changes
+
+- enforce single-line commit messages with trailers
+
 ## 1.14.3
 
 ### Patch Changes

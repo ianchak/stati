@@ -1,5 +1,16 @@
 # @stati/cli
 
+## 1.15.0
+
+### Minor Changes
+
+- enforce single-line commit messages with trailers
+
+### Patch Changes
+
+- Updated dependencies
+  - @stati/core@1.26.0
+
 ## 1.14.3
 
 ### Patch Changes
