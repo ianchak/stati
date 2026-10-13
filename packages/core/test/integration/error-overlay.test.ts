@@ -25,7 +25,7 @@ describe('Error Overlay', () => {
       expect(html).toContain('template');
       expect(html).toContain('Unexpected token in template');
       expect(html).toContain('/src/layout.eta');
-      expect(html).toContain('Line:</span>');
+      expect(html).toContain('<dt>Line</dt>');
       expect(html).toContain('15:20');
       expect(html).toContain('Check for unmatched brackets');
     });

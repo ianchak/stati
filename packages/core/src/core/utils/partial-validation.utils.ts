@@ -12,34 +12,40 @@ function createInlineErrorOverlay(partialName: string, suggestions: string[]): s
       ? `Did you mean: ${suggestions.map((s) => `"${s}"`).join(', ')}?`
       : 'No similar partials found';
 
+  // Inline styles only: this toast is injected into the user's own page, so it
+  // carries the Stati dark slate palette rather than relying on page styles.
   return `
 <!-- Stati Development Error Overlay -->
-<div style="
+<div role="alert" style="
   position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 999999;
-  background: #dc2626;
-  color: white;
-  padding: 16px;
+  top: 16px;
+  right: 16px;
+  z-index: 2147483647;
+  box-sizing: border-box;
+  width: min(24rem, calc(100vw - 32px));
+  margin: 0;
+  padding: 14px 16px;
+  background: #0f172a;
+  color: #f1f5f9;
+  border: 1px solid #475569;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 14px;
-  line-height: 1.4;
-  max-width: 400px;
-  border: 2px solid #fca5a5;
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: left;
 ">
-  <div style="font-weight: 600; margin-bottom: 8px; font-size: 16px;">
-    ⚠️ Template Error
+  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: #f87171;">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none;"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+    Template Error
   </div>
-  <div style="margin-bottom: 8px;">
-    <strong>Partial "${partialName}" not found</strong>
+  <div style="font-weight: 600; overflow-wrap: anywhere;">
+    Partial "${partialName}" not found
   </div>
-  <div style="color: #fca5a5; font-size: 13px;">
+  <div style="margin-top: 2px; font-size: 13px; color: #94a3b8; overflow-wrap: anywhere;">
     ${suggestionText}
   </div>
-  <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid #fca5a5; font-size: 12px; opacity: 0.8;">
+  <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid #1e293b; font-size: 12px; color: #8391a7;">
     Fix the partial name in your template to dismiss this error
   </div>
 </div>
