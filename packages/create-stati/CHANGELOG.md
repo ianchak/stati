@@ -1,5 +1,13 @@
 # create-stati
 
+## 1.15.1
+
+### Patch Changes
+
+- 20aed75: upgrade ESLint 9 to 10
+
+  Errors that wrap a lower-level failure (file system operations, cache manifest saves, build and dev server locks, ISG config validation, Tailwind executable lookup, and create-stati styling and package.json setup) now keep the original error as `cause`. Messages are unchanged.
+
 ## 1.15.0
 
 ### Minor Changes
