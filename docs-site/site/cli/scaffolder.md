@@ -279,7 +279,7 @@ my-site/
 
 ## Requirements
 
-- Node.js 22+
+- Node.js 22.12+ or 24+
 - npm, yarn, pnpm, or bun
 
 ## Next steps

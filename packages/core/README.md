@@ -738,7 +738,7 @@ export default defineConfig({
 
 ## Requirements
 
-- **Node.js** >=22
+- **Node.js** ^22.12.0 || >=24
 - **npm** 11.5.1 or higher (or equivalent package manager)
 
 ---

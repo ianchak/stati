@@ -4,12 +4,12 @@ The official documentation site for [Stati](https://github.com/ianchak/stati), b
 
 ## Prerequisites
 
-- **Node.js** 22.0.0 or higher
+- **Node.js** 22.12.0 or higher on the 22.x line, or 24 and later
 - **npm** 11.5.1 or higher
 
 Verify your versions:
 
 ```bash
-node --version  # Should be v22.0.0 or higher
+node --version  # Should be v22.12.0+ or v24+
 npm --version   # Should be 11.5.1 or higher
 ```
