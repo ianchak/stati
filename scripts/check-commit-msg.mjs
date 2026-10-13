@@ -1,16 +1,14 @@
 #!/usr/bin/env node
 
 /**
- * commit-msg hook: allow only a single-line subject plus trailers.
+ * commit-msg hook: allow only a single-line subject.
  *
  * scripts/generate-changesets.mjs reads `git log` line by line, so every body
  * line is treated as a separate commit. Body text gets cut from the changeset,
  * and a body line shaped like `type: subject` produces a spurious changeset.
  *
- * Allowed after the subject:
- * - Trailers with a hyphenated key (`Co-Authored-By: ...`, `Signed-off-by: ...`).
- *   The hyphen keeps them from matching the conventional commit pattern.
- * - GitHub closing keywords (`Closes #123`, `Fixes #45`).
+ * Nothing may follow the subject: no body, no trailers, no closing keywords.
+ * Link issues from the PR description instead.
  */
 
 import fs from 'node:fs';
@@ -24,8 +22,6 @@ const EXEMPT_SUBJECT_PATTERNS = [
   /^(fixup|squash|amend)! /,
 ];
 
-const TRAILER_PATTERN = /^[A-Za-z]+(?:-[A-Za-z]+)+: \S/;
-const CLOSING_KEYWORD_PATTERN = /^(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?) #\d+$/i;
 const SCISSORS_LINE = /^# -+ >8 -+$/;
 
 export function checkCommitMessage(message) {
@@ -43,7 +39,7 @@ export function checkCommitMessage(message) {
     return [];
   }
 
-  return rest.filter((line) => !TRAILER_PATTERN.test(line) && !CLOSING_KEYWORD_PATTERN.test(line));
+  return rest;
 }
 
 function main() {
@@ -56,14 +52,14 @@ function main() {
   const offending = checkCommitMessage(fs.readFileSync(messageFile, 'utf8'));
   if (offending.length === 0) return;
 
-  console.error('Commit message rejected: use a single-line subject with no body.\n');
+  console.error('Commit message rejected: use a single-line subject with nothing after it.\n');
   console.error('Unexpected lines after the subject:');
   for (const line of offending) {
     console.error(`  ${line}`);
   }
   console.error(
-    '\nPut the details in the PR description. Only trailers like `Co-Authored-By: ...`' +
-      '\nand closing keywords like `Closes #123` may follow the subject.' +
+    '\nPut the details, issue links (`Closes #123`), and co-author credits in the PR' +
+      '\ndescription. Trailers like `Co-Authored-By: ...` are not allowed either.' +
       '\nMark breaking changes with `!` (`feat(core)!: ...`), not a `BREAKING CHANGE:` footer.',
   );
   process.exit(1);

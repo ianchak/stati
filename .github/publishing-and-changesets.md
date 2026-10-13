@@ -57,12 +57,9 @@ Do not use a `BREAKING CHANGE:` footer. Commit messages are single-line (see bel
 
 Commit messages are a subject line only. The changeset generator reads `git log` line by line, so each body line would be treated as a separate commit: the body gets cut from the changeset, and a body line like `fix: ...` creates a spurious one.
 
-The `.husky/commit-msg` hook (`scripts/check-commit-msg.mjs`) enforces this. After the subject it allows only:
+The `.husky/commit-msg` hook (`scripts/check-commit-msg.mjs`) enforces this. It rejects every line after the subject, including trailers such as `Co-Authored-By: ...` or `Signed-off-by: ...` and closing keywords such as `Closes #123`.
 
-- Trailers with a hyphenated key, such as `Co-Authored-By: ...` or `Signed-off-by: ...`
-- GitHub closing keywords, such as `Closes #123`
-
-Release (`RELEASING: ...`), merge, revert, and `fixup!`/`squash!`/`amend!` commits are exempt. Put the details of a change in the PR description.
+Release (`RELEASING: ...`), merge, revert, and `fixup!`/`squash!`/`amend!` commits are exempt. Put the details of a change, issue links, and co-author credits in the PR description.
 
 ### Examples
 
