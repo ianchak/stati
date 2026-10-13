@@ -230,12 +230,12 @@ The official Stati documentation lives in `docs-site/site/`. Read these files di
 
 ## Commit messages
 
-- Format: `type(scope): subject` in imperative mood, subject ≤72 chars.
-- Body: what changed and why; wrap at 72; no emoji.
+- Format: `type(scope): subject` in imperative mood, subject ≤72 chars, no emoji.
+- Single line only, no body. Put what changed and why in the PR description. The only lines allowed after the subject are trailers with a hyphenated key (`Co-Authored-By: ...`, `Signed-off-by: ...`) and closing keywords (`Closes #123`). The `commit-msg` hook (`scripts/check-commit-msg.mjs`) enforces this, because the changeset generator reads each body line as a separate commit.
 - Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert.
 - Scope is usually the package: `core`, `cli`, `create-stati`, or an area like `isg`, `search`, `docs`.
-- Mark breaking changes with `!` after the type (`feat(core)!: ...`) or a `BREAKING CHANGE:` footer.
-- Commit types drive releases (see below), so pick them carefully: `feat` → minor, everything else → patch, `!`/`BREAKING CHANGE` → major.
+- Mark breaking changes with `!` after the type (`feat(core)!: ...`). A `BREAKING CHANGE:` footer is rejected by the hook.
+- Commit types drive releases (see below), so pick them carefully: `feat` → minor, everything else → patch, `!` → major.
 
 ## Releases and changesets
 
