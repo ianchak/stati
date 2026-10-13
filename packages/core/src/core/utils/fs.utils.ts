@@ -26,7 +26,7 @@ async function wrapFsOperation<T>(operation: string, fsCall: Promise<T>, path: s
     return await fsCall;
   } catch (error) {
     const nodeError = error as NodeError;
-    throw new Error(`Failed to ${operation} ${path}: ${nodeError.message}`);
+    throw new Error(`Failed to ${operation} ${path}: ${nodeError.message}`, { cause: error });
   }
 }
 
@@ -45,7 +45,7 @@ async function wrapFsOperationNullable<T>(
     if (nodeError.code === 'ENOENT') {
       return null; // File doesn't exist
     }
-    throw new Error(`Failed to ${operation} ${path}: ${nodeError.message}`);
+    throw new Error(`Failed to ${operation} ${path}: ${nodeError.message}`, { cause: error });
   }
 }
 
@@ -114,7 +114,9 @@ export async function readdir<T extends boolean = false>(
     return (await fseReaddir(dirPath)) as T extends true ? fse.Dirent[] : string[];
   } catch (error) {
     const nodeError = error as NodeError;
-    throw new Error(`Failed to read directory ${dirPath}: ${nodeError.message}`);
+    throw new Error(`Failed to read directory ${dirPath}: ${nodeError.message}`, {
+      cause: error,
+    });
   }
 }
 

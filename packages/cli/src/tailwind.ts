@@ -124,7 +124,7 @@ export function watchTailwindCSS(
       'Failed to locate Tailwind CSS executable:\n' +
       '  Make sure tailwindcss is installed: npm install -D tailwindcss';
     logger.error(errorMsg);
-    throw new Error('Failed to locate Tailwind CSS executable');
+    throw new Error('Failed to locate Tailwind CSS executable', { cause: err });
   }
 
   if (!options.verbose) {

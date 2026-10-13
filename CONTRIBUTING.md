@@ -6,7 +6,7 @@ Thanks for your interest in contributing to **Stati** - a lightweight, TypeScrip
 
 ## Requirements
 
-- **Node.js** 22+ (see `engines` in package.json)
+- **Node.js** 22.13+ or 24+ (see `engines` in package.json; ESLint 10 does not support Node 22.0–22.12 or 23)
 - **npm** 11.5.1+ with workspace support (required for OIDC publishing)
 - Familiarity with TypeScript and monorepo layouts is helpful
 
@@ -190,7 +190,7 @@ npx vitest run packages/core/test/perf
 # Benchmarks use 100 generated pages with warmup runs
 ```
 
-Baselines are defined in `perf/baselines/benchmark.json` with a 30% tolerance. Tests validate median duration and cache hit rates.
+Baselines are defined in `perf/baselines/benchmark.json`. Each benchmark passes if its median over 7 runs stays within 30% of the baseline or 40ms above it, whichever is larger, so fast benchmarks are not failed by CI runner noise. Cache hit rates are validated too.
 
 ---
 

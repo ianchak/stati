@@ -78,6 +78,6 @@ export async function processStyling(
       await applyProcessorResult(projectDir, result);
     }
   } catch (error) {
-    throw new Error(`Failed to setup ${styling}: ${formatErrorMessage(error)}`);
+    throw new Error(`Failed to setup ${styling}: ${formatErrorMessage(error)}`, { cause: error });
   }
 }

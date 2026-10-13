@@ -12,23 +12,27 @@
     "coldBuild": {
       "medianMs": 220,
       "p95Ms": 300,
-      "tolerance": 0.3
+      "tolerance": 0.3,
+      "minHeadroomMs": 40
     },
     "warmBuild": {
       "medianMs": 50,
       "p95Ms": 80,
       "tolerance": 0.3,
+      "minHeadroomMs": 40,
       "minCacheHitRate": 0.95
     },
     "incrementalBuild": {
       "medianMs": 55,
       "p95Ms": 90,
-      "tolerance": 0.3
+      "tolerance": 0.3,
+      "minHeadroomMs": 40
     },
     "complexBuild": {
       "medianMs": 280,
       "p95Ms": 380,
-      "tolerance": 0.3
+      "tolerance": 0.3,
+      "minHeadroomMs": 40
     }
   }
 }

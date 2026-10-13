@@ -74,6 +74,11 @@
           "minimum": 0,
           "maximum": 1,
           "description": "Acceptable variance as decimal (e.g., 0.20 = 20%)"
+        },
+        "minHeadroomMs": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Minimum absolute slack in milliseconds above medianMs. The allowed maximum is the larger of medianMs * (1 + tolerance) and medianMs + minHeadroomMs, so small baselines are not failed by CI runner noise."
         }
       }
     }

@@ -799,10 +799,6 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
   const { config, outDir, cacheDir } = await loadAndValidateConfig(options);
   endConfigSpan();
 
-  // Initialize cache stats
-  let cacheHits = 0;
-  let cacheMisses = 0;
-
   // Clean output directory and cache if requested
   if (options.clean) {
     logger.status('Cleaning output directory and ISG cache...');
@@ -934,9 +930,7 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     searchIndexFilename,
   );
   endPageRenderSpan();
-  cacheHits = pageProcessingResult.cacheHits;
-  cacheMisses = pageProcessingResult.cacheMisses;
-  const searchablePages = pageProcessingResult.searchablePages;
+  const { cacheHits, cacheMisses, searchablePages } = pageProcessingResult;
 
   // Generate search index if enabled
   // Uses markdown content and TOC entries

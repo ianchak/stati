@@ -24,8 +24,8 @@ import { setEnv } from '../../src/env.js';
 const BENCHMARK_CONFIG = {
   /** Number of warmup runs before measuring */
   warmupRuns: 1,
-  /** Number of measured runs */
-  measuredRuns: 3,
+  /** Number of measured runs (odd, so the median is a real sample; enough to absorb CI runner noise) */
+  measuredRuns: 7,
   /** Timeout per test in ms */
   timeout: 60000,
   /** Number of test pages to generate */
@@ -287,6 +287,13 @@ function p95(values: number[]): number {
 }
 
 /**
+ * Format individual run durations for log output.
+ */
+function formatRuns(values: number[]): string {
+  return values.map((v) => v.toFixed(0)).join(',');
+}
+
+/**
  * Benchmark results to be written at the end of the test suite.
  */
 interface BenchmarkSummary {
@@ -295,10 +302,10 @@ interface BenchmarkSummary {
   platform: string;
   pageCount: number;
   complexPageCount: number;
-  coldBuild?: { medianMs: number; p95Ms: number };
-  warmBuild?: { medianMs: number; p95Ms: number; cacheHitRate: number };
-  incrementalBuild?: { medianMs: number };
-  complexBuild?: { medianMs: number; p95Ms: number };
+  coldBuild?: { medianMs: number; p95Ms: number; runsMs: number[] };
+  warmBuild?: { medianMs: number; p95Ms: number; cacheHitRate: number; runsMs: number[] };
+  incrementalBuild?: { medianMs: number; runsMs: number[] };
+  complexBuild?: { medianMs: number; p95Ms: number; runsMs: number[] };
 }
 
 const benchmarkResults: BenchmarkSummary = {
@@ -415,10 +422,11 @@ describe('Build Performance Benchmarks', () => {
       benchmarkResults.coldBuild = {
         medianMs: medianDuration,
         p95Ms: p95Duration,
+        runsMs: durations,
       };
 
       console.warn(
-        `[PERF] Cold build: median=${medianDuration.toFixed(0)}ms, p95=${p95Duration.toFixed(0)}ms`,
+        `[PERF] Cold build: median=${medianDuration.toFixed(0)}ms, p95=${p95Duration.toFixed(0)}ms, runs=${formatRuns(durations)}`,
       );
 
       // Basic sanity check - cold build should complete in reasonable time
@@ -465,10 +473,11 @@ describe('Build Performance Benchmarks', () => {
         medianMs: medianDuration,
         p95Ms: p95Duration,
         cacheHitRate: medianCacheHitRate,
+        runsMs: durations,
       };
 
       console.warn(
-        `[PERF] Warm build: median=${medianDuration.toFixed(0)}ms, cacheHitRate=${(medianCacheHitRate * 100).toFixed(1)}%`,
+        `[PERF] Warm build: median=${medianDuration.toFixed(0)}ms, cacheHitRate=${(medianCacheHitRate * 100).toFixed(1)}%, runs=${formatRuns(durations)}`,
       );
 
       // Warm builds should be fast and have high cache hit rate
@@ -515,9 +524,12 @@ describe('Build Performance Benchmarks', () => {
       // Record results for summary
       benchmarkResults.incrementalBuild = {
         medianMs: medianDuration,
+        runsMs: durations,
       };
 
-      console.warn(`[PERF] Single file change: median=${medianDuration.toFixed(0)}ms`);
+      console.warn(
+        `[PERF] Single file change: median=${medianDuration.toFixed(0)}ms, runs=${formatRuns(durations)}`,
+      );
 
       // Incremental builds should be fast
       expect(medianDuration).toBeLessThan(5000);
@@ -580,10 +592,11 @@ describe('Build Performance Benchmarks', () => {
       benchmarkResults.complexBuild = {
         medianMs: medianDuration,
         p95Ms: p95Duration,
+        runsMs: durations,
       };
 
       console.warn(
-        `[PERF] Complex build (${BENCHMARK_CONFIG.complexPageCount} nested component pages): median=${medianDuration.toFixed(0)}ms, p95=${p95Duration.toFixed(0)}ms`,
+        `[PERF] Complex build (${BENCHMARK_CONFIG.complexPageCount} nested component pages): median=${medianDuration.toFixed(0)}ms, p95=${p95Duration.toFixed(0)}ms, runs=${formatRuns(durations)}`,
       );
 
       // Complex builds should complete in reasonable time

@@ -166,6 +166,7 @@ export async function loadConfig(cwd: string = process.cwd()): Promise<StatiConf
             `${error.code}: ${error.message}\n` +
             `Field: ${error.field}, Value: ${JSON.stringify(error.value)}\n\n` +
             `Please check your stati.config.ts file and correct the ISG configuration.`,
+          { cause: error },
         );
       }
       throw error; // Re-throw non-ISG errors
