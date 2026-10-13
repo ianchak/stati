@@ -42,7 +42,9 @@ export class PackageJsonModifier {
       // Write back with proper formatting
       await writePackageJson(projectDir, packageJson);
     } catch (error) {
-      throw new Error(`Failed to modify package.json: ${formatErrorMessage(error)}`);
+      throw new Error(`Failed to modify package.json: ${formatErrorMessage(error)}`, {
+        cause: error,
+      });
     }
   }
 }

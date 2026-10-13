@@ -90,6 +90,7 @@ export class DevServerLockManager {
         throw new Error(
           `Another dev server is starting in this directory.\n` +
             `Please wait a moment and try again, or delete: ${this.lockPath}`,
+          { cause: error },
         );
       }
 

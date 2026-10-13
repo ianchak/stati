@@ -92,6 +92,7 @@ export class BuildLockManager {
 
         throw new Error(
           `Failed to acquire build lock: ${error instanceof Error ? error.message : String(error)}`,
+          { cause: error },
         );
       }
     }

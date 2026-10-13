@@ -166,6 +166,7 @@ export async function saveCacheManifest(cacheDir: string, manifest: CacheManifes
       throw new Error(
         `Permission denied saving cache manifest to ${manifestPath}. ` +
           `Please check directory permissions or run with appropriate privileges.`,
+        { cause: error },
       );
     }
 
@@ -176,6 +177,7 @@ export async function saveCacheManifest(cacheDir: string, manifest: CacheManifes
       throw new Error(
         `No space left on device when saving cache manifest to ${manifestPath}. ` +
           `Please free up disk space and try again.`,
+        { cause: error },
       );
     }
 
@@ -183,6 +185,7 @@ export async function saveCacheManifest(cacheDir: string, manifest: CacheManifes
       throw new Error(
         `Too many open files when saving cache manifest. ` +
           `Consider reducing concurrent operations or increasing file descriptor limits.`,
+        { cause: error },
       );
     }
 
@@ -190,6 +193,7 @@ export async function saveCacheManifest(cacheDir: string, manifest: CacheManifes
       throw new Error(
         `Cache directory path ${cacheDir} is not a directory. ` +
           `Please remove the conflicting file and try again.`,
+        { cause: error },
       );
     }
 
@@ -201,6 +205,7 @@ export async function saveCacheManifest(cacheDir: string, manifest: CacheManifes
       ) {
         throw new Error(
           `Failed to save cache manifest to ${manifestPath}: ${error.message.split(': ').slice(-1)[0]}`,
+          { cause: error },
         );
       }
       if (error.message.includes('Failed to')) {
@@ -210,6 +215,7 @@ export async function saveCacheManifest(cacheDir: string, manifest: CacheManifes
 
     throw new Error(
       `Failed to save cache manifest to ${manifestPath}: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error },
     );
   }
 }
