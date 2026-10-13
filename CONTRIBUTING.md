@@ -6,7 +6,7 @@ Thanks for your interest in contributing to **Stati** - a lightweight, TypeScrip
 
 ## Requirements
 
-- **Node.js** 22+ (see `engines` in package.json)
+- **Node.js** 22.13+ or 24+ (see `engines` in package.json; ESLint 10 does not support Node 22.0–22.12 or 23)
 - **npm** 11.5.1+ with workspace support (required for OIDC publishing)
 - Familiarity with TypeScript and monorepo layouts is helpful
 
