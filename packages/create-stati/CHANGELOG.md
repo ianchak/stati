@@ -1,5 +1,11 @@
 # create-stati
 
+## 1.15.2
+
+### Patch Changes
+
+- 82bd60e: New projects created with create-stati now depend on `@stati/core` ^1.26.1 and `@stati/cli` ^1.15.1.
+
 ## 1.15.1
 
 ### Patch Changes
