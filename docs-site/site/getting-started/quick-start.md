@@ -22,7 +22,7 @@ Press Enter to accept each default; the scaffolder installs dependencies for you
 
 ## Prerequisites
 
-- Node.js 22 or higher
+- Node.js 22.12 or higher, or 24 and later
 - npm, pnpm, yarn or bun
 - A text editor (VS Code recommended)
 

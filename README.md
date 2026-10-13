@@ -393,7 +393,7 @@ Each package can be used independently or together for the complete Stati experi
 
 ## Requirements
 
-- **Node.js** 22.0.0 or higher
+- **Node.js** 22.12.0 or higher on the 22.x line, or 24 and later
 - **npm** 11.5.1 or higher (or equivalent package manager)
 
 ---
