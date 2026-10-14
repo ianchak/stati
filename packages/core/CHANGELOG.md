@@ -1,5 +1,11 @@
 # @stati/core
 
+## 1.27.2
+
+### Patch Changes
+
+- c636a50: track the rendered layout for nested collection index pages
+
 ## 1.27.1
 
 ### Patch Changes
