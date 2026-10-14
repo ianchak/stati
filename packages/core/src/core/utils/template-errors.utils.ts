@@ -161,7 +161,8 @@ export function parseEtaError(error: Error, templatePath?: string): TemplateErro
     if (header[1] !== undefined) {
       filePath = header[1];
     }
-    line = parseInt(header[2] ?? header[3] ?? '', 10);
+    // The regex captures the line in group 2 (with a path) or group 3 (without)
+    line = parseInt(header[2] ?? header[3]!, 10);
     column = undefined;
     message = message.slice(header[0].length);
     header = message.match(ETA_RUNTIME_ERROR_HEADER);

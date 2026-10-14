@@ -909,10 +909,6 @@ function formatCodeLine(lineNumber: number | string, content: string, isError: b
  * Formats code context with line numbers and highlighting.
  */
 function formatCodeContext(error: ErrorDetails): string {
-  if (!error.context && !error.code) {
-    return formatCodeLine('-', 'No code context available', false);
-  }
-
   const lines: string[] = [];
   const errorLine = error.line || 0;
   let currentLine = errorLine;

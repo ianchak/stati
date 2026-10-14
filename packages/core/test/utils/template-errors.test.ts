@@ -90,6 +90,21 @@ describe('parseEtaError with Eta debug output', () => {
     expect(templateError.suggestions?.[0]).toContain('use "stati" instead of Eta\'s default "it"');
   });
 
+  it('suggests the stati prefix for a bare context name in a template without a path', () => {
+    let error: Error | undefined;
+    try {
+      eta.renderString('<p>\n<%= page.title %>\n</p>', {});
+    } catch (e) {
+      error = e as Error;
+    }
+
+    const templateError = parseEtaError(error!, 'inline.eta');
+    expect(templateError.filePath).toBe('inline.eta');
+    expect(templateError.line).toBe(2);
+    expect(templateError.message).toBe('page is not defined');
+    expect(templateError.suggestions).toEqual(['Did you mean "stati.page"?']);
+  });
+
   it('reads the line and column of Eta syntax errors', () => {
     let error: Error | undefined;
     try {
