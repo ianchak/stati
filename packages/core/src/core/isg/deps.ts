@@ -55,13 +55,14 @@ export class CircularDependencyError extends Error {
  *
  * @param page - The page model to track dependencies for
  * @param config - Stati configuration
+ * @param allPages - All pages in the site, used to detect collection index pages the same way rendering does
  * @returns Array of absolute paths to actually-used template files (POSIX format)
  * @throws {CircularDependencyError} When circular dependencies are detected in templates
  *
  * @example
  * ```typescript
  * try {
- *   const deps = await trackTemplateDependencies(page, config);
+ *   const deps = await trackTemplateDependencies(page, config, allPages);
  *   console.log(`Page depends on ${deps.length} template files`);
  * } catch (error) {
  *   if (error instanceof CircularDependencyError) {
@@ -73,6 +74,7 @@ export class CircularDependencyError extends Error {
 export async function trackTemplateDependencies(
   page: PageModel,
   config: StatiConfig,
+  allPages: PageModel[],
 ): Promise<string[]> {
   // Early return if required config values are missing
   if (!config.srcDir) {
@@ -94,7 +96,7 @@ export async function trackTemplateDependencies(
     relativePath,
     config,
     page.frontMatter.layout as string | undefined,
-    isCollectionIndexPage(page),
+    isCollectionIndexPage(page, allPages),
   );
 
   if (layoutPath) {

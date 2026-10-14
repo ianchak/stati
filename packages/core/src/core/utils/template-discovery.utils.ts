@@ -10,31 +10,66 @@ import { resolveSrcDir } from './paths.utils.js';
  */
 
 /**
+ * Maps each directory prefix (ending in `/`) found in page URLs to the URL that contains it,
+ * or to `null` when two or more different URLs contain it.
+ */
+type DirectoryPrefixIndex = Map<string, string | null>;
+
+/**
+ * Directory prefix index per page list, so a build computes it once instead of
+ * scanning every page for every page. The length is stored to rebuild the index
+ * if pages are added to or removed from the same array later.
+ */
+const directoryPrefixCache = new WeakMap<
+  PageModel[],
+  { length: number; index: DirectoryPrefixIndex }
+>();
+
+function getDirectoryPrefixIndex(allPages: PageModel[]): DirectoryPrefixIndex {
+  const cached = directoryPrefixCache.get(allPages);
+  if (cached && cached.length === allPages.length) {
+    return cached.index;
+  }
+
+  const index: DirectoryPrefixIndex = new Map();
+  for (const { url } of allPages) {
+    // Every prefix ending at a '/' is a directory this URL lives in (or is, for trailing-slash URLs)
+    for (let i = url.indexOf('/'); i !== -1; i = url.indexOf('/', i + 1)) {
+      const prefix = url.slice(0, i + 1);
+      const existing = index.get(prefix);
+      if (existing === undefined) {
+        index.set(prefix, url);
+      } else if (existing !== null && existing !== url) {
+        index.set(prefix, null);
+      }
+    }
+  }
+
+  directoryPrefixCache.set(allPages, { length: allPages.length, index });
+  return index;
+}
+
+/**
  * Determines if the given page is a collection index page.
  * A collection index page is one whose URL matches a directory path that contains other pages.
  *
+ * Rendering and ISG dependency tracking must both call this with the same page list,
+ * otherwise they can pick different layouts for the same page.
+ *
  * @param page - The page to check
- * @param allPages - All pages in the site (optional for simplified check)
+ * @param allPages - All pages in the site
  * @returns True if the page is a collection index page
  */
-export function isCollectionIndexPage(page: PageModel, allPages?: PageModel[]): boolean {
+export function isCollectionIndexPage(page: PageModel, allPages: PageModel[]): boolean {
   // Root index page is always a collection index
   if (page.url === '/') {
     return true;
   }
 
-  // If we have all pages, do a proper check
-  if (allPages) {
-    // Check if this page's URL is a directory path that contains other pages
-    const pageUrlAsDir = page.url.endsWith('/') ? page.url : page.url + '/';
-    return allPages.some(
-      (otherPage) => otherPage.url !== page.url && otherPage.url.startsWith(pageUrlAsDir),
-    );
-  }
-
-  // Simplified version when we don't have all pages
-  // Assume any page ending in /index or at root is a collection page
-  return page.url.endsWith('/index') || page.slug === 'index';
+  // The page is an index when a different page's URL lives under this page's URL as a directory
+  const pageUrlAsDir = page.url.endsWith('/') ? page.url : page.url + '/';
+  const containingUrl = getDirectoryPrefixIndex(allPages).get(pageUrlAsDir);
+  return containingUrl === null || (containingUrl !== undefined && containingUrl !== page.url);
 }
 
 /**

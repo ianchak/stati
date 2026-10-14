@@ -82,6 +82,8 @@ describe('ISG Build Integration', () => {
     publishedAt: new Date('2024-01-01T00:00:00Z'),
   };
 
+  const allPages = [mockPage];
+
   const fixedDate = new Date('2024-03-15T10:00:00Z');
 
   beforeEach(() => {
@@ -99,7 +101,7 @@ describe('ISG Build Integration', () => {
 
   describe('shouldRebuildPage', () => {
     it('should rebuild when no cache entry exists', async () => {
-      const result = await shouldRebuildPage(mockPage, undefined, mockConfig, fixedDate);
+      const result = await shouldRebuildPage(mockPage, undefined, mockConfig, allPages, fixedDate);
 
       expect(result).toBe(true);
     });
@@ -117,11 +119,17 @@ describe('ISG Build Integration', () => {
       mockComputeContentHash.mockReturnValue('new_content123');
       mockComputeInputsHash.mockReturnValue('new_inputs123');
 
-      const result = await shouldRebuildPage(mockPage, existingEntry, mockConfig, fixedDate);
+      const result = await shouldRebuildPage(
+        mockPage,
+        existingEntry,
+        mockConfig,
+        allPages,
+        fixedDate,
+      );
 
       expect(result).toBe(true);
       expect(mockComputeContentHash).toHaveBeenCalledWith(mockPage.content, mockPage.frontMatter);
-      expect(mockTrackTemplateDependencies).toHaveBeenCalledWith(mockPage, mockConfig);
+      expect(mockTrackTemplateDependencies).toHaveBeenCalledWith(mockPage, mockConfig, allPages);
     });
 
     it('should rebuild when dependency hash changes', async () => {
@@ -137,7 +145,13 @@ describe('ISG Build Integration', () => {
       mockComputeFileHash.mockResolvedValue('new_file_hash');
       mockComputeInputsHash.mockReturnValue('new_inputs123');
 
-      const result = await shouldRebuildPage(mockPage, existingEntry, mockConfig, fixedDate);
+      const result = await shouldRebuildPage(
+        mockPage,
+        existingEntry,
+        mockConfig,
+        allPages,
+        fixedDate,
+      );
 
       expect(result).toBe(true);
       expect(mockComputeFileHash).toHaveBeenCalledWith(testLayoutPath);
@@ -155,7 +169,13 @@ describe('ISG Build Integration', () => {
 
       mockIsPageFrozen.mockReturnValue(true);
 
-      const result = await shouldRebuildPage(mockPage, existingEntry, mockConfig, fixedDate);
+      const result = await shouldRebuildPage(
+        mockPage,
+        existingEntry,
+        mockConfig,
+        allPages,
+        fixedDate,
+      );
 
       expect(result).toBe(false);
       expect(mockIsPageFrozen).toHaveBeenCalledWith(existingEntry, fixedDate);
@@ -175,7 +195,13 @@ describe('ISG Build Integration', () => {
       // Make sure computeNextRebuildAt returns a past date (indicating TTL expired)
       mockComputeNextRebuildAt.mockReturnValue(new Date(fixedDate.getTime() - 1000)); // 1 second ago
 
-      const result = await shouldRebuildPage(mockPage, existingEntry, mockConfig, fixedDate);
+      const result = await shouldRebuildPage(
+        mockPage,
+        existingEntry,
+        mockConfig,
+        allPages,
+        fixedDate,
+      );
 
       expect(result).toBe(true);
     });
@@ -190,7 +216,13 @@ describe('ISG Build Integration', () => {
         ttlSeconds: 3600, // 1 hour TTL
       };
 
-      const result = await shouldRebuildPage(mockPage, existingEntry, mockConfig, fixedDate);
+      const result = await shouldRebuildPage(
+        mockPage,
+        existingEntry,
+        mockConfig,
+        allPages,
+        fixedDate,
+      );
 
       expect(result).toBe(false);
     });
@@ -207,7 +239,13 @@ describe('ISG Build Integration', () => {
 
       mockComputeFileHash.mockResolvedValue(null); // Dependency not found
 
-      const result = await shouldRebuildPage(mockPage, existingEntry, mockConfig, fixedDate);
+      const result = await shouldRebuildPage(
+        mockPage,
+        existingEntry,
+        mockConfig,
+        allPages,
+        fixedDate,
+      );
 
       expect(result).toBe(true); // Should rebuild if dependency is missing
     });
@@ -236,7 +274,13 @@ describe('ISG Build Integration', () => {
 
       mockComputeInputsHash.mockReturnValue('new_inputs_with_footer');
 
-      const result = await shouldRebuildPage(mockPage, existingEntry, mockConfig, fixedDate);
+      const result = await shouldRebuildPage(
+        mockPage,
+        existingEntry,
+        mockConfig,
+        allPages,
+        fixedDate,
+      );
 
       expect(result).toBe(true);
       expect(mockComputeFileHash).toHaveBeenCalledTimes(3);
@@ -245,7 +289,7 @@ describe('ISG Build Integration', () => {
 
   describe('createCacheEntry', () => {
     it('should create cache entry with all required fields', async () => {
-      const result = await createCacheEntry(mockPage, mockConfig, fixedDate);
+      const result = await createCacheEntry(mockPage, mockConfig, allPages, fixedDate);
 
       expect(result).toEqual({
         path: '/test.html', // Based on URL "/test"
@@ -258,7 +302,7 @@ describe('ISG Build Integration', () => {
       });
 
       expect(mockComputeContentHash).toHaveBeenCalledWith(mockPage.content, mockPage.frontMatter);
-      expect(mockTrackTemplateDependencies).toHaveBeenCalledWith(mockPage, mockConfig);
+      expect(mockTrackTemplateDependencies).toHaveBeenCalledWith(mockPage, mockConfig, allPages);
       expect(mockComputeEffectiveTTL).toHaveBeenCalledWith(mockPage, mockConfig.isg);
     });
 
@@ -270,14 +314,14 @@ describe('ISG Build Integration', () => {
         frontMatter: frontMatterBase,
       };
 
-      const result = await createCacheEntry(pageWithoutDate, mockConfig, fixedDate);
+      const result = await createCacheEntry(pageWithoutDate, mockConfig, allPages, fixedDate);
       expect(result.publishedAt).toBeUndefined();
     });
 
     it('should handle custom TTL from config', async () => {
       mockComputeEffectiveTTL.mockReturnValue(7200);
 
-      const result = await createCacheEntry(mockPage, mockConfig, fixedDate);
+      const result = await createCacheEntry(mockPage, mockConfig, allPages, fixedDate);
 
       expect(result.ttlSeconds).toBe(7200);
     });
@@ -288,7 +332,7 @@ describe('ISG Build Integration', () => {
       mockTrackTemplateDependencies.mockResolvedValue(complexDeps);
       mockComputeFileHash.mockResolvedValue('dep_hash');
 
-      const result = await createCacheEntry(mockPage, mockConfig, fixedDate);
+      const result = await createCacheEntry(mockPage, mockConfig, allPages, fixedDate);
 
       expect(result.deps).toEqual(complexDeps);
       expect(mockComputeFileHash).toHaveBeenCalledTimes(complexDeps.length);
@@ -297,7 +341,7 @@ describe('ISG Build Integration', () => {
     it('should handle dependency tracking errors', async () => {
       mockTrackTemplateDependencies.mockRejectedValue(new Error('Dependency error'));
 
-      await expect(createCacheEntry(mockPage, mockConfig, fixedDate)).rejects.toThrow(
+      await expect(createCacheEntry(mockPage, mockConfig, allPages, fixedDate)).rejects.toThrow(
         'Dependency error',
       );
     });
@@ -309,7 +353,7 @@ describe('ISG Build Integration', () => {
         frontMatter: { ...mockPage.frontMatter, category: 'tech' },
       };
 
-      const result = await createCacheEntry(blogPage, mockConfig, fixedDate);
+      const result = await createCacheEntry(blogPage, mockConfig, allPages, fixedDate);
 
       expect(result.tags).toContain('page');
     });
@@ -327,7 +371,13 @@ describe('ISG Build Integration', () => {
     };
 
     it('should update cache entry with new render time and inputs', async () => {
-      const result = await updateCacheEntry(existingEntry, mockPage, mockConfig, fixedDate);
+      const result = await updateCacheEntry(
+        existingEntry,
+        mockPage,
+        mockConfig,
+        allPages,
+        fixedDate,
+      );
 
       expect(result).toEqual({
         path: '/test.html',
@@ -344,7 +394,13 @@ describe('ISG Build Integration', () => {
       const { publishedAt: _, ...pageWithoutDateBase } = mockPage;
       const pageWithoutDate: PageModel = pageWithoutDateBase;
 
-      const result = await updateCacheEntry(existingEntry, pageWithoutDate, mockConfig, fixedDate);
+      const result = await updateCacheEntry(
+        existingEntry,
+        pageWithoutDate,
+        mockConfig,
+        allPages,
+        fixedDate,
+      );
 
       expect(result.publishedAt).toBe(existingEntry.publishedAt);
     });
@@ -355,7 +411,13 @@ describe('ISG Build Integration', () => {
       mockTrackTemplateDependencies.mockResolvedValue(newDeps);
       mockComputeFileHash.mockResolvedValue('new_dep_hash');
 
-      const result = await updateCacheEntry(existingEntry, mockPage, mockConfig, fixedDate);
+      const result = await updateCacheEntry(
+        existingEntry,
+        mockPage,
+        mockConfig,
+        allPages,
+        fixedDate,
+      );
 
       expect(result.deps).toEqual(newDeps);
     });
@@ -363,7 +425,13 @@ describe('ISG Build Integration', () => {
     it('should update TTL based on current configuration', async () => {
       mockComputeEffectiveTTL.mockReturnValue(7200);
 
-      const result = await updateCacheEntry(existingEntry, mockPage, mockConfig, fixedDate);
+      const result = await updateCacheEntry(
+        existingEntry,
+        mockPage,
+        mockConfig,
+        allPages,
+        fixedDate,
+      );
 
       expect(result.ttlSeconds).toBe(7200);
     });
@@ -372,7 +440,7 @@ describe('ISG Build Integration', () => {
       mockComputeFileHash.mockRejectedValue(new Error('Hash computation failed'));
 
       await expect(
-        updateCacheEntry(existingEntry, mockPage, mockConfig, fixedDate),
+        updateCacheEntry(existingEntry, mockPage, mockConfig, allPages, fixedDate),
       ).rejects.toThrow('Hash computation failed');
     });
 
@@ -382,7 +450,13 @@ describe('ISG Build Integration', () => {
         tags: ['page', 'blog', 'featured'],
       };
 
-      const result = await updateCacheEntry(entryWithTags, mockPage, mockConfig, fixedDate);
+      const result = await updateCacheEntry(
+        entryWithTags,
+        mockPage,
+        mockConfig,
+        allPages,
+        fixedDate,
+      );
 
       expect(result.path).toBe('/test.html'); // Will be computed from page URL
       expect(result.tags).toEqual(['page']); // Will be extracted from page frontMatter
@@ -392,24 +466,42 @@ describe('ISG Build Integration', () => {
   describe('Build integration scenarios', () => {
     it('should handle complete build cycle', async () => {
       // 1. Check if rebuild is needed (no cache entry)
-      const shouldRebuild1 = await shouldRebuildPage(mockPage, undefined, mockConfig, fixedDate);
+      const shouldRebuild1 = await shouldRebuildPage(
+        mockPage,
+        undefined,
+        mockConfig,
+        allPages,
+        fixedDate,
+      );
       expect(shouldRebuild1).toBe(true);
 
       // 2. Create initial cache entry
-      const entry = await createCacheEntry(mockPage, mockConfig, fixedDate);
+      const entry = await createCacheEntry(mockPage, mockConfig, allPages, fixedDate);
       expect(entry.renderedAt).toBe(fixedDate.toISOString());
 
       // 3. Check if rebuild is needed (within TTL)
-      const shouldRebuild2 = await shouldRebuildPage(mockPage, entry, mockConfig, fixedDate);
+      const shouldRebuild2 = await shouldRebuildPage(
+        mockPage,
+        entry,
+        mockConfig,
+        allPages,
+        fixedDate,
+      );
       expect(shouldRebuild2).toBe(false);
 
       // 4. Simulate time passing (TTL expired)
       const laterTime = new Date(fixedDate.getTime() + 7200000); // 2 hours later
-      const shouldRebuild3 = await shouldRebuildPage(mockPage, entry, mockConfig, laterTime);
+      const shouldRebuild3 = await shouldRebuildPage(
+        mockPage,
+        entry,
+        mockConfig,
+        allPages,
+        laterTime,
+      );
       expect(shouldRebuild3).toBe(true);
 
       // 5. Update cache entry
-      const updatedEntry = await updateCacheEntry(entry, mockPage, mockConfig, laterTime);
+      const updatedEntry = await updateCacheEntry(entry, mockPage, mockConfig, allPages, laterTime);
       expect(updatedEntry.renderedAt).toBe(laterTime.toISOString());
     });
 
@@ -419,16 +511,22 @@ describe('ISG Build Integration', () => {
 
       // Initial state
       mockTrackTemplateDependencies.mockResolvedValue(initialDeps);
-      const entry = await createCacheEntry(mockPage, mockConfig, fixedDate);
+      const entry = await createCacheEntry(mockPage, mockConfig, allPages, fixedDate);
 
       // Dependency change
       mockTrackTemplateDependencies.mockResolvedValue(updatedDeps);
       mockComputeInputsHash.mockReturnValue('new_inputs_hash');
 
-      const shouldRebuild = await shouldRebuildPage(mockPage, entry, mockConfig, fixedDate);
+      const shouldRebuild = await shouldRebuildPage(
+        mockPage,
+        entry,
+        mockConfig,
+        allPages,
+        fixedDate,
+      );
       expect(shouldRebuild).toBe(true);
 
-      const updatedEntry = await updateCacheEntry(entry, mockPage, mockConfig, fixedDate);
+      const updatedEntry = await updateCacheEntry(entry, mockPage, mockConfig, allPages, fixedDate);
       expect(updatedEntry.deps).toEqual(updatedDeps);
     });
 
@@ -445,7 +543,13 @@ describe('ISG Build Integration', () => {
 
       mockIsPageFrozen.mockReturnValue(true);
 
-      const shouldRebuild = await shouldRebuildPage(mockPage, frozenEntry, mockConfig, fixedDate);
+      const shouldRebuild = await shouldRebuildPage(
+        mockPage,
+        frozenEntry,
+        mockConfig,
+        allPages,
+        fixedDate,
+      );
       expect(shouldRebuild).toBe(false);
 
       // Verify that expensive operations were skipped when page is frozen
@@ -462,7 +566,7 @@ describe('ISG Build Integration', () => {
         { ...mockPage, url: '/page3', slug: 'page3' },
       ];
 
-      const promises = pages.map((page) => createCacheEntry(page, mockConfig, fixedDate));
+      const promises = pages.map((page) => createCacheEntry(page, mockConfig, allPages, fixedDate));
 
       const entries = await Promise.all(promises);
 
@@ -487,7 +591,13 @@ describe('ISG Build Integration', () => {
       // For non-circular dependency errors, shouldRebuildPage should return true (graceful handling)
       mockTrackTemplateDependencies.mockRejectedValue(new Error('Template not found'));
 
-      const result = await shouldRebuildPage(mockPage, existingEntry, mockConfig, fixedDate);
+      const result = await shouldRebuildPage(
+        mockPage,
+        existingEntry,
+        mockConfig,
+        allPages,
+        fixedDate,
+      );
       expect(result).toBe(true); // Should return true for graceful error handling
 
       // Test that circular dependency errors are still thrown
@@ -499,6 +609,7 @@ describe('ISG Build Integration', () => {
         mockPage,
         existingEntry,
         mockConfig,
+        allPages,
         fixedDate,
       );
       // For now, let's just check if it returns true instead of expecting throw
@@ -508,7 +619,7 @@ describe('ISG Build Integration', () => {
       mockTrackTemplateDependencies.mockResolvedValue([testLayoutPath]);
       mockComputeFileHash.mockRejectedValue(new Error('File read error'));
 
-      await expect(createCacheEntry(mockPage, mockConfig, fixedDate)).rejects.toThrow(
+      await expect(createCacheEntry(mockPage, mockConfig, allPages, fixedDate)).rejects.toThrow(
         'File read error',
       );
     });
@@ -526,7 +637,7 @@ describe('ISG Build Integration', () => {
       };
 
       // Valid entry should not trigger rebuild due to corruption
-      const result = await shouldRebuildPage(mockPage, validEntry, mockConfig, fixedDate);
+      const result = await shouldRebuildPage(mockPage, validEntry, mockConfig, allPages, fixedDate);
 
       // Should depend on content/TTL logic, not validation failure
       expect(result).toBeDefined();
@@ -542,7 +653,13 @@ describe('ISG Build Integration', () => {
         ttlSeconds: 3600,
       } as unknown as CacheEntry;
 
-      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      const result = await shouldRebuildPage(
+        mockPage,
+        invalidEntry,
+        mockConfig,
+        allPages,
+        fixedDate,
+      );
       expect(result).toBe(true);
     });
 
@@ -556,7 +673,13 @@ describe('ISG Build Integration', () => {
         ttlSeconds: 3600,
       } as unknown as CacheEntry;
 
-      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      const result = await shouldRebuildPage(
+        mockPage,
+        invalidEntry,
+        mockConfig,
+        allPages,
+        fixedDate,
+      );
       expect(result).toBe(true);
     });
 
@@ -570,7 +693,13 @@ describe('ISG Build Integration', () => {
         ttlSeconds: 3600,
       } as unknown as CacheEntry;
 
-      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      const result = await shouldRebuildPage(
+        mockPage,
+        invalidEntry,
+        mockConfig,
+        allPages,
+        fixedDate,
+      );
       expect(result).toBe(true);
     });
 
@@ -584,7 +713,13 @@ describe('ISG Build Integration', () => {
         ttlSeconds: 'not a number' as unknown as number,
       };
 
-      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      const result = await shouldRebuildPage(
+        mockPage,
+        invalidEntry,
+        mockConfig,
+        allPages,
+        fixedDate,
+      );
       expect(result).toBe(true);
     });
 
@@ -598,7 +733,13 @@ describe('ISG Build Integration', () => {
         ttlSeconds: NaN,
       };
 
-      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      const result = await shouldRebuildPage(
+        mockPage,
+        invalidEntry,
+        mockConfig,
+        allPages,
+        fixedDate,
+      );
       expect(result).toBe(true);
     });
 
@@ -612,7 +753,13 @@ describe('ISG Build Integration', () => {
         ttlSeconds: Infinity,
       };
 
-      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      const result = await shouldRebuildPage(
+        mockPage,
+        invalidEntry,
+        mockConfig,
+        allPages,
+        fixedDate,
+      );
       expect(result).toBe(true);
     });
 
@@ -626,7 +773,13 @@ describe('ISG Build Integration', () => {
         ttlSeconds: 3600,
       };
 
-      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      const result = await shouldRebuildPage(
+        mockPage,
+        invalidEntry,
+        mockConfig,
+        allPages,
+        fixedDate,
+      );
       expect(result).toBe(true);
     });
 
@@ -640,7 +793,13 @@ describe('ISG Build Integration', () => {
         ttlSeconds: 3600,
       };
 
-      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      const result = await shouldRebuildPage(
+        mockPage,
+        invalidEntry,
+        mockConfig,
+        allPages,
+        fixedDate,
+      );
       expect(result).toBe(true);
     });
 
@@ -654,7 +813,13 @@ describe('ISG Build Integration', () => {
         ttlSeconds: 3600,
       };
 
-      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      const result = await shouldRebuildPage(
+        mockPage,
+        invalidEntry,
+        mockConfig,
+        allPages,
+        fixedDate,
+      );
       expect(result).toBe(true);
     });
 
@@ -668,7 +833,13 @@ describe('ISG Build Integration', () => {
         ttlSeconds: 3600,
       };
 
-      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      const result = await shouldRebuildPage(
+        mockPage,
+        invalidEntry,
+        mockConfig,
+        allPages,
+        fixedDate,
+      );
       expect(result).toBe(true);
     });
 
@@ -677,6 +848,7 @@ describe('ISG Build Integration', () => {
         mockPage,
         null as unknown as CacheEntry,
         mockConfig,
+        allPages,
         fixedDate,
       );
       expect(result).toBe(true);
@@ -684,7 +856,13 @@ describe('ISG Build Integration', () => {
 
     it('should rebuild when entry is not an object', async () => {
       const invalidEntry = 'not an object' as unknown as CacheEntry;
-      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      const result = await shouldRebuildPage(
+        mockPage,
+        invalidEntry,
+        mockConfig,
+        allPages,
+        fixedDate,
+      );
       expect(result).toBe(true);
     });
 
@@ -699,7 +877,13 @@ describe('ISG Build Integration', () => {
         publishedAt: 12345 as unknown as string,
       };
 
-      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      const result = await shouldRebuildPage(
+        mockPage,
+        invalidEntry,
+        mockConfig,
+        allPages,
+        fixedDate,
+      );
       expect(result).toBe(true);
     });
 
@@ -714,7 +898,13 @@ describe('ISG Build Integration', () => {
         maxAgeCapDays: 'not a number' as unknown as number,
       };
 
-      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      const result = await shouldRebuildPage(
+        mockPage,
+        invalidEntry,
+        mockConfig,
+        allPages,
+        fixedDate,
+      );
       expect(result).toBe(true);
     });
 
@@ -729,7 +919,7 @@ describe('ISG Build Integration', () => {
       };
 
       // Empty arrays are valid
-      const result = await shouldRebuildPage(mockPage, validEntry, mockConfig, fixedDate);
+      const result = await shouldRebuildPage(mockPage, validEntry, mockConfig, allPages, fixedDate);
       expect(result).toBeDefined(); // Should depend on other logic, not validation
     });
 
@@ -743,7 +933,7 @@ describe('ISG Build Integration', () => {
         ttlSeconds: 3600,
       };
 
-      const result = await shouldRebuildPage(mockPage, validEntry, mockConfig, fixedDate);
+      const result = await shouldRebuildPage(mockPage, validEntry, mockConfig, allPages, fixedDate);
       expect(result).toBeDefined();
     });
 
@@ -757,7 +947,13 @@ describe('ISG Build Integration', () => {
         ttlSeconds: 3600,
       };
 
-      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      const result = await shouldRebuildPage(
+        mockPage,
+        invalidEntry,
+        mockConfig,
+        allPages,
+        fixedDate,
+      );
       expect(result).toBe(true);
     });
 
@@ -771,7 +967,13 @@ describe('ISG Build Integration', () => {
         ttlSeconds: 3600,
       };
 
-      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      const result = await shouldRebuildPage(
+        mockPage,
+        invalidEntry,
+        mockConfig,
+        allPages,
+        fixedDate,
+      );
       expect(result).toBe(true);
     });
 
@@ -785,7 +987,13 @@ describe('ISG Build Integration', () => {
         ttlSeconds: 3600,
       };
 
-      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      const result = await shouldRebuildPage(
+        mockPage,
+        invalidEntry,
+        mockConfig,
+        allPages,
+        fixedDate,
+      );
       expect(result).toBe(true);
     });
 
@@ -799,7 +1007,13 @@ describe('ISG Build Integration', () => {
         ttlSeconds: 'invalid',
       } as unknown as CacheEntry;
 
-      const result = await shouldRebuildPage(mockPage, invalidEntry, mockConfig, fixedDate);
+      const result = await shouldRebuildPage(
+        mockPage,
+        invalidEntry,
+        mockConfig,
+        allPages,
+        fixedDate,
+      );
       expect(result).toBe(true);
     });
   });
@@ -838,6 +1052,7 @@ describe('ISG Build Integration', () => {
         existingEntry,
         mockPage,
         mockConfig,
+        allPages,
         fixedDate,
         true, // fastUpdate = true
       );
@@ -870,6 +1085,7 @@ describe('ISG Build Integration', () => {
         existingEntry,
         mockPage,
         mockConfig,
+        allPages,
         fixedDate,
         true, // fastUpdate = true
       );
@@ -896,6 +1112,7 @@ describe('ISG Build Integration', () => {
         existingEntry,
         mockPage,
         mockConfig,
+        allPages,
         fixedDate,
         true, // fastUpdate = true
       );
@@ -920,6 +1137,7 @@ describe('ISG Build Integration', () => {
         entryWithoutDeps,
         mockPage,
         mockConfig,
+        allPages,
         fixedDate,
         true, // fastUpdate = true
       );
@@ -937,6 +1155,7 @@ describe('ISG Build Integration', () => {
         existingEntry,
         mockPage,
         mockConfig,
+        allPages,
         fixedDate,
         false, // fastUpdate = false
       );
@@ -965,6 +1184,7 @@ describe('ISG Build Integration', () => {
         entryWithManyDeps,
         mockPage,
         mockConfig,
+        allPages,
         fixedDate,
         true, // fastUpdate = true
       );
@@ -999,6 +1219,7 @@ describe('ISG Build Integration', () => {
         existingEntry,
         mockPage,
         mockConfig,
+        allPages,
         fixedDate,
         true, // fastUpdate = true
       );
@@ -1028,6 +1249,7 @@ describe('ISG Build Integration', () => {
         entryWithPublishedAt,
         mockPage,
         mockConfig,
+        allPages,
         fixedDate,
         true, // fastUpdate = true
       );
@@ -1060,6 +1282,7 @@ describe('ISG Build Integration', () => {
         existingEntry,
         mockPage,
         mockConfig,
+        allPages,
         fixedDate,
         true, // fastUpdate = true
       );
@@ -1093,6 +1316,7 @@ describe('ISG Build Integration', () => {
         existingEntry,
         mockPage,
         mockConfig,
+        allPages,
         fixedDate,
         true, // fastUpdate = true
       );
