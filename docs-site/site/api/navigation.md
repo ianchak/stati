@@ -8,7 +8,7 @@ seo:
 
 # Navigation
 
-Stati automatically generates a hierarchical navigation structure from your content and provides powerful helper methods to query and traverse it in templates.
+Stati automatically generates a navigation tree from your content and provides helper methods to query and traverse it in templates.
 
 ## Overview
 
@@ -26,15 +26,49 @@ Each navigation node has the following structure:
 
 ```typescript
 interface NavNode {
-  title: string;              // Display title
+  title: string;              // Front matter title, or the file/folder name
   url: string;                // URL path
-  path: string;               // File system path
-  order?: number;             // Sort order (from frontmatter)
-  publishedAt?: Date;         // Publication date
-  children?: NavNode[];       // Child nodes (for collections)
-  isCollection?: boolean;     // True if this represents a directory
+  path: string;               // URL path of the page or collection folder
+  order?: number;             // Sort order (from front matter)
+  publishedAt?: Date;         // Publication date (quoted publishedAt front matter)
+  children?: NavNode[];       // Pages in the collection (collection nodes only)
+  isCollection?: boolean;     // True if this represents a folder
 }
 ```
+
+### Tree shape
+
+The tree is shallow. Its top level holds:
+
+- the pages directly in `site/` (including the home page `/`), and
+- **one node for every folder that contains pages besides its `index.md`, at any depth**, with `isCollection: true`. A folder's `index.md` supplies the node's title, URL and `order`; without one, the title is the folder name with its first letter capitalized. A folder that holds only an `index.md` appears as an ordinary page node.
+
+A collection node's `children` are the pages directly in that folder. A subfolder shows up there only as a page node for its `index.md`, with no `children`; the subfolder's own pages hang off the subfolder's top-level node. For this site structure:
+
+```text
+site/
+├── index.md          (Home)
+├── about.md          (About)
+└── docs/
+    ├── index.md      (Docs)
+    ├── intro.md      (Intro)
+    └── api/
+        ├── index.md  (API)
+        └── hooks.md  (Hooks)
+```
+
+`stati.nav.tree` is:
+
+```text
+About            /about
+API              /docs/api   (collection) → Hooks
+Docs             /docs       (collection) → API (page), Intro
+Home             /
+```
+
+Nodes are sorted by `order`, then by title; pages inside a collection are sorted by `order`, then newest `publishedAt`, then title. To build a nested menu, look up each collection node on the top level of `stati.nav.tree`, or prepare the structure in a [build hook](/api/hooks).
+
+> **Nested folders appear twice.** In the example, `/docs/api` is both a page node under Docs (no `children`) and a top-level collection node. `findNode()`, `getChildren()`, `getCurrentNode()` and `stati.page.navNode` return whichever of the two comes first in tree order, which depends on titles and `order`. To get a nested collection's pages reliably, use `stati.nav.tree.find((n) => n.isCollection && n.url === '/docs/api')?.children ?? []`. Top-level folders such as `/blog` are not affected.
 
 ## Navigation helpers
 
@@ -165,11 +199,13 @@ getChildren(path: string): NavNode[]
     </div>
   <% } %>
 
-  <%~ renderSection('/getting-started', 'Getting Started') %>
-  <%~ renderSection('/core-concepts', 'Core Concepts') %>
-  <%~ renderSection('/api', 'API Reference') %>
+  <% renderSection('/getting-started', 'Getting Started') %>
+  <% renderSection('/core-concepts', 'Core Concepts') %>
+  <% renderSection('/api', 'API Reference') %>
 </aside>
 ```
+
+> **Call template functions with `<% %>`, not `<%~ %>`.** Markup inside a function defined in a template is written to the output as the function runs, and the function returns `undefined`. Calling it with `<%~ renderSection(...) %>` prints `undefined` and drops the section's markup.
 
 ---
 
@@ -303,7 +339,7 @@ getSubtree(path: string): NavNode[]
 
 ### `stati.nav.getBreadcrumbs(path?)`
 
-Gets the breadcrumb trail from root to a specific path.
+Gets the breadcrumb trail to a specific path. The trail starts at the top-level node that contains the page, which for nested pages is the nearest collection rather than the site root: for `/docs/api/hooks` it is `[API, Hooks]`, and for `/docs/intro` it is `[Docs, Intro]` (see [Tree shape](#tree-shape)). Add a Home link yourself.
 
 **Signature:**
 
@@ -315,7 +351,7 @@ getBreadcrumbs(path?: string): NavNode[]
 
 - `path` (string, optional): Path to get breadcrumbs for. Defaults to current page.
 
-**Returns:** Array of nodes from root to the target
+**Returns:** Array of nodes from the containing top-level node to the target
 
 **Example:**
 
@@ -377,7 +413,7 @@ getCurrentNode(): NavNode | undefined
 
 ### `stati.page.navNode`
 
-Direct access to the current page's navigation node with all its properties and children.
+Direct access to the current page's navigation node with all its properties and children. For the index page of a top-level folder this is the collection node, so `children` lists the folder's pages; for other pages it is a page node without `children` (nested folders: see the note under [Tree shape](#tree-shape)).
 
 **Type:** `NavNode | undefined`
 
@@ -418,7 +454,7 @@ Direct access to the current page's navigation node with all its properties and 
           <%= node.title %>
         </a>
         <% if (node.children && node.children.length > 0) { %>
-          <%~ renderNavTree(node.children, level + 1) %>
+          <% renderNavTree(node.children, level + 1) %>
         <% } %>
       </li>
     <% }) %>
@@ -426,9 +462,11 @@ Direct access to the current page's navigation node with all its properties and 
 <% } %>
 
 <nav class="site-navigation">
-  <%~ renderNavTree(stati.nav.tree) %>
+  <% renderNavTree(stati.nav.tree) %>
 </nav>
 ```
+
+Because every collection folder is a top-level node, this renders at most two levels: top-level pages and collections, and each collection's pages.
 
 ### Section navigation with active state
 
@@ -457,19 +495,25 @@ Direct access to the current page's navigation node with all its properties and 
 
 ### Table of contents for collection
 
+A subsection's pages are not under its node in `children`, so look each subsection up among the top-level collection nodes:
+
 ```html
-<!-- Generate TOC for a section -->
-<% const section = stati.nav.findNode('/docs') %>
+<!-- Generate TOC for a section and its subsections -->
+<%
+  const collection = (url) => stati.nav.tree.find(n => n.isCollection && n.url === url);
+  const section = collection('/docs');
+%>
 <% if (section?.children) { %>
   <aside class="toc">
     <h2>Documentation</h2>
     <nav>
       <% section.children.forEach(subsection => { %>
+        <% const pages = collection(subsection.url)?.children ?? [] %>
         <div class="toc-section">
           <a href="<%= subsection.url %>"><%= subsection.title %></a>
-          <% if (subsection.children) { %>
+          <% if (pages.length > 0) { %>
             <ul>
-              <% subsection.children.forEach(page => { %>
+              <% pages.forEach(page => { %>
                 <li>
                   <a href="<%= page.url %>"><%= page.title %></a>
                 </li>

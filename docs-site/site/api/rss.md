@@ -90,8 +90,10 @@ interface RSSFeedConfig {
 
 **Content Selection:**
 
-- `contentPatterns` - Glob patterns to include content (e.g., `['blog/**']`)
+- `contentPatterns` - Glob patterns to include content (e.g., `['**/blog/**']`)
 - `excludePatterns` - Glob patterns to exclude content (e.g., `['**/draft-*']`)
+
+Both are matched against each page's absolute source file path (`PageModel.sourcePath`), so folder patterns need a leading `**/`. A pattern such as `'blog/**'` matches nothing.
 - `filter` - Custom filter function for fine-grained control
 - `maxItems` - Maximum number of items to include in feed
 
@@ -162,7 +164,7 @@ interface RSSItemMapping {
 
 - `guid` - Custom GUID generator (default: uses page URL)
 
-- `includeContent` - Whether to include full HTML content in description (default: `false`)
+- `includeContent` - Whether to put the page body in `<description>` (default: `false`). The body is the page's Markdown source (`PageModel.content`), wrapped in CDATA; it is not rendered to HTML.
 
 ---
 
@@ -458,7 +460,8 @@ export default defineConfig({
         filename: 'blog.xml',
         title: 'Blog Posts',
         description: 'Latest blog posts',
-        contentPatterns: ['blog/**'],
+        contentPatterns: ['**/blog/**'],
+        excludePatterns: ['**/index.md'],
         maxItems: 20,
       },
     ],
@@ -487,7 +490,8 @@ export default defineConfig({
           author: (page) => {
             const author = page.frontMatter.author;
             const email = page.frontMatter.email;
-            return email ? `${email} (${author})` : author;
+            if (typeof author !== 'string') return undefined;
+            return typeof email === 'string' ? `${email} (${author})` : author;
           },
         },
       },
@@ -499,5 +503,5 @@ export default defineConfig({
 ## See also
 
 - [RSS Configuration Guide](/configuration/rss)
-- [SEO Configuration](/api/seo)
+- [SEO API](/api/seo)
 - [Build Configuration](/configuration/file)

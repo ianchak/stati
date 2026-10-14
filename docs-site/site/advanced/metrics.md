@@ -15,8 +15,10 @@ Stati includes a built-in performance metrics system that helps you understand a
 Enable metrics collection with the `--metrics` flag:
 
 ```bash
-stati build --metrics
+npx stati build --metrics
 ```
+
+Run the commands on this page from your project root, where `@stati/cli` is installed (inside npm scripts, plain `stati` works).
 
 This will:
 
@@ -94,9 +96,13 @@ Metrics are saved to `.stati/metrics/build-<timestamp>.json`:
   "schemaVersion": "1",
   "meta": {
     "timestamp": "2024-01-15T10:30:00.000Z",
+    "gitCommit": "9180b39c1d2e…",
+    "gitBranch": "main",
     "ci": false,
-    "nodeVersion": "22.0.0",
+    "nodeVersion": "22.13.0",
     "platform": "darwin",
+    "arch": "arm64",
+    "cpuCount": 8,
     "cliVersion": "1.11.0",
     "coreVersion": "1.18.0",
     "command": "build",
@@ -113,7 +119,6 @@ Metrics are saved to `.stati/metrics/build-<timestamp>.json`:
   "phases": {
     "configLoadMs": 50,
     "contentDiscoveryMs": 100,
-    "navigationBuildMs": 25,
     "cacheManifestLoadMs": 10,
     "pageRenderingMs": 800,
     "assetCopyMs": 200,
@@ -160,7 +165,6 @@ The `phases` object shows how long each build phase took:
 |-------|-------------|
 | `configLoadMs` | Loading and parsing `stati.config.ts` |
 | `contentDiscoveryMs` | Finding and parsing markdown files |
-| `navigationBuildMs` | Building navigation tree from pages |
 | `cacheManifestLoadMs` | Loading ISG cache manifest |
 | `typescriptCompileMs` | Compiling TypeScript bundles |
 | `pageRenderingMs` | Rendering pages (markdown + templates) |
@@ -173,18 +177,17 @@ The `phases` object shows how long each build phase took:
 | `assetCopyMs` | Copying static assets |
 | `cacheManifestSaveMs` | Saving updated cache manifest |
 | `sitemapGenerationMs` | Generating sitemap.xml |
-| `rssGenerationMs` | Generating RSS feeds |
 | `tailwindInitMs` | Tailwind detection and inventory initialization |
 | `tailwindInventoryMs` | Writing Tailwind inventory at end of build |
 | `getDirectorySizeMs` | Calculating directory size for build stats |
-| `lockAcquireMs` | Build lock acquisition |
-| `lockReleaseMs` | Build lock release |
 | `hookBeforeAllMs` | Time spent in `beforeAll` hook (if configured) |
 | `hookAfterAllMs` | Time spent in `afterAll` hook (if configured) |
 | `hookBeforeRenderTotalMs` | Total time spent in `beforeRender` hooks across all pages |
 | `hookAfterRenderTotalMs` | Total time spent in `afterRender` hooks across all pages |
 
-> **Note:** Not all phases appear in every build. Only phases that actually run will be included in the metrics output. For example, hook timings are only recorded when the corresponding hooks are defined in your `stati.config.ts`, and TypeScript compilation only runs when TypeScript bundles are configured.
+> **Note:** The `MetricsPhases` type also declares `navigationBuildMs`, `rssGenerationMs`, `lockAcquireMs` and `lockReleaseMs`, but the build does not record them yet.
+>
+> Not all phases appear in every build. Only phases that actually run will be included in the metrics output. For example, hook timings are only recorded when the corresponding hooks are defined in your `stati.config.ts`, and TypeScript compilation only runs when TypeScript bundles are configured.
 
 ### Counts
 
@@ -230,12 +233,12 @@ High memory usage might indicate:
 
 ## Using metrics in CI
 
-Enable metrics in CI to track build performance over time:
+Enable metrics in CI to track build performance over time. The `STATI_METRICS` variable turns metrics on without changing your `build` script:
 
 ```yaml
 # .github/workflows/ci.yml
 - name: Build with metrics
-  run: stati build --metrics
+  run: npm run build
   env:
     STATI_METRICS: '1'
 
@@ -251,16 +254,16 @@ Enable metrics in CI to track build performance over time:
 Compare metrics between builds to detect regressions:
 
 ```bash
-# Get baseline
-stati build --metrics --metrics-file baseline.json
+# Get baseline (written to .stati/metrics/baseline.json)
+npx stati build --metrics --metrics-file baseline.json
 
 # Make changes...
 
 # Compare
-stati build --metrics --metrics-file current.json
+npx stati build --metrics --metrics-file current.json
 
 # Use jq to compare
-jq -r '.totals.durationMs' baseline.json current.json
+jq -r '.totals.durationMs' .stati/metrics/baseline.json .stati/metrics/current.json
 ```
 
 ## Programmatic access
@@ -268,8 +271,10 @@ jq -r '.totals.durationMs' baseline.json current.json
 Access metrics programmatically in Node.js:
 
 ```typescript
-import { build } from '@stati/core';
+import { build, setEnv } from '@stati/core';
 import type { BuildResult, BuildMetrics } from '@stati/core';
+
+setEnv('production'); // build() alone runs a development build
 
 const result: BuildResult = await build({
   metrics: { enabled: true, detailed: true }

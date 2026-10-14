@@ -6,7 +6,7 @@ order: 1
 
 # Advanced topics
 
-This section covers advanced Stati features and patterns for building high-performance, production-ready static sites. These topics are designed for users who want to push Stati to its limits and implement sophisticated site architectures.
+This section covers Stati features and patterns that go beyond the basics: build performance, SEO, environment-specific configuration, error handling and the template context.
 
 ## Build optimization
 
@@ -17,10 +17,15 @@ Stati uses **Incremental Static Generation (ISG)** for smart caching and selecti
 #### Build options for performance
 
 ```javascript
-// Force rebuild to clear all caches
+import { build, setEnv } from '@stati/core';
+
+// build() runs a development build unless the environment is set first
+setEnv('production');
+
+// Clean the output and cache, then render every page
 await build({ force: true, clean: true });
 
-// Incremental build using ISG cache
+// Incremental build using the ISG cache
 await build({ force: false });
 ```
 
@@ -28,7 +33,7 @@ await build({ force: false });
 
 #### Eta template optimization
 
-Stati uses the Eta template engine with built-in performance features and automatic template caching via ISG.
+Eta caches compiled templates in memory; the dev server keeps them between rebuilds and clears them when a template changes. This is separate from ISG, which caches rendered pages between builds.
 
 For detailed template configuration and `propValue` utility documentation, see [Template Configuration](/configuration/templates).
 
@@ -42,7 +47,7 @@ export default defineConfig({
   hooks: {
     afterAll: async (ctx) => {
       // Custom asset processing after build
-      console.log(`Copied ${ctx.config.staticDir} assets`);
+      console.log(`Copied ${ctx.config.staticDir ?? 'public'} assets`);
     }
   }
 });
@@ -115,7 +120,7 @@ Stati provides error overlays during development to help with debugging:
 export default defineConfig({
   dev: {
     port: 3000,
-    open: true, // Opens browser with error overlay on build failures
+    open: true, // Opens the browser when the dev server starts
   },
 
   hooks: {
@@ -126,7 +131,7 @@ export default defineConfig({
           throw new Error(`Missing title in ${ctx.page.sourcePath}`);
         }
       } catch (error) {
-        // Errors in hooks are displayed in the error overlay
+        // A thrown error fails the build; stati dev shows it in the error overlay
         console.error(`Page validation failed: ${error.message}`);
         throw error;
       }
@@ -143,30 +148,22 @@ For detailed cache management, see the [ISG documentation](/core-concepts/isg) w
 
 ### Advanced template context
 
-Every template receives the `stati` object with comprehensive page and site data:
+Every template receives the `stati` object with page and site data:
 
 ```eta
-<!-- Enhanced template context beyond basic usage -->
 <%= stati.page.title %>     <!-- Page title -->
-<%= stati.content %>        <!-- Rendered markdown content -->
+<%~ stati.content %>        <!-- Rendered Markdown content (HTML) -->
 <%= stati.page.url %>       <!-- Page URL -->
-<%= stati.page %>           <!-- Full page object with frontMatter properties -->
-
 <%= stati.site.title %>     <!-- Site title -->
 <%= stati.site.baseUrl %>   <!-- Site base URL -->
-
-<%= stati.nav %>            <!-- Navigation tree helpers -->
-<%= stati.collection %>     <!-- Collection data (for index pages) -->
 ```
 
+These members are objects, so read their properties rather than printing them:
+
+- `stati.page`: the current page, with every front matter field, `url`, `toc` and `navNode`
+- `stati.nav`: the navigation tree and helpers such as `getChildren()` and `getBreadcrumbs()`
+- `stati.collection`: the pages of the current collection (on a folder's `index.md`)
+
 For comprehensive template configuration including Eta filters, see the [Template Configuration](/configuration/templates) documentation.
-
-These advanced topics showcase Stati's core capabilities for building sophisticated static sites. The framework emphasizes:
-
-- **Smart Caching** with ISG for efficient builds
-- **Flexible Build Hooks** for custom build pipeline integration
-- **Template-First SEO** with rich context and metadata support
-- **Developer-Friendly** error handling and development workflow
-- **TypeScript-First** configuration with full type safety
 
 For specific implementation details, refer to the [API overview](/api/reference) or explore the [configuration file guide](/configuration/file) for complete setup instructions.

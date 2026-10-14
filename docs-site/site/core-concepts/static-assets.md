@@ -25,6 +25,8 @@ public/
     └── guide.pdf        → /downloads/guide.pdf
 ```
 
+Static assets are copied after the pages are written, and generated files are written last: if `public/` contains a `robots.txt` or `sitemap.xml` and the matching feature is enabled, the generated file replaces your copy in production builds.
+
 Use the `public/` directory for:
 
 - Favicons and meta images
@@ -101,7 +103,7 @@ Stati provides automatic support for dynamic Tailwind classes when using the `st
 ### Installation
 
 ```bash
-npm install -D tailwindcss
+npm install -D tailwindcss@3 @tailwindcss/typography @tailwindcss/forms
 npx tailwindcss init
 ```
 
@@ -187,10 +189,10 @@ The `propValue()` function:
         </div>
 
         <div class="hidden md:flex items-center space-x-6">
-          <a href="/docs/" class="text-gray-600 hover:text-gray-900 transition-colors">
+          <a href="/docs" class="text-gray-600 hover:text-gray-900 transition-colors">
             Documentation
           </a>
-          <a href="/blog/" class="text-gray-600 hover:text-gray-900 transition-colors">
+          <a href="/blog" class="text-gray-600 hover:text-gray-900 transition-colors">
             Blog
           </a>
         </div>

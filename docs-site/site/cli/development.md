@@ -1,6 +1,6 @@
 ---
 title: 'Dev server'
-description: 'Learn how to use Stati development server for hot reloading, debugging, and efficient development workflows.'
+description: 'Learn how to use Stati development server for live reload, debugging, and efficient development workflows.'
 order: 3
 seo:
   title: 'Stati dev server'
@@ -23,12 +23,9 @@ stati dev --port 4000 --host 0.0.0.0
 
 # Automatically open your browser
 stati dev --open
-
-# Load configuration from a different directory
-stati dev --config ./stati.staging.js
 ```
 
-The `--port`, `--host`, `--open`, and `--config` flags map directly to the options accepted by `createDevServer` in `@stati/core`.
+The `--port`, `--host` and `--open` flags map directly to the options accepted by `createDevServer` in `@stati/core` and override `dev.port`, `dev.host` and `dev.open` from your config. `--config` is accepted too, but the dev server loads `stati.config.*` from the current directory, so start it from the project root (see [Config file location](/cli/commands#config-file-location)).
 
 ## What happens on startup
 
@@ -54,8 +51,10 @@ File watching is handled by `chokidar` with listeners for file additions, edits,
 Templates (`*.eta`) and partials get special handling:
 
 - Stati inspects the cache manifest to find pages that depend on the changed template.
-- The affected entries are removed from the manifest so the next build renders them again.
+- The affected entries are marked stale so the rebuild renders them again.
 - If no dependency matches are found, Stati falls back to a full rebuild to keep output consistent.
+
+Markdown changes rebuild the edited page. When the edit changes the navigation (a `title` or `order`, or a page added or removed), Stati rebuilds every page so menus stay in sync.
 
 This logic lives in `handleTemplateChange` inside `packages/core/src/core/dev.ts`.
 
@@ -103,6 +102,6 @@ Press `Ctrl+C` (or send `SIGINT`/`SIGTERM`) to stop the server. Stati closes the
 ## Troubleshooting
 
 - **Repeated failures** – Check the browser overlay for the full stack trace, then inspect the terminal output logged by the CLI.
-- **Changes not showing up** – Ensure the file is inside `site` or `public`. Files outside those directories are not watched.
+- **Changes not showing up** – Ensure the file is inside `site` or `public` (or your TypeScript `srcDir`, which esbuild watches). Other files, including `stati.config.*`, are not watched: restart the server after editing the config.
 - **Cache feels stale** – Run `stati build --clean` in another terminal to rebuild everything and refresh the manifest.
 - **Port already in use** – Start the server on a different port with `stati dev --port 4001`.

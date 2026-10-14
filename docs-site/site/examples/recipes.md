@@ -8,7 +8,7 @@ seo:
 
 # Recipes
 
-A curated collection of practical recipes and patterns for building sites with Stati. Each recipe solves a common use case with complete, copy-paste code examples.
+Practical recipes and patterns for building sites with Stati. Each recipe solves a common use case with code you can adapt.
 
 ## Content management
 
@@ -30,15 +30,17 @@ Automatically generate navigation from your content structure using Stati's buil
             <%= item.title %>
           </a>
           <% if (item.children && item.children.length > 0) { %>
-            <%~ renderNavigation(item.children, level + 1) %>
+            <% renderNavigation(item.children, level + 1) %>
           <% } %>
         </li>
       <% }) %>
     </ul>
   <% } %>
-  <%~ renderNavigation(stati.nav.tree) %>
+  <% renderNavigation(stati.nav.tree) %>
 </nav>
 ```
+
+Call a template function that writes markup with `<% %>`: it adds to the output as it runs and returns nothing, so `<%~ renderNavigation(...) %>` would print `undefined`. Every folder of pages is a top-level node in `stati.nav.tree`, so this menu has at most two levels, with nested folders listed at the top (see [Tree shape](/api/navigation#tree-shape)).
 
 ### Section-specific navigation
 
@@ -60,22 +62,6 @@ Use `stati.page.navNode` to show the current page's child pages:
           >
             <%= page.title %>
           </a>
-
-          <!-- Show nested children if they exist -->
-          <% if (page.children && page.children.length > 0) { %>
-            <ul class="subsection">
-              <% page.children.forEach(child => { %>
-                <li>
-                  <a
-                    href="<%= child.url %>"
-                    class="<%= stati.page.url === child.url ? 'active' : '' %>"
-                  >
-                    <%= child.title %>
-                  </a>
-                </li>
-              <% }) %>
-            </ul>
-          <% } %>
         </li>
       <% }) %>
     </ul>
@@ -83,7 +69,9 @@ Use `stati.page.navNode` to show the current page's child pages:
 <% } %>
 ```
 
-Common navigation patterns made easy:
+`navNode.children` is only set on collection pages (a folder's `index.md`), and the children are the pages in that folder. A subfolder appears there as a single page without its own children.
+
+Common navigation patterns:
 
 - **Current page's children** - Use `stati.page.navNode.children`
 - **Any section's children** - Use `stati.nav.getChildren('/path')`
@@ -148,7 +136,7 @@ For hierarchical TOC with nesting:
         <li>
           <a href="<%= `#${item.id}` %>"><%= item.text %></a>
           <% if (item.children && item.children.length > 0) { %>
-            <%~ renderTocTree(item.children) %>
+            <% renderTocTree(item.children) %>
           <% } %>
         </li>
       <% }) %>
@@ -160,7 +148,7 @@ For hierarchical TOC with nesting:
   <nav class="toc-hierarchical">
     <h2>Contents</h2>
     <% const tocTree = buildTocTree(stati.page.toc) %>
-    <%~ renderTocTree(tocTree) %>
+    <% renderTocTree(tocTree) %>
   </nav>
 <% } %>
 ```
@@ -331,7 +319,33 @@ Use collection data provided to index pages to list and filter content:
 
 ### Related posts
 
-Find related posts based on shared tags using collection data:
+Post pages inside a folder do not receive `stati.collection`, so compute related posts in a `beforeAll` hook, which sees every page, and store them in each post's front matter:
+
+```javascript
+// stati.config.js
+export default defineConfig({
+  hooks: {
+    beforeAll: (ctx) => {
+      const posts = ctx.pages.filter(p => p.url.startsWith('/blog/'));
+      for (const post of posts) {
+        const currentTags = post.frontMatter.tags || [];
+        post.frontMatter.relatedPosts = posts
+          .filter(p => p.url !== post.url)
+          .map(p => ({
+            url: p.url,
+            title: p.frontMatter.title,
+            commonTags: (p.frontMatter.tags || []).filter(t => currentTags.includes(t))
+          }))
+          .filter(p => p.commonTags.length > 0)
+          .sort((a, b) => b.commonTags.length - a.commonTags.length)
+          .slice(0, 3);
+      }
+    }
+  }
+});
+```
+
+Then render them in the post layout:
 
 ```html
 <!-- blog/post-layout.eta -->
@@ -339,39 +353,22 @@ Find related posts based on shared tags using collection data:
   <%~ stati.content %>
 </article>
 
-<% if (stati.collection && stati.page.tags) { %>
-  <%
-    const currentTags = stati.page.tags;
-    const relatedPosts = stati.collection.pages
-      .filter(p => p.url !== stati.page.url)
-      .map(p => ({
-        ...p,
-        commonTags: (p.frontMatter.tags || []).filter(t => currentTags.includes(t))
-      }))
-      .filter(p => p.commonTags.length > 0)
-      .sort((a, b) => b.commonTags.length - a.commonTags.length)
-      .slice(0, 3);
-  %>
-
-  <% if (relatedPosts.length > 0) { %>
-    <aside class="related-posts">
-      <h2>Related Posts</h2>
-      <ul>
-        <% relatedPosts.forEach(post => { %>
-          <li>
-            <a href="<%= post.url %>">
-              <%= post.frontMatter.title %>
-            </a>
-            <span class="common-tags">
-              <%= post.commonTags.join(', ') %>
-            </span>
-          </li>
-        <% }) %>
-      </ul>
-    </aside>
-  <% } %>
+<% if (stati.page.relatedPosts?.length) { %>
+  <aside class="related-posts">
+    <h2>Related Posts</h2>
+    <ul>
+      <% stati.page.relatedPosts.forEach(post => { %>
+        <li>
+          <a href="<%= post.url %>"><%= post.title %></a>
+          <span class="common-tags"><%= post.commonTags.join(', ') %></span>
+        </li>
+      <% }) %>
+    </ul>
+  </aside>
 <% } %>
 ```
+
+Because the list is part of each post's front matter, the ISG cache re-renders a post when its related posts change.
 
 ### Custom filters in templates
 
@@ -455,7 +452,7 @@ Use filters in templates:
 
 ### Breadcrumb navigation
 
-Stati provides `stati.nav.getBreadcrumbs()` which uses the navigation tree for accurate titles:
+`stati.nav.getBreadcrumbs()` returns the trail from the page's top-level navigation node, which for nested pages is the nearest folder rather than the site root, so add the Home link yourself (see [getBreadcrumbs](/api/navigation#stati-nav-getbreadcrumbs-path)):
 
 ```html
 <!-- _partials/breadcrumbs.eta -->
@@ -529,12 +526,12 @@ seo:
   title: Custom SEO Title | My Site
   description: Custom meta description
   keywords: [stati, ssg, jamstack]
-  image: /images/og-image.jpg
   author: John Doe
   openGraph:
     type: article
+    image: /images/og-image.jpg
     article:
-      publishedTime: 2024-01-15
+      publishedTime: '2024-01-15'
       tags: [tech, web-dev]
   twitter:
     card: summary_large_image
@@ -542,28 +539,31 @@ seo:
 ---
 ```
 
+Quote dates inside `seo` (`'2024-01-15'`): an unquoted YAML date becomes a `Date` object, which breaks the Open Graph tag generator.
+
 ### Custom structured data
 
-Add structured data using build hooks:
+Add structured data in a `beforeAll` hook. Changes made there are part of each page's input, so cached pages stay cached until the data changes (changes made in `beforeRender` make the page re-render on every build):
 
 ```javascript
 // stati.config.js
 export default defineConfig({
   hooks: {
-    beforeRender: async (ctx) => {
+    beforeAll: async (ctx) => {
       // Add structured data for blog posts
-      if (ctx.page.frontMatter.type === 'post') {
-        ctx.page.frontMatter.seo = ctx.page.frontMatter.seo || {};
-        ctx.page.frontMatter.seo.structuredData = {
+      for (const page of ctx.pages) {
+        if (page.frontMatter.type !== 'post') continue;
+        page.frontMatter.seo = page.frontMatter.seo || {};
+        page.frontMatter.seo.structuredData = {
           '@context': 'https://schema.org',
           '@type': 'BlogPosting',
-          headline: ctx.page.frontMatter.title,
-          description: ctx.page.frontMatter.description,
-          datePublished: ctx.page.publishedAt?.toISOString(),
-          dateModified: ctx.page.frontMatter.modifiedAt || ctx.page.publishedAt?.toISOString(),
+          headline: page.frontMatter.title,
+          description: page.frontMatter.description,
+          datePublished: page.publishedAt?.toISOString(),
+          dateModified: page.frontMatter.modifiedAt || page.publishedAt?.toISOString(),
           author: {
             '@type': 'Person',
-            name: ctx.page.frontMatter.author || ctx.config.seo?.defaultAuthor?.name
+            name: page.frontMatter.author || ctx.config.seo?.defaultAuthor?.name
           },
           publisher: {
             '@type': 'Organization',
@@ -576,6 +576,8 @@ export default defineConfig({
   }
 });
 ```
+
+`page.publishedAt` is only set when the front matter `publishedAt` is a quoted string.
 
 ## Advanced patterns
 
@@ -643,9 +645,9 @@ export default defineConfig({
 
     // Age-based TTL adjustment
     aging: [
-      { untilDays: 7, ttlSeconds: 21600 },    // 6 hours for week-old content
-      { untilDays: 30, ttlSeconds: 86400 },   // 1 day for month-old content
-      { untilDays: 90, ttlSeconds: 259200 },  // 3 days for 3-month-old content
+      { untilDays: 7, ttlSeconds: 21600 },    // up to 7 days old: 6 hours
+      { untilDays: 30, ttlSeconds: 86400 },   // up to 30 days old: 1 day
+      { untilDays: 90, ttlSeconds: 259200 },  // up to 90 days old (and older): 3 days
     ]
   }
 });
@@ -685,30 +687,41 @@ stati invalidate "age:3months"
 
 Track build performance with hooks:
 
+Each hook receives a new context object, so keep timing state in module-level variables:
+
 ```javascript
 // stati.config.js
+let buildStart = 0;
+const renderStarts = new Map();
+
 export default defineConfig({
   hooks: {
     beforeAll: async (ctx) => {
-      ctx.buildStartTime = Date.now();
+      buildStart = Date.now();
       console.log(`Building ${ctx.pages.length} pages...`);
     },
 
+    beforeRender: async (ctx) => {
+      renderStarts.set(ctx.page.url, Date.now());
+    },
+
     afterRender: async (ctx) => {
-      const renderTime = Date.now() - (ctx.renderStartTime || 0);
+      const renderTime = Date.now() - renderStarts.get(ctx.page.url);
       if (renderTime > 100) {
         console.warn(`Slow render: ${ctx.page.url} took ${renderTime}ms`);
       }
     },
 
     afterAll: async (ctx) => {
-      const totalTime = Date.now() - (ctx.buildStartTime || 0);
+      const totalTime = Date.now() - buildStart;
       console.log(`Build completed in ${totalTime}ms`);
       console.log(`Average: ${Math.round(totalTime / ctx.pages.length)}ms per page`);
     }
   }
 });
 ```
+
+The render hooks only run for pages that are re-rendered, not for pages served from the ISG cache. For detailed timings, use [build metrics](/advanced/metrics) instead.
 
 ### Environment-specific configuration
 
@@ -723,6 +736,7 @@ const isProd = getEnv() === 'production';
 
 export default defineConfig({
   site: {
+    title: 'My Site',
     baseUrl: isProd
       ? 'https://example.com'
       : 'http://localhost:3000'
@@ -818,7 +832,7 @@ export default defineConfig({
     "build:clean": "npm run build:clean:dist && npm run build:clean:cache",
     "preview": "stati preview --port 8080",
     "invalidate:recent": "stati invalidate 'tag:recent'",
-    "invalidate:all": "stati invalidate 'path:/**'"
+    "invalidate:all": "stati invalidate"
   }
 }
 ```
@@ -826,10 +840,12 @@ export default defineConfig({
 ### Git hooks for cache management
 
 ```bash
-# .husky/post-merge
 #!/bin/sh
-# Invalidate cache after pulling changes
-stati invalidate "age:0days"
+# .husky/post-merge
+# Clear the whole cache after pulling changes
+npx stati invalidate
 ```
 
-This recipe collection provides practical, tested solutions for common Stati use cases, all verified against the current implementation.
+`stati invalidate` without a query clears every cache entry. A `path:` query is a plain prefix (`path:/blog`), not a glob; use `glob:` for wildcards.
+
+For complete starter sites, see [Examples](/examples/list).

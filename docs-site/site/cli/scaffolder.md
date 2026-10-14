@@ -14,20 +14,22 @@ The `create-stati` package provides an interactive scaffolding tool to quickly s
 
 ```bash
 # Interactive setup
-npm create stati my-site
+npx create-stati my-site
 
-# Non-interactive with options
-npm create stati my-site --template=blank --styling=tailwind
+# Skip the template and styling prompts
+npx create-stati my-site --template=blank --styling=tailwind
 
 # A ready-to-write blog
-npm create stati my-blog --template=blog
+npx create-stati my-blog --template=blog
 
 # A complete documentation site
-npm create stati my-docs --template=docs
+npx create-stati my-docs --template=docs
 
 # JavaScript instead of TypeScript
-npm create stati my-site --no-typescript
+npx create-stati my-site --no-typescript
 ```
+
+> **Using `npm create`:** `npm create stati my-site` works too, but npm keeps any `--option` that comes before a `--` separator for itself, so the scaffolder never sees it. Put the scaffolder's options after `--`: `npm create stati my-site -- --template=blog`. `npx create-stati` passes options through as written.
 
 Running the scaffolder will:
 
@@ -40,20 +42,29 @@ Running the scaffolder will:
 - Install dependencies by default (use `--no-install` to skip)
 
 > **Note:** You can skip automatic dependency installation with `--no-install` and install them manually later.
->
-> **Non-Interactive Mode:** When all required options are provided via CLI flags, dependencies are installed automatically by default using `npm`. Use `--package-manager` to specify a different package manager (yarn, pnpm, or bun).
 
 ## Interactive setup
 
 The scaffolder will prompt you for:
 
-1. **Project name** - Name for your new Stati site
-2. **Styling solution** - Choose between CSS, Sass, or Tailwind CSS
-3. **TypeScript** - On by default; answer no for a JavaScript project
-4. **Agent skill** - Where to install the Stati agent skill, if at all
-5. **Git initialization** - Whether to initialize a Git repository
-6. **Dependency installation** - Whether to install dependencies automatically
-7. **Package manager** - Which package manager to use (if multiple are detected)
+1. **Project name** - Name for your new Stati site (skipped when you pass one)
+2. **Template** - Blank, Blog or Docs (skipped with `--template`)
+3. **Styling solution** - Choose between CSS, Sass, or Tailwind CSS (skipped with `--styling`)
+4. **TypeScript** - On by default; answer no for a JavaScript project
+5. **Agent skill** - Where to install the Stati agent skill, if at all
+6. **Git initialization** - Whether to initialize a Git repository (skipped with `--no-git`)
+7. **Dependency installation** - Whether to install dependencies automatically (skipped with `--no-install`)
+8. **Package manager** - Which package manager to use (only when several are detected and another prompt was shown)
+
+### Running without prompts
+
+When the project name, `--template` and `--styling` are all given, the TypeScript and agent-skill prompts are skipped: the project uses TypeScript (unless `--no-typescript`) and gets no agent skill (unless `--agent-skill`). The Git and install prompts still appear unless you pass `--no-git` and `--no-install`; there are no `--git` or `--install` flags. So a fully unattended run looks like this:
+
+```bash
+npx create-stati my-site --template=blank --styling=css --no-git --no-install
+```
+
+With `--no-install` nothing is installed, so run your package manager's install command afterwards. When the scaffolder does install, `--package-manager` (npm, yarn, pnpm or bun) chooses the tool; without it you are asked when more than one is available.
 
 ## Command line options
 
@@ -86,8 +97,8 @@ The scaffolder can copy the Stati agent skill into your project. The skill teach
 In interactive mode you choose a target (or skip) when prompted. In non-interactive mode the skill is only installed when `--agent-skill` is passed. In Claude Code, invoke it with `/stati`.
 
 ```bash
-npm create stati my-site --agent-skill
-npm create stati my-site --agent-skill=github
+npx create-stati my-site --agent-skill
+npx create-stati my-site --agent-skill=github
 ```
 
 ## Project templates
@@ -122,7 +133,7 @@ A blog that works on first run. Its sample posts explain how each part of it wor
 - Light and dark themes with a self-hosted display face, styled from custom properties
 - `helpers/blog.js`, which builds the post index in the `beforeAll` hook and exposes it to templates as filters such as `stati.blogPosts()` and `stati.blogTags()`
 
-The blog template ships its own `stati.config.js` with the feed, sitemap and SEO settings. With TypeScript it becomes `stati.config.ts`; with Sass or Tailwind its stylesheet is carried over into `src/` so the design stays intact.
+The blog template ships its own `stati.config.js` with the feed, sitemap and SEO settings, and adds a `build:drafts` script (`stati build --include-drafts`). With TypeScript it becomes `stati.config.ts`; with Sass or Tailwind its stylesheet is carried over into `src/` so the design stays intact.
 
 ### Docs template
 
@@ -218,6 +229,8 @@ my-site/
 └── README.md            # Getting started guide
 ```
 
+For the blank template, the scaffolder writes a fresh `stati.config.ts` that sets `site.title` (your project name) and `site.description`, and turns on `typescript`. (The blog and docs templates keep their own config, which already contains a placeholder `baseUrl`.) Add `site.baseUrl` with your real address before you deploy: until you do, canonical links, the sitemap and feeds use the default `http://localhost:3000`.
+
 ### With Sass
 
 ```text
@@ -241,11 +254,14 @@ my-site/
 ├── src/
 │   └── styles.css        # Tailwind source file
 ├── public/
+│   ├── styles.css        # Blank template only: the starter stylesheet is kept
 │   └── favicon.svg       # Site icon
 ├── tailwind.config.js    # Tailwind configuration
 ├── stati.config.ts
 └── package.json          # Includes Tailwind scripts
 ```
+
+With the blog and docs templates, `public/styles.css` is moved into `src/styles.css` instead.
 
 The `typecheck` script is added to `package.json` for validating your TypeScript code.
 

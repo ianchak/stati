@@ -13,33 +13,30 @@ Stati implements a comprehensive error handling strategy designed to provide gra
 Stati follows these key principles:
 
 1. **Graceful Degradation** - Continue operation with fallback behavior when possible
-2. **Clear Error Messages** - All errors include actionable information
-3. **Fail Fast** - Configuration errors are caught early in the build process
-4. **Recovery Mechanisms** - Built-in fallbacks ensure partial builds can succeed
+2. **Clear Error Messages** - Errors name the file and, where possible, the line
+3. **Invalid cache settings fail early** - Invalid `isg` settings stop the build before any page renders
+4. **Recovery Mechanisms** - Built-in fallbacks let a production build finish when a single template fails
 
 ## Error categories
 
 ### Configuration errors
 
-**When they occur**: During configuration loading and validation
+**When they occur**: During configuration loading
 
-**Handling**: Immediate failure with detailed error message
+**Handling**:
 
-**Common scenarios**:
-
-- Configuration file not found or unreadable
-- Invalid configuration syntax (malformed JSON/JS)
-- Missing required configuration fields
-- Invalid configuration values (e.g., ISG validation failures)
+- **No config file**: not an error; Stati uses its defaults (site title "My Stati Site", base URL `http://localhost:3000`)
+- **Config file fails to load** (syntax error, failing import): the error is printed, followed by "Falling back to default configuration.", and the build **continues with the defaults**. Check the output if your title, base URL or other settings seem to be ignored.
+- **Invalid `isg` values**: the build stops with an `Invalid ISG configuration` error that names the field (see [ISG configuration errors](#isg-configuration-errors))
+- **Other values are not validated** at load time. A wrong type usually surfaces later as a generic error, for example `srcDir: 123` fails with `The "path" argument must be of type string`.
 
 **Example errors**:
 
 ```javascript
 // Example: Invalid configuration
 export default {
-  srcDir: 123, // ❌ Error: srcDir must be a string
   isg: {
-    ttlSeconds: 'invalid', // ❌ Error: ISGConfigurationError - ttlSeconds must be a number
+    ttlSeconds: 'invalid', // ❌ ISG_INVALID_TTL: ttlSeconds must be a positive integer representing seconds
   },
 };
 ```
@@ -51,15 +48,14 @@ export default {
 **Handling**:
 
 - **Individual file errors**: Skips unreadable files with warning and continues
-- **Directory errors**: Build fails if content directory is inaccessible
-- **Empty directory**: Build continues (valid scenario)
+- **Missing or empty content directory**: The build succeeds with 0 pages ("Found 0 pages"), so check `srcDir` if a build produces nothing
+- **Unsupported front matter format**: A front matter block marked with an unknown language (for example `---toml`) fails the build; YAML (the default) and `---json` are supported
 
 **Common scenarios**:
 
 - Individual content files that cannot be read
 - Invalid front matter (parsed but may cause issues downstream)
-- Empty content directory (handled gracefully)
-- Content directory not found (build fails)
+- A misspelled `srcDir`, which silently produces an empty site
 
 ### Template rendering errors
 
@@ -67,8 +63,8 @@ export default {
 
 **Handling**:
 
-- **Development mode**: Throws `TemplateError` with detailed context (file, line, column)
-- **Production mode**: Uses built-in fallback template (see Fallback Mechanisms section)
+- **Development mode**: Throws `TemplateError` with detailed context (file, line, column), shown in the error overlay
+- **Production mode**: A failing layout is logged as an error and the page is written with the built-in fallback template (see Fallback Mechanisms section); a failing partial is logged as a warning and replaced by `<!-- Error rendering partial: name -->`
 
 **Common scenarios**:
 
@@ -84,7 +80,7 @@ export default {
 <% if (stati.collection?.pages { %> <!-- ❌ Missing closing parenthesis -->
   <ul>
     <% stati.collection.pages.forEach(page => { %>
-      <li><%= page.title %></li>
+      <li><%= page.frontMatter.title %></li>
     <% }); %>
   </ul>
 <% } %>
@@ -145,7 +141,8 @@ The overlay also gives a hint when a template uses `it` or a bare context name s
 
 - Hook function throws an exception
 - Async hook rejection
-- Hook timeout
+
+Hooks have no timeout: a hook that never resolves makes the build wait.
 
 ```javascript
 export default defineConfig({
@@ -160,6 +157,8 @@ export default defineConfig({
 ## Error classes
 
 Stati uses domain-specific error classes that capture relevant context for debugging. Each error type includes structured information to help identify and resolve issues quickly.
+
+These classes are internal: `@stati/core` does not export them, so you cannot use `instanceof` with them in your own code. Check `error.name` (for example `'ISGConfigurationError'`) instead.
 
 ### Template errors
 
@@ -281,10 +280,11 @@ When template rendering fails, Stati uses a built-in fallback that generates min
 
 The fallback template:
 
-- Uses the page's title and description from frontmatter
-- HTML-escapes all content for security
-- Renders the markdown-processed body content
+- Uses the page's title and description from front matter (HTML-escaped)
+- Inserts the rendered Markdown body as HTML
 - Provides a minimal but valid HTML structure
+
+It is also used when no layout is found at all, with the warning "No layout template found, using fallback".
 
 ### Navigation fallback
 
@@ -329,8 +329,7 @@ The overlay follows your system's light or dark setting. It reloads by itself af
 Error messages include relevant context:
 
 ```text
-Error rendering layout /blog/layout.eta for page /blog/my-post/:
-Template syntax error: Unexpected token 'if' at line 15
+× Error rendering layout blog/layout.eta: Cannot read properties of undefined (reading 'title')
 ```
 
 ### Build statistics
@@ -403,18 +402,19 @@ Examine build output for error messages and stack traces. Stati provides detaile
 
 Test your configuration in development:
 
-```javascript
-// stati.config.js
-import { defineConfig } from '@stati/core';
+```typescript
+// stati.config.ts: the editor and `tsc` check the shape of the config
+import { defineConfig, getEnv } from '@stati/core';
 
 export default defineConfig({
-  // Configuration with TypeScript validation
   site: {
     title: 'My Site',
-    baseUrl: process.env.NODE_ENV === 'production' ? 'https://mysite.com' : 'http://localhost:3000',
+    baseUrl: getEnv() === 'production' ? 'https://mysite.com' : 'http://localhost:3000',
   },
 });
 ```
+
+Stati itself only validates the `isg` settings at load time, so the type check is your safeguard for everything else.
 
 ### 2. Handle hook errors gracefully
 
@@ -435,7 +435,7 @@ export default defineConfig({
 });
 ```
 
-### 4. Test content incrementally
+### 3. Test content incrementally
 
 **Gradual rollout approach:**
 
@@ -452,29 +452,27 @@ export default defineConfig({
 ---
 title: string (required)
 description: string (required)
-date: YYYY-MM-DD (required)
+publishedAt: 'YYYY-MM-DD' (quoted; required for dated content)
 draft: boolean (optional)
 tags: string[] (optional)
 ---
 ```
 
+Quote `publishedAt`: Stati reads it as the page's publication date (used for sorting collections and navigation) only when it is a string, and YAML turns an unquoted date into a date object.
+
 ## Recovery strategies
 
 ### Partial build success
 
-Stati attempts to build as many pages as possible:
-
-- ✅ Identify problematic content incrementally
-- ✅ Deploy partial updates while fixing issues
-- ✅ Maintain site functionality during updates
+In production builds, a page whose layout fails is still written, using the fallback template, and the build continues. Search the build output for `Error rendering layout` and `Failed to render partial` before deploying. Hook errors, file system errors and invalid `isg` settings still stop the build.
 
 ### Build interruption recovery
 
 If a build is interrupted:
 
-- **Cache preservation**: `.stati` directory preserves progress
-- **Atomic operations**: Static assets copied atomically
-- **Clean state**: Subsequent builds resume cleanly
+- **Cache**: The cache manifest is saved only at the end of a build, so an interrupted build's progress is not recorded; the next build re-renders those pages
+- **Lock file**: `stati build` holds a lock file at `.stati/.build-lock` while it runs. A lock left by a process that is no longer running is removed automatically; `--force` or `--clean` take the lock over even while another build holds it
+- **Clean state**: When in doubt, run `stati build --clean`
 
 ### Cache-related issues
 
@@ -512,8 +510,9 @@ The development server provides an [error overlay](#error-overlay) in the browse
 ### 3. Test production build
 
 ```bash
-# Test production build before deployment
-NODE_ENV=production stati build
+# Test the production build before deployment
+stati build
+stati preview
 ```
 
 ### 4. Validate output

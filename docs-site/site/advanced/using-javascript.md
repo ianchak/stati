@@ -1,7 +1,6 @@
 ---
 title: 'Using JavaScript'
 description: 'Learn four powerful ways to add JavaScript functionality to your Stati site: inline scripts, external files, built-in TypeScript compilation, and build hooks.'
-layout: layout.eta
 order: 4
 seo:
   title: 'Using JavaScript in Stati'
@@ -17,7 +16,7 @@ Stati is a static site generator, but that doesn't mean your sites have to be pu
 - [Method 2: External JavaScript Files](#method-2-external-javascript-files)
 - [Method 3: Built-in TypeScript Compilation](#method-3-built-in-typescript-compilation)
 - [Method 4: Build Hooks (Build-Time JavaScript)](#method-4-build-hooks-build-time-javascript)
-- [Comparison & Best Practices](#comparison--best-practices)
+- [Comparison & Best Practices](#comparison-and-best-practices)
 
 ---
 
@@ -85,8 +84,8 @@ In your `layout.eta` template:
         </button>
         <ul id="nav-menu" class="nav-menu">
             <li><a href="/">Home</a></li>
-            <li><a href="/docs/">Docs</a></li>
-            <li><a href="/blog/">Blog</a></li>
+            <li><a href="/docs">Docs</a></li>
+            <li><a href="/blog">Blog</a></li>
         </ul>
     </nav>
 </header>
@@ -268,7 +267,7 @@ Include in your `layout.eta`:
 <body>
     <header>
         <button id="theme-toggle" aria-label="Switch to dark mode">
-            🌙 Toggle Theme
+            Toggle theme
         </button>
     </header>
 
@@ -286,12 +285,14 @@ Include in your `layout.eta`:
 
 Create `public/js/search.js`:
 
+This example searches the index that Stati builds when `search: { enabled: true }` is set (see [Search](/configuration/search)). It assumes Fuse.js is loaded on the page, for example from a CDN.
+
 ```javascript
-// Client-side search using Fuse.js
+// Client-side search using Fuse.js over Stati's search index
 class SiteSearch {
-    constructor(searchIndex) {
-        this.fuse = new Fuse(searchIndex, {
-            keys: ['title', 'description', 'content'],
+    constructor(documents) {
+        this.fuse = new Fuse(documents, {
+            keys: ['title', 'heading', 'content'],
             threshold: 0.3,
             includeMatches: true,
             minMatchCharLength: 2
@@ -306,19 +307,21 @@ class SiteSearch {
     }
 
     renderResults(results, container) {
+        container.replaceChildren();
         if (results.length === 0) {
-            container.innerHTML = '<p class="no-results">No results found</p>';
+            container.textContent = 'No results found';
             return;
         }
 
-        const html = results.map(result => `
-            <article class="search-result">
-                <h3><a href="${result.item.url}">${result.item.title}</a></h3>
-                <p>${result.item.description}</p>
-            </article>
-        `).join('');
-
-        container.innerHTML = html;
+        for (const { item } of results) {
+            const link = document.createElement('a');
+            link.href = item.anchor ? `${item.url}#${item.anchor}` : item.url;
+            link.textContent = item.breadcrumb;
+            const article = document.createElement('article');
+            article.className = 'search-result';
+            article.append(link);
+            container.append(article);
+        }
     }
 }
 
@@ -329,11 +332,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (!searchInput || !searchResults) return;
 
-    // Load search index
-    const response = await fetch('/search-index.json');
+    // The index filename includes a hash; Stati puts it in a meta tag
+    const meta = document.querySelector('meta[name="stati:search-index"]');
+    if (!meta) return;
+    const response = await fetch(meta.getAttribute('content'));
     const searchIndex = await response.json();
 
-    const search = new SiteSearch(searchIndex);
+    const search = new SiteSearch(searchIndex.documents);
 
     // Handle search input
     let debounceTimer;
@@ -459,10 +464,10 @@ For modern, type-safe client-side code, Stati provides built-in TypeScript compi
 
 ### When to use built-in TypeScript
 
-- **Type safety**: Catch errors at build time, not runtime
+- **Type safety**: Catch type errors before deploying with `npm run typecheck` (esbuild compiles without type checking)
 - **Modern development**: Full IDE support with IntelliSense
 - **Production optimization**: Automatic minification and cache-busting hashes
-- **Hot reload**: Instant updates during development
+- **Live reload**: Bundles are recompiled on change and the browser reloads during development
 - **Bundle management**: Automatic script injection into HTML
 
 ### Quick setup
@@ -481,6 +486,7 @@ import { defineConfig } from '@stati/core';
 export default defineConfig({
   site: {
     title: 'My Site',
+    baseUrl: 'https://example.com',
   },
   typescript: {
     enabled: true, // Enable TypeScript compilation
@@ -584,13 +590,13 @@ Stati automatically adjusts behavior based on build mode:
 | Filenames | Stable (`bundle.js`) | Hashed (`bundle-a1b2c3d4.js`) |
 | Source maps | ✅ Enabled | ❌ Disabled |
 | Minification | ❌ Disabled | ✅ Enabled |
-| Watch mode | ✅ Hot reload | N/A |
+| Watch mode | ✅ Recompile and live reload | N/A |
 
 ### TypeScript advantages
 
 - ✅ Type safety with full IDE support
 - ✅ Automatic bundling and optimization
-- ✅ Hot reload in development
+- ✅ Live reload in development
 - ✅ Production-ready output (minified, hashed)
 - ✅ No manual script tag management
 - ✅ Modern ES module output
@@ -611,18 +617,19 @@ The most powerful way to use JavaScript in Stati is through build hooks in your 
 ### When to use build hooks
 
 - **Data fetching**: Load data from APIs at build time
-- **Content transformation**: Process markdown, images, etc.
-- **Dynamic page generation**: Create pages programmatically
+- **Content transformation**: Adjust page data and Markdown before rendering
 - **Integration with external services**: CMS, analytics, databases
 - **Build-time calculations**: Reading time, related posts, etc.
+
+Hooks cannot add pages: pages come from the Markdown files that exist when the build starts. To generate pages from a CMS or API, write the Markdown files in a separate script that runs before `stati build` (for example a `prebuild` npm script).
 
 ### Hook types
 
 Stati provides four main hooks:
 
-1. **`beforeAll`** - Runs once before the build starts
-2. **`beforeRender`** - Runs before rendering each page
-3. **`afterRender`** - Runs after rendering each page
+1. **`beforeAll`** - Runs once after the pages are loaded, before any page renders
+2. **`beforeRender`** - Runs before rendering each page that is re-rendered (cached pages skip it)
+3. **`afterRender`** - Runs after rendering each re-rendered page
 4. **`afterAll`** - Runs once after the build completes
 
 > **Important:** Hook contexts (`BuildContext` and `PageContext`) don't include shared state properties. To share data between hooks, use module-level variables as shown in the examples below. Data can then be added to `ctx.page.frontMatter` in `beforeRender` to make it available in templates.
@@ -712,26 +719,25 @@ Use in your template:
 
 ### Example: Generate related posts
 
+`beforeRender` only receives the current page, so collect the posts in `beforeAll`, which sees every page:
+
 ```javascript
 export default defineConfig({
     hooks: {
-        beforeRender: async (ctx) => {
-            if (ctx.page.url.startsWith('/blog/')) {
-                // Get all blog posts
-                const blogPosts = ctx.pages
-                    .filter(p => p.url.startsWith('/blog/') && p.url !== ctx.page.url)
-                    .sort((a, b) => new Date(b.frontMatter.date) - new Date(a.frontMatter.date));
+        beforeAll: async (ctx) => {
+            // Get all blog posts, newest first
+            const blogPosts = ctx.pages
+                .filter(p => p.url.startsWith('/blog/'))
+                .sort((a, b) => new Date(b.frontMatter.date) - new Date(a.frontMatter.date));
 
+            for (const page of blogPosts) {
                 // Find related posts by tags
-                const currentTags = ctx.page.frontMatter.tags || [];
-                const relatedPosts = blogPosts
-                    .filter(post => {
-                        const postTags = post.frontMatter.tags || [];
-                        return postTags.some(tag => currentTags.includes(tag));
-                    })
-                    .slice(0, 3);
-
-                ctx.page.frontMatter.relatedPosts = relatedPosts;
+                const currentTags = page.frontMatter.tags || [];
+                page.frontMatter.relatedPosts = blogPosts
+                    .filter(post => post.url !== page.url)
+                    .filter(post => (post.frontMatter.tags || []).some(tag => currentTags.includes(tag)))
+                    .slice(0, 3)
+                    .map(post => ({ url: post.url, frontMatter: { title: post.frontMatter.title } }));
             }
         }
     }
@@ -757,7 +763,9 @@ Display related posts:
 <% } %>
 ```
 
-### Example: Generate search index
+### Example: Write an extra file after the build
+
+Stati already builds a search index (`search: { enabled: true }`), a sitemap and RSS feeds. For anything else, write files in `afterAll`:
 
 ```javascript
 import { writeFile } from 'node:fs/promises';
@@ -766,23 +774,14 @@ import { join } from 'node:path';
 export default defineConfig({
     hooks: {
         afterAll: async (ctx) => {
-            console.log('Generating search index...');
-
-            // Create search index from all pages
-            const searchIndex = ctx.pages.map(page => ({
+            // A simple list of all pages for another tool to read
+            const pages = ctx.pages.map(page => ({
                 title: page.frontMatter.title || 'Untitled',
-                description: page.frontMatter.description || '',
                 url: page.url,
-                content: page.content
-                    .replace(/<[^>]*>/g, '') // Strip HTML
-                    .substring(0, 500) // First 500 chars
             }));
 
-            // Write to public directory
-            const indexPath = join(ctx.config.outDir, 'search-index.json');
-            await writeFile(indexPath, JSON.stringify(searchIndex, null, 2));
-
-            console.log(`Generated search index with ${searchIndex.length} entries`);
+            const outDir = ctx.config.outDir ?? 'dist';
+            await writeFile(join(outDir, 'pages.json'), JSON.stringify(pages, null, 2));
         }
     }
 });
@@ -790,49 +789,36 @@ export default defineConfig({
 
 ### Example: Integration with CMS
 
+Pages come from the Markdown files that exist when a build starts, so generate CMS content in a script that runs **before** Stati, not in a hook:
+
 ```javascript
-import { writeFile } from 'node:fs/promises';
+// scripts/fetch-cms.mjs, run with "prebuild": "node scripts/fetch-cms.mjs"
+import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-export default defineConfig({
-    hooks: {
-        beforeAll: async (ctx) => {
-            // Fetch content from headless CMS
-            const cmsContent = await fetchFromCMS();
+const response = await fetch('https://cms.example.com/api/posts', {
+    headers: { Authorization: `Bearer ${process.env.CMS_TOKEN}` },
+});
+const posts = await response.json();
 
-            // Generate markdown files
-            for (const item of cmsContent) {
-                const markdown = `---
-title: ${item.title}
-date: ${item.date}
-author: ${item.author}
+await mkdir(join('site', 'blog'), { recursive: true });
+for (const post of posts) {
+    // JSON.stringify quotes the values, which is valid YAML
+    const markdown = `---
+title: ${JSON.stringify(post.title)}
+publishedAt: ${JSON.stringify(post.date)}
+author: ${JSON.stringify(post.author)}
 ---
 
-${item.content}
+${post.content}
 `;
-
-                const filePath = join(
-                    ctx.config.siteDir,
-                    'blog',
-                    `${item.slug}.md`
-                );
-                await writeFile(filePath, markdown);
-            }
-
-            console.log(`Generated ${cmsContent.length} posts from CMS`);
-        }
-    }
-});
-
-async function fetchFromCMS() {
-    const response = await fetch('https://cms.example.com/api/posts', {
-        headers: {
-            'Authorization': `Bearer ${process.env.CMS_TOKEN}`
-        }
-    });
-    return response.json();
+    await writeFile(join('site', 'blog', `${post.slug}.md`), markdown);
 }
+
+console.log(`Wrote ${posts.length} posts from the CMS`);
 ```
+
+npm runs a `prebuild` script automatically before `npm run build`.
 
 ### Build hook advantages
 
@@ -884,7 +870,7 @@ async function fetchFromCMS() {
 - Building any substantial client-side functionality
 - Want type safety and IDE support
 - Need automatic bundling and optimization
-- Want hot reload during development
+- Want live reload during development
 - Building production-ready applications
 
 **Use Build Hooks when:**
