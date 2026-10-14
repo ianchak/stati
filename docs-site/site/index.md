@@ -1,6 +1,6 @@
 ---
 title: 'Stati: lightweight static sites, everything built in'
-description: 'Stati is a TypeScript-first static site generator: Markdown and Eta templates in, fast static HTML out, with typed config, client TypeScript bundles, search, sitemaps, RSS, SEO and incremental rebuilds built in.'
+description: 'A TypeScript-first static site generator: Markdown and Eta in, static HTML out, with search, sitemaps, RSS, SEO and incremental rebuilds built in.'
 layout: home
 seo:
   structuredData:
@@ -270,13 +270,16 @@ claims:
           code: |
             isg: {
               enabled: true,
-              // New articles: every 5 minutes
-              ttlSeconds: 300,
+              // Undated pages: every 6 hours
+              ttlSeconds: 21600,
+              // Frozen after 30 days
               maxAgeCapDays: 30,
               aging: [
+                // First day: every 5 minutes
+                { untilDays: 1, ttlSeconds: 300 },
                 // Then hourly, then daily
-                { untilDays: 1, ttlSeconds: 3600 },
-                { untilDays: 7, ttlSeconds: 86400 },
+                { untilDays: 7, ttlSeconds: 3600 },
+                { untilDays: 30, ttlSeconds: 86400 },
               ],
             },
         - file: 'terminal'
@@ -287,11 +290,11 @@ claims:
         caption: 'Illustrative next build after invalidating tag:news'
         rows:
           - { path: '/', status: 'cached', reason: 'within TTL' }
-          - { path: '/news/launch-day/', status: 'rebuilt', reason: 'invalidated by tag:news' }
-          - { path: '/news/roadmap/', status: 'rebuilt', reason: 'invalidated by tag:news' }
-          - { path: '/blog/2025-recap/', status: 'cached', reason: 'aged: cached for a day' }
-          - { path: '/docs/setup/', status: 'rebuilt', reason: 'docs/layout.eta changed' }
-          - { path: '/about/', status: 'rebuilt', reason: 'TTL expired' }
+          - { path: '/news/launch-day', status: 'rebuilt', reason: 'invalidated by tag:news' }
+          - { path: '/news/roadmap', status: 'rebuilt', reason: 'invalidated by tag:news' }
+          - { path: '/blog/2025-recap', status: 'cached', reason: 'aged: cached for a day' }
+          - { path: '/docs/setup', status: 'rebuilt', reason: 'docs/layout.eta changed' }
+          - { path: '/about', status: 'rebuilt', reason: 'TTL expired' }
 
 dogfood:
   title: 'This site is the demo'
@@ -310,12 +313,12 @@ dogfood:
         {
           entryPoint: 'home.ts',
           bundleName: 'home',
-          include: ['/index.html', '/'],
+          include: ['/'],
         },
         {
           entryPoint: 'docs.ts',
           bundleName: 'docs',
-          exclude: ['/index.html', '/'],
+          exclude: ['/'],
         },
       ],
     },

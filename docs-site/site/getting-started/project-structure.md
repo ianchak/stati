@@ -29,7 +29,7 @@ my-stati-site/
 
 ### With TypeScript enabled
 
-When you create a project with `--typescript`, you get additional files:
+TypeScript is the scaffolder's default, and a TypeScript project gets these additional files (pass `--no-typescript` for a JavaScript project):
 
 ```text
 my-stati-site/
@@ -51,9 +51,9 @@ my-stati-site/
 This is where all your content lives. Stati uses filesystem-based routing, so the structure of your `site/` directory directly maps to the URLs of your website.
 
 - **`site/index.md`** → `/`
-- **`site/about.md`** → `/about/`
-- **`site/blog/index.md`** → `/blog/`
-- **`site/blog/first-post.md`** → `/blog/first-post/`
+- **`site/about.md`** → `/about`
+- **`site/blog/index.md`** → `/blog`
+- **`site/blog/first-post.md`** → `/blog/first-post`
 
 ### `public/`
 
@@ -97,7 +97,7 @@ For TypeScript projects, you can also configure the built-in TypeScript compilat
 
 ```typescript
 export default defineConfig({
-  site: { ... },
+  site: { title: 'My Stati Site', baseUrl: 'https://example.com' },
   typescript: {
     enabled: true,
     // bundles defaults to [{ entryPoint: 'main.ts', bundleName: 'main' }]
@@ -127,12 +127,12 @@ Standard Node.js package file with your dependencies and build scripts.
 - **`layout.eta`** - Default layout template
 - **`blog/layout.eta`** - Section-specific layout
 
-You can also use page specific layouts if you want, by referring to the layouts name in the front matter of your page. For example: `layout: home` refers to `home.eta`
+You can also give a page its own layout by naming it in the page's front matter, relative to `site/` and without the `.eta` extension. For example, `layout: home` uses `site/home.eta`. If that file does not exist, Stati silently falls back to the usual `layout.eta` lookup.
 
 ### Content files
 
-- **`.md` files** - Markdown content with front matter
-- **`.eta` files** - Raw template files (rare, usually for complex pages)
+- **`.md` files** - Markdown content with front matter; every `.md` file outside an underscore folder becomes a page
+- **`.eta` files** - Layouts and partials only; an `.eta` file never becomes a page on its own
 
 ## Advanced structure
 
@@ -184,7 +184,7 @@ Layouts and partials cascade down the directory tree:
 ### Index files
 
 - **`index.md`** - Becomes the directory's homepage
-- **`site/blog/index.md`** → `/blog/`
+- **`site/blog/index.md`** → `/blog` (written to `dist/blog.html`)
 - **No index file** → 404 (add an `index.md` to make the directory accessible)
 
 ## Build output

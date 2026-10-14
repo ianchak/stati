@@ -22,7 +22,7 @@ site/
 ├── about.md               → /about
 ├── contact.md             → /contact
 └── blog/
-    ├── index.md           → /blog/
+    ├── index.md           → /blog
     ├── first-post.md      → /blog/first-post
     └── second-post.md     → /blog/second-post
 ```
@@ -35,10 +35,10 @@ Every directory can have its own `index.md` file, which becomes the homepage for
 site/
 ├── index.md              → / (site homepage)
 ├── docs/
-│   ├── index.md          → /docs/ (docs homepage)
+│   ├── index.md          → /docs (docs homepage)
 │   ├── getting-started.md → /docs/getting-started
 │   └── api/
-│       ├── index.md      → /docs/api/ (API section homepage)
+│       ├── index.md      → /docs/api (API section homepage)
 │       └── reference.md  → /docs/api/reference
 ```
 
@@ -46,22 +46,21 @@ site/
 
 ### Clean URLs
 
-Stati automatically generates clean URLs by:
+Stati generates URLs by:
 
 - Removing the `.md` file extension
-- Converting `index` files to directory URLs with trailing slashes
+- Mapping an `index.md` file to its folder's URL, without a trailing slash (the root `index.md` becomes `/`)
 
 ```text
-about.md → /about
-blog/index.md → /blog/
-blog/my-post.md → /blog/my-post
+about.md        → /about           → dist/about.html
+blog/index.md   → /blog            → dist/blog.html
+blog/my-post.md → /blog/my-post    → dist/blog/my-post.html
+index.md        → /                → dist/index.html
 ```
 
-**Important:** Only `index` files get trailing slashes. Non-index pages have URLs without trailing slashes. This means:
+Every page is written as a `.html` file named after its URL. Only the root page becomes an `index.html`. A `permalink` that ends in `/` is the one way to get a folder-style `…/index.html` output (see [Front matter URL override](#front-matter-url-override)).
 
-- `site/about.md` becomes `/about` (no trailing slash)
-- `site/blog/index.md` becomes `/blog/` (trailing slash)
-- `site/blog/post.md` becomes `/blog/post` (no trailing slash)
+`stati preview` serves `/blog`, `/blog.html` and `/blog/` from `dist/blog.html`. On your production host, check that an extensionless URL such as `/blog` is served from `blog.html`, including when a `blog/` folder sits next to it. Many static hosts do this by default; others need a "clean URLs" or rewrite setting.
 
 ### Important: No automatic slug transformation
 
@@ -172,7 +171,7 @@ site/
 ├── image.png            ❌ Not routed - Image file
 ├── .DS_Store            ❌ Not routed - Not markdown
 ├── .gitkeep             ❌ Not routed - Not markdown
-├── README.md            ✅ Routed - Creates /readme (is markdown!)
+├── README.md            ✅ Routed - Creates /README (is markdown!)
 └── index.md             ✅ Routed - Creates / homepage
 ```
 
@@ -233,7 +232,7 @@ site/
 ├── index.md            → / (uses root layout)
 ├── blog/
 │   ├── layout.eta      # Blog-specific layout
-│   ├── index.md        → /blog/ (uses blog layout)
+│   ├── index.md        → /blog (uses blog layout)
 │   └── post.md         → /blog/post (uses blog layout)
 ```
 
@@ -283,13 +282,13 @@ permalink: '/custom-path'
 # This page will be available at /custom-path
 ```
 
-**Note:** While you _can_ add trailing slashes to permalinks, Stati's default behavior only adds them to index pages. For consistency with the rest of your site, consider using permalinks without trailing slashes for non-index pages.
+**Note:** A permalink without a trailing slash (`/custom-path`) is written to `dist/custom-path.html`; one with a trailing slash (`/custom-path/`) is written to `dist/custom-path/index.html`. Generated URLs never end in a slash (except `/`), so use permalinks without a trailing slash to stay consistent.
 
 **Important:** When using `permalink`:
 
-- Must be a static string (no template variables or date formatting)
-- Must start with `/`
-- Completely replaces the file-path-based URL
+- It must be a static string (no template variables or date formatting)
+- Start it with `/`; Stati uses the value as-is and does not validate it
+- It completely replaces the file-path-based URL, which also changes the page's place in collections and navigation
 
 Example use cases:
 
@@ -317,15 +316,12 @@ permalink: '/docs/auth'
 
 ### Link generation
 
-When linking between pages, use absolute paths from the site root. Match your link URLs to how Stati generates them:
-
-- Index pages: use trailing slash (`/blog/`)
-- Non-index pages: no trailing slash (`/about`)
+When linking between pages, use absolute paths from the site root, written the way Stati generates them, without a trailing slash:
 
 ```markdown
 Check out our [Getting Started page](/getting-started/introduction) for more information.
 Visit the [API documentation](/api/reference) to learn more.
-Visit the [Blog homepage](/blog/) to see all posts.
+Visit the [Blog homepage](/blog) to see all posts.
 ```
 
 ### Navigation helpers
@@ -333,18 +329,10 @@ Visit the [Blog homepage](/blog/) to see all posts.
 In templates, you can access routing information:
 
 ```eta
+<% const inBlog = stati.page.url === '/blog' || stati.page.url.startsWith('/blog/'); %>
 <nav>
-  <% if (stati.page.url === '/') { %>
-    <a href="/" class="active">Home</a>
-  <% } else { %>
-    <a href="/">Home</a>
-  <% } %>
-
-  <% if (stati.page.url.startsWith('/blog/')) { %>
-    <a href="/blog/" class="active">Blog</a>
-  <% } else { %>
-    <a href="/blog/">Blog</a>
-  <% } %>
+  <a href="/" class="<%= stati.page.url === '/' ? 'active' : '' %>">Home</a>
+  <a href="/blog" class="<%= inBlog ? 'active' : '' %>">Blog</a>
 </nav>
 ```
 
@@ -369,7 +357,7 @@ Use the built-in `stati.nav.getBreadcrumbs()` helper to generate breadcrumb navi
 </nav>
 ```
 
-The `getBreadcrumbs()` method returns an array of `NavNode` objects from the root to the current page, each with `title` and `url` properties. This is more reliable than manually parsing URL segments because it uses the actual navigation tree and page titles from front matter.
+The `getBreadcrumbs()` method returns an array of `NavNode` objects, each with `title` and `url` properties, using page titles from front matter. The trail starts at the collection that contains the current page, not at the site root: for `/docs/api/hooks` it is `API › Hooks`, because every collection folder is a top-level node in the navigation tree (see [Navigation](/api/navigation#navigation-structure)). Add a Home link, and links to higher sections, yourself.
 
 See the [Navigation API](/api/navigation) for more details on breadcrumb customization.
 
@@ -378,8 +366,8 @@ See the [Navigation API](/api/navigation) for more details on breadcrumb customi
 ### URL structure design
 
 1. **Keep URLs short and descriptive**
-   - Good: `/docs/getting-started/`
-   - Avoid: `/documentation/getting-started-with-our-amazing-platform/`
+   - Good: `/docs/getting-started`
+   - Avoid: `/documentation/getting-started-with-our-amazing-platform`
 
 2. **Use consistent naming conventions**
    - All lowercase
@@ -429,7 +417,7 @@ See the [Navigation API](/api/navigation) for more details on breadcrumb customi
 
 3. **Clean URLs are user-friendly**
    - `/contact` is cleaner than `/contact.html`
-   - Stati automatically handles trailing slashes: index pages get them (`/blog/`), non-index pages don't (`/about`)
+   - Stati generates URLs without trailing slashes for every page, index pages included (`/blog`, `/about`)
 
 ## Advanced routing patterns
 
@@ -440,13 +428,13 @@ Organize content by language:
 ```text
 site/
 ├── en/
-│   ├── index.md → /en/
+│   ├── index.md → /en
 │   └── about.md → /en/about
 ├── es/
-│   ├── index.md → /es/
+│   ├── index.md → /es
 │   └── acerca.md → /es/acerca
 └── fr/
-    ├── index.md → /fr/
+    ├── index.md → /fr
     └── apropos.md → /fr/apropos
 ```
 
@@ -457,7 +445,7 @@ Structure API docs logically:
 ```text
 site/
 └── api/
-    ├── index.md → /api/ (API overview)
+    ├── index.md → /api (API overview)
     ├── authentication.md → /api/authentication
     ├── endpoints/
     │   ├── users.md → /api/endpoints/users

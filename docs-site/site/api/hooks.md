@@ -10,23 +10,33 @@ Build hooks allow you to inject custom logic at various stages of the Stati buil
 
 ## Hook lifecycle
 
-Stati executes hooks in the following order:
+A build runs in this order:
 
 ```text
-1. beforeAll    → Called once at build start
-2. Content Discovery & Processing
-3. beforeRender → Called for each page
-4. Template Rendering
-5. afterRender  → Called for each page
-6. Static Asset Copying
-7. afterAll     → Called once at build end
+1. Load config, discover Markdown pages, build the navigation tree
+2. Compile TypeScript bundles (when enabled)
+3. beforeAll    → once, with every page (ctx.pages)
+4. For each page:
+   - cache check: an unchanged page is skipped here, with no hooks
+   - beforeRender → before the page renders
+   - Markdown → HTML, layout rendering, SEO/search/script injection, file write
+   - afterRender  → after the page renders
+5. Search index, cache manifest, static asset copy
+6. sitemap.xml, robots.txt, RSS feeds (production builds only)
+7. afterAll     → once, at the end
 ```
+
+> **Per-page hooks only run for pages that are rendered.** With ISG enabled (the default), unchanged pages are served from the cache and skip `beforeRender` and `afterRender`. Do work that every page needs, or that other pages depend on, in `beforeAll`. Use `stati build --force` to run the per-page hooks for every page.
+
+A hook that throws, or returns a rejected promise, fails the build. Hooks have no timeout.
 
 ## Hook types
 
 ### `beforeAll`
 
-Called once before starting the build process.
+Called once, after the content has been loaded and before any page is rendered. `ctx.pages` holds every page, so this is the place to build indexes, related-post lists or other data that templates read through [filters](/configuration/templates#custom-filters) or module-level variables.
+
+`beforeAll` runs before the cache check, so values it writes into `page.frontMatter` are part of each page's cache hash. Use that to make a listing page rebuild when its posts change; see [Dependency tracking](/core-concepts/isg#dependency-tracking).
 
 **Use cases:**
 
@@ -55,30 +65,28 @@ export default defineConfig({
 
 ### `afterAll`
 
-Called once after completing the build process.
+Called once after completing the build process, after the static assets, sitemap, robots.txt and RSS feeds have been written.
 
 **Use cases:**
 
-- Generate sitemaps and RSS feeds
 - Deploy to CDN or hosting service
 - Send build notifications
+- Write extra files to the output directory
 - Clean up temporary resources
 
+Sitemaps, robots.txt and RSS feeds are built in; enable them with the `sitemap`, `robots` and `rss` options instead of generating them here.
+
 ```javascript
+import { getEnv } from '@stati/core';
+
 export default defineConfig({
   hooks: {
     afterAll: async (ctx) => {
-      console.log(`Build complete! Generated ${ctx.pages.length} pages`);
+      console.log(`Build complete! ${ctx.pages.length} pages`);
 
-      // Generate sitemap
-      await generateSitemap(ctx.pages, ctx.config.site.baseUrl);
-
-      // Generate RSS feed
-      await generateRSSFeed(ctx.pages.filter(p => p.frontMatter.type === 'post'));
-
-      // Deploy to CDN
-      if (process.env.NODE_ENV === 'production') {
-        await deployToCDN(ctx.config.outDir);
+      // Deploy only from production builds (`stati build`)
+      if (getEnv() === 'production') {
+        await deployToCDN(ctx.config.outDir ?? 'dist');
       }
 
       // Send notification
@@ -91,24 +99,24 @@ export default defineConfig({
 });
 ```
 
+`deployToCDN` and `sendBuildNotification` stand for your own functions.
+
 ### `beforeRender`
 
-Called before rendering each individual page.
+Called before rendering each page that is rendered in this build (not for pages served from the cache).
 
 **Use cases:**
 
 - Add dynamic data to pages
 - Calculate reading time or word count
-- Inject build metadata
-- Modify page content
+- Modify page content before Markdown rendering
+
+Values you add to `ctx.page.frontMatter` appear in templates as `stati.page.<name>`, and `ctx.page.content` is the Markdown body.
 
 ```javascript
 export default defineConfig({
   hooks: {
     beforeRender: async (ctx) => {
-      // Add build timestamp
-      ctx.page.frontMatter.buildTime = new Date().toISOString();
-
       // Calculate reading time
       const wordCount = ctx.page.content.split(/\s+/).length;
       ctx.page.frontMatter.readingTime = Math.ceil(wordCount / 200);
@@ -122,16 +130,17 @@ export default defineConfig({
 });
 ```
 
+> **Caching note:** the cache entry stores a hash of the front matter as the hook left it, while the next build compares it with the front matter read from the file. A page whose front matter `beforeRender` changes is therefore re-rendered on every build. Data that is the same every build is better added in `beforeAll` (which runs before the cache check), for example by looping over `ctx.pages` there; never add per-build values such as timestamps.
+
 ### `afterRender`
 
-Called after rendering each individual page.
+Called after each rendered page has been processed. The context holds the page model and the config only; the rendered HTML is not passed to the hook.
 
 **Use cases:**
 
-- Post-process generated HTML
-- Validate output
-- Generate search indices
-- Optimize images
+- Log or collect per-page information
+- Record metrics or analytics data
+- Track which pages changed in this build
 
 ```javascript
 export default defineConfig({
@@ -177,39 +186,42 @@ interface PageContext {
 
 ### External state management
 
-Since hook contexts don't support shared state, use module-level state or external storage for sharing data between hooks:
+Each hook receives a new context object, so values you attach to `ctx` do not carry over to later hooks. Use module-level state to share data between hooks, and expose it to templates through a filter:
 
 ```javascript
 // Module-level state
-let sharedBuildData = {};
+let sharedBuildData = { posts: [], authors: [] };
 
 export default defineConfig({
+  eta: {
+    filters: {
+      // Templates call stati.authors()
+      authors: () => sharedBuildData.authors,
+    },
+  },
   hooks: {
     beforeAll: async (ctx) => {
       // Fetch data once, store in module state
       sharedBuildData = {
         posts: await fetchBlogPosts(),
         authors: await fetchAuthors(),
-        buildId: generateBuildId()
       };
     },
 
-    beforeRender: async (ctx) => {
-      // Access shared data from module state
-      ctx.page.frontMatter.buildId = sharedBuildData.buildId;
-
-      // Add page-specific processing
-      if (ctx.page.frontMatter.type === 'post') {
-        ctx.page.frontMatter.section = 'blog';
-      }
+    afterAll: async (ctx) => {
+      console.log(`Rendered with ${sharedBuildData.authors.length} authors`);
     }
   }
 });
 ```
 
+Pages served from the cache are not re-rendered when this shared data changes; see the caching note under [`beforeRender`](#beforerender).
+
 ### Conditional hook execution
 
 ```javascript
+import { getEnv } from '@stati/core';
+
 export default defineConfig({
   hooks: {
     beforeRender: async (ctx) => {
@@ -224,8 +236,8 @@ export default defineConfig({
     },
 
     afterRender: async (ctx) => {
-      // Only log in production builds
-      if (process.env.NODE_ENV === 'production') {
+      // Only log in production builds (`stati build`)
+      if (getEnv() === 'production') {
         console.log(`Built production page: ${ctx.page.url}`);
       }
     }
@@ -300,25 +312,23 @@ export default defineConfig({
 
 ```javascript
 const isPost = (page) => page.frontMatter.type === 'post';
-const isDraft = (page) => page.frontMatter.draft === true;
-const isPublished = (page) => !isDraft(page);
 const isBlogContent = (page) => page.url.startsWith('/blog/');
-
-let publishedPosts = [];
 
 export default defineConfig({
   hooks: {
     beforeAll: async (ctx) => {
-      publishedPosts = ctx.pages
+      // Drafts are only in ctx.pages with --include-drafts
+      const publishedPosts = ctx.pages
         .filter(isPost)
-        .filter(isPublished)
+        .filter(isBlogContent)
         .sort((a, b) => new Date(b.frontMatter.date) - new Date(a.frontMatter.date));
-    },
 
-    beforeRender: async (ctx) => {
-      // Use the filtered posts in page hooks
-      if (ctx.page.url === '/blog/') {
-        ctx.page.frontMatter.recentPosts = publishedPosts.slice(0, 5);
+      // Give the blog index its list; changing a listed post rebuilds it
+      const blogIndex = ctx.pages.find((page) => page.url === '/blog');
+      if (blogIndex) {
+        blogIndex.frontMatter.recentPosts = publishedPosts
+          .slice(0, 5)
+          .map((post) => ({ url: post.url, title: post.frontMatter.title }));
       }
     }
   }
@@ -356,36 +366,32 @@ function calculateReadingTime(content) {
 ### Blog with related posts
 
 ```javascript
-let allPosts = [];
-
 function intersection(arr1, arr2) {
   return arr1.filter(item => arr2.includes(item));
 }
 
 export default defineConfig({
   hooks: {
+    // beforeAll sees every page and runs before the cache check, so the
+    // related posts become part of each post's cache hash: a post is
+    // rebuilt when its list of related posts changes.
     beforeAll: async (ctx) => {
-      // Store all posts for use in page hooks
-      allPosts = ctx.pages.filter(p => p.frontMatter.type === 'post');
-    },
+      const posts = ctx.pages.filter(p => p.frontMatter.type === 'post');
 
-    beforeRender: async (ctx) => {
-      if (ctx.page.frontMatter.type !== 'post') return;
+      for (const post of posts) {
+        const currentTags = post.frontMatter.tags || [];
 
-      // Find related posts by tags
-      const currentTags = ctx.page.frontMatter.tags || [];
-
-      const relatedPosts = allPosts
-        .filter(p => p.url !== ctx.page.url)
-        .map(p => ({
-          ...p,
-          score: intersection(currentTags, p.frontMatter.tags || []).length
-        }))
-        .filter(p => p.score > 0)
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 3);
-
-      ctx.page.frontMatter.relatedPosts = relatedPosts;
+        post.frontMatter.relatedPosts = posts
+          .filter(p => p.url !== post.url)
+          .map(p => ({
+            url: p.url,
+            title: p.frontMatter.title,
+            score: intersection(currentTags, p.frontMatter.tags || []).length
+          }))
+          .filter(p => p.score > 0)
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 3);
+      }
     }
   }
 });

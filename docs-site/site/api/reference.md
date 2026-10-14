@@ -8,7 +8,7 @@ seo:
 
 # Overview
 
-Stati's whole public surface fits on one page. Everything below is exported from `@stati/core` or available in templates as `stati`. Each section links to its full reference.
+The main parts of Stati's public API on one page. Everything below is exported from `@stati/core` or available in templates as `stati`. Each section links to its full reference, and [Types](/api/types#module-exports) lists every export.
 
 ## Configuration
 
@@ -32,15 +32,18 @@ Every config section is covered under [Configuration](/configuration/file).
 
 The same functions the `stati` CLI calls, for use in your own scripts.
 
-| Export                | Signature                                                           |
-| --------------------- | ------------------------------------------------------------------- |
-| `build`               | `(options?: BuildOptions) => Promise<BuildResult>`                  |
-| `createDevServer`     | `(options?: DevServerOptions) => Promise<DevServer>`                |
-| `createPreviewServer` | `(options?: PreviewServerOptions) => Promise<PreviewServer>`        |
-| `invalidate`          | `(query?: string) => Promise<InvalidationResult>`                   |
-| `setEnv`, `getEnv`    | Set or read the environment (`development`, `production` or `test`) |
+| Export                                    | Signature                                                           |
+| ----------------------------------------- | ------------------------------------------------------------------- |
+| `build`                                   | `(options?: BuildOptions) => Promise<BuildResult>`                  |
+| `createDevServer`                         | `(options?: DevServerOptions) => Promise<DevServer>`                |
+| `createPreviewServer`                     | `(options?: PreviewServerOptions) => Promise<PreviewServer>`        |
+| `invalidate`                              | `(query?: string) => Promise<InvalidationResult>`                   |
+| `setEnv`, `getEnv`                        | Set or read the environment (`development`, `production` or `test`) |
+| `isDevelopment`, `isProduction`, `isTest` | Check the current environment                                       |
 
-Dev and preview servers expose `start()`, `stop()` and `url`. `invalidate` accepts the same queries as the CLI, such as `tag:news`, `path:/blog/*` or `age:3months`. See [CLI commands](/cli/commands) and [ISG](/core-concepts/isg).
+Dev and preview servers expose `start()`, `stop()` and `url`; call `start()` to begin serving. `build()` does not set the environment: call `setEnv('production')` first for a production build (sitemap, robots.txt and RSS are only generated in production). `invalidate` accepts the same queries as the CLI, such as `tag:news`, `path:/blog` or `age:3months`. See [CLI commands](/cli/commands#stati-invalidate) and [ISG](/core-concepts/isg).
+
+`createMetricRecorder`, `noopMetricRecorder` and `writeMetrics` back the `--metrics` flags (see [Build metrics](/advanced/metrics)), and `getStatiVersion()` returns the installed `@stati/core` version.
 
 ## Build hooks
 
@@ -49,11 +52,11 @@ Defined under `hooks` in your config. Each can be async.
 | Hook           | Receives       | Runs                           |
 | -------------- | -------------- | ------------------------------ |
 | `beforeAll`    | `BuildContext` | Once, before any page renders  |
-| `beforeRender` | `PageContext`  | Before each page renders       |
-| `afterRender`  | `PageContext`  | After each page renders        |
+| `beforeRender` | `PageContext`  | Before each re-rendered page   |
+| `afterRender`  | `PageContext`  | After each re-rendered page    |
 | `afterAll`     | `BuildContext` | Once, after the build finishes |
 
-Full reference: [Build hooks](/api/hooks).
+Pages served from the ISG cache skip `beforeRender` and `afterRender`. Full reference: [Build hooks](/api/hooks).
 
 ## Template context
 
@@ -67,7 +70,7 @@ Every Eta template and partial receives a `stati` object.
 | `stati.partials`           | Partials from `_`-prefixed folders, renderable or callable with props                                                                    |
 | `stati.nav`                | The navigation tree and helpers: `findNode`, `getChildren`, `getParent`, `getSiblings`, `getSubtree`, `getBreadcrumbs`, `getCurrentNode` |
 | `stati.collection`         | Pages in the current collection, on index pages                                                                                          |
-| `stati.assets`             | Bundle paths when TypeScript bundles are enabled                                                                                         |
+| `stati.assets`             | `bundlePaths` for this page (empty when no bundle matches) and `searchIndexPath` when search is enabled                                  |
 | `stati.propValue(...)`     | Builds space-separated attribute values from strings, arrays and objects                                                                 |
 | `stati.generateSEO(tags?)` | Renders SEO tags for manual placement                                                                                                    |
 | `stati.generator.version`  | The Stati version that built the page                                                                                                    |

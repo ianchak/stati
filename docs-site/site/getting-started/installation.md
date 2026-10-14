@@ -22,8 +22,10 @@ npx create-stati
 This command will launch an interactive setup wizard that guides you through creating a new project. You'll be prompted for:
 
 - **Project name**: The directory for your new site.
+- **Template**: Start from the `blank`, `blog` or `docs` template.
 - **Styling solution**: Choose between plain CSS, Sass, or Tailwind CSS.
 - **TypeScript**: On by default, with a typed `stati.config.ts` and esbuild-compiled client code. Answer no for a JavaScript project.
+- **Agent skill**: Optionally install the Stati agent skill for AI coding assistants.
 - **Git initialization**: Optionally initialize a new Git repository.
 - **Dependency installation**: Choose whether to install dependencies automatically.
 - **Package manager**: Select your preferred package manager (npm, yarn, pnpm, or bun) if multiple are available.
@@ -36,11 +38,7 @@ You can also pass command-line arguments to pre-configure the scaffolder and ski
 npx create-stati my-site --styling tailwind
 ```
 
-This will:
-
-1. Create a new directory called `my-site`.
-2. Set up a basic Stati project with Tailwind CSS.
-3. Initialize a Git repository (default behavior).
+This creates a project in `my-site` with Tailwind CSS and asks only the remaining questions (template, TypeScript, agent skill, Git, dependency installation and, when several are detected, the package manager). To skip every prompt, see [Running without prompts](/cli/scaffolder#running-without-prompts).
 
 Here are the available options:
 
@@ -54,6 +52,8 @@ Here are the available options:
 | `--no-install` | Skips dependency installation (default: installs dependencies). |
 | `--package-manager` | Specifies the package manager to use (`npm`, `yarn`, `pnpm`, or `bun`). |
 | `--template` | Specifies a project template to use (`blank`, `blog` or `docs`). |
+| `--agent-skill [target]` | Installs the Stati agent skill (`claude`, `github` or `agents`; default `claude`). |
+| `--no-agent-skill` | Skips agent skill installation. |
 
 ### TypeScript by default
 
@@ -136,7 +136,7 @@ npm run build
 npm run preview
 ```
 
-Your site should be available at `http://localhost:3000`.
+The development server runs at `http://localhost:3000` and the preview server at `http://localhost:4000`.
 
 ## Next steps
 

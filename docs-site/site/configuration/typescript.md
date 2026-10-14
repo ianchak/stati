@@ -34,6 +34,7 @@ import { defineConfig } from '@stati/core';
 export default defineConfig({
   site: {
     title: 'My TypeScript Site',
+    baseUrl: 'https://example.com',
   },
   typescript: {
     enabled: true,
@@ -159,7 +160,7 @@ Each bundle in the `bundles` array can have these properties:
 |--------|------|----------|-------------|
 | `entryPoint` | `string` | Yes | Entry point file name relative to `srcDir` (e.g., `'main.ts'`, `'features/playground.ts'`) |
 | `bundleName` | `string` | Yes | Output bundle name (without extension). Final filename includes hash in production: `[bundleName]-[hash].js` |
-| `include` | `string[]` | No | Glob patterns for pages that should include this bundle. Matches against page output path (e.g., `/docs/api/hooks.html`). **If omitted, bundle is included on ALL pages (global bundle).** |
+| `include` | `string[]` | No | Glob patterns for pages that should include this bundle. Matched against the page URL (e.g., `/docs/api/hooks`, or `/` for the home page). **If omitted, bundle is included on ALL pages (global bundle).** |
 | `exclude` | `string[]` | No | Glob patterns for pages to exclude from this bundle. **Takes precedence over `include` patterns.** |
 
 ### Minimal configuration (default bundle)
@@ -207,7 +208,7 @@ export default defineConfig({
       {
         entryPoint: 'playground.ts',
         bundleName: 'playground',
-        include: ['/examples/**', '/playground.html'],
+        include: ['/examples/**', '/playground'],
         exclude: ['/examples/simple/**']
       },
 
@@ -215,7 +216,7 @@ export default defineConfig({
       {
         entryPoint: 'home.ts',
         bundleName: 'home',
-        include: ['/index.html', '/']
+        include: ['/']
       }
     ]
   }
@@ -224,19 +225,23 @@ export default defineConfig({
 
 ### Pattern matching
 
-Patterns use glob syntax (minimatch-compatible):
+Patterns use Stati's built-in glob syntax:
 
 | Pattern | Matches |
 |---------|---------|
 | `*` | Any characters except `/` |
 | `**` | Any characters including `/` |
-| `?` | A single character |
+| `**/` | Zero or more whole path segments |
+| `?` | A single character except `/` |
 | `[abc]` | Any character in brackets |
 
-Patterns match against the page's **output path** (the URL path), not the source file path:
+Brace alternatives such as `{a,b}` are not supported; list each pattern separately. A pattern must match the whole URL: `/docs/**` matches `/docs/intro` and `/docs/api/hooks` but not the `/docs` index page itself, so add `'/docs'` too when that page needs the bundle.
+
+Patterns match against the page's **URL**, not its source file or output file:
 
 - Source: `site/docs/api/hooks.md`
-- Output path: `/docs/api/hooks.html`
+- URL (what patterns see): `/docs/api/hooks`
+- Output file: `dist/docs/api/hooks.html`
 
 ### Matching logic
 
@@ -252,12 +257,12 @@ For each page, Stati determines which bundles to inject:
 **Example matching:**
 
 ```text
-Page: /docs/api/hooks.html
+Page: /docs/api/hooks
 
-Bundle 'core':      include=undefined       → MATCH (global)
-Bundle 'docs':      include=['/docs/**']    → MATCH
+Bundle 'core':       include=undefined        → MATCH (global)
+Bundle 'docs':       include=['/docs/**']     → MATCH
 Bundle 'playground': include=['/examples/**'] → NO MATCH
-Bundle 'home':      include=['/index.html'] → NO MATCH
+Bundle 'home':       include=['/']            → NO MATCH
 
 Result: ['core', 'docs'] scripts injected
 ```
@@ -374,7 +379,15 @@ If you see this warning:
 TypeScript entry point not found: /path/to/src/main.ts (bundle: main)
 ```
 
-Ensure your entry file exists at the configured location (`srcDir/entryPoint`). For multiple bundles, each missing entry point is skipped with a warning, and compilation continues with the remaining bundles.
+Ensure your entry file exists at the configured location (`srcDir/entryPoint`, relative to the project root). For multiple bundles, each missing entry point is skipped with a warning, and compilation continues with the remaining bundles.
+
+### Build fails on a bundle
+
+A syntax error in a bundle fails the build with `Bundle '<name>' compilation failed: …`. Two bundles with the same `bundleName` also fail the build (`Duplicate bundleName(s) found in configuration`); give each bundle a unique name.
+
+### Bundle missing on a page
+
+Check the page's URL against the bundle's `include` and `exclude` patterns. Patterns see `/docs/intro`, not `/docs/intro.html`, and `/docs/**` does not match the `/docs` index page.
 
 ### Type errors not caught during build
 

@@ -1,7 +1,6 @@
 ---
 title: 'SEO'
 description: 'Complete API reference for Stati SEO functions, types, and configuration interfaces'
-layout: layout.eta
 order: 6
 seo:
   title: 'SEO API'
@@ -20,7 +19,7 @@ Generates SEO metadata tags as an HTML string based on page context and configur
 **Signature:**
 
 ```typescript
-function generateSEOMetadata(context: SEOContext): string
+function generateSEOMetadata(context: SEOContext): string;
 ```
 
 **Parameters:**
@@ -34,7 +33,8 @@ function generateSEOMetadata(context: SEOContext): string
 **Example:**
 
 ```typescript
-import { generateSEOMetadata, SEOTagType } from '@stati/core';
+import { generateSEOMetadata } from '@stati/core';
+import { SEOTagType } from '@stati/core/types';
 
 const html = generateSEOMetadata({
   page: pageData,
@@ -44,6 +44,8 @@ const html = generateSEOMetadata({
   exclude: new Set([SEOTagType.Title]), // Skip title generation
 });
 ```
+
+> **Note:** `SEOTagType` is a runtime enum. Import it from `@stati/core/types`; the `@stati/core` entry point exports it as a type only, so `SEOTagType.Title` would be `undefined` there.
 
 **Behavior:**
 
@@ -66,8 +68,8 @@ function generateSEO(
     config: StatiConfig;
     site?: SiteConfig;
   },
-  tags?: Array<SEOTagType | string>
-): string
+  tags?: Array<SEOTagType | string>,
+): string;
 ```
 
 **Parameters:**
@@ -98,13 +100,14 @@ function generateSEO(
 **Programmatic Usage (TypeScript):**
 
 ```typescript
-import { generateSEO, SEOTagType } from '@stati/core';
+import { generateSEO } from '@stati/core';
+import { SEOTagType } from '@stati/core/types';
 
 // Using enum values in TypeScript code
-const html = generateSEO(
-  { page, config, site: config.site },
-  [SEOTagType.Title, SEOTagType.OpenGraph]
-);
+const html = generateSEO({ page, config, site: config.site }, [
+  SEOTagType.Title,
+  SEOTagType.OpenGraph,
+]);
 
 // Or using strings
 const html2 = generateSEO({ page, config, site: config.site }, ['title', 'description']);
@@ -128,8 +131,8 @@ Generates an XML sitemap from an array of pages.
 function generateSitemap(
   pages: PageModel[],
   config: StatiConfig,
-  sitemapConfig: SitemapConfig
-): SitemapGenerationResult
+  sitemapConfig: SitemapConfig,
+): SitemapGenerationResult;
 ```
 
 **Parameters:**
@@ -146,8 +149,9 @@ function generateSitemap(
 
 ```typescript
 import { generateSitemap } from '@stati/core';
+import type { SitemapConfig } from '@stati/core';
 
-const sitemapConfig = {
+const sitemapConfig: SitemapConfig = {
   enabled: true,
   defaultPriority: 0.5,
   defaultChangeFreq: 'monthly',
@@ -155,10 +159,10 @@ const sitemapConfig = {
 
 const result = generateSitemap(pages, config, sitemapConfig);
 
-console.log(result.xml);          // XML string
-console.log(result.entryCount);   // Number of URLs
-console.log(result.sizeInBytes);  // Size in bytes
-console.log(result.sitemaps);     // Array of sitemap files (if split)
+console.log(result.xml); // XML string
+console.log(result.entryCount); // Number of URLs
+console.log(result.sizeInBytes); // Size in bytes
+console.log(result.sitemaps); // Array of sitemap files (if split)
 ```
 
 **Notes:**
@@ -178,7 +182,7 @@ Generates robots.txt content from low-level options.
 **Signature:**
 
 ```typescript
-function generateRobotsTxt(options?: RobotsTxtOptions): string
+function generateRobotsTxt(options?: RobotsTxtOptions): string;
 
 interface RobotsTxtOptions {
   /** User agent rules */
@@ -215,15 +219,15 @@ const robotsTxt = generateRobotsTxt({
     {
       userAgent: 'Googlebot',
       allow: ['/'],
-      crawlDelay: 1
+      crawlDelay: 1,
     },
     {
       userAgent: '*',
-      disallow: ['/admin/', '/api/']
-    }
+      disallow: ['/admin/', '/api/'],
+    },
   ],
   sitemaps: ['https://example.com/sitemap.xml'],
-  custom: ['# Custom comment']
+  custom: ['# Custom comment'],
 });
 ```
 
@@ -236,10 +240,7 @@ Generates robots.txt content from Stati configuration.
 **Signature:**
 
 ```typescript
-function generateRobotsTxtFromConfig(
-  config: RobotsTxtConfig,
-  siteUrl?: string
-): string
+function generateRobotsTxtFromConfig(config: RobotsTxtConfig, siteUrl?: string): string;
 ```
 
 **Parameters:**
@@ -262,8 +263,8 @@ const config = {
     {
       userAgent: 'Googlebot',
       allow: ['/public/'],
-      disallow: ['/admin/']
-    }
+      disallow: ['/admin/'],
+    },
   ],
   disallow: ['/admin/', '/private/'],
   sitemap: true,
@@ -290,10 +291,7 @@ Automatically injects SEO metadata into rendered HTML, skipping tags that alread
 **Signature:**
 
 ```typescript
-function autoInjectSEO(
-  html: string,
-  options: AutoInjectOptions
-): string
+function autoInjectSEO(html: string, options: AutoInjectOptions): string;
 
 interface AutoInjectOptions {
   /** Page model with frontmatter and metadata */
@@ -302,6 +300,8 @@ interface AutoInjectOptions {
   config: StatiConfig;
   /** Site base URL */
   siteUrl: string;
+  /** Logger for validation warnings and debug output (required) */
+  logger: Logger;
   /** Enable debug logging */
   debug?: boolean;
 }
@@ -310,7 +310,7 @@ interface AutoInjectOptions {
 **Parameters:**
 
 - `html` (string): The rendered HTML content
-- `options` (AutoInjectOptions): Options object containing page, config, siteUrl, and optional debug flag
+- `options` (AutoInjectOptions): Options object containing page, config, siteUrl, logger, and optional debug flag
 
 **Returns:**
 
@@ -325,6 +325,7 @@ const enrichedHtml = autoInjectSEO(renderedHtml, {
   page: pageModel,
   config: statiConfig,
   siteUrl: 'https://example.com',
+  logger,
   debug: false,
 });
 ```
@@ -333,8 +334,10 @@ const enrichedHtml = autoInjectSEO(renderedHtml, {
 
 - Returns original HTML unchanged if `config.seo.autoInject === false`
 - Detects existing SEO tags and skips generation for those tag types
-- Injects generated tags before `</head>` closing tag
+- Injects generated tags before `</head>` closing tag; HTML without `</head>` is returned unchanged
 - Preserves existing tags exactly (no modification)
+
+`Logger` is the logger interface used across Stati (`import type { Logger } from '@stati/core/types'`): an object with the required methods `info`, `success`, `warning`, `error`, `status`, `building`, `processing` and `stats`, each taking a message string, plus optional progress and formatting methods. The same `logger` field is required in `SEOContext` for `generateSEOMetadata`, `generateOpenGraphTags` and `generateTwitterCardTags`.
 
 ---
 
@@ -345,7 +348,7 @@ Generates Open Graph meta tags from SEO context.
 **Signature:**
 
 ```typescript
-function generateOpenGraphTags(context: SEOContext): string[]
+function generateOpenGraphTags(context: SEOContext): string[];
 ```
 
 **Parameters:**
@@ -365,6 +368,7 @@ const ogTags = generateOpenGraphTags({
   page: pageModel,
   config: statiConfig,
   siteUrl: 'https://example.com',
+  logger,
 });
 
 console.log(ogTags.join('\n'));
@@ -379,7 +383,7 @@ Generates Twitter Card meta tags from SEO context.
 **Signature:**
 
 ```typescript
-function generateTwitterCardTags(context: SEOContext): string[]
+function generateTwitterCardTags(context: SEOContext): string[];
 ```
 
 **Parameters:**
@@ -399,6 +403,7 @@ const twitterTags = generateTwitterCardTags({
   page: pageModel,
   config: statiConfig,
   siteUrl: 'https://example.com',
+  logger,
 });
 
 console.log(twitterTags.join('\n'));
@@ -416,8 +421,8 @@ Generates a single sitemap entry from a page model.
 function generateSitemapEntry(
   page: PageModel,
   config: StatiConfig,
-  sitemapConfig: SitemapConfig
-): SitemapEntry | null
+  sitemapConfig: SitemapConfig,
+): SitemapEntry | null;
 ```
 
 **Parameters:**
@@ -450,7 +455,7 @@ Generates XML string from sitemap entries.
 **Signature:**
 
 ```typescript
-function generateSitemapXml(entries: SitemapEntry[]): string
+function generateSitemapXml(entries: SitemapEntry[]): string;
 ```
 
 **Parameters:**
@@ -468,7 +473,7 @@ import { generateSitemapXml } from '@stati/core';
 
 const entries = [
   { url: 'https://example.com/', priority: 1.0 },
-  { url: 'https://example.com/about', priority: 0.8 }
+  { url: 'https://example.com/about', priority: 0.8 },
 ];
 
 const xml = generateSitemapXml(entries);
@@ -483,10 +488,7 @@ Generates sitemap index XML for multiple sitemaps.
 **Signature:**
 
 ```typescript
-function generateSitemapIndexXml(
-  sitemapUrls: string[],
-  siteUrl: string
-): string
+function generateSitemapIndexXml(sitemapUrls: string[], siteUrl: string): string;
 ```
 
 **Parameters:**
@@ -505,7 +507,7 @@ import { generateSitemapIndexXml } from '@stati/core';
 
 const indexXml = generateSitemapIndexXml(
   ['/sitemap-1.xml', '/sitemap-2.xml'],
-  'https://example.com'
+  'https://example.com',
 );
 ```
 
@@ -518,10 +520,7 @@ Determines if auto-injection should be enabled for a page.
 **Signature:**
 
 ```typescript
-function shouldAutoInject(
-  config: StatiConfig,
-  page: PageModel
-): boolean
+function shouldAutoInject(config: StatiConfig, page: PageModel): boolean;
 ```
 
 **Parameters:**
@@ -554,7 +553,7 @@ Escapes HTML special characters for safe output.
 **Signature:**
 
 ```typescript
-function escapeHtml(text: string): string
+function escapeHtml(text: string): string;
 ```
 
 **Parameters:**
@@ -574,7 +573,7 @@ Generates robots meta tag content from SEO metadata.
 **Signature:**
 
 ```typescript
-function generateRobotsContent(seo: SEOMetadata): string | null
+function generateRobotsContent(seo: SEOMetadata): string;
 ```
 
 **Parameters:**
@@ -583,7 +582,7 @@ function generateRobotsContent(seo: SEOMetadata): string | null
 
 **Returns:**
 
-- `string | null`: Robots meta content or null if no robots config
+- `string`: Comma-separated robots directives (for example `'noindex, nofollow'`), or an empty string when there are none. A string `seo.robots` value is returned as-is, with `noindex, ` prepended when `seo.noindex` is set.
 
 ---
 
@@ -594,10 +593,7 @@ Validates SEO metadata and returns validation results.
 **Signature:**
 
 ```typescript
-function validateSEOMetadata(
-  seo: SEOMetadata,
-  pageUrl: string
-): SEOValidationResult
+function validateSEOMetadata(seo: SEOMetadata, pageUrl: string): SEOValidationResult;
 ```
 
 **Parameters:**
@@ -614,7 +610,7 @@ function validateSEOMetadata(
 ```typescript
 import { validateSEOMetadata } from '@stati/core';
 
-const result = validateSEOMetadata(page.frontMatter.seo, page.url);
+const result = validateSEOMetadata(page.frontMatter.seo ?? {}, page.url);
 
 if (!result.valid) {
   console.error('SEO validation errors:', result.errors);
@@ -631,7 +627,7 @@ Detects which SEO tag types exist in HTML content.
 **Signature:**
 
 ```typescript
-function detectExistingSEOTags(html: string): Set<SEOTagType>
+function detectExistingSEOTags(html: string): Set<SEOTagType>;
 ```
 
 **Parameters:**
@@ -645,7 +641,8 @@ function detectExistingSEOTags(html: string): Set<SEOTagType>
 **Example:**
 
 ```typescript
-import { detectExistingSEOTags, SEOTagType } from '@stati/core';
+import { detectExistingSEOTags } from '@stati/core';
+import { SEOTagType } from '@stati/core/types';
 
 const existingTags = detectExistingSEOTags(html);
 
@@ -679,7 +676,7 @@ enum SEOTagType {
 **Usage:**
 
 ```typescript
-import { SEOTagType } from '@stati/core';
+import { SEOTagType } from '@stati/core/types';
 
 const tags = [SEOTagType.Title, SEOTagType.Description];
 ```
@@ -742,13 +739,18 @@ interface SEOValidationResult {
 ```typescript
 {
   valid: false,
-  errors: ['Invalid canonical URL format'],
+  errors: ['Invalid canonical URL: example.com/page'],
   warnings: [
-    'Title is too short (< 5 characters)',
-    'Description is too long (> 160 characters)'
+    'Title is only 4 characters (recommended: 50-60)',
+    'Description is 182 characters (recommended: 150-160)'
   ]
 }
 ```
+
+`validateSEOMetadata` reports these checks:
+
+- **Errors:** `canonical` is not an `http`/`https` URL; `priority` outside 0.0–1.0; Open Graph image `width`/`height` not a positive integer
+- **Warnings:** `title` shorter than 5 or longer than 70 characters; `description` shorter than 50 or longer than 160 characters; Open Graph or Twitter image URL that is neither absolute nor starting with `/`; `structuredData` larger than 100 KB
 
 ---
 
@@ -801,14 +803,7 @@ interface SitemapGenerationResult {
 Valid values for sitemap entry change frequency.
 
 ```typescript
-type ChangeFrequency =
-  | 'always'
-  | 'hourly'
-  | 'daily'
-  | 'weekly'
-  | 'monthly'
-  | 'yearly'
-  | 'never';
+type ChangeFrequency = 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never';
 ```
 
 ---
@@ -884,13 +879,15 @@ interface SEOMetadata {
   /** Structured data (Schema.org JSON-LD) */
   structuredData?: Record<string, unknown>;
 
-  /** Sitemap priority (0.0 to 1.0) */
+  /** Validated to be 0.0-1.0, but not used by the sitemap */
   priority?: number;
 
-  /** Sitemap change frequency */
+  /** Not used by the sitemap */
   changeFreq?: ChangeFrequency;
 }
 ```
+
+To set a page's sitemap values, use the separate `sitemap` front matter block (`sitemap.priority`, `sitemap.changefreq`, `sitemap.lastmod`, `sitemap.exclude`); see [Per-page sitemap configuration](/configuration/seo#per-page-sitemap-configuration).
 
 ---
 
@@ -1068,7 +1065,7 @@ interface TwitterCardConfig {
 
 Sitemap generation configuration.
 
-```typescript
+````typescript
 interface SitemapConfig {
   /** Enable sitemap generation (default: false) */
   enabled?: boolean;
@@ -1076,7 +1073,7 @@ interface SitemapConfig {
   /** Default priority for all pages (0.0 to 1.0, default: 0.5) */
   defaultPriority?: number;
 
-  /** Default change frequency (default: 'monthly') */
+  /** Default change frequency (no default: omitted from entries unless set) */
   defaultChangeFreq?: ChangeFrequency;
 
   /** Glob patterns for pages to exclude from sitemap */
@@ -1109,18 +1106,21 @@ interface SitemapConfig {
    */
   priorityRules?: Array<{ pattern: string; priority: number }>;
 
-  /** Generate sitemap index for multiple sitemaps (default: false) */
+  /** Declared but currently not read: splitting always produces an index */
   generateIndex?: boolean;
 }
-```
+````
 
 **Notes:**
 
 - Sitemap URLs use `config.site.baseUrl` for absolute URL generation
 - `transformEntry` can return `null` to exclude an entry from the sitemap
 - `transformUrl` receives the config object as third parameter for advanced transformations
-- `excludePatterns` and `includePatterns` use glob syntax (e.g., `/blog/**`, `*.html`)
-- `priorityRules` are applied in order; first matching pattern sets the priority
+- `excludePatterns`, `includePatterns` and `priorityRules[].pattern` are matched against the page URL (`/blog/first-post`, `/` for the home page). A pattern containing `*` or `?` is a glob that must match the whole URL (`/blog/**` matches `/blog/first-post` but not `/blog`). A pattern without wildcards matches that exact URL, or any URL below it when followed by `/` (`/blog` matches `/blog` and `/blog/first-post`, but not `/blog-archive`); `/` matches only the home page
+- `priorityRules` are applied in order; first matching pattern sets the priority. A page's own `sitemap.priority` front matter wins over the rules
+- `lastmod` comes from front matter `sitemap.lastmod`, then `updated`, then `date`; `publishedAt` is not used
+- Priorities are written with one decimal place (`0.85` becomes `0.8`)
+- Above 50,000 entries the sitemap is split into `sitemap-1.xml`, `sitemap-2.xml`, … and `sitemap.xml` becomes a sitemap index
 
 ---
 
@@ -1128,7 +1128,7 @@ interface SitemapConfig {
 
 Robots.txt generation configuration.
 
-```typescript
+````typescript
 interface RobotsTxtConfig {
   /** Enable robots.txt generation (default: false) */
   enabled?: boolean;
@@ -1160,16 +1160,16 @@ interface RobotsTxtConfig {
   /** Global paths to explicitly allow (applies to all user agents) */
   allow?: string[];
 
-  /** Crawl delay in seconds */
+  /** Crawl delay in seconds (written in the `User-agent: *` group) */
   crawlDelay?: number;
 
-  /** Sitemap URL or boolean to auto-include sitemap.xml (default: true if sitemap enabled) */
+  /** `true` adds `Sitemap: <baseUrl>/sitemap.xml`; a string adds that URL; unset adds nothing */
   sitemap?: string | boolean;
 
   /** Custom lines to add to robots.txt */
   customLines?: string[];
 }
-```
+````
 
 **Example:**
 
@@ -1185,10 +1185,12 @@ interface RobotsTxtConfig {
   ],
   disallow: ['/admin/', '/private/'],
   allow: ['/api/public/'],
-  sitemap: true, // Auto-include sitemap.xml if sitemap is enabled
+  sitemap: true, // Adds "Sitemap: <baseUrl>/sitemap.xml"
   customLines: ['# Custom robots.txt directives']
 }
 ```
+
+The global `allow`, `disallow` and `crawlDelay` values form a `User-agent: *` group, written after the `userAgents` groups; within a group, `Allow` lines come before `Disallow` lines. Without any rules, Stati writes `User-agent: *` / `Allow: /`. `sitemap: true` adds the line whether or not sitemap generation is enabled, so enable `sitemap` too.
 
 ---
 
@@ -1220,7 +1222,7 @@ export default defineConfig({
     defaultChangeFreq: 'monthly',
     excludePatterns: ['/draft/**', '/admin/**'],
     filter: (page) => !page.frontMatter.draft,
-    transformUrl: (url, page, config) => url.endsWith('/') ? url : `${url}/`,
+    transformUrl: (url, page, config) => (url.endsWith('/') ? url : `${url}/`),
     priorityRules: [
       { pattern: '/', priority: 1.0 },
       { pattern: '/blog/**', priority: 0.8 },

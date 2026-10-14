@@ -95,6 +95,7 @@ describe('templates.ts', () => {
         cache: process.env.NODE_ENV === 'production',
         cacheFilepaths: process.env.NODE_ENV === 'production',
         varName: 'stati',
+        debug: false,
       });
       expect(eta).toBe(mockEtaInstance);
     });

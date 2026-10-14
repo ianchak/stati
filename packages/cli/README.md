@@ -26,8 +26,10 @@ This creates a complete Stati project with the CLI already configured in your `p
 Add Stati CLI to an existing project:
 
 ```bash
-npm install --save-dev @stati/cli
+npm install --save-dev @stati/cli @stati/core
 ```
+
+Install `@stati/core` too: your `stati.config.ts` imports `defineConfig` from it, and strict package managers such as pnpm do not expose the CLI's own copy to your project.
 
 Then add these scripts to your `package.json`:
 
@@ -50,6 +52,8 @@ npx @stati/cli dev
 npx @stati/cli build
 npx @stati/cli preview
 ```
+
+This works for a folder of Markdown and templates without a config file. A `stati.config.*` that imports `@stati/core` needs the package installed in the project; otherwise the config fails to load and Stati falls back to its defaults. Use the package name here: `npx stati` without a local install downloads an unrelated npm package called `stati`.
 
 ---
 
@@ -78,7 +82,10 @@ stati dev [options]
 - `--port <number>` - Server port (default: 3000)
 - `--host <string>` - Host address (default: localhost)
 - `--open` - Open browser automatically
-- `--config <path>` - Path to custom config file
+- `--tailwind-input <path>` - Tailwind CSS input file; starts a Tailwind watcher alongside the dev server
+- `--tailwind-output <path>` - Output file for the compiled Tailwind CSS
+- `--tailwind-verbose` - Show all Tailwind output (default: errors only)
+- `--config <path>` - Accepted, but `dev` loads the config from the current directory
 
 **Examples:**
 
@@ -89,8 +96,8 @@ npm run dev
 # Start on custom port and open browser
 stati dev --port 8080 --open
 
-# Use custom config
-stati dev --config ./my-config.js
+# Run the Tailwind watcher in the same process
+stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css
 ```
 
 ---
@@ -108,17 +115,21 @@ stati build [options]
 **What it does:**
 
 - Generates static HTML files from your content and templates
-- Optimizes output for production
+- Runs in production mode: minified, hashed TypeScript bundles
 - Uses smart caching to skip unchanged pages (ISG)
-- Creates sitemap and robots.txt (if configured)
+- Creates sitemap, robots.txt and RSS feeds (if configured)
 - Reports build statistics and performance metrics
 
 **Options:**
 
-- `--force` - Force full rebuild (keeps cache but rebuilds all pages)
-- `--clean` - Clean cache before building (fresh start)
-- `--config <path>` - Path to custom config file
+- `--force` - Re-render every page, ignoring the ISG cache (the cache is kept and updated)
+- `--clean` - Delete the output directory and the `.stati/` cache before building
+- `--config <path>` - Path to a config file; only its directory is used to find `stati.config.*`
 - `--include-drafts` - Include draft pages in the build
+- `--metrics` - Collect build metrics (also enabled by `STATI_METRICS=1`)
+- `--metrics-file <name>` - Metrics file name inside `.stati/metrics/`
+- `--metrics-detailed` - Include per-page timings in the metrics
+- `--metrics-html` - Write an HTML report next to the metrics JSON
 
 **Examples:**
 
@@ -126,7 +137,7 @@ stati build [options]
 # Standard production build
 npm run build
 
-# Clean build (removes cache first)
+# Clean build (removes dist/ and the cache first)
 stati build --clean
 
 # Force rebuild without clearing cache
@@ -158,8 +169,9 @@ stati preview [options]
 **Options:**
 
 - `--port <number>` - Server port (default: 4000)
+- `--host <string>` - Host address (default: localhost)
 - `--open` - Open browser automatically
-- `--config <path>` - Path to custom config file
+- `--config <path>` - Accepted, but `preview` loads the config from the current directory
 
 **Examples:**
 
@@ -191,9 +203,9 @@ stati invalidate [query]
 **Query Formats:**
 
 - `tag:value` - Invalidate pages with specific tag
-- `path:value` - Invalidate by path (supports prefixes)
-- `glob:pattern` - Invalidate by glob pattern
-- `age:duration` - Invalidate content younger than specified age
+- `path:value` - Invalidate cache entries whose key starts with this prefix (keys are output paths such as `/blog/post.html`)
+- `glob:pattern` - Invalidate by a glob pattern matched against the whole key
+- `age:duration` - Invalidate pages rendered within the specified period
 - No query - Clear entire cache
 
 **Examples:**
@@ -208,10 +220,10 @@ stati invalidate "path:/posts"
 # Invalidate using glob pattern
 stati invalidate "glob:/blog/**"
 
-# Invalidate recent content (younger than 3 months)
+# Invalidate pages rendered within the last 3 months
 stati invalidate "age:3months"
 
-# Invalidate week-old content
+# Invalidate pages rendered within the last week
 stati invalidate "age:1week"
 
 # Multiple criteria (OR logic)
@@ -223,10 +235,10 @@ stati invalidate
 
 **Age Formats:**
 
-- `age:30days` or `age:30day` - Content younger than 30 days
-- `age:2weeks` or `age:2week` - Content younger than 2 weeks
-- `age:6months` or `age:6month` - Content younger than 6 months
-- `age:1year` or `age:1years` - Content younger than 1 year
+- `age:30days` or `age:30day` - Rendered within the last 30 days
+- `age:2weeks` or `age:2week` - Rendered within the last 2 weeks
+- `age:6months` or `age:6month` - Rendered within the last 6 months
+- `age:1year` or `age:1years` - Rendered within the last year
 
 **Note:** Age calculations use exact calendar arithmetic. Months and years account for varying month lengths and leap years.
 
@@ -261,7 +273,7 @@ stati invalidate
    - Edit `site/index.md` for your homepage content
    - Modify `site/layout.eta` for your HTML structure
    - Update `public/styles.css` for styling
-   - Configure `stati.config.js` for site settings
+   - Configure `stati.config.ts` (or `stati.config.js`) for site settings
 
 5. **Build for production:**
 
@@ -300,7 +312,7 @@ npm run build
 
 ```bash
 # Clean build for production
-npm run build -- --clean
+npx stati build --clean
 
 # Test production build locally
 npm run preview
@@ -319,7 +331,7 @@ stati invalidate "tag:blog"
 npm run build
 
 # Or do a clean build
-npm run build -- --clean
+npx stati build --clean
 ```
 
 ---
@@ -337,7 +349,7 @@ npm run build -- --clean
 ## Requirements
 
 - **Node.js** ^22.12.0 || >=24
-- **npm** 11.5.1 or higher (or equivalent package manager)
+- **A package manager**: npm, pnpm, yarn or bun
 
 ---
 

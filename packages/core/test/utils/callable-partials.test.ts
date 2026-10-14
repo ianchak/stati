@@ -1,9 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Eta } from 'eta';
 import {
   makeCallablePartial,
   wrapPartialsAsCallable,
 } from '../../src/core/utils/callable-partials.utils.js';
+import { UnknownTemplatePropertyError } from '../../src/core/utils/context-validation.utils.js';
+import { setEnv, getEnv } from '../../src/env.js';
 
 describe('Callable Partials', () => {
   let mockEta: Eta;
@@ -581,6 +583,78 @@ describe('Callable Partials', () => {
       // Should contain error comment instead of crashing
       expect(result).toContain('<!-- Error rendering partial');
 
+      consoleErrorSpy.mockRestore();
+    });
+  });
+
+  describe('Development mode errors', () => {
+    let originalEnv: ReturnType<typeof getEnv>;
+
+    beforeEach(() => {
+      originalEnv = getEnv();
+    });
+
+    afterEach(() => {
+      setEnv(originalEnv);
+    });
+
+    it('rethrows render errors in development so they reach the error overlay', () => {
+      setEnv('development');
+      const failure = new Error('Render failed');
+      vi.spyOn(mockEta, 'render').mockImplementation(() => {
+        throw failure;
+      });
+
+      const callable = makeCallablePartial(mockEta, 'card.eta', baseContext, '');
+
+      expect(() => callable({ title: 'x' })).toThrow(failure);
+    });
+
+    it('validates the context of a partial called with props in development', () => {
+      setEnv('development');
+      vi.spyOn(mockEta, 'render').mockImplementation((_path, data) => {
+        return String((data as Record<string, unknown>).paeg);
+      });
+
+      const callable = makeCallablePartial(mockEta, 'card.eta', baseContext, '');
+
+      expect(() => callable({ title: 'x' })).toThrow(UnknownTemplatePropertyError);
+    });
+
+    it('validates stati.partials inside a partial rendered with props', () => {
+      setEnv('development');
+      let partialsInContext: Record<string, unknown> | undefined;
+      vi.spyOn(mockEta, 'render').mockImplementation((_path, data) => {
+        partialsInContext = (data as Record<string, Record<string, unknown>>).partials;
+        return '';
+      });
+
+      const wrapped = wrapPartialsAsCallable(
+        mockEta,
+        { card: '', badge: '' },
+        { card: 'card.eta', badge: 'badge.eta' },
+        baseContext,
+      );
+      wrapped.card?.({ title: 'x' });
+
+      expect(typeof partialsInContext?.badge).toBe('function');
+      const missing = partialsInContext?.bagde as (props?: object) => string;
+      expect(missing({ label: 'x' })).toContain('bagde');
+      expect(missing({ label: 'x' })).toContain('badge');
+    });
+
+    it('returns an HTML comment outside development', () => {
+      setEnv('production');
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      vi.spyOn(mockEta, 'render').mockImplementation(() => {
+        throw new Error('Render failed');
+      });
+
+      const callable = makeCallablePartial(mockEta, 'card.eta', baseContext, '');
+
+      expect(callable({ title: 'x' })).toBe(
+        '<!-- Error rendering partial with props: Render failed -->',
+      );
       consoleErrorSpy.mockRestore();
     });
   });

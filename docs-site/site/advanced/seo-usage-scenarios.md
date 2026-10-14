@@ -1,7 +1,6 @@
 ---
 title: 'SEO scenarios'
 description: Learn different strategies for using SEO features in your Stati project, from automatic to fully custom control
-layout: layout.eta
 order: 2
 seo:
   title: 'SEO usage scenarios'
@@ -186,7 +185,7 @@ seo:
       height: 630
     type: article
     article:
-      publishedTime: 2025-01-15T10:00:00Z
+      publishedTime: '2025-01-15T10:00:00Z'
       author: Jane Doe
       section: Web Development
       tags: [tutorial, static-sites, jamstack]
@@ -198,7 +197,7 @@ seo:
     '@context': https://schema.org
     '@type': Article
     headline: Complete Guide to Static Sites
-    datePublished: 2025-01-15T10:00:00Z
+    datePublished: '2025-01-15T10:00:00Z'
     author:
       '@type': Person
       name: Jane Doe
@@ -282,13 +281,13 @@ Keep auto-injection enabled but manually override specific SEO tags when needed.
 <html>
 <head>
   <!-- Custom OG image tag -->
-  <meta property="og:image" content="<%= stati.site.baseUrl %>/custom-og.jpg">
+  <meta property="og:image" content="<%= `${stati.site.baseUrl}/custom-og.jpg` %>">
 
   <!-- Stati detects OG tag and SKIPS all Open Graph generation -->
   <!-- You must add other OG tags manually -->
   <meta property="og:title" content="<%= stati.page.title %>">
   <meta property="og:description" content="<%= stati.page.description %>">
-  <meta property="og:url" content="<%= stati.site.baseUrl %><%= stati.page.url %>">
+  <meta property="og:url" content="<%= stati.site.baseUrl + stati.page.url %>">
 
   <!-- Stati still auto-generates: title, description, canonical, Twitter, etc. -->
 </head>
@@ -338,11 +337,11 @@ Keep auto-injection enabled but manually override specific SEO tags when needed.
     <meta property="og:image:alt" content="<%= stati.page.ogImageAlt || stati.page.title %>">
     <meta property="og:title" content="<%= stati.page.title %>">
     <meta property="og:description" content="<%= stati.page.description %>">
-    <meta property="og:url" content="<%= stati.site.baseUrl %><%= stati.page.url %>">
+    <meta property="og:url" content="<%= stati.site.baseUrl + stati.page.url %>">
     <meta property="og:type" content="article">
   <% } %>
 
-  <!-- Stati auto-generates: title, description, canonical, Twitter (if no OG) -->
+  <!-- Stati auto-generates: title, description, canonical, Twitter Card tags -->
 </head>
 <body>
   <%~ stati.content %>
@@ -406,7 +405,7 @@ export default defineConfig({
   <%~ stati.generateSEO(['title', 'description']) %>
 
   <!-- Add custom tags -->
-  <link rel="canonical" href="<%= stati.site.baseUrl %><%= stati.page.url %>">
+  <link rel="canonical" href="<%= stati.site.baseUrl + stati.page.url %>">
   <meta name="custom-meta" content="custom value">
 </head>
 <body>
@@ -417,6 +416,8 @@ export default defineConfig({
 
 ### Example 2: Generate basic SEO + custom social
 
+`ogImageName` is a custom front matter field in this example (for example `ogImageName: launch-post`).
+
 ```html
 <!-- site/layout.eta -->
 <!DOCTYPE html>
@@ -426,14 +427,14 @@ export default defineConfig({
   <%~ stati.generateSEO(['title', 'description', 'canonical', 'author']) %>
 
   <!-- Custom Open Graph -->
-  <meta property="og:title" content="<%= stati.page.title %> | <%= stati.site.title %>">
-  <meta property="og:image" content="<%= stati.site.baseUrl %>/images/og-<%= stati.page.slug %>.jpg">
+  <meta property="og:title" content="<%= `${stati.page.title} | ${stati.site.title}` %>">
+  <meta property="og:image" content="<%= `${stati.site.baseUrl}/images/og-${stati.page.ogImageName}.jpg` %>">
   <meta property="og:type" content="article">
 
   <!-- Custom Twitter -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@mysite">
-  <meta name="twitter:image" content="<%= stati.site.baseUrl %>/images/twitter-<%= stati.page.slug %>.jpg">
+  <meta name="twitter:image" content="<%= `${stati.site.baseUrl}/images/twitter-${stati.page.ogImageName}.jpg` %>">
 </head>
 <body>
   <%~ stati.content %>
@@ -533,18 +534,18 @@ export default defineConfig({
   <% } %>
 
   <!-- Manual canonical -->
-  <link rel="canonical" href="<%= stati.site.baseUrl %><%= stati.page.url %>">
+  <link rel="canonical" href="<%= stati.site.baseUrl + stati.page.url %>">
 
   <!-- Manual Open Graph -->
   <meta property="og:title" content="<%= stati.page.title || stati.site.title %>">
   <% if (stati.page.description) { %>
   <meta property="og:description" content="<%= stati.page.description %>">
   <% } %>
-  <meta property="og:url" content="<%= stati.site.baseUrl %><%= stati.page.url %>">
+  <meta property="og:url" content="<%= stati.site.baseUrl + stati.page.url %>">
   <meta property="og:type" content="<%= stati.page.type || 'website' %>">
 
   <% if (stati.page.ogImage) { %>
-    <meta property="og:image" content="<%= stati.site.baseUrl %><%= stati.page.ogImage %>">
+    <meta property="og:image" content="<%= stati.site.baseUrl + stati.page.ogImage %>">
     <% if (stati.page.ogImageWidth) { %>
       <meta property="og:image:width" content="<%= stati.page.ogImageWidth %>">
     <% } %>
@@ -561,13 +562,13 @@ export default defineConfig({
     <meta name="twitter:description" content="<%= stati.page.description %>">
   <% } %>
   <% if (stati.page.twitterImage || stati.page.ogImage) { %>
-    <meta name="twitter:image" content="<%= stati.site.baseUrl %><%= stati.page.twitterImage || stati.page.ogImage %>">
+    <meta name="twitter:image" content="<%= stati.site.baseUrl + (stati.page.twitterImage || stati.page.ogImage) %>">
   <% } %>
 
-  <!-- Manual structured data -->
+  <!-- Manual structured data (escape "<" so the JSON cannot close the script tag) -->
   <% if (stati.page.schema) { %>
     <script type="application/ld+json">
-      <%~ JSON.stringify(stati.page.schema, null, 2) %>
+      <%~ JSON.stringify(stati.page.schema, null, 2).replace(/</g, '\\u003c') %>
     </script>
   <% } %>
 
@@ -599,7 +600,7 @@ export default defineConfig({
 **Disadvantages:**
 
 - More code to maintain
-- Manual escaping required for user input
+- You must keep using `<%= %>` (escaped) for values; `<%~ %>` prints them unescaped
 - No automatic fallbacks
 - Higher chance of errors (missing tags, typos)
 - More testing required
@@ -666,12 +667,13 @@ After implementing SEO, validate your setup:
 
 **Issue:** Sitemap not generated
 
-**Solution:** Ensure sitemap is enabled and baseUrl is set:
+**Solution:** Ensure sitemap is enabled, `site.baseUrl` is set, and you ran a production build (`stati build`; the dev server does not write `sitemap.xml`):
 
 ```typescript
 export default defineConfig({
   site: {
-    baseUrl: 'https://example.com' // Required for sitemap URLs
+    title: 'My Site',
+    baseUrl: 'https://example.com' // Used for the sitemap URLs
   },
   sitemap: {
     enabled: true,

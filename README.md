@@ -47,9 +47,9 @@ Stati uses a simple file-based structure:
 my-site/
 ├── site/           # Your content (Markdown + templates)
 │   ├── index.md    # Homepage
-│   └── about.md    # About page → /about/
+│   └── about.md    # About page → /about
 ├── public/         # Static assets (CSS, images, fonts)
-├── src/            # TypeScript source (optional, with --typescript)
+├── src/            # Client-side TypeScript (created by default; not with --no-typescript)
 └── stati.config.js # Optional configuration (or .ts for TypeScript)
 ```
 
@@ -66,8 +66,8 @@ This is my first page. It's just Markdown.
 
 **Pages are automatically routed:**
 - `site/index.md` → `/`
-- `site/blog/hello.md` → `/blog/hello/`
-- `site/about.md` → `/about/`
+- `site/blog/hello.md` → `/blog/hello` (written to `dist/blog/hello.html`)
+- `site/about.md` → `/about`
 
 ---
 
@@ -159,7 +159,7 @@ npm run dev -- --port 8080 --open
 
 # Production
 npm run build            # Build site for production
-npm run build -- --clean --force
+npx stati build --clean --force  # Pass flags to stati directly
 
 # Preview
 npm run preview          # Test production build locally
@@ -238,8 +238,8 @@ export default defineConfig({
     ttlSeconds: 86400,        // Cache TTL: 24 hours (default: 21600 / 6 hours)
     maxAgeCapDays: 30,        // Max age for aging rules (default: 365)
     aging: [
-      { untilDays: 7, ttlSeconds: 86400 },   // 1 day cache for week-old content
-      { untilDays: 30, ttlSeconds: 604800 }, // 1 week cache for month-old content
+      { untilDays: 7, ttlSeconds: 86400 },   // up to 7 days old: 1 day
+      { untilDays: 30, ttlSeconds: 604800 }, // up to 30 days old (and older): 1 week
     ],
   },
 
@@ -394,7 +394,9 @@ Each package can be used independently or together for the complete Stati experi
 ## Requirements
 
 - **Node.js** 22.12.0 or higher on the 22.x line, or 24 and later
-- **npm** 11.5.1 or higher (or equivalent package manager)
+- **A package manager**: npm, pnpm, yarn or bun
+
+Contributing to this repository needs Node.js 22.13.0+ or 24+ and npm 11.5.1+ (see [Contributing](#contributing)).
 
 ---
 

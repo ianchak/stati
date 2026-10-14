@@ -64,9 +64,7 @@ layout: 'post'
 
 ### Syntax highlighting
 
-Code blocks in markdown are rendered with language class attributes. To add syntax highlighting, you need to include a client-side library like Prism.js or Highlight.js in your templates.
-
-Stati automatically adds language classes to code blocks:
+Code blocks in markdown are rendered with language class attributes, without highlighting:
 
 ```html
 <!-- Rendered output for code blocks -->
@@ -75,13 +73,9 @@ Stati automatically adds language classes to code blocks:
 </code></pre>
 ```
 
-**To add syntax highlighting:**
+To highlight code, either add the `markdown-it-prism` plugin, which highlights at build time with no browser JavaScript (see [Syntax highlighting](/configuration/markdown#syntax-highlighting)), or load a client-side library that picks up the `language-*` classes:
 
-1. Choose a highlighting library (Prism.js, Highlight.js, etc.)
-2. Include the library CSS and JS in your layout template
-3. Code blocks will be automatically highlighted client-side
-
-**Example with Prism.js:**
+**Example with Prism.js in the browser:**
 
 ```eta
 <!-- In your layout.eta -->
@@ -125,46 +119,32 @@ npm run build
 Create tables using standard markdown table syntax:
 
 ```markdown
-| Feature        | Stati          | Other SSGs  |
-| -------------- | -------------- | ----------- |
-| TypeScript     | ✅ First-class | ⚠️ Add-on   |
-| ISG            | ✅ Built-in    | ❌ Manual   |
-| esbuild        | ✅ Integrated  | ⚠️ Optional |
-| Simplicity     | ✅ Minimal     | 📦 Varies   |
+| Command         | Purpose                    |
+| --------------- | -------------------------- |
+| `stati dev`     | Development server         |
+| `stati build`   | Production build           |
+| `stati preview` | Serve the built site       |
 ```
 
 Renders as:
 
-| Feature        | Stati          | Other SSGs  |
-| -------------- | -------------- | ----------- |
-| TypeScript     | ✅ First-class | ⚠️ Add-on   |
-| ISG            | ✅ Built-in    | ❌ Manual   |
-| esbuild        | ✅ Integrated  | ⚠️ Optional |
-| Simplicity     | ✅ Minimal     | 📦 Varies   |
+| Command         | Purpose                    |
+| --------------- | -------------------------- |
+| `stati dev`     | Development server         |
+| `stati build`   | Production build           |
+| `stati preview` | Serve the built site       |
 
 ### Task lists
 
-Create interactive checkboxes:
-
-```markdown
-- [x] Completed task
-- [ ] Pending task
-- [x] Another completed task
-- [ ] Future task
-```
-
-- [x] Completed task
-- [ ] Pending task
-- [x] Another completed task
-- [ ] Future task
+Task list syntax (`- [x] Done`) is **not** supported out of the box: markdown-it renders the brackets as text. Add a markdown-it task-list plugin through `markdown.plugins` or `configure` if you need checkboxes.
 
 ### Auto-linking
 
-URLs and email addresses are automatically converted to links:
+URLs with a scheme (`https://stati.build`) are converted to links. Bare domains and email addresses (`example.com`, `hello@example.com`) are linked too, but only when their top-level domain is a common one such as `.com`, `.org` or `.net`; `stati.build` or `hello@stati.build` stay plain text. Write a Markdown link when in doubt:
 
 ```markdown
 Visit https://stati.build for more information.
-Contact us at hello@stati.build for support.
+Contact us at [hello@stati.build](mailto:hello@stati.build) for support.
 ```
 
 ### Typography enhancements
@@ -222,8 +202,8 @@ export default defineConfig({
   markdown: {
     // Plugins array - Stati auto-prepends 'markdown-it-'
     plugins: [
-      'footnote',               // Plugin name only
-      ['emoji', { shortcuts: {} }],  // Plugin with options
+      'footnote',                                   // Plugin name only
+      ['container', 'tip'],                         // Plugin with an argument
     ],
 
     // Custom markdown-it configuration
@@ -234,7 +214,7 @@ export default defineConfig({
       // Add custom rendering rules
       md.renderer.rules.code_inline = (tokens, idx) => {
         const token = tokens[idx];
-        return `<code class="inline-code">${token.content}</code>`;
+        return `<code class="inline-code">${md.utils.escapeHtml(token.content)}</code>`;
       };
     },
 
@@ -244,7 +224,7 @@ export default defineConfig({
 });
 ```
 
-> **Note:** HTML tags, linkify, and typographer are enabled by default in Stati and cannot be disabled. TOC extraction and heading anchors are also built-in.
+> **Note:** HTML tags, linkify, and typographer are enabled by default; change them with `md.set()` in `configure`. TOC extraction and heading anchors are built in and controlled by `markdown.toc`.
 
 ### Advanced configuration
 
@@ -256,18 +236,17 @@ export default defineConfig({
       // Add custom rules
       md.renderer.rules.code_inline = (tokens, idx) => {
         const token = tokens[idx];
-        return `<code class="inline-code">${token.content}</code>`;
+        return `<code class="inline-code">${md.utils.escapeHtml(token.content)}</code>`;
       };
 
       // Add custom plugins
       md.use(customPlugin, options);
 
-      // Modify existing rules
-      const defaultCodeBlockRule = md.renderer.rules.code_block;
-      md.renderer.rules.code_block = (tokens, idx, options, env) => {
-        const token = tokens[idx];
-        const langClass = token.info ? ` class="language-${token.info}"` : '';
-        return `<pre${langClass}><code>${token.content}</code></pre>`;
+      // Wrap fenced code blocks (``` blocks use the "fence" rule)
+      const defaultFence = md.renderer.rules.fence;
+      md.renderer.rules.fence = (tokens, idx, options, env, self) => {
+        const html = defaultFence(tokens, idx, options, env, self);
+        return `<div class="code-block">${html}</div>`;
       };
     },
   },
@@ -278,32 +257,34 @@ export default defineConfig({
 
 ### Creating a plugin
 
+A markdown-it plugin is a function that receives the `md` instance. This one adds an `alert` class to blockquotes that start with `[!NOTE]`, `[!TIP]` or `[!WARNING]`, and removes the marker:
+
 ```javascript
-// plugins/custom-alerts.js
-function alertPlugin(md, options = {}) {
-  const defaultRender =
-    md.renderer.rules.blockquote_open ||
-    function (tokens, idx, options, env, renderer) {
-      return renderer.renderToken(tokens, idx, options);
-    };
-
-  md.renderer.rules.blockquote_open = function (tokens, idx, options, env, renderer) {
-    const token = tokens[idx];
-    const nextToken = tokens[idx + 1];
-
-    if (nextToken && nextToken.content.startsWith('[!')) {
-      const match = nextToken.content.match(/^\[!(.*?)\]/);
-      if (match) {
-        const alertType = match[1].toLowerCase();
-        return `<div class="alert alert-${alertType}">`;
+// plugins/alerts.js
+export function alertPlugin(md) {
+  md.core.ruler.push('alerts', (state) => {
+    const tokens = state.tokens;
+    for (let i = 0; i < tokens.length; i++) {
+      if (tokens[i].type !== 'blockquote_open') continue;
+      // blockquote_open → paragraph_open → inline
+      const inline = tokens[i + 2];
+      const match = inline?.type === 'inline' && inline.content.match(/^\[!(NOTE|TIP|WARNING)\]/);
+      if (!match) continue;
+      tokens[i].attrJoin('class', `alert alert-${match[1].toLowerCase()}`);
+      // Remove the [!TYPE] marker (and the line break after it)
+      const children = inline.children ?? [];
+      if (children[0]?.type === 'text') {
+        children[0].content = children[0].content.slice(match[0].length).trimStart();
+        if (!children[0].content) children.splice(0, children[1]?.type === 'softbreak' ? 2 : 1);
       }
     }
-
-    return defaultRender(tokens, idx, options, env, renderer);
-  };
+  });
 }
 
-// Usage in config
+// stati.config.js
+import { defineConfig } from '@stati/core';
+import { alertPlugin } from './plugins/alerts.js';
+
 export default defineConfig({
   markdown: {
     configure(md) {
@@ -321,10 +302,9 @@ export default defineConfig({
 
 > [!WARNING]
 > This is a warning alert.
-
-> [!TIP]
-> This is a tip alert.
 ```
+
+Each renders as `<blockquote class="alert alert-note">…</blockquote>`, ready for your CSS.
 
 ## Content processing
 

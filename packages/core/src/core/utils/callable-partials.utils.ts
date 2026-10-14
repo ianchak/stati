@@ -1,4 +1,7 @@
 import { Eta } from 'eta';
+import { isDevelopment } from '../../env.js';
+import { createValidatingContextProxy } from './context-validation.utils.js';
+import { createValidatingPartialsProxy } from './partial-validation.utils.js';
 
 /**
  * Type definition for a callable partial function.
@@ -52,16 +55,21 @@ export function makeCallablePartial(
 
     // Props provided - re-render with merged context
     try {
-      const mergedContext = {
+      const mergedContext = createValidatingContextProxy({
         ...baseContext,
         props, // Make props available as stati.props
-      };
+      });
 
       // Render the partial with the merged context using renderAsync
       // This is a synchronous call despite the name when used with already-loaded templates
       const result = eta.render(partialPath, mergedContext);
       return result || '';
     } catch (error) {
+      // In development, let the error reach the calling template so it ends up
+      // in the error overlay instead of a hidden HTML comment
+      if (isDevelopment()) {
+        throw error;
+      }
       console.error(`Error rendering callable partial ${partialPath} with props:`, error);
       return `<!-- Error rendering partial with props: ${error instanceof Error ? error.message : String(error)} -->`;
     }
@@ -126,12 +134,13 @@ export function wrapPartialsAsCallable(
   const callablePartials: Record<string, CallablePartial> = {};
 
   // Create a context that will have partials updated to the callable versions
-  // This enables nested callable partial calls
+  // This enables nested callable partial calls. The getter runs when a partial is
+  // rendered with props, after all callables exist, and wraps them in the same
+  // validating proxy that layouts and pre-rendered partials get.
   const contextWithCallablePartials: Record<string, unknown> = {
     ...baseContext,
-    // The partials property will be updated after all callables are created
     get partials() {
-      return callablePartials;
+      return createValidatingPartialsProxy(callablePartials);
     },
   };
 

@@ -8,29 +8,30 @@ order: 5
 
 Common errors you may encounter when using Stati and how to fix them.
 
-## Error: `stati.config.ts` not found
+## Site uses the default title or `localhost` URLs
 
 **Cause:**
-Stati could not find a configuration file in the current directory.
+Stati did not use your configuration. Without a `stati.config.ts`, `stati.config.js` or `stati.config.mjs` in the current directory, Stati silently uses its defaults (site title "My Stati Site", base URL `http://localhost:3000`). If the file exists but fails to load, the build prints the error followed by "Falling back to default configuration." and continues with the defaults.
 
 **Solution:**
 
-1. Ensure `stati.config.ts` (or `stati.config.js`) exists in your project root
-2. Run commands from the project root directory
-3. If using a custom path, specify it with `--config`: `stati build --config ./config/stati.config.ts`
+1. Run commands from the project root, where the config file is
+2. Read the start of the build output for "Error loading config" and fix the reported error
+3. Use one of the standard file names; `--config` cannot point to a file with another name (see [Config file location](/cli/commands#config-file-location))
+4. A `.js` config that uses `import` needs `"type": "module"` in `package.json` (or rename it to `.mjs`)
 
 ---
 
-## Error: `layout.eta` not found
+## Page renders with the wrong layout or no styling
 
 **Cause:**
-A page references a layout that doesn't exist.
+A `layout` named in front matter that does not exist is ignored without an error: Stati falls back to the nearest `layout.eta`. If no layout exists at all, Stati logs "No layout template found, using fallback" and writes a bare HTML page.
 
 **Solution:**
 
-1. Check the `layout` field in your page's frontmatter
+1. Check the `layout` field in your page's front matter
 2. Ensure the layout file exists in `site/` (e.g., `site/layout.eta`)
-3. Use paths relative to `site/` **without** the `.eta` extension: `layout: layout` or `layout: layouts/blog`
+3. Use paths relative to `site/` **without** the `.eta` extension: `layout: post` or `layout: layouts/blog`
 
 ---
 
@@ -43,7 +44,8 @@ Invalid Eta template syntax.
 
 1. Check for unclosed tags: `<%` must have matching `%>`
 2. Use `<%~` for unescaped output (HTML), `<%=` for escaped output
-3. Avoid partial dynamic attributes (see [Dynamic Attribute Values](/core-concepts/templates#dynamic-attribute-values))
+3. Write JavaScript only inside `<% %>`: TypeScript annotations and `as` casts are syntax errors in templates
+4. Read the data from `stati`, not Eta's default `it`
 
 ---
 
@@ -55,7 +57,7 @@ Full rebuilds on every change, or ISG cache may be corrupted.
 **Solution:**
 
 1. ISG is enabled by default; if disabled, re-enable with `isg: { enabled: true }` in `stati.config.ts`
-2. Use `stati dev` during development for hot reload
+2. Use `stati dev` during development for incremental rebuilds and live reload
 3. Run `npm run clean` then `stati build` if cache is corrupted
 
 ---
@@ -136,8 +138,21 @@ RSS feeds are only generated during production builds, not in development mode.
 
 1. Run `stati build` (not `stati dev`) to generate the RSS feed
 2. Ensure `rss.enabled: true` is set in your `stati.config.ts`
-3. Verify `site.baseUrl` is configured (required for RSS URLs)
-4. Check the `dist/` directory for your configured feed file(s) (filename is set in `rss.feeds[].filename`)
+3. Verify `site.baseUrl` is configured (used for RSS URLs)
+4. Check the build output for "RSS configuration validation failed": any validation error stops all feeds
+5. Check the `dist/` directory for your configured feed file(s) (filename is set in `rss.feeds[].filename`)
+
+---
+
+## RSS feed is empty
+
+**Cause:**
+`contentPatterns` and `excludePatterns` are matched against each page's absolute source file path. A pattern such as `'blog/**'` never matches.
+
+**Solution:**
+
+1. Start folder patterns with `**/`: `contentPatterns: ['**/blog/**']`
+2. Check that `excludePatterns` and `filter` do not remove every page
 
 ---
 
@@ -177,11 +192,12 @@ Navigation generation may have failed or pages are excluded.
 
 **Solution:**
 
-1. Ensure pages have valid frontmatter with `title` field
+1. Give pages a `title` in front matter; without one, the node is labeled with the file name
 2. Check that pages don't have `draft: true` (unless using `--include-drafts`)
 3. Verify markdown files have `.md` extension
-4. Files/folders starting with `_` are excluded from navigation
-5. Check for frontmatter parsing errors in build output
+4. Folders starting with `_` are excluded from pages and navigation (individual files starting with `_` are not)
+5. Check for front matter parsing errors in build output
+6. Remember that every folder of pages is a top-level node in `stati.nav.tree`; nested folders are not inside their parent's `children` (see [Navigation](/api/navigation#tree-shape))
 
 ---
 
@@ -221,7 +237,7 @@ hooks: {
       console.error('Hook failed:', error);
       // Decide: throw to stop build, or continue
     }
-  }
+  };
 }
 ```
 
@@ -242,26 +258,21 @@ Tailwind watcher may not be started or is misconfigured.
 
 ---
 
-## Partial interpolation in template attributes
+## Dynamic Tailwind classes missing from the CSS
 
 **Cause:**
-Eta templates don't support mixing static and dynamic text within attribute values like `class="bg-<%= color %>-500"`.
+Tailwind finds class names by scanning your files, so a class assembled at render time, such as `class="bg-<%= color %>-500"`, is never seen.
 
 **Solution:**
 
-1. Use template literals for the entire attribute value:
+1. Build the classes with `stati.propValue()`, which records every class it returns in `.stati/tailwind-classes.html` when Tailwind is detected:
 
    ```eta
-   class="<%= `bg-${color}-500` %>"
+   class="<%= stati.propValue('base-class', `bg-${color}-500`, isActive && 'active') %>"
    ```
 
-2. For multiple classes, use `stati.propValue()`:
-
-   ```eta
-   class="<%= stati.propValue('base-class', `hover:bg-${color}-300`, isActive && 'active') %>"
-   ```
-
-3. See [Dynamic Attribute Values](/core-concepts/templates#dynamic-attribute-values) for details
+2. Add `./.stati/tailwind-classes.html` to the `content` array in `tailwind.config.js` (projects scaffolded with Tailwind already have it)
+3. See [Tailwind CSS integration](/core-concepts/static-assets#tailwind-css-integration) and [Dynamic attribute values](/core-concepts/templates#dynamic-attribute-values) for details
 
 ---
 

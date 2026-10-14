@@ -88,6 +88,29 @@ The public `TemplateContext` type is not the complete runtime shape (notably
 `partials` is typed as strings in the checked version). Do not infer that
 callable partials are unsupported, or that any arbitrary context property exists.
 
+### Unknown-property check in development
+
+In core versions after 1.26.2, the dev server wraps the context in a validating
+proxy. Reading a `stati.*` property that does not exist throws, and the error
+overlay shows the template file, line, and a "Did you mean" suggestion
+(`stati.paeg` → `stati.page`, `stati.title` → `stati.page.title`, `stati.header`
+→ `stati.partials.header`, misspelled filters). It checks top-level keys
+(including `eta.filters`) and the keys of
+`site`, `nav`, `collection`, and `generator`. Unset optional `SiteConfig` fields
+(`description`, `defaultLocale`) are allowed. It does **not** check frontmatter
+under `stati.page`, code that doesn't run on the current page, or production builds.
+
+Consequences for template code:
+
+- Test for an optional filter or property with `'name' in stati`. A read such as
+  `typeof stati.myFilter` or `stati.myFilter ?? fallback` throws in dev when the
+  key is absent.
+- `stati.props` is always present (undefined without props), so
+  `stati.props?.title` and `if (!stati.props) return;` are safe.
+- A typo now fails the dev build instead of printing `undefined`. Production is
+  unchanged: the same typo still renders `undefined` or falls back to the
+  fallback layout, so fix what the dev overlay reports before shipping.
+
 ## Layout selection
 
 For a page, the runtime:
@@ -244,7 +267,10 @@ not be hidden by optional checks.
 Check both logs and output. Layout failures can produce fallback documents;
 failed pre-renders can produce `<!-- Error rendering partial: ... -->`;
 callable failures log to the console and return an error comment even when the
-overall build completes. Treat all of these as validation failures.
+overall build completes. Treat all of these as validation failures. In core
+versions after 1.26.2, a callable (props) render failure in the dev server is
+rethrown instead, so it reaches the error overlay; production builds still return
+the comment.
 
 ## Native Eta includes: advanced, not the Stati component API
 

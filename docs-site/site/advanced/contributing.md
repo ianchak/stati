@@ -56,15 +56,15 @@ stati/
 ├── packages/
 │   ├── core/              # Core Stati engine
 │   │   ├── src/
-│   │   ├── tests/
+│   │   ├── test/
 │   │   └── package.json
 │   ├── cli/               # Command-line interface
 │   │   ├── src/
-│   │   ├── tests/
+│   │   ├── test/
 │   │   └── package.json
 │   └── create-stati/      # Project scaffolder
 │       ├── src/
-│       ├── tests/
+│       ├── test/
 │       └── package.json
 ├── examples/              # Example projects (bundled with the scaffolder)
 │   ├── blog/
@@ -129,10 +129,10 @@ npm test
 npm test -- --coverage
 
 # Run specific test file
-npm test -- packages/core/src/__tests__/build.test.ts
+npm test -- packages/core/test/core/build.test.ts
 
 # Run tests in watch mode
-npm test -- --watch
+npx vitest
 ```
 
 ### CI pipeline
@@ -183,7 +183,7 @@ stati build --metrics --metrics-detailed # Include per-page timings
 - **Totals:** Duration, peak RSS, heap usage
 - **Phases:** Config load, content discovery, rendering, asset copy, etc.
 - **Counts:** Pages rendered, cache hits/misses, assets copied
-- **ISG:** Cache hit rate, skipped pages, rebuild reasons
+- **ISG:** Whether ISG is enabled, cache hit rate, manifest entries, invalidated entries
 - **Per-page timing** (when `--metrics-detailed` is used)
 
 Metrics are written to `.stati/metrics/` as JSON files with timestamps. Use these to diagnose slow builds or cache inefficiencies.
@@ -230,56 +230,60 @@ Brief description of changes
 
 ### Commit messages
 
-We use [Conventional Commits](https://www.conventionalcommits.org/):
+We use [Conventional Commits](https://www.conventionalcommits.org/), and a `commit-msg` hook enforces the format:
 
 ```bash
-# Format: <type>(<scope>): <description>
+# Format: <type>(<scope>): <subject>
 
 # Examples:
 feat(core): add ISG aging algorithm
 fix(cli): resolve build output path issue
-docs(readme): update installation instructions
+docs(docs): update installation instructions
 test(core): add markdown processing tests
-refactor(templates): improve Eta helper organization
+feat(core)!: rename the isg.ttl option
 ```
+
+**Rules:**
+
+- One line only: no body, no trailers such as `Co-Authored-By:` or `Signed-off-by:`, and no closing keywords such as `Closes #123`. Put details, issue links and co-author credits in the pull request description. The changeset generator reads every line of a commit as a separate change.
+- Imperative mood, subject of 72 characters or less.
+- Scope is usually the package (`core`, `cli`, `create-stati`) or an area such as `isg`, `search` or `docs`.
+- Mark breaking changes with `!` after the type. A `BREAKING CHANGE:` footer is rejected.
 
 **Types:**
 
-- `feat` - New features
+- `feat` - New features (minor release)
 - `fix` - Bug fixes
 - `docs` - Documentation changes
-- `test` - Test additions/changes
+- `style` - Formatting changes
 - `refactor` - Code refactoring
 - `perf` - Performance improvements
+- `test` - Test additions/changes
+- `build` - Build system and dependencies
+- `ci` - CI configuration
 - `chore` - Maintenance tasks
+- `revert` - Reverting a previous commit
+
+Every type except `feat` produces a patch release, and `!` produces a major release.
 
 ## Development guidelines
 
 ### TypeScript standards
 
 ```typescript
-// Use strict TypeScript
-interface StatiConfig {
-  site: SiteConfig;
-  markdown?: MarkdownConfig;
-  // ... other properties
-}
-
-// Prefer interfaces over types
-interface BuildResult {
-  pageCount: number;
-  buildTime: number;
-  cacheHitRate: number;
+// Use strict TypeScript and prefer interfaces for object shapes
+export interface BuildResult extends BuildStats {
+  /** Build metrics (only present when metrics are enabled) */
+  buildMetrics?: BuildMetrics;
 }
 
 // Use JSDoc for public APIs
 /**
- * Build a Stati site
- * @param config - Site configuration
+ * Builds the site in the current working directory.
  * @param options - Build options
- * @returns Build result with statistics
+ * @returns Build statistics, plus metrics when they are enabled
  */
-export async function build(config: StatiConfig, options: BuildOptions = {}): Promise<BuildResult> {
+export async function build(options: BuildOptions = {}): Promise<BuildResult> {
   // Implementation
 }
 ```
@@ -485,17 +489,14 @@ Use TypeScript interfaces for API docs:
 
 ```typescript
 /**
- * Configuration for Stati sites
+ * An ISG aging rule: a cache lifetime for pages up to a given age.
  */
-export interface StatiConfig {
-  /** Site metadata and settings */
-  site: SiteConfig;
+export interface AgingRule {
+  /** Pages up to this many days old use this rule */
+  untilDays: number;
 
-  /** Markdown processing configuration */
-  markdown?: MarkdownConfig;
-
-  /** Template engine settings */
-  templates?: TemplateConfig;
+  /** Cache time-to-live in seconds for pages in this age range */
+  ttlSeconds: number;
 }
 ```
 
@@ -514,14 +515,6 @@ We follow the [Contributor Covenant](https://www.contributor-covenant.org/):
 - **Be patient** with newcomers
 - **Be constructive** in feedback
 - **Be collaborative** in discussions
-
-### Recognition
-
-Contributors are recognized in:
-
-- **Changelog** for each release
-- **Contributors** section in README
-- **All Contributors** bot acknowledgment
 
 ## Getting started contributing
 

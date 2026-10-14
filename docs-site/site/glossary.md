@@ -12,7 +12,7 @@ Key terms and concepts used throughout Stati documentation.
 
 ## Filesystem-based routing
 
-Stati maps your directory structure in `site/` directly to URL paths. A file at `site/docs/intro.md` becomes `/docs/intro/`.
+Stati maps your directory structure in `site/` directly to URL paths. A file at `site/docs/intro.md` becomes `/docs/intro` (written to `dist/docs/intro.html`).
 
 ## Incremental Static Generation (ISG)
 
@@ -24,7 +24,7 @@ Stati's templating engine. Eta files (`.eta`) support layouts, partials, filters
 
 ## Layout
 
-A reusable template wrapper that provides consistent structure (header, footer, navigation). Pages specify their layout via frontmatter: `layout: layout.eta`.
+A reusable template wrapper that provides consistent structure (header, footer, navigation). Pages use the nearest `layout.eta`, or name one in front matter without the extension: `layout: layouts/post`.
 
 ## Layout inheritance
 
@@ -53,6 +53,7 @@ Data is accessed inside the partial via `stati.props`. Callable partials enable 
 **Inside the partial:**
 
 ```eta
+<% if (!stati.props) return; %>
 <div class="card">
   <h2><%= stati.props.title %></h2>
   <% if (stati.props.featured) { %>
@@ -61,13 +62,15 @@ Data is accessed inside the partial via `stati.props`. Callable partials enable 
 </div>
 ```
 
+Every partial is also rendered once without props, so guard `stati.props` as in the first line.
+
 ## Frontmatter
 
 YAML metadata at the top of Markdown files. Controls title, description, layout, order, and SEO settings.
 
 ## Hierarchical partials
 
-Partials are discovered **upward** from the current page's directory to the root. A page can access partials from its own directory and all parent directories, but **not** from child directories. For example, a root layout can only access `site/_partials/`, while a blog layout can access both `site/_partials/` AND `site/blog/_partials/`. More specific partials (deeper in hierarchy) override less specific ones with the same name.
+Partials are discovered **upward** from the current page's directory to the root. A page can access partials from its own directory and all parent directories, but **not** from child directories. What counts is the page being rendered, not where the layout lives: a page in `site/blog/` sees both `site/_partials/` and `site/blog/_partials/`, even when it uses the root `layout.eta`. More specific partials (deeper in hierarchy) override less specific ones with the same name.
 
 ## Template context (`stati`)
 
@@ -101,7 +104,7 @@ The underlying JavaScript bundler that powers Stati's TypeScript compilation. Pr
 
 ## Development server
 
-Stati's local server (`stati dev`) with hot reload, file watching, and incremental builds for efficient development.
+Stati's local server (`stati dev`) with file watching, incremental rebuilds and live reload in the browser.
 
 ## TTL (time to live)
 
@@ -113,11 +116,11 @@ The process of marking cached entries as stale using `stati invalidate` with pat
 
 ## Draft
 
-A page marked with `draft: true` in frontmatter, excluded from production builds unless `--include-drafts` is used.
+A page marked with `draft: true` in frontmatter. Drafts are excluded from every build, including `stati dev`, unless you run `stati build --include-drafts`.
 
 ## Dynamic attribute values
 
-A templating pattern required when embedding dynamic content in HTML attributes. Eta doesn't support partial interpolation like mixing static and dynamic text in attributes. Instead, use template literals for the entire attribute value, or use `stati.propValue()` for space-separated values like multiple CSS classes. See [Dynamic Attribute Values](/core-concepts/templates#dynamic-attribute-values) in the templates documentation.
+Stati's convention for dynamic content in HTML attributes: make the whole attribute value one expression instead of mixing static text and tags. Use template literals for the entire attribute value, or use `stati.propValue()` for space-separated values like multiple CSS classes. See [Dynamic Attribute Values](/core-concepts/templates#dynamic-attribute-values) in the templates documentation.
 
 ## Collection
 
