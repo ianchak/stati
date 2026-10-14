@@ -20,6 +20,7 @@ vi.stubGlobal('process', { cwd: mockCwd });
 
 import {
   trackTemplateDependencies,
+  resolveLayoutDependency,
   resolveTemplatePath,
   clearTemplatePathCache,
 } from '../../../src/core/isg/deps.js';
@@ -456,6 +457,63 @@ describe('ISG Dependency Tracking', () => {
       // Should find the partials that are actually used
       expect(result.some((p) => p.includes('shared.eta'))).toBe(true);
       expect(result.some((p) => p.includes('blog-header.eta'))).toBe(true);
+    });
+  });
+
+  describe('resolveLayoutDependency', () => {
+    const blogIndexPage: PageModel = {
+      ...mockPage,
+      slug: '/blog',
+      url: '/blog',
+      sourcePath: `${absoluteSrcDir}/blog/index.md`,
+    };
+    const blogPostPage: PageModel = {
+      ...mockPage,
+      slug: '/blog/post',
+      url: '/blog/post',
+      sourcePath: `${absoluteSrcDir}/blog/post.md`,
+    };
+
+    beforeEach(() => {
+      mockPathExists.mockImplementation((path: string) => {
+        const normalizedPath = path.replace(/\\/g, '/');
+        return (
+          normalizedPath === `${absoluteSrcDir}/blog/index.eta` ||
+          normalizedPath === `${absoluteSrcDir}/layout.eta`
+        );
+      });
+    });
+
+    it('returns null when srcDir is missing', async () => {
+      const { srcDir: _, ...configWithoutSrcDir } = mockConfig;
+
+      const result = await resolveLayoutDependency(mockPage, configWithoutSrcDir, [mockPage]);
+
+      expect(result).toBeNull();
+      expect(mockPathExists).not.toHaveBeenCalled();
+    });
+
+    it('returns the root layout.eta for a regular page', async () => {
+      const result = await resolveLayoutDependency(mockPage, mockConfig, [mockPage]);
+
+      expect(result).toBe(`${absoluteSrcDir}/layout.eta`);
+    });
+
+    it('returns index.eta for a nested index page with child pages', async () => {
+      const result = await resolveLayoutDependency(blogIndexPage, mockConfig, [
+        blogIndexPage,
+        blogPostPage,
+      ]);
+
+      expect(result).toBe(`${absoluteSrcDir}/blog/index.eta`);
+    });
+
+    it('returns null when no layout file exists', async () => {
+      mockPathExists.mockReturnValue(false);
+
+      const result = await resolveLayoutDependency(mockPage, mockConfig, [mockPage]);
+
+      expect(result).toBeNull();
     });
   });
 

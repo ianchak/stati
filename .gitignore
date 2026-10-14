@@ -107,3 +107,4 @@ perf-report.md
 .playwright-mcp/
 .claude/settings.local.json
 .github/hooks/impeccable.json
+.vitest/
