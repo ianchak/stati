@@ -1,5 +1,11 @@
 # @stati/core
 
+## 1.27.0
+
+### Minor Changes
+
+- d2ef0c0: In the dev server, reading an unknown `stati.*` property in an Eta template now fails with the template file, line, and a "Did you mean" suggestion in the error overlay. The bundled agent skill documents the check.
+
 ## 1.26.2
 
 ### Patch Changes
