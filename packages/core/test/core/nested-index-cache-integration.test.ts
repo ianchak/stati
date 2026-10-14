@@ -80,4 +80,41 @@ describe('nested collection index cache integration', () => {
     expect(await readBlog()).toContain('NEW-INDEX');
     expect(logger.error).not.toHaveBeenCalled();
   });
+
+  describe('in dev mode', () => {
+    const postPath = () => join(projectDir, 'site', 'blog', 'post.md');
+    const readBlogDeps = async () =>
+      (await loadCacheManifest(join(projectDir, '.stati')))!.entries['/blog.html']!.deps;
+
+    beforeEach(() => {
+      setEnv('development');
+    });
+
+    it('switches to index.eta and settles when the first child page is added', async () => {
+      await rm(postPath());
+      expect(await runBuild()).toMatchObject({ cacheHits: 0, cacheMisses: 2 });
+      expect(await readBlog()).not.toContain('OLD-INDEX');
+
+      await writeFile(postPath(), '---\ntitle: Post\n---\n# Post');
+      expect(await runBuild()).toMatchObject({ cacheHits: 1, cacheMisses: 2 });
+      expect(await readBlog()).toContain('OLD-INDEX');
+      expect((await readBlogDeps()).some((dep) => dep.endsWith('/site/blog/index.eta'))).toBe(true);
+
+      expect(await runBuild()).toMatchObject({ cacheHits: 3, cacheMisses: 0 });
+      expect(logger.error).not.toHaveBeenCalled();
+    });
+
+    it('switches back to layout.eta and settles when the last child page is removed', async () => {
+      expect(await runBuild()).toMatchObject({ cacheHits: 0, cacheMisses: 3 });
+      expect(await readBlog()).toContain('OLD-INDEX');
+
+      await rm(postPath());
+      expect(await runBuild()).toMatchObject({ cacheHits: 1, cacheMisses: 1 });
+      expect(await readBlog()).not.toContain('OLD-INDEX');
+      expect((await readBlogDeps()).some((dep) => dep.endsWith('/site/layout.eta'))).toBe(true);
+
+      expect(await runBuild()).toMatchObject({ cacheHits: 2, cacheMisses: 0 });
+      expect(logger.error).not.toHaveBeenCalled();
+    });
+  });
 });

@@ -1,6 +1,6 @@
 import type { PageModel, CacheEntry, StatiConfig } from '../../types/index.js';
 import { computeContentHash, computeFileHash, computeInputsHash } from './hash.js';
-import { trackTemplateDependencies } from './deps.js';
+import { trackTemplateDependencies, resolveLayoutDependency } from './deps.js';
 import { computeEffectiveTTL, computeNextRebuildAt, isPageFrozen } from './ttl.js';
 import { validatePageISGOverrides, extractNumericOverride } from './validation.js';
 import { performance } from 'node:perf_hooks';
@@ -451,9 +451,16 @@ export async function updateCacheEntry(
     // contains different dependency patterns
     const structureChanged = await hasTemplateStructureChanged(entry);
 
-    if (structureChanged) {
-      // Template structure changed - fall through to full dependency tracking
-      // This ensures we pick up new includes/extends
+    // The page can also switch layouts without any template file changing, for example
+    // when a collection gains its first child page or a front matter layout is edited.
+    // deps[0] is always the layout, so compare it against the layout used now.
+    const layoutChanged =
+      !structureChanged &&
+      (await resolveLayoutDependency(page, config, allPages)) !== entry.deps[0];
+
+    if (structureChanged || layoutChanged) {
+      // Template structure or layout changed - fall through to full dependency tracking
+      // This ensures we pick up new includes/extends and the newly selected layout
     } else {
       // Structure unchanged - safe to reuse existing deps
       // Just update the content hash and timestamp, keep existing deps

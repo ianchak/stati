@@ -17,18 +17,21 @@ type DirectoryPrefixIndex = Map<string, string | null>;
 
 /**
  * Directory prefix index per page list, so a build computes it once instead of
- * scanning every page for every page. The length is stored to rebuild the index
- * if pages are added to or removed from the same array later.
+ * scanning every page for every page.
+ *
+ * The index is a snapshot of the page URLs taken at the first lookup for a given array,
+ * and every later lookup for that array reuses it. In a build the first lookup happens
+ * in the render loop, after the `beforeAll` hook, so URL changes made there are included.
+ * Changes made to the same array or its pages after that are not seen; a fresh build
+ * loads a new array and gets a new snapshot. Taking one snapshot keeps rendering and
+ * ISG dependency tracking in agreement for the whole build.
  */
-const directoryPrefixCache = new WeakMap<
-  PageModel[],
-  { length: number; index: DirectoryPrefixIndex }
->();
+const directoryPrefixCache = new WeakMap<PageModel[], DirectoryPrefixIndex>();
 
 function getDirectoryPrefixIndex(allPages: PageModel[]): DirectoryPrefixIndex {
   const cached = directoryPrefixCache.get(allPages);
-  if (cached && cached.length === allPages.length) {
-    return cached.index;
+  if (cached) {
+    return cached;
   }
 
   const index: DirectoryPrefixIndex = new Map();
@@ -45,7 +48,7 @@ function getDirectoryPrefixIndex(allPages: PageModel[]): DirectoryPrefixIndex {
     }
   }
 
-  directoryPrefixCache.set(allPages, { length: allPages.length, index });
+  directoryPrefixCache.set(allPages, index);
   return index;
 }
 
@@ -56,8 +59,11 @@ function getDirectoryPrefixIndex(allPages: PageModel[]): DirectoryPrefixIndex {
  * Rendering and ISG dependency tracking must both call this with the same page list,
  * otherwise they can pick different layouts for the same page.
  *
+ * Page URLs are read once per `allPages` array, at the first call; see
+ * `directoryPrefixCache` for when changes to the pages are picked up.
+ *
  * @param page - The page to check
- * @param allPages - All pages in the site
+ * @param allPages - All pages in the site (treated as unchanging after the first call)
  * @returns True if the page is a collection index page
  */
 export function isCollectionIndexPage(page: PageModel, allPages: PageModel[]): boolean {

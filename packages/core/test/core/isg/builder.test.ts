@@ -11,6 +11,7 @@ vi.mock('../../../src/core/isg/hash.js', () => ({
 
 vi.mock('../../../src/core/isg/deps.js', () => ({
   trackTemplateDependencies: vi.fn(),
+  resolveLayoutDependency: vi.fn(),
 }));
 
 vi.mock('../../../src/core/isg/ttl.js', () => ({
@@ -31,7 +32,7 @@ import {
   computeFileHash,
   computeInputsHash,
 } from '../../../src/core/isg/hash.js';
-import { trackTemplateDependencies } from '../../../src/core/isg/deps.js';
+import { trackTemplateDependencies, resolveLayoutDependency } from '../../../src/core/isg/deps.js';
 import {
   computeEffectiveTTL,
   computeNextRebuildAt,
@@ -42,6 +43,7 @@ const mockComputeContentHash = vi.mocked(computeContentHash);
 const mockComputeFileHash = vi.mocked(computeFileHash);
 const mockComputeInputsHash = vi.mocked(computeInputsHash);
 const mockTrackTemplateDependencies = vi.mocked(trackTemplateDependencies);
+const mockResolveLayoutDependency = vi.mocked(resolveLayoutDependency);
 const mockComputeEffectiveTTL = vi.mocked(computeEffectiveTTL);
 const mockComputeNextRebuildAt = vi.mocked(computeNextRebuildAt);
 const mockIsPageFrozen = vi.mocked(isPageFrozen);
@@ -94,6 +96,7 @@ describe('ISG Build Integration', () => {
     mockComputeFileHash.mockResolvedValue('file123');
     mockComputeInputsHash.mockReturnValue('inputs123');
     mockTrackTemplateDependencies.mockResolvedValue([testLayoutPath]);
+    mockResolveLayoutDependency.mockResolvedValue(testLayoutPath);
     mockComputeEffectiveTTL.mockReturnValue(3600);
     mockComputeNextRebuildAt.mockReturnValue(new Date(fixedDate.getTime() + 3600000));
     mockIsPageFrozen.mockReturnValue(false);
@@ -1035,6 +1038,7 @@ describe('ISG Build Integration', () => {
       mockComputeFileHash.mockResolvedValue('file123');
       mockComputeInputsHash.mockReturnValue('inputs123');
       mockTrackTemplateDependencies.mockResolvedValue([testLayoutPath, testHeaderPath]);
+      mockResolveLayoutDependency.mockResolvedValue(testLayoutPath);
       mockComputeEffectiveTTL.mockReturnValue(3600);
     });
 
@@ -1093,6 +1097,37 @@ describe('ISG Build Integration', () => {
       // Should perform full dependency tracking because template changed
       expect(mockTrackTemplateDependencies).toHaveBeenCalled();
       expect(result.deps).toEqual(newDeps);
+
+      vi.doUnmock('node:fs/promises');
+    });
+
+    it('should perform full dependency tracking when the page switches layouts', async () => {
+      // Templates are unchanged on disk, but the page now resolves to a different layout
+      // (for example, its collection gained its first child page)
+      const mockStat = vi.fn().mockResolvedValue({
+        mtimeMs: fixedDate.getTime() - 10000,
+      });
+
+      vi.doMock('node:fs/promises', () => ({
+        stat: mockStat,
+      }));
+
+      const indexLayoutPath = join(testSiteDir, 'blog', 'index.eta');
+      mockResolveLayoutDependency.mockResolvedValue(indexLayoutPath);
+      mockTrackTemplateDependencies.mockResolvedValue([indexLayoutPath]);
+
+      const result = await updateCacheEntry(
+        existingEntry,
+        mockPage,
+        mockConfig,
+        allPages,
+        fixedDate,
+        true, // fastUpdate = true
+      );
+
+      expect(mockResolveLayoutDependency).toHaveBeenCalledWith(mockPage, mockConfig, allPages);
+      expect(mockTrackTemplateDependencies).toHaveBeenCalledWith(mockPage, mockConfig, allPages);
+      expect(result.deps).toEqual([indexLayoutPath]);
 
       vi.doUnmock('node:fs/promises');
     });

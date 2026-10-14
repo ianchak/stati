@@ -84,10 +84,18 @@ describe('isCollectionIndexPage', () => {
     }
   });
 
-  it('picks up pages added to the same array after a lookup', () => {
-    const pages = [page('/blog')];
+  it('reads page URLs once per array, at the first lookup', () => {
+    const pages = [page('/blog'), page('/other/post')];
     expect(isCollectionIndexPage(pages[0]!, pages)).toBe(false);
-    pages.push(page('/blog/post'));
-    expect(isCollectionIndexPage(pages[0]!, pages)).toBe(true);
+
+    // Changes to the same array after the first lookup are not seen, whether or not
+    // they change its length, so every lookup in a build gives the same answer
+    pages[1]!.url = '/blog/post';
+    expect(isCollectionIndexPage(pages[0]!, pages)).toBe(false);
+    pages.push(page('/blog/another'));
+    expect(isCollectionIndexPage(pages[0]!, pages)).toBe(false);
+
+    // A new array (as each build loads) gets a new snapshot
+    expect(isCollectionIndexPage(pages[0]!, [...pages])).toBe(true);
   });
 });
