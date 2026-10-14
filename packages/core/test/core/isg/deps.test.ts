@@ -20,6 +20,7 @@ vi.stubGlobal('process', { cwd: mockCwd });
 
 import {
   trackTemplateDependencies,
+  resolveLayoutDependency,
   resolveTemplatePath,
   clearTemplatePathCache,
 } from '../../../src/core/isg/deps.js';
@@ -77,7 +78,7 @@ describe('ISG Dependency Tracking', () => {
       const { srcDir: _, ...configBase } = mockConfig;
       const configWithoutSrcDir: StatiConfig = configBase;
 
-      const result = await trackTemplateDependencies(mockPage, configWithoutSrcDir);
+      const result = await trackTemplateDependencies(mockPage, configWithoutSrcDir, [mockPage]);
 
       expect(result).toEqual([]);
     });
@@ -131,7 +132,7 @@ describe('ISG Dependency Tracking', () => {
         return [];
       });
 
-      const result = await trackTemplateDependencies(mockPage, mockConfig);
+      const result = await trackTemplateDependencies(mockPage, mockConfig, [mockPage]);
 
       expect(result).toHaveLength(3);
       // Check for POSIX-formatted paths
@@ -205,7 +206,7 @@ describe('ISG Dependency Tracking', () => {
         return [];
       });
 
-      const result = await trackTemplateDependencies(mockPage, mockConfig);
+      const result = await trackTemplateDependencies(mockPage, mockConfig, [mockPage]);
 
       // Should include layout + only the 2 used partials
       expect(result).toHaveLength(3);
@@ -258,7 +259,7 @@ describe('ISG Dependency Tracking', () => {
         return [];
       });
 
-      const result = await trackTemplateDependencies(mockPage, mockConfig);
+      const result = await trackTemplateDependencies(mockPage, mockConfig, [mockPage]);
 
       // Should include layout + all 3 non-callable partials
       expect(result).toHaveLength(4);
@@ -307,7 +308,7 @@ describe('ISG Dependency Tracking', () => {
         return [];
       });
 
-      const result = await trackTemplateDependencies(mockPage, mockConfig);
+      const result = await trackTemplateDependencies(mockPage, mockConfig, [mockPage]);
 
       // Should include layout + all 3 partials (mix of callable and non-callable)
       expect(result).toHaveLength(4);
@@ -329,7 +330,7 @@ describe('ISG Dependency Tracking', () => {
       mockReadFile.mockResolvedValue(''); // Empty template, no partials
       mockGlob.mockResolvedValue([]);
 
-      const result = await trackTemplateDependencies(pageWithLayout, mockConfig);
+      const result = await trackTemplateDependencies(pageWithLayout, mockConfig, [pageWithLayout]);
 
       // Check that result contains a path with custom.eta (POSIX format)
       const customLayout = result.find((p) => p.includes('custom.eta'));
@@ -339,25 +340,47 @@ describe('ISG Dependency Tracking', () => {
       expect(mockPathExists).toHaveBeenCalledWith(join(absoluteSrcDir, 'custom.eta'));
     });
 
-    it('should handle collection index pages', async () => {
-      const indexPage = {
+    describe('nested collection index pages', () => {
+      // Matches what content loading produces for site/blog/index.md
+      const blogIndexPage: PageModel = {
         ...mockPage,
-        slug: 'index',
-        url: '/blog/',
+        slug: '/blog',
+        url: '/blog',
         sourcePath: `${absoluteSrcDir}/blog/index.md`,
       };
+      const blogPostPage: PageModel = {
+        ...mockPage,
+        slug: '/blog/post',
+        url: '/blog/post',
+        sourcePath: `${absoluteSrcDir}/blog/post.md`,
+      };
 
-      mockPathExists.mockImplementation((path: string) => {
-        return path.includes('blog') && path.includes('index.eta');
+      beforeEach(() => {
+        mockPathExists.mockImplementation((path: string) => {
+          const normalizedPath = path.replace(/\\/g, '/');
+          return (
+            normalizedPath === `${absoluteSrcDir}/blog/index.eta` ||
+            normalizedPath === `${absoluteSrcDir}/layout.eta`
+          );
+        });
+        mockReadFile.mockResolvedValue(''); // Empty template
+        mockGlob.mockResolvedValue([]);
       });
-      mockReadFile.mockResolvedValue(''); // Empty template
-      mockGlob.mockResolvedValue([]);
 
-      await trackTemplateDependencies(indexPage, mockConfig);
+      it('tracks index.eta when the index page has child pages', async () => {
+        const result = await trackTemplateDependencies(blogIndexPage, mockConfig, [
+          blogIndexPage,
+          blogPostPage,
+        ]);
 
-      // Should check for index.eta before layout.eta for index pages
-      // Note: internally uses join() which produces native path separators
-      expect(mockPathExists).toHaveBeenCalledWith(join(absoluteSrcDir, 'blog/index.eta'));
+        expect(result).toEqual([`${absoluteSrcDir}/blog/index.eta`]);
+      });
+
+      it('tracks layout.eta when the index page has no child pages', async () => {
+        const result = await trackTemplateDependencies(blogIndexPage, mockConfig, [blogIndexPage]);
+
+        expect(result).toEqual([`${absoluteSrcDir}/layout.eta`]);
+      });
     });
 
     it('should fallback to layout.eta when index.eta not found', async () => {
@@ -374,7 +397,7 @@ describe('ISG Dependency Tracking', () => {
       mockReadFile.mockResolvedValue(''); // Empty template
       mockGlob.mockResolvedValue([]);
 
-      const result = await trackTemplateDependencies(indexPage, mockConfig);
+      const result = await trackTemplateDependencies(indexPage, mockConfig, [indexPage]);
 
       // Check for POSIX-formatted path
       const layoutPath = result.find((p) => p.includes('layout.eta'));
@@ -425,7 +448,7 @@ describe('ISG Dependency Tracking', () => {
         return [];
       });
 
-      const result = await trackTemplateDependencies(nestedPage, mockConfig);
+      const result = await trackTemplateDependencies(nestedPage, mockConfig, [nestedPage]);
 
       // Should find layout file
       const hasLayout = result.some((dep) => dep.includes('layout.eta'));
@@ -434,6 +457,63 @@ describe('ISG Dependency Tracking', () => {
       // Should find the partials that are actually used
       expect(result.some((p) => p.includes('shared.eta'))).toBe(true);
       expect(result.some((p) => p.includes('blog-header.eta'))).toBe(true);
+    });
+  });
+
+  describe('resolveLayoutDependency', () => {
+    const blogIndexPage: PageModel = {
+      ...mockPage,
+      slug: '/blog',
+      url: '/blog',
+      sourcePath: `${absoluteSrcDir}/blog/index.md`,
+    };
+    const blogPostPage: PageModel = {
+      ...mockPage,
+      slug: '/blog/post',
+      url: '/blog/post',
+      sourcePath: `${absoluteSrcDir}/blog/post.md`,
+    };
+
+    beforeEach(() => {
+      mockPathExists.mockImplementation((path: string) => {
+        const normalizedPath = path.replace(/\\/g, '/');
+        return (
+          normalizedPath === `${absoluteSrcDir}/blog/index.eta` ||
+          normalizedPath === `${absoluteSrcDir}/layout.eta`
+        );
+      });
+    });
+
+    it('returns null when srcDir is missing', async () => {
+      const { srcDir: _, ...configWithoutSrcDir } = mockConfig;
+
+      const result = await resolveLayoutDependency(mockPage, configWithoutSrcDir, [mockPage]);
+
+      expect(result).toBeNull();
+      expect(mockPathExists).not.toHaveBeenCalled();
+    });
+
+    it('returns the root layout.eta for a regular page', async () => {
+      const result = await resolveLayoutDependency(mockPage, mockConfig, [mockPage]);
+
+      expect(result).toBe(`${absoluteSrcDir}/layout.eta`);
+    });
+
+    it('returns index.eta for a nested index page with child pages', async () => {
+      const result = await resolveLayoutDependency(blogIndexPage, mockConfig, [
+        blogIndexPage,
+        blogPostPage,
+      ]);
+
+      expect(result).toBe(`${absoluteSrcDir}/blog/index.eta`);
+    });
+
+    it('returns null when no layout file exists', async () => {
+      mockPathExists.mockReturnValue(false);
+
+      const result = await resolveLayoutDependency(mockPage, mockConfig, [mockPage]);
+
+      expect(result).toBeNull();
     });
   });
 
@@ -540,7 +620,7 @@ describe('ISG Dependency Tracking', () => {
         return [];
       });
 
-      const result = await trackTemplateDependencies(complexPage, mockConfig);
+      const result = await trackTemplateDependencies(complexPage, mockConfig, [complexPage]);
 
       // Should include layout + 4 partials
       expect(result.length).toBe(5);
@@ -560,7 +640,7 @@ describe('ISG Dependency Tracking', () => {
       mockGlob.mockRejectedValue(new Error('Glob failed'));
 
       // The functions don't handle all errors gracefully, they may throw
-      await expect(trackTemplateDependencies(mockPage, mockConfig)).rejects.toThrow(
+      await expect(trackTemplateDependencies(mockPage, mockConfig, [mockPage])).rejects.toThrow(
         'File system error',
       );
     });
@@ -568,7 +648,7 @@ describe('ISG Dependency Tracking', () => {
     it('should handle missing config gracefully', async () => {
       const emptyConfig = {} as StatiConfig;
 
-      const result = await trackTemplateDependencies(mockPage, emptyConfig);
+      const result = await trackTemplateDependencies(mockPage, emptyConfig, [mockPage]);
 
       expect(result).toEqual([]);
     });
@@ -581,7 +661,7 @@ describe('ISG Dependency Tracking', () => {
       mockReadFile.mockResolvedValue(''); // Empty template
       mockGlob.mockResolvedValue([]);
 
-      const result = await trackTemplateDependencies(mockPage, winConfig);
+      const result = await trackTemplateDependencies(mockPage, winConfig, [mockPage]);
 
       // Should work regardless of path separator
       expect(Array.isArray(result)).toBe(true);
@@ -618,7 +698,7 @@ describe('ISG Dependency Tracking', () => {
         return [];
       });
 
-      const result = await trackTemplateDependencies(mockPage, winConfig);
+      const result = await trackTemplateDependencies(mockPage, winConfig, [mockPage]);
 
       // All paths should use forward slashes (POSIX format)
       for (const dep of result) {
@@ -701,7 +781,9 @@ describe('ISG Dependency Tracking', () => {
         return [];
       });
 
-      const result = await trackTemplateDependencies(pageWithCallablePartials, mockConfig);
+      const result = await trackTemplateDependencies(pageWithCallablePartials, mockConfig, [
+        pageWithCallablePartials,
+      ]);
 
       // Should include layout and all used partials
       expect(result.some((p) => p.includes('layout.eta'))).toBe(true);
@@ -748,7 +830,7 @@ describe('ISG Dependency Tracking', () => {
       });
 
       // Should throw CircularDependencyError for self-referencing templates
-      await expect(trackTemplateDependencies(mockPage, mockConfig)).rejects.toThrow(
+      await expect(trackTemplateDependencies(mockPage, mockConfig, [mockPage])).rejects.toThrow(
         'Circular dependency detected in templates',
       );
     });
@@ -764,7 +846,7 @@ describe('ISG Dependency Tracking', () => {
       mockReadFile.mockImplementation(async () => '');
       mockGlob.mockResolvedValue([]);
 
-      const result = await trackTemplateDependencies(mockPage, mockConfig);
+      const result = await trackTemplateDependencies(mockPage, mockConfig, [mockPage]);
 
       // Should return only the layout (no partials since template is empty)
       expect(result).toHaveLength(1);
@@ -787,7 +869,7 @@ describe('ISG Dependency Tracking', () => {
       // Spy on console.warn to verify error is logged
       const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-      const result = await trackTemplateDependencies(mockPage, mockConfig);
+      const result = await trackTemplateDependencies(mockPage, mockConfig, [mockPage]);
 
       // Should still return the layout path (even though parsing failed)
       expect(result).toHaveLength(1);
@@ -820,8 +902,8 @@ describe('ISG Dependency Tracking', () => {
       mockGlob.mockResolvedValue([]);
 
       // Track dependencies twice
-      await trackTemplateDependencies(mockPage, mockConfig);
-      await trackTemplateDependencies(mockPage, mockConfig);
+      await trackTemplateDependencies(mockPage, mockConfig, [mockPage]);
+      await trackTemplateDependencies(mockPage, mockConfig, [mockPage]);
 
       // Content should only be read once (cached)
       expect(readCount).toBe(1);
@@ -854,18 +936,18 @@ describe('ISG Dependency Tracking', () => {
       mockGlob.mockResolvedValue([]);
 
       // First tracking (populates content cache)
-      await trackTemplateDependencies(mockPage, mockConfig);
+      await trackTemplateDependencies(mockPage, mockConfig, [mockPage]);
       expect(readCount).toBe(1);
 
       // Second tracking (uses cache)
-      await trackTemplateDependencies(mockPage, mockConfig);
+      await trackTemplateDependencies(mockPage, mockConfig, [mockPage]);
       expect(readCount).toBe(1); // Still 1 due to cache
 
       // Clear cache
       clearTemplatePathCache();
 
       // Third tracking (cache cleared, should read again)
-      await trackTemplateDependencies(mockPage, mockConfig);
+      await trackTemplateDependencies(mockPage, mockConfig, [mockPage]);
       expect(readCount).toBe(2); // Increased after cache clear
     });
   });

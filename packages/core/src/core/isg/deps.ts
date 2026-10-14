@@ -55,13 +55,14 @@ export class CircularDependencyError extends Error {
  *
  * @param page - The page model to track dependencies for
  * @param config - Stati configuration
+ * @param allPages - All pages in the site, used to detect collection index pages the same way rendering does
  * @returns Array of absolute paths to actually-used template files (POSIX format)
  * @throws {CircularDependencyError} When circular dependencies are detected in templates
  *
  * @example
  * ```typescript
  * try {
- *   const deps = await trackTemplateDependencies(page, config);
+ *   const deps = await trackTemplateDependencies(page, config, allPages);
  *   console.log(`Page depends on ${deps.length} template files`);
  * } catch (error) {
  *   if (error instanceof CircularDependencyError) {
@@ -73,6 +74,7 @@ export class CircularDependencyError extends Error {
 export async function trackTemplateDependencies(
   page: PageModel,
   config: StatiConfig,
+  allPages: PageModel[],
 ): Promise<string[]> {
   // Early return if required config values are missing
   if (!config.srcDir) {
@@ -82,7 +84,6 @@ export async function trackTemplateDependencies(
 
   const deps: string[] = [];
   const srcDir = resolveSrcDir(config);
-  const relativePath = relative(srcDir, page.sourcePath);
 
   // Track dependencies with circular detection
   // The visited set will contain all templates that are actually used (not just accessible)
@@ -90,16 +91,9 @@ export async function trackTemplateDependencies(
   const currentPath = new Set<string>();
 
   // 1. Find the layout file that will be used for this page
-  const layoutPath = await discoverLayout(
-    relativePath,
-    config,
-    page.frontMatter.layout as string | undefined,
-    isCollectionIndexPage(page),
-  );
+  const absoluteLayoutPath = await resolveLayoutDependency(page, config, allPages);
 
-  if (layoutPath) {
-    // Normalize to POSIX format for consistent manifest output across platforms
-    const absoluteLayoutPath = posix.join(srcDir.replace(/\\/g, '/'), layoutPath);
+  if (absoluteLayoutPath) {
     deps.push(absoluteLayoutPath);
 
     // Recursively traverse the template dependency tree
@@ -120,6 +114,37 @@ export async function trackTemplateDependencies(
   }
 
   return deps;
+}
+
+/**
+ * Resolves the layout a page renders with, in the form stored as the first entry of its
+ * cache dependencies. Uses the same lookup as rendering, so callers can tell whether the
+ * page's layout has changed since its dependencies were recorded.
+ *
+ * @param page - The page model to resolve the layout for
+ * @param config - Stati configuration
+ * @param allPages - All pages in the site, used to detect collection index pages the same way rendering does
+ * @returns Absolute path to the layout file (POSIX format), or null if no layout applies
+ */
+export async function resolveLayoutDependency(
+  page: PageModel,
+  config: StatiConfig,
+  allPages: PageModel[],
+): Promise<string | null> {
+  if (!config.srcDir) {
+    return null;
+  }
+
+  const srcDir = resolveSrcDir(config);
+  const layoutPath = await discoverLayout(
+    relative(srcDir, page.sourcePath),
+    config,
+    page.frontMatter.layout as string | undefined,
+    isCollectionIndexPage(page, allPages),
+  );
+
+  // Normalize to POSIX format for consistent manifest output across platforms
+  return layoutPath ? posix.join(srcDir.replace(/\\/g, '/'), layoutPath) : null;
 }
 
 /**

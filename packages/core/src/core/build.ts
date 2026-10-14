@@ -491,7 +491,7 @@ async function processPagesWithCache(
       options.force ||
       config.isg?.enabled === false ||
       !(await pathExists(outputPath)) ||
-      (await shouldRebuildPage(page, existingEntry, config, buildTime, renderInputsHash));
+      (await shouldRebuildPage(page, existingEntry, config, pages, buildTime, renderInputsHash));
     const shouldRebuildTime = performance.now() - shouldRebuildStart;
     totalShouldRebuildTime += shouldRebuildTime;
 
@@ -607,6 +607,7 @@ async function processPagesWithCache(
             existingEntry,
             page,
             config,
+            pages,
             buildTime,
             false,
             renderInputsHash,
@@ -615,6 +616,7 @@ async function processPagesWithCache(
           manifest.entries[cacheKey] = await createCacheEntry(
             page,
             config,
+            pages,
             buildTime,
             renderInputsHash,
           );
@@ -660,6 +662,7 @@ async function processPagesWithCache(
             existingEntry,
             page,
             config,
+            pages,
             buildTime,
             true, // fastUpdate = true in dev mode
             renderInputsHash,
@@ -668,6 +671,7 @@ async function processPagesWithCache(
           manifest.entries[cacheKey] = await createCacheEntry(
             page,
             config,
+            pages,
             buildTime,
             renderInputsHash,
           );

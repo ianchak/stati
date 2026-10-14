@@ -1,6 +1,6 @@
 import type { PageModel, CacheEntry, StatiConfig } from '../../types/index.js';
 import { computeContentHash, computeFileHash, computeInputsHash } from './hash.js';
-import { trackTemplateDependencies } from './deps.js';
+import { trackTemplateDependencies, resolveLayoutDependency } from './deps.js';
 import { computeEffectiveTTL, computeNextRebuildAt, isPageFrozen } from './ttl.js';
 import { validatePageISGOverrides, extractNumericOverride } from './validation.js';
 import { getFrontMatterDate } from '../utils/index.js';
@@ -75,13 +75,14 @@ function isValidCacheEntry(entry: CacheEntry): boolean {
  * @param page - The page model to check
  * @param entry - Existing cache entry, or undefined if not cached
  * @param config - Stati configuration
+ * @param allPages - All pages in the site, used to resolve the same layout as rendering
  * @param now - Current date/time
  * @param renderInputsHash - Optional hash of asset URLs and injection settings
  * @returns True if the page should be rebuilt
  *
  * @example
  * ```typescript
- * const shouldRebuild = await shouldRebuildPage(page, cacheEntry, config, new Date());
+ * const shouldRebuild = await shouldRebuildPage(page, cacheEntry, config, pages, new Date());
  * if (shouldRebuild) {
  *   console.log('Page needs rebuilding');
  * }
@@ -91,6 +92,7 @@ export async function shouldRebuildPage(
   page: PageModel,
   entry: CacheEntry | undefined,
   config: StatiConfig,
+  allPages: PageModel[],
   now: Date,
   renderInputsHash?: string,
 ): Promise<boolean> {
@@ -116,7 +118,7 @@ export async function shouldRebuildPage(
     // Track dependencies with error handling
     let deps: string[];
     try {
-      deps = await trackTemplateDependencies(page, config);
+      deps = await trackTemplateDependencies(page, config, allPages);
     } catch (error) {
       if (error instanceof Error && error.name === 'CircularDependencyError') {
         console.error(`Circular dependency detected for ${page.url}: ${error.message}`);
@@ -264,18 +266,20 @@ export async function shouldRebuildPage(
  *
  * @param page - The page model
  * @param config - Stati configuration
+ * @param allPages - All pages in the site, used to resolve the same layout as rendering
  * @param renderedAt - When the page was rendered
  * @param renderInputsHash - Optional hash of asset URLs and injection settings
  * @returns New cache entry
  *
  * @example
  * ```typescript
- * const entry = await createCacheEntry(page, config, new Date());
+ * const entry = await createCacheEntry(page, config, pages, new Date());
  * ```
  */
 export async function createCacheEntry(
   page: PageModel,
   config: StatiConfig,
+  allPages: PageModel[],
   renderedAt: Date,
   renderInputsHash?: string,
 ): Promise<CacheEntry> {
@@ -293,7 +297,7 @@ export async function createCacheEntry(
 
   // Track all template dependencies
   start = performance.now();
-  const deps = await trackTemplateDependencies(page, config);
+  const deps = await trackTemplateDependencies(page, config, allPages);
   timings.trackDeps = performance.now() - start;
 
   // Compute hashes for all dependencies
@@ -421,6 +425,7 @@ async function hasTemplateStructureChanged(entry: CacheEntry): Promise<boolean> 
  * @param entry - Existing cache entry
  * @param page - The page model
  * @param config - Stati configuration
+ * @param allPages - All pages in the site, used to resolve the same layout as rendering
  * @param renderedAt - When the page was rendered
  * @param fastUpdate - If true, skip expensive dep tracking (dev mode optimization)
  * @param renderInputsHash - Optional hash of asset URLs and injection settings
@@ -428,13 +433,14 @@ async function hasTemplateStructureChanged(entry: CacheEntry): Promise<boolean> 
  *
  * @example
  * ```typescript
- * const updatedEntry = await updateCacheEntry(existingEntry, page, config, new Date());
+ * const updatedEntry = await updateCacheEntry(existingEntry, page, config, pages, new Date());
  * ```
  */
 export async function updateCacheEntry(
   entry: CacheEntry,
   page: PageModel,
   config: StatiConfig,
+  allPages: PageModel[],
   renderedAt: Date,
   fastUpdate = false,
   renderInputsHash?: string,
@@ -446,9 +452,16 @@ export async function updateCacheEntry(
     // contains different dependency patterns
     const structureChanged = await hasTemplateStructureChanged(entry);
 
-    if (structureChanged) {
-      // Template structure changed - fall through to full dependency tracking
-      // This ensures we pick up new includes/extends
+    // The page can also switch layouts without any template file changing, for example
+    // when a collection gains its first child page or a front matter layout is edited.
+    // deps[0] is always the layout, so compare it against the layout used now.
+    const layoutChanged =
+      !structureChanged &&
+      (await resolveLayoutDependency(page, config, allPages)) !== entry.deps[0];
+
+    if (structureChanged || layoutChanged) {
+      // Template structure or layout changed - fall through to full dependency tracking
+      // This ensures we pick up new includes/extends and the newly selected layout
     } else {
       // Structure unchanged - safe to reuse existing deps
       // Just update the content hash and timestamp, keep existing deps
@@ -474,7 +487,7 @@ export async function updateCacheEntry(
   }
 
   // Full update - create new entry and preserve original publishedAt
-  const newEntry = await createCacheEntry(page, config, renderedAt, renderInputsHash);
+  const newEntry = await createCacheEntry(page, config, allPages, renderedAt, renderInputsHash);
 
   // Preserve original publishedAt if no new one is specified
   if (!newEntry.publishedAt && entry.publishedAt) {
