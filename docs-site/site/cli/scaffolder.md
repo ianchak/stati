@@ -51,14 +51,15 @@ The scaffolder will prompt you for:
 2. **Template** - Blank, Blog or Docs (skipped with `--template`)
 3. **Styling solution** - Choose between CSS, Sass, or Tailwind CSS (skipped with `--styling`)
 4. **TypeScript** - On by default; answer no for a JavaScript project
-5. **Agent skill** - Where to install the Stati agent skill, if at all
-6. **Git initialization** - Whether to initialize a Git repository (skipped with `--no-git`)
-7. **Dependency installation** - Whether to install dependencies automatically (skipped with `--no-install`)
-8. **Package manager** - Which package manager to use (only when several are detected and another prompt was shown)
+5. **Image tools** - Off by default; answer yes for responsive images and link preview cards
+6. **Agent skill** - Where to install the Stati agent skill, if at all
+7. **Git initialization** - Whether to initialize a Git repository (skipped with `--no-git`)
+8. **Dependency installation** - Whether to install dependencies automatically (skipped with `--no-install`)
+9. **Package manager** - Which package manager to use (only when several are detected and another prompt was shown)
 
 ### Running without prompts
 
-When the project name, `--template` and `--styling` are all given, the TypeScript and agent-skill prompts are skipped: the project uses TypeScript (unless `--no-typescript`) and gets no agent skill (unless `--agent-skill`). The Git and install prompts still appear unless you pass `--no-git` and `--no-install`; there are no `--git` or `--install` flags. So a fully unattended run looks like this:
+When the project name, `--template` and `--styling` are all given, the TypeScript, image tools and agent-skill prompts are skipped: the project uses TypeScript (unless `--no-typescript`) and gets neither image tools (unless `--images`) nor an agent skill (unless `--agent-skill`). The Git and install prompts still appear unless you pass `--no-git` and `--no-install`; there are no `--git` or `--install` flags. So a fully unattended run looks like this:
 
 ```bash
 npx create-stati my-site --template=blank --styling=css --no-git --no-install
@@ -76,6 +77,9 @@ Options:
   --styling <type>         CSS solution (css|sass|tailwind)
   --typescript, --ts       Use TypeScript (default)
   --no-typescript, --no-ts Use JavaScript instead of TypeScript
+  --images                 Add image tools: responsive AVIF/WebP images and link
+                           preview cards (@stati/images)
+  --no-images              Skip image tools (default)
   --no-git                 Skip git initialization (default: initializes Git)
   --no-install             Skip dependency installation (default: installs dependencies)
   --package-manager <pm>   Package manager to use (npm|yarn|pnpm|bun)
@@ -83,6 +87,24 @@ Options:
   --no-agent-skill         Skip agent skill installation
   --help, -h               Show help message
 ```
+
+## Image tools
+
+Every Stati site gives its images a width, height and lazy loading. Image tools add [`@stati/images`](/configuration/images) for two more things: responsive AVIF and WebP versions of each image, and a link preview card for every page.
+
+```bash
+npx create-stati my-blog --template=blog --images
+```
+
+With image tools, the scaffolder:
+
+- adds `@stati/images` to the project's dev dependencies;
+- turns on `images.responsive` and `images.og` in the config, and sets `site.baseUrl` in the blank template, because preview images need absolute URLs;
+- keeps the card template of the blog and docs templates, `site/og.eta`, with its fonts in `og/fonts/`. The blank template uses the card built into `@stati/images`.
+
+Without image tools, the blog and docs templates' card template and fonts are left out. You can add the package later; see [Images](/configuration/images).
+
+The package includes a native image encoder, so the prompt defaults to no.
 
 ## Agent skill
 

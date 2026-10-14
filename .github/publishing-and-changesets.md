@@ -116,6 +116,7 @@ The script determines which packages need versioning based on file paths:
 
 - `packages/core/` → `@stati/core`
 - `packages/cli/` → `@stati/cli`
+- `packages/images/` → `@stati/images`
 - `packages/create-stati/` → `create-stati`
 
 **Workspace Root Changes:**
@@ -316,7 +317,16 @@ npm ci
 npm run build
 ```
 
-All three packages are built in dependency order: `core` → `cli` → `create-stati`.
+All four packages are built in dependency order: `core` → `images` → `cli` → `create-stati`.
+
+#### Publishing a new package
+
+npm trusted publishing can only be attached to a package that already exists, so a new
+package's first version can't go through OIDC. Before the change that adds a package is
+merged, a maintainer publishes it once by hand from their machine (for example a
+deprecated `0.0.0-reserved.0` placeholder with `npm login --auth-type=web`), then adds the
+trusted publisher (this repository and `publish.yml`) in the package's settings on
+npmjs.com. The workflow publishes every later version, including the real first one.
 
 #### 3. Check for Changesets
 

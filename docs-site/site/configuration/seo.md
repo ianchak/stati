@@ -144,6 +144,8 @@ order: 6
 
 ### Open Graph configuration
 
+With [`images.og`](/configuration/images#open-graph-images), every page that sets no image gets a generated card, and its `og:image`, `twitter:image` and image size tags are added for you. Set `image: false` under `openGraph` to give a page no image at all.
+
 ```markdown
 ---
 title: My Blog Post

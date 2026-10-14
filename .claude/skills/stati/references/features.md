@@ -37,7 +37,36 @@ Frontmatter `seo` supports:
 Fallbacks: SEO title -> frontmatter title -> site title; SEO description ->
 frontmatter description -> site description; keywords -> tags; canonical ->
 absolute page URL. Open Graph defaults to website type. Relative OG images are
-made absolute using the site base URL.
+made absolute using the site base URL. `twitter:card` defaults to
+`summary_large_image`.
+
+### Generated Open Graph images
+
+With `images.og` (needs `@stati/images`), each page that sets no
+`seo.openGraph.image` gets a generated card and the tags `og:image`,
+`og:image:width`, `og:image:height`, `og:image:alt` and `twitter:image`.
+`seo.openGraph.image: false` gives a page no image; `images.og.exclude` takes URL
+globs. Production builds require `site.baseUrl` to be an absolute, non-localhost
+URL.
+
+- **Template:** the nearest `og.eta` from the page's folder up to `site/`, else the
+  card built into the package (`node_modules/@stati/images/templates/og.eta`).
+  `og.eta` is not a layout or partial and never becomes a page.
+- **Context:** the layout's `stati` object with `stati.content` empty and
+  `stati.og` = `{ width, height }`. Partials and filters work.
+- **CSS:** Satori's subset. Inline `style` attributes only (no classes, `<style>`
+  or Sass), flexbox only, and every element with more than one child needs
+  `display:flex`. Unsupported CSS fails the dev build with the template path.
+  Local `<img src="/...">` is read from `public/`; inline `<svg>` works.
+- **Fonts:** Archivo 800, Inter 400/500 and Fira Code 400 are bundled (Latin,
+  Latin-1, Latin Extended-A). Add more with
+  `images.og.fonts: [{ name, path, weight?, style? }]`, paths relative to the
+  project, TTF/OTF/WOFF only (no WOFF2).
+- **Caching:** the image URL hashes the rendered card HTML, fonts and options, so it
+  changes when the title, description or site title change, not on body edits.
+- **Layouts with hand-written OG tags** read the image as `stati.ogImage`
+  (`url` is absolute). `stati.generateSEO()` includes it automatically, even when
+  called from a partial.
 
 Normally let auto-injection manage tags. For explicit placement:
 

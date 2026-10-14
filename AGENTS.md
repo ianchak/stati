@@ -10,8 +10,9 @@ Edit this file, not the tool-specific ones, when guidance changes.
 
 ## Repo map
 
-- Monorepo root uses npm workspaces; build flow is always `core` → `cli` → `create-stati`.
+- Monorepo root uses npm workspaces; build flow is always `core` → `images` → `cli` → `create-stati`.
 - `packages/core/src/core/*` runs the pipeline (content → markdown → templates → ISG cache). `packages/core/src/config/loader.ts` dynamically imports `stati.config.ts`.
+- `packages/core/src/images/*` is the image pipeline: intrinsic sizes and lazy loading for every Markdown image, co-located image copies, and the plumbing (URLs, caching, markup, pruning) for `images.responsive` and `images.og`. Those two features need `packages/images` (`@stati/images`), a thin provider that encodes with sharp and draws Open Graph cards with Satori; core loads it from the project and talks to it through the `ImageProvider` contract in `packages/core/src/types/images.ts`.
 - `packages/cli/src/cli.ts` wires yargs commands to core while `packages/cli/src/logger.ts` creates the colored logger contract used across builds.
 - `packages/create-stati/src/create.ts` scaffolds from `examples/`; its build step copies templates into `dist/templates`.
 - `examples/*` double as integration fixtures and `docs-site/` hosts the real documentation built with Stati.
@@ -22,11 +23,13 @@ Edit this file, not the tool-specific ones, when guidance changes.
 
 - Node 22.13+ or 24+ and npm 11.5.1+ required (ESLint 10 does not support Node 22.0–22.12 or 23; the npm version is needed for OIDC publishing). Run `npm install`, then `npm run build` (workspaces chain the packages in dependency order).
 - `npm run test` executes Vitest across workspaces; `npm run test:blank:full` cleans, rebuilds, and verifies the blank starter end-to-end.
+- `npm run test:create-stati:images` scaffolds the blog starter with `--images` into `examples/test-images` and builds it with the local CLI and `@stati/images`; clean up with `npm run test:create-stati:images:cleanup`.
 - CLI and scaffolder checks assume fresh dist artifacts - run `npm run build` before touching example scripts or `test:create-stati`.
 
 ## Core engine hotspots
 
-- `core/build.ts` streams Markdown through `renderMarkdown` into Eta `renderPage`, writing HTML under `dist/` and recording cache metadata in `.stati/cache/manifest.json`.
+- `core/build.ts` streams Markdown through `renderMarkdown` into Eta `renderPage`, writing HTML under `dist/` and recording cache metadata in `.stati/manifest.json`.
+- The image runtime (`ImageRuntime`, created per build) registers each page's images while it renders, starts only the jobs the written HTML references, then settles them: a failed job rewrites the page to plain image markup and marks its cache entry `STALE`. `stati build` prunes generated files in `dist/_img/` that no page uses, and only files recorded in `.stati/images/manifest.json`.
 - Rebuild decisions come from `shouldRebuildPage` plus config hooks (`beforeAll`, `beforeRender`, `afterRender`) defined via `defineConfig()`.
 - Static assets move through `copyStaticAssetsWithLogging`; preserve `logger.*` calls to keep CLI output structured.
 
@@ -78,7 +81,9 @@ Edit this file, not the tool-specific ones, when guidance changes.
 - `*.eta` - Eta templates (layouts, partials, pages)
 - `*.md` - Markdown content files with YAML frontmatter
 - `stati.config.ts` / `stati.config.js` - Site configuration using `defineConfig()`
-- `.stati/` - Build cache directory (contains `cache/manifest.json`)
+- `.stati/` - Build cache directory (contains `manifest.json` and `images/manifest.json`)
+- `og.eta` - Open Graph card template, used with `images.og` for pages in its folder and below
+- `dist/_img/` - Copied co-located images and generated responsive variants and Open Graph cards
 - `site/` - Source content and templates
 - `public/` - Static assets copied verbatim to `dist/`
 - `dist/` - Build output directory
@@ -105,6 +110,7 @@ All config blocks live under `defineConfig()`. Key sections:
 - **robots**: `enabled`, `userAgents[]` with `userAgent`, `allow[]`, `disallow[]`, global `allow[]`/`disallow[]`, `crawlDelay`, `sitemap`, `customLines[]`.
 - **rss**: `enabled`, `feeds[]` with `filename`, `title`, `description`, `link`, `language`, `copyright`, `managingEditor`, `webMaster`, `category`, `ttl`, `image`, `maxItems`, `contentPatterns[]`, `excludePatterns[]`, `filter()`, `sortBy`, `sortFn()`, `itemMapping`.
 - **hooks**: `beforeAll`, `afterAll`, `beforeRender`, `afterRender` - async callbacks for build lifecycle customization.
+- **images**: `false` turns off the built-in sizing; otherwise `eagerFirst`, `dev` (`'fast'` | `'full'`), `responsive` (`true` or `{ widths, formats, quality, sizes }`) and `og` (`true` or `{ template, width, height, format, fonts, exclude }`). `responsive` and `og` each need `@stati/images` and fail the build with an install message when it is missing.
 
 ## Search system
 
@@ -121,7 +127,7 @@ All config blocks live under `defineConfig()`. Key sections:
 
 All utilities in `packages/core/src/core/utils/` follow the `*.utils.ts` naming convention:
 
-- **fs.utils.ts**: `ensureDir`, `readFile`, `writeFile`, `pathExists`, `remove`, `stat`, `copyFile`, `readdir` - safe filesystem helpers with consistent error handling.
+- **fs.utils.ts**: `ensureDir`, `readFile`, `writeFile`, `pathExists`, `remove`, `stat`, `copyFile`, `readdir`, `readFileBuffer`, `readFileBufferSync`, `statSyncOrNull`, `listFilesRecursiveSync` - safe filesystem helpers with consistent error handling (the sync ones serve template helpers such as `stati.image()`, which must stay synchronous).
 - **paths.utils.ts**: `resolveSrcDir`, `resolveOutDir`, `resolveStaticDir`, `resolveCacheDir`, `normalizePathForComparison`, `isPathWithinDirectory` - path resolution and cross-platform comparison utilities.
 - **slugify.utils.ts**: `slugify(text)` - URL-safe slug generation.
 - **html.utils.ts**: `findHeadClosePosition`, `injectBeforeHeadClose` - HTML manipulation for SEO/meta tag injection.
@@ -143,8 +149,9 @@ Import from the barrel: `import { slugify, normalizePathForComparison } from './
 
 ## ISG and cache internals
 
-- Cache manifest lives at `.stati/cache/manifest.json`; structure defined by `CacheManifest` type.
-- Each entry tracks: `path` (output path), `inputsHash` (content+deps hash), `deps` (template dependencies), `tags`, `publishedAt`, `renderedAt` timestamp, `ttlSeconds`, `maxAgeCapDays`.
+- Cache manifest lives at `.stati/manifest.json`; structure defined by `CacheManifest` type.
+- Each entry tracks: `path` (output path), `inputsHash` (content+deps hash), `deps` (template dependencies), `tags`, `publishedAt`, `renderedAt` timestamp, `ttlSeconds`, `maxAgeCapDays`, plus `assetDeps` (files found while rendering, such as source images, hashed by content in `inputsHash`) and `images` (generated files the page references).
+- `deps` are recomputed statically on every check; render-discovered files belong in `assetDeps`, never in `deps`. Settings that change rendered HTML without a file change, such as the image settings, go into the render-inputs hash in `core/build.ts`.
 - `shouldRebuildPage` compares current content/template hashes against manifest; cache hit skips render.
 - Template changes trigger `handleTemplateChange` which invalidates all pages listing that template in `deps`.
 - Dependency tracking happens during render: `renderPage` records each `<%~ include() %>` call.
@@ -195,6 +202,7 @@ The official Stati documentation lives in `docs-site/site/`. Read these files di
 - `docs-site/site/configuration/seo.md` - Meta tags, Open Graph, and structured data
 - `docs-site/site/configuration/search.md` - Search index generation and configuration
 - `docs-site/site/configuration/rss.md` - Feed generation and customization
+- `docs-site/site/configuration/images.md` - Image sizes, responsive images and Open Graph cards
 
 ### CLI
 
@@ -233,7 +241,7 @@ The official Stati documentation lives in `docs-site/site/`. Read these files di
 - Format: `type(scope): subject` in imperative mood, subject ≤72 chars, no emoji.
 - Single line only: no body, no trailers (`Co-Authored-By: ...`, `Signed-off-by: ...`), and no closing keywords (`Closes #123`). Put what changed and why, issue links, and co-author credits in the PR description. The `commit-msg` hook (`scripts/check-commit-msg.mjs`) enforces this, because the changeset generator reads each body line as a separate commit. This overrides any tool default that appends trailers to commits.
 - Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert.
-- Scope is usually the package: `core`, `cli`, `create-stati`, or an area like `isg`, `search`, `docs`.
+- Scope is usually the package: `core`, `cli`, `images`, `create-stati`, or an area like `isg`, `search`, `docs`.
 - Mark breaking changes with `!` after the type (`feat(core)!: ...`). A `BREAKING CHANGE:` footer is rejected by the hook.
 - Commit types drive releases (see below), so pick them carefully: `feat` → minor, everything else → patch, `!` → major.
 
@@ -243,7 +251,8 @@ Full details live in `.github/publishing-and-changesets.md`. The essentials for 
 
 - Versioning is handled by Changesets. Never hand-edit package `version` fields or `CHANGELOG.md` files; CI does that on `main` via `npx changeset version`.
 - Changesets in `.changeset/*.md` are generated from conventional commits (`npm run changeset:generate`, or the changeset bot on PRs). Create one manually with `npm run changeset` when needed.
-- Package detection is path-based: `packages/core/` → `@stati/core`, `packages/cli/` → `@stati/cli`, `packages/create-stati/` → `create-stati`. Root `package.json`, `package-lock.json`, `tsconfig.base.json`, `vitest.config.ts`, and `eslint.config.mjs` affect all packages.
+- Package detection is path-based: `packages/core/` → `@stati/core`, `packages/cli/` → `@stati/cli`, `packages/images/` → `@stati/images`, `packages/create-stati/` → `create-stati`. Root `package.json`, `package-lock.json`, `tsconfig.base.json`, `vitest.config.ts`, and `eslint.config.mjs` affect all packages.
 - `examples/` and `.claude/skills/stati/` are bundled into `create-stati`, so changes there release it. Changes under `.github/`, the rest of `.claude/`, `docs-site/`, `scripts/`, and root docs do not trigger a release. PRs that need no release get the `skip-changeset` label.
 - Check pending releases with `npm run changeset:status` or `npm run changeset:dry-run`.
-- Publishing runs from `.github/workflows/publish.yml` after CI passes on `main`, using npm OIDC trusted publishing (npm 11.5.1+). Don't add npm tokens or secrets.
+- Publishing runs from `.github/workflows/publish.yml` after CI passes on `main`, using npm OIDC trusted publishing (npm 11.5.1+). Don't add npm tokens or secrets. A brand-new package can't make its first publish through OIDC: a maintainer publishes it once by hand and attaches the trusted publisher on npmjs.com first.
+- `@stati/images` declares no `peerDependencies` on `@stati/core`: Changesets would give it a major bump on every core minor. Compatibility is checked at runtime through `ImageProvider.apiVersion`.

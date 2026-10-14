@@ -18,6 +18,7 @@ Thanks for your interest in contributing to **Stati** - a lightweight, TypeScrip
 packages/
 ├─ @stati/core         → Core SSG engine (build, dev server, content processing)
 ├─ @stati/cli          → Command-line interface (stati build, dev, invalidate)
+├─ @stati/images       → Optional image encoder (sharp) and Open Graph card renderer (Satori)
 ├─ create-stati        → NPX scaffolder (templates, Tailwind opt-in) - in development
 examples/
 ├─ blog                → Complete blog example with navigation and content
@@ -56,7 +57,7 @@ npm run typecheck      # TypeScript compilation check
 npm run test           # Run all tests across packages
 
 # Building
-npm run build          # Build core, cli, and create-stati packages
+npm run build          # Build core, images, cli, and create-stati packages
 
 # Full pipeline
 npm run test:ci        # Lint + typecheck + test + build (CI workflow)
@@ -162,7 +163,7 @@ npm run test:ci        # Full CI pipeline including tests
 Every push and pull request triggers the CI workflow (`.github/workflows/ci.yml`):
 
 1. **Dependency Install** - `npm ci` with npm 11.5.1+
-2. **Build Packages** - `npm run build` (core → cli → create-stati)
+2. **Build Packages** - `npm run build` (core → images → cli → create-stati)
 3. **Run Tests** - Vitest with coverage (perf tests excluded from CI)
 4. **Upload Coverage** - Reports sent to Codecov
 

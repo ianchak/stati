@@ -384,6 +384,7 @@ This is a monorepo containing:
 packages/
 ├── @stati/core       # Core static site generator engine
 ├── @stati/cli        # Command-line interface
+├── @stati/images     # Optional: responsive images and Open Graph cards
 └── create-stati      # Project scaffolding tool
 ```
 

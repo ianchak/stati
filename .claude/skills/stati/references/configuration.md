@@ -121,11 +121,49 @@ Static files are copied, not bundled or optimized. Put fonts, favicon files,
 images, downloads, and plain browser scripts here when they need no compilation.
 Do not put private configuration, credentials, or unpublished content in public
 assets. Avoid collisions with generated page HTML, bundle paths, search index,
-feeds, sitemap, or robots files.
+feeds, sitemap, or robots files. Leave `public/_img/` unused: `/_img/` holds
+copied and generated images.
 
-Stati does not imply responsive image generation or compression. Supply suitable
-image sizes, explicit width/height where possible, alt text, and lazy loading for
-noncritical images. Use real asset files, not broken placeholders.
+## Images
+
+From core 1.28, Markdown images (`![alt](src)`) get their intrinsic `width` and
+`height` (read from the file, EXIF rotation applied), `loading="lazy"` and
+`decoding="async"` with no configuration. A page's first image in its first few
+blocks loads eagerly with `fetchpriority="high"` (`images.eagerFirst: false` turns
+that off).
+
+- `/images/a.jpg` resolves from `public/`; `./a.jpg` resolves next to the page's
+  Markdown file and is copied to `/_img/{name}-{hash}.{ext}`.
+- Left as authored: remote URLs, `data:` URIs, SVG and other formats, paths ending
+  in `?raw` (the suffix is removed), and raw `<img>` HTML. Missing files warn.
+- The site CSS needs `img { max-width: 100%; height: auto; }`, or sized images
+  stretch when narrowed. The starters have it.
+- `images: false` turns all of this off.
+
+In templates use `stati.image(src, options)`; see the Eta reference.
+
+Two features need the optional `@stati/images` package; each is independent:
+
+```ts
+images: {
+  responsive: true, // or { widths, formats, quality, sizes }
+  og: true, // or { template, width, height, format, fonts, exclude }
+}
+```
+
+- `responsive` writes `<picture>` with AVIF and WebP `srcset`s plus a fallback in the
+  source format (GIF becomes PNG; PNG stays lossless). Widths never exceed the
+  image's own width. Animated images keep the built-in behavior.
+- `og` generates a link preview card per page; see the features reference.
+- With either on and the package missing, every build, including the dev server,
+  stops with `images.<feature> requires @stati/images. Run: npm i -D @stati/images`.
+- `images.dev: 'fast'` (default) skips both in the dev server; `'full'` runs them.
+- Generated files live in `dist/_img/`, keyed by content and options, reused
+  between builds via `.stati/images/manifest.json`. `stati build` deletes generated
+  files no page uses; it never deletes files copied from `public/`.
+
+Do not hand-write `width`, `height` or `loading` on Markdown images; use real
+asset files, not broken placeholders, and always write alt text.
 
 ## Styling
 
