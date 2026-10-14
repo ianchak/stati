@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { writeFile, mkdir, unlink } from 'node:fs/promises';
+import { writeFile, mkdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import {
   writeProcessorFiles,
@@ -68,26 +68,21 @@ describe('processor.utils', () => {
   });
 
   describe('deleteProcessorFiles', () => {
-    it('should delete specified files', async () => {
-      const filesToDelete = ['old-file.txt', 'deprecated/config.json'];
+    it('should delete specified files and folders', async () => {
+      const filesToDelete = ['old-file.txt', 'deprecated/config.json', 'og'];
 
       await deleteProcessorFiles(projectDir, filesToDelete);
 
-      expect(unlink).toHaveBeenCalledWith(join(projectDir, 'old-file.txt'));
-      expect(unlink).toHaveBeenCalledWith(join(projectDir, 'deprecated', 'config.json'));
+      const options = { recursive: true, force: true };
+      expect(rm).toHaveBeenCalledWith(join(projectDir, 'old-file.txt'), options);
+      expect(rm).toHaveBeenCalledWith(join(projectDir, 'deprecated', 'config.json'), options);
+      expect(rm).toHaveBeenCalledWith(join(projectDir, 'og'), options);
     });
 
     it('should handle empty array', async () => {
       await deleteProcessorFiles(projectDir, []);
 
-      expect(unlink).not.toHaveBeenCalled();
-    });
-
-    it('should ignore errors when file does not exist', async () => {
-      vi.mocked(unlink).mockRejectedValue(new Error('ENOENT'));
-
-      // Should not throw
-      await expect(deleteProcessorFiles(projectDir, ['missing.txt'])).resolves.not.toThrow();
+      expect(rm).not.toHaveBeenCalled();
     });
   });
 
@@ -119,7 +114,10 @@ describe('processor.utils', () => {
       await applyProcessorResult(projectDir, result);
 
       expect(writeFile).toHaveBeenCalledWith(join(projectDir, 'new-file.scss'), 'body {}');
-      expect(unlink).toHaveBeenCalledWith(join(projectDir, 'old-file.css'));
+      expect(rm).toHaveBeenCalledWith(join(projectDir, 'old-file.css'), {
+        recursive: true,
+        force: true,
+      });
       expect(updatePackageJson).toHaveBeenCalled();
     });
 
@@ -132,7 +130,7 @@ describe('processor.utils', () => {
 
       await applyProcessorResult(projectDir, result);
 
-      expect(unlink).not.toHaveBeenCalled();
+      expect(rm).not.toHaveBeenCalled();
     });
 
     it('should handle empty result', async () => {

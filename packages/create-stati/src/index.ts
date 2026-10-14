@@ -28,6 +28,9 @@ Options:
   --styling <type>         CSS solution (css|sass|tailwind)
   --typescript, --ts       Use TypeScript (default)
   --no-typescript, --no-ts Use JavaScript instead of TypeScript
+  --images                 Add image tools: responsive AVIF/WebP images and link
+                           preview cards (@stati/images)
+  --no-images              Skip image tools (default)
   --no-git                 Skip git initialization (default: initializes Git)
   --no-install             Skip dependency installation (default: installs dependencies)
   --package-manager <pm>   Package manager to use (npm|yarn|pnpm|bun)
@@ -41,6 +44,7 @@ Examples:
   create-stati my-docs --template=docs
   create-stati my-site --styling=sass
   create-stati my-app --no-typescript
+  create-stati my-blog --template=blog --images
   create-stati my-app --template=blank --styling=tailwind --package-manager=pnpm
   create-stati my-app --no-install --no-git
   create-stati my-app --agent-skill=github
@@ -82,6 +86,12 @@ Examples:
         case 'no-typescript':
         case 'no-ts':
           options.typescript = false;
+          break;
+        case 'images':
+          options.images = true;
+          break;
+        case 'no-images':
+          options.images = false;
           break;
         case 'no-git':
           options.gitInit = false;
@@ -232,6 +242,18 @@ export async function runCLI(cliOptions?: Partial<CreateOptions> | null): Promis
     });
   }
 
+  // Image tools prompt (only in interactive mode, like TypeScript). Off unless chosen: the
+  // package installs a native image encoder.
+  if (options.images === undefined && hasRequiredPrompts) {
+    prompts.push({
+      name: 'images',
+      type: 'confirm',
+      message:
+        'Add image tools? Responsive AVIF/WebP images and link preview cards (@stati/images)',
+      default: false,
+    });
+  }
+
   // Agent skill prompt (only in interactive mode, like TypeScript)
   if (options.agentSkill === undefined && hasRequiredPrompts) {
     prompts.push({
@@ -309,6 +331,7 @@ export async function runCLI(cliOptions?: Partial<CreateOptions> | null): Promis
     template: options.template || answers.template || 'blank',
     styling: options.styling || answers.styling || 'css',
     typescript: options.typescript ?? answers.typescript ?? true,
+    images: options.images ?? answers.images ?? false,
     gitInit:
       options.gitInit !== undefined
         ? options.gitInit

@@ -1,0 +1,44 @@
+<%
+  /*
+   * The link preview card for each page. Stati uses it when images.og is on in
+   * stati.config.js, which needs @stati/images, and turns it into a 1200 by 630 image.
+   *
+   * Cards use inline styles in the CSS subset Satori supports: flexbox layout, no grid,
+   * no classes. Every element with more than one child needs display:flex. The fonts
+   * come from images.og.fonts in stati.config.js; Inter is always available.
+   */
+  const clamp = (value, max) => {
+    const text = String(value || '').replace(/\s+/g, ' ').trim();
+    return text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
+  };
+
+  const isHome = stati.page.url === '/';
+  const title = clamp(isHome ? stati.site.title : stati.page.title || stati.site.title, 90);
+  const description = clamp(isHome ? stati.site.description : stati.page.description, 130);
+
+  let host = '';
+  try {
+    host = new URL(stati.site.baseUrl).host;
+  } catch (error) {
+    host = '';
+  }
+  const footer = isHome ? host : [clamp(stati.site.title, 40), host].filter(Boolean).join(' · ');
+  const titleSize = isHome ? 104 : title.length > 60 ? 60 : title.length > 32 ? 70 : 84;
+%>
+<div style="display:flex;flex-direction:column;width:100%;height:100%;padding:80px 96px 64px;background-color:#ffffff;color:#1b1f1d;font-family:'Young Serif'">
+  <div style="display:flex;flex-direction:column;flex-grow:1">
+    <div style="<%= `display:flex;font-size:${titleSize}px;line-height:1.08` %>"><%= title %></div>
+<% if (description) { %>
+    <div style="display:flex;margin-top:28px;font-size:34px;line-height:1.35;color:#545d58"><%= description %></div>
+<% } %>
+  </div>
+  <div style="display:flex;align-items:center;justify-content:space-between;padding-top:32px;border-top:2px solid #e4e8e6">
+    <div style="display:flex;font-family:Inter;font-size:26px;color:#545d58"><%= footer %></div>
+    <svg width="144" height="54" viewBox="0 0 64 24">
+      <path d="M2 12h17" stroke="#0f7b6c" stroke-width="1.75" stroke-linecap="round" />
+      <path d="M45 12h17" stroke="#0f7b6c" stroke-width="1.75" stroke-linecap="round" />
+      <path d="M41.5 12c-3.2 2.2-5.6 7.6-10.3 7.6-3.2 0-5.2-2.3-5.2-4.6 0-1.6.9-2.8 2.1-3.4-1.2-.6-2.1-1.8-2.1-3.4 0-2.3 2-4.6 5.2-4.6 4.7 0 7.1 5.4 10.3 7.6Z" fill="#0f7b6c" />
+      <path d="M26 12c-1.6 0-2.8-.8-3.6-2.1-.7-1.2-1.8-1.9-3.1-1.9" fill="none" stroke="#0f7b6c" stroke-width="1.75" stroke-linecap="round" />
+    </svg>
+  </div>
+</div>

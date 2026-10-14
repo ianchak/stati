@@ -37,7 +37,7 @@ All of this comes from front matter you already write: `title`, `description`, `
 
 ---
 
-Pages without their own image use `/images/social-card.png`. Replace it with a 1200 by 630 pixel image of your own, or give a post its own picture:
+Pages without their own image use `/images/social-card.png`. Replace it with a 1200 by 630 pixel image of your own, or give a post its own picture. If you added image tools when you created the blog, each page gets its own card instead, drawn from `site/og.eta` with the page's title and description:
 
 ```yaml
 image: /images/my-post-card.png

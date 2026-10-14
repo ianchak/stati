@@ -1,0 +1,52 @@
+<%
+  /*
+   * The link preview card for each page. Stati uses it when images.og is on in
+   * stati.config.js, which needs @stati/images, and turns it into a 1200 by 630 image.
+   *
+   * Cards use inline styles in the CSS subset Satori supports: flexbox layout, no grid,
+   * no classes. Every element with more than one child needs display:flex. The fonts
+   * come from images.og.fonts in stati.config.js; Inter 400 is always available.
+   */
+  const clamp = (value, max) => {
+    const text = String(value || '').replace(/\s+/g, ' ').trim();
+    return text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
+  };
+
+  const isHome = stati.page.url === '/';
+  const siteTitle = clamp(stati.site.title, 40);
+  // The home page shows its hero heading, as on the site itself
+  const title = clamp(
+    (isHome && stati.page.heading) || stati.page.title || stati.site.title,
+    90,
+  );
+  const description = clamp(isHome ? stati.site.description : stati.page.description, 130);
+  const parent = isHome ? undefined : stati.nav.getParent();
+  const section =
+    parent && parent.title && parent.title !== stati.page.title ? clamp(parent.title, 36) : '';
+  const titleSize = title.length > 60 ? 58 : title.length > 32 ? 68 : 80;
+  const tracking = (titleSize * -0.025).toFixed(2);
+%>
+<div style="display:flex;flex-direction:column;width:100%;height:100%;background-color:#ffffff;color:#0f172a;font-family:Inter">
+  <div style="display:flex;width:100%;height:12px;background-color:#2563eb"></div>
+  <div style="display:flex;flex-direction:column;flex-grow:1;padding:68px 88px 64px">
+    <div style="display:flex;align-items:center">
+      <svg width="56" height="56" viewBox="0 0 32 32">
+        <rect width="32" height="32" rx="8" fill="#2563eb" />
+        <path d="M8 9.5c2.7-.9 5.4-.6 8 1v13c-2.6-1.6-5.3-1.9-8-1z" fill="#ffffff" />
+        <path d="M24 9.5c-2.7-.9-5.4-.6-8 1v13c2.6-1.6 5.3-1.9 8-1z" fill="#ffffff" fill-opacity="0.72" />
+      </svg>
+      <div style="display:flex;margin-left:20px;font-size:34px;font-weight:600"><%= siteTitle %></div>
+    </div>
+    <div style="display:flex;flex-direction:column;margin-top:52px">
+      <div style="<%= `display:flex;font-size:${titleSize}px;font-weight:800;line-height:1.08;letter-spacing:${tracking}px` %>"><%= title %></div>
+<% if (description) { %>
+      <div style="display:flex;margin-top:24px;font-size:32px;line-height:1.4;color:#64748b"><%= description %></div>
+<% } %>
+    </div>
+<% if (section) { %>
+    <div style="display:flex;margin-top:auto">
+      <div style="display:flex;padding:10px 24px;border:2px solid #e2e8f0;border-radius:999px;font-size:26px;color:#334155"><%= section %></div>
+    </div>
+<% } %>
+  </div>
+</div>

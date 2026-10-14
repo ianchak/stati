@@ -176,6 +176,16 @@ describe('create-stati CLI', () => {
       );
     });
 
+    it('should parse --images and --no-images flags', async () => {
+      expect(await parseArgs(['test-project', '--images'])).toEqual(
+        expect.objectContaining({ projectName: 'test-project', images: true }),
+      );
+      expect(await parseArgs(['test-project', '--no-images'])).toEqual(
+        expect.objectContaining({ projectName: 'test-project', images: false }),
+      );
+      expect(await parseArgs(['test-project'])).not.toHaveProperty('images');
+    });
+
     it('should return empty object for no arguments', async () => {
       const result = await parseArgs([]);
 
@@ -394,9 +404,59 @@ describe('create-stati CLI', () => {
         template: 'blank',
         styling: 'css',
         typescript: true, // TypeScript is the default in non-interactive mode
+        images: false, // Image tools are off unless --images is passed
         gitInit: false,
         install: false,
       });
+    });
+
+    it('should add image tools only when --images is passed in non-interactive mode', async () => {
+      await runCLI({
+        projectName: 'test-project',
+        template: 'blog',
+        styling: 'css',
+        images: true,
+        gitInit: false,
+        install: false,
+      });
+
+      expect(mockInquirer.prompt).not.toHaveBeenCalled();
+      expect(mockCreateSite).toHaveBeenCalledWith(expect.objectContaining({ images: true }));
+    });
+
+    it('should ask about image tools in interactive mode, defaulting to no, after TypeScript', async () => {
+      mockInquirer.prompt.mockResolvedValueOnce({
+        styling: 'css',
+        typescript: true,
+        images: true,
+        gitInit: false,
+        install: false,
+      });
+
+      await runCLI({ projectName: 'test-project', template: 'blank' });
+
+      const prompts = mockInquirer.prompt.mock.calls[0]?.[0] as Array<{ name: string }>;
+      const names = prompts.map((p) => p.name);
+      expect(names.indexOf('images')).toBe(names.indexOf('typescript') + 1);
+      expect(prompts.find((p) => p.name === 'images')).toEqual(
+        expect.objectContaining({ type: 'confirm', default: false }),
+      );
+      expect(mockCreateSite).toHaveBeenCalledWith(expect.objectContaining({ images: true }));
+    });
+
+    it('should not ask about image tools when --no-images is passed', async () => {
+      mockInquirer.prompt.mockResolvedValueOnce({
+        styling: 'css',
+        typescript: true,
+        gitInit: false,
+        install: false,
+      });
+
+      await runCLI({ projectName: 'test-project', template: 'blank', images: false });
+
+      const prompts = mockInquirer.prompt.mock.calls[0]?.[0] as Array<{ name: string }>;
+      expect(prompts.map((p) => p.name)).not.toContain('images');
+      expect(mockCreateSite).toHaveBeenCalledWith(expect.objectContaining({ images: false }));
     });
 
     it('should default the TypeScript prompt to yes', async () => {

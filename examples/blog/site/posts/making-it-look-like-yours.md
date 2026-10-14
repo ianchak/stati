@@ -35,7 +35,7 @@ The leaf between sections and at the end of each post is `public/images/fleuron.
 
 ## The favicon and link preview image
 
-Replace `public/favicon.svg` with your own icon, and `public/images/social-card.png` with a 1200 by 630 pixel image for link previews.
+Replace `public/favicon.svg` with your own icon, and `public/images/social-card.png` with a 1200 by 630 pixel image for link previews. With image tools on, each page's preview is drawn from `site/og.eta` instead; edit its colours and fonts there.
 
 ## Header links
 

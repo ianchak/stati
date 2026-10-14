@@ -69,11 +69,13 @@ npx create-stati my-blog --template blog --styling css --no-typescript --package
 
 ## Images
 
-Images span the column. Store them in `public/images/` and always describe them in the alt text. Wrap an image in a `<figure>` to give it a caption:
+Images span the column. Store them in `public/images/`, or next to the post's Markdown file and link them as `./photo.jpg`, and always describe them in the alt text. Stati adds each image's width and height and loads it lazily. Wrap an image in a `<figure>` to give it a caption, with blank lines around the image so it is still read as Markdown:
 
 <figure>
-  <img src="/images/social-card.png" alt="The blog name in large serif letters above the address and the leaf ornament" width="1200" height="630" loading="lazy" />
-  <figcaption>The default link preview card, public/images/social-card.png. Replace it with your own.</figcaption>
+
+![The blog name in large serif letters above the address and the leaf ornament](/images/social-card.png)
+
+<figcaption>The default link preview card, public/images/social-card.png. Replace it with your own.</figcaption>
 </figure>
 
 That is everything. If this page reads well, so will your posts.

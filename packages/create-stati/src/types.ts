@@ -34,6 +34,6 @@ export interface ProcessorResult {
  * Used by processors that need to remove template files (e.g., Sass removes public/styles.css).
  */
 export interface ProcessorResultWithDeletions extends ProcessorResult {
-  /** Array of relative file paths to delete */
+  /** Array of relative file or folder paths to delete */
   filesToDelete?: string[];
 }
