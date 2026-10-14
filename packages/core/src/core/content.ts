@@ -62,7 +62,7 @@ export async function loadContent(
     };
 
     const publishedAt = getFrontMatterDate(frontMatter, (field, value) => {
-      console.warn(`Ignoring invalid date in "${field}" of ${file}: ${String(value)}`);
+      console.warn(`Ignoring invalid date in "${field}" of ${file}: ${describeDateValue(value)}`);
     });
     if (publishedAt) {
       page.publishedAt = publishedAt;
@@ -83,6 +83,20 @@ function computeSlug(relativePath: string): string {
   }
 
   return dir === '.' ? `/${name}` : `/${dir}/${name}`;
+}
+
+/**
+ * Describes a rejected front matter date for a warning without calling the value's
+ * own conversion methods, which a YAML mapping such as `{ toString: x }` can break.
+ */
+function describeDateValue(value: unknown): string {
+  if (typeof value === 'string') {
+    return JSON.stringify(value);
+  }
+  if (typeof value === 'object' && !(value instanceof Date)) {
+    return Array.isArray(value) ? 'a list' : 'a mapping';
+  }
+  return String(value);
 }
 
 function computeUrl(slug: string, frontMatter: Record<string, unknown>): string {

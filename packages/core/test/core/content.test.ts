@@ -217,6 +217,30 @@ describe('content.ts', () => {
       expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('/test/project/src/post.md'));
     });
 
+    it('should warn without converting a mapping or list and use the fallback date', async () => {
+      mockGlob.mockResolvedValue(['/test/project/src/post.md']);
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      mockReadFile.mockResolvedValue(
+        "---\npublishedAt: { toString: invalid }\npublished: [soon]\ndate: '2026-06-01'\n---\n# Post",
+      );
+      mockMatter.mockReturnValue(
+        createMockMatterResult(
+          { publishedAt: { toString: 'invalid' }, published: ['soon'], date: '2026-06-01' },
+          '# Post',
+        ),
+      );
+
+      const pages = await loadContent(mockConfig);
+
+      expect(pages[0]!.publishedAt).toEqual(new Date('2026-06-01'));
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('"publishedAt" of /test/project/src/post.md: a mapping'),
+      );
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('"published" of /test/project/src/post.md: a list'),
+      );
+    });
+
     it('should handle nested directory structure', async () => {
       const mockFiles = [
         '/test/project/src/blog/first-post.md',

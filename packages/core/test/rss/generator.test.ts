@@ -524,6 +524,35 @@ describe('RSS Feed Generation', () => {
       expect(result.xml).toMatch(/<pubDate>[A-Za-z]{3}, 15 Mar 2025/);
     });
 
+    it('should read pubDate from a custom string mapping only', () => {
+      baseFeedConfig.itemMapping = { pubDate: 'releasedOn' };
+      const pages = [
+        {
+          slug: 'mapped',
+          url: '/mapped',
+          content: '<p>Content</p>',
+          frontMatter: { title: 'Mapped', publishedAt: '2025-01-01', releasedOn: '2025-04-02' },
+          sourcePath: 'site/mapped.md',
+        },
+        {
+          slug: 'bad-mapped',
+          url: '/bad-mapped',
+          content: '<p>Content</p>',
+          frontMatter: { title: 'Bad Mapped', publishedAt: '2025-01-01', releasedOn: 'soon' },
+          sourcePath: 'site/bad-mapped.md',
+        },
+      ] as PageModel[];
+
+      const result = generateRSSFeed(pages, baseConfig, baseFeedConfig);
+      const pubDates = [...result.xml.matchAll(/<item>[\s\S]*?<\/item>/g)].map(
+        (match) => match[0].match(/<pubDate>([^<]+)<\/pubDate>/)?.[1],
+      );
+
+      expect(pubDates[0]).toMatch(/02 Apr 2025/);
+      // An invalid mapped value omits pubDate instead of falling back to publishedAt
+      expect(pubDates[1]).toBeUndefined();
+    });
+
     it('should read published and createdAt for pubDate and sorting', () => {
       const pages = [
         {
