@@ -1,5 +1,6 @@
 ---
 '@stati/core': minor
+'@stati/cli': patch
 'create-stati': patch
 ---
 
