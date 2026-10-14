@@ -544,9 +544,10 @@ describe('RSS Feed Generation', () => {
       ] as PageModel[];
 
       const result = generateRSSFeed(pages, baseConfig, baseFeedConfig);
-      const pubDates = [...result.xml.matchAll(/<item>[\s\S]*?<\/item>/g)].map(
-        (match) => match[0].match(/<pubDate>([^<]+)<\/pubDate>/)?.[1],
-      );
+      const pubDates = result.xml
+        .split('<item>')
+        .slice(1)
+        .map((item) => item.match(/<pubDate>([^<]+)<\/pubDate>/)?.[1]);
 
       expect(pubDates[0]).toMatch(/02 Apr 2025/);
       // An invalid mapped value omits pubDate instead of falling back to publishedAt
