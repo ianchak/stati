@@ -32,21 +32,21 @@ or that malformed values will be safely coerced by every feature.
 
 Built-in/respected metadata:
 
-| Field                         | Purpose                                                          |
-| ----------------------------- | ---------------------------------------------------------------- |
-| `title`, `description`        | Display/SEO defaults                                             |
-| `tags`                        | Grouping, search, invalidation, keyword fallback                 |
-| `layout`                      | Source-root-relative layout name without `.eta`                  |
-| `order`                       | Navigation sort key                                              |
-| `publishedAt`                 | Canonical publication date, parsed on PageModel                  |
-| `date`                        | Feature-specific date alias/fallback; not universally equivalent |
-| `updated`                     | Modification metadata fallback                                   |
-| `draft`                       | Omitted unless draft inclusion requested                         |
-| `permalink`                   | String URL override supported by loader                          |
-| `ttlSeconds`, `maxAgeCapDays` | Page cache controls                                              |
-| `seo`                         | Page SEO settings                                                |
-| `sitemap`                     | Page sitemap settings                                            |
-| custom fields                 | Remain in `frontMatter` / current `stati.page`                   |
+| Field                            | Purpose                                                         |
+| -------------------------------- | --------------------------------------------------------------- |
+| `title`, `description`           | Display/SEO defaults                                            |
+| `tags`                           | Grouping, search, invalidation, keyword fallback                |
+| `layout`                         | Source-root-relative layout name without `.eta`                 |
+| `order`                          | Navigation sort key                                             |
+| `publishedAt`                    | Canonical publication date, parsed into `PageModel.publishedAt` |
+| `published`, `date`, `createdAt` | Fallbacks, in that order, when `publishedAt` is absent/invalid  |
+| `updated`                        | Modification metadata fallback                                  |
+| `draft`                          | Omitted unless draft inclusion requested                        |
+| `permalink`                      | String URL override supported by loader                         |
+| `ttlSeconds`, `maxAgeCapDays`    | Page cache controls                                             |
+| `seo`                            | Page SEO settings                                               |
+| `sitemap`                        | Page sitemap settings                                           |
+| custom fields                    | Remain in `frontMatter` / current `stati.page`                  |
 
 Reserve `path`, `url`, `content`, `navNode`, `toc`: rendering overwrites them.
 A custom frontmatter field is not automatically a new runtime feature.
@@ -120,6 +120,12 @@ not also require the Markdown body to repeat that same `h1`.
 A `PageModel` has `slug`, `url`, `sourcePath`, `frontMatter`, raw Markdown
 `content`, and optional parsed `publishedAt`. This is what hooks, feature
 callbacks, and collection arrays receive.
+
+`publishedAt` is a `Date` taken from the first valid front matter value among
+`publishedAt`, `published`, `date`, `createdAt`. Quoted (string) and unquoted
+(YAML `Date`) values both work; invalid values are skipped with a console
+warning. Collections, navigation, ISG aging and RSS use the same order. The
+flattened `stati.page.publishedAt` is still the raw front matter value.
 
 Inside the current template, `stati.page.title` is flattened frontmatter and
 `stati.content` is rendered HTML. In a listing:

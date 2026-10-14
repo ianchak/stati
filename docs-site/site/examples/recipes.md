@@ -577,7 +577,7 @@ export default defineConfig({
 });
 ```
 
-`page.publishedAt` is only set when the front matter `publishedAt` is a quoted string.
+`page.publishedAt` is a `Date` taken from the first valid front matter value among `publishedAt`, `published`, `date` and `createdAt`, quoted or unquoted. It is `undefined` for undated pages.
 
 ## Advanced patterns
 

@@ -452,13 +452,13 @@ export default defineConfig({
 ---
 title: string (required)
 description: string (required)
-publishedAt: 'YYYY-MM-DD' (quoted; required for dated content)
+publishedAt: YYYY-MM-DD (required for dated content)
 draft: boolean (optional)
 tags: string[] (optional)
 ---
 ```
 
-Quote `publishedAt`: Stati reads it as the page's publication date (used for sorting collections and navigation) only when it is a string, and YAML turns an unquoted date into a date object.
+Use one date field across the site. Stati reads the page's publication date (used for sorting collections, navigation, ISG aging and RSS) from the first valid value among `publishedAt`, `published`, `date` and `createdAt`, quoted or unquoted. An invalid value is skipped with a warning, so a typo silently moves the page to the end of date-sorted lists.
 
 ## Recovery strategies
 

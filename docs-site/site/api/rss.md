@@ -150,7 +150,7 @@ interface RSSItemMapping {
 
 - `link` - Custom link generator (default: uses page URL)
 
-- `pubDate` - Publication date field mapping (default: `'publishedAt'` or `'date'`)
+- `pubDate` - Publication date field mapping (default: the first valid of `'publishedAt'`, `'published'`, `'date'`, `'createdAt'`)
   - String: frontMatter property name
   - Function: custom date generator
 

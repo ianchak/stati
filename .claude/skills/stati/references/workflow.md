@@ -167,7 +167,7 @@ will not execute Stati to refresh expired cache entries on visitor requests.
 | Template syntax failure               | JavaScript only; no `as string`, JSX, type declarations, or undeclared locals           |
 | `post.title` missing                  | Collection entries require `post.frontMatter.title`                                     |
 | Missing post sidebar collection       | Parent URL normalization caveat; use guarded navigation helpers                         |
-| Date sort not applied                 | Use quoted valid `publishedAt`; `date` is not universally parsed into PageModel         |
+| Date sort not applied                 | Check for an invalid-date warning; use a valid `publishedAt`, `published`, `date`, etc. |
 | Missing Tailwind variant              | Inventory/build order, literal class map, branches actually rendered                    |
 | Bundle on wrong page                  | Output-path include/exclude patterns and unique bundle names                            |
 | Missing feed/sitemap/robots in dev    | Production-only generators; run production build                                        |
