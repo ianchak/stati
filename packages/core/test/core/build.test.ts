@@ -383,9 +383,15 @@ describe('build.ts', () => {
       await build();
 
       expect(mockRenderMarkdown).toHaveBeenCalledTimes(3);
-      expect(mockRenderMarkdown).toHaveBeenCalledWith('# Welcome to our site', mockMd, true);
-      expect(mockRenderMarkdown).toHaveBeenCalledWith('# About us', mockMd, true);
-      expect(mockRenderMarkdown).toHaveBeenCalledWith('# My first post', mockMd, true);
+      expect(mockRenderMarkdown).toHaveBeenCalledWith('# Welcome to our site', mockMd, true, {
+        images: expect.anything(),
+      });
+      expect(mockRenderMarkdown).toHaveBeenCalledWith('# About us', mockMd, true, {
+        images: expect.anything(),
+      });
+      expect(mockRenderMarkdown).toHaveBeenCalledWith('# My first post', mockMd, true, {
+        images: expect.anything(),
+      });
     });
 
     it('should render each page with template', async () => {
@@ -402,6 +408,7 @@ describe('build.ts', () => {
         expect.objectContaining({ bundlePaths: [] }), // assets parameter
         expect.any(Array), // toc parameter
         expect.objectContaining({ error: expect.any(Function) }), // logger parameter
+        { images: expect.anything() }, // page image state
       );
     });
 
@@ -1125,6 +1132,7 @@ describe('build.ts', () => {
         }),
         expect.any(Array), // toc parameter
         expect.objectContaining({ error: expect.any(Function) }), // logger parameter
+        { images: expect.anything() }, // page image state
       );
     });
 
@@ -1153,6 +1161,7 @@ describe('build.ts', () => {
         expect.objectContaining({ bundlePaths: [] }),
         expect.any(Array), // toc parameter
         expect.objectContaining({ error: expect.any(Function) }), // logger parameter
+        { images: expect.anything() }, // page image state
       );
     });
   });
@@ -1289,6 +1298,7 @@ describe('build.ts', () => {
         }),
         expect.any(Array),
         expect.any(Object),
+        { images: expect.anything() },
       );
     });
 

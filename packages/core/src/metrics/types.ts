@@ -140,6 +140,8 @@ export interface MetricsPhases {
   readonly hookBeforeRenderTotalMs?: number;
   /** Aggregate time spent in afterRender hooks across all pages */
   readonly hookAfterRenderTotalMs?: number;
+  /** Waiting for image jobs and saving the images manifest */
+  readonly imageSettleMs?: number;
 }
 
 /**
@@ -157,6 +159,12 @@ export interface MetricsCounts {
   readonly assetsCopied: number;
   readonly templatesLoaded: number;
   readonly markdownFilesProcessed: number;
+  /** Image files generated or copied this build */
+  readonly imagesGenerated?: number;
+  /** Image jobs whose files were reused from an earlier build */
+  readonly imagesCached?: number;
+  /** Image jobs that failed */
+  readonly imagesFailed?: number;
 }
 
 /**

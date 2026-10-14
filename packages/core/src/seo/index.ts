@@ -10,6 +10,8 @@ export {
   generateSEO,
   generateOpenGraphTags,
   generateTwitterCardTags,
+  generatedOgImageTags,
+  resolveGeneratedImagePlaceholders,
 } from './generator.js';
 
 // Sitemap generation

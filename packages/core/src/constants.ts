@@ -136,3 +136,38 @@ export const DEFAULT_TS_OUT_DIR = '_assets';
  * Creates a single global bundle from 'main.ts' entry point.
  */
 export const DEFAULT_BUNDLES = [{ entryPoint: 'main.ts', bundleName: 'main' }] as const;
+
+// === Image Constants ===
+
+/** Output directory for generated and copied images, relative to the build output */
+export const IMAGES_OUTPUT_DIR = '_img';
+
+/** Subdirectory of {@link IMAGES_OUTPUT_DIR} for generated Open Graph images */
+export const OG_IMAGES_SUBDIR = 'og';
+
+/** Cache subdirectory (inside `.stati`) holding the images manifest */
+export const IMAGES_CACHE_SUBDIR = 'images';
+
+/** Package that implements responsive images and Open Graph image generation */
+export const IMAGES_PACKAGE_NAME = '@stati/images';
+
+/** Default candidate widths for responsive images */
+export const DEFAULT_IMAGE_WIDTHS: readonly number[] = [480, 960, 1440];
+
+/** Default modern formats for responsive images */
+export const DEFAULT_IMAGE_FORMATS: readonly ('avif' | 'webp')[] = ['avif', 'webp'];
+
+/** Default encoder quality per format; PNG stays lossless unless configured */
+export const DEFAULT_IMAGE_QUALITY = { avif: 50, webp: 75, jpeg: 80 } as const;
+
+/** Default `sizes` attribute for responsive images */
+export const DEFAULT_IMAGE_SIZES = '100vw';
+
+/** Default Open Graph image template name */
+export const DEFAULT_OG_TEMPLATE = 'og.eta';
+
+/** Default Open Graph image width in pixels */
+export const DEFAULT_OG_WIDTH = 1200;
+
+/** Default Open Graph image height in pixels */
+export const DEFAULT_OG_HEIGHT = 630;

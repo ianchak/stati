@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { readFile, pathExists } from '../utils/index.js';
+import { inspectSource } from '../../images/sources.js';
 
 /**
  * Creates a SHA-256 hash instance, updates it with data, and returns the hex digest.
@@ -114,6 +115,20 @@ export async function computeFileHash(filePath: string): Promise<string | null> 
     fileHashCache.set(normalizedPath, null);
     return null;
   }
+}
+
+/**
+ * Computes a hash of a binary file, such as an image a page displays.
+ * Unlike {@link computeFileHash}, it hashes raw bytes, and a missing file hashes to a
+ * fixed sentinel: a page that references a missing image stays cached until the file
+ * appears, and then rebuilds.
+ *
+ * @param filePath - Absolute path to the file
+ * @returns `sha256-…` for an existing file, `missing:<path>` otherwise
+ */
+export async function computeBinaryFileHash(filePath: string): Promise<string> {
+  const info = await inspectSource(filePath);
+  return info ? `sha256-${info.hash}` : `missing:${filePath.replace(/\\/g, '/')}`;
 }
 
 /**

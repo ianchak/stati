@@ -12,6 +12,7 @@ export { loadCacheManifest, saveCacheManifest, createEmptyManifest } from './man
 
 // Build decision logic
 export { shouldRebuildPage, createCacheEntry, updateCacheEntry } from './builder.js';
+export type { RenderedAssets } from './builder.js';
 
 // Build locking
 export { BuildLockManager, withBuildLock } from './build-lock.js';
@@ -29,6 +30,7 @@ export {
 export {
   computeContentHash,
   computeFileHash,
+  computeBinaryFileHash,
   computeInputsHash,
   computeNavigationHash,
   clearFileHashCache,

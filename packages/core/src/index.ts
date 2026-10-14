@@ -60,6 +60,25 @@ export type {
 // RSS types
 export type { RSSConfig, RSSFeedConfig, RSSGenerationResult } from './types/index.js';
 
+// Image types
+export type {
+  ImagesConfig,
+  ResponsiveImagesConfig,
+  OgImagesConfig,
+  OgImageFontConfig,
+  ImagesQualityConfig,
+  ImageVariantFormat,
+  ImageOutputFormat,
+  ImageSourceFormat,
+  ImageProvider,
+  VariantRequest,
+  VariantOutput,
+  OgImageRequest,
+  OgFont,
+  OgDefaults,
+  GeneratedOgImage,
+} from './types/index.js';
+
 // Re-export core functionality from barrel
 export type {
   BuildOptions,

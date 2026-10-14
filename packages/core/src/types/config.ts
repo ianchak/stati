@@ -88,6 +88,11 @@ export interface StatiConfig {
   search?: SearchConfig;
   /** TypeScript compilation settings */
   typescript?: TypeScriptConfig;
+  /**
+   * Image handling. Intrinsic sizes, lazy loading and co-located images work without
+   * configuration; `false` turns them off. `responsive` and `og` need `@stati/images`.
+   */
+  images?: false | import('./images.js').ImagesConfig;
   /** Development server configuration */
   dev?: {
     /** Port for development server (default: 3000) */

@@ -84,6 +84,13 @@ export interface CacheEntry {
   readonly ttlSeconds: number;
   /** Maximum age cap for this page in days */
   maxAgeCapDays?: number;
+  /**
+   * Files found while rendering, such as the images a page displays. Their hashes are part
+   * of `inputsHash`, so replacing an image rebuilds only the pages that show it.
+   */
+  assetDeps?: readonly string[];
+  /** Generated image files this page references, relative to the output directory */
+  images?: readonly string[];
 }
 
 /**

@@ -7,6 +7,7 @@ import type { SEOContext } from '../types/seo.js';
 import type { PageModel } from '../types/content.js';
 import type { StatiConfig, SiteConfig } from '../types/config.js';
 import type { Logger } from '../types/logging.js';
+import type { GeneratedOgImage } from '../types/images.js';
 import { SEOTagType } from '../types/seo.js';
 import {
   escapeHtml,
@@ -191,7 +192,14 @@ export function generateOpenGraphTags(ctx: SEOContext): string[] {
   tags.push(`<meta property="og:type" content="${escapeHtml(ogType)}">`);
   tags.push(`<meta property="og:site_name" content="${escapeHtml(ogSiteName)}">`);
 
-  // OG Image
+  // OG Image: front matter wins, then a generated image unless front matter sets `false`
+  if (!og.image && og.image !== false) {
+    if (ctx.generatedImage) {
+      tags.push(...generatedOgImageTags(ctx.generatedImage).openGraph);
+    } else if (ctx.deferGeneratedImage) {
+      tags.push(OG_IMAGE_PLACEHOLDER);
+    }
+  }
   if (og.image) {
     const image = typeof og.image === 'string' ? { url: og.image } : og.image;
     const imageUrl = image.url.startsWith('/') ? `${siteUrl}${image.url}` : image.url;
@@ -314,9 +322,67 @@ export function generateTwitterCardTags(ctx: SEOContext): string[] {
     if (twitter.imageAlt) {
       tags.push(`<meta name="twitter:image:alt" content="${escapeHtml(twitter.imageAlt)}">`);
     }
+  } else if (seo.openGraph?.image !== false && ctx.generatedImage) {
+    tags.push(...generatedOgImageTags(ctx.generatedImage).twitter);
+  } else if (seo.openGraph?.image !== false && ctx.deferGeneratedImage) {
+    tags.push(TWITTER_IMAGE_PLACEHOLDER);
   }
 
   return tags;
+}
+
+/** Stands in for generated `og:image` tags until the image is known. */
+const OG_IMAGE_PLACEHOLDER = '<!--stati:og-image-->';
+
+/** Stands in for generated `twitter:image` tags until the image is known. */
+const TWITTER_IMAGE_PLACEHOLDER = '<!--stati:twitter-image-->';
+
+/**
+ * Replaces the placeholders that {@link SEOContext.deferGeneratedImage} produced with the
+ * generated image's tags, or removes them when the page ended up without an image.
+ *
+ * @param html - Rendered HTML
+ * @param image - The generated image, if any
+ * @returns HTML without placeholders
+ */
+export function resolveGeneratedImagePlaceholders(
+  html: string,
+  image: GeneratedOgImage | undefined,
+): string {
+  if (!html.includes('<!--stati:')) {
+    return html;
+  }
+  const tags = image ? generatedOgImageTags(image) : { openGraph: [], twitter: [] };
+  return html
+    .split(OG_IMAGE_PLACEHOLDER)
+    .join(tags.openGraph.join('\n    '))
+    .split(TWITTER_IMAGE_PLACEHOLDER)
+    .join(tags.twitter.join('\n    '));
+}
+
+/**
+ * Open Graph and Twitter tags for a generated image.
+ * Shared by tag generation and by the image pipeline, which removes exactly these tags
+ * from a page when its image fails to generate.
+ *
+ * @param image - The generated image
+ * @returns The `og:image*` and `twitter:image*` tags
+ */
+export function generatedOgImageTags(image: GeneratedOgImage): {
+  openGraph: string[];
+  twitter: string[];
+} {
+  const openGraph = [
+    `<meta property="og:image" content="${escapeHtml(image.url)}">`,
+    `<meta property="og:image:width" content="${image.width}">`,
+    `<meta property="og:image:height" content="${image.height}">`,
+  ];
+  const twitter = [`<meta name="twitter:image" content="${escapeHtml(image.url)}">`];
+  if (image.alt) {
+    openGraph.push(`<meta property="og:image:alt" content="${escapeHtml(image.alt)}">`);
+    twitter.push(`<meta name="twitter:image:alt" content="${escapeHtml(image.alt)}">`);
+  }
+  return { openGraph, twitter };
 }
 
 /**
@@ -338,6 +404,8 @@ export function generateSEO(
     page: PageModel;
     config: StatiConfig;
     site?: SiteConfig;
+    generatedImage?: GeneratedOgImage | undefined;
+    deferGeneratedImage?: boolean | undefined;
   },
   tags?: Array<SEOTagType | string>,
 ): string {
@@ -383,6 +451,11 @@ export function generateSEO(
 
   if (include) {
     seoContext.include = include;
+  }
+  if (context.generatedImage) {
+    seoContext.generatedImage = context.generatedImage;
+  } else if (context.deferGeneratedImage) {
+    seoContext.deferGeneratedImage = true;
   }
 
   return generateSEOMetadata(seoContext);

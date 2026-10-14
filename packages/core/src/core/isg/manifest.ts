@@ -304,6 +304,17 @@ function validateCacheEntry(entry: unknown, path: string): entry is CacheEntry {
     return false;
   }
 
+  for (const field of ['assetDeps', 'images'] as const) {
+    const value = entryObj[field];
+    if (
+      value !== undefined &&
+      (!Array.isArray(value) || !value.every((item: unknown) => typeof item === 'string'))
+    ) {
+      console.warn(`Invalid cache entry for ${path}: "${field}" must be an array of strings`);
+      return false;
+    }
+  }
+
   // Validate that deps and tags arrays contain strings
   if (!entryObj.deps.every((dep: unknown) => typeof dep === 'string')) {
     console.warn(`Invalid cache entry for ${path}: all "deps" must be strings`);
