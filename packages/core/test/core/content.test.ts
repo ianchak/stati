@@ -164,9 +164,10 @@ describe('content.ts', () => {
       expect(pages[0]!.publishedAt).toEqual(new Date('2023-01-01'));
     });
 
-    it('should not set publishedAt if not a string', async () => {
+    it('should not set publishedAt if not a string or Date', async () => {
       const mockFiles = ['/test/project/src/post.md'];
       mockGlob.mockResolvedValue(mockFiles);
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
       mockReadFile.mockResolvedValue('---\ntitle: Post\npublishedAt: 123\n---\n# Post content');
 
@@ -177,6 +178,67 @@ describe('content.ts', () => {
       const pages = await loadContent(mockConfig);
 
       expect(pages[0]!.publishedAt).toBeUndefined();
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('"publishedAt"'));
+    });
+
+    it('should parse an unquoted YAML date (Date object) in publishedAt', async () => {
+      mockGlob.mockResolvedValue(['/test/project/src/post.md']);
+      mockReadFile.mockResolvedValue('---\npublishedAt: 2026-01-01\n---\n# Post');
+      mockMatter.mockReturnValue(
+        createMockMatterResult({ publishedAt: new Date('2026-01-01') }, '# Post'),
+      );
+
+      const pages = await loadContent(mockConfig);
+
+      expect(pages[0]!.publishedAt).toEqual(new Date('2026-01-01'));
+    });
+
+    it('should fall back to the date field', async () => {
+      mockGlob.mockResolvedValue(['/test/project/src/post.md']);
+      mockReadFile.mockResolvedValue("---\ndate: '2026-06-01'\n---\n# Post");
+      mockMatter.mockReturnValue(createMockMatterResult({ date: '2026-06-01' }, '# Post'));
+
+      const pages = await loadContent(mockConfig);
+
+      expect(pages[0]!.publishedAt).toEqual(new Date('2026-06-01'));
+    });
+
+    it('should warn and skip an invalid publishedAt in favor of a valid date', async () => {
+      mockGlob.mockResolvedValue(['/test/project/src/post.md']);
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      mockReadFile.mockResolvedValue("---\npublishedAt: soon\ndate: '2026-06-01'\n---\n# Post");
+      mockMatter.mockReturnValue(
+        createMockMatterResult({ publishedAt: 'soon', date: '2026-06-01' }, '# Post'),
+      );
+
+      const pages = await loadContent(mockConfig);
+
+      expect(pages[0]!.publishedAt).toEqual(new Date('2026-06-01'));
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('/test/project/src/post.md'));
+    });
+
+    it('should warn without converting a mapping or list and use the fallback date', async () => {
+      mockGlob.mockResolvedValue(['/test/project/src/post.md']);
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      mockReadFile.mockResolvedValue(
+        "---\npublishedAt: { toString: invalid }\npublished: [soon]\ndate: '2026-06-01'\n---\n# Post",
+      );
+      mockMatter.mockReturnValue(
+        createMockMatterResult(
+          { publishedAt: { toString: 'invalid' }, published: ['soon'], date: '2026-06-01' },
+          '# Post',
+        ),
+      );
+
+      const pages = await loadContent(mockConfig);
+
+      expect(pages[0]!.publishedAt).toEqual(new Date('2026-06-01'));
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('"publishedAt" of /test/project/src/post.md: a mapping'),
+      );
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('"published" of /test/project/src/post.md: a list'),
+      );
     });
 
     it('should handle nested directory structure', async () => {

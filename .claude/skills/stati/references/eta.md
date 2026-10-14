@@ -303,7 +303,8 @@ All arrays contain **PageModel**, not flattened frontmatter:
 
 Nonroot collections include descendant URLs, excluding the current page. Root
 collection behavior is direct-root membership, not all site descendants.
-`recentPages` sorts parsed `publishedAt` newest first; undated pages follow,
+`recentPages` sorts parsed `PageModel.publishedAt` (first valid of `publishedAt`,
+`published`, `date`, `createdAt`) newest first; undated pages follow,
 alphabetically by frontmatter title/URL fallback. `pagesByTag` uses string tags.
 Neither links nor tags generate additional content routes.
 

@@ -224,7 +224,7 @@ interface PageModel {
   /** Raw markdown content (before rendering) */
   content: string;
 
-  /** Publication date, set only when front matter `publishedAt` is a quoted string */
+  /** Publication date, from the first valid of `publishedAt`, `published`, `date`, `createdAt` */
   publishedAt?: Date;
 }
 ```
@@ -250,11 +250,14 @@ interface FrontMatter {
   /** Numeric order for sorting (useful for navigation) */
   order?: number;
 
-  /** Publication date as ISO string */
-  publishedAt?: string;
+  /**
+   * Publication date. A quoted YAML value is a string; an unquoted one
+   * (`publishedAt: 2024-01-01`) is parsed into a `Date`.
+   */
+  publishedAt?: string | Date;
 
-  /** Date used by ISG aging and sitemap lastmod (not copied to PageModel.publishedAt) */
-  date?: string;
+  /** Publication date when `publishedAt` and `published` are absent or invalid; also the sitemap lastmod fallback */
+  date?: string | Date;
 
   /** Last updated date as ISO string */
   updated?: string;

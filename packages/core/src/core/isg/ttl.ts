@@ -4,6 +4,7 @@ import {
   DEFAULT_TTL_SECONDS,
   MILLISECONDS_PER_DAY,
 } from '../../constants.js';
+import { getFrontMatterDate } from '../utils/index.js';
 // dedup: time constants centralized in constants.ts
 
 /**
@@ -235,37 +236,8 @@ export function applyAgingRules(
 
 /**
  * Helper function to extract published date from page front matter.
- * Supports various date formats and field names.
- * Uses safe date parsing to handle timezone issues.
+ * Uses the shared field order from {@link getFrontMatterDate}.
  */
 function getPublishedDate(page: PageModel): Date | null {
-  const frontMatter = page.frontMatter;
-
-  // Try common field names for published date
-  const dateFields = ['publishedAt', 'published', 'date', 'createdAt'];
-
-  for (const field of dateFields) {
-    const value = frontMatter[field];
-    if (value) {
-      // Handle string dates
-      if (typeof value === 'string') {
-        const safeDate = parseSafeDate(
-          value,
-          `front-matter field "${field}" in ${page.sourcePath}`,
-        );
-        if (safeDate) {
-          return safeDate;
-        }
-      }
-      // Handle Date objects
-      if (value instanceof Date) {
-        const safeDate = getSafeCurrentTime(value);
-        if (!isNaN(safeDate.getTime())) {
-          return safeDate;
-        }
-      }
-    }
-  }
-
-  return null;
+  return getFrontMatterDate(page.frontMatter) ?? null;
 }

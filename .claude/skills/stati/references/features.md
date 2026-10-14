@@ -229,8 +229,9 @@ RSS recommends width at most 144 and height at most 400; the checked generator
 does not clamp these values. Supply valid positive dimensions.
 
 Sort values: `date-desc` (default), `date-asc`, `title-asc`, `title-desc`, `custom`.
-Use `sortFn(a, b)` only with `sortBy: 'custom'`. Date sorting reads
-`frontMatter.publishedAt` then `date`; missing dates sort after dated pages.
+Use `sortFn(a, b)` only with `sortBy: 'custom'`. Date sorting and the default
+`pubDate` use the first valid of `publishedAt`, `published`, `date`, `createdAt`;
+missing dates sort after dated pages.
 `maxItems` limits only when positive.
 
 `itemMapping`:
