@@ -32,12 +32,24 @@ export default defineConfig({
 
 ### Available options
 
-| Option          | Type        | Default | Description                                           |
-| --------------- | ----------- | ------- | ----------------------------------------------------- |
-| `enabled`       | boolean     | `true`  | Enable or disable ISG cache reuse                     |
-| `ttlSeconds`    | number      | `21600` | Default cache time-to-live in seconds (6 hours)       |
-| `maxAgeCapDays` | number      | `365`   | Maximum age in days for applying aging rules (1 year) |
-| `aging`         | AgingRule[] | `[]`    | Array of aging rules for progressive cache extension  |
+| Option          | Type        | Default | Description                                                                                                                                    |
+| --------------- | ----------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `enabled`       | boolean     | `true`  | Enable or disable ISG cache reuse                                                                                                              |
+| `ttlSeconds`    | number      | `21600` | Cache time-to-live in seconds (6 hours) for pages that no aging rule covers: pages without a publish date, or every page when `aging` is empty |
+| `maxAgeCapDays` | number      | `365`   | Age in days after which a dated page is frozen: no longer rebuilt for TTL reasons                                                              |
+| `aging`         | AgingRule[] | `[]`    | Rules that set the TTL from a dated page's age                                                                                                 |
+
+The values are validated when the config loads: `ttlSeconds` must be a whole number from 0 to one year, `maxAgeCapDays` a whole number from 1 to 3650, and invalid values stop the build with an "Invalid ISG configuration" error.
+
+Pages can override both settings in front matter:
+
+```markdown
+---
+title: Live scores
+ttlSeconds: 300
+maxAgeCapDays: 7
+---
+```
 
 ## TTL (time to live)
 
@@ -70,29 +82,35 @@ export default defineConfig({
 
 ## Aging rules
 
-Aging rules allow you to progressively extend cache TTL based on content age. This is useful for keeping recent content fresh while caching older content longer.
+Aging rules set a page's TTL from its age, so recent content is refreshed often and older content is cached longer.
 
 ### How aging rules work
 
+A page's age is counted from its publish date: the first of the `publishedAt`, `published`, `date` or `createdAt` front matter fields that holds a valid date. Pages without one ignore the rules and use `ttlSeconds`.
+
 Each aging rule specifies:
 
-- `untilDays` - Age threshold in days after content was rendered
-- `ttlSeconds` - Cache duration in seconds for content that reaches this age
+- `untilDays` - The rule applies to pages up to this many days old
+- `ttlSeconds` - The cache duration for those pages
+
+Stati picks the first rule, in ascending `untilDays` order, whose `untilDays` is at least the page's age. Pages older than every rule use the last rule, until they pass `maxAgeCapDays` and are frozen.
 
 ```javascript
 export default defineConfig({
   isg: {
     enabled: true,
-    ttlSeconds: 3600, // Default: 1 hour
-    maxAgeCapDays: 365, // Stop applying rules after 1 year
+    ttlSeconds: 3600, // pages without a publish date: 1 hour
+    maxAgeCapDays: 365, // freeze pages older than 1 year
     aging: [
-      { untilDays: 7, ttlSeconds: 86400 }, // 1 day for week-old content
-      { untilDays: 30, ttlSeconds: 604800 }, // 1 week for month-old content
-      { untilDays: 90, ttlSeconds: 2592000 }, // 30 days for 3-month-old content
+      { untilDays: 7, ttlSeconds: 86400 }, // up to 7 days old: 1 day
+      { untilDays: 30, ttlSeconds: 604800 }, // up to 30 days old: 1 week
+      { untilDays: 90, ttlSeconds: 2592000 }, // older: 30 days (the last rule)
     ],
   },
 });
 ```
+
+Rules must be listed in ascending `untilDays` order, without duplicate `untilDays`, with `untilDays` no greater than `maxAgeCapDays` and `ttlSeconds` no greater than 30 days (2592000); otherwise the config is rejected.
 
 ### Practical examples
 
@@ -102,12 +120,12 @@ export default defineConfig({
 export default defineConfig({
   isg: {
     enabled: true,
-    ttlSeconds: 300, // 5 minutes for new articles
-    maxAgeCapDays: 30,
+    ttlSeconds: 3600, // undated pages: 1 hour
+    maxAgeCapDays: 30, // articles older than 30 days are frozen
     aging: [
-      { untilDays: 1, ttlSeconds: 3600 }, // 1 hour for day-old news
-      { untilDays: 7, ttlSeconds: 86400 }, // 1 day for week-old news
-      { untilDays: 30, ttlSeconds: 604800 }, // 1 week for month-old archives
+      { untilDays: 1, ttlSeconds: 300 }, // first day: 5 minutes
+      { untilDays: 7, ttlSeconds: 3600 }, // first week: 1 hour
+      { untilDays: 30, ttlSeconds: 86400 }, // first month: 1 day
     ],
   },
 });
@@ -119,11 +137,11 @@ export default defineConfig({
 export default defineConfig({
   isg: {
     enabled: true,
-    ttlSeconds: 21600, // 6 hours for all docs
+    ttlSeconds: 21600, // undated pages: 6 hours
     maxAgeCapDays: 365,
     aging: [
-      { untilDays: 30, ttlSeconds: 86400 }, // 1 day for month-old docs
-      { untilDays: 90, ttlSeconds: 604800 }, // 1 week for older docs
+      { untilDays: 30, ttlSeconds: 86400 }, // up to 30 days old: 1 day
+      { untilDays: 90, ttlSeconds: 604800 }, // older: 1 week
     ],
   },
 });
@@ -135,12 +153,12 @@ export default defineConfig({
 export default defineConfig({
   isg: {
     enabled: true,
-    ttlSeconds: 3600, // 1 hour default
+    ttlSeconds: 3600, // undated pages: 1 hour
     maxAgeCapDays: 180,
     aging: [
-      { untilDays: 7, ttlSeconds: 21600 }, // 6 hours for week-old posts
-      { untilDays: 30, ttlSeconds: 86400 }, // 1 day for month-old posts
-      { untilDays: 90, ttlSeconds: 604800 }, // 1 week for 3-month-old posts
+      { untilDays: 7, ttlSeconds: 21600 }, // up to 7 days old: 6 hours
+      { untilDays: 30, ttlSeconds: 86400 }, // up to 30 days old: 1 day
+      { untilDays: 90, ttlSeconds: 604800 }, // older: 1 week
     ],
   },
 });
@@ -148,14 +166,14 @@ export default defineConfig({
 
 ## Maximum age cap
 
-The `maxAgeCapDays` option limits how old content can be before aging rules stop applying:
+`maxAgeCapDays` freezes old content. A dated page older than `maxAgeCapDays` is never rebuilt because its TTL expired; it is rebuilt only when its own content or one of its templates changes, or when you force it (`stati build --force` or `stati invalidate`):
 
 ```javascript
 export default defineConfig({
   isg: {
     enabled: true,
     ttlSeconds: 3600,
-    maxAgeCapDays: 365, // Stop applying aging rules after 1 year
+    maxAgeCapDays: 365, // pages published more than a year ago are frozen
     aging: [
       { untilDays: 7, ttlSeconds: 86400 },
       { untilDays: 30, ttlSeconds: 604800 },
@@ -164,7 +182,7 @@ export default defineConfig({
 });
 ```
 
-Content older than `maxAgeCapDays` will continue to use the last applicable aging rule's TTL.
+Pages without a publish date are never frozen.
 
 ## Cache invalidation
 
@@ -172,13 +190,15 @@ Stati provides cache invalidation through the `stati invalidate` CLI command. Se
 
 ### Invalidation patterns
 
-| Pattern        | Example            | Description                                    |
-| -------------- | ------------------ | ---------------------------------------------- |
-| `tag:value`    | `tag:blog`         | Invalidate entries with specific tag           |
-| `path:value`   | `path:/blog`       | Invalidate specific path or prefix             |
-| `glob:pattern` | `glob:blog/**`     | Invalidate paths matching glob pattern         |
-| `age:duration` | `age:1week`        | Invalidate entries rendered within time window |
-| (empty)        | `stati invalidate` | Clear entire cache                             |
+| Pattern        | Example            | Description                                        |
+| -------------- | ------------------ | -------------------------------------------------- |
+| `tag:value`    | `tag:blog`         | Invalidate entries with specific tag               |
+| `path:value`   | `path:/blog`       | Invalidate entries whose key starts with the value |
+| `glob:pattern` | `glob:/blog/**`    | Invalidate entries whose key matches the glob      |
+| `age:duration` | `age:1week`        | Invalidate entries rendered within time window     |
+| (empty)        | `stati invalidate` | Clear entire cache                                 |
+
+Cache keys are output paths with a leading slash, such as `/blog.html` and `/blog/first-post.html`, so include the `/` in `path:` and `glob:` values. When a query has several terms, an entry that matches **any** of them is invalidated.
 
 ### CLI examples
 
@@ -193,16 +213,16 @@ stati invalidate "tag:blog"
 stati invalidate "path:/about"
 
 # Invalidate paths matching glob pattern
-stati invalidate "glob:blog/**"
+stati invalidate "glob:/blog/**"
 
 # Invalidate entries rendered within time window
 stati invalidate "age:3months"
 
-# Multiple criteria (space-separated)
+# Several terms (an entry matching either one is invalidated)
 stati invalidate "tag:blog age:1week"
 
-# Quoted strings for values with spaces
-stati invalidate "tag:my blog" "path:/my path"
+# Values with spaces: quote them inside the single query argument
+stati invalidate '"tag:my blog" "path:/my path"'
 ```
 
 ### Age-based invalidation
@@ -237,7 +257,7 @@ stati build --clean
 
 ### Cache manifest
 
-ISG maintains a cache manifest at `.stati/cache/manifest.json` that tracks:
+ISG maintains a cache manifest at `.stati/manifest.json`, with one entry per output path (such as `/blog/first-post.html`) that tracks:
 
 - **inputsHash**: Hash of page content and all dependencies
 - **deps**: Array of file paths this page depends on (templates, partials)
@@ -250,18 +270,21 @@ ISG maintains a cache manifest at `.stati/cache/manifest.json` that tracks:
 
 A page is rebuilt if:
 
-1. Cache is bypassed (`--force` flag)
-2. Page is not in cache manifest
-3. Page's `inputsHash` has changed (content or dependencies modified)
-4. Page's TTL has expired
-5. Page matches an invalidation query
+1. Cache is bypassed (`--force` flag) or ISG is disabled (`isg.enabled: false`)
+2. Its HTML file is missing from the output directory
+3. Page is not in cache manifest (for example, after `stati invalidate`)
+4. Page's `inputsHash` has changed (its own content or front matter, or one of its templates)
+5. Page's TTL has expired and the page is not frozen by `maxAgeCapDays`
+
+Changes to _other_ pages never trigger a rebuild: a listing page that shows post titles stays cached until its TTL expires. See [Dependency tracking](/core-concepts/isg#dependency-tracking).
 
 ### Template dependency tracking
 
 ISG automatically tracks template dependencies:
 
-- Main layout template (`layout.eta`)
-- Included partials (`<%~ include() %>` or `<%- include() %>`)
+- The page's layout (the nearest `layout.eta`, or the `layout` named in front matter)
+- Partials it references by name: `stati.partials.header`, `stati.partials['header']`, `stati.partials.card({ ... })`
+- Templates inside `_` folders loaded with `include('…')` or `layout('…')`
 - Changes to any dependency invalidate affected pages
 
 ### Tag extraction
@@ -283,7 +306,7 @@ Only values in the `tags` array become searchable tags for invalidation. Individ
 
 1. **Appropriate TTL**: Use shorter TTL (5-60 minutes) for frequently changing content, longer TTL (6-24 hours) for stable content
 2. **Aging Rules**: Define 2-4 aging rules that progressively extend TTL as content ages
-3. **Max Age Cap**: Set `maxAgeCapDays` to prevent indefinite cache growth (typically 30-365 days)
+3. **Max Age Cap**: Set `maxAgeCapDays` to the age after which old pages no longer need refreshing (typically 30-365 days); older pages are frozen
 4. **Tag Organization**: Use consistent, hierarchical tags in front matter for efficient invalidation
 
 ### Development workflow
@@ -291,14 +314,14 @@ Only values in the `tags` array become searchable tags for invalidation. Individ
 1. **Dev Mode**: Cache is cleared at dev server startup, then ISG is used for incremental rebuilds during watch mode
 2. **Test Builds**: Use `stati build` locally to test ISG behavior
 3. **Selective Invalidation**: Use `stati invalidate` with specific patterns during testing
-4. **Cache Inspection**: Review `.stati/cache/manifest.json` to understand cache state
+4. **Cache Inspection**: Review `.stati/manifest.json` to understand cache state
 
 ### Production deployment
 
-1. **Persistent Cache**: Keep `.stati/cache/` in CI/CD between builds for efficient rebuilds
+1. **Persistent Cache**: Keep both `.stati/` and `dist/` between CI/CD builds; a cache entry is only reused when its HTML file still exists
 2. **Invalidation Strategy**: Define clear invalidation patterns for content updates
 3. **Monitoring**: Track build times to measure ISG effectiveness
-4. **Cache Cleanup**: Periodically clear stale cache entries with `age:` invalidation
+4. **Listing pages**: Give index pages that list other pages a short `ttlSeconds`, or invalidate them after publishing
 
 ### Build tips
 
@@ -311,8 +334,8 @@ Only values in the `tags` array become searchable tags for invalidation. Individ
 
 ### Cache not working
 
-- Verify `isg.enabled: true` in config
-- Check that `.stati/cache/` directory exists
+- Verify `isg.enabled` is not set to `false`
+- Check that `.stati/manifest.json` exists and that `dist/` was kept from the previous build
 - Review build output for cache hit/miss messages
 - Try `stati build --clean` to reset cache
 
@@ -321,12 +344,12 @@ Only values in the `tags` array become searchable tags for invalidation. Individ
 - Check `inputsHash` in manifest for changed dependencies
 - Verify template partials aren't changing unintentionally
 - Review TTL settings - may be too short
-- Ensure file timestamps are stable in CI/CD
+- Check `beforeRender` hooks: a hook that writes to `page.frontMatter` changes the page's hash, so that page is re-rendered on every build (do such work in `beforeAll` instead)
 
 ### Invalidation not working
 
 - Verify tag names match front matter exactly (case-sensitive)
-- Check path patterns use correct syntax (`path:/prefix`, `glob:pattern/**`)
+- Check path patterns use correct syntax and a leading slash (`path:/blog`, `glob:/blog/**`)
 - Review manifest to confirm tags are being extracted
 - Try full cache clear with `stati invalidate` (no arguments)
 

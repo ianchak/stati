@@ -14,15 +14,15 @@ Eta is a fast, lightweight templating engine with a syntax similar to EJS but wi
 
 ### Dynamic attribute values
 
-> Eta requires every HTML attribute value to be fully resolved by the time it is rendered. You cannot splice template expressions into the middle of a static value (for example `class="bg-<%= color %>-500"`).
+> **Stati convention:** write each dynamic HTML attribute value as one expression, rather than splicing expressions into the middle of static text (for example `class="bg-<%= color %>-500"`). Eta itself renders spliced values, but one expression per attribute keeps values readable, and building class names with `stati.propValue()` records them in the Tailwind class inventory.
 
 Use template literals (or the helper described below) to make the entire attribute value dynamic:
 
 ```eta
-<!-- ❌ Invalid: partial interpolation -->
+<!-- ❌ Avoid: expression spliced into static text -->
 <button class="bg-<%= color %>-500">Click me</button>
 
-<!-- ✅ Valid: full dynamic value -->
+<!-- ✅ Preferred: one expression for the whole value -->
 <button class="<%= `bg-${color}-500` %>">Click me</button>
 ```
 
@@ -60,10 +60,10 @@ data-id="<%= `item-${id}` %>"
   <p>Author unknown</p>
 <% } %>
 
-<!-- Loops -->
+<!-- Loops (collection entries keep front matter under frontMatter) -->
 <ul>
 <% (stati.collection?.pages || []).forEach(page => { %>
-  <li><a href="<%= page.url %>"><%= page.title %></a></li>
+  <li><a href="<%= page.url %>"><%= page.frontMatter.title %></a></li>
 <% }); %>
 </ul>
 
@@ -79,7 +79,7 @@ In your templates, you have access to:
 <!-- Page data -->
 <%= stati.page.title %>     <!-- From front matter -->
 <%= stati.page.description %> <!-- From front matter -->
-<%= stati.content %>        <!-- Rendered markdown content -->
+<%~ stati.content %>        <!-- Rendered markdown content (HTML, so use <%~) -->
 <%= stati.page.url %>       <!-- Current page URL -->
 <%= stati.page.date %>      <!-- Page date (if specified) -->
 <% stati.page.toc.forEach(entry => { %>  <!-- TOC entries (h2-h6) -->
@@ -95,9 +95,9 @@ In your templates, you have access to:
 <!-- Generator data -->
 <%= stati.generator.version %> <!-- Stati core version -->
 
-<!-- Page frontmatter data -->
-<%= stati.page.layout %>    <!-- Layout name from frontmatter -->
-<%= stati.partials.header %> <!-- Partial templates -->
+<!-- Page front matter data -->
+<%= stati.page.layout %>    <!-- Layout name from front matter -->
+<%~ stati.partials.header %> <!-- Partial templates (HTML, so use <%~) -->
 ```
 
 ## Layout system
@@ -139,6 +139,8 @@ layout: 'article'
 title: 'My Post'
 ---
 ```
+
+The `layout` value is a path relative to `site/`, without the `.eta` extension: `layout: 'article'` uses `site/article.eta`, and `layout: 'layouts/post'` uses `site/layouts/post.eta`. If the file does not exist, Stati silently falls back to the `layout.eta` lookup, so check the name when a page renders with the wrong layout.
 
 The first match wins, providing maximum flexibility while maintaining sensible defaults.
 
@@ -282,11 +284,12 @@ site/
             </a>
         </div>
 
+        <% const inSection = (path) => stati.page.url === path || stati.page.url.startsWith(`${path}/`); %>
         <ul class="nav-links">
             <li><a href="/" class="<%= stati.page.url === '/' ? 'active' : '' %>">Home</a></li>
-            <li><a href="/blog/" class="<%= stati.page.url.startsWith('/blog/') ? 'active' : '' %>">Blog</a></li>
-            <li><a href="/docs/" class="<%= stati.page.url.startsWith('/docs/') ? 'active' : '' %>">Docs</a></li>
-            <li><a href="/about/" class="<%= stati.page.url === '/about/' ? 'active' : '' %>">About</a></li>
+            <li><a href="/blog" class="<%= inSection('/blog') ? 'active' : '' %>">Blog</a></li>
+            <li><a href="/docs" class="<%= inSection('/docs') ? 'active' : '' %>">Docs</a></li>
+            <li><a href="/about" class="<%= stati.page.url === '/about' ? 'active' : '' %>">About</a></li>
         </ul>
     </nav>
 </header>
@@ -319,11 +322,11 @@ Partials can accept custom data, making them reusable like components. This is p
   subtitle: 'Build modern static sites'
 }) %>
 
-<!-- In loops: render a card for each post -->
-<% posts.forEach(post => { %>
+<!-- In loops: render a card for each page of the collection -->
+<% (stati.collection?.pages ?? []).forEach(post => { %>
   <%~ stati.partials.card({
-    title: post.title,
-    description: post.description,
+    title: post.frontMatter.title,
+    description: post.frontMatter.description,
     url: post.url
   }) %>
 <% }) %>
@@ -335,6 +338,9 @@ Partials can accept custom data, making them reusable like components. This is p
 - Pass data by calling the partial like a function: `stati.partials.name({ ... })`
 - Access passed data inside the partial via `stati.props.propertyName`
 - All Stati data remains available: `stati.site`, `stati.page`, `stati.content`, etc.
+- The partial's name is its file name without `.eta`, wherever it sits inside the `_` folder: `_partials/components/card.eta` is `stati.partials.card`. A file named `page-header.eta` is `stati.partials['page-header']`; names are not converted to camelCase.
+
+> **Important:** before rendering a page, Stati renders every partial it can see once **without props**, so that `<%~ stati.partials.name %>` works. In that pass `stati.props` is `undefined`, so a partial that reads `stati.props.title` fails: in development the page shows a template error, and in production the partial's no-props output becomes `<!-- Error rendering partial: card -->`. Read props with optional chaining (`stati.props?.title`), or start component-only partials with `<% if (!stati.props) return; %>`. Calling a partial with an empty object (`stati.partials.card({})`) also returns the no-props output.
 
 #### Creating a reusable partial
 
@@ -343,13 +349,14 @@ Let's create a card component that accepts custom data.
 **Example partial** (`_partials/card.eta`):
 
 ```eta
+<% const props = stati.props ?? {}; %>
 <article class="card">
-  <h3><%= stati.props.title || 'Untitled' %></h3>
-  <% if (stati.props.description) { %>
-    <p><%= stati.props.description %></p>
+  <h3><%= props.title || 'Untitled' %></h3>
+  <% if (props.description) { %>
+    <p><%= props.description %></p>
   <% } %>
-  <% if (stati.props.url) { %>
-    <a href="<%= stati.props.url %>">Read more →</a>
+  <% if (props.url) { %>
+    <a href="<%= props.url %>">Read more →</a>
   <% } %>
 </article>
 ```
@@ -373,8 +380,8 @@ Let's create a card component that accepts custom data.
 <div class="posts-grid">
   <% stati.collection?.pages.forEach(post => { %>
     <%~ stati.partials.card({
-      title: post.title,
-      description: post.description,
+      title: post.frontMatter.title,
+      description: post.frontMatter.description,
       url: post.url
     }) %>
   <% }) %>
@@ -386,7 +393,8 @@ Let's create a card component that accepts custom data.
 Inside your partials, any data you pass is available via `stati.props`:
 
 ```eta
-<!-- Inside _partials/hero.eta -->
+<!-- Inside _partials/hero.eta: only meaningful with props -->
+<% if (!stati.props) return; %>
 <section class="hero">
   <h1><%= stati.props.title %></h1>
   <p><%= stati.props.subtitle %></p>
@@ -404,16 +412,16 @@ Inside your partials, any data you pass is available via `stati.props`:
 You can combine data passed to the partial with Stati's global data:
 
 ```eta
-<!-- _partials/page-header.eta -->
+<!-- _partials/pageHeader.eta -->
 <header>
   <!-- Use custom title if provided, otherwise fall back to site title -->
-  <h1><%= stati.props.customTitle || stati.site.title %></h1>
+  <h1><%= stati.props?.customTitle || stati.site.title %></h1>
 
   <!-- Always show current page -->
   <p>You're on: <%= stati.page.title %></p>
 
   <!-- Use custom subtitle if provided -->
-  <% if (stati.props.subtitle) { %>
+  <% if (stati.props?.subtitle) { %>
     <p class="subtitle"><%= stati.props.subtitle %></p>
   <% } %>
 </header>
@@ -430,7 +438,7 @@ You can combine data passed to the partial with Stati's global data:
 - Use `stati.props` for data that changes each time you use the partial
 - Use `stati.site` for global site information (title, URL, etc.)
 - Use `stati.page` for the current page's information
-- Provide sensible defaults with `||` for optional properties
+- Read props with `stati.props?.name` and provide defaults with `||` or `??`, because `stati.props` is `undefined` when the partial is used without data
 
 ### Hierarchical partials
 
@@ -452,9 +460,10 @@ site/
 
 **Key points:**
 
-- Root layout (`site/layout.eta`) can only access `site/_partials/`
-- Blog layout (`site/blog/layout.eta`) can access both `site/_partials/` AND `site/blog/_partials/`
+- Visibility follows the **page** being rendered, not the layout file: for `site/blog/posts/my-post.md`, every template (including the root `site/layout.eta`) sees `site/_partials/`, `site/blog/_partials/` and `site/blog/posts/_partials/`
+- A page at the root (`site/about.md`) sees only `site/_partials/`, even if its layout lives elsewhere
 - More specific partials (deeper in hierarchy) override less specific ones with the same name
+- Every visible partial is pre-rendered for every page, so keep partials cheap and guard prop-only partials (see above)
 
 ## Template data and context
 
@@ -491,8 +500,8 @@ Template usage:
     </div>
 
     <div class="tags">
-        <% stati.page.tags.forEach(tag => { %>
-        <a href="/tags/<%= tag %>/" class="tag">#<%= tag %></a>
+        <% (stati.page.tags ?? []).forEach(tag => { %>
+        <a href="<%= `/tags#${tag}` %>" class="tag">#<%= tag %></a>
         <% }); %>
     </div>
 
@@ -628,7 +637,7 @@ function slugify(text) {
     .replace(/^-+|-+$/g, '');
 }
 %>
-<a href="/tags/<%= slugify(tag) %>/" class="tag-link">#<%= tag %></a>
+<a href="<%= `/tags#${slugify(tag)}` %>" class="tag-link">#<%= tag %></a>
 ```
 
 ## Performance considerations

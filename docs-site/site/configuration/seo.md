@@ -1,7 +1,6 @@
 ---
 title: 'SEO and sitemap'
 description: Complete guide to SEO metadata generation, sitemap, and robots.txt configuration in Stati
-layout: layout.eta
 order: 6
 seo:
   title: 'SEO and sitemap configuration'
@@ -36,25 +35,26 @@ By default, Stati automatically injects SEO metadata into all pages during build
 
 When auto-injection is enabled (default), Stati automatically generates:
 
-- **Title tag** - From page title or site title
-- **Meta description** - From page description
-- **Meta keywords** - From page tags or keywords
-- **Canonical URL** - Based on page URL and site base URL
-- **Author meta tag** - From page author or site default author
-- **Robots meta tag** - Based on page or site robots configuration
+- **Title tag** - From `seo.title`, the page `title`, or the site title
+- **Meta description** - From `seo.description`, the page `description`, or `site.description`
+- **Meta keywords** - From `seo.keywords`, or the page `tags`
+- **Canonical URL** - `seo.canonical`, or the page URL on `site.baseUrl`
+- **Author meta tag** - From `seo.author`, or `seo.defaultAuthor` in the config
+- **Robots meta tag** - Only when the page sets `seo.robots` or `seo.noindex`
 - **Open Graph tags** - For social media sharing (og:title, og:description, og:image, etc.)
 - **Twitter Card tags** - For Twitter sharing
-- **Structured Data** - JSON-LD schema when configured in frontmatter
+- **Structured Data** - JSON-LD schema when configured in front matter
 
 ### Disabling auto-injection
 
 To disable automatic SEO injection globally:
 
 ```typescript
-// stati.config.ts
+// stati.config.ts (excerpt)
 import { defineConfig } from '@stati/core';
 
 export default defineConfig({
+  // site: { … },
   seo: {
     autoInject: false, // Disable automatic SEO injection
   },
@@ -89,6 +89,8 @@ Generate only specific SEO tags using tag type strings:
 ```
 
 ### Available tag types
+
+In templates, pass the strings. The `SEOTagType` enum is for TypeScript code that calls the SEO functions directly; import it from `@stati/core/types`.
 
 - `'title'` or `SEOTagType.Title` - Title tag
 - `'description'` or `SEOTagType.Description` - Meta description
@@ -158,13 +160,17 @@ seo:
     siteName: My Site
     locale: en_US
     article:
-      publishedTime: 2025-01-15T10:00:00Z
-      modifiedTime: 2025-01-20T15:30:00Z
+      publishedTime: '2025-01-15T10:00:00Z'
+      modifiedTime: '2025-01-20T15:30:00Z'
       author: Jane Doe
       section: Technology
       tags: [web, development, seo]
 ---
 ```
+
+> **Quote dates.** YAML turns an unquoted date or timestamp into a date object, and an unquoted `publishedTime` or `modifiedTime` makes the build fail with "text.replace is not a function". Dates inside `structuredData` must be quoted too; unquoted ones are written as `{}`.
+
+Article tags (`article:published_time`, `article:tag` and so on) are only written when `type` is `article`. Image URLs that start with `/` are made absolute with `site.baseUrl`.
 
 ### Twitter card configuration
 
@@ -237,7 +243,8 @@ import { defineConfig } from '@stati/core';
 
 export default defineConfig({
   site: {
-    baseUrl: 'https://example.com', // Required for absolute URLs in sitemap
+    title: 'My Site',
+    baseUrl: 'https://example.com', // Used for the absolute URLs in the sitemap
   },
   sitemap: {
     enabled: true,
@@ -253,22 +260,23 @@ import { defineConfig } from '@stati/core';
 
 export default defineConfig({
   site: {
-    baseUrl: 'https://example.com', // Required for absolute URLs
+    title: 'My Site',
+    baseUrl: 'https://example.com', // Used for absolute URLs
   },
   sitemap: {
     enabled: true,
 
-    // Default priority for all pages (0.0 to 1.0)
+    // Default priority for all pages (0.0 to 1.0; 0.5 if not set)
     defaultPriority: 0.5,
 
-    // Default change frequency
+    // Default change frequency (no <changefreq> is written if not set)
     defaultChangeFreq: 'monthly',
 
-    // Exclude pages matching glob patterns
-    excludePatterns: ['/draft/**', '/admin/**'],
+    // Exclude pages whose URL matches (see "Pattern matching" below)
+    excludePatterns: ['/draft', '/admin'],
 
-    // Include only pages matching glob patterns (if specified)
-    includePatterns: ['/blog/**', '/docs/**'],
+    // Include only pages whose URL matches (if specified)
+    includePatterns: ['/blog', '/docs'],
 
     // Filter pages to include in sitemap
     filter: (page) => {
@@ -294,18 +302,24 @@ export default defineConfig({
       };
     },
 
-    // Priority rules based on URL patterns
+    // Priority rules based on URL patterns (first match wins)
     priorityRules: [
       { pattern: '/', priority: 1.0 },
       { pattern: '/blog/**', priority: 0.8 },
       { pattern: '/docs/**', priority: 0.9 },
     ],
-
-    // Generate sitemap index for multiple sitemaps (default: false)
-    generateIndex: false,
   },
 });
 ```
+
+**Pattern matching.** `excludePatterns`, `includePatterns` and `priorityRules[].pattern` are matched against page URLs such as `/blog/first-post` (`/` for the home page):
+
+- A pattern with `*` or `?` is a glob that must match the whole URL: `/blog/**` matches `/blog/first-post` but not the `/blog` index page.
+- A pattern without wildcards matches that URL and everything below it: `/blog` matches `/blog` and `/blog/first-post`, but not `/blog-archive`. The pattern `/` matches only the home page.
+
+Pages with `draft: true` are never in the sitemap (they are not built), so `filter: (page) => !page.frontMatter.draft` is only needed for builds with `--include-drafts`.
+
+**Output.** `lastmod` comes from the page's `sitemap.lastmod`, then `updated`, then `date` front matter (not `publishedAt`). Priorities are written with one decimal place, so `0.85` becomes `0.8`. Above 50,000 URLs the sitemap is split into `sitemap-1.xml`, `sitemap-2.xml`, … with `sitemap.xml` as the index; this happens automatically (the `generateIndex` option is not used).
 
 ### Per-page sitemap configuration
 
@@ -316,11 +330,13 @@ Control sitemap behavior for individual pages using frontmatter:
 title: My Page
 sitemap:
   exclude: false        # Exclude from sitemap (default: false)
-  priority: 0.8         # Priority (0.0 to 1.0)
+  priority: 0.8         # Priority (0.0 to 1.0), overrides priorityRules
   changefreq: weekly    # Change frequency
-  lastmod: 2025-01-20   # Last modification date
+  lastmod: '2025-01-20' # Last modification date
 ---
 ```
+
+The sitemap reads only this `sitemap` block; `seo.priority` and `seo.changeFreq` are not used for it.
 
 ### Change frequency values
 
@@ -328,7 +344,7 @@ sitemap:
 - `hourly` - Changes hourly
 - `daily` - Changes daily (good for news/blogs)
 - `weekly` - Changes weekly (good for general content)
-- `monthly` - Changes monthly (default)
+- `monthly` - Changes monthly
 - `yearly` - Changes yearly (good for static content)
 - `never` - Archived content that never changes
 
@@ -345,11 +361,14 @@ Generate a `robots.txt` file to control search engine crawling.
 import { defineConfig } from '@stati/core';
 
 export default defineConfig({
+  site: { title: 'My Site', baseUrl: 'https://example.com' },
   robots: {
     enabled: true,
   },
 });
 ```
+
+With no rules configured, this writes `User-agent: *` and `Allow: /`. The `Sitemap:` line is only added when you set `robots.sitemap` (see below).
 
 ### Advanced robots.txt options
 
@@ -386,10 +405,10 @@ export default defineConfig({
       '/api/public/',
     ],
 
-    // Crawl delay in seconds (be careful with this)
+    // Crawl delay in seconds, written in the "User-agent: *" group (be careful with this)
     crawlDelay: undefined,
 
-    // Reference to sitemap (automatically added if sitemap is enabled)
+    // Sitemap reference: a URL, or true for <baseUrl>/sitemap.xml (not added when unset)
     sitemap: 'https://example.com/sitemap.xml',
 
     // Custom lines to add to robots.txt
@@ -415,10 +434,10 @@ User-agent: Bingbot
 Disallow: /admin/
 
 User-agent: *
+Allow: /api/public/
 Disallow: /admin/
 Disallow: /private/
 Disallow: /api/
-Allow: /api/public/
 
 Sitemap: https://example.com/sitemap.xml
 
@@ -509,7 +528,7 @@ seo:
     '@context': https://schema.org
     '@type': Article
     headline: Your Article Title
-    datePublished: 2025-01-15
+    datePublished: '2025-01-15'
     author:
       '@type': Person
       name: Jane Doe
@@ -554,8 +573,10 @@ export default defineConfig({
 **Common reasons:**
 
 - **Group behavior**: Adding any Open Graph tag manually skips all OG tags
-- **Validation errors**: Invalid data (e.g., malformed URLs) causes tags to be skipped
-- **Missing data**: No source data available (e.g., no page description)
+- **Missing data**: No source data available (e.g., no page description, so no description tags)
+- **No `</head>`**: Tags are injected before `</head>`; a layout without it gets none
+
+Validation problems (for example a malformed canonical URL) are logged as warnings, but the tags are still generated with the values you gave.
 
 ### How do I override specific tags?
 
@@ -572,20 +593,22 @@ Use **hybrid mode** - keep auto-injection enabled and add manual tags for specif
 
 ### Configuration validation errors
 
-Stati validates SEO configuration at build time. Common errors:
+Stati checks each page's `seo` front matter during the build and logs what it finds; none of these stop the build:
 
-- **Invalid priority**: Must be between 0.0 and 1.0
-- **Invalid canonical URL**: Must be a valid URL format
-- **Structured data too large**: Should be under 100KB
+- **Invalid priority** (error): `seo.priority` must be between 0.0 and 1.0
+- **Invalid canonical URL** (error): `seo.canonical` must be an absolute `http` or `https` URL
+- **Structured data too large** (warning): should be under 100KB
+- **Title or description length** (warning)
+
+Errors are always logged; warnings are only logged when `seo.debug` is `true`.
 
 ### Performance concerns
 
 For large sites (10,000+ pages):
 
-- Sitemap generation automatically splits into multiple files at 50,000 URLs
+- Sitemap generation automatically splits into multiple files, with a sitemap index, above 50,000 URLs
 - Auto-injection overhead is minimal during builds
 - Consider using `sitemap.filter` to exclude unnecessary pages from sitemap
-- Use `generateIndex: true` to create a sitemap index when splitting is needed
 
 ## Next steps
 

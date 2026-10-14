@@ -12,6 +12,21 @@ Stati is designed to work great out of the box, but it's also highly configurabl
 
 ## Configuration file
 
+### File name and location
+
+Stati looks in the directory you run it from for `stati.config.ts`, then `stati.config.js`, then `stati.config.mjs`, and uses the first one it finds. The file's default export is the configuration. Without a config file, Stati uses its defaults:
+
+| Option | Default |
+| ------ | ------- |
+| `srcDir` | `'site'` |
+| `outDir` | `'dist'` |
+| `staticDir` | `'public'` |
+| `site.title` | `'My Stati Site'` |
+| `site.baseUrl` | `'http://localhost:3000'` |
+| `isg` | `{ enabled: true, ttlSeconds: 21600, maxAgeCapDays: 365 }` |
+
+Your config is merged over these defaults: `site` and `isg` are merged field by field, every other section replaces the default as a whole. If the file fails to load (for example, a syntax error), Stati prints the error and builds with the defaults, so watch the output for "Falling back to default configuration."; only invalid `isg` values stop the build. A `.js` config with `import` statements needs `"type": "module"` in `package.json` (or use `.mjs`).
+
 ### Basic setup
 
 Create `stati.config.js` in your project root:
@@ -45,7 +60,7 @@ const config: StatiConfig = {
 
   // Type-safe plugin configuration
   markdown: {
-    plugins: [['footnote', { backref: true }]],
+    plugins: ['footnote'], // loads markdown-it-footnote
   },
 
   // ISG options with autocomplete
@@ -98,7 +113,7 @@ export default defineConfig({
       ['container', { validate: () => true }],  // markdown-it-container with options
     ],
 
-    // Custom markdown-it configuration function
+    // Custom markdown-it configuration function (runs after plugins)
     configure: (md) => {
       // Add custom plugins or modify renderer
       md.use(customPlugin, options);
@@ -106,7 +121,7 @@ export default defineConfig({
       // Modify rendering rules
       md.renderer.rules.code_inline = (tokens, idx) => {
         const token = tokens[idx];
-        return `<code class="inline-code">${token.content}</code>`;
+        return `<code class="inline-code">${md.utils.escapeHtml(token.content)}</code>`;
       };
     },
   },
@@ -162,7 +177,7 @@ export default defineConfig({
 <time><%= stati.date(stati.page.date) %></time>
 
 <!-- Apply slug filter -->
-<a href="/<%= stati.slug(stati.page.title) %>/">Link</a>
+<a href="<%= `/${stati.slug(stati.page.title)}` %>">Link</a>
 
 <!-- Apply uppercase filter -->
 <span><%= stati.upper(stati.page.category) %></span>
@@ -187,11 +202,11 @@ export default defineConfig({
     // Maximum age cap in days
     maxAgeCapDays: 365,
 
-    // Aging rules for progressive cache extension
+    // Aging rules: TTL by age since the page's publish date
     aging: [
-      { untilDays: 7, ttlSeconds: 86400 },     // 1 day for week-old content
-      { untilDays: 30, ttlSeconds: 604800 },   // 1 week for month-old content
-      { untilDays: 365, ttlSeconds: 2592000 }, // 30 days for year-old content
+      { untilDays: 7, ttlSeconds: 86400 },     // up to 7 days old: 1 day
+      { untilDays: 30, ttlSeconds: 604800 },   // up to 30 days old: 1 week
+      { untilDays: 365, ttlSeconds: 2592000 }, // up to 365 days old: 30 days
     ],
   },
 });
@@ -200,21 +215,23 @@ export default defineConfig({
 **Available Options:**
 
 - `enabled` (boolean) - Enable or disable ISG caching (default: true)
-- `ttlSeconds` (number) - Default cache time-to-live in seconds (default: 21600)
-- `maxAgeCapDays` (number) - Maximum age in days for applying aging rules (default: 365)
+- `ttlSeconds` (number) - Cache time-to-live in seconds for pages no aging rule covers (default: 21600)
+- `maxAgeCapDays` (number) - Dated pages older than this are frozen: no longer rebuilt for TTL reasons (default: 365)
 - `aging` (array) - Array of aging rules with `untilDays` and `ttlSeconds` properties
 
 **Aging Rules:**
 
-Aging rules allow you to progressively extend cache TTL based on content age. Each rule specifies a time threshold (`untilDays`) and the cache duration (`ttlSeconds`) to apply to content that reaches that age.
+Aging rules set a dated page's TTL from its age. A page's age is counted from its `publishedAt` (or `published`, `date`, `createdAt`) front matter. Stati applies the first rule whose `untilDays` is at least the page's age; pages older than every rule use the last rule. Pages without a publish date use `ttlSeconds`.
 
 ```javascript
 // Example: older content gets cached longer
 aging: [
-  { untilDays: 7, ttlSeconds: 86400 },    // 1 day cache for content 7+ days old
-  { untilDays: 30, ttlSeconds: 604800 },  // 1 week cache for content 30+ days old
+  { untilDays: 7, ttlSeconds: 86400 },    // up to 7 days old: 1 day
+  { untilDays: 30, ttlSeconds: 604800 },  // older: 1 week
 ]
 ```
+
+See [ISG configuration](/configuration/isg) for validation rules and examples.
 
 ### Development server
 
@@ -269,7 +286,7 @@ Add custom logic at various stages of the build process:
 ```javascript
 export default defineConfig({
   hooks: {
-    // Before build starts - receives BuildContext
+    // After pages are loaded, before any page renders - receives BuildContext
     async beforeAll(context) {
       console.log('Starting build...');
       console.log(`Building ${context.pages.length} pages`);
@@ -299,10 +316,12 @@ export default defineConfig({
 
 **Available Hooks:**
 
-- `beforeAll` (function) - Called before starting the build process, receives `BuildContext`
+- `beforeAll` (function) - Called once after content is loaded, before any page renders, receives `BuildContext`
 - `afterAll` (function) - Called after completing the build process, receives `BuildContext`
-- `beforeRender` (function) - Called before rendering each page, receives `PageContext`
-- `afterRender` (function) - Called after rendering each page, receives `PageContext`
+- `beforeRender` (function) - Called before rendering each page that is re-rendered (not for pages served from the ISG cache), receives `PageContext`
+- `afterRender` (function) - Called after rendering each re-rendered page, receives `PageContext`
+
+See [Build hooks](/api/hooks) for the full order and the caching notes.
 
 **Context Types:**
 
@@ -391,7 +410,7 @@ export default defineConfig({
 
    // config/markdown.js
    export const markdownConfig = {
-     plugins: ['footnote', 'emoji'],  // Stati auto-prepends 'markdown-it-'
+     plugins: ['footnote', 'container'],  // Stati auto-prepends 'markdown-it-'
    };
 
    // stati.config.js
@@ -449,10 +468,12 @@ export default environments;
 
 ```javascript
 // stati.config.js
-import { defineConfig } from '@stati/core';
+import { defineConfig, getEnv } from '@stati/core';
 import environments from './config/environments.js';
 
-const env = process.env.NODE_ENV || 'development';
+// STATI_TARGET selects staging; otherwise follow the command:
+// `stati build` → 'production', `stati dev` → 'development'
+const env = process.env.STATI_TARGET || getEnv();
 const envConfig = environments[env] || environments.development;
 
 export default defineConfig({
@@ -464,6 +485,14 @@ export default defineConfig({
 });
 ```
 
+```bash
+stati build                       # production settings
+STATI_TARGET=staging stati build  # staging settings
+stati dev                         # development settings
+```
+
+Stati does not set `process.env.NODE_ENV`. A config that selects its settings with `process.env.NODE_ENV || 'development'` gets the development settings during a plain `stati build`, unless your script sets `NODE_ENV=production` itself. `getEnv()` reflects the command that is running. The dev server does not watch the config file, and some settings (such as Markdown plugins) are set up only once, so restart it after changing the config or its environment variables.
+
 ## Configuration reference
 
 For detailed information about specific configuration options, see:
@@ -472,8 +501,10 @@ For detailed information about specific configuration options, see:
 - **[Template Settings](/configuration/templates)** - Eta template engine configuration
 - **[Markdown Configuration](/configuration/markdown)** - Plugins and markdown-it processing
 - **[ISG Options](/configuration/isg)** - Incremental static generation and caching
-- **[SEO Configuration](/configuration/seo)** - SEO metadata and optimization
+- **[SEO Configuration](/configuration/seo)** - SEO metadata, sitemap and robots.txt
+- **[Search](/configuration/search)** - Search index generation
 - **[RSS Configuration](/configuration/rss)** - RSS feed generation
 - **[TypeScript](/configuration/typescript)** - Built-in TypeScript compilation with esbuild
+- **[CLI commands](/cli/commands#config-file-location)** - How `--config` and the config file location work
 
 The configuration system is designed to grow with your needs while maintaining simplicity for basic use cases. Start with minimal configuration and add complexity as your site evolves.

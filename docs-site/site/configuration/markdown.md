@@ -22,11 +22,11 @@ export default defineConfig({
   markdown: {
     // Array of markdown-it plugins (Stati auto-prepends 'markdown-it-')
     plugins: [
-      'footnote',                  // Plugin name only
-      ['prism', { options }],      // Plugin with options
+      'footnote',                                  // Plugin name only
+      ['prism', { defaultLanguage: 'javascript' }], // Plugin with options
     ],
 
-    // Custom configuration function
+    // Custom configuration function (runs after the plugins, synchronously)
     configure: (md) => {
       // Receive markdown-it instance
       // Customize rendering, add plugins, etc.
@@ -67,17 +67,19 @@ See [Table of Contents (TOC)](#table-of-contents-toc) for template usage example
 
 ## Default settings
 
-Stati creates markdown-it with these hardcoded settings (not configurable):
+Stati creates markdown-it with these settings:
 
 - **HTML enabled**: HTML tags are allowed in markdown source
 - **Linkify enabled**: URLs are automatically converted to links
 - **Typographer enabled**: Smart quotes and typography replacements
 
-These defaults provide a good balance of functionality and security for most use cases.
+To change them, call `md.set()` in `configure`, for example `md.set({ html: false })` when your Markdown comes from untrusted authors.
 
 ## Markdown plugins
 
-The `plugins` option accepts an array of markdown-it plugins. Stati automatically prepends `markdown-it-` to plugin names.
+The `plugins` option accepts an array of markdown-it plugins. Stati automatically prepends `markdown-it-` to plugin names, so `'footnote'` loads the `markdown-it-footnote` package from your project.
+
+Stati passes the package's default export to `md.use()`. A plugin that only has named exports (such as `markdown-it-emoji` 3, which exports `full`, `light` and `bare`) cannot be loaded by name: Stati logs "Failed to load markdown plugin" and continues without it. Load such plugins in `configure` instead (see [Custom configuration](#custom-configuration)). A plugin that is not installed also only logs this warning, so check the build output.
 
 ### Plugin format
 
@@ -86,7 +88,7 @@ The `plugins` option accepts an array of markdown-it plugins. Stati automaticall
 ```javascript
 export default defineConfig({
   markdown: {
-    plugins: ['footnote', 'emoji', 'external-links'],
+    plugins: ['footnote', 'external-links'],
   },
 });
 ```
@@ -114,7 +116,7 @@ Plugins must be installed as npm dependencies:
 
 ```bash
 npm install markdown-it-footnote
-npm install @widgetbot/markdown-it-prism
+npm install markdown-it-prism
 npm install markdown-it-external-links
 ```
 
@@ -124,12 +126,25 @@ npm install markdown-it-external-links
 
 | Plugin | Package | Purpose |
 |--------|---------|---------|
-| `prism` | `@widgetbot/markdown-it-prism` | Syntax highlighting |
+| `prism` | `markdown-it-prism` | Syntax highlighting at build time |
 | `footnote` | `markdown-it-footnote` | Footnote support |
-| `emoji` | `markdown-it-emoji` | Emoji shortcuts :smile: |
 | `external-links` | `markdown-it-external-links` | External link attributes |
 | `container` | `markdown-it-container` | Custom containers |
 | `attrs` | `markdown-it-attrs` | Add attributes to elements |
+
+For emoji shortcodes, load `markdown-it-emoji` in `configure`, because version 3 has no default export:
+
+```javascript
+import { full as emoji } from 'markdown-it-emoji';
+
+export default defineConfig({
+  markdown: {
+    configure: (md) => {
+      md.use(emoji);
+    },
+  },
+});
+```
 
 ### Example: Complete plugin setup
 
@@ -155,9 +170,6 @@ export default defineConfig({
 
       // Footnote support
       'footnote',
-
-      // Emoji shortcuts
-      'emoji',
     ],
   },
 });
@@ -166,6 +178,8 @@ export default defineConfig({
 ## Custom configuration
 
 The `configure` option accepts a function that receives the markdown-it instance. This runs **after** plugins are loaded, allowing you to override plugin behavior.
+
+`configure` is called synchronously and its return value is ignored, so an `async` function's awaited work may finish after pages have started rendering. Prepare anything asynchronous at the top level of your config module (with top-level `await`) and use the result inside `configure`.
 
 ### Basic customization
 
@@ -194,11 +208,12 @@ Customize how specific markdown elements are rendered:
 export default defineConfig({
   markdown: {
     configure: (md) => {
-      // Customize heading rendering
-      md.renderer.rules.heading_open = (tokens, idx) => {
-        const level = tokens[idx].tag;
-        const label = tokens[idx + 1].content;
-        return `<${level} class="heading heading-${level}" data-label="${label}">`;
+      // Customize heading rendering. Keep the token's attributes:
+      // Stati stores the heading's anchor id there for the TOC.
+      md.renderer.rules.heading_open = (tokens, idx, options, env, self) => {
+        const token = tokens[idx];
+        token.attrJoin('class', `heading heading-${token.tag}`);
+        return self.renderToken(tokens, idx, options);
       };
 
       // Customize link rendering
@@ -228,10 +243,9 @@ export default defineConfig({
 Create custom container syntax:
 
 ```javascript
-import container from 'markdown-it-container';
-
 export default defineConfig({
   markdown: {
+    // Each entry is [pluginName, containerName]; requires markdown-it-container
     plugins: [
       ['container', 'warning'],
       ['container', 'tip'],
@@ -255,16 +269,16 @@ This is a helpful tip
 
 ## Syntax highlighting
 
-Stati doesn't provide built-in syntax highlighting. You have two options:
+Stati doesn't provide built-in syntax highlighting. Without a plugin, fenced code blocks are rendered as `<pre><code class="language-xxx">` so that you can add highlighting yourself. You have two options:
 
-### Option 1: Client-side (recommended)
+### Option 1: Build-time highlighting (recommended)
 
-Use the `markdown-it-prism` plugin with Prism.js:
+The `markdown-it-prism` plugin highlights code with Prism while Stati builds the page, so the HTML arrives already highlighted and no script is needed in the browser. This site uses it.
 
 **Install:**
 
 ```bash
-npm install @widgetbot/markdown-it-prism prismjs
+npm install markdown-it-prism prismjs
 ```
 
 **Configure:**
@@ -279,44 +293,28 @@ export default defineConfig({
 });
 ```
 
-**Add to layout:**
+**Add a Prism theme stylesheet to your layout** (any Prism theme CSS, copied into `public/`):
 
 ```html
-<link rel="stylesheet" href="/path/to/prism.css">
-<script src="/path/to/prism.js"></script>
+<link rel="stylesheet" href="/prism-theme.css">
 ```
 
-**Pros:** Simple setup, many themes available, works well for static sites
-**Cons:** Requires JavaScript, flash of unstyled code before JS loads
+**Pros:** No client-side JavaScript, no flash of unstyled code, many themes available
+**Cons:** Only the languages Prism supports; the theme CSS is up to you
 
-### Option 2: Server-side
+### Option 2: Client-side highlighting
 
-Use any server-side highlighter in the `configure` function:
+Leave the Markdown as it is and load a highlighter in the browser, such as Prism or highlight.js, which picks up the `language-xxx` classes:
 
-```javascript
-import { getHighlighter } from 'shiki';
-
-export default defineConfig({
-  markdown: {
-    configure: async (md) => {
-      const highlighter = await getHighlighter({
-        theme: 'nord',
-        langs: ['javascript', 'typescript', 'python', 'html', 'css'],
-      });
-
-      md.options.highlight = (code, lang) => {
-        if (lang && highlighter.getLoadedLanguages().includes(lang)) {
-          return highlighter.codeToHtml(code, { lang });
-        }
-        return ''; // Return empty string for unsupported languages
-      };
-    },
-  },
-});
+```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs/themes/prism.min.css">
+<script src="https://cdn.jsdelivr.net/npm/prismjs/prism.min.js"></script>
 ```
 
-**Pros:** No JavaScript required, no flash of unstyled code
-**Cons:** More complex setup, increases build time
+**Pros:** No build configuration
+**Cons:** Requires JavaScript, and code is unstyled until the script runs
+
+Other server-side highlighters work through `configure` as long as they are ready synchronously: create them with top-level `await` in your config module, then set `md.options.highlight` inside `configure`.
 
 ## Front matter
 
@@ -361,8 +359,8 @@ All front matter fields are available in templates:
 ### Performance
 
 1. **Limit plugins** - Too many plugins slow down builds
-2. **Cache compiled results** - Stati caches in production automatically
-3. **Optimize images** - Large images slow down markdown parsing
+2. **Rely on ISG** - Unchanged pages are served from the build cache and are not re-parsed (see [ISG](/core-concepts/isg))
+3. **Keep `configure` cheap** - It runs once per build (once per dev server session)
 
 ## Complete example
 

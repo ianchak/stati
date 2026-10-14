@@ -25,7 +25,7 @@ describe('Error Overlay', () => {
       expect(html).toContain('template');
       expect(html).toContain('Unexpected token in template');
       expect(html).toContain('/src/layout.eta');
-      expect(html).toContain('Line:</span>');
+      expect(html).toContain('<dt>Line</dt>');
       expect(html).toContain('15:20');
       expect(html).toContain('Check for unmatched brackets');
     });
@@ -56,6 +56,68 @@ describe('Error Overlay', () => {
       expect(html).toContain('Stati Development Error');
       expect(html).toContain('markdown');
       expect(html).toContain('Invalid front-matter');
+    });
+
+    it('should number the context lines around the error line', () => {
+      const html = createErrorOverlay(
+        {
+          type: 'template',
+          message: 'Unknown property',
+          file: '/src/layout.eta',
+          line: 10,
+          code: '<%= stati.paeg %>',
+          context: { before: ['<head>', '<title>'], after: ['</title>'] },
+        },
+        '/',
+      );
+
+      expect(html).toContain(
+        '<span class="line-number">8</span><span class="line-content">&lt;head&gt;',
+      );
+      expect(html).toContain(
+        '<span class="line-number">9</span><span class="line-content">&lt;title&gt;',
+      );
+      expect(html).toContain(
+        '<div class="code-line line-error"><span class="line-number">10<span class="sr-only"> (error)</span>',
+      );
+      expect(html).toContain(
+        '<span class="line-number">11</span><span class="line-content">&lt;/title&gt;',
+      );
+    });
+
+    it('should show code context without a file caption when the file is unknown', () => {
+      const html = createErrorOverlay(
+        { type: 'template', message: 'Broken', context: { before: ['<p>'] } },
+        '/',
+      );
+
+      expect(html).toContain('Code context');
+      expect(html).not.toContain('class="panel-bar"');
+    });
+
+    it('should leave out the position when the file has no line number', () => {
+      const html = createErrorOverlay(
+        { type: 'template', message: 'Broken', file: '/src/layout.eta', code: '<p>' },
+        '/',
+      );
+
+      expect(html).toContain('<span class="panel-file">/src/layout.eta</span>');
+      expect(html).not.toContain('class="panel-pos"');
+    });
+
+    it('should count stack frames in the stack trace heading', () => {
+      const oneFrame = createErrorOverlay(
+        { type: 'build', message: 'Failed', stack: 'Error: Failed\n    at build (build.js:1:1)' },
+        '/',
+      );
+      expect(oneFrame).toContain('<span class="stack-count">1 frame</span>');
+
+      const noFrames = createErrorOverlay(
+        { type: 'build', message: 'Failed', stack: 'Error: Failed' },
+        '/',
+      );
+      expect(noFrames).toContain('Stack trace');
+      expect(noFrames).not.toContain('class="stack-count"');
     });
   });
 

@@ -114,12 +114,11 @@ This is my first page built with Stati, a TypeScript-first static site generator
 
 ## Features I Love
 
-- ⚡️ Lightning-fast development with esbuild
-- 🔧 TypeScript-first configuration with IntelliSense
-- 📦 Built-in TypeScript compilation for client-side code
-- 📝 Markdown-based content
-- 🎨 Flexible templating with Eta
-- 🚀 Incremental Static Generation
+- Markdown-based content
+- Flexible templating with Eta
+- TypeScript-first configuration with IntelliSense
+- Built-in esbuild compilation for client-side TypeScript
+- Incremental Static Generation
 
 Ready to build something amazing!
 ```
@@ -145,7 +144,7 @@ Welcome to my personal website! I'm excited to be using Stati for this project.
 I chose Stati because:
 
 1. **TypeScript Support** - Full type safety for config plus built-in esbuild compilation for client-side code
-2. **Modern Tooling** - Lightning-fast builds with esbuild, hot reload, and automatic bundle injection
+2. **Modern Tooling** - esbuild-compiled client TypeScript, live reload, and automatic bundle injection
 3. **Flexible** - Powerful but not overwhelming
 4. **Smart Caching** - Incremental builds with intelligent caching
 
@@ -167,7 +166,7 @@ Your new page will be available at [http://localhost:3000/about](http://localhos
 </nav>
 ```
 
-`aria-current="page"` tells screen readers which page is open, and the stylesheet highlights that link. The whole attribute value is one expression on purpose: Eta templates can't mix static text and `<%= %>` inside an attribute (see [Templates](/core-concepts/templates)).
+`aria-current="page"` tells screen readers which page is open, and the stylesheet highlights that link. The whole attribute value is one expression, following Stati's convention for dynamic attributes (see [Dynamic attribute values](/core-concepts/templates#dynamic-attribute-values)).
 
 ### Step 7: Change the colors
 

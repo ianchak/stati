@@ -14,9 +14,9 @@ Stati can generate a JSON search index at build time, enabling client-side searc
 
 Search index generation in Stati:
 
-- **Build-time generation**: Search index is generated during the build process
+- **Build-time generation**: Search index is generated during the build process, in both `stati build` and `stati dev`
 - **Section-level indexing**: Extracts searchable sections from markdown headings
-- **Cache-friendly**: Hash-based filenames for optimal cache busting
+- **Cache-friendly**: Hashed filenames for cache busting
 - **Auto-discovery**: Automatically injects a meta tag for client-side discovery
 - **Configurable**: Control heading levels, content length, and exclusions
 
@@ -28,13 +28,14 @@ Enable search index generation in your `stati.config.ts`:
 import { defineConfig } from '@stati/core';
 
 export default defineConfig({
+  // site: { … },
   search: {
     enabled: true,
   },
 });
 ```
 
-This generates a `search-index-[hash].json` file in your output directory containing all your pages.
+This generates a `search-index-[hash].json` file in your output directory containing all your pages except the home page (see `includeHomePage`).
 
 ## Configuration options
 
@@ -44,6 +45,7 @@ This generates a `search-index-[hash].json` file in your output directory contai
 import { defineConfig } from '@stati/core';
 
 export default defineConfig({
+  // site: { … },
   search: {
     enabled: true,
     indexName: 'search-index',
@@ -64,7 +66,7 @@ export default defineConfig({
 |--------|------|---------|-------------|
 | `enabled` | `boolean` | `false` | Enable search index generation |
 | `indexName` | `string` | `'search-index'` | Base filename for the search index (without extension) |
-| `hashFilename` | `boolean` | `true` | Include content hash in filename for cache busting |
+| `hashFilename` | `boolean` | `true` | Add a per-build hash to the filename for cache busting |
 | `maxContentLength` | `number` | `1000` | Maximum content length per section (in characters) |
 | `maxPreviewLength` | `number` | `500` | Maximum preview length for page-level entries (in characters) |
 | `headingLevels` | `number[]` | `[2, 3, 4, 5, 6]` | Heading levels to include in the index |
@@ -82,12 +84,15 @@ Use `exclude` patterns to exclude specific content from the search index:
 search: {
   enabled: true,
   exclude: [
-    '/private/**',      // Exclude all pages under /private/
-    '/admin/**',        // Exclude admin pages
-    '/api/**',          // Exclude API documentation
+    '/private',         // The /private index page
+    '/private/**',      // Every page under /private/
+    '/admin/**',        // Admin pages
+    '/api/**',          // API documentation
   ],
 }
 ```
+
+Patterns are globs matched against the whole page URL (`/private/docs`, `/` for the home page). `/private/**` does not match `/private` itself, and a pattern without wildcards matches only that exact URL.
 
 ### Include home page
 
@@ -111,6 +116,8 @@ search: {
 }
 ```
 
+Sections come from the heading anchors that `markdown.toc` creates. With `markdown: { toc: false }`, each page contributes only its page-level entry.
+
 ## Search index structure
 
 The generated search index is a JSON file with the following structure:
@@ -122,32 +129,45 @@ The generated search index is a JSON file with the following structure:
   "documentCount": 150,
   "documents": [
     {
+      "id": "/getting-started/installation#top",
+      "url": "/getting-started/installation",
+      "anchor": "",
+      "title": "Installation",
+      "heading": "Installation",
+      "level": 1,
+      "content": "Text before the first heading…",
+      "breadcrumb": "Getting Started > Installation",
+      "tags": ["setup", "installation"]
+    },
+    {
       "id": "/getting-started/installation#prerequisites",
       "url": "/getting-started/installation",
       "anchor": "prerequisites",
       "title": "Installation",
       "heading": "Prerequisites",
       "level": 2,
-      "content": "Before installing Stati, ensure you have Node.js 22 or later...",
-      "breadcrumb": "Getting Started > Installation",
+      "content": "Node.js 22.12.0 or higher on the 22.x line, or 24 and later…",
+      "breadcrumb": "Getting Started > Installation > Prerequisites",
       "tags": ["setup", "installation"]
     }
   ]
 }
 ```
 
+Every page gets one page-level entry (`level: 1`, `anchor: ""`, `id` ending in `#top`) with the text before its first heading, plus one entry per heading section that has text.
+
 ### Document fields
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `id` | `string` | Unique identifier (page URL + section anchor) |
+| `id` | `string` | Unique identifier (page URL + `#` + section anchor, or `#top` for the page-level entry) |
 | `url` | `string` | Page URL path |
 | `anchor` | `string` | Section anchor (heading ID), empty for page-level entries |
-| `title` | `string` | Page title from frontmatter |
+| `title` | `string` | Page title from front matter (the page slug if there is none) |
 | `heading` | `string` | Section heading text |
 | `level` | `number` | Heading level (1 for page title, 2-6 for headings) |
 | `content` | `string` | Text content of the section (stripped of markdown) |
-| `breadcrumb` | `string` | Breadcrumb path for display |
+| `breadcrumb` | `string` | Breadcrumb for display, built from the URL folders, the page title and (for sections) the heading |
 | `tags` | `string[]` | Optional tags from frontmatter |
 
 ## Template access
@@ -222,7 +242,7 @@ When `hashFilename` is enabled (default), the search index filename includes a h
 search-index-a1b2c3d4.json
 ```
 
-This ensures browsers fetch the latest version when your content changes. The hash is deterministic per build, so the filename remains consistent within a single build but changes between builds when content is updated.
+The hash is derived from the build's start time, not from the index content, so every production build writes a new filename and browsers never use a stale cached index. During `stati dev` the name stays the same between rebuilds. Because the name changes, read it from the meta tag or `stati.assets.searchIndexPath` instead of hard-coding it.
 
 To disable hash-based filenames:
 
@@ -277,4 +297,4 @@ search: {
 
 ## Draft pages
 
-Draft pages (pages with `draft: true` in frontmatter) are automatically excluded from the search index, regardless of other configuration settings.
+Draft pages (pages with `draft: true` in front matter) are never in the search index. Drafts are normally not built at all; with `stati build --include-drafts` they are rendered but still left out of the index.

@@ -43,7 +43,7 @@ Frequently asked questions about Stati, the TypeScript-first static site generat
 
 Stati is a TypeScript-first static site generator for documentation, blogs, and content-heavy sites, with zero-config setup, fast esbuild bundling, and file-based routing.
 
-## When should I choose Stati over other static site generators?
+## When should I choose Stati over other generators?
 
 Choose Stati if you want:
 
@@ -54,7 +54,7 @@ Choose Stati if you want:
 
 ## Does Stati support Incremental Static Generation (ISG)?
 
-Yes. Stati includes built-in ISG so you can update specific pages without running a full rebuild. Configure `isg.enabled: true` in your config, and Stati will cache rendered pages with configurable TTL and smart invalidation.
+Yes. ISG is enabled by default: Stati caches rendered pages between builds and re-renders only the pages whose content, templates or TTL require it. Configure TTLs and aging rules under `isg`, and clear entries with `stati invalidate`. See [ISG](/core-concepts/isg).
 
 ## What templating engine does Stati use?
 

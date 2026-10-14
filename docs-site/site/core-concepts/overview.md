@@ -76,7 +76,7 @@ You write content in Markdown files with front matter metadata. The file locatio
 
 Stati uses Eta templates to render your content, with support for:
 
-- Layout inheritance
+- Layouts chosen by folder (the nearest `layout.eta`) or per page
 - Partial templates
 - Custom filters and helpers
 - Dynamic content generation
@@ -89,10 +89,10 @@ Stati copies everything from your configured `staticDir` into the output folder.
 
 ISG tracks dependencies and only rebuilds what's necessary:
 
-- Content changes trigger targeted rebuilds
-- Template changes rebuild affected pages
-- Asset changes update only impacted files
-- Time-based cache expiration for dynamic content
+- A changed page is re-rendered; unchanged pages are served from the cache
+- Template changes rebuild the pages that use them
+- Static assets are copied on every build; they do not invalidate pages
+- Time-based cache expiration for content that changes over time
 
 ### 5. Output generation
 

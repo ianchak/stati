@@ -45,7 +45,7 @@ export default defineConfig({
 });
 ```
 
-This minimal configuration will generate a `feed.xml` file containing all your pages.
+This minimal configuration will generate a `feed.xml` file containing all your pages, including index pages such as the home page. Use `excludePatterns: ['**/index.md']` to leave index pages out.
 
 ## Content filtering
 
@@ -61,11 +61,13 @@ rss: {
       filename: 'blog.xml',
       title: 'Blog Feed',
       description: 'Latest blog posts',
-      contentPatterns: ['blog/**'],  // Only pages in blog directory
+      contentPatterns: ['**/blog/**'],  // Only pages in a blog/ folder
     },
   ],
 }
 ```
+
+> **How patterns match:** `contentPatterns` and `excludePatterns` are tested against each page's **source file path**, which is an absolute path such as `/home/me/my-site/site/blog/post.md`. Start folder patterns with `**/` (`'**/blog/**'`). A pattern like `'blog/**'` or `'site/blog/**'` matches nothing and produces an empty feed. Patterns without `*` or `?` must equal the path or be a prefix of it, so prefer glob patterns. `**/blog/**` also matches `blog/index.md`; add `excludePatterns: ['**/index.md']` to leave the listing page out.
 
 ### Exclude patterns
 
@@ -120,14 +122,14 @@ rss: {
       filename: 'blog.xml',
       title: 'Blog Posts',
       description: 'Latest blog posts',
-      contentPatterns: ['blog/**'],
+      contentPatterns: ['**/blog/**'],
       maxItems: 20,
     },
     {
       filename: 'news.xml',
       title: 'News Feed',
       description: 'Latest news updates',
-      contentPatterns: ['news/**'],
+      contentPatterns: ['**/news/**'],
       maxItems: 10,
     },
   ],
@@ -277,7 +279,7 @@ Use functions for custom transformations:
 
 ## Include full content
 
-Include the full HTML content in feed items:
+Include each page's body in its feed item:
 
 ```typescript
 {
@@ -285,10 +287,12 @@ Include the full HTML content in feed items:
   title: 'My Feed',
   description: 'Latest posts with full content',
   itemMapping: {
-    includeContent: true,  // Include rendered HTML in description
+    includeContent: true,  // Put the page body in <description>
   },
 }
 ```
+
+> **Note:** `includeContent` uses the page's **Markdown source** (the text after the front matter), not rendered HTML. It is written inside a CDATA section in `<description>`. Feed readers that expect HTML will show the Markdown as plain text.
 
 ## Advanced features
 
@@ -319,11 +323,12 @@ Add custom XML elements to each item:
   description: 'Latest posts',
   customItemElements: (page) => ({
     'dc:creator': page.frontMatter.author,
-    'content:encoded': page.content,
     'custom:readTime': `${page.frontMatter.readTime} min`,
   }),
 }
 ```
+
+Values are converted to strings and HTML-escaped; `undefined` and `null` values are skipped. Declare any prefix you use (`dc:`, `custom:`) in `namespaces`.
 
 ### Enclosures (media files)
 
@@ -359,7 +364,8 @@ rss: {
       filename: 'feed.xml',
       title: 'My Development Blog',
       description: 'Articles about web development, JavaScript, and more',
-      contentPatterns: ['blog/**'],
+      contentPatterns: ['**/blog/**'],
+      excludePatterns: ['**/index.md'],
       language: 'en-US',
       copyright: 'Copyright 2025 Your Name',
       category: 'Technology',
@@ -397,7 +403,7 @@ rss: {
       filename: 'sports.xml',
       title: 'Sports News',
       description: 'Sports coverage',
-      contentPatterns: ['news/sports/**'],
+      contentPatterns: ['**/news/sports/**'],
       maxItems: 20,
     },
   ],
@@ -414,7 +420,7 @@ rss: {
       filename: 'podcast.xml',
       title: 'My Tech Podcast',
       description: 'Weekly discussions about technology',
-      contentPatterns: ['episodes/**'],
+      contentPatterns: ['**/episodes/**'],
       language: 'en-US',
       category: 'Technology',
       image: {
@@ -438,7 +444,7 @@ rss: {
 
 ## Configuration validation
 
-Stati automatically validates your RSS configuration during the build process. If there are any errors, the build will display them and continue without generating the problematic feeds.
+Stati automatically validates your RSS configuration during the build process. If validation reports any error, Stati logs the errors and generates **no** feeds for that build; the rest of the build continues. Warnings are logged and the feeds are still generated.
 
 ### Automatic validation
 
@@ -486,7 +492,7 @@ if (result.warnings.length > 0) {
 
 ### Validation rules
 
-**Errors** (will prevent feed generation):
+**Errors** (no feed is generated while any error remains):
 
 - Missing required fields (`filename`, `title`, `description`)
 - Invalid TTL value (must be non-negative)
@@ -504,7 +510,7 @@ if (result.warnings.length > 0) {
 - TTL set to 0 (no caching)
 - Empty content patterns array
 
-For more details on validation, see the [RSS API](../api/rss.md#rssvalidationresult).
+For more details on validation, see the [RSS API](/api/rss#rssvalidationresult).
 
 ## Development vs production
 
@@ -536,7 +542,7 @@ If your feed isn't being generated:
 
 If your feed is empty:
 
-1. **Check content patterns**: Verify patterns match your content paths
+1. **Check content patterns**: Patterns are matched against absolute source file paths, so folder patterns need a leading `**/` (`'**/blog/**'`, not `'blog/**'`)
 2. **Check exclude patterns**: Ensure you're not excluding all content
 3. **Check filter function**: Verify your custom filter isn't too restrictive
 4. **Check maxItems**: Ensure `maxItems` isn't set to 0

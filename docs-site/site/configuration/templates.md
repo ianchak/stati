@@ -108,8 +108,8 @@ Access filters directly from the `stati` context:
 <p><%= stati.truncate(stati.page.description, 150) %></p>
 <!-- Result: First 150 characters... -->
 
-<a href="/tags/<%= stati.slugify(tag) %>/"><%= tag %></a>
-<!-- Result: /tags/my-tag/ -->
+<a href="<%= `/tags#${stati.slugify(tag)}` %>"><%= tag %></a>
+<!-- Result: /tags#my-tag -->
 
 <span><%= stati.timeAgo(stati.page.publishedAt) %></span>
 <!-- Result: 3 days ago -->
@@ -122,7 +122,8 @@ The following Eta settings are hardcoded and cannot be configured:
 - **Template directory**: Always `srcDir` (default `'site'`)
 - **Variable name**: Always `'stati'` (the context object in templates)
 - **Delimiters**: Always `<%` and `%>`
-- **Caching**: Enabled in production, disabled in development
+- **Escaping**: `<%= %>` HTML-escapes its value; `<%~ %>` prints it as-is
+- **Caching**: Compiled templates are cached in production and development; the dev server clears the cache when a template changes
 - **File extension**: Always `.eta`
 
 ## Advanced: Custom filter patterns
@@ -139,7 +140,7 @@ You can combine filters for complex transformations:
 <%
 const titleSlug = (title) => stati.slugify(stati.lowercase(title));
 %>
-<a href="/posts/<%= titleSlug(stati.page.title) %>/"><%= stati.page.title %></a>
+<a href="<%= `/posts/${titleSlug(stati.page.title)}` %>"><%= stati.page.title %></a>
 ```
 
 ### Conditional filters
@@ -165,27 +166,29 @@ Import utilities in your config file for use in filters:
 
 ```javascript
 import { marked } from 'marked';
-import { highlight } from 'highlight.js';
+import hljs from 'highlight.js';
 
 export default defineConfig({
   eta: {
     filters: {
       // Process markdown in templates
       renderMarkdown: (content) => {
-        return marked(content);
+        return marked(String(content));
       },
 
       // Syntax highlighting
       highlight: (code, lang) => {
-        if (lang && highlight.getLanguage(lang)) {
-          return highlight.highlight(code, { language: lang }).value;
+        if (lang && hljs.getLanguage(lang)) {
+          return hljs.highlight(String(code), { language: lang }).value;
         }
-        return code;
+        return hljs.highlightAuto(String(code)).value;
       },
     },
   },
 });
 ```
+
+These filters return HTML, so print them raw: `<%~ stati.highlight(snippet, 'ts') %>`. Only pass trusted content. In a TypeScript config, give extra parameters a default value (`(code, lang = 'plaintext') => …`), because the `eta.filters` type only allows one required parameter.
 
 ## Filter examples
 
@@ -359,10 +362,12 @@ The `bundlePaths` array contains paths to all bundles matched for the current pa
 <!-- Debug: Show which bundles are loaded on this page -->
 <% if (stati.assets?.bundlePaths) { %>
 <script>
-  console.log('Bundles for this page:', <%= JSON.stringify(stati.assets.bundlePaths) %>);
+  console.log('Bundles for this page:', <%~ JSON.stringify(stati.assets.bundlePaths) %>);
 </script>
 <% } %>
 ```
+
+Use `<%~` here: `<%=` would HTML-escape the quotes in the JSON and break the script.
 
 For more details on configuring multiple bundles, see [TypeScript Support](/configuration/typescript).
 

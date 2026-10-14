@@ -61,6 +61,17 @@ export {
 // Partial validation utilities
 export { createValidatingPartialsProxy } from './partial-validation.utils.js';
 
+// Template context validation utilities
+export {
+  createValidatingContextProxy,
+  isPassthroughProperty,
+  parseUnknownPropertyMessage,
+  UnknownTemplatePropertyError,
+} from './context-validation.utils.js';
+
+// String similarity utilities
+export { editDistance, findSimilarNames } from './similarity.utils.js';
+
 // Callable partial utilities
 export { makeCallablePartial, wrapPartialsAsCallable } from './callable-partials.utils.js';
 export type { CallablePartial } from './callable-partials.utils.js';

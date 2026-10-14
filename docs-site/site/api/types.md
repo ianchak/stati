@@ -256,7 +256,7 @@ interface FrontMatter {
    */
   publishedAt?: string | Date;
 
-  /** Publication date, used when `publishedAt` and `published` are absent or invalid */
+  /** Publication date when `publishedAt` and `published` are absent or invalid; also the sitemap lastmod fallback */
   date?: string | Date;
 
   /** Last updated date as ISO string */
@@ -312,7 +312,7 @@ interface TemplateContext {
 
   /** Current page data */
   page: {
-    /** Output path for the page */
+    /** URL path of the page (same value as url) */
     path: string;
     /** URL for the page */
     url: string;
@@ -360,10 +360,21 @@ interface TemplateContext {
   /** Collection data (available on index pages and collection children) */
   collection?: CollectionData;
 
-  /** TypeScript bundle assets (when typescript.enabled is true) */
+  /** Bundle and search index paths (passed on every render) */
   assets?: StatiAssets;
 }
 ```
+
+The declared interface is narrower than what templates receive. At render time the context also has:
+
+- `generator.version`: the installed `@stati/core` version
+- `generateSEO(tags?)`: renders SEO tags for manual placement
+- `propValue(...values)`: builds space-separated attribute values
+- `props`: the props passed to a callable partial (`undefined` otherwise)
+- every function from `eta.filters`, under its own name
+- `partials.<name>`: each partial's rendered HTML, which can also be called with props (`stati.partials.card({ title: 'Hi' })`)
+
+See [Template API](/api/templates) for how to use them.
 
 ## ISG types
 
@@ -462,7 +473,7 @@ interface BundleConfig {
 
   /**
    * Glob patterns for pages that should include this bundle.
-   * Matches against page output path (e.g., '/docs/api/hooks.html').
+   * Matches against the page URL (e.g., '/docs/api/hooks', or '/' for the home page).
    * If omitted, bundle is included on ALL pages (global bundle).
    */
   include?: string[];
@@ -476,7 +487,7 @@ interface BundleConfig {
 
 ### StatiAssets interface
 
-Available in templates when TypeScript is enabled. Script tags are **automatically injected** into your HTML during build - no template changes required!
+Available in every template as `stati.assets`. Bundle script tags are injected into your HTML automatically (unless `typescript.autoInject` is `false`), so you only need these paths for custom markup.
 
 ```typescript
 interface StatiAssets {
@@ -486,6 +497,9 @@ interface StatiAssets {
    * Always an array, empty [] if no TypeScript enabled or no bundles match.
    */
   bundlePaths: string[];
+
+  /** Path to the search index (e.g., '/search-index-a1b2c3d4.json') when search is enabled */
+  searchIndexPath?: string;
 }
 ```
 
@@ -512,15 +526,58 @@ declare function defineConfig(config: StatiConfig): StatiConfig;
 
 ### Core package
 
-The `@stati/core` package exports the following types and functions:
+`@stati/core` has three entry points.
+
+**`@stati/core`** exports these functions:
 
 ```typescript
-// Functions
-export { defineConfig, loadConfig, setEnv, getEnv } from '@stati/core';
-export { build, createDevServer, createPreviewServer, invalidate } from '@stati/core';
+// Configuration and environment
+import { defineConfig, loadConfig, clearConfigCache } from '@stati/core';
+import { setEnv, getEnv, isDevelopment, isProduction, isTest, getStatiVersion } from '@stati/core';
 
-// Configuration types
-export type {
+// Build and servers
+import { build, createDevServer, createPreviewServer, invalidate } from '@stati/core';
+
+// Metrics
+import { createMetricRecorder, noopMetricRecorder, writeMetrics } from '@stati/core';
+
+// SEO, sitemap and robots.txt
+import {
+  generateSEOMetadata,
+  generateSEO,
+  generateOpenGraphTags,
+  generateTwitterCardTags,
+  generateSitemap,
+  generateSitemapEntry,
+  generateSitemapXml,
+  generateSitemapIndexXml,
+  generateRobotsTxt,
+  generateRobotsTxtFromConfig,
+  generateRobotsContent,
+  validateSEOMetadata,
+  detectExistingSEOTags,
+  autoInjectSEO,
+  shouldAutoInject,
+  escapeHtml,
+  normalizeUrlPath,
+  resolveAbsoluteUrl,
+  isValidUrl,
+} from '@stati/core';
+
+// RSS
+import {
+  generateRSSFeed,
+  generateRSSFeeds,
+  validateRSSConfig,
+  validateRSSFeedConfig,
+} from '@stati/core';
+```
+
+and these types:
+
+```typescript
+import type {
+  // Configuration and content
   SiteConfig,
   StatiConfig,
   PageModel,
@@ -533,33 +590,61 @@ export type {
   AgingRule,
   BuildStats,
   BundleConfig,
-} from '@stati/core';
-
-// SEO types
-export type {
+  // Build, servers and invalidation
+  BuildOptions,
+  BuildResult,
+  MetricsOptions,
+  DevServerOptions,
+  PreviewServerOptions,
+  InvalidationResult,
+  // Metrics
+  BuildMetrics,
+  MetricsMeta,
+  MetricsFlags,
+  MetricsTotals,
+  MetricsPhases,
+  MetricsCounts,
+  MetricsISG,
+  PageTiming,
+  IncrementalMetrics,
+  MetricRecorder,
+  MetricRecorderOptions,
+  PhaseName,
+  CounterName,
+  // SEO
   SEOMetadata,
   SEOConfig,
+  SEOContext,
+  SEOValidationResult,
+  SEOTagType,
   RobotsConfig,
   OpenGraphConfig,
   OpenGraphImage,
   OpenGraphArticle,
   TwitterCardConfig,
   AuthorConfig,
-} from '@stati/core';
-
-// Sitemap types
-export type {
+  AutoInjectOptions,
+  // Sitemap and RSS
   SitemapConfig,
   SitemapEntry,
   SitemapGenerationResult,
   ChangeFrequency,
+  RSSConfig,
+  RSSFeedConfig,
+  RSSGenerationResult,
+  RSSValidationResult,
 } from '@stati/core';
-
-// RSS types
-export type { RSSConfig, RSSFeedConfig, RSSGenerationResult } from '@stati/core';
 ```
 
-Note: Types like `TemplateContext`, `CollectionData`, `StatiAssets`, `TocEntry`, and `CacheEntry` are used internally by the framework and are not exported from `@stati/core`. If you need these types for advanced use cases, they can be found in `packages/core/src/types/` but are not part of the public API.
+`SEOTagType` is exported from `@stati/core` as a type only. To use its values (such as `SEOTagType.Title`), import it from `@stati/core/types`.
+
+**`@stati/core/types`** exports type declarations only (plus the `SEOTagType` enum), including the template and cache types that the main entry point leaves out: `TemplateContext`, `CollectionData`, `StatiAssets`, `TocEntry`, `CacheEntry`, `CacheManifest`, `RobotsTxtConfig`, `TypeScriptConfig`, `SearchConfig`, `SearchDocument`, `SearchIndex`, `SearchIndexMetadata` and `Logger`.
+
+```typescript
+import type { TemplateContext, CacheManifest, Logger } from '@stati/core/types';
+```
+
+**`@stati/core/config`** exports `loadConfig`, `clearConfigCache` and `getConfigFilePaths(cwd)`, which returns the config file paths Stati looks for in a directory.
 
 ### CLI package
 
@@ -567,36 +652,7 @@ The `@stati/cli` package provides the `stati` command-line interface as a binary
 
 ### `create-stati` package
 
-```typescript
-// From create-stati
-export interface CreateOptions {
-  /** Name of the project to create */
-  projectName: string;
-
-  /** Template to use */
-  template: 'blank' | 'blog' | 'docs';
-
-  /** CSS solution to use */
-  styling: 'css' | 'sass' | 'tailwind';
-
-  /** Enable TypeScript configuration */
-  typescript?: boolean;
-
-  /** Initialize a git repository */
-  gitInit?: boolean;
-
-  /** Install dependencies after scaffolding */
-  install?: boolean;
-
-  /** Package manager to use for installation */
-  packageManager?: 'npm' | 'yarn' | 'pnpm' | 'bun';
-
-  /** Target directory (defaults to projectName) */
-  dir?: string;
-}
-
-export function createSite(options: CreateOptions): Promise<void>;
-```
+`create-stati` is a command-line tool only: the package declares a `bin` entry and no importable module or type declarations. See [Scaffolder](/cli/scaffolder) for its options.
 
 ## Usage examples
 
@@ -646,9 +702,7 @@ export default defineConfig({
     },
     beforeRender: async (ctx) => {
       // Modify page data before rendering
-      if (ctx.page.frontMatter.draft) {
-        console.log(`Skipping draft: ${ctx.page.slug}`);
-      }
+      ctx.page.frontMatter.description ??= ctx.config.site.description;
     },
     afterRender: async (ctx) => {
       console.log(`Rendered: ${ctx.page.url}`);
@@ -660,4 +714,4 @@ export default defineConfig({
 });
 ```
 
-Stati's comprehensive TypeScript support ensures type safety throughout your development process, providing excellent IntelliSense and catching errors at compile time. Use these types to build robust, maintainable static sites with confidence.
+These types give you editor completion and compile-time checks in `stati.config.ts`, hooks and build scripts. Templates are plain JavaScript and are not type-checked.

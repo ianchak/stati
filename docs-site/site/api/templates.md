@@ -39,11 +39,14 @@ interface TemplateContext {
     getBreadcrumbs: (path?: string) => NavNode[];
     getCurrentNode: () => NavNode | undefined;
   };
-  collection?: CollectionData; // Only for index pages
+  collection?: CollectionData; // Index pages, and top-level pages (root collection)
   partials: Record<string, CallablePartial>; // Callable partial functions (runtime type)
-  assets?: StatiAssets; // TypeScript bundle paths (when enabled)
+  assets: StatiAssets; // Bundle paths ([] when none) and the search index path
   propValue: (...args) => string; // Class/attribute value builder (added at runtime)
   generateSEO: (tags?: string[]) => string; // SEO tag generator (added at runtime)
+  generator: { version: string }; // Stati core version
+  props: Record<string, unknown> | undefined; // Data passed to a callable partial
+  // ...plus one function per entry in eta.filters, e.g. stati.formatDate()
 }
 
 interface TocEntry {
@@ -67,6 +70,7 @@ interface SiteConfig {
   title: string;
   baseUrl: string;
   defaultLocale?: string;
+  description?: string;
 }
 
 interface StatiAssets {
@@ -77,7 +81,9 @@ interface StatiAssets {
 }
 ```
 
-Front matter values are exposed through `stati.page`. Additional properties you place on `site` in `stati.config.ts` are available at runtime, but the public type includes the three fields above by default.
+Front matter values are exposed through `stati.page`. Additional properties you place on `site` in a JavaScript config are available at runtime as `stati.site.yourKey`, but the `SiteConfig` type only declares the four fields above, so a TypeScript config rejects them.
+
+During `stati dev`, reading a `stati.*` property that does not exist (for example a misspelled filter, or `stati.site.author` when your config has no `site.author`) throws an error with a "Did you mean …?" hint instead of returning `undefined`. Front matter under `stati.page` is not checked. Test for optional values with the `in` operator: `'author' in stati.site`. See [Unknown template properties](/api/error-handling#unknown-template-properties).
 
 The `nav` object provides helper methods for working with navigation. See [Navigation API](/api/navigation) for details on `getTree()`, `findNode()`, `getBreadcrumbs()`, and other navigation helpers.
 
@@ -148,15 +154,15 @@ stati.propValue(...args: PropValueArg[]): string
 
 **Important Notes:**
 
-- Eta does NOT support partial dynamic attributes like `class="static-<%= dynamic %>-morestatic"`. All attribute values must be fully dynamic.
-- For single concatenated values (like `data-id="item-42"`), use template literals: `data-id="<%=`item-${id}`%>"`.
+- Stati's convention is to write each dynamic attribute value as one expression instead of splicing expressions into static text (`class="static-<%= dynamic %>-morestatic"`). Eta renders spliced values, but the convention keeps attributes readable and lets `propValue()` record Tailwind classes.
+- For single concatenated values (like `data-id="item-42"`), use template literals: ``data-id="<%= `item-${id}` %>"``.
 - `propValue()` also tracks Tailwind classes for inventory when Tailwind integration is enabled, ensuring dynamically-generated classes are included in the CSS build.
 
 For more details on Eta template limitations and best practices, see [Template Configuration](/configuration/templates).
 
 ## Text processing utilities
 
-Common text processing patterns for templates:
+Common text processing patterns for templates. Code inside `<% %>` tags is plain JavaScript: Stati does not compile TypeScript in templates, so type annotations or `as` casts cause a syntax error.
 
 ```eta
 <!-- Truncate text -->
@@ -166,7 +172,7 @@ function truncate(text, length = 150) {
   return text.slice(0, length).replace(/\s+\S*$/, '') + '...';
 }
 %>
-<p class="excerpt"><%= truncate(stati.page.description as string) %></p>
+<p class="excerpt"><%= truncate(stati.page.description) %></p>
 
 <!-- Slugify text -->
 <%
@@ -178,7 +184,7 @@ function slugify(text) {
     .replace(/^-+|-+$/g, '');
 }
 %>
-<a href="/tags/<%= slugify(tag) %>/" class="tag">#<%= tag %></a>
+<a href="<%= `/tags#${slugify(tag)}` %>" class="tag">#<%= tag %></a>
 
 <!-- Strip HTML -->
 <%
@@ -203,22 +209,27 @@ Partials are reusable templates from underscore-prefixed directories (e.g., `_pa
 <!-- With props (re-rendered dynamically) -->
 <%~ stati.partials.card({ title: 'Hello', featured: true }) %>
 
-<!-- Conditional -->
-<% if (stati.partials.sidebar) { %>
+<!-- Conditional: test membership, not truthiness -->
+<% if ('sidebar' in stati.partials) { %>
   <%~ stati.partials.sidebar %>
 <% } %>
 ```
+
+Outside production builds, reading a partial that does not exist returns an inline "Partial not found" warning box instead of `undefined`, so `if (stati.partials.sidebar)` is always true. Use the `in` operator to check whether a partial exists.
 
 ### Defining partials
 
 ```eta
 <!-- site/_partials/card.eta or site/_components/card.eta -->
+<% if (!stati.props) return; %>
 <article class="<%= stati.propValue('card', stati.props.featured && 'featured') %>">
   <h2><%= stati.props.title %></h2>
   <p><%= stati.props.description %></p>
   <a href="<%= stati.props.url %>">Read more</a>
 </article>
 ```
+
+Stati pre-renders every partial once without props for each page, with `stati.props` set to `undefined`. The first line keeps that pass from failing when the card reads its props; see [Passing data to partials](/core-concepts/templates#passing-data-to-partials).
 
 ### Props vs context
 
@@ -228,8 +239,8 @@ Partials are reusable templates from underscore-prefixed directories (e.g., `_pa
 - With props: re-renders with merged context (dynamic)
 
 ```eta
-<!-- Fallback pattern: props → page → site -->
-<%= stati.props?.author || stati.page.author || stati.site.author %>
+<!-- Fallback pattern: props → page → site title -->
+<%= stati.props?.author || stati.page.author || stati.site.title %>
 ```
 
 ## Custom filters
@@ -240,16 +251,19 @@ Register custom Eta filters in your configuration for reusable transformations:
 import { defineConfig } from '@stati/core';
 
 export default defineConfig({
+  site: { title: 'My Site', baseUrl: 'https://example.com' },
   eta: {
     filters: {
-      formatDate: (value: string | Date, locale = 'en-US') =>
-        new Intl.DateTimeFormat(locale).format(new Date(value)),
-      uppercase: (value: string) => value.toUpperCase(),
+      formatDate: (value: unknown, locale = 'en-US') =>
+        new Intl.DateTimeFormat(locale).format(new Date(String(value))),
+      uppercase: (value: unknown) => String(value).toUpperCase(),
       json: (value: unknown) => JSON.stringify(value, null, 2),
     },
   },
 });
 ```
+
+The `eta.filters` type is `Record<string, (x: unknown) => unknown>`, so in a TypeScript config declare the first parameter as `unknown` and make any further parameters optional; filters typed as `(value: string) => …` or with two required parameters do not type-check. At runtime, filters are plain functions on `stati` and receive whatever arguments the template passes.
 
 Use filters in templates by calling them as functions from the `stati` context:
 

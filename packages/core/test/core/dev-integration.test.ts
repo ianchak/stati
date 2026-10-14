@@ -60,7 +60,7 @@ describe('Dev Server Integration Tests', () => {
     // Create a basic layout
     await writeFile(
       join(testDir, 'site', 'layout.eta'),
-      `<!DOCTYPE html><html><head><title><%= stati.title %></title></head><body><%~ stati.content %></body></html>`,
+      `<!DOCTYPE html><html><head><title><%= stati.page.title %></title></head><body><%~ stati.content %></body></html>`,
     );
 
     // Create test content

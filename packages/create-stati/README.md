@@ -22,6 +22,8 @@ The interactive wizard will guide you through:
 4. **TypeScript** - On by default; answer no for a JavaScript project
 5. **Agent skill** - Optional Stati skill for AI coding assistants
 6. **Git initialization** - Optional repository setup
+7. **Dependency installation** - Install now or later
+8. **Package manager** - Only when several are detected
 
 In less than 2 minutes, you'll have a complete static site ready to customize.
 
@@ -32,8 +34,10 @@ In less than 2 minutes, you'll have a complete static site ready to customize.
 Skip the prompts and create a site with specific options:
 
 ```bash
-npx create-stati my-site --template=blank --styling=tailwind --git
+npx create-stati my-site --template=blank --styling=tailwind --no-git --no-install
 ```
+
+When the project name, `--template` and `--styling` are all given, the TypeScript and agent skill prompts are skipped. The Git and install prompts still appear unless you pass `--no-git` and `--no-install`; there are no `--git` or `--install` flags.
 
 **Available flags:**
 
@@ -67,10 +71,10 @@ npx create-stati my-docs --styling=sass --package-manager=pnpm
 npx create-stati my-site --agent-skill
 
 # Full control with all options
-npx create-stati my-site --typescript --styling=tailwind --no-git --no-install --package-manager=yarn
+npx create-stati my-site --template=blank --typescript --styling=tailwind --no-git --no-install --package-manager=yarn
 ```
 
-> **Note:** In non-interactive mode (when using CLI flags), dependencies are installed by default using `npm`. Use `--package-manager` to specify a different package manager (yarn, pnpm, or bun).
+> **Note:** When no prompt is shown at all, dependencies are installed with `npm` unless you pass `--no-install`. Use `--package-manager` to specify a different package manager (yarn, pnpm, or bun).
 
 ---
 
@@ -102,7 +106,7 @@ When you run `npx create-stati`, you'll see a friendly wizard:
 
 Each choice is explained, so you can make the right decision for your project.
 
-> **Note:** The package manager prompt only appears if you choose to install dependencies and multiple package managers are detected on your system.
+> **Note:** The package manager prompt only appears if you choose to install dependencies, another prompt was shown, and multiple package managers are detected on your system.
 
 ---
 
@@ -124,12 +128,12 @@ Stati uses [esbuild](https://esbuild.github.io/) for lightning-fast TypeScript c
 
 Your compiled JavaScript bundle is **automatically injected** into your HTML output before the closing `</body>` tag. No template modifications needed!
 
-The bundle path is also available via `stati.assets.bundlePath` for advanced use cases like preloading:
+The bundle paths are also available as `stati.assets.bundlePaths` (an array) for advanced use cases like preloading:
 
 ```eta
 <head>
-  <% if (stati.assets?.bundlePath) { %>
-  <link rel="modulepreload" href="<%= stati.assets.bundlePath %>">
+  <% for (const path of stati.assets.bundlePaths) { %>
+  <link rel="modulepreload" href="<%= path %>">
   <% } %>
 </head>
 ```
@@ -182,13 +186,13 @@ A minimal, flexible starting point for any type of Stati site.
 
 **Features:**
 
-- Clean, minimal layout with no opinionated styling
+- Clean, minimal layout with a small light and dark theme that is easy to replace
 - Basic page structure with welcome content and clear instructions
 - Responsive design foundation ready to customize
 - Extensible architecture for any project type
 - Just the essentials - build on your own terms
 
-**File Structure (Plain CSS):**
+**File Structure (Plain CSS, TypeScript):**
 
 ```text
 my-site/
@@ -198,9 +202,14 @@ my-site/
 ├── public/
 │   ├── styles.css        # Basic CSS styles
 │   └── favicon.svg       # Default favicon
-├── stati.config.js       # Stati configuration
+├── src/
+│   └── main.ts           # Client TypeScript entry point
+├── stati.config.ts       # Stati configuration
+├── tsconfig.json         # TypeScript compiler configuration
 └── package.json          # Project dependencies
 ```
+
+With `--no-typescript` you get `stati.config.js` instead, and no `src/main.ts` or `tsconfig.json`. The Sass and Tailwind trees below show only the files that differ.
 
 **File Structure (Sass):**
 
@@ -212,7 +221,7 @@ my-site/
 │   └── styles.scss       # Sass source file
 ├── public/
 │   └── favicon.svg       # Site icon
-├── stati.config.js
+├── stati.config.ts
 └── package.json          # Includes sass scripts
 ```
 
@@ -225,9 +234,10 @@ my-site/
 ├── src/
 │   └── styles.css        # Tailwind source file
 ├── public/
+│   ├── styles.css        # Blank template only: the starter stylesheet is kept
 │   └── favicon.svg       # Site icon
 ├── tailwind.config.js    # Tailwind configuration
-├── stati.config.js
+├── stati.config.ts
 └── package.json          # Includes Tailwind scripts
 ```
 
@@ -236,7 +246,7 @@ my-site/
 - **Homepage (`site/index.md`)** - Welcome page with getting started instructions
 - **Layout (`site/layout.eta`)** - HTML5 boilerplate with responsive meta tags
 - **Styles** - CSS in `public/` (plain CSS) or `src/` (Sass/Tailwind)
-- **Configuration (`stati.config.js`)** - Pre-configured with sensible defaults
+- **Configuration (`stati.config.ts` or `.js`)** - Sets the site title and description; add `baseUrl` before deploying
 - **Favicon (`public/favicon.svg`)** - Simple SVG favicon ready to customize
 
 ### Perfect For
@@ -252,7 +262,7 @@ my-site/
 2. Edit `site/index.md` to add your content
 3. Customize `site/layout.eta` for your HTML structure
 4. Update your styles (in `public/` for plain CSS, `src/` for Sass/Tailwind)
-5. Configure site metadata in `stati.config.js`
+5. Configure site metadata (including `baseUrl`) in `stati.config.ts`
 
 ---
 
@@ -315,7 +325,7 @@ bun install
 npm run dev
 ```
 
-Your site will be live at `http://localhost:3000` with hot reload.
+Your site will be live at `http://localhost:3000` with live reload.
 
 ### 3. Build for Production
 
@@ -346,7 +356,7 @@ my-site/
 │   ├── *.eta         # Eta templates
 │   └── _partials/    # Reusable template parts (optional)
 ├── public/           # Static assets (CSS, images, fonts)
-├── stati.config.js   # Stati configuration
+├── stati.config.ts   # Stati configuration (.js for JavaScript projects)
 ├── package.json      # Project metadata and scripts
 └── dist/             # Built site (generated on build)
 ```
@@ -355,7 +365,7 @@ my-site/
 
 - **`site/`** - All your content lives here. Markdown files become pages.
 - **`public/`** - Static assets copied as-is to your build.
-- **`stati.config.js`** - Configure your site's behavior.
+- **`stati.config.ts`** - Configure your site's behavior.
 - **`dist/`** - Your built static site, ready to deploy.
 
 ---
@@ -389,22 +399,23 @@ Build your site and deploy to any static hosting:
 
 ## Configuration Example
 
-Each template comes with a pre-configured `stati.config.js` optimized for that use case:
+For the blank template, the scaffolder writes this `stati.config.ts` (with your project name as the title):
 
-```javascript
+```typescript
 import { defineConfig } from '@stati/core';
 
 export default defineConfig({
   site: {
-    title: 'My Stati Site',
-    baseUrl: 'https://example.com',
-    defaultLocale: 'en-US',
+    title: 'my-site',
+    description: 'A Stati site',
   },
-  srcDir: 'site',
-  outDir: 'dist',
-  staticDir: 'public',
+  typescript: {
+    enabled: true,
+  },
 });
 ```
+
+Add `site.baseUrl` with your real address before you deploy: until you do, canonical links, the sitemap and feeds use the default `http://localhost:3000`. The blog and docs templates ship their own config with a placeholder `baseUrl` to replace.
 
 You can customize this file to add features like SEO, sitemap, ISG caching, and more. See the [Configuration Guide](https://stati.build/configuration/file/) for all options.
 
@@ -413,7 +424,7 @@ You can customize this file to add features like SEO, sitemap, ISG caching, and 
 ## Requirements
 
 - **Node.js** ^22.12.0 || >=24
-- **npm** 11.5.1 or higher (or yarn/pnpm equivalent)
+- **A package manager**: npm, pnpm, yarn or bun
 
 ---
 

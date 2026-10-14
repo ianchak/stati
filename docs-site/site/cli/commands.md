@@ -54,6 +54,8 @@ npx stati build --clean
 npx stati invalidate "tag:blog"
 ```
 
+> **Note:** `npx stati` runs the `stati` binary from your project's `@stati/cli` dev dependency. In a folder without `@stati/cli` installed, npx would download the unrelated npm package that is literally named `stati` instead. Install the CLI first, or call it by its package name: `npx @stati/cli build`.
+
 ### Global installation (optional)
 
 If you prefer using `stati` directly without `npm run` or `npx`, install the CLI globally:
@@ -75,7 +77,7 @@ stati build
 
 ### `stati dev`
 
-Start development server with hot reload and incremental builds.
+Start development server with live reload and incremental builds.
 
 ```bash
 stati dev [options]
@@ -88,7 +90,7 @@ stati dev [options]
 | `--port` | number | 3000 | Port to run the dev server on |
 | `--host` | string | localhost | Host to bind the dev server to |
 | `--open` | boolean | false | Open browser after starting server |
-| `--config` | string | - | Path to config file |
+| `--config` | string | - | Accepted, but `dev` currently loads the config from the current directory (see [Config file location](#config-file-location)) |
 | `--tailwind-input` | string | - | Input file path for Tailwind CSS watcher |
 | `--tailwind-output` | string | - | Output file path for compiled Tailwind CSS |
 | `--tailwind-verbose` | boolean | false | Show all Tailwind CSS output (default shows errors only) |
@@ -104,9 +106,6 @@ stati dev --port 8080 --host 0.0.0.0
 
 # Open browser automatically
 stati dev --open
-
-# Custom config file
-stati dev --config stati.staging.js
 
 # With Tailwind CSS integration
 stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css
@@ -130,7 +129,7 @@ stati preview [options]
 | `--port` | number | 4000 | Port to run the preview server on |
 | `--host` | string | localhost | Host to bind the preview server to |
 | `--open` | boolean | false | Open browser after starting server |
-| `--config` | string | - | Path to config file |
+| `--config` | string | - | Accepted, but `preview` currently loads the config from the current directory (see [Config file location](#config-file-location)) |
 
 **Examples:**
 
@@ -143,10 +142,9 @@ stati preview --port 8080 --host 0.0.0.0
 
 # Open browser automatically
 stati preview --open
-
-# Custom config file
-stati preview --config stati.prod.js
 ```
+
+The preview server serves `dist/` as built, with no live reload. Extensionless URLs such as `/about` are served from `about.html`, and a missing file returns a plain-text 404.
 
 ### `stati build`
 
@@ -160,12 +158,12 @@ stati build [options]
 
 | Flag | Type | Default | Description |
 |------|------|---------|-------------|
-| `--force` | boolean | false | Force full rebuild without deleting cache |
-| `--clean` | boolean | false | Clean cache before building |
-| `--config` | string | - | Path to config file |
+| `--force` | boolean | false | Re-render every page, ignoring the ISG cache (the cache is kept and updated) |
+| `--clean` | boolean | false | Delete the output directory and the `.stati/` cache before building |
+| `--config` | string | - | Path to a config file; only its directory is used (see [Config file location](#config-file-location)) |
 | `--include-drafts` | boolean | false | Include draft pages in the build |
-| `--metrics` | boolean | false | Enable build metrics collection |
-| `--metrics-file` | string | - | Output path for metrics JSON (default: .stati/metrics/) |
+| `--metrics` | boolean | false | Enable build metrics collection (also enabled by `STATI_METRICS=1` or `true`) |
+| `--metrics-file` | string | - | Metrics JSON file name, resolved inside `.stati/metrics/`; paths outside that folder are rejected (default: `.stati/metrics/build-<timestamp>.json`) |
 | `--metrics-detailed` | boolean | false | Include per-page timing in metrics |
 | `--metrics-html` | boolean | false | Generate HTML report alongside JSON metrics |
 
@@ -199,15 +197,22 @@ Invalidate cache entries by tag, path, pattern, or age.
 stati invalidate [query]
 ```
 
+Cache entries are keyed by **output path**, with a leading slash: `/index.html`, `/about.html`, `/blog.html`, `/blog/first-post.html`. `path:` and `glob:` match against these keys.
+
 **Query Patterns:**
 
 | Pattern | Format | Example | Description |
 |---------|--------|---------|-------------|
-| Tag | `tag:value` | `tag:blog` | Invalidate by tag |
-| Path | `path:/route` | `path:/about` | Invalidate specific path or nested routes |
-| Glob | `glob:pattern` | `glob:blog/**` | Invalidate paths matching glob expressions |
-| Age | `age:duration` | `age:1week` | Invalidate entries rendered within specified time window (uses calendar arithmetic) |
+| Tag | `tag:value` | `tag:blog` | Entries whose front matter `tags` contain the value (exact, case-sensitive) |
+| Path | `path:/prefix` | `path:/blog` | Entries whose key starts with the value (plain text prefix: `/blog` matches `/blog.html` and `/blog/first-post.html`, and also `/blog-archive.html`) |
+| Glob | `glob:pattern` | `glob:/blog/**` | Entries whose whole key matches the glob; include the leading `/` |
+| Age | `age:duration` | `age:1week` | Entries **rendered** within the given period: `days`, `weeks`, `months`, `years` (singular or plural); months and years use calendar arithmetic |
+| Plain term | `term` | `news` | Entries with a tag containing the text, or a key containing it |
 | Clear All | (empty) | `stati invalidate` | Clear entire cache |
+
+A query can hold several terms separated by spaces; an entry is invalidated if it matches **any** of them. To use a value that contains spaces, quote it inside the query, for example `stati invalidate '"tag:release notes" path:/blog'`.
+
+Invalidation only removes entries from `.stati/manifest.json`; the pages are re-rendered on the next `stati build`.
 
 **Examples:**
 
@@ -215,11 +220,11 @@ stati invalidate [query]
 # Invalidate all content with 'blog' tag
 stati invalidate tag:blog
 
-# Invalidate specific path
+# Invalidate one page (its key is /about.html)
 stati invalidate path:/about
 
-# Invalidate paths matching glob pattern
-stati invalidate glob:blog/**
+# Invalidate everything under /blog/
+stati invalidate "glob:/blog/**"
 
 # Invalidate entries rendered in the last week
 stati invalidate age:1week
@@ -232,18 +237,14 @@ stati invalidate
 
 ### Environment configuration
 
-Use environment-specific configuration:
+Stati reads only `stati.config.ts`, `stati.config.js` or `stati.config.mjs`, so switch settings with environment variables that your config reads:
 
 ```bash
-# Development with custom config
-NODE_ENV=development stati dev --config stati.dev.js
-
-# Production build with staging config
-NODE_ENV=production stati build --config stati.staging.js
-
-# Environment variables in config
+# stati.config.ts reads process.env.SITE_URL
 SITE_URL=https://staging.example.com stati build
 ```
+
+`stati build` switches Stati's internal mode to production, but it does **not** set `process.env.NODE_ENV`. If your config branches on `NODE_ENV`, set it yourself (`NODE_ENV=production stati build`), or read the mode with `getEnv()` from `@stati/core` (see [Configuration file](/configuration/file#multi-environment-configuration)).
 
 ### CI/CD integration
 
@@ -259,10 +260,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
@@ -271,7 +272,7 @@ jobs:
         run: npm ci
 
       - name: Build site
-        run: stati build
+        run: npm run build
         env:
           SITE_URL: ${{ secrets.SITE_URL }}
           API_TOKEN: ${{ secrets.API_TOKEN }}
@@ -280,12 +281,14 @@ jobs:
         run: rsync -av dist/ user@server:/var/www/html/
 ```
 
+Run the build through your `build` script rather than calling `stati build` directly: the script is how projects scaffolded with Sass or Tailwind compile their CSS (`stati build && npm run build:css`), and CI runners do not put `node_modules/.bin` on the `PATH` for plain `run:` steps.
+
 **Netlify:**
 
-```bash
+```toml
 # netlify.toml
 [build]
-  command = "stati build"
+  command = "npm run build"
   publish = "dist"
 
 [build.environment]
@@ -296,7 +299,7 @@ jobs:
 
 ```json
 {
-  "buildCommand": "stati build",
+  "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "installCommand": "npm install"
 }
@@ -304,11 +307,12 @@ jobs:
 
 ## Global options
 
-Most commands support these options:
+Every command supports:
 
-- `--config <path>` - Path to configuration file (supported by `build`, `dev`, and `preview`)
 - `--help` - Show command help
-- `--version` - Show version information
+- `--version` - Show the CLI version
+
+`build`, `dev` and `preview` also accept `--config <path>`; see [Config file location](#config-file-location) for what it actually changes.
 
 ### Version information
 
@@ -324,35 +328,40 @@ stati dev --help
 
 ## Configuration options
 
-### Configuration files
+### Config file location
 
-Stati uses project-specific configuration files:
+Stati looks for one of these files, in this order, and uses the first it finds:
 
-```bash
-# Use custom config file
-stati dev --config stati.dev.js
-stati build --config stati.prod.js
-
-# Default config file locations (searched in this order)
+```text
 stati.config.ts   # TypeScript config
 stati.config.js   # JavaScript config
-stati.config.mjs  # ES Module config
+stati.config.mjs  # ES module config
 ```
+
+If none exists, Stati builds with its defaults (site title "My Stati Site", base URL `http://localhost:3000`). If the file exists but fails to load (for example, a syntax error), the error is printed, followed by "Falling back to default configuration.", and the build continues with those defaults, so read the output when a build looks wrong. Invalid `isg` settings are the exception: they stop the build with an "Invalid ISG configuration" error.
+
+`--config` does not select a file by name:
+
+- `stati build --config path/to/stati.config.ts` uses only the **directory** of the path and loads the standard file name from it. `--config stati.staging.js` is ignored and `./stati.config.*` is used.
+- `stati dev` and `stati preview` currently always load the config from the current directory.
+- `srcDir`, `outDir`, `staticDir` and the `.stati/` cache are resolved from the current directory in every case.
+
+Run commands from the project root, and keep one config file per project; switch environments with environment variables instead of separate config files.
 
 ## Development workflows
 
-### Hot reload
+### Live reload
 
 The development server automatically rebuilds affected pages and refreshes the browser. Terminal output shows the changed path and how long the rebuild took:
 
-```bash
-$ stati dev
-
-⚡ site/blog/post.md rebuilt in 120ms
-⚡ site/layout.eta rebuilt in 340ms
+```text
+▸ site/blog/post.md rebuilt
+   Done in 120ms
+▸ site/layout.eta rebuilt
+   12/12 pages rebuilt in 340ms
 ```
 
-Template or partial changes invalidate dependent pages in the cache before the rebuild so those pages always render with the latest layout.
+Template or partial changes mark the dependent pages as stale in the cache before the rebuild, so those pages always render with the latest layout. Changes to `stati.config.*` are not watched; restart `stati dev` after editing the config.
 
 ### Preview builds
 
@@ -372,7 +381,7 @@ stati build && python -m http.server 8080 --directory dist
 ### Debugging
 
 - During `stati dev`, any build failure shows a browser overlay with the stack trace and file location.
-- The terminal logs which file triggered the rebuild (for example, `⚡ site/docs/api.md rebuilt in 92ms`).
+- The terminal logs which file triggered the rebuild (for example, `▸ site/docs/api.md rebuilt`, then `Done in 92ms`).
 - Run `stati build --clean` to regenerate everything from scratch if cached output looks stale.
 
 ## Scripting and automation
@@ -386,8 +395,8 @@ Common npm script patterns:
   "scripts": {
     "dev": "stati dev",
     "build": "stati build",
-    "preview": "stati build && serve dist",
-    "clean": "rm -rf dist .stati",
+    "preview": "stati preview",
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true});require('node:fs').rmSync('.stati',{recursive:true,force:true})\"",
     "fresh": "npm run clean && npm run build",
     "deploy": "npm run build && rsync -av dist/ server:/path/",
     "invalidate": "stati invalidate tag:blog"

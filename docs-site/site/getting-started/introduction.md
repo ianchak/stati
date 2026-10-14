@@ -35,7 +35,7 @@ title: Hello, Stati
 This page becomes `/hello`.
 ```
 
-Save it as `site/hello.md`, add a layout at `site/layout.eta`, and run `npx stati build`. The output in `dist/` is static HTML with no client-side framework.
+Save it as `site/hello.md`, add a layout at `site/layout.eta`, install Stati with `npm install -D @stati/cli @stati/core`, and run `npx stati build`. The output in `dist/` is static HTML with no client-side framework. (Install first: without a local `@stati/cli`, `npx stati` downloads an unrelated npm package of the same name.)
 
 ```html
 <!doctype html>

@@ -149,7 +149,7 @@ seo:
 
 ## SEO metadata
 
-Stati manages SEO metadata through page frontmatter and the SEO configuration system. See the [SEO Configuration](./seo.md) guide for details.
+Stati manages SEO metadata through page frontmatter and the SEO configuration system. See the [SEO Configuration](/configuration/seo) guide for details.
 
 ### Page-level SEO
 
@@ -254,13 +254,14 @@ For **explicit control over tag placement**, use the `generateSEO()` helper in t
 
 ```javascript
 export default defineConfig({
+  // site: { … },
   seo: {
     autoInject: false, // Disable automatic injection
   },
 });
 ```
 
-See [SEO API](../api/seo.md) for complete `generateSEO()` documentation.
+See [SEO API](/api/seo) for complete `generateSEO()` documentation.
 
 ## Template usage
 
@@ -271,38 +272,43 @@ Access site configuration in Eta templates:
 <title><%= stati.page.title %> | <%= stati.site.title %></title>
 
 <!-- Base URL for absolute links -->
-<link rel="canonical" href="<%= stati.site.baseUrl %><%= stati.page.url %>" />
+<link rel="canonical" href="<%= stati.site.baseUrl + stati.page.url %>" />
 
 <!-- Locale -->
 <html lang="<%= stati.site.defaultLocale || 'en' %>">
 
-<!-- Author from SEO config (if configured) -->
-<% if (stati.page.author) { %>
-  <meta name="author" content="<%= stati.page.author.name %>" />
+<!-- Author from the page's seo front matter (if set) -->
+<% const author = stati.page.seo?.author; %>
+<% if (author) { %>
+  <meta name="author" content="<%= typeof author === 'string' ? author : author.name %>" />
 <% } %>
 ```
 
+The config's `seo.defaultAuthor` is not part of the template context; auto-injection uses it when a page has no `seo.author`.
+
 ## Environment-specific configuration
 
-Configure different metadata for different environments:
+Configure different metadata for different environments. `getEnv()` from `@stati/core` returns `'production'` during `stati build` and `'development'` during `stati dev`:
 
 ```javascript
+import { defineConfig, getEnv } from '@stati/core';
+
+const isProd = getEnv() === 'production';
+
 export default defineConfig({
   site: {
     title: 'My Site',
-    baseUrl:
-      process.env.NODE_ENV === 'production'
-        ? 'https://mysite.com'
-        : 'http://localhost:3000',
+    baseUrl: isProd ? 'https://mysite.com' : 'http://localhost:3000',
     defaultLocale: 'en-US',
   },
   seo: {
-    // Disable auto-injection in development for manual control
-    autoInject: process.env.NODE_ENV === 'production',
-    debug: process.env.NODE_ENV === 'development',
+    // Log SEO warnings while developing
+    debug: !isProd,
   },
 });
 ```
+
+Stati does not set `process.env.NODE_ENV`; if your config reads it, set it in your scripts yourself (for example `NODE_ENV=production stati build`).
 
 ## Sitemap and robots.txt
 
@@ -322,7 +328,7 @@ export default defineConfig({
   },
   robots: {
     enabled: true,
-    sitemap: true, // Auto-reference sitemap.xml
+    sitemap: true, // Adds "Sitemap: https://example.com/sitemap.xml"
     userAgents: [
       {
         userAgent: 'Googlebot',
@@ -333,7 +339,7 @@ export default defineConfig({
 });
 ```
 
-See [SEO Configuration](./seo.md) for complete sitemap and robots.txt options.
+See [SEO Configuration](/configuration/seo) for complete sitemap and robots.txt options.
 
 ## RSS feeds
 
@@ -352,14 +358,14 @@ export default defineConfig({
         filename: 'feed.xml',
         title: 'My Blog Feed',
         description: 'Latest posts from my blog',
-        contentPatterns: ['blog/**/*.md'],
+        contentPatterns: ['**/blog/**/*.md'],
       },
     ],
   },
 });
 ```
 
-See [RSS Configuration](./rss.md) for complete RSS feed options.
+See [RSS Configuration](/configuration/rss) for complete RSS feed options.
 
 ## Validation and testing
 
@@ -420,7 +426,7 @@ export default defineConfig({
 
 ## Related configuration
 
-- [SEO Configuration](./seo.md) - Complete SEO setup including Open Graph and Twitter Cards
-- [RSS Configuration](./rss.md) - RSS feed generation
-- [Sitemap Configuration](./seo.md#sitemap-configuration) - XML sitemap generation
-- [Template Configuration](./templates.md) - Access metadata in templates
+- [SEO Configuration](/configuration/seo) - Complete SEO setup including Open Graph and Twitter Cards
+- [RSS Configuration](/configuration/rss) - RSS feed generation
+- [Sitemap Configuration](/configuration/seo#sitemap-configuration) - XML sitemap generation
+- [Template Configuration](/configuration/templates) - Access metadata in templates
