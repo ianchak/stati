@@ -218,6 +218,9 @@ jobs:
               "core")
                 CHANGELOG_FILE="packages/core/CHANGELOG.md"
                 ;;
+              "images")
+                CHANGELOG_FILE="packages/images/CHANGELOG.md"
+                ;;
               "create-stati")
                 CHANGELOG_FILE="packages/create-stati/CHANGELOG.md"
                 ;;

@@ -10,7 +10,7 @@ import path from 'node:path';
 import { execSync } from 'node:child_process';
 
 // Configuration
-const WORKSPACE_PACKAGES = ['@stati/core', '@stati/cli', 'create-stati'];
+const WORKSPACE_PACKAGES = ['@stati/core', '@stati/cli', '@stati/images', 'create-stati'];
 const CHANGESET_DIR = path.join(process.cwd(), '.changeset');
 
 // Patterns for commits to skip
@@ -179,6 +179,9 @@ function determineAffectedPackages(commit) {
       }
       if (file.startsWith('packages/cli/')) {
         packages.add('@stati/cli');
+      }
+      if (file.startsWith('packages/images/')) {
+        packages.add('@stati/images');
       }
       if (file.startsWith('packages/create-stati/')) {
         packages.add('create-stati');

@@ -67,3 +67,29 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
           verbose: true
+
+  # @stati/images depends on sharp's native binaries, which differ per platform.
+  # The test job above covers Linux; this one runs the package's tests on macOS and Windows.
+  images:
+    if: ${{ github.event_name == 'pull_request' || (!contains(github.event.head_commit.message, '[skip ci]') && github.actor != 'github-actions[bot]') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build core and images
+        run: npm run build -w packages/core && npm run build -w packages/images
+
+      - name: Run @stati/images tests
+        run: npx vitest run packages/images
