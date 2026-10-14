@@ -123,6 +123,9 @@ export type { CompileOptions, WatchOptions } from './typescript.utils.js';
 // HTML manipulation utilities
 export { findHeadClosePosition, injectBeforeHeadClose } from './html.utils.js';
 
+// Date utilities
+export { getFrontMatterDate, PUBLISHED_DATE_FIELDS } from './date.utils.js';
+
 // Environment utilities
 export { isEnabledEnvFlag } from './env.utils.js';
 

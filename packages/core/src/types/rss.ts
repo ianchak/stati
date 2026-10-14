@@ -166,7 +166,7 @@ export interface RSSFeedConfig {
      * Can be:
      * - A string property name from frontMatter (e.g., 'publishedAt', 'date')
      * - A function that returns a Date or string
-     * @default 'publishedAt' or 'date'
+     * @default The first valid date in `publishedAt`, `published`, `date`, `createdAt`
      */
     pubDate?: string | ((page: PageModel) => Date | string);
 

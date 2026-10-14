@@ -1,5 +1,5 @@
 import glob from 'fast-glob';
-import { readFile, resolveSrcDir } from './utils/index.js';
+import { readFile, resolveSrcDir, getFrontMatterDate } from './utils/index.js';
 import matter from 'gray-matter';
 import { relative, dirname, basename } from 'node:path';
 import type { PageModel, StatiConfig } from '../types/index.js';
@@ -61,8 +61,11 @@ export async function loadContent(
       content: markdown,
     };
 
-    if (frontMatter.publishedAt && typeof frontMatter.publishedAt === 'string') {
-      page.publishedAt = new Date(frontMatter.publishedAt);
+    const publishedAt = getFrontMatterDate(frontMatter, (field, value) => {
+      console.warn(`Ignoring invalid date in "${field}" of ${file}: ${String(value)}`);
+    });
+    if (publishedAt) {
+      page.publishedAt = publishedAt;
     }
 
     pages.push(page);

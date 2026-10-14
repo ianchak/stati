@@ -3,6 +3,7 @@ import { computeContentHash, computeFileHash, computeInputsHash } from './hash.j
 import { trackTemplateDependencies } from './deps.js';
 import { computeEffectiveTTL, computeNextRebuildAt, isPageFrozen } from './ttl.js';
 import { validatePageISGOverrides, extractNumericOverride } from './validation.js';
+import { getFrontMatterDate } from '../utils/index.js';
 import { performance } from 'node:perf_hooks';
 
 /**
@@ -487,27 +488,5 @@ export async function updateCacheEntry(
  * Helper function to get published date as ISO string from page front matter.
  */
 function getPublishedDateISO(page: PageModel): string | undefined {
-  const frontMatter = page.frontMatter;
-
-  // Try common field names for published date
-  const dateFields = ['publishedAt', 'published', 'date', 'createdAt'];
-
-  for (const field of dateFields) {
-    const value = frontMatter[field];
-    if (value) {
-      // Handle string dates
-      if (typeof value === 'string') {
-        const date = new Date(value);
-        if (!isNaN(date.getTime())) {
-          return date.toISOString();
-        }
-      }
-      // Handle Date objects
-      if (value instanceof Date && !isNaN(value.getTime())) {
-        return value.toISOString();
-      }
-    }
-  }
-
-  return undefined;
+  return getFrontMatterDate(page.frontMatter)?.toISOString();
 }

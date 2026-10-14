@@ -519,16 +519,16 @@ site/
 
 ### Collection data
 
-| Property                  | What it holds                                                                        |
-| ------------------------- | ------------------------------------------------------------------------------------ |
-| `pages`                   | Every page in the collection, at any depth, excluding the index page itself          |
-| `children`                | Only the pages one level down (`hello-world`, not `2025/recap`)                      |
-| `recentPages`             | `pages` sorted by `publishedAt`, newest first; undated pages follow, sorted by title |
-| `pagesByTag`              | An object mapping each front matter tag to the pages that carry it                   |
-| `metadata.totalPages`     | The number of entries in `pages`                                                     |
-| `metadata.hasChildren`    | Whether `children` is non-empty                                                      |
-| `metadata.collectionPath` | The index page's URL, such as `/blog`                                                |
-| `metadata.collectionName` | The folder name, such as `blog`, or `Home` for the root                              |
+| Property                  | What it holds                                                                       |
+| ------------------------- | ----------------------------------------------------------------------------------- |
+| `pages`                   | Every page in the collection, at any depth, excluding the index page itself         |
+| `children`                | Only the pages one level down (`hello-world`, not `2025/recap`)                     |
+| `recentPages`             | `pages` sorted by publish date, newest first; undated pages follow, sorted by title |
+| `pagesByTag`              | An object mapping each front matter tag to the pages that carry it                  |
+| `metadata.totalPages`     | The number of entries in `pages`                                                    |
+| `metadata.hasChildren`    | Whether `children` is non-empty                                                     |
+| `metadata.collectionPath` | The index page's URL, such as `/blog`                                               |
+| `metadata.collectionName` | The folder name, such as `blog`, or `Home` for the root                             |
 
 Each entry is a page model, not a template context. Read front matter through `frontMatter`, and use `url` for links:
 
@@ -559,7 +559,7 @@ A tag list with counts comes straight from `pagesByTag`:
 
 ### Rules to know
 
-- **Dates:** `recentPages` sorts on `publishedAt` from front matter. Quote the value (`publishedAt: '2025-03-01'`); an unquoted YAML date is not picked up. The `date` field is not used for sorting.
+- **Dates:** `recentPages` sorts on `post.publishedAt`, which Stati takes from the first valid front matter field among `publishedAt`, `published`, `date` and `createdAt`. Quoted (`publishedAt: '2025-03-01'`) and unquoted (`date: 2025-03-01`) values both work. An invalid value is skipped with a warning. Navigation, ISG aging and RSS read dates in the same order.
 - **The root collection is shallow:** `site/index.md` collects only top-level pages, such as `/about`, not the pages inside `blog/`. Other collections include every depth.
 - **Index pages only:** `stati.collection` is set on index pages. Pages at the top level of the site also receive the root collection. Other pages get `undefined`, so guard with `stati.collection?.` in shared layouts.
 - **Drafts:** pages with `draft: true` are left out unless you build with `--include-drafts`.

@@ -508,6 +508,57 @@ describe('RSS Feed Generation', () => {
       expect(result.xml).toMatch(/<pubDate>[A-Za-z]{3}, 15 [A-Za-z]{3} 2025/);
     });
 
+    it('should fall back to date when publishedAt is invalid', () => {
+      const pages = [
+        {
+          slug: 'fallback',
+          url: '/fallback',
+          content: '<p>Content</p>',
+          frontMatter: { title: 'Fallback', publishedAt: 'soon', date: '2025-03-15' },
+          sourcePath: 'site/fallback.md',
+        },
+      ] as PageModel[];
+
+      const result = generateRSSFeed(pages, baseConfig, baseFeedConfig);
+
+      expect(result.xml).toMatch(/<pubDate>[A-Za-z]{3}, 15 Mar 2025/);
+    });
+
+    it('should read published and createdAt for pubDate and sorting', () => {
+      const pages = [
+        {
+          slug: 'created',
+          url: '/created',
+          content: '<p>Content</p>',
+          frontMatter: { title: 'Created', createdAt: '2025-01-10' },
+          sourcePath: 'site/created.md',
+        },
+        {
+          slug: 'published',
+          url: '/published',
+          content: '<p>Content</p>',
+          frontMatter: { title: 'Published', published: new Date('2025-02-20') },
+          sourcePath: 'site/published.md',
+        },
+        {
+          slug: 'undated',
+          url: '/undated',
+          content: '<p>Content</p>',
+          frontMatter: { title: 'Undated' },
+          sourcePath: 'site/undated.md',
+        },
+      ] as PageModel[];
+
+      const result = generateRSSFeed(pages, baseConfig, baseFeedConfig);
+      const titles = [...result.xml.matchAll(/<item>\s*<title>([^<]+)<\/title>/g)].map(
+        (match) => match[1],
+      );
+
+      expect(titles).toEqual(['Published', 'Created', 'Undated']);
+      expect(result.xml).toMatch(/<pubDate>[A-Za-z]{3}, 20 Feb 2025/);
+      expect(result.xml).toMatch(/<pubDate>[A-Za-z]{3}, 10 Jan 2025/);
+    });
+
     it('should handle enclosure function', () => {
       baseFeedConfig.enclosure = (page) => {
         if (page.slug === 'post-1') {

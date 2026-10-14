@@ -188,7 +188,7 @@ These are checked-version cautions, not instructions to modify Stati:
 | Optional partial checks | Membership test, not truthiness through the development error proxy                          |
 | Collection items        | `frontMatter.title`, not `title`; parent collections may be absent                           |
 | Routing                 | Preserved names, ordinary `/blog` + `blog.html`, not guaranteed slugification/trailing slash |
-| Dates                   | Quote `publishedAt`; `date` is not universally a parsed alias                                |
+| Dates                   | First valid of `publishedAt`, `published`, `date`, `createdAt`; quoted or unquoted           |
 | Template cache          | Current source caches in development, invalidates on template changes                        |
 | Config selection        | `configPath` chooses a directory searched for standard filenames                             |
 | Config errors           | General import failures can log/fall back; don't accept default-shaped success               |

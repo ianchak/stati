@@ -83,10 +83,13 @@ export interface FrontMatter {
   layout?: string;
   /** Numeric order for sorting (useful for navigation) */
   order?: number;
-  /** Publication date as ISO string */
-  publishedAt?: string;
-  /** Publication date (alias for publishedAt) */
-  date?: string;
+  /**
+   * Publication date. A quoted YAML value is a string; an unquoted one
+   * (`publishedAt: 2024-01-01`) is parsed into a `Date`.
+   */
+  publishedAt?: string | Date;
+  /** Publication date, used when `publishedAt` and `published` are absent or invalid */
+  date?: string | Date;
   /** Last updated date as ISO string */
   updated?: string;
   /** Custom cache TTL in seconds (overrides global ISG settings) */
@@ -310,7 +313,7 @@ export interface PageModel {
   frontMatter: FrontMatter;
   /** Raw markdown content (before rendering) */
   content: string;
-  /** Publication date (parsed from front matter or file stats) */
+  /** Publication date, from the first valid of `publishedAt`, `published`, `date`, `createdAt` */
   publishedAt?: Date;
 }
 

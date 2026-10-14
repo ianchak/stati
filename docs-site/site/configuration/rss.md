@@ -222,7 +222,7 @@ By default, Stati uses these frontmatter fields:
 
 - `title` → RSS item title
 - `description` → RSS item description
-- `publishedAt` or `date` → RSS item pubDate
+- `publishedAt`, `published`, `date` or `createdAt` (first valid one) → RSS item pubDate
 - `tags` → RSS item categories
 
 ### Custom field names

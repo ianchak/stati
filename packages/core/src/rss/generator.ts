@@ -9,6 +9,7 @@ import type { RSSFeedConfig, RSSGenerationResult } from '../types/rss.js';
 import type { Logger } from '../types/logging.js';
 import { escapeHtml } from '../seo/utils/index.js';
 import { filterByPatterns } from './utils/index.js';
+import { getFrontMatterDate } from '../core/utils/index.js';
 
 /**
  * Formats a date for RSS pubDate field (RFC 822)
@@ -71,8 +72,8 @@ function filterPages(pages: PageModel[], feedConfig: RSSFeedConfig): PageModel[]
  * @param page - Page to get date from
  * @returns Date value or undefined
  */
-function getPageDate(page: PageModel): string | Date | undefined {
-  return page.frontMatter.publishedAt || page.frontMatter.date;
+function getPageDate(page: PageModel): Date | undefined {
+  return getFrontMatterDate(page.frontMatter);
 }
 
 /**
@@ -98,7 +99,7 @@ function sortPages(pages: PageModel[], feedConfig: RSSFeedConfig): PageModel[] {
         if (!dateA && !dateB) return 0;
         if (!dateA) return 1;
         if (!dateB) return -1;
-        const comparison = new Date(dateA).getTime() - new Date(dateB).getTime();
+        const comparison = dateA.getTime() - dateB.getTime();
         return sortBy === 'date-asc' ? comparison : -comparison;
       }
       case 'title-asc':
@@ -307,9 +308,9 @@ export function generateRSSFeed(
     }
 
     // Pub date
-    const pubDate =
-      getFieldValue<Date | string>(page, itemMapping.pubDate, 'publishedAt', logger) ||
-      getFieldValue<Date | string>(page, itemMapping.pubDate, 'date', logger);
+    const pubDate = itemMapping.pubDate
+      ? getFieldValue<Date | string>(page, itemMapping.pubDate, undefined, logger)
+      : getPageDate(page);
     const formattedPubDate = parseAndFormatDate(pubDate);
     if (formattedPubDate) {
       xmlLines.push(`      <pubDate>${formattedPubDate}</pubDate>`);
