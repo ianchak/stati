@@ -881,9 +881,16 @@ export class ImageRuntime {
       this.dirty = true;
       for (const output of spec.outputs) this.existing.add(output);
       this.stats.generated++;
-    })().catch((error: unknown) => {
+    })().catch(async (error: unknown) => {
       this.failures.set(key, error instanceof Error ? error : new Error(String(error)));
       this.stats.failed++;
+      // Outputs this run wrote before failing are recorded nowhere, so pruning would never
+      // remove them. Files that existed when the build started stay: cached pages may show them.
+      await Promise.all(
+        spec.outputs
+          .filter((output) => !this.existing.has(output))
+          .map((output) => remove(join(this.outDir, output)).catch(() => undefined)),
+      );
     });
     this.jobs.set(key, promise);
   }

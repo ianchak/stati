@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { access, mkdir, mkdtemp, readFile, rm, utimes, writeFile } from 'node:fs/promises';
+import { access, mkdir, mkdtemp, readdir, readFile, rm, utimes, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { URL } from 'node:url';
@@ -27,6 +27,7 @@ interface FakeCalls {
 
 declare global {
   var __statiImagesCalls: FakeCalls | undefined;
+  var __statiImagesFailPartwayOn: string | undefined;
 }
 
 /**
@@ -72,6 +73,14 @@ export function createImageProvider() {
     async createVariants(request) {
       calls.variants.push(request);
       if (failOn && request.sourcePath.includes(failOn)) throw new Error('encoder exploded');
+      // Read per call, so a test can make a later build fail after writing some outputs
+      const partway = globalThis.__statiImagesFailPartwayOn;
+      if (partway && request.sourcePath.includes(partway)) {
+        for (const output of request.outputs.slice(0, -1)) {
+          writeFileSync(output.filePath, 'partial');
+        }
+        throw new Error('encoder exploded partway');
+      }
       for (const output of request.outputs) {
         mkdirSync(dirname(output.filePath), { recursive: true });
         writeFileSync(output.filePath, output.format + ':' + output.width);
@@ -161,6 +170,7 @@ describe('image pipeline in builds', () => {
     vi.restoreAllMocks();
     setEnv('development');
     globalThis.__statiImagesCalls = undefined;
+    globalThis.__statiImagesFailPartwayOn = undefined;
     await rm(projectDir, { recursive: true, force: true });
   });
 
@@ -360,6 +370,34 @@ describe('image pipeline in builds', () => {
           expect(await exists(`dist/${file}`)).toBe(true);
         }
       }
+    });
+
+    it('removes files a failed job wrote, but keeps files from earlier builds', async () => {
+      await installFakeImagesPackage(projectDir);
+      config.images = { responsive: true };
+      const heroFiles = async () =>
+        (await readdir(join(projectDir, 'dist', '_img'))).filter((f) => f.startsWith('hero-'));
+
+      // One output fails after the others are written: none of them may stay behind untracked
+      globalThis.__statiImagesFailPartwayOn = 'hero';
+      await runBuild();
+      expect(await heroFiles()).toEqual([]);
+      expect(await read('dist/index.html')).not.toContain('<picture>');
+
+      // After a good build, a retry that fails must keep the files a cached page still shows.
+      // Losing the images manifest makes another page's render run the job again.
+      globalThis.__statiImagesFailPartwayOn = undefined;
+      await runBuild();
+      const written = await heroFiles();
+      expect(written).toHaveLength(9);
+      await rm(join(projectDir, '.stati', 'images', 'manifest.json'));
+      await write('site/about.md', '---\ntitle: About\n---\n![Hero](/images/hero.png)');
+      globalThis.__statiImagesFailPartwayOn = 'hero';
+      expect(await runBuild()).toMatchObject({ cacheHits: 2, cacheMisses: 1 });
+
+      expect(await heroFiles()).toEqual(written);
+      expect(await read('dist/index.html')).toContain('<picture>');
+      expect(await read('dist/about.html')).not.toContain('<picture>');
     });
 
     it('copies a co-located image for the fallback when its variants fail', async () => {
