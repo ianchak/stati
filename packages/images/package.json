@@ -1,0 +1,57 @@
+{
+  "name": "@stati/images",
+  "version": "0.0.0",
+  "description": "Responsive AVIF/WebP images and generated Open Graph images for Stati",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "fonts",
+    "templates"
+  ],
+  "keywords": [
+    "stati",
+    "static-site-generator",
+    "images",
+    "responsive-images",
+    "avif",
+    "webp",
+    "open-graph",
+    "og-image",
+    "sharp",
+    "satori"
+  ],
+  "author": "Imre Csige <me@imrecsige.dev> (https://imrecsige.dev)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ianchak/stati.git",
+    "directory": "packages/images"
+  },
+  "bugs": {
+    "url": "https://github.com/ianchak/stati/issues"
+  },
+  "homepage": "https://stati.build",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch",
+    "test": "vitest run"
+  },
+  "engines": {
+    "node": "^22.12.0 || >=24"
+  },
+  "dependencies": {
+    "satori": "^0.33.5",
+    "sharp": "^0.35.4"
+  },
+  "devDependencies": {
+    "@stati/core": "^1.27.2"
+  }
+}

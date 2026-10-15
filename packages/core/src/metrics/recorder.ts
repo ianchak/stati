@@ -56,6 +56,7 @@ type MutablePhases = {
   hookAfterAllMs?: number;
   hookBeforeRenderTotalMs?: number;
   hookAfterRenderTotalMs?: number;
+  imageSettleMs?: number;
 };
 
 /**
@@ -68,6 +69,9 @@ type MutableCounts = {
   assetsCopied: number;
   templatesLoaded: number;
   markdownFilesProcessed: number;
+  imagesGenerated: number;
+  imagesCached: number;
+  imagesFailed: number;
 };
 
 /**
@@ -91,6 +95,9 @@ class ActiveMetricRecorder implements MetricRecorder {
     assetsCopied: 0,
     templatesLoaded: 0,
     markdownFilesProcessed: 0,
+    imagesGenerated: 0,
+    imagesCached: 0,
+    imagesFailed: 0,
   };
   private isgMetrics: MetricsISG = {
     enabled: false,

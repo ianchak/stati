@@ -25,7 +25,9 @@ import {
   createNavigationHelpers,
 } from './utils/index.js';
 import { isDevelopment, isProduction } from '../env.js';
-import { generateSEO } from '../seo/index.js';
+import { generateSEO, resolveGeneratedImagePlaceholders } from '../seo/index.js';
+import type { PageImages, StatiImageOptions } from '../images/runtime.js';
+import type { GeneratedOgImage } from '../types/index.js';
 
 /**
  * Result of rendering a page template.
@@ -35,6 +37,32 @@ export interface RenderResult {
   html: string;
   /** Number of templates loaded (layout + partials) */
   templatesLoaded: number;
+  /** Open Graph image generated for the page, if any */
+  ogImage?: GeneratedOgImage | undefined;
+}
+
+/**
+ * Page-specific state for {@link renderPage}.
+ */
+export interface RenderPageExtras {
+  /** Image state of the page; without it `stati.image()` emits a plain `<img>` */
+  images?: PageImages | undefined;
+}
+
+/**
+ * `stati.image()` when images are turned off: a plain `<img>`, attributes escaped.
+ */
+function renderPlainImage(src: unknown, options: StatiImageOptions = {}): string {
+  if (typeof src !== 'string' || !src.trim()) {
+    return '';
+  }
+  const attributes = [
+    `src="${escapeHtml(src)}"`,
+    `alt="${escapeHtml(options.alt ?? '')}"`,
+    ...(options.title ? [`title="${escapeHtml(options.title)}"`] : []),
+    ...(options.class ? [`class="${escapeHtml(options.class)}"`] : []),
+  ];
+  return `<img ${attributes.join(' ')}>`;
 }
 
 /**
@@ -290,8 +318,16 @@ export async function renderPage(
   assets?: import('../types/index.js').StatiAssets,
   toc?: TocEntry[],
   logger?: Logger,
+  extras?: RenderPageExtras,
 ): Promise<RenderResult> {
   const log = logger || createFallbackLogger();
+  const pageImages = extras?.images;
+  // The generated Open Graph image is known once the og template has rendered, after the
+  // partials. Until then stati.generateSEO() emits placeholders for its tags.
+  const ogState: { image: GeneratedOgImage | undefined; pending: boolean } = {
+    image: undefined,
+    pending: pageImages?.wantsOg() ?? false,
+  };
 
   // Discover partials for this page's directory hierarchy
   const srcDir = resolveSrcDir(config);
@@ -365,12 +401,29 @@ export async function renderPage(
       version: getStatiVersion(),
     },
     // Stati utilities object with helper functions
-    generateSEO: (tags?: string[]) => generateSEO({ page, config, site: config.site }, tags),
+    generateSEO: (tags?: string[]) =>
+      generateSEO(
+        {
+          page,
+          config,
+          site: config.site,
+          generatedImage: ogState.image,
+          deferGeneratedImage: ogState.pending,
+        },
+        tags,
+      ),
     propValue,
+    // Image with dimensions, lazy loading and, with images.responsive, srcset variants
+    image: (src: unknown, options?: StatiImageOptions) =>
+      pageImages ? pageImages.renderHelperImage(src, options) : renderPlainImage(src, options),
     assets, // TypeScript bundle assets (available when typescript.enabled is true)
     // Set by callable partials invoked with props; always present so that
     // stati.props?.x works under the dev-mode context validation
     props: undefined,
+    // Set while the Open Graph template renders: { width, height }
+    og: undefined as { width: number; height: number } | undefined,
+    // The page's generated Open Graph image, once rendered: { url, path, width, height, alt }
+    ogImage: undefined as GeneratedOgImage | undefined,
   };
 
   // Render partials and store their content
@@ -460,6 +513,26 @@ export async function renderPage(
     }
   }
 
+  // Render the Open Graph template with the layout's context, minus the page body, so the
+  // generated image is known before the layout renders its SEO tags
+  if (pageImages && ogState.pending) {
+    const ogBaseContext = {
+      ...baseContext,
+      content: '',
+      page: { ...baseContext.page, content: '' },
+      og: pageImages.ogSize(),
+    };
+    const ogContext = createValidatingContextProxy({
+      ...ogBaseContext,
+      partials: createValidatingPartialsProxy(
+        wrapPartialsAsCallable(eta, renderedPartials, partialPaths, ogBaseContext),
+      ),
+    });
+    ogState.image = (await pageImages.renderOg(ogContext, eta)) ?? undefined;
+    ogState.pending = false;
+    baseContext.ogImage = ogState.image;
+  }
+
   // Wrap final rendered partials as callable before passing to layout context
   const callablePartials = wrapPartialsAsCallable(eta, renderedPartials, partialPaths, baseContext);
 
@@ -471,11 +544,15 @@ export async function renderPage(
   try {
     if (!layoutPath) {
       log.warning('No layout template found, using fallback');
-      return { html: createFallbackHtml(page, body), templatesLoaded };
+      return { html: createFallbackHtml(page, body), templatesLoaded, ogImage: ogState.image };
     }
 
     const html = await eta.renderAsync(layoutPath, context);
-    return { html, templatesLoaded };
+    return {
+      html: resolveGeneratedImagePlaceholders(html, ogState.image),
+      templatesLoaded,
+      ogImage: ogState.image,
+    };
   } catch (error) {
     log.error(
       `Error rendering layout ${layoutPath || 'unknown'}: ${error instanceof Error ? error.message : String(error)}`,
@@ -490,7 +567,7 @@ export async function renderPage(
       throw templateError;
     }
 
-    return { html: createFallbackHtml(page, body), templatesLoaded };
+    return { html: createFallbackHtml(page, body), templatesLoaded, ogImage: ogState.image };
   }
 }
 

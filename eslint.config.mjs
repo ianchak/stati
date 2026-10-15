@@ -46,9 +46,9 @@ export default [
       'no-var': 'error',
     },
   },
-  // Stricter console rules for core library - no console statements allowed
+  // Stricter console rules for library packages - no console statements allowed
   {
-    files: ['packages/core/**/*.{ts,tsx}'],
+    files: ['packages/core/**/*.{ts,tsx}', 'packages/images/**/*.{ts,tsx}'],
     rules: {
       'no-console': ['error', { allow: ['error', 'warn'] }],
     },

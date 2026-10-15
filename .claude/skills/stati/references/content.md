@@ -26,6 +26,11 @@ draft: false
 Readable content with ordinary Markdown links and images.
 ```
 
+Write images as Markdown (`![Alt text](./photo.jpg)`) rather than raw `<img>` so
+Stati adds their size and lazy loading; a relative path points next to the `.md`
+file. For a caption, put the Markdown image between blank lines inside
+`<figure>`, before the `<figcaption>`.
+
 Quote dates intended as strings. Use a numeric `order`, booleans for `draft`,
 and arrays of strings for `tags`. Do not assume YAML fields are schema-validated
 or that malformed values will be safely coerced by every feature.

@@ -4,9 +4,10 @@ import { ExampleManager, TEMPLATES } from './examples.js';
 import type { TemplateName } from './examples.js';
 import { PackageJsonModifier } from './package-json.js';
 import { processStyling } from './css-processors.js';
-import { writeProcessorFiles } from './utils/index.js';
+import { writeProcessorFiles, applyProcessorResult } from './utils/index.js';
 import type { StylingOption } from './css-processors.js';
 import { setupTypeScript } from './typescript-processor.js';
+import { setupImages, imagesConfigBlock } from './images-processor.js';
 import { isCommandAvailable, spawnProcess, log } from './utils/index.js';
 import { copyAgentSkill } from './agent-skill.js';
 import type { AgentSkillTarget } from './agent-skill.js';
@@ -188,6 +189,8 @@ export interface CreateOptions {
   install?: boolean;
   packageManager?: PackageManager;
   agentSkill?: AgentSkillTarget | false;
+  /** Add @stati/images: responsive images and link preview cards */
+  images?: boolean;
   dir?: string;
 }
 
@@ -218,27 +221,62 @@ function generateConfigFile(options: CreateOptions): { filename: string; content
 }
 
 /**
- * Adapt a config file shipped by the template (see `ExampleMetadata.ownConfig`).
- * The JavaScript config is kept as-is; for TypeScript projects it becomes
- * stati.config.ts with client-side TypeScript bundling enabled.
+ * Adds blocks, such as `typescript: { ... }`, before the closing `});` of `defineConfig()`.
+ * Each block is indented for the config object and has no trailing comma.
  */
-export function adaptTemplateConfig(
-  content: string,
-  typescript: boolean | undefined,
-): { filename: string; content: string } {
-  if (!typescript) {
-    return { filename: 'stati.config.js', content };
+function appendConfigBlocks(content: string, blocks: string[]): string {
+  if (blocks.length === 0) {
+    return content;
   }
-
   const closing = /\n\}\);\s*$/;
   if (!closing.test(content)) {
     throw new Error('Template config must end with the closing "});" of defineConfig()');
   }
+  return content.replace(closing, `\n\n${blocks.map((block) => `${block},`).join('\n\n')}\n});\n`);
+}
+
+/**
+ * Adapt a config file shipped by the template (see `ExampleMetadata.ownConfig`).
+ * The JavaScript config is kept as-is apart from added blocks; for TypeScript projects it
+ * becomes stati.config.ts with client-side TypeScript bundling enabled.
+ *
+ * @param content - The template's stati.config.js
+ * @param typescript - Whether the project uses TypeScript
+ * @param imagesBlock - The `images` block to add when image tools were chosen
+ */
+export function adaptTemplateConfig(
+  content: string,
+  typescript: boolean | undefined,
+  imagesBlock?: string,
+): { filename: string; content: string } {
+  const blocks = imagesBlock ? [imagesBlock] : [];
+  if (!typescript) {
+    return { filename: 'stati.config.js', content: appendConfigBlocks(content, blocks) };
+  }
 
   return {
     filename: 'stati.config.ts',
-    content: content.replace(closing, '\n\n  typescript: {\n    enabled: true,\n  },\n});\n'),
+    content: appendConfigBlocks(content, ['  typescript: {\n    enabled: true,\n  }', ...blocks]),
   };
+}
+
+/**
+ * The `site` block of a generated config. With image tools, `baseUrl` is set too, because
+ * link preview images need absolute URLs.
+ */
+function generatedSiteBlock(options: CreateOptions): string {
+  return [
+    '  site: {',
+    `    title: '${options.projectName}',`,
+    "    description: 'A Stati site',",
+    ...(options.images
+      ? [
+          "    // Your site's public address, used for link preview images",
+          "    baseUrl: 'https://example.com',",
+        ]
+      : []),
+    '  },',
+  ].join('\n');
 }
 
 /**
@@ -246,18 +284,16 @@ export function adaptTemplateConfig(
  * Includes full TypeScript config with all settings.
  */
 function generateTypeScriptConfig(options: CreateOptions): string {
-  return `import { defineConfig } from '@stati/core';
+  const content = `import { defineConfig } from '@stati/core';
 
 export default defineConfig({
-  site: {
-    title: '${options.projectName}',
-    description: 'A Stati site',
-  },
+${generatedSiteBlock(options)}
   typescript: {
     enabled: true,
   },
 });
 `;
+  return appendConfigBlocks(content, options.images ? [imagesConfigBlock(options.template)] : []);
 }
 
 /**
@@ -265,15 +301,13 @@ export default defineConfig({
  * Minimal config without TypeScript settings.
  */
 function generateJavaScriptConfig(options: CreateOptions): string {
-  return `import { defineConfig } from '@stati/core';
+  const content = `import { defineConfig } from '@stati/core';
 
 export default defineConfig({
-  site: {
-    title: '${options.projectName}',
-    description: 'A Stati site',
-  },
+${generatedSiteBlock(options)}
 });
 `;
+  return appendConfigBlocks(content, options.images ? [imagesConfigBlock(options.template)] : []);
 }
 
 export class ProjectScaffolder {
@@ -297,7 +331,11 @@ export class ProjectScaffolder {
       // 3. Generate and write config file (stati.config.ts or stati.config.js)
       const templateConfigPath = join(targetDir, 'stati.config.js');
       const configFile = TEMPLATES[this.options.template].ownConfig
-        ? adaptTemplateConfig(await readFile(templateConfigPath, 'utf-8'), this.options.typescript)
+        ? adaptTemplateConfig(
+            await readFile(templateConfigPath, 'utf-8'),
+            this.options.typescript,
+            this.options.images ? imagesConfigBlock(this.options.template) : undefined,
+          )
         : generateConfigFile(this.options);
       // Remove template config file if we're writing a different one (e.g., TS replacing JS)
       if (configFile.filename !== 'stati.config.js') {
@@ -326,6 +364,12 @@ export class ProjectScaffolder {
       await processStyling(targetDir, this.options.styling, {
         keepTemplateStyles: TEMPLATES[this.options.template].ownStyles,
       });
+
+      // 6b. Add image tools, or remove the starter's link preview template when not chosen
+      await applyProcessorResult(
+        targetDir,
+        setupImages(this.options.template, Boolean(this.options.images)),
+      );
 
       // 7. Install the Stati agent skill (optional)
       if (this.options.agentSkill) {

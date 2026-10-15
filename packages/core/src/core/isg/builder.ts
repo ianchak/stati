@@ -1,5 +1,10 @@
 import type { PageModel, CacheEntry, StatiConfig } from '../../types/index.js';
-import { computeContentHash, computeFileHash, computeInputsHash } from './hash.js';
+import {
+  computeContentHash,
+  computeFileHash,
+  computeBinaryFileHash,
+  computeInputsHash,
+} from './hash.js';
 import { trackTemplateDependencies, resolveLayoutDependency } from './deps.js';
 import { computeEffectiveTTL, computeNextRebuildAt, isPageFrozen } from './ttl.js';
 import { validatePageISGOverrides, extractNumericOverride } from './validation.js';
@@ -64,7 +69,48 @@ function isValidCacheEntry(entry: CacheEntry): boolean {
     return false;
   }
 
+  for (const list of [entry.assetDeps, entry.images]) {
+    if (list !== undefined && (!Array.isArray(list) || !list.every((v) => typeof v === 'string'))) {
+      return false;
+    }
+  }
+
   return true;
+}
+
+/**
+ * Files a render discovered: the source images a page displays (`assetDeps`) and the
+ * generated images it references (`images`).
+ */
+export interface RenderedAssets {
+  /** Absolute paths of files whose content affects the page, such as source images */
+  assetDeps: readonly string[];
+  /** Generated image files the page references, relative to the output directory */
+  images: readonly string[];
+}
+
+/**
+ * Hashes render-discovered dependencies by content. Missing files hash to a sentinel.
+ */
+async function hashAssetDeps(assetDeps: readonly string[] | undefined): Promise<string[]> {
+  const hashes: string[] = [];
+  for (const assetPath of assetDeps ?? []) {
+    hashes.push(await computeBinaryFileHash(assetPath));
+  }
+  return hashes;
+}
+
+/**
+ * Returns the entry with its `assetDeps` and `images` replaced by this render's,
+ * dropping the fields when a render found none.
+ */
+function withRenderedAssets(entry: CacheEntry, rendered: RenderedAssets | undefined): CacheEntry {
+  const { assetDeps: _assetDeps, images: _images, ...rest } = entry;
+  return {
+    ...rest,
+    ...(rendered && rendered.assetDeps.length > 0 && { assetDeps: [...rendered.assetDeps] }),
+    ...(rendered && rendered.images.length > 0 && { images: [...rendered.images] }),
+  };
 }
 
 /**
@@ -159,6 +205,9 @@ export async function shouldRebuildPage(
       console.warn(`${dependencyErrors} dependency errors for ${page.url}, forcing rebuild`);
       return true;
     }
+
+    // Files found during the last render, such as images, are hashed by content
+    depsHashes.push(...(await hashAssetDeps(entry.assetDeps)));
 
     const currentInputsHash = computeInputsHash(currentContentHash, depsHashes, renderInputsHash);
 
@@ -269,6 +318,7 @@ export async function shouldRebuildPage(
  * @param allPages - All pages in the site, used to resolve the same layout as rendering
  * @param renderedAt - When the page was rendered
  * @param renderInputsHash - Optional hash of asset URLs and injection settings
+ * @param rendered - Files the render discovered, such as images
  * @returns New cache entry
  *
  * @example
@@ -282,6 +332,7 @@ export async function createCacheEntry(
   allPages: PageModel[],
   renderedAt: Date,
   renderInputsHash?: string,
+  rendered?: RenderedAssets,
 ): Promise<CacheEntry> {
   const timings: Record<string, number> = {};
   let start = performance.now();
@@ -309,6 +360,7 @@ export async function createCacheEntry(
       depsHashes.push(depHash);
     }
   }
+  depsHashes.push(...(await hashAssetDeps(rendered?.assetDeps)));
   timings.depsHashes = performance.now() - start;
 
   const inputsHash = computeInputsHash(contentHash, depsHashes, renderInputsHash);
@@ -366,7 +418,7 @@ export async function createCacheEntry(
     cacheEntry.maxAgeCapDays = maxAgeCapDays;
   }
 
-  return cacheEntry;
+  return withRenderedAssets(cacheEntry, rendered);
 }
 
 /**
@@ -429,6 +481,7 @@ async function hasTemplateStructureChanged(entry: CacheEntry): Promise<boolean> 
  * @param renderedAt - When the page was rendered
  * @param fastUpdate - If true, skip expensive dep tracking (dev mode optimization)
  * @param renderInputsHash - Optional hash of asset URLs and injection settings
+ * @param rendered - Files the render discovered, such as images
  * @returns Updated cache entry
  *
  * @example
@@ -444,6 +497,7 @@ export async function updateCacheEntry(
   renderedAt: Date,
   fastUpdate = false,
   renderInputsHash?: string,
+  rendered?: RenderedAssets,
 ): Promise<CacheEntry> {
   // In fast update mode (dev), reuse existing deps to avoid expensive tracking
   if (fastUpdate && entry.deps.length > 0) {
@@ -475,19 +529,31 @@ export async function updateCacheEntry(
           depsHashes.push(depHash);
         }
       }
+      // Asset deps come from this render, not from the previous entry
+      depsHashes.push(...(await hashAssetDeps(rendered?.assetDeps)));
 
       const inputsHash = computeInputsHash(contentHash, depsHashes, renderInputsHash);
 
-      return {
-        ...entry,
-        inputsHash,
-        renderedAt: renderedAt.toISOString(),
-      };
+      return withRenderedAssets(
+        {
+          ...entry,
+          inputsHash,
+          renderedAt: renderedAt.toISOString(),
+        },
+        rendered,
+      );
     }
   }
 
   // Full update - create new entry and preserve original publishedAt
-  const newEntry = await createCacheEntry(page, config, allPages, renderedAt, renderInputsHash);
+  const newEntry = await createCacheEntry(
+    page,
+    config,
+    allPages,
+    renderedAt,
+    renderInputsHash,
+    rendered,
+  );
 
   // Preserve original publishedAt if no new one is specified
   if (!newEntry.publishedAt && entry.publishedAt) {

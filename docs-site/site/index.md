@@ -62,7 +62,7 @@ inventory:
       items:
         - {
             name: 'Markdown pipeline',
-            text: 'markdown-it with plugins, heading anchors and a generated table of contents.',
+            text: 'markdown-it with plugins, heading anchors, a table of contents and sized, lazy-loaded images.',
             href: '/core-concepts/markdown',
           }
         - {
@@ -168,6 +168,16 @@ inventory:
             name: 'SEO metadata',
             text: 'Meta tags, Open Graph, Twitter cards and JSON-LD, injected for you.',
             href: '/configuration/seo',
+          }
+        - {
+            name: 'Responsive images',
+            text: 'AVIF and WebP at several widths, with @stati/images.',
+            href: '/configuration/images#responsive-images',
+          }
+        - {
+            name: 'Link preview cards',
+            text: 'An Open Graph image for every page, drawn from an Eta template.',
+            href: '/configuration/images#open-graph-images',
           }
         - {
             name: 'Static assets',

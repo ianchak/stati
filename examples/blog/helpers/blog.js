@@ -215,15 +215,19 @@ export function createBlog(options) {
    * matter to decide which pages to rebuild; it must not change after rendering.
    *
    * @param {PageModel} page
+   * @param {boolean} generatedCards Whether Stati generates an Open Graph image for every
+   *   page (`images.og`). The site-wide social image is then left out, so each page gets
+   *   its own card; a page's `image` still wins.
    */
-  function addSeo(page) {
+  function addSeo(page, generatedCards) {
     const fm = page.frontMatter;
     const seo = { ...(fm.seo ?? {}) };
     const openGraph = { ...(seo.openGraph ?? {}) };
     const image = fm.image ? { url: String(fm.image), alt: String(fm.imageAlt ?? '') } : undefined;
 
     if (image) openGraph.image ??= image;
-    else if (options.socialImage) openGraph.image ??= options.socialImage;
+    else if (options.socialImage && !generatedCards) openGraph.image ??= options.socialImage;
+    const hasImage = openGraph.image ? true : openGraph.image !== false && generatedCards;
     openGraph.locale ??= locale.replace('-', '_');
 
     if (isPost(page)) {
@@ -261,7 +265,7 @@ export function createBlog(options) {
 
     seo.openGraph = openGraph;
     seo.twitter = {
-      card: openGraph.image ? 'summary_large_image' : 'summary',
+      card: hasImage ? 'summary_large_image' : 'summary',
       ...(seo.twitter ?? {}),
     };
     fm.seo = seo;
@@ -269,12 +273,13 @@ export function createBlog(options) {
 
   /** @type {NonNullable<StatiConfig['hooks']>} */
   const hooks = {
-    beforeAll: ({ pages }) => {
+    beforeAll: ({ pages, config }) => {
       buildIndex(pages);
       const version = fingerprint();
+      const generatedCards = Boolean(config.images && config.images.og);
       for (const page of pages) {
         page.frontMatter.blogIndex = version;
-        addSeo(page);
+        addSeo(page, generatedCards);
       }
     },
   };

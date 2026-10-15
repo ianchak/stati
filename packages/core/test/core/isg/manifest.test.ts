@@ -141,6 +141,40 @@ describe('ISG Cache Manifest', () => {
       expect(result).toEqual(mockManifest);
       expect(Object.keys(result!.entries)).toHaveLength(2);
     });
+
+    it('should keep image fields and drop entries whose image fields are not string lists', async () => {
+      const valid = {
+        path: 'page1.html',
+        inputsHash: 'abc123',
+        deps: ['layout.eta'],
+        tags: ['page'],
+        renderedAt: new Date().toISOString(),
+        ttlSeconds: 3600,
+        assetDeps: ['site/photo.png'],
+        images: ['_img/photo-0123abcd.png'],
+      };
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      mockPathExists.mockResolvedValue(true);
+      mockReadFile.mockResolvedValue(
+        JSON.stringify({
+          entries: {
+            '/page1': valid,
+            '/page2': { ...valid, path: 'page2.html', assetDeps: 'site/photo.png' },
+            '/page3': { ...valid, path: 'page3.html', images: [42] },
+          },
+        }),
+      );
+
+      const result = await loadCacheManifest(testCacheDir);
+
+      expect(result!.entries).toEqual({ '/page1': valid });
+      expect(warn).toHaveBeenCalledWith(
+        'Invalid cache entry for /page2: "assetDeps" must be an array of strings',
+      );
+      expect(warn).toHaveBeenCalledWith(
+        'Invalid cache entry for /page3: "images" must be an array of strings',
+      );
+    });
   });
 
   describe('saveCacheManifest', () => {

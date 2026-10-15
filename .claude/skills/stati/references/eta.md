@@ -77,12 +77,21 @@ safe: validate externally supplied destinations separately.
 | `stati.assets`                        | Optional asset object with `bundlePaths`, `searchIndexPath`      |
 | `stati.propValue(...)`                | Token-list attribute helper                                      |
 | `stati.generateSEO(tags?)`            | Generated SEO HTML; use raw output when needed                   |
+| `stati.image(src, options?)`          | Sized `<img>` (or `<picture>`) HTML, synchronous; print with `<%~ %>` |
+| `stati.ogImage`                       | Generated Open Graph image `{ url, path, width, height, alt }`, or undefined |
+| `stati.og`                            | `{ width, height }` inside an `og.eta` card template; undefined elsewhere |
 | `stati.someFilter(...)`               | A function you registered in `eta.filters`                       |
 
 Frontmatter keys `path`, `url`, `content`, `navNode`, `toc` conflict with runtime
 fields: Stati warns and overwrites them. Filters are spread into the base context;
 avoid names such as `site`, `page`, `content`, `nav`, `collection`, `partials`,
-`props`, `generator`, `generateSEO`, `propValue`, and `assets`.
+`props`, `generator`, `generateSEO`, `propValue`, `image`, `og`, `ogImage` and `assets`.
+
+`stati.image(src, { alt, sizes, priority, class, title })` resolves `src` like a
+Markdown image: from `public/` when it starts with `/`, otherwise next to the page's
+Markdown file. It returns `''` for an empty `src`, so `stati.image(stati.page.cover)`
+needs no guard, and warns when `alt` is missing (pass `alt: ''` for decorative
+images). `priority: true` loads the image eagerly with high fetch priority.
 
 The public `TemplateContext` type is not the complete runtime shape (notably
 `partials` is typed as strings in the checked version). Do not infer that
@@ -106,7 +115,8 @@ Consequences for template code:
   `typeof stati.myFilter` or `stati.myFilter ?? fallback` throws in dev when the
   key is absent.
 - `stati.props` is always present (undefined without props), so
-  `stati.props?.title` and `if (!stati.props) return;` are safe.
+  `stati.props?.title` and `if (!stati.props) return;` are safe. The same holds
+  for `stati.og` and `stati.ogImage`.
 - A typo now fails the dev build instead of printing `undefined`. Production is
   unchanged: the same typo still renders `undefined` or falls back to the
   fallback layout, so fix what the dev overlay reports before shipping.

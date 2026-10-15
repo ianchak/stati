@@ -204,8 +204,8 @@ export interface OpenGraphConfig {
   type?: string;
   /** Open Graph description */
   description?: string;
-  /** Open Graph image (URL string or full image object) */
-  image?: string | OpenGraphImage;
+  /** Open Graph image (URL string or full image object), or `false` for none, not even a generated one */
+  image?: string | OpenGraphImage | false;
   /** Open Graph URL */
   url?: string;
   /** Site name */
@@ -387,6 +387,19 @@ export interface TemplateContext {
   collection?: CollectionData;
   /** TypeScript bundle assets (available when typescript.enabled is true) */
   assets?: StatiAssets;
+  /**
+   * Renders an image with intrinsic dimensions and lazy loading, plus `srcset` variants when
+   * `images.responsive` is on. Synchronous; print it with `<%~ %>`. Relative paths resolve
+   * next to the page's Markdown file, root-relative ones from the static directory.
+   */
+  image?: (
+    src: string,
+    options?: { alt?: string; sizes?: string; priority?: boolean; class?: string; title?: string },
+  ) => string;
+  /** Size of the Open Graph image, set only while an Open Graph template renders */
+  og?: { width: number; height: number };
+  /** The page's generated Open Graph image, when `images.og` produced one */
+  ogImage?: import('./images.js').GeneratedOgImage;
   /** Additional properties that may be added dynamically (e.g., custom filters, helpers) */
   [key: string]: unknown;
 }

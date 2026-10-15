@@ -1,5 +1,7 @@
 import fse from 'fs-extra';
-import type { WriteFileOptions } from 'node:fs';
+import { readFileSync, statSync, readdirSync } from 'node:fs';
+import type { WriteFileOptions, Stats } from 'node:fs';
+import { join, relative } from 'node:path';
 const {
   readFile: fseReadFile,
   writeFile: fseWriteFile,
@@ -125,4 +127,64 @@ export async function readdir<T extends boolean = false>(
  */
 export async function copyFile(src: string, dest: string): Promise<void> {
   return wrapFsOperation('copy', fseCopyFile(src, dest), `${src} to ${dest}`);
+}
+
+/**
+ * Reads a file as raw bytes. Returns null if the file does not exist.
+ */
+export async function readFileBuffer(filePath: string): Promise<Buffer | null> {
+  return wrapFsOperationNullable('read file', fseReadFile(filePath), filePath);
+}
+
+/**
+ * Reads a file as raw bytes synchronously. Returns null if the file does not exist.
+ * For code that must stay synchronous, such as template helpers.
+ */
+export function readFileBufferSync(filePath: string): Buffer | null {
+  try {
+    return readFileSync(filePath);
+  } catch (error) {
+    const nodeError = error as NodeError;
+    if (nodeError.code === 'ENOENT' || nodeError.code === 'ENOTDIR') {
+      return null;
+    }
+    throw new Error(`Failed to read file ${filePath}: ${nodeError.message}`, { cause: error });
+  }
+}
+
+/**
+ * Gets file stats synchronously. Returns null if the path does not exist.
+ */
+export function statSyncOrNull(filePath: string): Stats | null {
+  try {
+    return statSync(filePath);
+  } catch (error) {
+    const nodeError = error as NodeError;
+    if (nodeError.code === 'ENOENT' || nodeError.code === 'ENOTDIR') {
+      return null;
+    }
+    throw new Error(`Failed to get stats for ${filePath}: ${nodeError.message}`, { cause: error });
+  }
+}
+
+/**
+ * Lists every file under a directory, recursively.
+ *
+ * @param dirPath - Directory to list
+ * @returns Paths relative to `dirPath` with forward slashes; empty if the directory does not exist
+ */
+export function listFilesRecursiveSync(dirPath: string): string[] {
+  let entries: fse.Dirent[];
+  try {
+    entries = readdirSync(dirPath, { withFileTypes: true, recursive: true });
+  } catch (error) {
+    const nodeError = error as NodeError;
+    if (nodeError.code === 'ENOENT' || nodeError.code === 'ENOTDIR') {
+      return [];
+    }
+    throw new Error(`Failed to read directory ${dirPath}: ${nodeError.message}`, { cause: error });
+  }
+  return entries
+    .filter((entry) => entry.isFile())
+    .map((entry) => relative(dirPath, join(entry.parentPath, entry.name)).replace(/\\/g, '/'));
 }

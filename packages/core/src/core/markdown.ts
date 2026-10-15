@@ -6,6 +6,8 @@ import path from 'node:path';
 import type { StatiConfig, TocEntry } from '../types/index.js';
 import { slugify } from './utils/index.js';
 import { isDevelopment } from '../env.js';
+import { installImageRule, selectEagerImage, IMAGES_ENV_KEY } from '../images/markdown-rule.js';
+import type { PageImages } from '../images/runtime.js';
 
 /**
  * Result of rendering markdown content.
@@ -65,6 +67,10 @@ export async function createMarkdownProcessor(config: StatiConfig): Promise<Mark
     linkify: true,
     typographer: true,
   });
+
+  // Image dimensions, lazy loading and responsive variants. Installed first so plugins and
+  // markdown.configure can still replace the image rule.
+  installImageRule(md);
 
   // Apply plugins from array format
   if (config.markdown?.plugins) {
@@ -194,26 +200,43 @@ export function extractToc(content: string, md: MarkdownIt): TocEntry[] {
 }
 
 /**
+ * Options for {@link renderMarkdown}.
+ */
+export interface RenderMarkdownOptions {
+  /** Image state of the page being rendered; without it images are left as authored */
+  images?: PageImages | undefined;
+}
+
+/**
  * Renders markdown content to HTML with optional TOC extraction.
  *
  * @param content - The markdown content to render
  * @param md - The configured MarkdownIt instance
  * @param tocEnabled - Whether to extract TOC and inject heading anchors (default: true)
+ * @param options - Page-specific rendering state
  * @returns Object containing rendered HTML and TOC entries
  */
 export function renderMarkdown(
   content: string,
   md: MarkdownIt,
   tocEnabled: boolean = true,
+  options: RenderMarkdownOptions = {},
 ): MarkdownResult {
+  // The same env object goes to parsing and rendering so renderer rules see the page's state
+  const env: Record<string, unknown> = options.images ? { [IMAGES_ENV_KEY]: options.images } : {};
+
   // Parse content into tokens
-  const tokens = md.parse(content, {});
+  const tokens = md.parse(content, env);
 
   // Extract TOC and inject anchor IDs
   const toc = extractAndInjectAnchors(tokens, tocEnabled);
 
+  if (options.images) {
+    options.images.eagerToken = selectEagerImage(tokens);
+  }
+
   // Render tokens to HTML
-  const html = md.renderer.render(tokens, md.options, {});
+  const html = md.renderer.render(tokens, md.options, env);
 
   return { html, toc };
 }

@@ -5,6 +5,7 @@
 import type { PageModel } from './content.js';
 import type { StatiConfig } from './config.js';
 import type { Logger } from './logging.js';
+import type { GeneratedOgImage } from './images.js';
 
 /**
  * Enum for SEO tag types used in selective generation and detection.
@@ -56,6 +57,14 @@ export interface SEOContext {
   exclude?: Set<SEOTagType>;
   /** Set of tag types to include in generation (whitelist mode) */
   include?: Set<SEOTagType>;
+  /** Open Graph image generated for the page, used when front matter sets none */
+  generatedImage?: GeneratedOgImage | undefined;
+  /**
+   * The page's image is generated but not known yet, as when a partial calls
+   * `stati.generateSEO()` before the image exists: emit placeholders that rendering
+   * replaces once it is known.
+   */
+  deferGeneratedImage?: boolean | undefined;
 }
 
 /**

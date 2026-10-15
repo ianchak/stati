@@ -8,7 +8,8 @@ import {
 } from '../utils/index.js';
 import glob from 'fast-glob';
 import type { PageModel, StatiConfig } from '../../types/index.js';
-import { TEMPLATE_EXTENSION } from '../../constants.js';
+import { TEMPLATE_EXTENSION, DEFAULT_OG_TEMPLATE } from '../../constants.js';
+import { clearOgTemplateCache, findOgTemplatePath, isOgImageExcluded } from '../../images/og.js';
 
 /**
  * Per-build cache for template path resolution (glob results).
@@ -29,6 +30,7 @@ const templateContentCache = new Map<string, string | null>();
 export function clearTemplatePathCache(): void {
   templatePathCache.clear();
   templateContentCache.clear();
+  clearOgTemplateCache();
 }
 
 /**
@@ -101,6 +103,14 @@ export async function trackTemplateDependencies(
     await collectTemplateDependencies(absoluteLayoutPath, srcDir, visited, currentPath);
   }
 
+  // The Open Graph template renders with the page, so it and its partials are dependencies too.
+  // It comes after the layout, which must stay first.
+  const ogTemplatePath = await resolveOgTemplateDependency(page, config);
+  if (ogTemplatePath) {
+    deps.push(ogTemplatePath);
+    await collectTemplateDependencies(ogTemplatePath, srcDir, visited, currentPath);
+  }
+
   // 2. Add all actually-used templates from the visited set
   // Filter to only include underscore directories (partials/components)
   // and normalize paths to POSIX format
@@ -145,6 +155,34 @@ export async function resolveLayoutDependency(
 
   // Normalize to POSIX format for consistent manifest output across platforms
   return layoutPath ? posix.join(srcDir.replace(/\\/g, '/'), layoutPath) : null;
+}
+
+/**
+ * Resolves the Open Graph template a page renders with, when Open Graph images are on and the
+ * page does not opt out. Pages that use the built-in template have no file dependency.
+ *
+ * @param page - The page model
+ * @param config - Stati configuration
+ * @returns Absolute path to the template (POSIX format), or null
+ */
+export async function resolveOgTemplateDependency(
+  page: PageModel,
+  config: StatiConfig,
+): Promise<string | null> {
+  const og = config.images ? config.images.og : undefined;
+  if (!og || !config.srcDir) {
+    return null;
+  }
+  const options = og === true ? {} : og;
+  if (isOgImageExcluded(page, options.exclude ?? [])) {
+    return null;
+  }
+  const templatePath = await findOgTemplatePath(
+    page.sourcePath,
+    resolveSrcDir(config),
+    options.template ?? DEFAULT_OG_TEMPLATE,
+  );
+  return templatePath ? templatePath.replace(/\\/g, '/') : null;
 }
 
 /**

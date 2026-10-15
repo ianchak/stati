@@ -7,6 +7,7 @@ import type { PageModel } from '../types/content.js';
 import type { StatiConfig } from '../types/config.js';
 import type { SEOContext } from '../types/seo.js';
 import type { Logger } from '../types/logging.js';
+import type { GeneratedOgImage } from '../types/images.js';
 import { detectExistingSEOTags } from './utils/index.js';
 import { generateSEOMetadata } from './generator.js';
 import { injectBeforeHeadClose } from '../core/index.js';
@@ -25,6 +26,8 @@ export interface AutoInjectOptions {
   logger: Logger;
   /** Enable debug logging */
   debug?: boolean;
+  /** Open Graph image generated for the page */
+  generatedImage?: GeneratedOgImage | undefined;
 }
 
 /**
@@ -87,6 +90,7 @@ export function autoInjectSEO(html: string, options: AutoInjectOptions): string 
     config,
     siteUrl,
     logger,
+    ...(options.generatedImage && { generatedImage: options.generatedImage }),
   };
 
   // Only add exclude if we have existing tags

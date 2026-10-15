@@ -4,7 +4,7 @@
  * @module create-stati/utils/processor
  */
 
-import { writeFile, mkdir, unlink } from 'node:fs/promises';
+import { writeFile, mkdir, rm } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { updatePackageJson } from './package-json.utils.js';
 import type { ProcessorResult, ProcessorResultWithDeletions } from '../types.js';
@@ -37,21 +37,18 @@ export async function writeProcessorFiles(
 }
 
 /**
- * Delete files specified in a processor result.
+ * Delete files and folders specified in a processor result.
  *
  * @param projectDir - The project directory
- * @param filesToDelete - Array of relative file paths to delete
+ * @param filesToDelete - Array of relative file or folder paths to delete
  */
 export async function deleteProcessorFiles(
   projectDir: string,
   filesToDelete: string[],
 ): Promise<void> {
   for (const relativePath of filesToDelete) {
-    try {
-      await unlink(join(projectDir, relativePath));
-    } catch {
-      // Ignore if file doesn't exist
-    }
+    // force: a path that doesn't exist is not an error
+    await rm(join(projectDir, relativePath), { recursive: true, force: true });
   }
 }
 

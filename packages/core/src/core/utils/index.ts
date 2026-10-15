@@ -13,6 +13,10 @@ export {
   copyFile,
   readdir,
   stat,
+  readFileBuffer,
+  readFileBufferSync,
+  statSyncOrNull,
+  listFilesRecursiveSync,
 } from './fs.utils.js';
 
 // Path resolution utilities

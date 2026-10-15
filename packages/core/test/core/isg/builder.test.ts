@@ -1000,6 +1000,28 @@ describe('ISG Build Integration', () => {
       expect(result).toBe(true);
     });
 
+    it.each(['assetDeps', 'images'])(
+      'should rebuild when %s is not a list of strings',
+      async (field) => {
+        const entry: CacheEntry = {
+          path: 'test.html',
+          inputsHash: 'inputs123',
+          deps: [testLayoutPath],
+          tags: ['page'],
+          renderedAt: new Date(fixedDate.getTime() - 1800000).toISOString(),
+          ttlSeconds: 3600,
+        };
+        expect(await shouldRebuildPage(mockPage, entry, mockConfig, allPages, fixedDate)).toBe(
+          false,
+        );
+
+        const invalidEntry = { ...entry, [field]: [42] } as unknown as CacheEntry;
+        expect(
+          await shouldRebuildPage(mockPage, invalidEntry, mockConfig, allPages, fixedDate),
+        ).toBe(true);
+      },
+    );
+
     it('should handle deeply corrupted entry object', async () => {
       const invalidEntry = {
         path: null,

@@ -570,6 +570,57 @@ describe('create-stati scaffolding', () => {
       expect(scss).toContain("font-family: 'Young Serif'");
       await expect(access(join(result.targetDir, 'public', 'styles.css'))).rejects.toThrow();
     });
+
+    it('should add image tools with the blog card template and its font', async () => {
+      const projectDir = join(tempDir, 'test-blog-images');
+      const result = await createSite({
+        projectName: 'test-blog-images',
+        template: 'blog',
+        styling: 'css',
+        typescript: false,
+        images: true,
+        gitInit: false,
+        dir: projectDir,
+      });
+
+      const config = await readFile(join(result.targetDir, 'stati.config.js'), 'utf-8');
+      expect(config).toContain('  images: {\n    responsive: true,\n    og: {\n');
+      expect(config).toContain(
+        "        { name: 'Young Serif', path: './og/fonts/young-serif-regular.woff', weight: 400 },",
+      );
+      expect(config).toContain("      exclude: ['/404'],");
+      expect(config).toMatch(/\n {2}\},\n\}\);\n$/);
+      await expect(access(join(result.targetDir, 'site', 'og.eta'))).resolves.not.toThrow();
+      await expect(
+        access(join(result.targetDir, 'og', 'fonts', 'young-serif-regular.woff')),
+      ).resolves.not.toThrow();
+
+      const packageJson = JSON.parse(
+        await readFile(join(result.targetDir, 'package.json'), 'utf-8'),
+      );
+      expect(packageJson.devDependencies['@stati/images']).toBe('^1.0.0');
+    });
+
+    it('should remove the blog card template and fonts without image tools', async () => {
+      const projectDir = join(tempDir, 'test-blog-no-images');
+      const result = await createSite({
+        projectName: 'test-blog-no-images',
+        template: 'blog',
+        styling: 'css',
+        typescript: false,
+        gitInit: false,
+        dir: projectDir,
+      });
+
+      const config = await readFile(join(result.targetDir, 'stati.config.js'), 'utf-8');
+      expect(config).not.toContain('images:');
+      await expect(access(join(result.targetDir, 'site', 'og.eta'))).rejects.toThrow();
+      await expect(access(join(result.targetDir, 'og'))).rejects.toThrow();
+      const packageJson = JSON.parse(
+        await readFile(join(result.targetDir, 'package.json'), 'utf-8'),
+      );
+      expect(packageJson.devDependencies).not.toHaveProperty('@stati/images');
+    });
   });
 
   describe('docs template', () => {
@@ -669,6 +720,74 @@ describe('create-stati scaffolding', () => {
       expect(scss).toContain('--accent: #{$primary-color};');
       await expect(access(join(result.targetDir, 'public', 'styles.css'))).rejects.toThrow();
     });
+
+    it('should add image tools after TypeScript bundling in a stati.config.ts', async () => {
+      const projectDir = join(tempDir, 'test-docs-images');
+      const result = await createSite({
+        projectName: 'test-docs-images',
+        template: 'docs',
+        styling: 'css',
+        typescript: true,
+        images: true,
+        gitInit: false,
+        dir: projectDir,
+      });
+
+      const config = await readFile(join(result.targetDir, 'stati.config.ts'), 'utf-8');
+      expect(config).toMatch(
+        /typescript: \{\n {4}enabled: true,\n {2}\},\n\n[^]*images: \{\n {4}responsive: true,/,
+      );
+      expect(config).toContain(
+        "{ name: 'Inter', path: './og/fonts/inter-semibold.woff', weight: 600 }",
+      );
+      expect(config).toContain(
+        "{ name: 'Inter', path: './og/fonts/inter-extrabold.woff', weight: 800 }",
+      );
+      await expect(access(join(result.targetDir, 'site', 'og.eta'))).resolves.not.toThrow();
+      await expect(
+        access(join(result.targetDir, 'og', 'fonts', 'inter-extrabold.woff')),
+      ).resolves.not.toThrow();
+    });
+  });
+
+  describe('blank template with image tools', () => {
+    it('should use the built-in card and set baseUrl', async () => {
+      const projectDir = join(tempDir, 'test-blank-images');
+      const result = await createSite({
+        projectName: 'test-blank-images',
+        template: 'blank',
+        styling: 'css',
+        typescript: false,
+        images: true,
+        gitInit: false,
+        dir: projectDir,
+      });
+
+      const config = await readFile(join(result.targetDir, 'stati.config.js'), 'utf-8');
+      expect(config).toContain("    baseUrl: 'https://example.com',");
+      expect(config).toContain('  images: {\n    responsive: true,\n    og: true,\n  },\n});\n');
+      await expect(access(join(result.targetDir, 'site', 'og.eta'))).rejects.toThrow();
+      const packageJson = JSON.parse(
+        await readFile(join(result.targetDir, 'package.json'), 'utf-8'),
+      );
+      expect(packageJson.devDependencies['@stati/images']).toBe('^1.0.0');
+    });
+
+    it('should leave baseUrl and images out without image tools', async () => {
+      const projectDir = join(tempDir, 'test-blank-plain');
+      const result = await createSite({
+        projectName: 'test-blank-plain',
+        template: 'blank',
+        styling: 'css',
+        typescript: true,
+        gitInit: false,
+        dir: projectDir,
+      });
+
+      const config = await readFile(join(result.targetDir, 'stati.config.ts'), 'utf-8');
+      expect(config).not.toContain('baseUrl');
+      expect(config).not.toContain('images:');
+    });
   });
 
   describe('adaptTemplateConfig', () => {
@@ -694,6 +813,17 @@ describe('create-stati scaffolding', () => {
     it('should refuse a config it cannot adapt', () => {
       expect(() => adaptTemplateConfig('export default {};\n', true)).toThrow(
         'Template config must end',
+      );
+    });
+
+    it('should add an images block to JavaScript and TypeScript configs', () => {
+      const block = '  images: {\n    og: true,\n  }';
+
+      expect(adaptTemplateConfig(config, false, block).content).toBe(
+        "import { defineConfig } from '@stati/core';\n\nexport default defineConfig({\n  site: { title: 'Blog' },\n\n  images: {\n    og: true,\n  },\n});\n",
+      );
+      expect(adaptTemplateConfig(config, true, block).content).toBe(
+        "import { defineConfig } from '@stati/core';\n\nexport default defineConfig({\n  site: { title: 'Blog' },\n\n  typescript: {\n    enabled: true,\n  },\n\n  images: {\n    og: true,\n  },\n});\n",
       );
     });
   });

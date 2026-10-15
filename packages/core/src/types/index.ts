@@ -59,5 +59,24 @@ export type { SearchConfig, SearchDocument, SearchIndex, SearchIndexMetadata } f
 // Navigation types
 export type { NavNode } from './navigation.js';
 
+// Image types
+export type {
+  ImagesConfig,
+  ResponsiveImagesConfig,
+  OgImagesConfig,
+  OgImageFontConfig,
+  ImagesQualityConfig,
+  ImageVariantFormat,
+  ImageOutputFormat,
+  ImageSourceFormat,
+  ImageProvider,
+  VariantRequest,
+  VariantOutput,
+  OgImageRequest,
+  OgFont,
+  OgDefaults,
+  GeneratedOgImage,
+} from './images.js';
+
 // Logging types
 export type { Logger } from './logging.js';

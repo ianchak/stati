@@ -99,8 +99,12 @@ Read the other references that match the work; do not load everything by default
 - ISG is build-time caching, not request-time regeneration on a static host.
 - Avoid manually duplicating auto-injected SEO, search metadata, or bundle tags.
 - Do not assume framework features such as MDX, React/Vue components, hydration,
-  image optimization, CMS routing, automatic pagination, or internationalization.
-  Verify an API before using it.
+  CMS routing, automatic pagination, or internationalization. Verify an API before
+  using it.
+- Images: core (1.28+) sizes Markdown images and lazy-loads them on its own.
+  Responsive variants and generated Open Graph cards exist only with the
+  `@stati/images` package installed and `images.responsive` / `images.og` on; do
+  not assume them otherwise. Raw `<img>` HTML is never processed.
 
 ## Portable use and maintenance
 

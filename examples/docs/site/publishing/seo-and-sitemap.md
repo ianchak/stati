@@ -17,7 +17,7 @@ Stati adds these to each page's `<head>` when it builds:
 
 ## The link-preview image
 
-Every page uses `public/images/social-card.png` unless it sets its own. Replace it with a 1200 by 630 pixel image of your own, and update its `alt` text in `stati.config.js`. To give one page its own image:
+Every page uses `public/images/social-card.png` unless it sets its own. Replace it with a 1200 by 630 pixel image of your own, and update its `alt` text in `stati.config.js`. If you added image tools when you created the site, each page gets its own card instead, drawn from `site/og.eta` with the page's title, description and section. To give one page its own image:
 
 ```yaml
 ---

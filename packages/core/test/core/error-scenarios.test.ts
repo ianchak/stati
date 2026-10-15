@@ -255,7 +255,14 @@ describe('Error Scenario Tests', () => {
       await expect(build()).resolves.not.toThrow();
 
       // Should still process the page
-      expect(mockRenderMarkdown).toHaveBeenCalledWith('# Invalid Content', expect.anything(), true);
+      expect(mockRenderMarkdown).toHaveBeenCalledWith(
+        '# Invalid Content',
+        expect.anything(),
+        true,
+        {
+          images: expect.anything(),
+        },
+      );
     });
 
     it('should handle content files with missing titles', async () => {
@@ -282,6 +289,7 @@ describe('Error Scenario Tests', () => {
         expect.objectContaining({ bundlePaths: [] }), // assets parameter
         expect.any(Array), // toc parameter
         expect.objectContaining({ error: expect.any(Function) }), // logger parameter
+        { images: expect.anything() }, // page image state
       );
     });
   });
@@ -324,6 +332,7 @@ describe('Error Scenario Tests', () => {
         '# Unclosed **bold text\n\n```\nUnclosed code block',
         expect.anything(),
         true,
+        { images: expect.anything() },
       );
     });
   });
@@ -482,7 +491,9 @@ describe('Error Scenario Tests', () => {
 
       await expect(build()).resolves.not.toThrow();
 
-      expect(mockRenderMarkdown).toHaveBeenCalledWith(largeContent, expect.anything(), true);
+      expect(mockRenderMarkdown).toHaveBeenCalledWith(largeContent, expect.anything(), true, {
+        images: expect.anything(),
+      });
     });
 
     it('should handle many pages without memory issues', async () => {
@@ -609,7 +620,9 @@ describe('Error Scenario Tests', () => {
 
       await expect(build()).resolves.not.toThrow();
 
-      expect(mockRenderMarkdown).toHaveBeenCalledWith('', expect.anything(), true);
+      expect(mockRenderMarkdown).toHaveBeenCalledWith('', expect.anything(), true, {
+        images: expect.anything(),
+      });
     });
 
     it('should handle null/undefined in page data', async () => {
@@ -635,6 +648,7 @@ describe('Error Scenario Tests', () => {
         expect.objectContaining({ bundlePaths: [] }), // assets parameter
         expect.any(Array), // toc parameter
         expect.objectContaining({ error: expect.any(Function) }), // logger parameter
+        { images: expect.anything() }, // page image state
       );
     });
 

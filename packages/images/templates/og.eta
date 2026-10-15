@@ -1,0 +1,52 @@
+<%
+  /*
+   * The built-in Open Graph card of @stati/images. Copy this file to site/og.eta to
+   * change it. Templates use inline styles in the CSS subset Satori supports: flexbox
+   * layout, no grid, no classes or <style> blocks. Every element with more than one
+   * child needs display:flex.
+   *
+   * Fonts: Archivo (800), Inter (400, 500) and 'Fira Code' (400) are always available.
+   */
+  const card = stati.og || { width: 1200, height: 630 };
+  const clamp = (value, max) => {
+    const text = String(value || '').replace(/\s+/g, ' ').trim();
+    return text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
+  };
+
+  const siteTitle = clamp(stati.site.title, 42);
+  const title = clamp(stati.page.title || stati.site.title, 96);
+  const description = clamp(stati.page.description, 140);
+  const parent = stati.page.url !== '/' ? stati.nav.getParent() : undefined;
+  const section =
+    parent && parent.title && parent.title !== stati.page.title ? clamp(parent.title, 32) : '';
+
+  let address = '';
+  try {
+    const base = new URL(stati.site.baseUrl);
+    const path = stati.page.url === '/' ? '' : String(stati.page.url).replace(/\/$/, '');
+    address = clamp(`${base.host}${base.pathname.replace(/\/$/, '')}${path}`, 64);
+  } catch (error) {
+    address = '';
+  }
+
+  const padding = Math.round(card.width * 0.06);
+  const titleSize = title.length > 64 ? 56 : title.length > 36 ? 64 : 72;
+  const tracking = (titleSize * -0.02).toFixed(2);
+%>
+<div style="<%= `display:flex;flex-direction:column;width:100%;height:100%;padding:${padding}px;background-color:#ffffff;color:#0b0d12;font-family:Inter` %>">
+  <div style="display:flex;align-items:center">
+    <div style="display:flex;width:26px;height:26px;border-radius:6px;background-color:#2563eb"></div>
+    <div style="display:flex;margin-left:16px;font-family:Archivo;font-size:30px;font-weight:800;letter-spacing:-0.6px"><%= siteTitle %></div>
+<% if (section) { %>
+    <div style="display:flex;width:1px;height:28px;margin-left:20px;margin-right:20px;background-color:#cbd5e1"></div>
+    <div style="display:flex;font-size:26px;font-weight:500;color:#475569"><%= section %></div>
+<% } %>
+  </div>
+  <div style="display:flex;flex-direction:column;flex-grow:1;justify-content:center">
+    <div style="<%= `display:flex;font-family:Archivo;font-size:${titleSize}px;font-weight:800;line-height:1.05;letter-spacing:${tracking}px;word-break:break-word` %>"><%= title %></div>
+<% if (description) { %>
+    <div style="display:flex;margin-top:28px;font-size:30px;line-height:1.4;color:#475569"><%= description %></div>
+<% } %>
+  </div>
+  <div style="display:flex;padding-top:24px;border-top:1px solid #e2e8f0;font-family:'Fira Code';font-size:22px;color:#5b6577"><%= address %></div>
+</div>

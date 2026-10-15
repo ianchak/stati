@@ -55,6 +55,8 @@ This is where all your content lives. Stati uses filesystem-based routing, so th
 - **`site/blog/index.md`** → `/blog`
 - **`site/blog/first-post.md`** → `/blog/first-post`
 
+Images can sit next to the pages that use them. In `site/blog/first-post.md`, `![Map](./map.png)` refers to `site/blog/map.png`, which Stati copies to `/_img/` with its size added to the page. See [Images](/configuration/images).
+
 ### `public/`
 
 Static assets that should be copied directly to the output directory. Everything in `public/` is served from the root of your site.
@@ -133,6 +135,7 @@ You can also give a page its own layout by naming it in the page's front matter,
 
 - **`.md` files** - Markdown content with front matter; every `.md` file outside an underscore folder becomes a page
 - **`.eta` files** - Layouts and partials only; an `.eta` file never becomes a page on its own
+- **`og.eta`** - With [`images.og`](/configuration/images#open-graph-images), the template for the link preview image of the pages in its folder and below
 
 ## Advanced structure
 
@@ -198,6 +201,7 @@ dist/
 ├── blog.html
 ├── blog/
 │   └── first-post.html
+├── _img/          # images copied from site/, and generated ones
 ├── favicon.svg
 └── styles.css
 ```

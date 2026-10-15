@@ -3,6 +3,8 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { StatiConfig } from '../types/index.js';
 import { validateISGConfig, ISGConfigurationError } from '../core/isg/validation.js';
+import { validateImagesConfig } from '../images/config.js';
+import { ConfigValidationError } from './errors.js';
 import { compileStatiConfig, cleanupCompiledConfig } from '../core/utils/index.js';
 import {
   DEFAULT_SRC_DIR,
@@ -172,6 +174,19 @@ export async function loadConfig(cwd: string = process.cwd()): Promise<StatiConf
       throw error; // Re-throw non-ISG errors
     }
 
+    // Validate image configuration
+    try {
+      validateImagesConfig(mergedConfig.images);
+    } catch (error) {
+      if (error instanceof ConfigValidationError) {
+        throw new ConfigValidationError(
+          `Invalid images configuration in ${configPath}:\n${error.message}`,
+          { cause: error },
+        );
+      }
+      throw error;
+    }
+
     // Cache the loaded config with its modification time
     try {
       const mtime = statSync(resolvedConfigPath).mtimeMs;
@@ -186,8 +201,11 @@ export async function loadConfig(cwd: string = process.cwd()): Promise<StatiConf
 
     return mergedConfig;
   } catch (error) {
-    if (error instanceof Error && error.message.includes('Invalid ISG configuration')) {
-      // ISG validation errors should bubble up with context
+    if (
+      error instanceof ConfigValidationError ||
+      (error instanceof Error && error.message.includes('Invalid ISG configuration'))
+    ) {
+      // Validation errors bubble up with context: the build cannot proceed with an invalid config
       throw error;
     }
 

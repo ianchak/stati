@@ -71,6 +71,9 @@ import type {
   SearchIndexMetadata,
 } from '../types/index.js';
 import type MarkdownIt from 'markdown-it';
+import { ImageRuntime } from '../images/runtime.js';
+import type { SettleResult } from '../images/runtime.js';
+import type { RenderedAssets } from './isg/index.js';
 import type { MetricRecorder, BuildMetrics } from '../metrics/index.js';
 import { createMetricRecorder, noopMetricRecorder } from '../metrics/index.js';
 
@@ -394,6 +397,25 @@ interface ProcessPagesResult {
 }
 
 /**
+ * Output file and ISG cache key of a page.
+ */
+function getPageOutput(page: PageModel, outDir: string): { outputPath: string; cacheKey: string } {
+  let outputPath: string;
+  if (page.url === '/') {
+    outputPath = join(outDir, 'index.html');
+  } else if (page.url.endsWith('/')) {
+    outputPath = join(outDir, page.url, 'index.html');
+  } else {
+    outputPath = join(outDir, `${page.url}.html`);
+  }
+
+  // Cache key is the output path relative to outDir
+  const relativePath = relative(outDir, outputPath).replace(/\\/g, '/');
+  const cacheKey = relativePath.startsWith('/') ? relativePath : `/${relativePath}`;
+  return { outputPath, cacheKey };
+}
+
+/**
  * Processes pages with ISG caching logic.
  */
 async function processPagesWithCache(
@@ -410,6 +432,7 @@ async function processPagesWithCache(
   compiledBundles: CompiledBundleInfo[],
   recorder: MetricRecorder = noopMetricRecorder,
   searchIndexFilename?: string,
+  imageRuntime: ImageRuntime | null = null,
 ): Promise<ProcessPagesResult> {
   let cacheHits = 0;
   let cacheMisses = 0;
@@ -450,25 +473,18 @@ async function processPagesWithCache(
     page: PageModel;
     existingEntry: CacheEntry | undefined;
     renderInputsHash: string;
+    renderedAssets: RenderedAssets | undefined;
   }> = [];
+
+  // Image settings that change generated HTML, part of every page's render inputs
+  const imageFingerprint = imageRuntime?.fingerprint();
 
   for (let i = 0; i < pages.length; i++) {
     const page = pages[i];
     if (!page) continue; // Safety check
 
-    // Determine output path
-    let outputPath: string;
-    if (page.url === '/') {
-      outputPath = join(outDir, 'index.html');
-    } else if (page.url.endsWith('/')) {
-      outputPath = join(outDir, page.url, 'index.html');
-    } else {
-      outputPath = join(outDir, `${page.url}.html`);
-    }
-
-    // Get cache key (use output path relative to outDir)
-    const relativePath = relative(outDir, outputPath).replace(/\\/g, '/');
-    const cacheKey = relativePath.startsWith('/') ? relativePath : `/${relativePath}`;
+    // Determine output path and cache key
+    const { outputPath, cacheKey } = getPageOutput(page, outDir);
     const existingEntry = manifest.entries[cacheKey];
 
     const bundlePaths = getBundlePathsForPage(page.url, compiledBundles);
@@ -483,6 +499,8 @@ async function processPagesWithCache(
       ...assets,
       bundleAutoInject: config.typescript?.autoInject !== false,
       searchAutoInject: config.search?.autoInjectMetaTag !== false,
+      // Omitted with images: false, so the hash matches builds without the image pipeline
+      ...(imageFingerprint && { images: imageFingerprint }),
     });
 
     // Check if we should rebuild this page (considering ISG logic)
@@ -491,6 +509,8 @@ async function processPagesWithCache(
       options.force ||
       config.isg?.enabled === false ||
       !(await pathExists(outputPath)) ||
+      // A cached page whose generated images are gone is rebuilt to regenerate them
+      (imageRuntime !== null && !imageRuntime.outputsExist(existingEntry?.images)) ||
       (await shouldRebuildPage(page, existingEntry, config, pages, buildTime, renderInputsHash));
     const shouldRebuildTime = performance.now() - shouldRebuildStart;
     totalShouldRebuildTime += shouldRebuildTime;
@@ -525,9 +545,14 @@ async function processPagesWithCache(
       recorder.addToPhase('hookBeforeRenderTotalMs', performance.now() - hookStart);
     }
 
+    // Image state for this page: markup, dependencies and generated files
+    const pageImages = imageRuntime?.createPageContext(page);
+
     // Render markdown to HTML with TOC extraction
     const tocEnabled = config.markdown?.toc !== false;
-    const { html: htmlContent, toc } = renderMarkdown(page.content, md, tocEnabled);
+    const { html: htmlContent, toc } = renderMarkdown(page.content, md, tocEnabled, {
+      images: pageImages,
+    });
 
     // Render with template
     const renderPageStart = performance.now();
@@ -541,6 +566,7 @@ async function processPagesWithCache(
       assets,
       toc,
       logger,
+      { images: pageImages },
     );
     const renderPageTime = performance.now() - renderPageStart;
     totalRenderTime += renderPageTime;
@@ -561,6 +587,9 @@ async function processPagesWithCache(
       if (config.seo?.debug !== undefined) {
         injectOptions.debug = config.seo.debug;
       }
+      if (renderResult.ogImage) {
+        injectOptions.generatedImage = renderResult.ogImage;
+      }
 
       finalHtml = autoInjectSEO(finalHtml, injectOptions);
     }
@@ -579,6 +608,12 @@ async function processPagesWithCache(
       finalHtml = autoInjectBundles(finalHtml, assets.bundlePaths);
     }
 
+    // Start the image jobs the final HTML needs and record its image files for the cache
+    const renderedAssets =
+      pageImages && imageRuntime
+        ? imageRuntime.commitPage(pageImages, finalHtml, { outputPath, cacheKey })
+        : undefined;
+
     const renderTime = Math.round(performance.now() - startTime);
 
     // Record page timing for rendered pages (includes template count)
@@ -591,7 +626,7 @@ async function processPagesWithCache(
     // In dev mode, batch writes for parallel execution to avoid Windows filesystem slowdown
     if (isDevMode) {
       pendingWrites.push({ outputPath, content: finalHtml });
-      pendingCacheUpdates.push({ cacheKey, page, existingEntry, renderInputsHash });
+      pendingCacheUpdates.push({ cacheKey, page, existingEntry, renderInputsHash, renderedAssets });
     } else {
       // Production mode: write immediately
       const fileWriteStart = performance.now();
@@ -611,6 +646,7 @@ async function processPagesWithCache(
             buildTime,
             false,
             renderInputsHash,
+            renderedAssets,
           );
         } else {
           manifest.entries[cacheKey] = await createCacheEntry(
@@ -619,6 +655,7 @@ async function processPagesWithCache(
             pages,
             buildTime,
             renderInputsHash,
+            renderedAssets,
           );
         }
         totalCacheEntryTime += performance.now() - cacheEntryStart;
@@ -655,7 +692,13 @@ async function processPagesWithCache(
     // This avoids expensive template dependency tracking on each incremental rebuild
     if (!options.skipCacheUpdate) {
       const cacheEntryStart = performance.now();
-      for (const { cacheKey, page, existingEntry, renderInputsHash } of pendingCacheUpdates) {
+      for (const {
+        cacheKey,
+        page,
+        existingEntry,
+        renderInputsHash,
+        renderedAssets,
+      } of pendingCacheUpdates) {
         if (existingEntry) {
           // Fast update: reuse existing deps, just update hashes and timestamp
           manifest.entries[cacheKey] = await updateCacheEntry(
@@ -666,6 +709,7 @@ async function processPagesWithCache(
             buildTime,
             true, // fastUpdate = true in dev mode
             renderInputsHash,
+            renderedAssets,
           );
         } else {
           manifest.entries[cacheKey] = await createCacheEntry(
@@ -674,6 +718,7 @@ async function processPagesWithCache(
             pages,
             buildTime,
             renderInputsHash,
+            renderedAssets,
           );
         }
       }
@@ -812,6 +857,15 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
 
   await ensureDir(outDir);
 
+  // Image pipeline; null with images: false. Fails here, before any page renders, when a
+  // feature needs @stati/images and it is missing or incompatible.
+  const imageRuntime = await ImageRuntime.create(config, {
+    outDir,
+    cacheDir,
+    logger,
+    development: isDevelopment(),
+  });
+
   // Enable Tailwind class inventory tracking only if Tailwind is detected
   const tailwindInitStart = performance.now();
   const hasTailwind = await isTailwindUsed();
@@ -932,9 +986,31 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     compiledBundles,
     recorder,
     searchIndexFilename,
+    imageRuntime,
   );
   endPageRenderSpan();
   const { cacheHits, cacheMisses, searchablePages } = pageProcessingResult;
+
+  // Wait for image jobs; pages whose images failed are rewritten to show plain images
+  let imageFailures: SettleResult['failures'] = [];
+  if (imageRuntime) {
+    const endImageSpan = recorder.startSpan('imageSettleMs');
+    const settled = await imageRuntime.settle(manifest);
+    await imageRuntime.save();
+    endImageSpan();
+    imageFailures = settled.failures;
+
+    const { generated, cached, failed } = imageRuntime.stats;
+    recorder.increment('imagesGenerated', generated);
+    recorder.increment('imagesCached', cached);
+    recorder.increment('imagesFailed', failed);
+    if (generated > 0 || failed > 0) {
+      logger.info('');
+      logger.info(
+        `Images: ${generated} generated, ${cached} reused${failed > 0 ? `, ${failed} failed` : ''}`,
+      );
+    }
+  }
 
   // Generate search index if enabled
   // Uses markdown content and TOC entries
@@ -990,6 +1066,16 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
   }
   endManifestSaveSpan();
 
+  // In the dev server a failed Open Graph image goes to the error overlay, like a template error
+  const ogFailures = imageFailures.filter((failure) => failure.og);
+  if (isDevMode && ogFailures.length > 0) {
+    throw new Error(
+      ogFailures
+        .map((failure) => `Open Graph image failed for ${failure.label}: ${failure.message}`)
+        .join('\n'),
+    );
+  }
+
   // Copy static assets and count them (skip for template-only changes in dev mode)
   const endAssetSpan = recorder.startSpan('assetCopyMs');
   let assetsCount = 0;
@@ -998,6 +1084,22 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
   }
   endAssetSpan();
   recorder.increment('assetsCopied', assetsCount);
+
+  // Delete generated images no page of this build uses. Production only: dev builds skip
+  // responsive and Open Graph images by default and must not delete them.
+  if (imageRuntime && getEnv() === 'production') {
+    const liveImages = new Set<string>();
+    const liveSources = new Set<string>();
+    for (const page of pages) {
+      const entry = manifest.entries[getPageOutput(page, outDir).cacheKey];
+      entry?.images?.forEach((image) => liveImages.add(image));
+      entry?.assetDeps?.forEach((source) => liveSources.add(source));
+    }
+    const removed = await imageRuntime.prune(liveImages, liveSources);
+    if (removed > 0) {
+      logger.info(`Removed ${removed} unused generated image${removed === 1 ? '' : 's'}`);
+    }
+  }
 
   // Get current environment
   const currentEnv = getEnv();
