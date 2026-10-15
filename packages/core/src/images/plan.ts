@@ -73,13 +73,6 @@ export function imageBaseName(filePath: string): string {
   return slugify(basename(filePath, extname(filePath))) || 'image';
 }
 
-/**
- * First characters of a SHA-256 hex digest.
- */
-export function shortHash(input: string): string {
-  return createHash('sha256').update(input).digest('hex').slice(0, NAME_HASH_LENGTH);
-}
-
 /** One file to generate, with its path relative to the output directory and its URL. */
 export interface PlannedOutput {
   /** Path relative to the output directory, with forward slashes */
