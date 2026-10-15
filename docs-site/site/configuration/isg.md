@@ -277,11 +277,16 @@ A page is rebuilt if:
 1. Cache is bypassed (`--force` flag) or ISG is disabled (`isg.enabled: false`)
 2. Its HTML file, or a generated image it references, is missing from the output directory
 3. Page is not in cache manifest (for example, after `stati invalidate`)
-4. Page's `inputsHash` has changed (its own content or front matter, one of its templates, an image it shows, or the `images` settings)
+4. Page's `inputsHash` has changed (its own content or front matter, one of its templates, an image it shows, the `images` settings, or data it read: the summary of its collection, the pages of its listing, or the navigation tree)
 5. Page's TTL has expired and the page is not frozen by `maxAgeCapDays`
 6. An image job for the page failed in the previous build
+7. Its cache entry was written before Stati recorded what pages read, which happens once after upgrading
 
-Changes to _other_ pages never trigger a rebuild: a listing page that shows post titles stays cached until its TTL expires. See [Dependency tracking](/core-concepts/isg#dependency-tracking).
+Changes to other pages rebuild a page only through data it read: a listing that reads `stati.collection` rebuilds when a post's title, description, tags or publish date changes, not when its body does. See [Dependency tracking](/core-concepts/isg#dependency-tracking).
+
+### Removing stale pages
+
+When a page no longer exists, `stati build` deletes its HTML file and its cache entry: a deleted post, a tag no post uses, or the last page of a listing that got shorter. Only files recorded in the cache manifest are deleted, so `stati build --clean` is no longer needed to clear out removed pages.
 
 ### Template dependency tracking
 

@@ -9,12 +9,12 @@ This blog is a working Stati site with sample posts, and you are reading the fir
 
 ## What you get
 
-- **Posts** written in Markdown, listed newest first on the home page.
-- **Tags** on each post, collected on a [tags page](/tags) with every post under each tag.
-- **An [archive](/archive)** of every post, grouped by year.
+- **Posts** written in Markdown, listed newest first on the home page, five to a page.
+- **Tags** on each post, collected on a [tags page](/tags), with a page of its own for every tag.
+- **An [archive](/posts)** of every post, grouped by year.
 - **Newer, older and related posts** under each post, so readers keep going.
 - **An RSS feed** at `/feed.xml`, plus a sitemap and `robots.txt` for search engines.
-- **Link previews and search metadata**: Open Graph, Twitter cards and `BlogPosting` structured data on every post.
+- **Link previews and search metadata**: a description, a canonical link, Open Graph and Twitter tags on every page.
 - **Light and dark themes** that follow the reader's system setting.
 
 None of it needs JavaScript in the browser. The pages are plain HTML and one stylesheet.
@@ -28,16 +28,18 @@ None of it needs JavaScript in the browser. The pages are plain HTML and one sty
 
 ## Where things live
 
-| Path                    | What it is                                            |
-| ----------------------- | ----------------------------------------------------- |
-| `site/posts/`           | One Markdown file per post                            |
-| `site/*.md`             | Home, archive, tags, about and the 404 page           |
-| `site/layout.eta`       | The layout for pages                                  |
-| `site/posts/layout.eta` | The layout for posts                                  |
-| `site/_partials/`       | Shared pieces: head, header, footer, post lists       |
-| `public/styles.css`     | Every style on the site                               |
-| `helpers/blog.js`       | Builds the post index behind listings and tags        |
-| `stati.config.js`       | Your name, the feed, the sitemap and the SEO settings |
+| Path                    | What it is                                                  |
+| ----------------------- | ----------------------------------------------------------- |
+| `site/posts/`           | One Markdown file per post                                  |
+| `site/posts/index.md`   | The archive                                                 |
+| `site/tags/`            | The tags page, and `[tag].md`, which makes a page per tag   |
+| `site/*.md`             | Home, about and the 404 page                                |
+| `site/layout.eta`       | The layout for pages                                        |
+| `site/posts/layout.eta` | The layout for posts                                        |
+| `site/_partials/`       | Shared pieces: head, header, footer, post lists, page links |
+| `public/styles.css`     | Every style on the site                                     |
+| `helpers/blog.js`       | Related posts and dates, used by the templates              |
+| `stati.config.js`       | Your name, the feed, the sitemap and the SEO settings       |
 
 ## Next steps
 

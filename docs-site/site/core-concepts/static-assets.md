@@ -1,7 +1,7 @@
 ---
 title: 'Static assets'
 description: 'Learn how to manage static files, images, and integrate TypeScript and Tailwind CSS.'
-order: 6
+order: 7
 ---
 
 # Static assets

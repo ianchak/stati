@@ -163,8 +163,10 @@ export function computeInputsHash(
 }
 
 /**
- * Computes a hash of the navigation tree structure.
- * Used to detect when navigation has changed (title, url, order, children structure).
+ * Computes a hash of the navigation tree.
+ * Covers every field of a navigation node (title, url, path, order, publishedAt,
+ * isCollection and children), so pages that read the navigation rebuild when any of
+ * what they can show changes.
  *
  * @param navigation - The navigation tree to hash
  * @returns SHA-256 hash as a hex string
@@ -176,16 +178,14 @@ export function computeInputsHash(
  * ```
  */
 export function computeNavigationHash(navigation: unknown[]): string {
-  // Convert navigation tree to a deterministic JSON string
-  // Only include fields that affect navigation structure:
-  // - title (displayed in menu)
-  // - url (navigation links)
-  // - order (affects sorting)
-  // - children (nested structure)
+  // Convert navigation tree to a deterministic JSON string of the NavNode fields
   interface NormalizedNode {
     title: string;
     url: string;
+    path?: string;
     order?: number;
+    publishedAt?: string;
+    isCollection?: boolean;
     children?: NormalizedNode[];
   }
 
@@ -195,8 +195,20 @@ export function computeNavigationHash(navigation: unknown[]): string {
       url: String(node.url ?? ''),
     };
 
+    if (typeof node.path === 'string') {
+      normalized.path = node.path;
+    }
+
     if (node.order !== undefined && typeof node.order === 'number') {
       normalized.order = node.order;
+    }
+
+    if (node.publishedAt instanceof Date && !Number.isNaN(node.publishedAt.getTime())) {
+      normalized.publishedAt = node.publishedAt.toISOString();
+    }
+
+    if (typeof node.isCollection === 'boolean') {
+      normalized.isCollection = node.isCollection;
     }
 
     if (node.children && Array.isArray(node.children) && node.children.length > 0) {

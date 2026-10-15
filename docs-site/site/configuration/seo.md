@@ -321,6 +321,8 @@ export default defineConfig({
 
 Pages with `draft: true` are never in the sitemap (they are not built), so `filter: (page) => !page.frontMatter.draft` is only needed for builds with `--include-drafts`.
 
+Pages created from a `[param].md` template and the later pages of a paginated listing (`/blog/page/2`) are in the sitemap like any other page. Leave them out with a pattern such as `excludePatterns: ['/blog/page/**']`, `sitemap: { exclude: true }` in the template's front matter, or a `filter` that checks `page.generated` and `page.pagination`.
+
 **Output.** `lastmod` comes from the page's `sitemap.lastmod`, then `updated`, then `date` front matter (not `publishedAt`). Priorities are written with one decimal place, so `0.85` becomes `0.8`. Above 50,000 URLs the sitemap is split into `sitemap-1.xml`, `sitemap-2.xml`, … with `sitemap.xml` as the index; this happens automatically (the `generateIndex` option is not used).
 
 ### Per-page sitemap configuration

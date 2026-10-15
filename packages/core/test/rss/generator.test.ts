@@ -427,6 +427,32 @@ describe('RSS Feed Generation', () => {
       expect(results[1]!.filename).toBe('blog.xml');
       expect(results[1]!.itemCount).toBe(2);
     });
+
+    it('should leave out generated and pagination pages', () => {
+      baseConfig.rss = {
+        enabled: true,
+        feeds: [{ ...baseFeedConfig, contentPatterns: ['site/blog/**'] }],
+      };
+      const tagPage = {
+        slug: '/blog/tags/tech',
+        url: '/blog/tags/tech',
+        content: '',
+        frontMatter: { title: 'Tagged tech', publishedAt: '2025-03-01' },
+        sourcePath: 'site/blog/tags/[tag].md',
+        generated: { key: 'tech', label: 'tech', items: [], template: 'blog/tags/[tag].md' },
+      } as PageModel;
+      const pageTwo = {
+        ...samplePages[0]!,
+        url: '/blog/page/2',
+        pagination: { pageNumber: 2, totalPages: 2, items: [], urls: ['/blog', '/blog/page/2'] },
+      } as PageModel;
+
+      const results = generateRSSFeeds([...samplePages, tagPage, pageTwo], baseConfig);
+
+      expect(results[0]!.itemCount).toBe(2);
+      expect(results[0]!.xml).not.toContain('/blog/tags/tech');
+      expect(results[0]!.xml).not.toContain('/blog/page/2');
+    });
   });
 
   describe('Edge Cases and Additional Coverage', () => {

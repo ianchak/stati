@@ -54,7 +54,7 @@ Templates (`*.eta`) and partials get special handling:
 - The affected entries are marked stale so the rebuild renders them again.
 - If no dependency matches are found, Stati falls back to a full rebuild to keep output consistent.
 
-Markdown changes rebuild the edited page. When the edit changes the navigation (a `title` or `order`, or a page added or removed), Stati rebuilds every page so menus stay in sync.
+Markdown changes rebuild the edited page, plus the pages whose output depends on it: pages that read its [collection](/core-concepts/collections) when its title, description, tags or date changed, and pages that render the navigation when the edit changed it (a `title` or `order`, or a page added or removed). Deleting a page removes its HTML from the output directory.
 
 This logic lives in `handleTemplateChange` inside `packages/core/src/core/dev.ts`.
 

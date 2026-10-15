@@ -1,48 +1,52 @@
 ---
 title: Tags, the archive and related posts
-description: How one index of your posts powers the home page, the tags page, the archive and the links under every post.
+description: How one collection of your posts powers the home page, the archive, a page for every tag and the links under every post.
 publishedAt: '2026-10-05'
 tags: ['structure', 'guides']
 ---
 
-Every template can read Stati's navigation tree through `stati.nav`, but its entries only carry a title, address, order and date. Listings also need each post's description and tags, so the starter builds that view once per build in `helpers/blog.js` and hands it to the templates.
+Every list on this blog comes from one place: the posts in `site/posts/`. Stati calls a folder with an `index.md` a collection, and hands it to templates as `stati.collection`, already sorted newest first and grouped by tag.
 
-## The post index
+## The collection
 
-Before any page renders, Stati runs the `beforeAll` hook with every page it found. The starter keeps the pages under `/posts/` and sorts them newest first. Templates then read that index through filters:
+`site/posts/index.md` is the folder's index page, the [archive](/posts). Pages elsewhere name the collection in their front matter with `collection: /posts`, as the home page, the tags pages and the 404 page do. Templates then read it:
 
 ```eta
-<% for (const post of stati.blogPosts(5)) { %>
-  <a href="<%= post.url %>"><%= post.title %></a>
+<% for (const post of stati.collection.recentPages.slice(0, 5)) { %>
+  <a href="<%= post.url %>"><%= post.frontMatter.title %></a>
 <% } %>
 ```
 
-| Filter                          | Returns                                         |
-| ------------------------------- | ----------------------------------------------- |
-| `stati.blogPosts(limit?)`       | Posts, newest first                             |
-| `stati.blogTags()`              | Every tag with its posts, most used first       |
-| `stati.postsByYear()`           | Posts grouped by year, for the archive          |
-| `stati.adjacentPosts(url)`      | The newer and older neighbours of a post        |
-| `stati.relatedPosts(url, n)`    | Posts that share the most tags with a post      |
-| `stati.tagUrl(name)`            | The link to a tag's section on the tags page    |
-| `stati.formatDate(date, style)` | A date in your locale: `short`, `long` or `day` |
+| Property                       | Holds                                    |
+| ------------------------------ | ---------------------------------------- |
+| `stati.collection.recentPages` | Every post, newest first                 |
+| `stati.collection.pagesByTag`  | The posts for each tag                   |
+| `stati.collection.pages`       | Every post, in no particular order       |
+| `stati.pagination`             | This page's share of a paginated listing |
+| `stati.generated`              | The tag and posts of a tag page          |
 
-Each post in these lists has `url`, `title`, `description`, `date`, `updated`, `tags` and `draft`.
+Each post in these lists is a page: its front matter is under `post.frontMatter`, its date is `post.publishedAt`.
 
-## Tags
+## Pages of posts
 
-Tags come from each post's `tags` list. The [tags page](/tags) lists them by how often they are used, then every post under each one. A tag's link jumps to its section, so `/tags#guides` opens straight on the guides.
+The home page lists five posts at a time. `paginate: 5` in `site/index.md` splits the collection into pages: the first at `/`, the next at [/page/2](/page/2), and so on, each with links to the others. Change the number to show more or fewer.
+
+## A page for every tag
+
+Tags come from each post's `tags` list. The [tags page](/tags) lists them by how often they are used, and each tag has a page of its own, such as [/tags/guides](/tags/guides).
+
+Those pages come from one file, `site/tags/[tag].md`. The brackets make it a template: Stati creates one page from it for every tag the posts use, and drops pages for tags no post uses anymore. In its front matter, `{tag}` stands for the tag, so `title: '{tag}'` gives each page its tag as its title.
 
 Keep tags few and reusable. A tag with one post in it is a label; a tag with ten is a way in.
 
 ## The archive
 
-The [archive](/archive) lists every post grouped by year. It comes from `site/archive.md`, whose front matter asks the layout for that list with `listing: archive`. The home page does the same with `listing: latest`, and the tags page with `listing: tags`. Any page can use one.
+The [archive](/posts) lists every post grouped by year. Its front matter asks the layout for that list with `listing: archive`, the home page does the same with `listing: latest`, and the tags pages with `listing: tags` and `listing: tag`. Any page can use one.
 
 ## Newer, older and related
 
-Under each post, links lead to the next newer and older post, and to up to three related posts. A post is related when it shares a tag; the more tags it shares, the higher it ranks. Posts without tags have no related posts.
+Under each post, links lead to the next newer and older post, and to up to three related posts. A post is related when it shares a tag; the more tags it shares, the higher it ranks. Posts without tags have no related posts. The post layout finds all of them in `stati.collection`, the related ones with `stati.relatedPosts` from `helpers/blog.js`.
 
 ## Why listings stay current
 
-Stati caches pages between builds and only re-renders a page when its own files change. Listings depend on other posts, so the starter stores a fingerprint of the index on every page. Add, retitle or retag a post and every listing re-renders with it. Edit only a post's text and only that post is rebuilt.
+Stati caches pages between builds and re-renders a page when what it shows changes. It notices which pages read `stati.collection`, so adding, removing, retitling or retagging a post rebuilds the pages that list it, and nothing else. Edit only a post's text and only that post is rebuilt.

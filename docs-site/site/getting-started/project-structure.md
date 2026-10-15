@@ -54,6 +54,7 @@ This is where all your content lives. Stati uses filesystem-based routing, so th
 - **`site/about.md`** → `/about`
 - **`site/blog/index.md`** → `/blog`
 - **`site/blog/first-post.md`** → `/blog/first-post`
+- **`site/blog/tags/[tag].md`** → `/blog/tags/css`, `/blog/tags/javascript`… one page per tag, and none at its own URL. See [Generated pages](/core-concepts/collections#generated-pages).
 
 Images can sit next to the pages that use them. In `site/blog/first-post.md`, `![Map](./map.png)` refers to `site/blog/map.png`, which Stati copies to `/_img/` with its size added to the page. See [Images](/configuration/images).
 

@@ -42,11 +42,11 @@ export const TEMPLATES = {
     name: 'blog',
     title: 'Blog Template',
     description:
-      'A complete blog with posts, tags, a yearly archive, an RSS feed, a sitemap and SEO metadata',
+      'A complete blog with posts, tag pages, a yearly archive, an RSS feed, a sitemap and SEO metadata',
     features: [
-      'Posts with tags, archive, newer/older and related posts',
+      'Posts with tag pages, pagination, archive, newer/older and related posts',
       'RSS feed, sitemap and robots.txt',
-      'Open Graph, Twitter cards and BlogPosting structured data',
+      'Open Graph and Twitter link previews',
       'Light and dark themes with self-hosted display type',
     ],
     difficulty: 'beginner',

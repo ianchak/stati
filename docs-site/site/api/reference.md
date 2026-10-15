@@ -69,7 +69,10 @@ Every Eta template and partial receives a `stati` object.
 | `stati.content`            | The rendered Markdown body                                                                                                               |
 | `stati.partials`           | Partials from `_`-prefixed folders, renderable or callable with props                                                                    |
 | `stati.nav`                | The navigation tree and helpers: `findNode`, `getChildren`, `getParent`, `getSiblings`, `getSubtree`, `getBreadcrumbs`, `getCurrentNode` |
-| `stati.collection`         | Pages in the current collection, on index pages                                                                                          |
+| `stati.collection`         | Pages of the page's collection: its own on index pages, the one it belongs to on others, or the one named by `collection`                |
+| `stati.pagination`         | This page's part of a listing with `paginate`: `pageNumber`, `totalPages`, `items`, `prevUrl`, `nextUrl`, `urls`                         |
+| `stati.generated`          | On pages from a `[param].md` template: `key`, `label`, `items`, `template`, `data`                                                       |
+| `stati.slugify(text)`      | The URL slug Stati gives a generated page's key                                                                                          |
 | `stati.assets`             | `bundlePaths` for this page (empty when no bundle matches) and `searchIndexPath` when search is enabled                                  |
 | `stati.propValue(...)`     | Builds space-separated attribute values from strings, arrays and objects                                                                 |
 | `stati.generateSEO(tags?)` | Renders SEO tags for manual placement                                                                                                    |

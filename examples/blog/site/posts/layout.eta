@@ -1,12 +1,19 @@
 <%
   /* Layout for every post in site/posts/. Shares head, header and footer with
-     site/layout.eta through the partials in site/_partials/. */
+     site/layout.eta through the partials in site/_partials/.
+
+     stati.collection holds every post in this folder, newest first. The newer, older
+     and related posts come from it, so Stati rebuilds a post when its neighbours or
+     their titles change. */
   const url = stati.page.url;
   const tags = Array.isArray(stati.page.tags) ? stati.page.tags : [];
   const published = stati.page.publishedAt ?? stati.page.date;
   const updated = stati.page.updated;
-  const { newer, older } = stati.adjacentPosts(url);
-  const related = stati.relatedPosts(url, 3);
+  const posts = stati.collection?.recentPages ?? [];
+  const index = posts.findIndex((post) => post.url === url);
+  const newer = index > 0 ? posts[index - 1] : undefined;
+  const older = index >= 0 ? posts[index + 1] : undefined;
+  const related = stati.relatedPosts(posts, url, 3);
   const author = stati.site.author;
 %>
 <!DOCTYPE html>
@@ -53,13 +60,13 @@
         <% if (newer) { %>
           <a class="pager-newer" href="<%= newer.url %>" rel="prev">
             <span class="pager-label">Newer</span>
-            <span class="pager-title"><%= newer.title %></span>
+            <span class="pager-title"><%= newer.frontMatter.title %></span>
           </a>
         <% } %>
         <% if (older) { %>
           <a class="pager-older" href="<%= older.url %>" rel="next">
             <span class="pager-label">Older</span>
-            <span class="pager-title"><%= older.title %></span>
+            <span class="pager-title"><%= older.frontMatter.title %></span>
           </a>
         <% } %>
       </nav>

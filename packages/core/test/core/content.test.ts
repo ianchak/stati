@@ -265,9 +265,9 @@ describe('content.ts', () => {
       expect(pages).toHaveLength(2);
       expect(pages[0]!.slug).toBe('/blog/first-post');
       expect(pages[0]!.url).toBe('/blog/first-post');
-      // Handle Windows path separators in slug
-      expect(pages[1]!.slug.replace(/\\/g, '/')).toBe('/blog/category/second-post');
-      expect(pages[1]!.url.replace(/\\/g, '/')).toBe('/blog/category/second-post');
+      // Forward slashes on every platform, also two folders deep
+      expect(pages[1]!.slug).toBe('/blog/category/second-post');
+      expect(pages[1]!.url).toBe('/blog/category/second-post');
     });
 
     it('should handle index files correctly', async () => {

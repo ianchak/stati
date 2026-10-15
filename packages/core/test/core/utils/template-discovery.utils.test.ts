@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { isCollectionIndexPage } from '../../../src/core/utils/template-discovery.utils.js';
+import {
+  isCollectionIndexPage,
+  isVirtualPage,
+} from '../../../src/core/utils/template-discovery.utils.js';
 import type { PageModel } from '../../../src/types/index.js';
 
 const page = (url: string): PageModel => ({
@@ -97,5 +100,51 @@ describe('isCollectionIndexPage', () => {
 
     // A new array (as each build loads) gets a new snapshot
     expect(isCollectionIndexPage(pages[0]!, [...pages])).toBe(true);
+  });
+
+  describe('generated and pagination pages', () => {
+    const generated = (url: string): PageModel => ({
+      ...page(url),
+      generated: { key: 'k', label: 'K', items: [], template: 'tags/[tag].md' },
+    });
+    const later = (url: string, firstUrl: string): PageModel => ({
+      ...page(url),
+      pagination: { pageNumber: 2, totalPages: 2, items: [], urls: [firstUrl, url] },
+    });
+
+    it('does not let them turn a folder into a collection', () => {
+      const tags = page('/tags');
+      const pages = [page('/'), tags, generated('/tags/css'), later('/notes/page/2', '/notes')];
+      expect(isCollectionIndexPage(tags, pages)).toBe(false);
+      expect(isCollectionIndexPage(page('/notes'), pages)).toBe(false);
+    });
+
+    it('never treats a generated page as an index', () => {
+      const css = generated('/tags/css');
+      expect(isCollectionIndexPage(css, [css, page('/tags/css/intro')])).toBe(false);
+    });
+
+    it('treats a later pagination page like the first page of its listing', () => {
+      const blog = page('/blog');
+      const pages = [page('/'), blog, page('/blog/post'), later('/blog/page/2', '/blog')];
+      expect(isCollectionIndexPage(pages[3]!, pages)).toBe(true);
+
+      const about = page('/about');
+      const aboutTwo = later('/about/page/2', '/about');
+      expect(isCollectionIndexPage(aboutTwo, [page('/'), about, aboutTwo])).toBe(false);
+      expect(isCollectionIndexPage(later('/x/page/2', '/x'), [page('/')])).toBe(false);
+    });
+
+    it('can tell virtual pages from pages loaded from Markdown', () => {
+      expect(isVirtualPage(page('/a'))).toBe(false);
+      expect(isVirtualPage(generated('/a'))).toBe(true);
+      expect(isVirtualPage(later('/a/page/2', '/a'))).toBe(true);
+      expect(
+        isVirtualPage({
+          ...page('/a'),
+          pagination: { pageNumber: 1, totalPages: 2, items: [], urls: ['/a', '/a/page/2'] },
+        }),
+      ).toBe(false);
+    });
   });
 });

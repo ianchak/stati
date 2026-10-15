@@ -262,6 +262,37 @@ describe('ISG Cache Manifest', () => {
   });
 
   describe('Manifest validation scenarios', () => {
+    it('should keep boolean read flags and drop entries with other values', async () => {
+      const entry = {
+        path: '/a.html',
+        inputsHash: 'a',
+        deps: [],
+        tags: [],
+        renderedAt: '2024-03-15T10:00:00.000Z',
+        ttlSeconds: 60,
+      };
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      mockPathExists.mockResolvedValue(true);
+      mockReadFile.mockResolvedValue(
+        JSON.stringify({
+          entries: {
+            '/a.html': { ...entry, readsCollection: true, readsNav: false },
+            '/b.html': { ...entry, path: '/b.html', readsCollection: 'yes' },
+            '/c.html': { ...entry, path: '/c.html', readsNav: 1 },
+          },
+        }),
+      );
+
+      const result = await loadCacheManifest(testCacheDir);
+
+      expect(Object.keys(result!.entries)).toEqual(['/a.html']);
+      expect(result!.entries['/a.html']).toMatchObject({ readsCollection: true, readsNav: false });
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('"readsCollection" must be a boolean'),
+      );
+      warn.mockRestore();
+    });
+
     it('should handle empty entries object', async () => {
       const emptyManifest: CacheManifest = { entries: {} };
 

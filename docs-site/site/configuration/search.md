@@ -94,6 +94,10 @@ search: {
 
 Patterns are globs matched against the whole page URL (`/private/docs`, `/` for the home page). `/private/**` does not match `/private` itself, and a pattern without wildcards matches only that exact URL.
 
+### Generated and paginated pages
+
+Pages created from a `[param].md` template, such as one page per tag, are left out of the index. To index them, set `search: true` in the template's front matter. The later pages of a listing with `paginate` (`/blog/page/2` and on) are always left out, since they repeat the first page's text. See [Collections and generated pages](/core-concepts/collections#where-generated-and-paginated-pages-appear).
+
 ### Include home page
 
 By default, the home page is excluded from the search index. To include it:

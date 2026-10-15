@@ -7,6 +7,7 @@ import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { writeFile, ensureDir } from '../core/utils/fs.utils.js';
 import { matchesGlob } from '../core/utils/glob-patterns.utils.js';
+import { isVirtualPage } from '../core/utils/template-discovery.utils.js';
 import { SEARCH_INDEX_VERSION, SEARCH_DEFAULTS } from './constants.js';
 import type { PageModel, TocEntry } from '../types/content.js';
 import type {
@@ -288,6 +289,11 @@ export function shouldExcludePage(page: PageModel, config: SearchConfig): boolea
     return true;
   }
 
+  // Exclude generated and pagination pages unless their template opts in
+  if (isGeneratedPageExcludedFromSearch(page)) {
+    return true;
+  }
+
   // Check home page exclusion
   const isHomePage = page.url === '/' || page.url === '';
   const includeHomePage = config.includeHomePage ?? SEARCH_DEFAULTS.includeHomePage;
@@ -304,6 +310,22 @@ export function shouldExcludePage(page: PageModel, config: SearchConfig): boolea
   }
 
   return false;
+}
+
+/**
+ * Whether a page created by Stati stays out of the search index. Pages generated from a
+ * `[param].md` template are left out unless the template sets `search: true`; later pages
+ * of a paginated listing are always left out, since they repeat the first page's content.
+ *
+ * @param page - Page model to check
+ * @returns true for generated and pagination pages that are not indexed
+ */
+export function isGeneratedPageExcludedFromSearch(page: PageModel): boolean {
+  if (!isVirtualPage(page)) {
+    return false;
+  }
+  const firstPage = (page.pagination?.pageNumber ?? 1) === 1;
+  return !(page.generated && firstPage && page.frontMatter.search === true);
 }
 
 /**

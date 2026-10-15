@@ -38,6 +38,8 @@ export {
 export {
   discoverLayout,
   isCollectionIndexPage,
+  isVirtualPage,
+  getFirstPaginationPage,
   getCollectionPathForPage,
 } from './template-discovery.utils.js';
 

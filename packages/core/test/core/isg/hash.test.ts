@@ -388,6 +388,26 @@ describe('Hash Utilities', () => {
       expect(hash1).toBe(hash2);
     });
 
+    it('should change with every field a navigation node carries', () => {
+      const node = {
+        title: 'Post',
+        url: '/blog/post',
+        path: '/blog/post',
+        publishedAt: new Date('2026-01-01'),
+        isCollection: false,
+      };
+      const base = computeNavigationHash([node]);
+
+      expect(computeNavigationHash([{ ...node, publishedAt: new Date('2026-02-01') }])).not.toBe(
+        base,
+      );
+      expect(computeNavigationHash([{ ...node, isCollection: true }])).not.toBe(base);
+      expect(computeNavigationHash([{ ...node, path: '/blog/other' }])).not.toBe(base);
+      expect(computeNavigationHash([{ ...node, publishedAt: new Date('invalid') }])).toBe(
+        computeNavigationHash([{ ...node, publishedAt: undefined }]),
+      );
+    });
+
     it('should handle nodes with undefined or missing fields', () => {
       const navigation = [
         {

@@ -719,7 +719,7 @@ Use in your template:
 
 ### Example: Generate related posts
 
-`beforeRender` only receives the current page, so collect the posts in `beforeAll`, which sees every page:
+A post layout can read its folder's posts from [`stati.collection`](/core-concepts/collections) and pick related ones there. To compute them in config instead: `beforeRender` only receives the current page, so collect the posts in `beforeAll`, which sees every page:
 
 ```javascript
 export default defineConfig({

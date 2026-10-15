@@ -23,6 +23,7 @@ export {
   extractSectionsFromMarkdown,
   stripMarkdown,
   shouldExcludePage,
+  isGeneratedPageExcludedFromSearch,
   generateContentHash,
   buildBreadcrumb,
   computeSearchIndexFilename,

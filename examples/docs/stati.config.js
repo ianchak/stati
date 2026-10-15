@@ -25,15 +25,7 @@ const site = {
   footer: 'Released under the MIT License.',
 };
 
-const docs = createDocs({
-  site,
-  socialImage: {
-    url: '/images/social-card.png',
-    alt: `${site.title}, documentation built with Stati`,
-    width: 1200,
-    height: 630,
-  },
-});
+const docs = createDocs({ site });
 
 export default defineConfig({
   site,

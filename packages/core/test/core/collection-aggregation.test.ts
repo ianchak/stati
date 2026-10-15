@@ -195,7 +195,7 @@ describe('Collection Aggregation', () => {
     );
   });
 
-  it('should not provide collection data for non-index pages', async () => {
+  it('should give a child page the collection of its folder index page', async () => {
     const blogPost: PageModel = {
       slug: '/blog/post-1',
       url: '/blog/post-1',
@@ -225,12 +225,42 @@ describe('Collection Aggregation', () => {
       allPages,
     );
 
-    // Verify no collection data for regular pages
+    // /blog/post-1 belongs to /blog, whose URL has no trailing slash
     expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({
-        collection: undefined,
+        collection: expect.objectContaining({
+          pages: [expect.objectContaining({ url: '/blog/post-1' })],
+          metadata: expect.objectContaining({ collectionPath: '/blog', totalPages: 1 }),
+        }),
       }),
+    );
+  });
+
+  it('should give pages without a collection undefined', async () => {
+    const page: PageModel = {
+      slug: '/notes/draft',
+      url: '/notes/draft',
+      sourcePath: '/test/project/src/notes/draft.md',
+      frontMatter: { title: 'Draft' },
+      content: '# Draft',
+    };
+
+    mockEtaInstance.renderAsync.mockResolvedValue('<html>Rendered page</html>');
+
+    // No /notes index page, and nested pages are not part of the shallow root collection
+    await renderPage(
+      page,
+      '<h1>Draft</h1>',
+      mockConfig,
+      mockEtaInstance as unknown as Eta,
+      [],
+      [page],
+    );
+
+    expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ collection: undefined }),
     );
   });
 
@@ -494,11 +524,14 @@ describe('Collection Aggregation', () => {
       allPages,
     );
 
-    // Verify it used layout.eta instead of index.eta (since this is not a collection index page)
+    // Verify it used layout.eta instead of index.eta (since this is not a collection index page),
+    // while still reading the collection it belongs to
     expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
       expect.stringContaining('layout.eta'),
       expect.objectContaining({
-        collection: undefined, // No collection data for regular pages
+        collection: expect.objectContaining({
+          metadata: expect.objectContaining({ collectionPath: '/blog' }),
+        }),
       }),
     );
   });

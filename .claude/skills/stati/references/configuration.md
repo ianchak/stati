@@ -110,6 +110,31 @@ exit status. `configure` runs after plugin loading.
 `stati.uppercase(value)` is a registered filter; pipes are not supported.
 Avoid context-reserved filter names. Prefer synchronous, deterministic helpers
 safe for repeated component pre-rendering. Full rules are in the Eta reference.
+Data a filter returns is invisible to ISG: a page listing posts through a
+filter is not rebuilt when the posts change. Prefer `stati.collection`.
+
+## Collections
+
+Core 1.29+. Collections, `paginate` and `[param].md` templates need no config;
+the optional block:
+
+```ts
+collections: {
+  // Frontmatter that listings show; default ['title', 'description', 'tags', 'draft'].
+  // URL and publish date always count; 'content' means the Markdown body.
+  summaryFields: ['title', 'description', 'tags', 'draft', 'image'],
+  // Pages from data, rendered by a [param].md template (path relative to srcDir)
+  generate: async ({ config, pages }) => [
+    { url: '/authors/ada', template: 'authors/[author].md', label: 'Ada', items: [], data: {} },
+  ],
+},
+```
+
+`generate` runs once per build after content loads (before navigation and
+`beforeAll`), receives content pages without templates, and may be async; a
+throw fails the build. Entries need `url` (starting with `/`) and an existing
+template, else they are skipped with a warning. `data` must be JSON-serializable;
+it is hashed, so changing it rebuilds the page. See the content reference.
 
 ## Static assets
 

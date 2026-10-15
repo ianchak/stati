@@ -54,8 +54,11 @@ Built-in/respected metadata:
 | custom fields                    | Remain in `frontMatter` / current `stati.page`                  |
 
 Reserve `path`, `url`, `content`, `navNode`, `toc`: rendering overwrites them.
-A custom frontmatter field is not automatically a new runtime feature.
-For example, `slug`, `pagination`, or `locale` do not imply route generation.
+From core 1.29, `collection`, `paginate` and `generate` configure collections,
+pagination and generated pages (see below); in a `[param].md` template, `nav`
+and `search` opt its pages in. Any other custom frontmatter field is not
+automatically a runtime feature: `slug`, `pagination` (as opposed to
+`paginate`) or `locale` do not imply route generation.
 
 ## Routes and output are different
 
@@ -68,9 +71,12 @@ automatically slugified. Choose lowercase hyphenated names yourself.
 | `site/about.md`      | `/about`                   | `dist/about.html`      |
 | `site/blog/index.md` | `/blog`                    | `dist/blog.html`       |
 | `site/blog/hello.md` | `/blog/hello`              | `dist/blog/hello.html` |
+| `site/blog/a/b.md`   | `/blog/a/b`                | `dist/blog/a/b.html`   |
 
 An explicit trailing-slash permalink such as `/custom/` produces
 `dist/custom/index.html`. Normal nonroot URLs instead produce `<url>.html`.
+(Before core 1.29, pages two or more folders deep got a backslash in their URL
+on Windows, such as `/blog\a/b`.)
 
 Docs sometimes show trailing slashes and filename slugification that are not
 guaranteed by the checked source. Use actual `page.url` / navigation URLs in
@@ -86,7 +92,9 @@ URL redirect. Implement redirects using explicit pages or hosting configuration.
 `site.baseUrl` is used for absolute metadata links, not a universal route-prefix
 transformer. A host must resolve the emitted pretty URLs to actual files.
 Verify both `/about` and intended trailing-slash variants on the target host.
-Use a clean production build for route deletions/renames to avoid stale output.
+From core 1.29, `stati build` deletes the HTML of pages that no longer exist
+(only files its cache manifest records); on older versions use a clean
+production build after deleting or renaming routes.
 
 ## Markdown behavior
 
@@ -124,7 +132,9 @@ not also require the Markdown body to repeat that same `h1`.
 
 A `PageModel` has `slug`, `url`, `sourcePath`, `frontMatter`, raw Markdown
 `content`, and optional parsed `publishedAt`. This is what hooks, feature
-callbacks, and collection arrays receive.
+callbacks, and collection arrays receive. From 1.29, generated pages carry
+`generated` and every page of a paginated listing carries `pagination`; hooks
+receive those pages too.
 
 `publishedAt` is a `Date` taken from the first valid front matter value among
 `publishedAt`, `published`, `date`, `createdAt`. Quoted (string) and unquoted
@@ -192,31 +202,66 @@ Sort behavior uses numeric `order` first. Child ordering then uses parsed
 publication date newest first and title; top-level ordering falls back to title.
 Do not mutate the shared navigation tree to implement one view's sorting.
 
-## Collections and generated-content limits
+## Collections, pagination and generated pages
 
 `collection` contains `pages`, `children`, `recentPages`, `pagesByTag`, `metadata`.
 Nonroot aggregation pages include descendants, excluding the current page.
-Root aggregation is not the entire website. An `index.eta` can specialize the
-listing layout, but still needs Markdown pages and actual descendant content.
+Root aggregation is not the entire website: only top-level pages, including
+folder index pages such as `/blog`. An `index.eta` can specialize the listing
+layout, but still needs Markdown pages and actual descendant content. Each
+render gets its own copies of the arrays.
 
-The checked implementation's child-page parent collection lookup has URL
-trailing-slash sensitivity. Guard `stati.collection`; do not rely on every post
-having a parent collection. Navigation helpers are often the better sidebar API.
+Which collection `stati.collection` is (core 1.29+):
 
-To list a section from another page, such as the latest posts on the home page,
-use `stati.nav.getChildren('/blog')`; the root collection cannot do it. Nodes
-arrive in nav order (numeric `order`, then newest `publishedAt`), so a plain
-`.slice(0, 5)` gives the latest posts when posts set no `order`. Posts in
-subfolders come back as `isCollection` nodes with nested `children`, not a flat
-list. Nodes carry no `description`, `tags`, or other frontmatter; when a listing
-outside its index page needs those, build the data in `beforeAll` and expose it
-through an `eta.filters` function.
+1. The one named by `collection: /blog` in the page's frontmatter (`blog`,
+   `/blog`, `/blog/` all work). Use this to list another section, such as the
+   latest posts on the home page. An unknown name warns and falls back.
+2. Its own, on a collection index page.
+3. The nearest collection the page belongs to: `/blog/post` and
+   `/blog/2025/recap` read `/blog`; top-level pages read the root collection.
+4. `undefined` when it belongs to none. Guard with `stati.collection?.`.
 
-Tags only aggregate data. They do not create `/tags/<tag>` pages. Pagination,
-author archives, language variants, CMS-driven pages, and date archives require
-explicit content generation or authored Markdown plus layouts/hooks. Generate
-source content **before** Stati's content discovery if adding pages in a build
-script; `beforeAll` is not a pre-discovery file-generation hook.
+Before 1.29, nested child pages got `undefined` (a trailing-slash lookup bug), so
+older sites computed prev/next and related posts in `beforeAll`.
+
+ISG tracks reads: a page that reads `stati.collection` rebuilds when a member is
+added, removed or moved, or its `title`, `description`, `tags`, `draft` or
+publish date changes. `collections.summaryFields` replaces that field list
+(`content` means the body). Data handed over through `beforeAll` and filters is
+not tracked; prefer `stati.collection`.
+
+**Pagination:** `paginate: 10` or `paginate: { size: 10, path: 'page' }` on a page
+with a collection splits `recentPages`: page 1 keeps the URL (`/blog`), later
+pages are `/blog/page/2` (`/blog/page/2/` when the URL has a trailing slash;
+`/page/2` for the root). Templates read `stati.pagination`: `pageNumber`,
+`totalPages` (≥ 1), `items`, `prevUrl`, `nextUrl`, `urls`. Later pages reuse the
+first page's layout (including `index.eta`), Markdown and frontmatter.
+
+**Generated pages:** a file named `[tag].md` (letters, digits, `-`, `_` in the
+brackets) is a template, never a page. With `generate: { from: tags }` it
+becomes one page per value of that frontmatter field in its collection
+(`collection:` or the nearest collection with pages), keyed by Stati's slugify
+(`CSS` → `css`, at `/blog/tags/css`). Values slugifying to the same key merge
+with a warning; values with an empty key (no Latin letters or digits) get no
+page. `{tag}` in its frontmatter strings becomes the label (`CSS`), `{{tag}}`
+stays literal, other `{…}` and `permalink`/`generate` are untouched;
+`permalink: /topics/[tag]/` places pages. `generate.paginate` splits each page.
+Templates read `stati.generated`: `key`, `label`, `items`, `template`, `data`.
+Link to them with `` `/blog/tags/${stati.slugify(tag)}` ``.
+`collections.generate(ctx)` in config returns `{ url, template, key?, label?,
+items?, data? }` entries for keys that aren't frontmatter values.
+
+Generated pages and pages 2+ are never collection members, stay out of
+navigation (`nav: true` in the template opts generated pages in), search
+(`search: true` opts in) and RSS, and are in the sitemap. They are created
+after content loads and before `beforeAll`, so hook-added tags make no pages.
+Their output is deleted when a key or page disappears.
+
+Author archives by field, tag pages and numbered listings need no build
+script. Language variants, CMS-driven pages and date archives still need
+authored Markdown, `collections.generate`, or source files generated **before**
+Stati's content discovery; `beforeAll` is not a pre-discovery file-generation
+hook.
 
 Drafts are omitted by normal content loading. `--include-drafts` is an explicit
 build preview choice; search still excludes drafts. Do not publish draft-including

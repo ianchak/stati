@@ -83,8 +83,8 @@ inventory:
           }
         - {
             name: 'Collections',
-            text: 'Index pages get their pages, newest first and grouped by tag.',
-            href: '/core-concepts/templates#collections',
+            text: 'Listings that stay current, pagination, and a page per tag.',
+            href: '/core-concepts/collections',
           }
         - {
             name: 'Filesystem routing',

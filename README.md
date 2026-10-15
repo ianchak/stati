@@ -109,7 +109,8 @@ Customize layouts with [Eta templates](https://eta.js.org):
 ### Incremental Static Generation (ISG)
 
 Pages rebuild only when needed:
-- **Smart caching** - Only changed pages rebuild
+- **Smart caching** - Only changed pages rebuild, plus the listings that show them
+- **Stale page cleanup** - Deleted posts and unused tag pages disappear from the output
 - **TTL-based refresh** - Control how long pages stay cached
 - **Tag-based invalidation** - Update related content together
 
@@ -122,6 +123,26 @@ stati invalidate "path:/blog/2024/"
 
 # Invalidate by age
 stati invalidate "age:3months"
+```
+
+### Collections, Pagination and Tag Pages
+
+A folder with an `index.md` is a collection that templates read as `stati.collection`. Split a listing into pages and create one page per tag from front matter:
+
+```markdown
+---
+# site/blog/index.md → /blog, /blog/page/2, …
+paginate: 10
+---
+```
+
+```markdown
+---
+# site/blog/tags/[tag].md → /blog/tags/css, /blog/tags/javascript, …
+title: 'Posts tagged {tag}'
+generate:
+  from: tags
+---
 ```
 
 ### Built-in SEO

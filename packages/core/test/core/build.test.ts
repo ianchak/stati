@@ -3,6 +3,7 @@ import { build } from '../../src/core/build.js';
 import type { BuildOptions } from '../../src/core/build.js';
 import type { StatiConfig } from '../../src/types/index.js';
 import type { RSSFeedConfig } from '../../src/types/rss.js';
+import type * as SearchModule from '../../src/search/index.js';
 import { setEnv } from '../../src/env.js';
 
 // Create hoisted mocks that are available during module hoisting
@@ -119,6 +120,8 @@ vi.mock('../../src/core/isg/builder.js', () => ({
   shouldRebuildPage: mockShouldRebuildPage,
   createCacheEntry: mockCreateCacheEntry,
   updateCacheEntry: mockUpdateCacheEntry,
+  // Entries in these tests count as current; mockShouldRebuildPage decides
+  hasRecordedReads: () => true,
 }));
 
 vi.mock('../../src/core/isg/build-lock.js', () => ({
@@ -132,7 +135,9 @@ vi.mock('../../src/core/utils/typescript.utils.js', () => ({
   formatBytes: () => '1.00 KB',
 }));
 
-vi.mock('../../src/search/index.js', () => ({
+vi.mock('../../src/search/index.js', async (importOriginal) => ({
+  isGeneratedPageExcludedFromSearch: (await importOriginal<typeof SearchModule>())
+    .isGeneratedPageExcludedFromSearch,
   computeSearchIndexFilename: mockComputeSearchIndexFilename,
   generateSearchIndex: mockGenerateSearchIndex,
   writeSearchIndex: mockWriteSearchIndex,

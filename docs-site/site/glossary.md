@@ -124,7 +124,15 @@ Stati's convention for dynamic content in HTML attributes: make the whole attrib
 
 ## Collection
 
-A folder of pages with an `index.md`, often with shared layout and navigation (e.g., blog posts, documentation sections). Its index page receives `stati.collection` with the pages sorted by date and grouped by tag. See [Collections](/core-concepts/templates#collections).
+A folder of pages with an `index.md`, often with shared layout and navigation (e.g., blog posts, documentation sections). Templates read it as `stati.collection`, with the pages sorted by date and grouped by tag: the index page reads its own collection, the pages in the folder read theirs, and any page can name one with `collection` in its front matter. See [Collections and generated pages](/core-concepts/collections).
+
+## Pagination
+
+Splitting a collection listing into numbered pages with `paginate` in front matter. The first page keeps its URL, later ones get `/page/2`, `/page/3` and so on, and templates read their part as `stati.pagination`. See [Pagination](/core-concepts/collections#pagination).
+
+## Generated page
+
+A page Stati creates from a `[param].md` template, one per key: `site/blog/tags/[tag].md` becomes `/blog/tags/css`, `/blog/tags/javascript` and so on, one for each tag in its collection. Templates read the key and its pages as `stati.generated`. See [Generated pages](/core-concepts/collections#generated-pages).
 
 ## Eta filters
 

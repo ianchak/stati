@@ -1,7 +1,7 @@
 ---
 title: 'Markdown pipeline'
 description: 'Learn how Stati processes and renders Markdown content with advanced features.'
-order: 4
+order: 5
 ---
 
 # Markdown pipeline

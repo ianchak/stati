@@ -970,6 +970,49 @@ describe('Development Server', () => {
   });
 
   describe('File Change Queue and Event Types', () => {
+    it('should rebuild incrementally, never forcing, when a Markdown file changes', async () => {
+      const chokidar = await import('chokidar');
+      const mockWatch = vi.mocked(chokidar.default.watch);
+      const { loadCacheManifest } = await import('../../src/core/isg/index.js');
+      const mockLoadCacheManifest = vi.mocked(loadCacheManifest);
+
+      let changeHandler: ((path: string) => void) | undefined;
+      mockWatch.mockImplementation(
+        () =>
+          ({
+            on: vi.fn((event: string, handler: (path: string) => void) => {
+              if (event === 'change') {
+                changeHandler ??= handler;
+              }
+              return { on: vi.fn().mockReturnThis(), close: vi.fn(() => Promise.resolve()) };
+            }),
+            close: vi.fn(() => Promise.resolve()),
+          }) as unknown as ReturnType<typeof chokidar.default.watch>,
+      );
+
+      // A stored navigation hash that differs from the current one used to force a full rebuild
+      mockLoadCacheManifest.mockResolvedValue({ entries: {}, navigationHash: 'old-hash' });
+      mockLoadConfig.mockResolvedValueOnce({
+        srcDir: 'site',
+        outDir: 'dist',
+        staticDir: 'public',
+        site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
+      });
+
+      const devServer = await createDevServer({ port: 8119, logger: createMockLogger() });
+      await devServer.start();
+      mockBuild.mockClear();
+
+      changeHandler!(`${process.cwd()}/site/blog/post.md`);
+      await setTimeout(50);
+
+      expect(mockBuild).toHaveBeenCalledTimes(1);
+      expect(mockBuild).toHaveBeenCalledWith(expect.objectContaining({ force: false }));
+
+      await devServer.stop();
+      mockLoadCacheManifest.mockResolvedValue(null);
+    });
+
     it('should pass event type to watcher handlers', async () => {
       const chokidar = await import('chokidar');
       const mockWatch = vi.mocked(chokidar.default.watch);

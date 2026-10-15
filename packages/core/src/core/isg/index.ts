@@ -11,8 +11,16 @@
 export { loadCacheManifest, saveCacheManifest, createEmptyManifest } from './manifest.js';
 
 // Build decision logic
-export { shouldRebuildPage, createCacheEntry, updateCacheEntry } from './builder.js';
+export {
+  shouldRebuildPage,
+  createCacheEntry,
+  updateCacheEntry,
+  hasRecordedReads,
+} from './builder.js';
 export type { RenderedAssets } from './builder.js';
+
+// Removal of pages that no longer exist
+export { pruneOrphanedPages } from './prune.js';
 
 // Build locking
 export { BuildLockManager, withBuildLock } from './build-lock.js';

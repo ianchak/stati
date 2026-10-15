@@ -319,48 +319,34 @@ Use collection data provided to index pages to list and filter content:
 
 ### Related posts
 
-Post pages inside a folder do not receive `stati.collection`, so compute related posts in a `beforeAll` hook, which sees every page, and store them in each post's front matter:
-
-```javascript
-// stati.config.js
-export default defineConfig({
-  hooks: {
-    beforeAll: (ctx) => {
-      const posts = ctx.pages.filter(p => p.url.startsWith('/blog/'));
-      for (const post of posts) {
-        const currentTags = post.frontMatter.tags || [];
-        post.frontMatter.relatedPosts = posts
-          .filter(p => p.url !== post.url)
-          .map(p => ({
-            url: p.url,
-            title: p.frontMatter.title,
-            commonTags: (p.frontMatter.tags || []).filter(t => currentTags.includes(t))
-          }))
-          .filter(p => p.commonTags.length > 0)
-          .sort((a, b) => b.commonTags.length - a.commonTags.length)
-          .slice(0, 3);
-      }
-    }
-  }
-});
-```
-
-Then render them in the post layout:
+A post reads the collection of its folder, so the post layout can pick related posts from `stati.collection` with no hook:
 
 ```html
-<!-- blog/post-layout.eta -->
+<!-- blog/layout.eta -->
+<%
+  const tags = stati.page.tags ?? [];
+  const related = (stati.collection?.recentPages ?? [])
+    .filter((post) => post.url !== stati.page.url)
+    .map((post) => ({
+      post,
+      commonTags: (post.frontMatter.tags ?? []).filter((tag) => tags.includes(tag)),
+    }))
+    .filter(({ commonTags }) => commonTags.length > 0)
+    .sort((a, b) => b.commonTags.length - a.commonTags.length)
+    .slice(0, 3);
+%>
 <article class="post">
   <%~ stati.content %>
 </article>
 
-<% if (stati.page.relatedPosts?.length) { %>
+<% if (related.length > 0) { %>
   <aside class="related-posts">
     <h2>Related Posts</h2>
     <ul>
-      <% stati.page.relatedPosts.forEach(post => { %>
+      <% related.forEach(({ post, commonTags }) => { %>
         <li>
-          <a href="<%= post.url %>"><%= post.title %></a>
-          <span class="common-tags"><%= post.commonTags.join(', ') %></span>
+          <a href="<%= post.url %>"><%= post.frontMatter.title %></a>
+          <span class="common-tags"><%= commonTags.join(', ') %></span>
         </li>
       <% }) %>
     </ul>
@@ -368,7 +354,76 @@ Then render them in the post layout:
 <% } %>
 ```
 
-Because the list is part of each post's front matter, the ISG cache re-renders a post when its related posts change.
+Because the layout reads `stati.collection`, ISG re-renders the posts when a post is added or removed or its title or tags change.
+
+### Paginated listing
+
+Split a long listing into pages with `paginate`, and link them with `stati.pagination`:
+
+```markdown
+---
+# site/blog/index.md
+title: Blog
+paginate: 10
+---
+```
+
+```html
+<!-- blog/index.eta -->
+<% const { items, pageNumber, totalPages, prevUrl, nextUrl, urls } = stati.pagination; %>
+<% items.forEach((post) => { %>
+  <h2><a href="<%= post.url %>"><%= post.frontMatter.title %></a></h2>
+<% }) %>
+
+<% if (totalPages > 1) { %>
+  <nav aria-label="Pages">
+    <% if (prevUrl) { %><a href="<%= prevUrl %>" rel="prev">Newer</a><% } %>
+    <% urls.forEach((url, i) => { %>
+      <% if (i + 1 === pageNumber) { %>
+        <span aria-current="page"><%= i + 1 %></span>
+      <% } else { %>
+        <a href="<%= url %>"><%= i + 1 %></a>
+      <% } %>
+    <% }) %>
+    <% if (nextUrl) { %><a href="<%= nextUrl %>" rel="next">Older</a><% } %>
+  </nav>
+<% } %>
+```
+
+The first page stays at `/blog`; the next ones are `/blog/page/2`, `/blog/page/3` and so on.
+
+### A page for every tag
+
+A file named `[tag].md` becomes one page per tag of its collection:
+
+```markdown
+---
+# site/blog/tags/[tag].md
+title: 'Posts tagged {tag}'
+generate:
+  from: tags
+---
+```
+
+```html
+<!-- blog/tags/layout.eta -->
+<h1><%= stati.page.title %></h1>
+<ul>
+  <% stati.generated.items.forEach((post) => { %>
+    <li><a href="<%= post.url %>"><%= post.frontMatter.title %></a></li>
+  <% }) %>
+</ul>
+```
+
+Link to the pages with `stati.slugify`, which gives the same key Stati used for the URL:
+
+```html
+<% (stati.page.tags ?? []).forEach((tag) => { %>
+  <a href="<%= `/blog/tags/${stati.slugify(tag)}` %>"><%= tag %></a>
+<% }) %>
+```
+
+See [Collections and generated pages](/core-concepts/collections) for keys from other fields, pagination of tag pages and pages from data.
 
 ### Custom filters in templates
 

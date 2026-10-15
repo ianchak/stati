@@ -10,14 +10,14 @@ Stati adds these to each page's `<head>` when it builds:
 
 - A description, from the page's `description`
 - A canonical link, built from `baseUrl` and the page's address
-- Open Graph and Twitter tags, so links shared in chat apps and social networks show a title, description and image
+- Open Graph and Twitter tags, so links shared in chat apps and social networks show a title, a description and, when the page has one, an image
 - Breadcrumb structured data, which search engines can show in place of the URL
 
-`helpers/docs.js` sets the default link-preview image and the breadcrumbs; the `seo` block in `stati.config.js` turns the injection on.
+`helpers/docs.js` sets the page's own link-preview image and the breadcrumbs; the `seo` block in `stati.config.js` turns the injection on.
 
 ## The link-preview image
 
-Every page uses `public/images/social-card.png` unless it sets its own. Replace it with a 1200 by 630 pixel image of your own, and update its `alt` text in `stati.config.js`. If you added image tools when you created the site, each page gets its own card instead, drawn from `site/og.eta` with the page's title, description and section. To give one page its own image:
+If you added image tools when you created the site, each page gets its own preview image, drawn from `site/og.eta` with the page's title, description and section. Without them, a page has an image only when you give it one. Either way, a page's own image wins; 1200 by 630 pixels suits every network:
 
 ```yaml
 ---

@@ -76,6 +76,8 @@ export interface StatiConfig {
   };
   /** Incremental Static Generation configuration */
   isg?: import('./isg.js').ISGConfig;
+  /** Collection listings: which fields rebuild them, and pages generated from data */
+  collections?: CollectionsConfig;
   /** SEO configuration */
   seo?: SEOConfig;
   /** Sitemap generation configuration */
@@ -113,6 +115,61 @@ export interface StatiConfig {
   };
   /** Build lifecycle hooks */
   hooks?: BuildHooks;
+}
+
+/**
+ * Collection settings.
+ *
+ * @example
+ * ```typescript
+ * const collections: CollectionsConfig = {
+ *   // Listings also show each post's image, so changing it rebuilds them
+ *   summaryFields: ['title', 'description', 'tags', 'draft', 'image'],
+ *   // One page per author, rendered with site/authors/[author].md
+ *   generate: ({ pages }) => [
+ *     {
+ *       url: '/authors/ada',
+ *       template: 'authors/[author].md',
+ *       label: 'Ada Lovelace',
+ *       items: pages.filter((page) => page.frontMatter.author === 'ada'),
+ *     },
+ *   ],
+ * };
+ * ```
+ */
+export interface CollectionsConfig {
+  /**
+   * Front matter fields of collection pages that listings show. A page that reads
+   * `stati.collection` rebuilds when one of these fields changes on a page in the collection,
+   * and so do paginated and generated pages that list it. Each page's URL and publish date
+   * always count. `content` stands for the Markdown body, for listings that show excerpts.
+   *
+   * @default ['title', 'description', 'tags', 'draft']
+   */
+  summaryFields?: string[];
+  /**
+   * Pages to create from data, each rendered with a `[param].md` template. Runs once per build,
+   * after content is loaded and before navigation is built.
+   */
+  generate?: (ctx: BuildContext) => GeneratedPageEntry[] | Promise<GeneratedPageEntry[]>;
+}
+
+/**
+ * A page returned by `collections.generate`.
+ */
+export interface GeneratedPageEntry {
+  /** URL of the page, such as `/authors/ada` */
+  url: string;
+  /** The `[param].md` template that renders it, relative to the source directory */
+  template: string;
+  /** `stati.generated.key`; defaults to the last segment of `url` */
+  key?: string;
+  /** `stati.generated.label` and the value of `{param}` placeholders; defaults to `key` */
+  label?: string;
+  /** Pages the page lists (`stati.generated.items`), split up by the template's `generate.paginate` */
+  items?: import('./content.js').PageModel[];
+  /** Any JSON-serializable data, as `stati.generated.data`; changing it rebuilds the page */
+  data?: Record<string, unknown>;
 }
 
 /**

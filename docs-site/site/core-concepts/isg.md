@@ -1,7 +1,7 @@
 ---
 title: 'Incremental Static Generation'
 description: 'Learn about Incremental Static Generation and build caching.'
-order: 5
+order: 6
 ---
 
 # Incremental Static Generation
@@ -23,39 +23,42 @@ Unlike traditional static site generators that rebuild everything, Stati only re
 
 ### Dependency tracking
 
-For each page, Stati records the **templates** it was rendered with: its layout, plus the partials it references by name (`stati.partials.header`, `stati.partials.card({ … })`) or loads from `_` folders with `include()`. It also records the **images** the page shows, from Markdown or `stati.image()`, hashed by content. A page is re-rendered when its own Markdown or front matter changes, when one of those templates or images changes, or when its TTL expires. The [ISG configuration](/configuration/isg#template-dependency-tracking) page lists the template changes that are not detected.
+For each page, Stati records the **templates** it was rendered with: its layout, plus the partials it references by name (`stati.partials.header`, `stati.partials.card({ … })`) or loads from `_` folders with `include()`. It also records the **images** the page shows, from Markdown or `stati.image()`, hashed by content. The [ISG configuration](/configuration/isg#template-dependency-tracking) page lists the template changes that are not detected.
 
-Other pages are **not** dependencies. A listing page such as `blog/index.md` that shows the titles of the posts in `stati.collection` is not re-rendered when you edit a post:
+It also records what the page **read** while it rendered:
+
+- **Its [collection](/core-concepts/collections).** A page that reads `stati.collection` depends on a summary of the pages in it: each one's URL, publish date, `title`, `description`, `tags` and `draft`. [`collections.summaryFields`](/core-concepts/collections#what-rebuilds-a-listing) changes the fields. A page of a paginated listing depends on the pages it shows and on the number of pages, and a generated page on its own items.
+- **The navigation.** A page that reads `stati.nav` or `stati.page.navNode` depends on the whole navigation tree.
+
+A page is re-rendered when its own Markdown or front matter changes, when one of its templates or images changes, when data it read changes, or when its TTL expires:
 
 ```text
-When blog/post-1.md changes (stati build):
-✅ Rebuild blog/post-1 (its content changed)
-❌ Skip blog (index page) — still cached until its TTL expires
-❌ Skip blog/post-2 (no changes)
+When the body of blog/post-1.md changes:
+✅ Rebuild blog/post-1
+❌ Skip blog (index page): nothing it lists changed
+
+When the title of blog/post-1.md changes:
+✅ Rebuild blog/post-1
+✅ Rebuild blog, and every page that reads the blog collection, such as posts with newer and older links
+❌ Skip pages that don't read it, such as /about
+
+When blog/post-3.md is added, or deleted:
+✅ Render blog/post-3, or delete its HTML
+✅ Rebuild the pages that read the blog collection
 
 When blog/layout.eta changes:
 ✅ Rebuild every page rendered with blog/layout.eta
 ```
 
-To refresh listing pages after editing posts, run `stati build --force`, invalidate them (`stati invalidate path:/blog.html`), or give them a short `ttlSeconds` in their front matter. You can also make the listing depend on its posts: in a `beforeAll` hook, write a fingerprint of what the listing shows into the index page's front matter. The page's hash then changes whenever a post's title (or whatever you include) changes:
+Data that reaches a template some other way is not tracked, for example a filter that returns posts it collected in a `beforeAll` hook. Read listings from `stati.collection`, or, in that hook, write what the page shows into its front matter, which is part of its hash.
 
-```javascript
-export default defineConfig({
-  hooks: {
-    beforeAll: (ctx) => {
-      const posts = ctx.pages.filter((p) => p.url.startsWith('/blog/'));
-      const index = ctx.pages.find((p) => p.url === '/blog');
-      if (index) {
-        index.frontMatter.postsFingerprint = posts
-          .map((p) => `${p.url}|${p.frontMatter.title}`)
-          .join('\n');
-      }
-    },
-  },
-});
-```
+### Removing pages that no longer exist
 
-During `stati dev`, an edit that changes a page's `title` or `order` (or adds or removes a page) rebuilds every page.
+`stati build` deletes the HTML of pages that no longer exist: a deleted or renamed Markdown file, a draft after a build with `--include-drafts`, a tag no post uses anymore, or the last page of a listing that got shorter. It deletes only files the cache manifest records, along with folders that deleting them leaves empty, so files that `public/` or other tools put in `dist/` are never touched.
+
+### Upgrading
+
+Stati 1.29 started recording what each page reads. The first build after upgrading from an earlier version re-renders every page once to record it; later builds use the cache as usual.
 
 ### Cache manifest
 
@@ -73,19 +76,24 @@ Stati maintains a cache manifest at `.stati/manifest.json`. Entries are keyed by
       "publishedAt": "2024-01-15T00:00:00.000Z",
       "renderedAt": "2024-01-20T10:00:00.000Z",
       "ttlSeconds": 21600,
-      "maxAgeCapDays": 365
+      "maxAgeCapDays": 365,
+      "readsCollection": true,
+      "readsNav": false
     }
   },
   "navigationHash": "…"
 }
 ```
 
+`readsCollection` and `readsNav` record whether the last render read `stati.collection` and the navigation. An entry without them, written before Stati recorded them, makes its page rebuild once.
+
 ### Build process
 
-1. **Content discovery** - Find all Markdown pages and build the navigation tree
-2. **Cache check** - For each page, compare its content and template hashes with the manifest, and check its TTL
+1. **Content discovery** - Find all Markdown pages, create [generated and paginated pages](/core-concepts/collections), and build the navigation tree
+2. **Cache check** - For each page, compare its content, template and data hashes with the manifest, and check its TTL
 3. **Selective rendering** - Render only the pages that changed, expired, or have no output file yet
-4. **Manifest update** - Save new cache entries, including each page's template dependencies
+4. **Cleanup** - Delete the output of pages that no longer exist
+5. **Manifest update** - Save new cache entries, including each page's template dependencies and what it read
 
 ## Configuration
 
@@ -244,7 +252,8 @@ Traditional SSG (full rebuild):
 
 Stati with ISG (incremental):
 ├── First build: Full build
-├── Content change: Only the edited page
+├── Body edit: Only the edited page
+├── Title or tag edit: The edited page and the pages that list it
 └── Layout change: Only pages using that layout
 ```
 
@@ -253,7 +262,7 @@ Stati with ISG (incremental):
 During development, ISG provides fast feedback:
 
 - **Initial build** - The dev server clears the cache and builds every page
-- **Content change** - The edited page rebuilds; if its `title` or `order` changed, every page rebuilds so navigation stays current
+- **Content change** - The edited page rebuilds, along with the pages that list it or render the navigation when what they show changed; a deleted page's HTML is removed
 - **Template change** - All pages using that template rebuild
 
 This means most edits during development result in significantly faster rebuilds compared to full site regeneration.

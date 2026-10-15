@@ -15,26 +15,13 @@ const site = {
   },
   // Links in the header, in order. The RSS link is added automatically.
   nav: [
-    { label: 'Archive', url: '/archive' },
+    { label: 'Archive', url: '/posts' },
     { label: 'Tags', url: '/tags' },
     { label: 'About', url: '/about' },
   ],
-  // Number of posts listed on the home page before "All posts" takes over.
-  homePostCount: 8,
 };
 
-const blog = createBlog({
-  site,
-  author: site.author,
-  postsPath: '/posts/',
-  tagsPath: '/tags',
-  socialImage: {
-    url: '/images/social-card.png',
-    alt: `${site.title}, a blog built with Stati`,
-    width: 1200,
-    height: 630,
-  },
-});
+const blog = createBlog({ site });
 
 export default defineConfig({
   site,
@@ -45,8 +32,6 @@ export default defineConfig({
   eta: {
     filters: blog.filters,
   },
-
-  hooks: blog.hooks,
 
   seo: {
     autoInject: true,
@@ -63,6 +48,8 @@ export default defineConfig({
         link: site.baseUrl,
         language: site.defaultLocale.toLowerCase(),
         contentPatterns: ['**/posts/**/*.md'],
+        // The archive is the posts folder's index page, not a post
+        excludePatterns: ['**/posts/index.md'],
         maxItems: 20,
         sortBy: 'date-desc',
         itemMapping: {

@@ -13,7 +13,8 @@ Build hooks allow you to inject custom logic at various stages of the Stati buil
 A build runs in this order:
 
 ```text
-1. Load config, discover Markdown pages, build the navigation tree
+1. Load config, discover Markdown pages, create generated and paginated pages
+   (collections.generate runs here), build the navigation tree
 2. Compile TypeScript bundles (when enabled)
 3. beforeAll    → once, with every page (ctx.pages)
 4. For each page:
@@ -21,7 +22,7 @@ A build runs in this order:
    - beforeRender → before the page renders
    - Markdown → HTML, layout rendering, SEO/search/script injection, file write
    - afterRender  → after the page renders
-5. Search index, cache manifest, static asset copy
+5. Removal of pages that no longer exist, search index, cache manifest, static asset copy
 6. sitemap.xml, robots.txt, RSS feeds (production builds only)
 7. afterAll     → once, at the end
 ```
@@ -34,9 +35,11 @@ A hook that throws, or returns a rejected promise, fails the build. Hooks have n
 
 ### `beforeAll`
 
-Called once, after the content has been loaded and before any page is rendered. `ctx.pages` holds every page, so this is the place to build indexes, related-post lists or other data that templates read through [filters](/configuration/templates#custom-filters) or module-level variables.
+Called once, after the content has been loaded and before any page is rendered. `ctx.pages` holds every page, including [generated and paginated pages](/core-concepts/collections) (with `page.generated` or `page.pagination` set), so this is the place to build indexes or other data that templates read through [filters](/configuration/templates#custom-filters) or module-level variables. Listings of a folder's pages need no hook: templates read them from [`stati.collection`](/core-concepts/collections).
 
-`beforeAll` runs before the cache check, so values it writes into `page.frontMatter` are part of each page's cache hash. Use that to make a listing page rebuild when its posts change; see [Dependency tracking](/core-concepts/isg#dependency-tracking).
+`beforeAll` runs before the cache check, so values it writes into `page.frontMatter` are part of each page's cache hash. Data a filter hands to templates is not: Stati can't tell which pages use it. To make a page rebuild when such data changes, write what the page shows into its front matter here; see [Dependency tracking](/core-concepts/isg#dependency-tracking).
+
+Generated pages and pagination are worked out before `beforeAll` runs, from the content as loaded: tags a hook adds don't create tag pages.
 
 **Use cases:**
 
@@ -169,7 +172,7 @@ Each hook receives a context object with different properties:
 ```typescript
 interface BuildContext {
   config: StatiConfig;          // Build configuration
-  pages: PageModel[];           // All discovered pages
+  pages: PageModel[];           // All pages, generated and paginated ones included
 }
 ```
 
@@ -364,6 +367,8 @@ function calculateReadingTime(content) {
 ## Real-world examples
 
 ### Blog with related posts
+
+Posts read the collection of their folder, so a post layout can also find related posts in `stati.collection.recentPages`, as the blog starter does. Computing them in a hook suits data that templates can't reach, such as posts from several collections:
 
 ```javascript
 function intersection(arr1, arr2) {

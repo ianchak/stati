@@ -1136,5 +1136,106 @@ describe('templates.ts', () => {
         expect(result.templatesLoaded).toBe(4);
       });
     });
+
+    describe('shared data the render reads', () => {
+      const blogIndex: PageModel = {
+        slug: '/blog',
+        url: '/blog',
+        sourcePath: join(mockProjectRoot, 'src', 'blog', 'index.md'),
+        frontMatter: { title: 'Blog' },
+        content: '',
+      };
+      const post: PageModel = {
+        slug: '/blog/post',
+        url: '/blog/post',
+        sourcePath: join(mockProjectRoot, 'src', 'blog', 'post.md'),
+        frontMatter: { title: 'Post' },
+        content: '',
+      };
+      const allPages = [blogIndex, post];
+      const navigation = [{ title: 'Post', url: '/blog/post', path: '/blog/post' }];
+
+      /** Renders the post with a layout that runs `read` on the template context */
+      async function renderWith(
+        read: (context: Record<string, unknown>) => unknown,
+        page: PageModel = post,
+        config: StatiConfig = mockConfig,
+      ) {
+        mockPathExists.mockResolvedValueOnce(true).mockResolvedValue(false);
+        let seen: Record<string, unknown> = {};
+        mockEtaInstance.renderAsync.mockImplementation(async (_path, context) => {
+          seen = context as Record<string, unknown>;
+          return `<html>${String(read(seen) ?? '')}</html>`;
+        });
+        const result = await renderPage(
+          page,
+          '<p>Body</p>',
+          config,
+          mockEtaInstance as Eta,
+          navigation,
+          allPages,
+        );
+        return { result, context: seen };
+      }
+
+      it('reports no reads for a layout that reads neither', async () => {
+        const { result } = await renderWith((context) => (context.page as { title: string }).title);
+        expect(result.reads).toEqual({ collection: false, nav: false });
+      });
+
+      it('reports a collection read when a template reads stati.collection', async () => {
+        const { result } = await renderWith(
+          (context) => (context.collection as { pages: PageModel[] }).pages.length,
+        );
+        expect(result.reads).toEqual({ collection: true, nav: false });
+      });
+
+      it('reports a navigation read for stati.nav and stati.page.navNode', async () => {
+        const viaHelpers = await renderWith(
+          (context) => (context.nav as { getTree: () => unknown[] }).getTree().length,
+        );
+        expect(viaHelpers.result.reads.nav).toBe(true);
+
+        const viaNode = await renderWith(
+          (context) => (context.page as { navNode?: { title: string } }).navNode?.title,
+        );
+        expect(viaNode.result.reads.nav).toBe(true);
+      });
+
+      it('does not count spreading the context, as callable partials do, as a read', async () => {
+        const { result } = await renderWith((context) => Object.keys({ ...context }).length);
+        expect(result.reads).toEqual({ collection: false, nav: false });
+      });
+
+      it('passes copies of the pagination and generated data, and slugify', async () => {
+        const pagination = {
+          pageNumber: 1,
+          totalPages: 1,
+          items: [post],
+          urls: ['/blog'],
+        };
+        const listing: PageModel = { ...blogIndex, pagination };
+        const { context } = await renderWith(
+          (ctx) => (ctx.pagination as { items: PageModel[] }).items.reverse().length,
+          listing,
+        );
+
+        expect(context.pagination).toEqual(pagination);
+        expect(context.pagination).not.toBe(pagination);
+        expect(context.generated).toBeUndefined();
+        expect((context.slugify as (text: string) => string)('Hello World')).toBe('hello-world');
+      });
+
+      it('lets an existing filter with the same name win', async () => {
+        const slugify = () => 'custom';
+        const { context } = await renderWith(() => '', post, {
+          ...mockConfig,
+          eta: { filters: { slugify, pagination: slugify } },
+        });
+
+        expect(context.slugify).toBe(slugify);
+        expect(context.pagination).toBe(slugify);
+      });
+    });
   });
 });

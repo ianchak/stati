@@ -189,6 +189,8 @@ stati build --metrics
 stati build --metrics --metrics-detailed --metrics-html
 ```
 
+**Removed pages:** `stati build` deletes the HTML of pages that no longer exist, such as a deleted post, a tag no post uses or the last page of a listing that got shorter, along with folders left empty. It only deletes files it recorded in `.stati/manifest.json`, so files from `public/` or other tools stay. See [ISG](/core-concepts/isg#removing-pages-that-no-longer-exist).
+
 **Images:** `stati build` reuses generated images from earlier builds and deletes the ones in `dist/_img/` that no page uses any more. It only deletes files it generated, never files from `public/`. The dev server doesn't delete them. `--clean` removes the image cache with the rest of `.stati/`, so the next build encodes every image again. See [Images](/configuration/images#caching-and-cleanup).
 
 ### `stati invalidate`
@@ -363,7 +365,7 @@ The development server automatically rebuilds affected pages and refreshes the b
    12/12 pages rebuilt in 340ms
 ```
 
-Template or partial changes mark the dependent pages as stale in the cache before the rebuild, so those pages always render with the latest layout. Changes to `stati.config.*` are not watched; restart `stati dev` after editing the config.
+Template or partial changes mark the dependent pages as stale in the cache before the rebuild, so those pages always render with the latest layout. A Markdown change rebuilds the page, the pages that list it, and the pages that render the navigation when it changed; a deleted page's HTML is removed. Changes to `stati.config.*` are not watched; restart `stati dev` after editing the config.
 
 ### Preview builds
 

@@ -147,13 +147,13 @@ A blog that works on first run. Its sample posts explain how each part of it wor
 
 **What's included:**
 
-- Markdown posts in `site/posts/`, listed newest first on the home page
-- A tags page and a yearly archive, plus newer, older and related posts under every post
+- Markdown posts in `site/posts/`, listed newest first on the home page, five to a page
+- A tags page with a page for every tag, a yearly archive, and newer, older and related posts under every post
 - An RSS feed, a sitemap and `robots.txt`
-- Open Graph and Twitter tags, and `BlogPosting` structured data on every post
+- Open Graph and Twitter tags on every page
 - Drafts that stay out of the build until you publish them, and a 404 page
 - Light and dark themes with a self-hosted display face, styled from custom properties
-- `helpers/blog.js`, which builds the post index in the `beforeAll` hook and exposes it to templates as filters such as `stati.blogPosts()` and `stati.blogTags()`
+- Listings read from Stati's [collections](/core-concepts/collections): `paginate` splits the home page, `site/tags/[tag].md` generates the tag pages, and `helpers/blog.js` adds filters for related posts and dates; the blog uses no build hooks
 
 The blog template ships its own `stati.config.js` with the feed, sitemap and SEO settings, and adds a `build:drafts` script (`stati build --include-drafts`). With TypeScript it becomes `stati.config.ts`; with Sass or Tailwind its stylesheet is carried over into `src/` so the design stays intact.
 

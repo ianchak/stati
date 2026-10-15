@@ -7,7 +7,7 @@ order: 2
 ## Before you deploy
 
 - Set `baseUrl` in `stati.config.js` to the address the site will live at, without a trailing slash
-- Replace `public/favicon.svg` and `public/images/social-card.png`, or with image tools on, adjust `site/og.eta`
+- Replace `public/favicon.svg`, and with image tools on, adjust the link-preview card in `site/og.eta`
 - Replace or delete these sample pages
 - Run `npm run build` and `npm run preview`, then click through the result
 

@@ -12,7 +12,8 @@
     return text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
   };
 
-  const isHome = stati.page.url === '/';
+  // The home page's later pages (/page/2) get the home page's card
+  const isHome = (stati.pagination?.urls[0] ?? stati.page.url) === '/';
   const title = clamp(isHome ? stati.site.title : stati.page.title || stati.site.title, 90);
   const description = clamp(isHome ? stati.site.description : stati.page.description, 130);
 
