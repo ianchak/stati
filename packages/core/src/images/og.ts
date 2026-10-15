@@ -109,7 +109,8 @@ export async function inlineLocalImages(
   dirs: { staticDir: string; baseDir: string; srcDir: string },
 ): Promise<{ html: string; files: string[] }> {
   const files: string[] = [];
-  const pattern = /(<img\b[^>]*?\bsrc\s*=\s*)("([^"]*)"|'([^']*)')/gi;
+  // `[^<>]` keeps each match inside one tag, so unclosed tags can't make the search quadratic
+  const pattern = /(<img\b[^<>]*?\bsrc\s*=\s*)("([^"]*)"|'([^']*)')/gi;
   const replacements: Array<{ match: string; replacement: string }> = [];
 
   for (const match of html.matchAll(pattern)) {
