@@ -14,7 +14,7 @@ import { PACKAGE_VERSION, createLimiter, defaultConcurrency, loadSharp } from '.
  * Options for {@link createImageProvider}.
  */
 export interface ImageProviderOptions {
-  /** Maximum number of images encoded at once (default: half the CPUs, at most 3) */
+  /** Maximum number of images encoded at once, 1 or more (default: half the CPUs, at most 3) */
   concurrency?: number;
 }
 
@@ -24,13 +24,14 @@ export interface ImageProviderOptions {
  *
  * @param options - Provider options
  * @returns The provider
+ * @throws {RangeError} When `concurrency` is not a whole number of 1 or more
  * @throws {Error} When sharp's native binary cannot be loaded on this platform
  */
 export async function createImageProvider(
   options: ImageProviderOptions = {},
 ): Promise<ImageProvider> {
-  const sharp = await loadSharp();
   const limit = createLimiter(options.concurrency ?? defaultConcurrency());
+  const sharp = await loadSharp();
 
   return {
     apiVersion: 1,

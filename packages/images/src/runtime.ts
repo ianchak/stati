@@ -54,8 +54,14 @@ export function defaultConcurrency(): number {
 
 /**
  * Runs at most `concurrency` tasks at once, in the order they were queued.
+ *
+ * @throws {RangeError} When `concurrency` is not a whole number of 1 or more, with which no
+ *   task would ever start
  */
 export function createLimiter(concurrency: number): <T>(task: () => Promise<T>) => Promise<T> {
+  if (!Number.isInteger(concurrency) || concurrency < 1) {
+    throw new RangeError(`concurrency must be a whole number of 1 or more (got ${concurrency})`);
+  }
   let active = 0;
   const queue: Array<() => void> = [];
 

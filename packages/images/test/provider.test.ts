@@ -142,6 +142,28 @@ describe('createVariants', () => {
     ).rejects.toThrow();
     expect(await readdir(dir)).toEqual(['broken.jpg']);
   });
+
+  it('reports a failed output only once the others are written', async () => {
+    const provider = await createImageProvider({ concurrency: 1 });
+    const sourcePath = await sourceImage('photo.jpg', 400, 200);
+    const last = join(dir, 'photo-300.webp');
+    await expect(
+      provider.createVariants({
+        sourcePath,
+        outputs: [
+          { filePath: join(dir, 'photo-100.webp'), width: 100, format: 'webp', quality: 75 },
+          {
+            filePath: join(dir, 'gone', 'photo-200.webp'),
+            width: 200,
+            format: 'webp',
+            quality: 75,
+          },
+          { filePath: last, width: 300, format: 'webp', quality: 75 },
+        ],
+      }),
+    ).rejects.toThrow();
+    expect(await sharp(last).metadata()).toMatchObject({ width: 300, format: 'webp' });
+  });
 });
 
 describe('renderOgImage', () => {
@@ -195,6 +217,36 @@ describe('renderOgImage', () => {
     });
   });
 
+  it('draws the <img> of a <picture>, as stati.image() writes for responsive images', async () => {
+    const provider = await createImageProvider();
+    const defaults = await provider.loadOgDefaults!();
+    const blue = await sharp({
+      create: { width: 40, height: 20, channels: 3, background: { r: 37, g: 99, b: 235 } },
+    })
+      .png()
+      .toBuffer();
+    const filePath = join(dir, 'picture.png');
+    await provider.renderOgImage!({
+      html: `<div style="display:flex;width:100%;height:100%;background-color:#fff"><picture><source type="image/avif" srcset="/_img/a-480.avif 480w"><img src="data:image/png;base64,${blue.toString('base64')}" srcset="/_img/a-480.png 480w" sizes="100vw" alt="" width="40" height="20" loading="lazy" decoding="async"></picture></div>`,
+      width: 600,
+      height: 315,
+      format: 'png',
+      fonts: defaults.fonts,
+      filePath,
+      templatePath: 'site/og.eta',
+    });
+
+    const { data, info } = await sharp(filePath)
+      .removeAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    const pixel = (x: number, y: number) => [
+      ...data.subarray((y * info.width + x) * 3, (y * info.width + x) * 3 + 3),
+    ];
+    expect(pixel(5, 5)).toEqual([37, 99, 235]);
+    expect(pixel(300, 200)).toEqual([255, 255, 255]);
+  });
+
   it('names the template when Satori rejects its CSS', async () => {
     const provider = await createImageProvider();
     const defaults = await provider.loadOgDefaults!();
@@ -231,5 +283,13 @@ describe('concurrency', () => {
       });
     await Promise.all(Array.from({ length: 8 }, task));
     expect(peak).toBe(2);
+  });
+
+  it('rejects a limit with which no task would ever start', async () => {
+    expect(() => createLimiter(0)).toThrow(
+      'concurrency must be a whole number of 1 or more (got 0)',
+    );
+    expect(() => createLimiter(1.5)).toThrow(RangeError);
+    await expect(createImageProvider({ concurrency: -1 })).rejects.toThrow(RangeError);
   });
 });
