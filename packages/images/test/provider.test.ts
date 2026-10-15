@@ -112,6 +112,22 @@ describe('createVariants', () => {
     });
   });
 
+  it('quantizes PNG fallbacks to a palette when a PNG quality is set', async () => {
+    const provider = await createImageProvider();
+    const sourcePath = await sourceImage('logo.png', 300, 150, { alpha: true });
+    const filePath = join(dir, 'logo-300.png');
+    await provider.createVariants({
+      sourcePath,
+      outputs: [{ filePath, width: 300, format: 'png', quality: 80 }],
+    });
+
+    expect(await sharp(filePath).metadata()).toMatchObject({
+      format: 'png',
+      width: 300,
+      isPalette: true,
+    });
+  });
+
   it('fails for files that are not images', async () => {
     const provider = await createImageProvider();
     const sourcePath = join(dir, 'broken.jpg');
