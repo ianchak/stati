@@ -338,9 +338,11 @@ During `stati dev`, a failed build is also reported in the browser: Stati serves
 The overlay follows your system's light or dark setting. It reloads by itself after the next successful rebuild; see [Browser feedback](/cli/development#browser-feedback).
 
 <figure>
-  <img class="dark:hidden" src="/images/error-overlay-light.webp" alt="The Stati error overlay for a template error: a header with the Stati mark, a Watching for changes status and a Refresh button; the heading Template rendering failed; the message Unknown property stati.generatr; the file, line 48 and route; and the template code with line 48 highlighted." width="1120" height="716" loading="lazy" />
-  <img class="hidden dark:block" src="/images/error-overlay-dark.webp" alt="The Stati error overlay in its dark theme: the heading Template rendering failed, the message Unknown property stati.generatr, the file, line and route, and the template code with the failing line highlighted." width="1120" height="716" loading="lazy" />
-  <figcaption>A misspelled <code>stati.generator</code> in a footer partial, as the overlay reports it.</figcaption>
+
+![The Stati error overlay for a template error: a header with the Stati mark, a Watching for changes status and a Refresh button; the heading Template rendering failed; the message Unknown property stati.generatr; the file, line 48 and route; and the template code with line 48 highlighted.](/images/error-overlay-light.webp){.dark:hidden}
+![The Stati error overlay in its dark theme: the heading Template rendering failed, the message Unknown property stati.generatr, the file, line and route, and the template code with the failing line highlighted.](/images/error-overlay-dark.webp){.hidden .dark:block}
+
+<figcaption>A misspelled <code>stati.generator</code> in a footer partial, as the overlay reports it.</figcaption>
 </figure>
 
 ### Error context

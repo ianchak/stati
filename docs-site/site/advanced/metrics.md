@@ -202,7 +202,7 @@ The `counts` object tracks quantities processed during the build:
 | `assetsCopied` | Number of static assets copied |
 | `templatesLoaded` | Total templates loaded across all rendered pages |
 | `markdownFilesProcessed` | Number of markdown files processed |
-| `imagesGenerated` | Image files generated or copied in this build: responsive variants, Open Graph cards and images next to pages |
+| `imagesGenerated` | Image jobs that ran in this build: one per image's set of responsive versions, per Open Graph card and per image copied from next to a page |
 | `imagesCached` | Image jobs whose files were reused from an earlier build |
 | `imagesFailed` | Image jobs that failed; their pages show the original image and are rebuilt next time |
 

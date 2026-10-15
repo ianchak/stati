@@ -309,7 +309,7 @@ claims:
 
 dogfood:
   title: 'This site is the demo'
-  text: 'stati.build is built with Stati, plus Tailwind for CSS, Prism for code highlighting and FlexSearch behind the search box. The search index, sitemap, robots.txt, RSS feed and per-page script bundles all come from the config below.'
+  text: 'stati.build is built with Stati, plus Tailwind for CSS, Prism for code highlighting and FlexSearch behind the search box. The search index, sitemap, robots.txt, RSS feed, per-page script bundles, responsive images and link preview cards all come from the config below.'
   link:
     {
       text: 'View the source on GitHub',
@@ -332,6 +332,10 @@ dogfood:
           exclude: ['/'],
         },
       ],
+    },
+    images: {
+      responsive: { sizes: '(min-width: 768px) 725px, 100vw' },
+      og: { exclude: ['/404'] },
     },
     isg: { enabled: true, ttlSeconds: 86400, maxAgeCapDays: 30 },
     search: { enabled: true, exclude: ['/404'] },

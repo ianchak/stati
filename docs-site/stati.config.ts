@@ -30,6 +30,8 @@ export default defineConfig({
   markdown: {
     plugins: [
       ['external-links', { externalTarget: '_blank' }],
+      // {.class} after a Markdown image, for the light and dark screenshots
+      'attrs',
       [
         'prism',
         {
@@ -80,6 +82,17 @@ export default defineConfig({
         exclude: ['/'],
       },
     ],
+  },
+  images: {
+    // AVIF and WebP variants of Markdown images (@stati/images)
+    responsive: {
+      // The docs column (max-w-prose) is about 725px wide from 768px up
+      sizes: '(min-width: 768px) 725px, 100vw',
+    },
+    // A link preview card for every page, drawn from the built-in template
+    og: {
+      exclude: ['/404'],
+    },
   },
   isg: {
     enabled: true,
