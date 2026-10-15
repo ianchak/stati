@@ -45,11 +45,18 @@ describe('inlineLocalImages', () => {
   });
 
   it('reads the file an HTML-escaped src names', async () => {
-    await writeFile(join(dirs.staticDir, 'images', 'a&b.png'), Buffer.from([1, 2, 3]));
-    expect(await inlineLocalImages('<img src="/images/a&amp;b.png">', dirs)).toEqual({
-      html: '<img src="data:image/png;base64,AQID">',
-      files: [posix(join(dirs.staticDir, 'images', 'a&b.png'))],
-    });
+    const ampersand = join(dirs.staticDir, 'images', 'a&b.png');
+    const apostrophe = join(dirs.staticDir, 'images', "jo's.png");
+    await writeFile(ampersand, Buffer.from([1, 2, 3]));
+    await writeFile(apostrophe, Buffer.from([1, 2, 3]));
+
+    // Eta writes & as &amp; and ' as &#39;; hexadecimal references decode too
+    const result = await inlineLocalImages(
+      '<img src="/images/a&amp;b.png"><img src="/images/a&#x26;b.png"><img src="/images/jo&#39;s.png">',
+      dirs,
+    );
+    expect(result.html).toBe('<img src="data:image/png;base64,AQID">'.repeat(3));
+    expect(result.files).toEqual([ampersand, ampersand, apostrophe].map(posix));
   });
 
   it('inlines the source of an image Stati generates, which may not exist yet', async () => {
