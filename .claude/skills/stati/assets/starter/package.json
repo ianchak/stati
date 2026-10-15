@@ -8,8 +8,8 @@
     "preview": "stati preview"
   },
   "dependencies": {
-    "@stati/core": "^1.28.0",
-    "@stati/cli": "^1.15.3"
+    "@stati/core": "^1.29.0",
+    "@stati/cli": "^1.15.4"
   },
   "engines": {
     "node": "^22.12.0 || >=24"
