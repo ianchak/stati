@@ -125,4 +125,14 @@ describe('planVariants', () => {
       planVariants({ ...input, providerVersion: '@stati/images@1.1.0' }).fallback.src,
     ).not.toBe(base);
   });
+
+  it('gives identical files under different names their own job, and shares one per name', () => {
+    const hero = planVariants(input);
+    const banner = planVariants({ ...input, filePath: '/public/images/banner.jpg' });
+    expect(banner.key).not.toBe(hero.key);
+    expect(banner.fallback.src).toMatch(/^\/_img\/banner-/);
+
+    // The same file name in another folder writes the same outputs, so the job is shared
+    expect(planVariants({ ...input, filePath: '/site/blog/hero.jpg' }).key).toBe(hero.key);
+  });
 });

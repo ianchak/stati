@@ -118,7 +118,7 @@ export function planCopy(
  * Generated files for one responsive image, grouped for markup.
  */
 export interface VariantPlan {
-  /** Cache key covering the source bytes, options and encoder */
+  /** Cache key covering the output name, source bytes, options and encoder */
   key: string;
   /** Every file to generate */
   outputs: PlannedOutput[];
@@ -162,7 +162,7 @@ export function planVariants(input: VariantPlanInput): VariantPlan {
   const fallbackFormat = fallbackFormatFor(input.format);
   const formats = input.responsive.formats.filter((format) => format !== fallbackFormat);
 
-  const key = createHash('sha256')
+  const hash = createHash('sha256')
     .update(
       JSON.stringify({
         source: input.sourceHash,
@@ -174,7 +174,8 @@ export function planVariants(input: VariantPlanInput): VariantPlan {
       }),
     )
     .digest('hex');
-  const name = `${imageBaseName(input.filePath)}-${key.slice(0, NAME_HASH_LENGTH)}`;
+  const baseName = imageBaseName(input.filePath);
+  const name = `${baseName}-${hash.slice(0, NAME_HASH_LENGTH)}`;
 
   const outputsFor = (format: ImageOutputFormat): PlannedOutput[] =>
     widths.map((width) => {
@@ -193,7 +194,8 @@ export function planVariants(input: VariantPlanInput): VariantPlan {
   const fallbackOutputs = outputsFor(fallbackFormat);
 
   return {
-    key: `variants:${key}`,
+    // The name is part of the key: identical files under different names get their own outputs
+    key: `variants:${baseName}:${hash}`,
     outputs: [...sourceOutputs.flatMap((group) => group.outputs), ...fallbackOutputs],
     sources: sourceOutputs.map((group) => ({
       type: mimeTypeFor(group.format),
