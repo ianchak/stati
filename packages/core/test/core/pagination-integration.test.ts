@@ -92,6 +92,33 @@ describe('pagination', () => {
     expect(await site.exists('dist/page/2.html')).toBe(false);
   });
 
+  it('lists no posts, not another collection, once the last post is deleted', async () => {
+    // An explicit layout keeps the listing template for an index page without posts
+    await site.write(
+      'site/blog/index.md',
+      page({ title: 'Blog', layout: 'blog/index', paginate: { size: 2 } }),
+    );
+    await site.write('site/index.md', page({ title: 'Home', collection: '/blog', paginate: 2 }));
+    await site.write('site/index.eta', LISTING_LAYOUT);
+    await writePosts(site, 3);
+    await site.build();
+
+    for (const i of [1, 2, 3]) {
+      await site.remove(`site/blog/post-${i}.md`);
+    }
+    const { warnings } = await site.build();
+
+    // The blog and the home page read the empty blog collection, not the root collection
+    for (const file of ['dist/blog.html', 'dist/index.html']) {
+      const html = await site.read(file);
+      expect(html).toContain('Page 1 of 1');
+      expect(html).toContain('<ul></ul>');
+    }
+    expect(await site.exists('dist/blog/page/2.html')).toBe(false);
+    expect(await site.exists('dist/page/2.html')).toBe(false);
+    expect(warnings).not.toContainEqual(expect.stringContaining('collection "/blog"'));
+  });
+
   it('rebuilds every listing page when a new post adds a page', async () => {
     await writePosts(site, 4);
     await site.build();

@@ -216,7 +216,8 @@ Which collection `stati.collection` is (core 1.29+):
 1. The one named by `collection: /blog` in the page's frontmatter (`blog`,
    `/blog`, `/blog/` all work). Use this to list another section, such as the
    latest posts on the home page. An unknown name warns and falls back.
-2. Its own, on a collection index page.
+2. Its own, on a collection index page. An `index.md` whose folder has no
+   pages yet reads an empty collection, never another one.
 3. The nearest collection the page belongs to: `/blog/post` and
    `/blog/2025/recap` read `/blog`; top-level pages read the root collection.
 4. `undefined` when it belongs to none. Guard with `stati.collection?.`.

@@ -209,3 +209,24 @@ export function isPathWithinDirectory(baseDir: string, targetPath: string): bool
   // We also allow exact match (resolvedTarget === resolvedBase) for the root
   return resolvedTarget === resolvedBase || resolvedTarget.startsWith(normalizedBase);
 }
+
+/**
+ * The file a page URL is written to, relative to the output directory. The build joins it to
+ * the output directory, which also normalizes separators and `.` segments.
+ *
+ * @param url - The page URL
+ * @returns The output file
+ *
+ * @example
+ * ```typescript
+ * getPageOutputFile('/');          // 'index.html'
+ * getPageOutputFile('/blog/');     // '/blog/index.html'
+ * getPageOutputFile('/blog/post'); // '/blog/post.html'
+ * ```
+ */
+export function getPageOutputFile(url: string): string {
+  if (url === '/') {
+    return 'index.html';
+  }
+  return url.endsWith('/') ? `${url}index.html` : `${url}.html`;
+}

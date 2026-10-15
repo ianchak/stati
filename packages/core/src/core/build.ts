@@ -22,6 +22,7 @@ import {
   getBundlePathsForPage,
   formatBytes,
   isVirtualPage,
+  getPageOutputFile,
 } from './utils/index.js';
 import type { CompiledBundleInfo } from './utils/index.js';
 import { join, dirname, relative, posix } from 'node:path';
@@ -418,14 +419,7 @@ interface ProcessPagesResult {
  * Output file and ISG cache key of a page.
  */
 function getPageOutput(page: PageModel, outDir: string): { outputPath: string; cacheKey: string } {
-  let outputPath: string;
-  if (page.url === '/') {
-    outputPath = join(outDir, 'index.html');
-  } else if (page.url.endsWith('/')) {
-    outputPath = join(outDir, page.url, 'index.html');
-  } else {
-    outputPath = join(outDir, `${page.url}.html`);
-  }
+  const outputPath = join(outDir, getPageOutputFile(page.url));
 
   // Cache key is the output path relative to outDir
   const relativePath = relative(outDir, outputPath).replace(/\\/g, '/');

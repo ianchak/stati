@@ -16,6 +16,7 @@ const {
   mockPathExists,
   mockReaddir,
   mockStat,
+  mockRealpath,
   mockLoadConfig,
   mockLoadContent,
   mockCreateMarkdownProcessor,
@@ -47,6 +48,7 @@ const {
   mockPathExists: vi.fn(),
   mockReaddir: vi.fn(),
   mockStat: vi.fn(),
+  mockRealpath: vi.fn(),
   // core module mocks
   mockLoadConfig: vi.fn(),
   mockLoadContent: vi.fn(),
@@ -85,6 +87,7 @@ vi.mock('fs-extra', () => ({
     pathExists: mockPathExists,
     readdir: mockReaddir,
     stat: mockStat,
+    realpath: mockRealpath,
   },
 }));
 
@@ -213,6 +216,7 @@ describe('build.ts', () => {
     mockRemove.mockResolvedValue(undefined);
     mockReaddir.mockResolvedValue([]);
     mockStat.mockResolvedValue({ size: 1024 });
+    mockRealpath.mockImplementation(async (path: string) => path);
 
     // Setup ISG mocks
     mockLoadCacheManifest.mockResolvedValue(null);
@@ -571,6 +575,49 @@ describe('build.ts', () => {
       await build({ clean: true });
 
       expect(consoleSpy).toHaveBeenCalledWith('Cleaning output directory and ISG cache...');
+    });
+
+    it('warns about a stale page it cannot remove and keeps its entry for the next build', async () => {
+      const logger = {
+        info: vi.fn(),
+        success: vi.fn(),
+        warning: vi.fn(),
+        error: vi.fn(),
+        status: vi.fn(),
+        building: vi.fn(),
+        processing: vi.fn(),
+        stats: vi.fn(),
+      };
+      mockLoadCacheManifest.mockResolvedValue({
+        entries: {
+          '/old.html': {
+            path: '/old.html',
+            inputsHash: 'old',
+            deps: [],
+            tags: [],
+            renderedAt: '2026-01-01T00:00:00.000Z',
+            ttlSeconds: 3600,
+          },
+        },
+      });
+      mockStat.mockResolvedValue({ size: 1024, isFile: () => true });
+      mockRemove.mockImplementation(async (path: string) => {
+        if (path.endsWith('old.html')) {
+          throw new Error('EBUSY: resource busy or locked');
+        }
+      });
+
+      await build({ logger });
+
+      expect(logger.warning).toHaveBeenCalledWith(
+        expect.stringContaining('Could not remove the stale page /old.html'),
+      );
+      expect(mockSaveCacheManifest).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          entries: expect.objectContaining({ '/old.html': expect.anything() }),
+        }),
+      );
     });
 
     it('should handle build with no pages', async () => {

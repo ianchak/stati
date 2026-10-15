@@ -1202,6 +1202,21 @@ describe('templates.ts', () => {
         expect(viaNode.result.reads.nav).toBe(true);
       });
 
+      it('counts replacing a navigation helper as a read and keeps the replacement', async () => {
+        const replaced = await renderWith((context) => {
+          (context.nav as { getTree: () => unknown[] }).getTree = () => [];
+          return 'replaced';
+        });
+        expect(replaced.result.reads.nav).toBe(true);
+
+        const reread = await renderWith((context) => {
+          const nav = context.nav as { getTree: () => unknown[] };
+          nav.getTree = () => [];
+          return nav.getTree().length;
+        });
+        expect(reread.result.html).toBe('<html>0</html>');
+      });
+
       it('does not count spreading the context, as callable partials do, as a read', async () => {
         const { result } = await renderWith((context) => Object.keys({ ...context }).length);
         expect(result.reads).toEqual({ collection: false, nav: false });

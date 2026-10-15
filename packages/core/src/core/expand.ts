@@ -1,4 +1,4 @@
-import { basename, relative } from 'node:path';
+import { basename, join, relative, sep } from 'node:path';
 import type {
   FrontMatter,
   GeneratedPageData,
@@ -8,7 +8,7 @@ import type {
   PaginationData,
   StatiConfig,
 } from '../types/index.js';
-import { resolveSrcDir, slugify } from './utils/index.js';
+import { getPageOutputFile, resolveSrcDir, slugify } from './utils/index.js';
 import { findCollectionPath, getCollections, resolveCollectionPath } from './collections.js';
 
 /**
@@ -276,8 +276,8 @@ function groupByField(
  *   `generate.paginate`, gets one more page per additional slice of its items.
  *
  * Generated and pagination pages are virtual: they are never collection members and are left
- * out of navigation, search and RSS unless they opt in. A virtual page whose URL is already
- * taken is skipped with a warning.
+ * out of navigation, search and RSS unless they opt in. A virtual page whose URL or output
+ * file is already taken is skipped with a warning.
  *
  * @param loaded - Pages loaded from Markdown files
  * @param config - Stati configuration
@@ -334,14 +334,30 @@ export async function expandPages(
     }
   }
 
-  // Taken URLs; later pages that want one are skipped
-  const taken = new Set(pages.map((page) => page.url));
+  // Output files taken so far, with the URL that writes each. A later page that would write
+  // one is skipped: /tags/ and /tags/index both write tags/index.html.
+  const outputFileOf = (url: string) => join(sep, getPageOutputFile(url)).replace(/\\/g, '/');
+  const taken = new Map<string, string>();
+  for (const page of pages) {
+    const file = outputFileOf(page.url);
+    if (!taken.has(file)) {
+      taken.set(file, page.url);
+    }
+  }
   const claim = (url: string, what: string): boolean => {
-    if (taken.has(url)) {
+    const file = outputFileOf(url);
+    const owner = taken.get(file);
+    if (owner === url) {
       warnOnce(`${what} would use the URL ${url}, which another page already has; it is skipped`);
       return false;
     }
-    taken.add(url);
+    if (owner !== undefined) {
+      warnOnce(
+        `${what} would use the URL ${url}, which writes the same file as ${owner} (${file.slice(1)}); it is skipped`,
+      );
+      return false;
+    }
+    taken.set(file, url);
     return true;
   };
 
@@ -453,9 +469,8 @@ export async function expandPages(
         frontMatter.collection = collectionPath;
       }
       const page: PageModel = {
-        slug: template.slug.endsWith(`[${param}]`)
-          ? `${template.slug.slice(0, -param.length - 2)}${group.key}`
-          : group.url,
+        // The template's slug with the key in place of [param]: /tags/[tag] → /tags/css
+        slug: `${template.slug.slice(0, template.slug.lastIndexOf('/') + 1)}${group.key}`,
         url: group.url,
         sourcePath: template.sourcePath,
         frontMatter,

@@ -52,6 +52,17 @@ describe('Hash Utilities', () => {
       expect(hash1).not.toBe(hash2);
     });
 
+    it('should include dates, which unquoted YAML dates parse to', () => {
+      const hash = (updated: Date) =>
+        computeContentHash('', { updated, nested: { dates: [updated] } });
+
+      expect(hash(new Date('2026-01-01'))).toBe(hash(new Date('2026-01-01')));
+      expect(hash(new Date('2026-01-01'))).not.toBe(hash(new Date('2026-01-02')));
+      expect(computeContentHash('', { updated: new Date('2026-01-01') })).not.toBe(
+        computeContentHash('', { updated: {} }),
+      );
+    });
+
     it('should sort frontmatter keys for consistency', () => {
       const content = '# Test';
 

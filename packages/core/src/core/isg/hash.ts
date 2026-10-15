@@ -56,6 +56,8 @@ export function computeContentHash(content: string, frontMatter: Record<string, 
   // Note: We need to sort keys at all levels, not just top level
   const sortKeys = (obj: unknown): unknown => {
     if (obj === null || typeof obj !== 'object') return obj;
+    // A date has no keys to sort; kept as it is, it serializes as its ISO string, not {}
+    if (obj instanceof Date) return obj;
     if (Array.isArray(obj)) return obj.map(sortKeys);
 
     const sorted: Record<string, unknown> = {};

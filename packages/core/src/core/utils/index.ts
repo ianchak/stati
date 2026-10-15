@@ -13,6 +13,8 @@ export {
   copyFile,
   readdir,
   stat,
+  lstat,
+  realpath,
   readFileBuffer,
   readFileBufferSync,
   statSyncOrNull,
@@ -32,6 +34,7 @@ export {
   resolveStaticPath,
   normalizePathForComparison,
   isPathWithinDirectory,
+  getPageOutputFile,
 } from './paths.utils.js';
 
 // Template discovery utilities

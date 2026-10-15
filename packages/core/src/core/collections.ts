@@ -13,6 +13,7 @@ import {
   isVirtualPage,
 } from './utils/index.js';
 import { computeContentHash } from './isg/hash.js';
+import { MARKDOWN_EXTENSION } from '../constants.js';
 
 /**
  * Front matter fields of the collection summary when `collections.summaryFields` is not set.
@@ -63,8 +64,9 @@ export function getCollections(allPages: PageModel[]): CollectionIndex {
 /**
  * Computes every collection of a page list in one pass.
  *
- * A collection belongs to a collection index page (see `isCollectionIndexPage`). The root
- * collection holds the top-level pages; any other collection holds every page below its
+ * A collection belongs to a collection index page (see `isCollectionIndexPage`), or to a page
+ * loaded from an `index.md`, whose collection is empty while its folder holds no pages. The
+ * root collection holds the top-level pages; any other collection holds every page below its
  * folder, at any depth. The index page itself, generated pages and pagination pages are
  * never members.
  *
@@ -76,7 +78,10 @@ export function buildCollections(allPages: PageModel[]): CollectionIndex {
 
   const members = new Map<string, PageModel[]>();
   for (const page of pages) {
-    if (!members.has(page.url) && isCollectionIndexPage(page, allPages)) {
+    if (
+      !members.has(page.url) &&
+      (isFolderIndexPage(page) || isCollectionIndexPage(page, allPages))
+    ) {
       members.set(page.url, []);
     }
   }
@@ -92,6 +97,14 @@ export function buildCollections(allPages: PageModel[]): CollectionIndex {
     byPath.set(path, createCollectionData(path, collectionPages));
   }
   return { byPath };
+}
+
+/**
+ * Whether a page was loaded from a folder's `index.md`. The folder is a collection even before
+ * it holds any pages, so an empty blog lists no posts instead of reading another collection.
+ */
+function isFolderIndexPage(page: PageModel): boolean {
+  return basename(page.sourcePath, MARKDOWN_EXTENSION) === 'index';
 }
 
 /**
@@ -155,17 +168,15 @@ function createCollectionData(
  * @returns Object mapping tag names to arrays of pages
  */
 function groupPagesByTags(pages: PageModel[]): Record<string, PageModel[]> {
-  const pagesByTag: Record<string, PageModel[]> = {};
+  // No prototype, so tags such as `constructor` or `__proto__` are keys like any other
+  const pagesByTag: Record<string, PageModel[]> = Object.create(null);
 
   for (const page of pages) {
     const tags = page.frontMatter.tags;
     if (Array.isArray(tags)) {
       for (const tag of tags) {
         if (typeof tag === 'string') {
-          if (!pagesByTag[tag]) {
-            pagesByTag[tag] = [];
-          }
-          pagesByTag[tag].push(page);
+          (pagesByTag[tag] ??= []).push(page);
         }
       }
     }
@@ -225,9 +236,10 @@ export function findCollectionPath(index: CollectionIndex, value: unknown): stri
  * Finds the collection a page reads as `stati.collection`:
  *
  * 1. The collection its `collection` front matter field names, when that collection exists.
- * 2. Its own collection, when the page is a collection index page.
- * 3. Otherwise the nearest collection the page belongs to: `/blog/post` reads `/blog`, and a
- *    top-level page reads the root collection.
+ * 2. Its own collection, when the page is a collection index page or an `index.md`, even
+ *    when that collection is empty.
+ * 3. Otherwise the nearest collection with pages that the page belongs to: `/blog/post` reads
+ *    `/blog`, and a top-level page reads the root collection.
  *
  * Pagination pages after the first read the collection of the first page. Generated pages
  * read only the collection their template names; expansion sets it in their front matter.
@@ -250,10 +262,15 @@ export function resolveCollectionPath(page: PageModel, allPages: PageModel[]): s
     const first = getFirstPaginationPage(page, allPages);
     return first && !isVirtualPage(first) ? resolveCollectionPath(first, allPages) : undefined;
   }
-  if (index.byPath.has(page.url) && isCollectionIndexPage(page, allPages)) {
+  if (index.byPath.has(page.url)) {
     return page.url;
   }
-  return collectionsContaining(page.url, (path) => index.byPath.has(path)).at(-1);
+  // A page always has pages in the collections it belongs to; only a [param].md template can
+  // sit in an empty one, and site/blog/tags/[tag].md reads /blog even with a tags/index.md
+  return collectionsContaining(
+    page.url,
+    (path) => (index.byPath.get(path)?.pages.length ?? 0) > 0,
+  ).at(-1);
 }
 
 /**
@@ -376,16 +393,15 @@ export function createCollectionView(data: CollectionData, reads: PageReads): Co
   return view;
 }
 
-function copyCollectionValue(value: unknown): unknown {
+function copyCollectionValue(value: object): object {
   if (Array.isArray(value)) {
     return [...value];
   }
-  if (value && typeof value === 'object') {
-    return Object.fromEntries(
-      Object.entries(value).map(([key, entry]) => [key, Array.isArray(entry) ? [...entry] : entry]),
-    );
-  }
-  return value;
+  const copy = Object.fromEntries(
+    Object.entries(value).map(([key, entry]) => [key, Array.isArray(entry) ? [...entry] : entry]),
+  );
+  // pagesByTag has no prototype, and neither has its copy, so any tag stays a plain key
+  return Object.setPrototypeOf(copy, Object.getPrototypeOf(value));
 }
 
 /**

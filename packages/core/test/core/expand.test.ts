@@ -316,4 +316,34 @@ describe('expandPages', () => {
       expect.stringContaining('Page 2 of blog/index.md would use the URL'),
     );
   });
+
+  it('skips a generated page that would write the file of a real page', async () => {
+    // /blog/tags/ and /blog/tags/index both write blog/tags/index.html
+    const tagsIndex = makePage('blog/tags/index.md', {}, { url: '/blog/tags/' });
+    const post = makePage('blog/c.md', { tags: ['Index'] });
+    const template = makePage('blog/tags/[tag].md', { generate: { from: 'tags' } });
+    const pages = await expandPages([...blog(), tagsIndex, post, template], config, logger);
+
+    expect(pages.some((page) => page.url === '/blog/tags/index')).toBe(false);
+    expect(pages.some((page) => page.url === '/blog/tags/css')).toBe(true);
+    expect(warnings).toContainEqual(
+      expect.stringContaining(
+        'blog/tags/[tag].md for "Index" would use the URL /blog/tags/index, which writes the same file as /blog/tags/ (blog/tags/index.html); it is skipped',
+      ),
+    );
+  });
+
+  it('warns about a paginate value that is neither a size nor a mapping', async () => {
+    const listing = makePage('blog/index.md', { paginate: 'five' });
+    const pages = await expandPages(
+      [makePage('index.md'), listing, ...blog().slice(2)],
+      config,
+      logger,
+    );
+
+    expect(warnings).toContainEqual(
+      expect.stringContaining('blog/index.md: paginate must be a page size or { size, path }'),
+    );
+    expect(pages.some((page) => page.pagination)).toBe(false);
+  });
 });

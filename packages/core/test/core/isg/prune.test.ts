@@ -1,9 +1,17 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { mkdtemp, mkdir, readdir, rm, writeFile, access } from 'node:fs/promises';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { mkdtemp, mkdir, readdir, rm, writeFile, access, lstat, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pruneOrphanedPages } from '../../../src/core/isg/prune.js';
+import { remove } from '../../../src/core/utils/index.js';
+import type * as Utils from '../../../src/core/utils/index.js';
 import type { CacheEntry, CacheManifest } from '../../../src/types/index.js';
+
+// The real remove, which a test can make fail once
+vi.mock('../../../src/core/utils/index.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof Utils>();
+  return { ...actual, remove: vi.fn(actual.remove) };
+});
 
 const entry = (path: string): CacheEntry => ({
   path,
@@ -91,5 +99,61 @@ describe('pruneOrphanedPages', () => {
     expect(await access(join(root, 'outside.html')).then(() => true)).toBe(true);
     expect(await exists('data.json')).toBe(true);
     expect(await readdir(join(outDir, 'folder.html'))).toEqual(['inner.txt']);
+  });
+
+  it('keeps the entry of a page it cannot delete, so the next build deletes it', async () => {
+    await writeOutput('blog/post.html');
+    const manifest: CacheManifest = {
+      entries: { '/blog/post.html': entry('/blog/post.html') },
+    };
+    vi.mocked(remove).mockRejectedValueOnce(new Error('EBUSY: resource busy or locked'));
+
+    const failed = await pruneOrphanedPages(manifest, new Set(), outDir);
+
+    expect(failed).toEqual({
+      removed: [],
+      failed: [{ key: '/blog/post.html', message: 'EBUSY: resource busy or locked' }],
+    });
+    expect(Object.keys(manifest.entries)).toEqual(['/blog/post.html']);
+    expect(await exists('blog/post.html')).toBe(true);
+
+    const retried = await pruneOrphanedPages(manifest, new Set(), outDir);
+
+    expect(retried).toEqual({ removed: ['/blog/post.html'], failed: [] });
+    expect(manifest.entries).toEqual({});
+    expect(await exists('blog')).toBe(false);
+  });
+
+  // Junctions on Windows, which need no extra rights; symbolic links elsewhere
+  const linkFolder = (target: string, path: string) => symlink(target, path, 'junction');
+
+  it('leaves pages in a folder linked to somewhere outside the output directory', async () => {
+    const outside = join(root, 'shared');
+    await mkdir(outside);
+    await writeFile(join(outside, 'post.html'), 'not ours');
+    await linkFolder(outside, join(outDir, 'blog'));
+    const manifest: CacheManifest = {
+      entries: { '/blog/post.html': entry('/blog/post.html') },
+    };
+
+    const result = await pruneOrphanedPages(manifest, new Set(), outDir);
+
+    expect(result).toEqual({ removed: [], failed: [] });
+    expect(manifest.entries).toEqual({});
+    expect(await readdir(outside)).toEqual(['post.html']);
+  });
+
+  it('deletes a page through a folder linked inside the output directory, but keeps the link', async () => {
+    await writeOutput('real/post.html');
+    await linkFolder(join(outDir, 'real'), join(outDir, 'alias'));
+    const manifest: CacheManifest = {
+      entries: { '/alias/post.html': entry('/alias/post.html') },
+    };
+
+    const result = await pruneOrphanedPages(manifest, new Set(), outDir);
+
+    expect(result).toEqual({ removed: ['/alias/post.html'], failed: [] });
+    expect(await readdir(join(outDir, 'real'))).toEqual([]);
+    expect((await lstat(join(outDir, 'alias'))).isSymbolicLink()).toBe(true);
   });
 });

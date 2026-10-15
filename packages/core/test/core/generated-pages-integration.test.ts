@@ -271,6 +271,45 @@ describe('generated pages', () => {
     expect(await site.read('dist/blog/tags/css.html')).toContain('Hand-written CSS page');
   });
 
+  it('skips a generated page that would write the file of a real page', async () => {
+    // /blog/tags/ and /blog/tags/index both write blog/tags/index.html
+    await site.write(
+      'site/blog/tags/index.md',
+      page({ title: 'All tags', layout: 'layout', permalink: '/blog/tags/' }),
+    );
+    await site.write(
+      'site/blog/third.md',
+      page({ title: 'Third', publishedAt: '2026-03-01', tags: ['Index'] }),
+    );
+    const { warnings } = await site.build();
+
+    expect(warnings).toContainEqual(
+      expect.stringContaining(
+        'would use the URL /blog/tags/index, which writes the same file as /blog/tags/',
+      ),
+    );
+    expect(await site.read('dist/blog/tags/index.html')).toContain('<title>All tags</title>');
+  });
+
+  it('builds tags named like object properties', async () => {
+    await site.write(
+      'site/blog/third.md',
+      page({ title: 'Third', publishedAt: '2026-03-01', tags: ['constructor', 'toString'] }),
+    );
+    await site.write(
+      'site/blog/index.eta',
+      `<html><body><% const byTag = stati.collection.pagesByTag; %><%=
+Object.keys(byTag).sort().map((tag) => tag + '=' + byTag[tag].length).join(',') %></body></html>`,
+    );
+    await site.build();
+
+    expect(await site.read('dist/blog.html')).toContain(
+      'CSS=2,JavaScript=1,constructor=1,toString=1',
+    );
+    expect(await site.exists('dist/blog/tags/constructor.html')).toBe(true);
+    expect(await site.exists('dist/blog/tags/tostring.html')).toBe(true);
+  });
+
   it('leaves generated pages out of navigation unless the template opts in', async () => {
     await site.write(
       'site/layout.eta',
@@ -380,6 +419,32 @@ describe('collections.generate', () => {
 
     expect(rendered).toEqual(['/authors/ada']);
     expect(await site.read('dist/authors/ada.html')).toContain('<p>Two</p>');
+  });
+
+  const useData = (data: Record<string, unknown>) =>
+    vi.mocked(loadConfig).mockImplementation(async () =>
+      baseConfig({
+        collections: {
+          generate: () => [{ url: '/authors/ada', template: 'authors/[author].md', data }],
+        },
+      }),
+    );
+
+  it('rebuilds a page when a date in its data changes', async () => {
+    useData({ bio: 'Same', joined: new Date('2026-01-01') });
+    await site.build();
+
+    useData({ bio: 'Same', joined: new Date('2026-02-01') });
+    const { rendered } = await site.build();
+
+    expect(rendered).toEqual(['/authors/ada']);
+  });
+
+  it('rebuilds a page whose data cannot be serialized on every build', async () => {
+    useData({ bio: 'Same', id: BigInt(1) });
+    await site.build();
+
+    expect((await site.build()).rendered).toEqual(['/authors/ada']);
   });
 
   it('passes the content pages without templates or generated pages', async () => {

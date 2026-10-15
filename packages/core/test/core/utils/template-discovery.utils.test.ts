@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  getFirstPaginationPage,
   isCollectionIndexPage,
   isVirtualPage,
 } from '../../../src/core/utils/template-discovery.utils.js';
@@ -133,6 +134,19 @@ describe('isCollectionIndexPage', () => {
       const aboutTwo = later('/about/page/2', '/about');
       expect(isCollectionIndexPage(aboutTwo, [page('/'), about, aboutTwo])).toBe(false);
       expect(isCollectionIndexPage(later('/x/page/2', '/x'), [page('/')])).toBe(false);
+    });
+
+    it('finds the first page of a listing only from a later page', () => {
+      const blog: PageModel = {
+        ...page('/blog'),
+        pagination: { pageNumber: 1, totalPages: 2, items: [], urls: ['/blog', '/blog/page/2'] },
+      };
+      const two = later('/blog/page/2', '/blog');
+      const pages = [page('/'), blog, two];
+
+      expect(getFirstPaginationPage(two, pages)).toBe(blog);
+      expect(getFirstPaginationPage(blog, pages)).toBeUndefined();
+      expect(getFirstPaginationPage(page('/about'), pages)).toBeUndefined();
     });
 
     it('can tell virtual pages from pages loaded from Markdown', () => {

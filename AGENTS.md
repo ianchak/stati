@@ -130,8 +130,8 @@ All config blocks live under `defineConfig()`. Key sections:
 
 All utilities in `packages/core/src/core/utils/` follow the `*.utils.ts` naming convention:
 
-- **fs.utils.ts**: `ensureDir`, `readFile`, `writeFile`, `pathExists`, `remove`, `stat`, `copyFile`, `readdir`, `readFileBuffer`, `readFileBufferSync`, `statSyncOrNull`, `listFilesRecursiveSync` - safe filesystem helpers with consistent error handling (the sync ones serve template helpers such as `stati.image()`, which must stay synchronous).
-- **paths.utils.ts**: `resolveSrcDir`, `resolveOutDir`, `resolveStaticDir`, `resolveCacheDir`, `normalizePathForComparison`, `isPathWithinDirectory` - path resolution and cross-platform comparison utilities.
+- **fs.utils.ts**: `ensureDir`, `readFile`, `writeFile`, `pathExists`, `remove`, `stat`, `lstat`, `realpath`, `copyFile`, `readdir`, `readFileBuffer`, `readFileBufferSync`, `statSyncOrNull`, `listFilesRecursiveSync` - safe filesystem helpers with consistent error handling (the sync ones serve template helpers such as `stati.image()`, which must stay synchronous).
+- **paths.utils.ts**: `resolveSrcDir`, `resolveOutDir`, `resolveStaticDir`, `resolveCacheDir`, `normalizePathForComparison`, `isPathWithinDirectory`, `getPageOutputFile` - path resolution, cross-platform comparison, and the output file of a page URL.
 - **slugify.utils.ts**: `slugify(text)` - URL-safe slug generation.
 - **html.utils.ts**: `findHeadClosePosition`, `injectBeforeHeadClose` - HTML manipulation for SEO/meta tag injection.
 - **navigation-helpers.utils.ts**: `createNavigationHelpers` - creates navigation helper object with `findNode`, `getChildren`, `getParent`, `getSiblings`, `getSubtree`, `getBreadcrumbs`, `getCurrentNode` methods.

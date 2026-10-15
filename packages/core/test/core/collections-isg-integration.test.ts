@@ -146,6 +146,42 @@ describe('collection-aware ISG', () => {
     ]);
   });
 
+  describe('with a date in front matter', () => {
+    // Unquoted, so YAML reads it as a Date
+    const second = (updated: string) =>
+      `---\ntitle: Second\ndescription: two\npublishedAt: '2026-02-01'\nupdated: ${updated}\n---\nBody\n`;
+
+    it('rebuilds the post when the date changes', async () => {
+      await site.write('site/blog/second.md', second('2026-02-05'));
+      await site.build();
+
+      await site.write('site/blog/second.md', second('2026-02-06'));
+
+      expect((await site.build()).rendered).toEqual(['/blog/second']);
+    });
+
+    it('rebuilds the listings when the date is a summary field', async () => {
+      vi.mocked(loadConfig).mockImplementation(async () => ({
+        srcDir: 'site',
+        outDir: 'dist',
+        staticDir: 'public',
+        site: { title: 'Fixture', baseUrl: 'https://example.com' },
+        collections: { summaryFields: ['title', 'updated'] },
+      }));
+      await site.write('site/blog/second.md', second('2026-02-05'));
+      await site.build();
+
+      await site.write('site/blog/second.md', second('2026-02-06'));
+
+      expect(sorted((await site.build()).rendered)).toEqual([
+        '/blog',
+        '/blog/first',
+        '/blog/second',
+        '/blog/third',
+      ]);
+    });
+  });
+
   it('rebuilds the new post and the pages that list its collection when a post is added', async () => {
     await site.build();
 

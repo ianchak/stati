@@ -337,7 +337,8 @@ hacks), and the dev server forced a full rebuild on navigation changes.
 
 `stati build` (1.29+) deletes the HTML of pages that no longer exist, plus
 emptied folders, and only files the manifest records; `public/` and other tools'
-files survive.
+files survive, as does anything a linked folder reaches outside `dist/`. A file
+it cannot delete keeps its manifest entry and is retried on the next build.
 
 Invalidation:
 

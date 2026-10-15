@@ -102,6 +102,31 @@ describe('buildCollections', () => {
     expect(getCollections(list)).toBe(getCollections(list));
     expect(getCollections([...list])).not.toBe(getCollections(list));
   });
+
+  it('groups tags named like object properties', () => {
+    const tagged = makePage('/blog/odd', { tags: ['constructor', '__proto__', 'toString'] });
+    const { pagesByTag } = buildCollections([home, blog, post, tagged]).byPath.get('/blog')!;
+    const pagesTagged = (tag: string) => pagesByTag[tag];
+
+    expect(Object.keys(pagesByTag).sort()).toEqual(['__proto__', 'a', 'constructor', 'toString']);
+    expect(urls(pagesTagged('constructor')!)).toEqual(['/blog/odd']);
+    expect(urls(pagesTagged('__proto__')!)).toEqual(['/blog/odd']);
+    expect(pagesTagged('valueOf')).toBeUndefined();
+  });
+
+  it('gives a folder index page an empty collection before the folder has pages', () => {
+    const emptyBlog = { ...makePage('/blog'), sourcePath: '/site/blog/index.md' };
+    const { byPath } = buildCollections([home, about, emptyBlog]);
+
+    expect(byPath.get('/blog')).toMatchObject({
+      pages: [],
+      children: [],
+      recentPages: [],
+      metadata: { totalPages: 0, hasChildren: false, collectionPath: '/blog' },
+    });
+    // A page that is not an index.md needs pages below it
+    expect(buildCollections([home, about, makePage('/blog')]).byPath.has('/blog')).toBe(false);
+  });
 });
 
 describe('resolveCollectionPath', () => {
@@ -141,6 +166,27 @@ describe('resolveCollectionPath', () => {
     expect(resolveCollectionPath(page, [...all, page])).toBe('/blog');
     expect(findCollectionPath(getCollections(all), 42)).toBeUndefined();
     expect(findCollectionPath(getCollections(all), '')).toBeUndefined();
+    // Without a home page there is no root collection to name
+    expect(findCollectionPath(getCollections([blog, post]), '/')).toBeUndefined();
+  });
+
+  it('keeps an empty collection for its index page and pages that name it', () => {
+    // site/posts/index.md after the last post is deleted
+    const posts = { ...makePage('/posts'), sourcePath: '/site/posts/index.md' };
+    const latest = makePage('/latest', { collection: '/posts' });
+    const list = [home, about, posts, latest];
+
+    expect(resolveCollectionPath(posts, list)).toBe('/posts');
+    expect(resolveCollectionPath(latest, list)).toBe('/posts');
+  });
+
+  it('gives a template the nearest collection with pages, past an empty one', () => {
+    const tagsIndex = { ...makePage('/blog/tags'), sourcePath: '/site/blog/tags/index.md' };
+    const template = makePage('/blog/tags/[tag]');
+    const list = [...all, tagsIndex];
+
+    expect(resolveCollectionPath(tagsIndex, list)).toBe('/blog/tags');
+    expect(resolveCollectionPath(template, list)).toBe('/blog');
   });
 
   it('gives later pagination pages the collection of the first page', () => {
@@ -197,6 +243,18 @@ describe('createCollectionView', () => {
     expect(second.metadata.totalPages).toBe(2);
     // Within one render, a property returns the same copy each time
     expect(first.recentPages).toBe(first.recentPages);
+  });
+
+  it('keeps tags named like object properties plain keys in the copy', () => {
+    const tagged = makePage('/blog/odd', { tags: ['constructor'] });
+    const shared = buildCollections([blog, older, tagged]).byPath.get('/blog')!;
+    const view = createCollectionView(shared, { collection: false, nav: false });
+    const byTag = view.pagesByTag;
+    const tag = (name: string) => byTag[name];
+
+    expect(urls(tag('constructor')!)).toEqual(['/blog/odd']);
+    expect(tag('toString')).toBeUndefined();
+    expect(Object.getPrototypeOf(view.metadata)).toBe(Object.prototype);
   });
 
   it('keeps assignments within the view', () => {

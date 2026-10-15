@@ -67,7 +67,7 @@ Each template gets its own copy of the lists, so sorting or filtering them in pl
 ## Which collection a page reads
 
 1. **The one its front matter names.** `collection: /blog` gives any page the blog collection, such as the latest posts on the home page. The value is the URL of a collection's index page; `blog`, `/blog` and `/blog/` all work.
-2. **Its own,** on a collection index page: `site/blog/index.md` reads the blog collection.
+2. **Its own,** on a collection index page: `site/blog/index.md` reads the blog collection. Until the folder has pages, that collection is empty, so the listing shows nothing rather than another collection's pages.
 3. **The nearest one it belongs to,** on other pages: `/blog/hello-world` and `/blog/2025/recap` read the blog collection, and top-level pages such as `/about` read the root collection.
 4. **None:** a page that belongs to no collection, such as `/notes/draft` without a `site/notes/index.md`, gets `undefined`. Guard with `stati.collection?.` in shared layouts.
 
@@ -185,7 +185,7 @@ With posts tagged `CSS` and `JavaScript`, this creates `/blog/tags/css` and `/bl
 - **Keys:** `generate.from` names a front matter field of the pages in the template's collection. Lists such as `tags` give a page per value, and so do single values such as `author: ada`. Each value becomes a key through the same slugify Stati uses for heading anchors: `CSS` becomes `css`, `Node.js` becomes `node-js`.
 - **Collection:** the template reads the collection its `collection` front matter names, or else the nearest collection its folder belongs to. `site/blog/tags/[tag].md` reads `/blog`, even when `site/blog/tags/index.md` exists, because that folder holds no pages of its own.
 - **URLs:** the file's path, with the bracketed name replaced by the key. To put the pages elsewhere, write the bracketed name into `permalink`: `permalink: /topics/[tag]/` gives `/topics/css/`.
-- **Collisions:** values that slugify to the same key share one page, under the first value seen (newest page first), with a warning. Values whose key comes out empty get no page, also with a warning: slugify keeps Latin letters and digits only, so `!!!` or a tag written in another script has no key. Give such pages URLs of your own with [`collections.generate`](#pages-from-data). When another page already has a generated page's URL, that page wins.
+- **Collisions:** values that slugify to the same key share one page, under the first value seen (newest page first), with a warning. Values whose key comes out empty get no page, also with a warning: slugify keeps Latin letters and digits only, so `!!!` or a tag written in another script has no key. Give such pages URLs of your own with [`collections.generate`](#pages-from-data). When another page already has a generated page's URL, or writes the same file (`/tags/` and `/tags/index` both write `tags/index.html`), that page wins.
 - **Drafts:** a tag only drafts use gets a page only when you build with `--include-drafts`.
 
 Templates read the page's key and items as `stati.generated`:
