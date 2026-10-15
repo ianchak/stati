@@ -178,7 +178,7 @@ Cards are drawn by [Satori](https://github.com/vercel/satori), which supports a 
 
 - Inline `style` attributes only: no classes, no `<style>` blocks, no Sass.
 - Flexbox layout. Every element with more than one child needs `display:flex`; grid is not supported.
-- Images from your site work: `<img src="/images/logo.png">` is read from `public/`.
+- Images from your site work: `<img src="/images/logo.png">` is read from `public/`, and a relative `src` from the template's folder. `stati.image()` works as it does in layouts, so a card can show a post's cover image; cards always use the original file.
 
 A template Satori can't draw stops the build in the dev server's error overlay; in production builds the page is written without a generated image and the error is logged.
 

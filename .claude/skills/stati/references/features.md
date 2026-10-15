@@ -57,7 +57,10 @@ URL.
 - **CSS:** Satori's subset. Inline `style` attributes only (no classes, `<style>`
   or Sass), flexbox only, and every element with more than one child needs
   `display:flex`. Unsupported CSS fails the dev build with the template path.
-  Local `<img src="/...">` is read from `public/`; inline `<svg>` works.
+  Local `<img src="/...">` is read from `public/`, a relative `src` from the
+  template's folder; inline `<svg>` works. `stati.image()` resolves as in layouts
+  (relative to the page), and the card inlines the original file, never a
+  generated variant.
 - **Fonts:** Archivo 800, Inter 400/500 and Fira Code 400 are bundled (Latin,
   Latin-1, Latin Extended-A). Add more with
   `images.og.fonts: [{ name, path, weight?, style? }]`, paths relative to the
