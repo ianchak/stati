@@ -189,6 +189,8 @@ stati build --metrics
 stati build --metrics --metrics-detailed --metrics-html
 ```
 
+**Images:** `stati build` reuses generated images from earlier builds and deletes the ones in `dist/_img/` that no page uses any more. It only deletes files it generated, never files from `public/`. The dev server doesn't delete them. `--clean` removes the image cache with the rest of `.stati/`, so the next build encodes every image again. See [Images](/configuration/images#caching-and-cleanup).
+
 ### `stati invalidate`
 
 Invalidate cache entries by tag, path, pattern, or age.

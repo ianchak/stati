@@ -44,6 +44,9 @@ interface TemplateContext {
   assets: StatiAssets; // Bundle paths ([] when none) and the search index path
   propValue: (...args) => string; // Class/attribute value builder (added at runtime)
   generateSEO: (tags?: string[]) => string; // SEO tag generator (added at runtime)
+  image: (src: string, options?: ImageOptions) => string; // Sized, lazy-loaded <img> or <picture>
+  ogImage: GeneratedOgImage | undefined; // The page's generated Open Graph image, with images.og
+  og: { width: number; height: number } | undefined; // Card size, only while og.eta renders
   generator: { version: string }; // Stati core version
   props: Record<string, unknown> | undefined; // Data passed to a callable partial
   // ...plus one function per entry in eta.filters, e.g. stati.formatDate()
@@ -71,6 +74,22 @@ interface SiteConfig {
   baseUrl: string;
   defaultLocale?: string;
   description?: string;
+}
+
+interface ImageOptions {
+  alt?: string;
+  sizes?: string;
+  priority?: boolean;
+  class?: string;
+  title?: string;
+}
+
+interface GeneratedOgImage {
+  url: string; // Absolute
+  path: string; // Root-relative
+  width: number;
+  height: number;
+  alt?: string; // The page title
 }
 
 interface StatiAssets {
@@ -159,6 +178,38 @@ stati.propValue(...args: PropValueArg[]): string
 - `propValue()` also tracks Tailwind classes for inventory when Tailwind integration is enabled, ensuring dynamically-generated classes are included in the CSS build.
 
 For more details on Eta template limitations and best practices, see [Template Configuration](/configuration/templates).
+
+### `stati.image(src, options?)`
+
+Renders an image from a layout or partial the way Stati renders Markdown images: with its `width` and `height`, `loading="lazy"` and `decoding="async"`, and as a `<picture>` with AVIF and WebP versions when [`images.responsive`](/configuration/images#responsive-images) is on. It returns HTML, so print it with `<%~ %>`:
+
+```eta
+<%~ stati.image(stati.page.cover, { alt: stati.page.coverAlt, priority: true }) %>
+```
+
+| Option | Description |
+|---|---|
+| `alt` | Alternative text. Use `''` for a decorative image; Stati warns when `alt` is missing. |
+| `priority` | Load eagerly with `fetchpriority="high"`, for the main image above the fold. |
+| `sizes` | The `sizes` attribute for responsive images. |
+| `class`, `title` | Added to the `<img>`. |
+
+- A path that starts with `/` is read from `public/`; any other path is read next to the page's Markdown file and copied to `/_img/`.
+- An empty `src` returns an empty string, so an optional cover image needs no guard.
+- The helper is synchronous, so it works anywhere in a template.
+- With `images: false`, it returns a plain `<img>` with the attributes you passed.
+
+### `stati.ogImage`
+
+With [`images.og`](/configuration/images#open-graph-images), the page's generated card: `url` (absolute), `path`, `width`, `height` and `alt`. It is `undefined` when the page has no generated card, for example because its front matter sets its own image. Stati's SEO injection and `stati.generateSEO()` already write the tags, so you only need this in a layout that writes its own Open Graph tags:
+
+```eta
+<% if (stati.ogImage) { %>
+  <meta property="og:image" content="<%= stati.ogImage.url %>">
+<% } %>
+```
+
+In an `og.eta` card template, `stati.og` holds the card's `width` and `height`.
 
 ## Text processing utilities
 

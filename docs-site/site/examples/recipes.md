@@ -771,26 +771,22 @@ export default defineConfig({
 
     // Custom markdown-it configuration
     configure: (md) => {
-      // Customize renderer rules
+      // Customize renderer rules. Wrap the default image rule instead of
+      // replacing it: Stati's rule adds width, height and lazy loading, and
+      // with images.responsive it writes a <picture> with srcset.
       const defaultImageRender = md.renderer.rules.image || ((tokens, idx, options, env, self) => self.renderToken(tokens, idx, options));
 
       md.renderer.rules.image = (tokens, idx, options, env, self) => {
         const token = tokens[idx];
-        const srcIndex = token.attrIndex('src');
-        const altIndex = token.attrIndex('alt');
-        const titleIndex = token.attrIndex('title');
-
-        const src = srcIndex >= 0 ? token.attrs[srcIndex][1] : '';
         const alt = token.content;
-        const title = titleIndex >= 0 ? token.attrs[titleIndex][1] : '';
+
+        // Attributes set on the token, such as a class, are kept on the <img>
+        token.attrJoin('class', 'responsive-image');
+        const image = defaultImageRender(tokens, idx, options, env, self);
 
         return `
           <figure class="image-figure">
-            <img src="${md.utils.escapeHtml(src)}"
-                 alt="${md.utils.escapeHtml(alt)}"
-                 ${title ? `title="${md.utils.escapeHtml(title)}"` : ''}
-                 loading="lazy"
-                 class="responsive-image">
+            ${image}
             ${alt ? `<figcaption>${md.utils.escapeHtml(alt)}</figcaption>` : ''}
           </figure>
         `;
@@ -817,6 +813,8 @@ export default defineConfig({
   }
 });
 ```
+
+An image rule that doesn't call `defaultImageRender` replaces Stati's own, and Markdown images lose their sizes, lazy loading and [responsive versions](/configuration/images).
 
 ## Development workflow
 

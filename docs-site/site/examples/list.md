@@ -21,9 +21,11 @@ A minimal Stati site demonstrating core concepts:
 - **Best for:** Getting started, understanding Stati fundamentals
 
 <figure>
-  <img class="dark:hidden" src="/images/blank-template-light.webp" alt="The blank starter's homepage: a header with the site name, a large Welcome to your Stati site heading, and a numbered list of getting-started steps." width="1120" height="716" loading="lazy" />
-  <img class="hidden dark:block" src="/images/blank-template-dark.webp" alt="The blank starter's homepage in its dark theme: a header with the site name, a large Welcome to your Stati site heading, and a numbered list of getting-started steps." width="1120" height="716" loading="lazy" />
-  <figcaption>The blank starter homepage, in the theme that matches your system setting.</figcaption>
+
+![The blank starter's homepage: a header with the site name, a large Welcome to your Stati site heading, and a numbered list of getting-started steps.](/images/blank-template-light.webp){.dark:hidden}
+![The blank starter's homepage in its dark theme: a header with the site name, a large Welcome to your Stati site heading, and a numbered list of getting-started steps.](/images/blank-template-dark.webp){.hidden .dark:block}
+
+<figcaption>The blank starter homepage, in the theme that matches your system setting.</figcaption>
 </figure>
 
 **Key Files:**
@@ -59,9 +61,11 @@ A complete blog, ready to write in:
 - **Best for:** Starting a personal or team blog, and seeing how hooks and filters share data across pages
 
 <figure>
-  <img class="dark:hidden" src="/images/blog-template-light.webp" alt="The blog starter's homepage: the blog name and navigation, a large Hi, this is your new blog heading in a serif display face, and a dated list of posts with descriptions." width="1120" height="716" loading="lazy" />
-  <img class="hidden dark:block" src="/images/blog-template-dark.webp" alt="The blog starter's homepage in its dark theme: the blog name and navigation, a large Hi, this is your new blog heading in a serif display face, and a dated list of posts with descriptions." width="1120" height="716" loading="lazy" />
-  <figcaption>The blog starter homepage, in the theme that matches your system setting.</figcaption>
+
+![The blog starter's homepage: the blog name and navigation, a large Hi, this is your new blog heading in a serif display face, and a dated list of posts with descriptions.](/images/blog-template-light.webp){.dark:hidden}
+![The blog starter's homepage in its dark theme: the blog name and navigation, a large Hi, this is your new blog heading in a serif display face, and a dated list of posts with descriptions.](/images/blog-template-dark.webp){.hidden .dark:block}
+
+<figcaption>The blog starter homepage, in the theme that matches your system setting.</figcaption>
 </figure>
 
 **Key Files:**
@@ -93,9 +97,11 @@ A complete documentation site, ready to fill in:
 - **Best for:** Documenting a library, CLI, API or product, and seeing how a hook and filters build site-wide navigation
 
 <figure>
-  <img class="dark:hidden" src="/images/docs-template-light.webp" alt="A page of the docs starter: a header with the site name, links, a search box and a theme toggle; a sidebar of sections with the current page highlighted; and the Sidebar and sections page with breadcrumbs, its title, a lead paragraph and a collapsible On this page list." width="1120" height="716" loading="lazy" />
-  <img class="hidden dark:block" src="/images/docs-template-dark.webp" alt="The same docs starter page in its dark theme: a header with search and a theme toggle, a sidebar of sections, and the Sidebar and sections page with breadcrumbs, title and lead paragraph." width="1120" height="716" loading="lazy" />
-  <figcaption>A page of the docs starter, in the theme that matches your system setting.</figcaption>
+
+![A page of the docs starter: a header with the site name, links, a search box and a theme toggle; a sidebar of sections with the current page highlighted; and the Sidebar and sections page with breadcrumbs, its title, a lead paragraph and a collapsible On this page list.](/images/docs-template-light.webp){.dark:hidden}
+![The same docs starter page in its dark theme: a header with search and a theme toggle, a sidebar of sections, and the Sidebar and sections page with breadcrumbs, title and lead paragraph.](/images/docs-template-dark.webp){.hidden .dark:block}
+
+<figcaption>A page of the docs starter, in the theme that matches your system setting.</figcaption>
 </figure>
 
 **Key Files:**

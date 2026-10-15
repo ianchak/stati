@@ -27,9 +27,17 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            docs-site/package-lock.json
 
       - name: Install dependencies
         run: npm ci
+
+      # The check runs the dev server on docs-site, which needs its own packages,
+      # such as @stati/images (images.responsive and images.og) and its Markdown plugins
+      - name: Install docs-site dependencies
+        run: npm ci --prefix docs-site
 
       - name: Build core package
         run: npm run build -w packages/core

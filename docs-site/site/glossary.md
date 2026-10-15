@@ -155,6 +155,18 @@ An XML file listing all site URLs with metadata, auto-generated during productio
 
 An XML file for content syndication, configured via `rss.feeds` with content patterns, filters, and item mapping.
 
+## `@stati/images`
+
+An optional package that adds the image features needing an encoder: responsive AVIF and WebP images (`images.responsive`) and generated Open Graph cards (`images.og`). Without it, Stati still adds sizes and lazy loading to Markdown images. See [Images](/configuration/images).
+
+## Open Graph card
+
+The image social networks and chat apps show when someone shares a page. With `images.og`, Stati draws one for every page from an `og.eta` template, or from the card built into `@stati/images`.
+
+## `/_img/`
+
+The output folder for images Stati copies from `site/` and for the files it generates, such as responsive variants and Open Graph cards. Names change with the content, so these files can be cached forever.
+
 ## Scaffolder (`create-stati`)
 
 The interactive CLI tool that creates new Stati projects with styling options, TypeScript support, and Git initialization.

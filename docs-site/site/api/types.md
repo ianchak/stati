@@ -65,6 +65,9 @@ interface StatiConfig {
   /** TypeScript compilation settings */
   typescript?: TypeScriptConfig;
 
+  /** Image sizes, responsive images and Open Graph cards; false turns the built-in handling off */
+  images?: false | ImagesConfig;
+
   /** Development server configuration */
   dev?: {
     port?: number;
@@ -371,6 +374,9 @@ The declared interface is narrower than what templates receive. At render time t
 - `generateSEO(tags?)`: renders SEO tags for manual placement
 - `propValue(...values)`: builds space-separated attribute values
 - `props`: the props passed to a callable partial (`undefined` otherwise)
+- `image(src, options?)`: renders a sized, lazy-loaded image, responsive with `images.responsive` (see [Images in templates](/configuration/images#images-in-templates))
+- `ogImage`: the page's generated Open Graph image (`GeneratedOgImage`), when `images.og` made one
+- `og`: the card's `width` and `height`, only while an `og.eta` card template renders
 - every function from `eta.filters`, under its own name
 - `partials.<name>`: each partial's rendered HTML, which can also be called with props (`stati.partials.card({ title: 'Hi' })`)
 
@@ -427,6 +433,12 @@ interface CacheEntry {
 
   /** Maximum age cap for this page in days */
   maxAgeCapDays?: number;
+
+  /** Files found while rendering, such as the images the page shows; their content is part of inputsHash */
+  assetDeps?: readonly string[];
+
+  /** Generated image files the page references, relative to the output directory */
+  images?: readonly string[];
 }
 ```
 
@@ -484,6 +496,77 @@ interface BundleConfig {
 ```
 
 > **Note:** Source maps, hashing, and minification are automatic based on build mode. In development, source maps are enabled and hash/minify are disabled. In production, source maps are disabled and hash/minify default to true but can be set to false for debugging.
+
+### Image configuration
+
+Types for the `images` block. `responsive` and `og` need the `@stati/images` package. See [Images](/configuration/images) for defaults and behavior.
+
+```typescript
+interface ImagesConfig {
+  /** Load the first image near the top of a page eagerly with high fetch priority (default: true) */
+  eagerFirst?: boolean;
+  /** AVIF and WebP variants with srcset and <picture> */
+  responsive?: boolean | ResponsiveImagesConfig;
+  /** An Open Graph image for every page */
+  og?: boolean | OgImagesConfig;
+  /** 'fast' (default) skips responsive and og in the dev server; 'full' runs them */
+  dev?: 'fast' | 'full';
+}
+
+interface ResponsiveImagesConfig {
+  /** Candidate widths in pixels (default: [480, 960, 1440]) */
+  widths?: number[];
+  /** Formats added as <source> elements (default: ['avif', 'webp']) */
+  formats?: ImageVariantFormat[]; // 'avif' | 'webp'
+  /** Encoder quality from 1 to 100 (default: avif 50, webp 75, jpeg 80, png lossless) */
+  quality?: ImagesQualityConfig; // { avif?, webp?, jpeg?, png? }
+  /** Default sizes attribute (default: '100vw') */
+  sizes?: string;
+}
+
+interface OgImagesConfig {
+  /** Template file name, looked up from the page's folder up to srcDir (default: 'og.eta') */
+  template?: string;
+  /** Card width in pixels (default: 1200) */
+  width?: number;
+  /** Card height in pixels (default: 630) */
+  height?: number;
+  /** Output format (default: 'png') */
+  format?: 'png' | 'jpeg';
+  /** Fonts added to the bundled ones (Archivo, Inter, Fira Code) */
+  fonts?: OgImageFontConfig[];
+  /** URL glob patterns of pages that get no generated image */
+  exclude?: string[];
+}
+
+interface OgImageFontConfig {
+  /** Family name used in font-family inside the template */
+  name: string;
+  /** TTF, OTF or WOFF file, relative to the project root (WOFF2 is not supported) */
+  path: string;
+  /** Font weight (default: 400) */
+  weight?: number;
+  /** Font style (default: 'normal') */
+  style?: 'normal' | 'italic';
+}
+```
+
+`GeneratedOgImage` is the generated card a template reads as `stati.ogImage`:
+
+```typescript
+interface GeneratedOgImage {
+  /** Absolute URL */
+  url: string;
+  /** Root-relative path */
+  path: string;
+  width: number;
+  height: number;
+  /** Alternative text, the page title */
+  alt?: string;
+}
+```
+
+`ImageProvider`, `VariantRequest`, `VariantOutput`, `OgImageRequest`, `OgFont` and `OgDefaults` describe the contract between `@stati/core` and `@stati/images`. Sites don't need them.
 
 ### StatiAssets interface
 
@@ -633,6 +716,22 @@ import type {
   RSSFeedConfig,
   RSSGenerationResult,
   RSSValidationResult,
+  // Images
+  ImagesConfig,
+  ResponsiveImagesConfig,
+  OgImagesConfig,
+  OgImageFontConfig,
+  ImagesQualityConfig,
+  ImageVariantFormat,
+  ImageOutputFormat,
+  ImageSourceFormat,
+  GeneratedOgImage,
+  ImageProvider,
+  VariantRequest,
+  VariantOutput,
+  OgImageRequest,
+  OgFont,
+  OgDefaults,
 } from '@stati/core';
 ```
 

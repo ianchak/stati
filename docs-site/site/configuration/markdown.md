@@ -238,6 +238,8 @@ export default defineConfig({
 });
 ```
 
+> **Note:** Stati renders Markdown images with its own `image` rule, which adds `width`, `height` and lazy loading, and with [`images.responsive`](/configuration/images#responsive-images) writes a `<picture>`. Plugins and `configure` run after it, so a rule that replaces `md.renderer.rules.image` without calling the previous one turns that off. Keep the previous rule and call it, as the link rule above does; attributes you set on the token, such as a `class`, are kept on the `<img>`.
+
 ### Custom block syntax
 
 Create custom container syntax:

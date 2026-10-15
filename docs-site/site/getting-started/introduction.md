@@ -50,7 +50,7 @@ Save it as `site/hello.md`, add a layout at `site/layout.eta`, install Stati wit
 - **Small and simple**: Markdown plus Eta templates, nine runtime dependencies in `@stati/core`, and no framework runtime in the browser.
 - **TypeScript-first**: `defineConfig()` gives you a typed `stati.config.ts`, and client-side TypeScript is compiled with esbuild and injected only on the pages that need it.
 - **Incremental Static Generation**: a build cache with TTLs, age-based aging rules, and invalidation by tag, path or age (`stati invalidate "tag:news"`).
-- **Built in, not bolted on**: search index, sitemap, robots.txt, RSS feeds, SEO metadata, build hooks and build metrics ship with Stati.
+- **Built in, not bolted on**: search index, sitemap, robots.txt, RSS feeds, SEO metadata, sized and lazy-loaded images, build hooks and build metrics ship with Stati. The optional `@stati/images` package adds responsive AVIF and WebP images and an Open Graph image for every page.
 - **Fast feedback**: a dev server with live reload, incremental rebuilds and an in-browser error overlay.
 
 ## Quick overview

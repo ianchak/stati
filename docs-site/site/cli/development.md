@@ -60,7 +60,9 @@ This logic lives in `handleTemplateChange` inside `packages/core/src/core/dev.ts
 
 ## Static assets
 
-Static files inside `public` are part of the watch list. When assets change they are recopied into `dist/` during the rebuild, so image and favicon updates appear on the next refresh.
+Static files inside `public` are part of the watch list. When assets change they are recopied into `dist/` during the rebuild, so image and favicon updates appear on the next refresh. Images next to your Markdown files are watched too: changing one rebuilds the pages that show it.
+
+Responsive images and Open Graph cards take time to encode, so the dev server skips them by default and shows images with their size and lazy loading only. Set `images.dev: 'full'` to generate them while you work. See [Images](/configuration/images#dev-server).
 
 ## Tailwind CSS integration
 

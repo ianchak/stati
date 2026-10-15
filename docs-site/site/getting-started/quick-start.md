@@ -89,9 +89,11 @@ The dev server will:
 Open your browser and navigate to the URL shown in the terminal. Your site is running; the rest of this guide makes it yours.
 
 <figure>
-  <img class="dark:hidden" src="/images/blank-template-light.webp" alt="The blank starter's homepage: a header with the site name, a large Welcome to your Stati site heading, and a numbered list of getting-started steps." width="1120" height="716" loading="lazy" />
-  <img class="hidden dark:block" src="/images/blank-template-dark.webp" alt="The blank starter's homepage in its dark theme: a header with the site name, a large Welcome to your Stati site heading, and a numbered list of getting-started steps." width="1120" height="716" loading="lazy" />
-  <figcaption>The starter homepage. It follows the visitor&#39;s light or dark system setting.</figcaption>
+
+![The blank starter's homepage: a header with the site name, a large Welcome to your Stati site heading, and a numbered list of getting-started steps.](/images/blank-template-light.webp){.dark:hidden}
+![The blank starter's homepage in its dark theme: a header with the site name, a large Welcome to your Stati site heading, and a numbered list of getting-started steps.](/images/blank-template-dark.webp){.hidden .dark:block}
+
+<figcaption>The starter homepage. It follows the visitor&#39;s light or dark system setting.</figcaption>
 </figure>
 
 ## Next: Make it yours

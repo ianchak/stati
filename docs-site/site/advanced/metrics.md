@@ -175,6 +175,7 @@ The `phases` object shows how long each build phase took:
 | `searchIndexGenerationMs` | Generating search index JSON |
 | `searchIndexWriteMs` | Writing search index to disk |
 | `assetCopyMs` | Copying static assets |
+| `imageSettleMs` | Waiting for image jobs to finish and saving the image manifest (unless `images: false`) |
 | `cacheManifestSaveMs` | Saving updated cache manifest |
 | `sitemapGenerationMs` | Generating sitemap.xml |
 | `tailwindInitMs` | Tailwind detection and inventory initialization |
@@ -201,6 +202,9 @@ The `counts` object tracks quantities processed during the build:
 | `assetsCopied` | Number of static assets copied |
 | `templatesLoaded` | Total templates loaded across all rendered pages |
 | `markdownFilesProcessed` | Number of markdown files processed |
+| `imagesGenerated` | Image jobs that ran in this build: one per image's set of responsive versions, per Open Graph card and per image copied from next to a page |
+| `imagesCached` | Image jobs whose files were reused from an earlier build |
+| `imagesFailed` | Image jobs that failed; their pages show the original image and are rebuilt next time |
 
 #### Templates loaded
 

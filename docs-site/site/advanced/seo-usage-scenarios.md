@@ -324,17 +324,29 @@ Keep auto-injection enabled but manually override specific SEO tags when needed.
 </html>
 ```
 
-### Example 4: Dynamic OG images
+### Example 4: Open Graph tags for pages with their own image
+
+In this example, a page can name its own share image with two custom front matter fields:
+
+```yaml
+---
+title: Release 2.0
+shareImage: https://example.com/images/release-2.png
+shareImageAlt: The Release 2.0 banner
+---
+```
+
+The layout writes a complete Open Graph section for those pages:
 
 ```html
 <!-- site/layout.eta -->
 <!DOCTYPE html>
 <html>
 <head>
-  <% if (stati.page.ogImage) { %>
+  <% if (stati.page.shareImage) { %>
     <!-- Complete custom Open Graph section -->
-    <meta property="og:image" content="<%= stati.page.ogImage %>">
-    <meta property="og:image:alt" content="<%= stati.page.ogImageAlt || stati.page.title %>">
+    <meta property="og:image" content="<%= stati.page.shareImage %>">
+    <meta property="og:image:alt" content="<%= stati.page.shareImageAlt || stati.page.title %>">
     <meta property="og:title" content="<%= stati.page.title %>">
     <meta property="og:description" content="<%= stati.page.description %>">
     <meta property="og:url" content="<%= stati.site.baseUrl + stati.page.url %>">
@@ -348,6 +360,10 @@ Keep auto-injection enabled but manually override specific SEO tags when needed.
 </body>
 </html>
 ```
+
+On pages with a `shareImage`, the layout writes `og:*` tags, so Stati skips its own Open Graph tags there (see [Tag groups](#tag-groups)). Other pages keep the generated ones.
+
+> **Note:** You only need a layout like this to control the whole Open Graph section. To set just the image, use `seo.openGraph.image` in front matter and Stati writes the tags for you. To generate an image for every page from a template, see [`images.og`](/configuration/images#open-graph-images).
 
 ### Tag groups
 
@@ -544,13 +560,14 @@ export default defineConfig({
   <meta property="og:url" content="<%= stati.site.baseUrl + stati.page.url %>">
   <meta property="og:type" content="<%= stati.page.type || 'website' %>">
 
-  <% if (stati.page.ogImage) { %>
-    <meta property="og:image" content="<%= stati.site.baseUrl + stati.page.ogImage %>">
-    <% if (stati.page.ogImageWidth) { %>
-      <meta property="og:image:width" content="<%= stati.page.ogImageWidth %>">
+  <% if (stati.page.shareImage) { %>
+    <!-- new URL() accepts both absolute URLs and paths such as /images/og.png -->
+    <meta property="og:image" content="<%= new URL(stati.page.shareImage, stati.site.baseUrl).href %>">
+    <% if (stati.page.shareImageWidth) { %>
+      <meta property="og:image:width" content="<%= stati.page.shareImageWidth %>">
     <% } %>
-    <% if (stati.page.ogImageHeight) { %>
-      <meta property="og:image:height" content="<%= stati.page.ogImageHeight %>">
+    <% if (stati.page.shareImageHeight) { %>
+      <meta property="og:image:height" content="<%= stati.page.shareImageHeight %>">
     <% } %>
   <% } %>
 
@@ -561,8 +578,8 @@ export default defineConfig({
   <% if (stati.page.description) { %>
     <meta name="twitter:description" content="<%= stati.page.description %>">
   <% } %>
-  <% if (stati.page.twitterImage || stati.page.ogImage) { %>
-    <meta name="twitter:image" content="<%= stati.site.baseUrl + (stati.page.twitterImage || stati.page.ogImage) %>">
+  <% if (stati.page.twitterImage || stati.page.shareImage) { %>
+    <meta name="twitter:image" content="<%= new URL(stati.page.twitterImage || stati.page.shareImage, stati.site.baseUrl).href %>">
   <% } %>
 
   <!-- Manual structured data (escape "<" so the JSON cannot close the script tag) -->
