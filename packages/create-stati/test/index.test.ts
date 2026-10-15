@@ -435,10 +435,11 @@ describe('create-stati CLI', () => {
 
       await runCLI({ projectName: 'test-project', template: 'blank' });
 
-      const prompts = mockInquirer.prompt.mock.calls[0]?.[0] as Array<{ name: string }>;
-      const names = prompts.map((p) => p.name);
+      const prompts = mockInquirer.prompt.mock.calls[0]?.[0];
+      expect(prompts).toBeDefined();
+      const names: string[] = prompts?.map((p: { name: string }) => p.name) ?? [];
       expect(names.indexOf('images')).toBe(names.indexOf('typescript') + 1);
-      expect(prompts.find((p) => p.name === 'images')).toEqual(
+      expect(prompts?.find((p: { name: string }) => p.name === 'images')).toEqual(
         expect.objectContaining({ type: 'confirm', default: false }),
       );
       expect(mockCreateSite).toHaveBeenCalledWith(expect.objectContaining({ images: true }));
@@ -454,8 +455,9 @@ describe('create-stati CLI', () => {
 
       await runCLI({ projectName: 'test-project', template: 'blank', images: false });
 
-      const prompts = mockInquirer.prompt.mock.calls[0]?.[0] as Array<{ name: string }>;
-      expect(prompts.map((p) => p.name)).not.toContain('images');
+      const prompts = mockInquirer.prompt.mock.calls[0]?.[0];
+      expect(prompts).toBeDefined();
+      expect(prompts?.some((p: { name: string }) => p.name === 'images')).toBe(false);
       expect(mockCreateSite).toHaveBeenCalledWith(expect.objectContaining({ images: false }));
     });
 
