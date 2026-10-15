@@ -1,6 +1,6 @@
 {
   "name": "@stati/images",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Responsive AVIF/WebP images and generated Open Graph images for Stati",
   "type": "module",
   "main": "./dist/index.js",
@@ -52,6 +52,6 @@
     "sharp": "^0.35.4"
   },
   "devDependencies": {
-    "@stati/core": "^1.27.2"
+    "@stati/core": "^1.28.0"
   }
 }
