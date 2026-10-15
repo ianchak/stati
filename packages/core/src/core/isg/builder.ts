@@ -586,6 +586,8 @@ export async function updateCacheEntry(
         {
           ...entry,
           inputsHash,
+          // Front matter tags, and a generated page's label, can change without a layout change
+          tags: getCacheTags(page),
           renderedAt: renderedAt.toISOString(),
         },
         rendered,

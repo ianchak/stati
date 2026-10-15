@@ -156,4 +156,35 @@ describe('pruneOrphanedPages', () => {
     expect(await readdir(join(outDir, 'real'))).toEqual([]);
     expect((await lstat(join(outDir, 'alias'))).isSymbolicLink()).toBe(true);
   });
+
+  it('keeps the file of a live page that a stale entry reaches through a linked folder', async () => {
+    // The page moved from /alias/post to /real/post, and dist/alias links to dist/real
+    await writeOutput('real/post.html');
+    await linkFolder(join(outDir, 'real'), join(outDir, 'alias'));
+    const manifest: CacheManifest = {
+      entries: {
+        '/alias/post.html': entry('/alias/post.html'),
+        '/real/post.html': entry('/real/post.html'),
+      },
+    };
+
+    const result = await pruneOrphanedPages(manifest, new Set(['/real/post.html']), outDir);
+
+    expect(result).toEqual({ removed: [], failed: [] });
+    expect(Object.keys(manifest.entries)).toEqual(['/real/post.html']);
+    expect(await exists('real/post.html')).toBe(true);
+  });
+
+  it('keeps the file of a live page renamed only in letter case', async () => {
+    // About.md became about.md; on a case-insensitive file system both names are one file
+    await writeOutput('about.html');
+    const manifest: CacheManifest = {
+      entries: { '/About.html': entry('/About.html'), '/about.html': entry('/about.html') },
+    };
+
+    await pruneOrphanedPages(manifest, new Set(['/about.html']), outDir);
+
+    expect(Object.keys(manifest.entries)).toEqual(['/about.html']);
+    expect(await exists('about.html')).toBe(true);
+  });
 });

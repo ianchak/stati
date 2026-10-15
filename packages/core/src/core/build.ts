@@ -477,6 +477,17 @@ async function processPagesWithCache(
   // Collection summaries, hashed after beforeAll because the hook can change front matter
   const summaries = createSummaryHasher(pages, resolveSummaryFields(config));
 
+  // The pages of a listing share one array of page URLs, hashed once for all of them
+  const urlListHashes = new WeakMap<readonly string[], string>();
+  const hashUrlList = (urls: readonly string[]): string => {
+    let hash = urlListHashes.get(urls);
+    if (hash === undefined) {
+      hash = computeContentHash('', { urls });
+      urlListHashes.set(urls, hash);
+    }
+    return hash;
+  };
+
   // Render each page with progress tracking and ISG
   if (logger.step) {
     logger.step(2, 3, 'Rendering pages');
@@ -541,7 +552,7 @@ async function processPagesWithCache(
         pagination: {
           pageNumber: page.pagination.pageNumber,
           totalPages: page.pagination.totalPages,
-          urls: page.pagination.urls,
+          urls: hashUrlList(page.pagination.urls),
           items: summaries.pages(page.pagination.items),
         },
       }),

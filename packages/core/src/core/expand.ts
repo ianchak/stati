@@ -171,7 +171,8 @@ export function paginateItems(
     items: items.slice(i * settings.size, (i + 1) * settings.size),
     ...(i > 0 && { prevUrl: urls[i - 1]! }),
     ...(i < totalPages - 1 && { nextUrl: urls[i + 1]! }),
-    urls: [...urls],
+    // One array for the whole listing, not one per page; templates get their own copy
+    urls,
   }));
 }
 

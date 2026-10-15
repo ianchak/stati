@@ -1372,6 +1372,32 @@ describe('ISG Build Integration', () => {
       vi.doUnmock('node:fs/promises');
     });
 
+    it('should refresh the cache tags in fast update mode', async () => {
+      vi.doMock('node:fs/promises', () => ({
+        stat: vi.fn().mockResolvedValue({ mtimeMs: fixedDate.getTime() - 10000 }),
+      }));
+      // A tag page whose label changed from CSS to Css, and front matter tags that changed
+      const tagPage: PageModel = {
+        ...mockPage,
+        frontMatter: { ...mockPage.frontMatter, tags: ['news'] },
+        generated: { key: 'css', label: 'Css', items: [], template: 'tags/[tag].md' },
+      };
+
+      const result = await updateCacheEntry(
+        { ...existingEntry, tags: ['page', 'css', 'CSS'] },
+        tagPage,
+        mockConfig,
+        allPages,
+        fixedDate,
+        true, // fastUpdate = true
+      );
+
+      expect(mockTrackTemplateDependencies).not.toHaveBeenCalled();
+      expect(result.tags).toEqual(['news', 'css', 'Css']);
+
+      vi.doUnmock('node:fs/promises');
+    });
+
     it('should preserve publishedAt in fast update mode', async () => {
       const entryWithPublishedAt: CacheEntry = {
         ...existingEntry,

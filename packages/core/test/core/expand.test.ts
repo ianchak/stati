@@ -107,6 +107,8 @@ describe('pagination URLs', () => {
       urls: ['/blog', '/blog/page/2', '/blog/page/3'],
     });
     expect(pages[2]!.nextUrl).toBeUndefined();
+    // One list of URLs for the whole listing, so memory grows with pages, not pages squared
+    expect(pages[0]!.urls).toBe(pages[2]!.urls);
   });
 
   it('always has a first page', () => {
