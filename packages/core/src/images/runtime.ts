@@ -97,6 +97,8 @@ interface JobSpec {
   outputs: string[];
   /** Source or page, for messages */
   label: string;
+  /** Absolute path of the source image, for jobs that copy or encode one */
+  sourcePath?: string;
   run: () => Promise<void>;
 }
 
@@ -403,11 +405,15 @@ export class PageImages {
       return null;
     }
 
-    const inlined = await inlineLocalImages(html, {
-      staticDir: this.runtime.staticDir,
-      baseDir: templatePath ? dirname(templatePath) : srcDir,
-      srcDir,
-    });
+    const inlined = await inlineLocalImages(
+      html,
+      {
+        staticDir: this.runtime.staticDir,
+        baseDir: templatePath ? dirname(templatePath) : srcDir,
+        srcDir,
+      },
+      (path) => this.runtime.generatedSourceFor(path),
+    );
     for (const file of inlined.files) this.assetDeps.add(file);
 
     const key = sha256(
@@ -421,10 +427,11 @@ export class PageImages {
       }),
     );
     const extension = og.format === 'jpeg' ? 'jpg' : 'png';
+    const slug = ogImageSlug(this.page.url);
     const relPath = posix.join(
       IMAGES_OUTPUT_DIR,
       OG_IMAGES_SUBDIR,
-      `${ogImageSlug(this.page.url)}-${key.slice(0, 8)}.${extension}`,
+      `${slug}-${key.slice(0, 8)}.${extension}`,
     );
     const path = `/${relPath}`;
     const title = this.page.frontMatter.title;
@@ -436,7 +443,8 @@ export class PageImages {
       ...(typeof title === 'string' && title && { alt: title }),
     };
 
-    const jobKey = `og:${key}`;
+    // The slug is part of the key: pages that draw the same card each get their own file
+    const jobKey = `og:${slug}:${key}`;
     const filePath = join(this.runtime.outDir, relPath);
     const render = provider.renderOgImage.bind(provider);
     this.runtime.registerJob({
@@ -484,6 +492,8 @@ export class ImageRuntime {
   readonly stats = { generated: 0, cached: 0, failed: 0 };
 
   private readonly specs = new Map<string, JobSpec>();
+  /** Source file of each generated image registered this build, by URL path */
+  private readonly generatedSources = new Map<string, string>();
   private readonly jobs = new Map<string, Promise<void>>();
   private readonly failures = new Map<string, Error>();
   private readonly records: PageRecord[] = [];
@@ -801,6 +811,17 @@ export class ImageRuntime {
     if (!this.specs.has(spec.key)) {
       this.specs.set(spec.key, spec);
     }
+    if (spec.sourcePath) {
+      for (const output of spec.outputs) this.generatedSources.set(`/${output}`, spec.sourcePath);
+    }
+  }
+
+  /**
+   * The source file of an image this build generates, by its URL path, such as
+   * `/_img/hero-1a2b3c4d-960.webp`.
+   */
+  generatedSourceFor(path: string): string | undefined {
+    return this.generatedSources.get(path);
   }
 
   /**
@@ -812,6 +833,7 @@ export class ImageRuntime {
       key: plan.key,
       outputs: [plan.relPath],
       label: toPosix(relative(process.cwd(), sourcePath)),
+      sourcePath,
       run: () => copyFile(sourcePath, target),
     };
   }
@@ -825,6 +847,7 @@ export class ImageRuntime {
       key: plan.key,
       outputs: plan.outputs.map((output) => output.relPath),
       label: toPosix(relative(process.cwd(), sourcePath)),
+      sourcePath,
       run: () =>
         provider.createVariants({
           sourcePath,

@@ -44,6 +44,34 @@ describe('inlineLocalImages', () => {
     ]);
   });
 
+  it('reads the file an HTML-escaped src names', async () => {
+    await writeFile(join(dirs.staticDir, 'images', 'a&b.png'), Buffer.from([1, 2, 3]));
+    expect(await inlineLocalImages('<img src="/images/a&amp;b.png">', dirs)).toEqual({
+      html: '<img src="data:image/png;base64,AQID">',
+      files: [posix(join(dirs.staticDir, 'images', 'a&b.png'))],
+    });
+  });
+
+  it('inlines the source of an image Stati generates, which may not exist yet', async () => {
+    const source = join(dirs.baseDir, 'mark.png');
+    const generated = new Map([['/_img/mark-0123abcd-960.png', source]]);
+    const result = await inlineLocalImages(
+      '<picture><source type="image/avif" srcset="/_img/mark-0123abcd-960.avif 960w"><img src="/_img/mark-0123abcd-960.png" alt=""></picture>',
+      dirs,
+      (path) => generated.get(path),
+    );
+
+    expect(result.html).toBe(
+      '<picture><source type="image/avif" srcset="/_img/mark-0123abcd-960.avif 960w"><img src="data:image/png;base64,AQID" alt=""></picture>',
+    );
+    expect(result.files).toEqual([posix(source)]);
+  });
+
+  it("keeps $ patterns in the tag's other attributes literal", async () => {
+    const result = await inlineLocalImages(`<img alt="Save $' and $&" src="./mark.png">`, dirs);
+    expect(result.html).toBe(`<img alt="Save $' and $&" src="data:image/png;base64,AQID">`);
+  });
+
   it('tracks a missing image so the page rebuilds once it exists', async () => {
     const html = '<img src="/images/later.png">';
     expect(await inlineLocalImages(html, dirs)).toEqual({

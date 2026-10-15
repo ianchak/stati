@@ -346,6 +346,22 @@ describe('image pipeline in builds', () => {
       expect(await runBuild()).toMatchObject({ cacheMisses: 1 });
     });
 
+    it('writes variants for identical images saved under different names', async () => {
+      await installFakeImagesPackage(projectDir);
+      config.images = { responsive: true };
+      await write('public/images/banner.png', pngBytes(1600, 900));
+      await write('site/about.md', '---\ntitle: About\n---\n![Banner](/images/banner.png)');
+      await runBuild();
+
+      for (const page of ['dist/index.html', 'dist/about.html']) {
+        const files = [...(await read(page)).matchAll(/\/(_img\/[^"\s,]+)/g)].map((m) => m[1]!);
+        expect(files.length).toBeGreaterThan(0);
+        for (const file of files) {
+          expect(await exists(`dist/${file}`)).toBe(true);
+        }
+      }
+    });
+
     it('copies a co-located image for the fallback when its variants fail', async () => {
       await installFakeImagesPackage(projectDir, { failOn: 'photo' });
       config.images = { responsive: true };
@@ -530,6 +546,39 @@ describe('image pipeline in builds', () => {
       expect(ogImageOf(await read('dist/index.html'))).toMatch(
         /^https:\/\/example\.com\/_img\/og\//,
       );
+    });
+
+    it.each([
+      ['responsive images', { responsive: true, og: true }],
+      ['copied co-located images', { og: true }],
+    ])('draws stati.image() in cards from the original file, with %s', async (_label, images) => {
+      config.images = images;
+      await write(
+        'site/og.eta',
+        `<div style="display:flex"><%~ stati.image('/images/hero.png', { alt: '' }) %></div>`,
+      );
+      await write(
+        'site/blog/og.eta',
+        `<div style="display:flex"><%~ stati.image('./photo.png', { alt: '' }) %></div>`,
+      );
+      await runBuild();
+
+      const calls = globalThis.__statiImagesCalls!.og;
+      expect(calls).toHaveLength(3);
+      for (const call of calls) {
+        expect(call.html).toContain('src="data:image/png;base64,');
+        expect(call.html).not.toContain('src="/_img/');
+      }
+    });
+
+    it('writes a card for each page, even when pages draw the same card', async () => {
+      await write('site/og.eta', '<div style="display:flex"><%= stati.site.title %></div>');
+      await runBuild();
+
+      for (const page of ['dist/index.html', 'dist/about.html', 'dist/blog/post.html']) {
+        const url = ogImageOf(await read(page));
+        expect(await exists(`dist${new URL(url!).pathname}`)).toBe(true);
+      }
     });
 
     it('gives generateSEO() in the layout the generated image', async () => {

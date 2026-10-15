@@ -172,7 +172,10 @@ export interface ImageProvider {
   readonly apiVersion: 1;
   /** Encoder identity, part of every cache key so encoder upgrades produce new URLs */
   readonly version: string;
-  /** Encode one source image into the requested outputs */
+  /**
+   * Encode one source image into the requested outputs. Settles only once no output is still
+   * being written, even when one fails, because core rewrites pages and prunes files next.
+   */
   createVariants(request: VariantRequest): Promise<void>;
   /** Rasterize one Open Graph image; required when `images.og` is on */
   renderOgImage?(request: OgImageRequest): Promise<void>;
