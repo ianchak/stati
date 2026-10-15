@@ -92,6 +92,17 @@ describe('htmlToSatori', () => {
     });
   });
 
+  it('shows the <img> of a <picture> and drops its <source> elements', () => {
+    expect(
+      htmlToSatori(
+        '<div><picture><source type="image/avif" srcset="/a.avif 480w"><img src="data:image/png;base64,AA" alt=""></picture></div>',
+      ),
+    ).toEqual({
+      type: 'div',
+      props: { children: { type: 'img', props: { src: 'data:image/png;base64,AA', alt: '' } } },
+    });
+  });
+
   it('skips comments, scripts and style blocks', () => {
     expect(
       htmlToSatori('<div><!-- note --><style>.a{color:red}</style><script>x()</script>Text</div>'),

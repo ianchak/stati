@@ -365,6 +365,11 @@ export function htmlToSatori(html: string): SatoriElement {
         if (!selfClosing) skipUntil = lower;
         continue;
       }
+      // A <picture>, as stati.image() writes for responsive images, shows its <img>;
+      // Satori reads neither <source> nor srcset
+      if (lower === 'picture' || lower === 'source') {
+        continue;
+      }
       // HTML element names are case-insensitive; SVG ones such as linearGradient are not
       const type = /[A-Z]/.test(name) && name !== name.toUpperCase() ? name : lower;
       const node: BuildNode = { type, props: parseAttributes(attributes), children: [] };
