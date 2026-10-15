@@ -27,6 +27,8 @@ public/
 
 Static assets are copied after the pages are written, and generated files are written last: if `public/` contains a `robots.txt` or `sitemap.xml` and the matching feature is enabled, the generated file replaces your copy in production builds.
 
+Avoid a `public/_img/` folder: Stati writes copied and generated images to `/_img/`.
+
 Use the `public/` directory for:
 
 - Favicons and meta images
@@ -238,35 +240,37 @@ See the [Development Server](/cli/development) documentation for more details on
 
 ## Images and media
 
-### Responsive images
+Images in `public/` are copied to the output as they are. When a Markdown page shows one, Stati adds its `width`, `height` and lazy loading:
+
+```markdown
+![Hero image](/images/hero.jpg)
+```
+
+```html
+<img src="/images/hero.jpg" alt="Hero image" width="1600" height="900" loading="lazy" decoding="async">
+```
+
+Images can also sit next to the pages that use them: `![Map](./map.png)` in `site/blog/post.md` reads `site/blog/map.png`, and Stati copies it to `/_img/` under a name that changes with its content. In layouts and partials, `stati.image()` does the same for images such as a post's cover:
 
 ```eta
-<!-- Basic responsive image -->
-<img src="/images/hero.jpg"
-     alt="Hero image"
-     loading="lazy"
-     class="w-full h-auto">
+<%~ stati.image(stati.page.cover, { alt: stati.page.coverAlt, priority: true }) %>
+```
 
-<!-- Responsive with srcset -->
-<img src="/images/hero-800.jpg"
-     srcset="/images/hero-400.jpg 400w,
-             /images/hero-800.jpg 800w,
-             /images/hero-1200.jpg 1200w"
-     sizes="(max-width: 768px) 100vw,
-            (max-width: 1200px) 80vw,
-            1200px"
-     alt="Hero image"
-     loading="lazy">
+Raw `<img>` tags are written as authored, so give those `width` and `height` yourself.
 
-<!-- Picture element for art direction -->
+### Responsive images
+
+With the optional `@stati/images` package and `images.responsive` on, Stati writes each of these images as a `<picture>` with AVIF and WebP versions at several widths. You don't need to resize images before adding them. See [Images](/configuration/images) for setup, options and caching.
+
+For art direction, such as a different crop on small screens, write the `<picture>` element yourself in a template:
+
+```eta
 <picture>
   <source media="(max-width: 768px)" srcset="/images/hero-mobile.jpg">
   <source media="(max-width: 1200px)" srcset="/images/hero-tablet.jpg">
-  <img src="/images/hero-desktop.jpg" alt="Hero image">
+  <img src="/images/hero-desktop.jpg" alt="Hero image" width="1600" height="900">
 </picture>
 ```
-
-**Note**: Stati copies images from your `public/` directory as-is. For image optimization, you'll need to optimize images before placing them in your project or use external tools in your build process.
 
 ## Web fonts
 

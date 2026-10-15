@@ -134,6 +134,21 @@ Renders as:
 | `stati build`   | Production build           |
 | `stati preview` | Serve the built site       |
 
+### Images
+
+Stati reads the size of each Markdown image and writes it into the HTML, with lazy loading:
+
+```markdown
+![Harbour at dawn](/images/harbour.jpg)
+![Map of the route](./map.png)
+```
+
+```html
+<img src="/images/harbour.jpg" alt="Harbour at dawn" width="1600" height="900" loading="lazy" decoding="async">
+```
+
+A path that starts with `/` is read from `public/`. A relative path is read next to the page's Markdown file, and Stati copies that image to `/_img/`. With the optional `@stati/images` package, images can also get responsive AVIF and WebP versions. See [Images](/configuration/images) for the details and for turning this off.
+
 ### Task lists
 
 Task list syntax (`- [x] Done`) is **not** supported out of the box: markdown-it renders the brackets as text. Add a markdown-it task-list plugin through `markdown.plugins` or `configure` if you need checkboxes.

@@ -233,6 +233,31 @@ aging: [
 
 See [ISG configuration](/configuration/isg) for validation rules and examples.
 
+### Image configuration
+
+Markdown images get their `width`, `height` and lazy loading without any configuration. The `images` block turns on features from the optional `@stati/images` package, or turns the built-in handling off:
+
+```javascript
+export default defineConfig({
+  images: {
+    // Responsive AVIF and WebP images (needs @stati/images)
+    responsive: true,
+
+    // An Open Graph image for every page (needs @stati/images and a public site.baseUrl)
+    og: true,
+  },
+});
+```
+
+**Available Options:**
+
+- `eagerFirst` (boolean) - Load the first image near the top of a page eagerly (default: true)
+- `responsive` (boolean or object) - Responsive variants with `widths`, `formats`, `quality` and `sizes` (default: false)
+- `og` (boolean or object) - Open Graph cards with `template`, `width`, `height`, `format`, `fonts` and `exclude` (default: false)
+- `dev` (`'fast'` or `'full'`) - Whether the dev server generates responsive images and cards (default: `'fast'`)
+
+Set `images: false` to write Markdown images exactly as authored. Unknown or invalid options stop the build with an error that names them. See [Images](/configuration/images) for every option.
+
 ### Development server
 
 Configure the development server:
@@ -505,6 +530,7 @@ For detailed information about specific configuration options, see:
 - **[Search](/configuration/search)** - Search index generation
 - **[RSS Configuration](/configuration/rss)** - RSS feed generation
 - **[TypeScript](/configuration/typescript)** - Built-in TypeScript compilation with esbuild
+- **[Images](/configuration/images)** - Image sizes, responsive images and Open Graph cards
 - **[CLI commands](/cli/commands#config-file-location)** - How `--config` and the config file location work
 
 The configuration system is designed to grow with your needs while maintaining simplicity for basic use cases. Start with minimal configuration and add complexity as your site evolves.

@@ -11,7 +11,7 @@ Common errors you may encounter when using Stati and how to fix them.
 ## Site uses the default title or `localhost` URLs
 
 **Cause:**
-Stati did not use your configuration. Without a `stati.config.ts`, `stati.config.js` or `stati.config.mjs` in the current directory, Stati silently uses its defaults (site title "My Stati Site", base URL `http://localhost:3000`). If the file exists but fails to load, the build prints the error followed by "Falling back to default configuration." and continues with the defaults.
+Stati did not use your configuration. Without a `stati.config.ts`, `stati.config.js` or `stati.config.mjs` in the current directory, Stati silently uses its defaults (site title "My Stati Site", base URL `http://localhost:3000`). If the file exists but fails to load, the build prints the error followed by "Falling back to default configuration." and continues with the defaults. Invalid `isg` or `images` settings are different: they stop the build with an error that names the setting.
 
 **Solution:**
 
@@ -72,6 +72,29 @@ Auto-injection disabled or manual generation not called.
 1. Check `seo.autoInject` is not set to `false`
 2. If using manual mode, add `<%~ stati.generateSEO() %>` to your layout's `<head>`
 3. Ensure `site.baseUrl` is set for canonical URLs
+
+---
+
+## Images look stretched or squashed
+
+**Cause:**
+Stati adds `width` and `height` to Markdown images. A stylesheet that sets `max-width: 100%` without `height: auto` narrows the image but keeps its full height.
+
+**Solution:**
+
+1. Add `height: auto` next to `max-width` in your image styles
+2. Or turn the built-in image handling off with `images: false`
+
+---
+
+## Build stops with an image error
+
+**Cause:**
+`images.responsive` or `images.og` is on without `@stati/images` installed, the package doesn't match your `@stati/core` version, or `images.og` has no public `site.baseUrl`.
+
+**Solution:**
+
+See [Images troubleshooting](/configuration/images#troubleshooting) for each message and its fix.
 
 ---
 

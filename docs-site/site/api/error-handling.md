@@ -28,6 +28,7 @@ Stati follows these key principles:
 - **No config file**: not an error; Stati uses its defaults (site title "My Stati Site", base URL `http://localhost:3000`)
 - **Config file fails to load** (syntax error, failing import): the error is printed, followed by "Falling back to default configuration.", and the build **continues with the defaults**. Check the output if your title, base URL or other settings seem to be ignored.
 - **Invalid `isg` values**: the build stops with an `Invalid ISG configuration` error that names the field (see [ISG configuration errors](#isg-configuration-errors))
+- **Invalid `images` values**: the build stops with an `Invalid images configuration in <config file>` error that names the option. Unknown keys are rejected too, which catches typos (see [Image errors](#image-errors))
 - **Other values are not validated** at load time. A wrong type usually surfaces later as a generic error, for example `srcDir: 123` fails with `The "path" argument must be of type string`.
 
 **Example errors**:
@@ -37,6 +38,9 @@ Stati follows these key principles:
 export default {
   isg: {
     ttlSeconds: 'invalid', // ❌ ISG_INVALID_TTL: ttlSeconds must be a positive integer representing seconds
+  },
+  images: {
+    responsive: { widht: [480, 960] }, // ❌ Unknown option images.responsive.widht. Allowed options: widths, formats, quality, sizes.
   },
 };
 ```
@@ -130,6 +134,21 @@ The overlay also gives a hint when a template uses `it` or a bare context name s
 - Disk space exhausted
 - File system corruption
 - Directory creation failures
+
+### Image errors
+
+**When they occur**: At the start of a build, before any page renders, and while image jobs finish at the end
+
+**Handling**:
+
+- **`images.responsive` or `images.og` on without `@stati/images`**: the build stops with `images.responsive requires @stati/images. Run: npm i -D @stati/images`. This also applies to the dev server.
+- **Incompatible `@stati/images` version**: the build stops with `@stati/images … is not compatible with @stati/core …`. Update both packages.
+- **`images.og` with a local or missing `site.baseUrl`**: production builds stop, because `og:image` needs an absolute URL. The dev server doesn't check this.
+- **Missing image file**: Stati logs a warning and writes the image as authored. The page is rebuilt once the file exists.
+- **An image fails to encode** (a damaged file, for example): the page is rewritten to show the original image without variants, and it is rebuilt on the next build.
+- **An Open Graph template Satori can't draw**: in production builds the page is written without a generated image and the error is logged; the dev server shows it in the error overlay.
+
+See [Images troubleshooting](/configuration/images#troubleshooting) for fixes.
 
 ### Build hook errors
 

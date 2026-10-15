@@ -18,6 +18,7 @@ seo:
       - 'https://github.com/ianchak/stati'
       - 'https://www.npmjs.com/package/@stati/core'
       - 'https://www.npmjs.com/package/@stati/cli'
+      - 'https://www.npmjs.com/package/@stati/images'
       - 'https://www.npmjs.com/package/create-stati'
     'offers':
       '@type': 'Offer'

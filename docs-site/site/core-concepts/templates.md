@@ -98,7 +98,13 @@ In your templates, you have access to:
 <!-- Page front matter data -->
 <%= stati.page.layout %>    <!-- Layout name from front matter -->
 <%~ stati.partials.header %> <!-- Partial templates (HTML, so use <%~) -->
+
+<!-- Images -->
+<%~ stati.image(stati.page.cover, { alt: stati.page.coverAlt }) %> <!-- Sized, lazy-loaded image (HTML, so use <%~) -->
+<%= stati.ogImage?.url %>   <!-- Generated Open Graph image, with images.og -->
 ```
+
+`stati.image()` sizes an image from a layout, such as a post's cover, the way Stati sizes Markdown images. See [Images in templates](/configuration/images#images-in-templates) and the [Template API](/api/templates#stati-image-src-options).
 
 ## Layout system
 

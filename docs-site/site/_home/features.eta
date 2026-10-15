@@ -43,6 +43,6 @@ const total = inventory.groups.reduce((sum, group) => sum + group.items.length, 
             <% }) %>
         </div>
 
-        <p class="mt-10 font-mono text-xs text-faint"><%= total %> built-in features across @stati/core, @stati/cli and create-stati</p>
+        <p class="mt-10 font-mono text-xs text-faint"><%= total %> features across @stati/core, @stati/cli, create-stati and the optional @stati/images</p>
     </div>
 </section>

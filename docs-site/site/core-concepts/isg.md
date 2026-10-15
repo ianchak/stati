@@ -23,7 +23,7 @@ Unlike traditional static site generators that rebuild everything, Stati only re
 
 ### Dependency tracking
 
-For each page, Stati records the **templates** it was rendered with: its layout, plus the partials it references by name (`stati.partials.header`, `stati.partials.card({ … })`) or loads from `_` folders with `include()`. A page is re-rendered when its own Markdown or front matter changes, when one of those templates changes, or when its TTL expires. The [ISG configuration](/configuration/isg#template-dependency-tracking) page lists the template changes that are not detected.
+For each page, Stati records the **templates** it was rendered with: its layout, plus the partials it references by name (`stati.partials.header`, `stati.partials.card({ … })`) or loads from `_` folders with `include()`. It also records the **images** the page shows, from Markdown or `stati.image()`, hashed by content. A page is re-rendered when its own Markdown or front matter changes, when one of those templates or images changes, or when its TTL expires. The [ISG configuration](/configuration/isg#template-dependency-tracking) page lists the template changes that are not detected.
 
 Other pages are **not** dependencies. A listing page such as `blog/index.md` that shows the titles of the posts in `stati.collection` is not re-rendered when you edit a post:
 
@@ -68,6 +68,7 @@ Stati maintains a cache manifest at `.stati/manifest.json`. Entries are keyed by
       "path": "/blog/first-post.html",
       "inputsHash": "sha256-cf6a9a641fd5…",
       "deps": ["/home/me/my-site/site/blog/layout.eta", "/home/me/my-site/site/_partials/header.eta"],
+      "assetDeps": ["/home/me/my-site/site/blog/map.png"],
       "tags": ["blog", "news"],
       "publishedAt": "2024-01-15T00:00:00.000Z",
       "renderedAt": "2024-01-20T10:00:00.000Z",

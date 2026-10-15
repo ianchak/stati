@@ -261,20 +261,25 @@ ISG maintains a cache manifest at `.stati/manifest.json`, with one entry per out
 
 - **inputsHash**: Hash of page content and all dependencies
 - **deps**: Array of file paths this page depends on (templates, partials)
+- **assetDeps**: Files found while rendering, such as the images the page shows; their content is part of `inputsHash`
+- **images**: Generated image files the page references, such as responsive variants and its Open Graph card
 - **tags**: Tags from front matter for invalidation
 - **renderedAt**: ISO date when page was last rendered
 - **ttlSeconds**: Effective TTL for this page
 - **publishedAt**: ISO date when content was originally published (from front matter)
+
+Generated images are tracked separately, in `.stati/images/manifest.json`, so later builds reuse them instead of encoding them again. See [Caching and cleanup](/configuration/images#caching-and-cleanup).
 
 ### Rebuild decision logic
 
 A page is rebuilt if:
 
 1. Cache is bypassed (`--force` flag) or ISG is disabled (`isg.enabled: false`)
-2. Its HTML file is missing from the output directory
+2. Its HTML file, or a generated image it references, is missing from the output directory
 3. Page is not in cache manifest (for example, after `stati invalidate`)
-4. Page's `inputsHash` has changed (its own content or front matter, or one of its templates)
+4. Page's `inputsHash` has changed (its own content or front matter, one of its templates, an image it shows, or the `images` settings)
 5. Page's TTL has expired and the page is not frozen by `maxAgeCapDays`
+6. An image job for the page failed in the previous build
 
 Changes to _other_ pages never trigger a rebuild: a listing page that shows post titles stays cached until its TTL expires. See [Dependency tracking](/core-concepts/isg#dependency-tracking).
 
