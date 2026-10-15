@@ -1,9 +1,25 @@
 <%
-  /* Layout for every page outside site/posts/ (posts use site/posts/layout.eta).
-     A page can add a generated list under its Markdown by setting `listing` in its
-     front matter: 'latest' (home), 'archive' or 'tags'. */
+  /* Layout for every page outside site/posts/ (posts use site/posts/layout.eta), and for
+     the archive, site/posts/index.md. A page adds a list of posts under its Markdown by
+     setting `listing` in its front matter:
+
+       latest   the newest posts: the home page and the 404 page
+       archive  every post, grouped by year: site/posts/index.md
+       tags     every tag with its number of posts: site/tags/index.md
+       tag      the posts with one tag: site/tags/[tag].md, one page per tag
+
+     The posts come from stati.collection. The archive is the index page of site/posts/,
+     so that folder is its collection; the other pages name it with `collection: /posts`.
+     Stati rebuilds these pages when a post is added, removed, retitled or retagged. */
   const listing = stati.page.listing;
-  const heading = stati.page.heading ?? stati.page.title;
+  const pageNumber = stati.pagination?.pageNumber ?? 1;
+  const baseHeading = stati.page.heading ?? stati.page.title;
+  const heading =
+    pageNumber === 1
+      ? baseHeading
+      : listing === 'latest'
+        ? 'Older posts'
+        : `${baseHeading}, page ${pageNumber}`;
 %>
 <!DOCTYPE html>
 <html lang="<%= stati.site.defaultLocale || 'en' %>">
@@ -17,21 +33,32 @@
         <h1><%= heading %></h1>
       </header>
 
-      <div class="prose"><%~ stati.content %></div>
+      <% if (pageNumber === 1 && stati.content.trim()) { %>
+        <div class="prose"><%~ stati.content %></div>
+      <% } %>
 
       <% if (listing === 'latest') { %>
         <%
-          const all = stati.blogPosts();
-          const limit = stati.page.listingLimit ?? stati.site.homePostCount ?? 8;
+          /* The home page is paginated (`paginate` in site/index.md): stati.pagination holds
+             this page's posts, and Stati rebuilds the page when they change. The 404 page lists
+             the newest `listingLimit` posts of the whole collection instead. */
+          const all = stati.pagination ? [] : (stati.collection?.recentPages ?? []);
+          const posts = stati.pagination
+            ? stati.pagination.items
+            : all.slice(0, stati.page.listingLimit ?? all.length);
         %>
         <section class="listing" aria-labelledby="latest-heading">
-          <h2 id="latest-heading" class="listing-heading">Latest posts</h2>
-          <% if (all.length === 0) { %>
+          <h2 id="latest-heading" class="listing-heading">
+            <%= pageNumber === 1 ? 'Latest posts' : `Page ${pageNumber} of ${stati.pagination.totalPages}` %>
+          </h2>
+          <% if (posts.length === 0) { %>
             <p class="empty">No posts yet. Add a Markdown file to <code>site/posts/</code> and it appears here.</p>
           <% } else { %>
-            <%~ stati.partials['post-list']({ posts: all.slice(0, limit), descriptions: true, transition: true }) %>
-            <% if (all.length > limit) { %>
-              <p class="more"><a href="/archive">All <%= all.length %> posts in the archive</a></p>
+            <%~ stati.partials['post-list']({ posts, descriptions: true, transition: true }) %>
+            <% if (stati.pagination) { %>
+              <%~ stati.partials['page-nav']({ pagination: stati.pagination, newer: 'Newer posts', older: 'Older posts' }) %>
+            <% } else if (all.length > posts.length) { %>
+              <p class="more"><a href="/posts">All <%= all.length %> posts in the archive</a></p>
             <% } %>
             <div class="end-mark" aria-hidden="true"></div>
           <% } %>
@@ -39,7 +66,16 @@
       <% } %>
 
       <% if (listing === 'archive') { %>
-        <% const years = stati.postsByYear(); %>
+        <%
+          /* Posts grouped by year, newest first */
+          const years = [];
+          for (const post of stati.collection?.recentPages ?? []) {
+            const year = post.publishedAt ? String(post.publishedAt.getUTCFullYear()) : 'Undated';
+            const last = years.at(-1);
+            if (last && last.year === year) last.posts.push(post);
+            else years.push({ year, posts: [post] });
+          }
+        %>
         <% if (years.length === 0) { %>
           <p class="empty">Nothing in the archive yet.</p>
         <% } %>
@@ -55,28 +91,44 @@
       <% } %>
 
       <% if (listing === 'tags') { %>
-        <% const tags = stati.blogTags(); %>
+        <%
+          /* Every tag, most used first. Each one's page comes from site/tags/[tag].md, at the
+             address stati.slugify gives the tag. */
+          const byTag = stati.collection?.pagesByTag ?? {};
+          const tags = Object.keys(byTag).sort(
+            (a, b) => byTag[b].length - byTag[a].length || a.localeCompare(b),
+          );
+        %>
         <% if (tags.length === 0) { %>
           <p class="empty">No tags yet. Add <code>tags: ['example']</code> to a post's front matter.</p>
         <% } else { %>
           <ul class="tag-cloud" role="list" aria-label="All tags">
             <% for (const tag of tags) { %>
               <li>
-                <a href="<%= `#${tag.slug}` %>"><%= tag.name %></a>
-                <span class="count"><%= tag.posts.length %></span>
+                <a href="<%= `/tags/${stati.slugify(tag)}` %>"><%= tag %></a>
+                <span class="count"><%= byTag[tag].length %></span>
               </li>
             <% } %>
           </ul>
-          <% for (const tag of tags) { %>
-            <section class="listing tag-section" id="<%= tag.slug %>" aria-labelledby="<%= `tag-${tag.slug}` %>">
-              <h2 id="<%= `tag-${tag.slug}` %>" class="listing-heading">
-                <span><span class="hash" aria-hidden="true">#</span><%= tag.name %></span>
-                <span class="count"><%= tag.posts.length === 1 ? '1 post' : `${tag.posts.length} posts` %></span>
-              </h2>
-              <%~ stati.partials['post-list']({ posts: tag.posts }) %>
-            </section>
-          <% } %>
         <% } %>
+      <% } %>
+
+      <% if (listing === 'tag') { %>
+        <%
+          /* One tag's posts. stati.generated holds the tag and every post filed under it;
+             with more posts than `generate.paginate` allows, stati.pagination holds this page's. */
+          const total = stati.generated.items.length;
+          const posts = stati.pagination ? stati.pagination.items : stati.generated.items;
+        %>
+        <section class="listing" aria-labelledby="tag-heading">
+          <h2 id="tag-heading" class="listing-heading">
+            <span><span class="hash" aria-hidden="true">#</span><%= stati.generated.label %></span>
+            <span class="count"><%= total === 1 ? '1 post' : `${total} posts` %></span>
+          </h2>
+          <%~ stati.partials['post-list']({ posts, descriptions: true }) %>
+          <%~ stati.partials['page-nav']({ pagination: stati.pagination, newer: 'Newer posts', older: 'Older posts' }) %>
+          <p class="more"><a href="/tags">All tags</a></p>
+        </section>
       <% } %>
     </main>
 

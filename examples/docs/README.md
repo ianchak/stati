@@ -60,7 +60,7 @@ To add a section, create a folder in `site/` with an `index.md` giving its `titl
 │   └── docs.js           # Sections, sidebar order, pager, breadcrumbs, SEO
 ├── public/
 │   ├── fonts/            # Inter and its license
-│   ├── images/           # Link-preview image, sample screenshot
+│   ├── images/           # Sample screenshot
 │   ├── scripts/docs.js   # Search, theme toggle, mobile menu, copy buttons
 │   ├── favicon.svg       # Your logo
 │   └── styles.css        # All styles; colors, fonts and widths at the top
@@ -86,7 +86,7 @@ Templates can read Stati's navigation tree as `stati.nav`, but its nodes only ca
 ## Before you deploy
 
 - Set `baseUrl` in the config to your real address; the sitemap and link previews use it
-- Replace `public/images/social-card.png` (1200 by 630) and `public/favicon.svg`
+- Replace `public/favicon.svg`, and give pages an `image` for link previews (or create the site with image tools, which draws one for every page)
 - Build with `npm run build` and deploy the `dist/` folder to any static host
 
 Happy documenting!

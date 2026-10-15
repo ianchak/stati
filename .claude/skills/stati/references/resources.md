@@ -17,6 +17,8 @@ it does not replace version-specific evidence.
 
 Verified baseline: core 1.24.1, Eta 3.5.0, Node 22.22.0; source commit
 `64df3241ad897fe479d9b8fb7723752d25fe9f07`; live docs checked 2026-10-10.
+Collections, pagination, generated pages, ISG read tracking and output
+pruning were verified against the core 1.29 source and tests on 2026-10-15.
 Package versions may differ across workspaces/releases. Revalidate after upgrades.
 
 Official entry points:
@@ -178,26 +180,28 @@ Do not assume every internal utility is a supported public package subpath.
 
 These are checked-version cautions, not instructions to modify Stati:
 
-| Topic                   | Use this verified guidance                                                                   |
-| ----------------------- | -------------------------------------------------------------------------------------------- |
-| Dynamic attributes      | Follow Stati's full-value convention; don't falsely generalize it to all Eta engines         |
-| Template code           | JavaScript only; some docs show invalid TypeScript assertions                                |
-| Partial props           | Guard no-props pre-render; examples accessing `stati.props.title` unguarded can fail         |
-| Partial names           | Exact basename; `page-header.eta` does not become `pageHeader`                               |
-| Partial visibility      | Page ancestry, not layout file ancestry; Windows intermediate levels need verification       |
-| Optional partial checks | Membership test, not truthiness through the development error proxy                          |
-| Collection items        | `frontMatter.title`, not `title`; parent collections may be absent                           |
-| Routing                 | Preserved names, ordinary `/blog` + `blog.html`, not guaranteed slugification/trailing slash |
-| Dates                   | First valid of `publishedAt`, `published`, `date`, `createdAt`; quoted or unquoted           |
-| Template cache          | Current source caches in development, invalidates on template changes                        |
-| Config selection        | `configPath` chooses a directory searched for standard filenames                             |
-| Config errors           | General import failures can log/fall back; don't accept default-shaped success               |
-| ISG                     | Enabled by loader default; invalidation terms OR together                                    |
-| Invalidation `age`      | Recently rendered entries, not old publication dates                                         |
-| Hooks                   | `beforeAll` after discovery; per-page hooks miss-only; `afterRender` has no HTML field       |
-| Robots sitemap          | Set `robots.sitemap` explicitly                                                              |
-| Sitemap index           | `generateIndex` not consulted by checked splitting logic                                     |
-| Search filename         | Hashed by default; read metadata rather than guessing                                        |
+| Topic                   | Use this verified guidance                                                                    |
+| ----------------------- | --------------------------------------------------------------------------------------------- |
+| Dynamic attributes      | Follow Stati's full-value convention; don't falsely generalize it to all Eta engines          |
+| Template code           | JavaScript only; some docs show invalid TypeScript assertions                                 |
+| Partial props           | Guard no-props pre-render; examples accessing `stati.props.title` unguarded can fail          |
+| Partial names           | Exact basename; `page-header.eta` does not become `pageHeader`                                |
+| Partial visibility      | Page ancestry, not layout file ancestry; Windows intermediate levels need verification        |
+| Optional partial checks | Membership test, not truthiness through the development error proxy                           |
+| Collection items        | `frontMatter.title`, not `title`; child pages get their collection from core 1.29 only        |
+| Listing freshness       | 1.29+: pages reading `stati.collection`/`stati.nav` rebuild on data change; filters untracked |
+| Generated routes        | 1.29+: `paginate` and `[param].md` only; never from links or tags alone                       |
+| Routing                 | Preserved names, ordinary `/blog` + `blog.html`, not guaranteed slugification/trailing slash  |
+| Dates                   | First valid of `publishedAt`, `published`, `date`, `createdAt`; quoted or unquoted            |
+| Template cache          | Current source caches in development, invalidates on template changes                         |
+| Config selection        | `configPath` chooses a directory searched for standard filenames                              |
+| Config errors           | General import failures can log/fall back; don't accept default-shaped success                |
+| ISG                     | Enabled by loader default; invalidation terms OR together                                     |
+| Invalidation `age`      | Recently rendered entries, not old publication dates                                          |
+| Hooks                   | `beforeAll` after discovery; per-page hooks miss-only; `afterRender` has no HTML field        |
+| Robots sitemap          | Set `robots.sitemap` explicitly                                                               |
+| Sitemap index           | `generateIndex` not consulted by checked splitting logic                                      |
+| Search filename         | Hashed by default; read metadata rather than guessing                                         |
 
 ## Licensing and attribution
 

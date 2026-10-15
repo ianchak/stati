@@ -102,8 +102,63 @@ export interface FrontMatter {
   seo?: SEOMetadata;
   /** Sitemap configuration for the page */
   sitemap?: SitemapMetadata;
+  /**
+   * URL of the collection index page this page reads as `stati.collection`, such as `/posts`.
+   * Without it, an index page reads its own collection and other pages the nearest collection
+   * they belong to.
+   */
+  collection?: string;
+  /**
+   * Splits the page's collection (`stati.collection.recentPages`) into pages of this size.
+   * Page 1 keeps the page's URL; later pages get `<url>/page/2` and so on.
+   */
+  paginate?: number | PaginateOptions;
+  /** Expansion of a `[param].md` template into one page per key */
+  generate?: GenerateOptions;
+  /** Includes the pages a `[param].md` template generates in the navigation tree */
+  nav?: boolean;
+  /** Includes the pages a `[param].md` template generates in the search index */
+  search?: boolean;
   /** Additional custom properties */
   [key: string]: unknown;
+}
+
+/**
+ * Pagination settings from front matter (`paginate`).
+ *
+ * @example
+ * ```yaml
+ * paginate:
+ *   size: 10      # items per page
+ *   path: page    # optional, default 'page' → /blog/page/2
+ * ```
+ */
+export interface PaginateOptions {
+  /** Items per page */
+  size: number;
+  /** URL segment before the page number (default `'page'`) */
+  path?: string;
+}
+
+/**
+ * Settings of a `[param].md` template (`generate` in its front matter).
+ *
+ * @example
+ * ```yaml
+ * # site/blog/tags/[tag].md
+ * generate:
+ *   from: tags             # one page per tag in the collection
+ *   paginate: { size: 10 }  # optional
+ * ```
+ */
+export interface GenerateOptions {
+  /**
+   * Front matter field whose values become the keys, read from the pages of the template's
+   * collection. Works with string fields (`author`) and lists of strings (`tags`).
+   */
+  from?: string;
+  /** Splits each generated page's items into pages of this size */
+  paginate?: number | PaginateOptions;
 }
 
 /**
@@ -315,6 +370,74 @@ export interface PageModel {
   content: string;
   /** Publication date, from the first valid of `publishedAt`, `published`, `date`, `createdAt` */
   publishedAt?: Date;
+  /**
+   * Position of the page in a paginated listing. Set on every page of a listing with
+   * `paginate`, including the first one. Templates read it as `stati.pagination`.
+   */
+  pagination?: PaginationData;
+  /**
+   * Set on pages expanded from a `[param].md` template or a `collections.generate` entry.
+   * Templates read it as `stati.generated`.
+   */
+  generated?: GeneratedPageData;
+}
+
+/**
+ * One page of a paginated listing, available to templates as `stati.pagination`.
+ *
+ * @example
+ * ```typescript
+ * const pagination: PaginationData = {
+ *   pageNumber: 2,
+ *   totalPages: 7,
+ *   items: [], // this page's slice of the listing
+ *   prevUrl: '/blog',
+ *   nextUrl: '/blog/page/3',
+ *   urls: ['/blog', '/blog/page/2', '/blog/page/3'],
+ * };
+ * ```
+ */
+export interface PaginationData {
+  /** Number of this page, starting at 1 */
+  pageNumber: number;
+  /** Number of pages in the listing; at least 1, even when there are no items */
+  totalPages: number;
+  /** The pages listed on this page: a slice of `recentPages`, or of `stati.generated.items` */
+  items: PageModel[];
+  /** URL of the previous page; absent on the first page */
+  prevUrl?: string;
+  /** URL of the next page; absent on the last page */
+  nextUrl?: string;
+  /** URL of every page of the listing, in order; `urls[0]` is the first page */
+  urls: string[];
+}
+
+/**
+ * Data of a page expanded from a `[param].md` template, available to templates as
+ * `stati.generated`.
+ *
+ * @example
+ * ```typescript
+ * // site/blog/tags/[tag].md, for the tag "CSS"
+ * const generated: GeneratedPageData = {
+ *   key: 'css',
+ *   label: 'CSS',
+ *   items: [], // pages tagged "CSS", newest first
+ *   template: 'blog/tags/[tag].md',
+ * };
+ * ```
+ */
+export interface GeneratedPageData {
+  /** The key in the page URL, slugified for keys taken from front matter */
+  key: string;
+  /** The original value, used for `{param}` placeholders in front matter */
+  label: string;
+  /** The pages for this key, newest first */
+  items: PageModel[];
+  /** The template, relative to the source directory, such as `blog/tags/[tag].md` */
+  template: string;
+  /** Data from the `collections.generate` entry that created the page */
+  data?: Record<string, unknown>;
 }
 
 /**
@@ -383,8 +506,17 @@ export interface TemplateContext {
   };
   /** Discovered partials from underscore folders in hierarchy */
   partials: Record<string, string>;
-  /** Collection data (available on index pages and child pages showing parent collection) */
+  /**
+   * Collection data: the page's own collection on index pages, the collection the page belongs
+   * to on other pages, or the one named by the `collection` front matter field
+   */
   collection?: CollectionData;
+  /** This page's position in a paginated listing (pages with `paginate`) */
+  pagination?: PaginationData;
+  /** Key, label and items of a page expanded from a `[param].md` template */
+  generated?: GeneratedPageData;
+  /** Converts text to the URL slug Stati uses for generated page keys and heading anchors */
+  slugify?: (text: string) => string;
   /** TypeScript bundle assets (available when typescript.enabled is true) */
   assets?: StatiAssets;
   /**

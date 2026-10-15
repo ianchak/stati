@@ -11,14 +11,7 @@ import { invalidate } from './invalidate.js';
 import { loadConfig } from '../config/loader.js';
 import { clearTemplateEngineCache } from './templates.js';
 import { clearMarkdownProcessorCache } from './markdown.js';
-import {
-  loadCacheManifest,
-  saveCacheManifest,
-  computeNavigationHash,
-  DevServerLockManager,
-} from './isg/index.js';
-import { loadContent } from './content.js';
-import { buildNavigation } from './navigation.js';
+import { loadCacheManifest, saveCacheManifest, DevServerLockManager } from './isg/index.js';
 import {
   resolveDevPaths,
   resolveCacheDir,
@@ -441,73 +434,22 @@ async function handleTemplateChange(
 }
 
 /**
- * Handles markdown file changes by comparing navigation hashes.
- * Only performs a full rebuild if navigation structure actually changed.
- * Navigation changes come from frontmatter modifications (title, order, description).
- * Content-only changes use incremental rebuilds.
+ * Handles markdown file changes (added, edited or deleted pages) with an incremental build.
+ * ISG decides what re-renders: the changed page, the pages that list it through a collection,
+ * and the pages that read the navigation when the change altered it. A deleted page's output
+ * is removed by the build.
  */
 async function handleMarkdownChange(
   _markdownPath: string,
   configPath: string | undefined,
   logger: Logger,
 ): Promise<void> {
-  const cacheDir = resolveCacheDir();
-
-  try {
-    // Load existing cache manifest
-    const cacheManifest = await loadCacheManifest(cacheDir);
-
-    if (!cacheManifest || !cacheManifest.navigationHash) {
-      // No cache or no navigation hash exists, perform full rebuild
-      await build({
-        logger,
-        force: false,
-        clean: false,
-        ...(configPath && { configPath }),
-      });
-      return;
-    }
-
-    // Load config and content to rebuild navigation tree
-    const config = await loadConfig(configPath);
-    const pages = await loadContent(config);
-    const newNavigation = buildNavigation(pages);
-    const newNavigationHash = computeNavigationHash(newNavigation);
-
-    // Compare navigation hashes
-    if (newNavigationHash !== cacheManifest.navigationHash) {
-      // Navigation structure changed - clear cache and force full rebuild
-      logger.status('Navigation structure changed, performing full rebuild...');
-
-      // Force rebuild bypasses ISG cache entirely
-      await build({
-        logger,
-        force: true, // Force rebuild to bypass cache
-        clean: false,
-        ...(configPath && { configPath }),
-      });
-    } else {
-      // Navigation unchanged - use incremental rebuild for content changes
-      await build({
-        logger,
-        force: false,
-        clean: false,
-        ...(configPath && { configPath }),
-      });
-    }
-  } catch (_error) {
-    try {
-      // Fallback to full rebuild
-      await build({
-        logger,
-        force: false,
-        clean: false,
-        ...(configPath && { configPath }),
-      });
-    } catch (fallbackError) {
-      throw fallbackError instanceof Error ? fallbackError : new Error(String(fallbackError));
-    }
-  }
+  await build({
+    logger,
+    force: false,
+    clean: false,
+    ...(configPath && { configPath }),
+  });
 }
 
 export async function createDevServer(options: DevServerOptions = {}): Promise<DevServer> {

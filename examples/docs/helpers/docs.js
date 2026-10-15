@@ -46,8 +46,6 @@ import { createHash } from 'node:crypto';
  *
  * @typedef {object} DocsOptions
  * @property {{ title: string, baseUrl: string, defaultLocale?: string }} site
- * @property {{ url: string, alt: string, width: number, height: number }} [socialImage]
- *   Image used for link previews when a page does not set its own.
  */
 
 /** Trailing slashes and `/index.html` removed, so `/a/`, `/a` and `/a/index.html` match. */
@@ -241,18 +239,16 @@ export function createDocs(options) {
    * matter to decide which pages to rebuild; it must not change after rendering.
    *
    * @param {PageModel} page
-   * @param {boolean} generatedCards Whether Stati generates an Open Graph image for every
-   *   page (`images.og`). The site-wide social image is then left out, so each page gets
-   *   its own card; a page's `image` still wins.
+   * @param {boolean} generatedCards Whether Stati draws an Open Graph card for every page
+   *   (`images.og`, with @stati/images). Pages without their own `image` then use it.
    */
   function addSeo(page, generatedCards) {
     const fm = page.frontMatter;
     const seo = { ...(fm.seo ?? {}) };
     const openGraph = { ...(seo.openGraph ?? {}) };
-    const image = fm.image ? { url: String(fm.image), alt: String(fm.imageAlt ?? '') } : undefined;
 
-    if (image) openGraph.image ??= image;
-    else if (options.socialImage && !generatedCards) openGraph.image ??= options.socialImage;
+    // A page's own link-preview image; without one it gets the generated card, if any
+    if (fm.image) openGraph.image ??= { url: String(fm.image), alt: String(fm.imageAlt ?? '') };
     const hasImage = openGraph.image ? true : openGraph.image !== false && generatedCards;
     openGraph.locale ??= locale.replace('-', '_');
     openGraph.siteName ??= options.site.title;

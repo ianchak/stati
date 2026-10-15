@@ -233,6 +233,36 @@ aging: [
 
 See [ISG configuration](/configuration/isg) for validation rules and examples.
 
+### Collections configuration
+
+Collections need no configuration: a folder's `index.md` makes one, `paginate` and `[param].md` templates work from front matter. The `collections` block covers the rest:
+
+```javascript
+export default defineConfig({
+  collections: {
+    // Front matter that listings show; changing it rebuilds the pages that list the page
+    summaryFields: ['title', 'description', 'tags', 'draft', 'image'],
+
+    // Pages from data, rendered with a [param].md template
+    generate: async ({ pages }) => [
+      {
+        url: '/authors/ada',
+        template: 'authors/[author].md',
+        label: 'Ada Lovelace',
+        items: pages.filter((page) => page.frontMatter.author === 'ada'),
+      },
+    ],
+  },
+});
+```
+
+**Available Options:**
+
+- `summaryFields` (string[]) - Front matter fields of collection pages whose changes rebuild the pages that list them (default: `['title', 'description', 'tags', 'draft']`; URLs and publish dates always count, and `content` stands for the Markdown body)
+- `generate` (function) - Returns pages to create, each with a `url` and a `[param].md` `template`, plus optional `key`, `label`, `items` and `data`
+
+See [Collections and generated pages](/core-concepts/collections).
+
 ### Image configuration
 
 Markdown images get their `width`, `height` and lazy loading without any configuration. The `images` block turns on features from the optional `@stati/images` package, or turns the built-in handling off:
@@ -526,6 +556,7 @@ For detailed information about specific configuration options, see:
 - **[Template Settings](/configuration/templates)** - Eta template engine configuration
 - **[Markdown Configuration](/configuration/markdown)** - Plugins and markdown-it processing
 - **[ISG Options](/configuration/isg)** - Incremental static generation and caching
+- **[Collections](/core-concepts/collections)** - Listings, pagination and generated pages
 - **[SEO Configuration](/configuration/seo)** - SEO metadata, sitemap and robots.txt
 - **[Search](/configuration/search)** - Search index generation
 - **[RSS Configuration](/configuration/rss)** - RSS feed generation

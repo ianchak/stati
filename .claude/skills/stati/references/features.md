@@ -122,6 +122,8 @@ search: {
 Those values show the feature defaults; search is disabled until enabled.
 Default output is `search-index-<8-character-hash>.json`, not a fixed
 `search-index.json`. With `hashFilename: false`, the filename is stable.
+Generated pages (`[param].md`) are left out unless the template sets
+`search: true`; pages 2+ of a paginated listing are always left out.
 
 The file is an **object**, not a bare document array:
 
@@ -248,6 +250,11 @@ rss: {
 }
 ```
 
+Generated pages and pages 2+ of a paginated listing are never feed items; they
+share their template's source path, so patterns could not tell them apart. They
+are in the sitemap by default (exclude them with `excludePatterns`, `filter`, or
+`sitemap: { exclude: true }` in the template).
+
 RSS patterns match **source paths**, unlike bundle output patterns or URL-oriented
 search/sitemap patterns. Portable includes such as `**/blog/**/*.md` avoid a
 machine-specific absolute prefix.
@@ -312,10 +319,26 @@ age, and otherwise use the default TTL. Max-age capping suppresses time-based
 refresh of old dated pages, not content/dependency-driven changes. Do not use it
 as an immutable-content guarantee.
 
-Cache manifest: `.stati/cache/manifest.json`; entries track output path, inputs
-hash, template dependencies, tags, publication/render timestamps, TTL/max age;
-the manifest can also track navigation hash. ISG compares source/dependency
+Cache manifest: `.stati/manifest.json`; entries track output path, inputs
+hash, template dependencies, tags, publication/render timestamps, TTL/max age,
+and from core 1.29 `readsCollection`/`readsNav`. ISG compares source/dependency
 hashes and time constraints. Do not manually edit manifest entries as an author.
+
+What a page read while rendering is part of its hash (core 1.29+): reading
+`stati.collection` adds the collection summary (members' URL, publish date,
+`title`, `description`, `tags`, `draft`, or `collections.summaryFields`);
+reading `stati.nav`/`stati.page.navNode` adds the navigation hash. So a body
+edit rebuilds only that page, while a retitled/added/deleted post also rebuilds
+the pages that list it, in `stati build` and dev alike. Paginated pages depend
+on their slice and page count; generated pages on their own items. Entries
+from older versions lack the flags and rebuild once. Earlier versions never
+rebuilt listings for other pages' changes (hence `beforeAll` "fingerprint"
+hacks), and the dev server forced a full rebuild on navigation changes.
+
+`stati build` (1.29+) deletes the HTML of pages that no longer exist, plus
+emptied folders, and only files the manifest records; `public/` and other tools'
+files survive, as does anything a linked folder reaches outside `dist/`. A file
+it cannot delete keeps its manifest entry and is retried on the next build.
 
 Invalidation:
 
@@ -327,7 +350,8 @@ npx stati invalidate "age:1week"
 ```
 
 - No query invalidates the full cache.
-- `tag:` uses exact equality.
+- `tag:` uses exact equality. A generated tag page carries its key and label
+  (`tag:css` and `tag:CSS`).
 - `path:` uses exact/prefix matching, **not glob expansion**.
 - Use `glob:` for wildcards.
 - Multiple space-separated terms are **OR**, not AND.
@@ -339,8 +363,10 @@ npx stati invalidate "age:1week"
 
 Use `--force` when validating output-affecting config/hook/filter changes instead
 of assuming their effects are always captured by existing cache hashes. External
-data changes need an explicit rebuild strategy. A before-render mutation cannot
-affect an earlier cache-hit decision.
+data changes need an explicit rebuild strategy. Data a filter returns from a
+`beforeAll` closure is not tracked; write what a page shows into its frontmatter
+in `beforeAll`, or read it from `stati.collection`. A before-render mutation
+cannot affect an earlier cache-hit decision.
 
 ## Hooks: actual lifecycle
 
@@ -358,19 +384,22 @@ Hooks may be synchronous or async.
 
 Actual order:
 
-1. Load config/cache/content, construct navigation/processors/bundle preparation.
-2. `beforeAll` receives the **already loaded** pages.
+1. Load config/cache/content, expand `[param].md` templates, `collections.generate`
+   entries and `paginate` listings into pages, construct navigation/processors/
+   bundle preparation.
+2. `beforeAll` receives the **already loaded** pages, generated ones included.
 3. For each cache miss: `beforeRender` -> Markdown -> Eta -> SEO/search/bundle
    injection -> production HTML write/cache update -> `afterRender`.
 4. Dev mode queues writes; `afterRender` runs before the deferred physical write.
-5. Save cache/copy assets/generate applicable search/sitemap/robots/RSS output.
+5. Delete output of pages that no longer exist, save cache, copy assets,
+   generate applicable search/sitemap/robots/RSS output.
 6. `afterAll`.
 
 Cache hits skip both per-page hooks. All-build hooks still run.
 `afterRender` does not receive HTML or an output path and is not a returned-HTML
 transform API. Do not post-process via nonexistent `ctx.html`.
-Navigation is constructed before `beforeAll`; do not assume mutations automatically
-rebuild it. Generate files before the Stati build if content discovery must see them.
+Navigation, generated pages and pagination are constructed before `beforeAll`; do
+not assume mutations automatically rebuild them (hook-added tags make no tag pages). Generate files before the Stati build if content discovery must see them.
 Hook failures propagate; don't hide errors with broad catches.
 
 ## Metrics

@@ -18,6 +18,8 @@ export type {
   RobotsTxtConfig,
   TypeScriptConfig,
   BundleConfig,
+  CollectionsConfig,
+  GeneratedPageEntry,
 } from './config.js';
 
 // Content types
@@ -25,6 +27,10 @@ export type {
   FrontMatter,
   PageModel,
   CollectionData,
+  PaginationData,
+  GeneratedPageData,
+  PaginateOptions,
+  GenerateOptions,
   TemplateContext,
   SEOMetadata,
   SitemapMetadata,

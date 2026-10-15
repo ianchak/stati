@@ -33,9 +33,9 @@ To use another display face, put its `.woff2` file in `public/fonts/`, point the
 
 The leaf between sections and at the end of each post is `public/images/fleuron.svg`, drawn in your accent colour. Replace it with any single-colour SVG: an asterism, a star, your initials.
 
-## The favicon and link preview image
+## The favicon and link previews
 
-Replace `public/favicon.svg` with your own icon, and `public/images/social-card.png` with a 1200 by 630 pixel image for link previews. With image tools on, each page's preview is drawn from `site/og.eta` instead; edit its colours and fonts there.
+Replace `public/favicon.svg` with your own icon. With image tools on, each page's link preview image is drawn from `site/og.eta`; edit its colours and fonts there. Without them, a post shows the picture you set under `seo.openGraph.image` in its front matter; [Feeds, sitemaps and search engines](/posts/feeds-sitemaps-and-search-engines) shows how.
 
 ## Header links
 
@@ -43,7 +43,7 @@ The header links come from the `nav` list in `stati.config.js`. Add a page, such
 
 ```js
 nav: [
-  { label: 'Archive', url: '/archive' },
+  { label: 'Archive', url: '/posts' },
   { label: 'Tags', url: '/tags' },
   { label: 'Now', url: '/now' },
   { label: 'About', url: '/about' },

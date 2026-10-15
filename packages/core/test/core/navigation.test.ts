@@ -148,4 +148,63 @@ describe('Navigation', () => {
     expect(docsGuideCollection?.children).toHaveLength(1);
     expect(docsGuideCollection?.children?.[0]?.title).toBe('Getting Started');
   });
+
+  describe('generated and pagination pages', () => {
+    const tagsIndex: PageModel = {
+      slug: '/tags',
+      url: '/tags',
+      sourcePath: '/content/tags/index.md',
+      frontMatter: { title: 'Tags' },
+      content: '',
+    };
+    const generatedPage = (key: string, frontMatter: Record<string, unknown> = {}): PageModel => ({
+      slug: `/tags/${key}`,
+      url: `/tags/${key}`,
+      sourcePath: '/content/tags/[tag].md',
+      frontMatter: { title: `Tagged ${key}`, ...frontMatter },
+      content: '',
+      generated: { key, label: key, items: [], template: 'tags/[tag].md' },
+    });
+    const paginationPage: PageModel = {
+      slug: '/page/2',
+      url: '/page/2',
+      sourcePath: '/content/index.md',
+      frontMatter: { title: 'Home' },
+      content: '',
+      pagination: { pageNumber: 2, totalPages: 2, items: [], urls: ['/', '/page/2'] },
+    };
+    const allUrls = (nodes: ReturnType<typeof buildNavigation>): string[] =>
+      nodes.flatMap((node) => [node.url, ...allUrls(node.children ?? [])]);
+
+    it('leaves them out by default', () => {
+      const navigation = buildNavigation([
+        ...mockPages,
+        tagsIndex,
+        generatedPage('css'),
+        paginationPage,
+      ]);
+
+      expect(allUrls(navigation)).not.toContain('/tags/css');
+      expect(allUrls(navigation)).not.toContain('/page/2');
+      expect(allUrls(navigation)).toContain('/tags');
+    });
+
+    it('includes generated pages whose template sets nav: true, but not their later pages', () => {
+      const css = generatedPage('css', { nav: true });
+      const cssPageTwo: PageModel = {
+        ...css,
+        url: '/tags/css/page/2',
+        pagination: {
+          pageNumber: 2,
+          totalPages: 2,
+          items: [],
+          urls: ['/tags/css', '/tags/css/page/2'],
+        },
+      };
+      const navigation = buildNavigation([...mockPages, tagsIndex, css, cssPageTwo]);
+
+      expect(allUrls(navigation)).toContain('/tags/css');
+      expect(allUrls(navigation)).not.toContain('/tags/css/page/2');
+    });
+  });
 });

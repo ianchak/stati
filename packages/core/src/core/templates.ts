@@ -15,15 +15,23 @@ import {
   getStatiVersion,
   isCollectionIndexPage,
   discoverLayout,
-  getCollectionPathForPage,
   resolveSrcDir,
   createTemplateError,
   createValidatingPartialsProxy,
   createValidatingContextProxy,
   propValue,
+  slugify,
   wrapPartialsAsCallable,
   createNavigationHelpers,
 } from './utils/index.js';
+import {
+  getCollections,
+  resolveCollectionPath,
+  createCollectionView,
+  copyPaginationData,
+  copyGeneratedData,
+} from './collections.js';
+import type { PageReads } from './collections.js';
 import { isDevelopment, isProduction } from '../env.js';
 import { generateSEO, resolveGeneratedImagePlaceholders } from '../seo/index.js';
 import type { PageImages, StatiImageOptions } from '../images/runtime.js';
@@ -39,6 +47,8 @@ export interface RenderResult {
   templatesLoaded: number;
   /** Open Graph image generated for the page, if any */
   ogImage?: GeneratedOgImage | undefined;
+  /** Shared data the render read, which the cache entry records */
+  reads: PageReads;
 }
 
 /**
@@ -66,133 +76,28 @@ function renderPlainImage(src: unknown, options: StatiImageOptions = {}): string
 }
 
 /**
- * Groups pages by their tags for aggregation purposes.
- *
- * @param pages - Pages to group
- * @returns Object mapping tag names to arrays of pages
+ * Wraps the navigation helpers for one render so that reading any of them sets `reads.nav`.
+ * Like the collection view, it uses accessors on a plain object, so spreading the template
+ * context does not count as a read. The helpers return the shared nodes unchanged.
  */
-function groupPagesByTags(pages: PageModel[]): Record<string, PageModel[]> {
-  const pagesByTag: Record<string, PageModel[]> = {};
-
-  for (const page of pages) {
-    const tags = page.frontMatter.tags;
-    if (Array.isArray(tags)) {
-      for (const tag of tags) {
-        if (typeof tag === 'string') {
-          if (!pagesByTag[tag]) {
-            pagesByTag[tag] = [];
-          }
-          pagesByTag[tag].push(page);
-        }
-      }
-    }
+function createNavView<T extends object>(helpers: T, reads: PageReads): T {
+  const view = {} as T;
+  for (const [key, initial] of Object.entries(helpers)) {
+    let value: unknown = initial;
+    Object.defineProperty(view, key, {
+      enumerable: true,
+      configurable: true,
+      get() {
+        reads.nav = true;
+        return value;
+      },
+      set(next: unknown) {
+        reads.nav = true;
+        value = next;
+      },
+    });
   }
-
-  return pagesByTag;
-}
-
-/**
- * Sorts pages by publishedAt date (most recent first), falling back to alphabetical by title.
- *
- * @param pages - Pages to sort
- * @returns Sorted array of pages
- */
-function sortPagesByDate(pages: PageModel[]): PageModel[] {
-  return pages.sort((a, b) => {
-    // Sort by publishedAt (newest first)
-    if (a.publishedAt && b.publishedAt) {
-      return b.publishedAt.getTime() - a.publishedAt.getTime();
-    }
-    if (a.publishedAt && !b.publishedAt) return -1;
-    if (!a.publishedAt && b.publishedAt) return 1;
-
-    // Fallback to title
-    const titleA = a.frontMatter.title || basename(a.url) || 'Untitled';
-    const titleB = b.frontMatter.title || basename(b.url) || 'Untitled';
-    return titleA.localeCompare(titleB);
-  });
-}
-
-/**
- * Builds collection aggregation data for index pages.
- * Provides all the data needed for index pages to list and organize their collection's content.
- *
- * @param currentPage - The current page being rendered (must be an index page)
- * @param allPages - All pages in the site
- * @returns Collection data for template rendering
- */
-function buildCollectionData(currentPage: PageModel, allPages: PageModel[]): CollectionData {
-  const collectionPath = currentPage.url === '/' ? '/' : currentPage.url;
-  const collectionName = collectionPath === '/' ? 'Home' : basename(collectionPath);
-
-  // Find all pages that belong to this collection
-  const collectionPages = allPages.filter((page) => {
-    if (page.url === currentPage.url) {
-      return false; // Don't include the index page itself
-    }
-
-    if (collectionPath === '/') {
-      // For root collection, include pages that are direct children of root
-      const pageCollectionPath = getCollectionPathForPage(page.url);
-      return pageCollectionPath === '/';
-    } else {
-      // For other collections, include pages that start with the collection path
-      const pageUrlAsDir = collectionPath.endsWith('/') ? collectionPath : collectionPath + '/';
-      return page.url.startsWith(pageUrlAsDir);
-    }
-  });
-
-  // Find direct children (one level down)
-  const children = collectionPages.filter((page) => {
-    const relativePath = page.url.substring(collectionPath.length);
-    const cleanPath = relativePath.startsWith('/') ? relativePath.substring(1) : relativePath;
-    return !cleanPath.includes('/'); // No further slashes means direct child
-  });
-
-  // Sort pages by date for recent posts
-  const recentPages = sortPagesByDate([...collectionPages]);
-
-  // Group by tags
-  const pagesByTag = groupPagesByTags(collectionPages);
-
-  return {
-    pages: collectionPages,
-    children,
-    recentPages,
-    pagesByTag,
-    metadata: {
-      totalPages: collectionPages.length,
-      hasChildren: children.length > 0,
-      collectionPath,
-      collectionName,
-    },
-  };
-}
-
-/**
- * Builds collection data for a child page (showing parent collection data).
- * Finds the parent collection and returns its data.
- *
- * @param currentPage - The current page being rendered
- * @param allPages - All pages in the site
- * @returns Collection data for the parent collection or undefined
- */
-function buildParentCollectionData(
-  currentPage: PageModel,
-  allPages: PageModel[],
-): CollectionData | undefined {
-  // Get the parent collection path
-  const parentPath = getCollectionPathForPage(currentPage.url);
-
-  // Find the index page for the parent collection
-  const parentIndexPage = allPages.find((p) => p.url === parentPath);
-
-  if (parentIndexPage) {
-    // Build collection data for the parent
-    return buildCollectionData(parentIndexPage, allPages);
-  }
-
-  return undefined;
+  return view;
 }
 
 /**
@@ -337,17 +242,22 @@ export async function renderPage(
   // Count templates: partials + layout (if found)
   const partialsCount = Object.keys(partialPaths).length;
 
-  // Build collection data based on page type
+  // What this render reads from shared data, so the cache can rebuild the page when it changes
+  const reads: PageReads = { collection: false, nav: false };
+
+  // The page's collection: its own on index pages, the one it belongs to on other pages, or
+  // the one its front matter names. Collections are computed once per page list.
   let collectionData: CollectionData | undefined;
   const isIndexPage = allPages && isCollectionIndexPage(page, allPages);
 
   if (allPages) {
-    if (isIndexPage) {
-      // For index pages, show their own collection data
-      collectionData = buildCollectionData(page, allPages);
-    } else {
-      // For child pages, show parent collection data
-      collectionData = buildParentCollectionData(page, allPages);
+    const collectionPath = resolveCollectionPath(page, allPages);
+    const data =
+      collectionPath !== undefined
+        ? getCollections(allPages).byPath.get(collectionPath)
+        : undefined;
+    if (data) {
+      collectionData = createCollectionView(data, reads);
     }
   }
 
@@ -385,16 +295,29 @@ export async function renderPage(
     );
   }
 
+  // The current page's navigation node counts as a navigation read
+  const pageContext: Record<string, unknown> = { ...page.frontMatter, ...pageOverrides };
+  Object.defineProperty(pageContext, 'navNode', {
+    enumerable: true,
+    configurable: true,
+    get() {
+      reads.nav = true;
+      return currentNavNode;
+    },
+  });
+
   // Create base context for partial rendering
   const baseContext = {
     site: config.site,
-    page: {
-      ...page.frontMatter,
-      ...pageOverrides,
-    },
+    page: pageContext,
     content: body,
-    nav: navHelpers, // Replace navigation with nav helpers
+    nav: createNavView(navHelpers, reads), // Replace navigation with nav helpers
     collection: collectionData, // Add collection data
+    // Set on paginated listings and on pages generated from [param].md templates. Placed before
+    // the filters, like slugify, so that an existing filter with the same name keeps working.
+    pagination: page.pagination ? copyPaginationData(page.pagination) : undefined,
+    generated: page.generated ? copyGeneratedData(page.generated) : undefined,
+    slugify,
     // Add custom filters to context
     ...(config.eta?.filters || {}),
     generator: {
@@ -516,10 +439,17 @@ export async function renderPage(
   // Render the Open Graph template with the layout's context, minus the page body, so the
   // generated image is known before the layout renders its SEO tags
   if (pageImages && ogState.pending) {
+    // Copy the page's property descriptors so that navNode stays a getter: spreading would
+    // read it and count every page with a card as reading the navigation
+    const ogPage = Object.defineProperties(
+      {},
+      Object.getOwnPropertyDescriptors(baseContext.page),
+    ) as Record<string, unknown>;
+    ogPage.content = '';
     const ogBaseContext = {
       ...baseContext,
       content: '',
-      page: { ...baseContext.page, content: '' },
+      page: ogPage,
       og: pageImages.ogSize(),
     };
     const ogContext = createValidatingContextProxy({
@@ -544,7 +474,12 @@ export async function renderPage(
   try {
     if (!layoutPath) {
       log.warning('No layout template found, using fallback');
-      return { html: createFallbackHtml(page, body), templatesLoaded, ogImage: ogState.image };
+      return {
+        html: createFallbackHtml(page, body),
+        templatesLoaded,
+        ogImage: ogState.image,
+        reads,
+      };
     }
 
     const html = await eta.renderAsync(layoutPath, context);
@@ -552,6 +487,7 @@ export async function renderPage(
       html: resolveGeneratedImagePlaceholders(html, ogState.image),
       templatesLoaded,
       ogImage: ogState.image,
+      reads,
     };
   } catch (error) {
     log.error(
@@ -567,7 +503,12 @@ export async function renderPage(
       throw templateError;
     }
 
-    return { html: createFallbackHtml(page, body), templatesLoaded, ogImage: ogState.image };
+    return {
+      html: createFallbackHtml(page, body),
+      templatesLoaded,
+      ogImage: ogState.image,
+      reads,
+    };
   }
 }
 

@@ -101,13 +101,16 @@ See [Images troubleshooting](/configuration/images#troubleshooting) for each mes
 ## Cache hiccups or stale content
 
 **Cause:**
-ISG cache is outdated or corrupted.
+ISG cache is outdated or corrupted, or a page shows data that Stati doesn't track. Stati rebuilds a page when its own files change and when data it read changes: its [collection](/core-concepts/collections) or the navigation. Data that a filter collects in a `beforeAll` hook isn't tracked.
 
 **Solution:**
 
-1. Run `npm run clean` to clear the `.stati/` directory and `dist/` folder
-2. Run `stati build --clean` to force a full rebuild
-3. Check your ISG TTL settings in `stati.config.ts`
+1. Read listings from `stati.collection`, or, in the `beforeAll` hook, write what a page shows into its front matter so it becomes part of the page's hash
+2. When a listing shows front matter beyond `title`, `description`, `tags` and `draft`, add the fields to `collections.summaryFields`
+3. Run `stati build --clean` to clear `dist/` and `.stati/` and rebuild everything
+4. Check your ISG TTL settings in `stati.config.ts`
+
+Pages that no longer exist are removed by every `stati build`, so stale HTML from a deleted or renamed page doesn't need `--clean`.
 
 ---
 

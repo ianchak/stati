@@ -39,7 +39,10 @@ interface TemplateContext {
     getBreadcrumbs: (path?: string) => NavNode[];
     getCurrentNode: () => NavNode | undefined;
   };
-  collection?: CollectionData; // Index pages, and top-level pages (root collection)
+  collection?: CollectionData; // The page's collection; undefined when it has none
+  pagination?: PaginationData; // This page's part of a listing with `paginate`
+  generated?: GeneratedPageData; // Key and items of a page from a [param].md template
+  slugify: (text: string) => string; // The slug Stati gives generated page keys
   partials: Record<string, CallablePartial>; // Callable partial functions (runtime type)
   assets: StatiAssets; // Bundle paths ([] when none) and the search index path
   propValue: (...args) => string; // Class/attribute value builder (added at runtime)
@@ -98,7 +101,26 @@ interface StatiAssets {
   /** Path to search index file (when search enabled) */
   searchIndexPath?: string;
 }
+
+interface PaginationData {
+  pageNumber: number; // Starts at 1
+  totalPages: number; // At least 1
+  items: PageModel[]; // This page's share of the listing, newest first
+  prevUrl?: string; // Absent on the first page
+  nextUrl?: string; // Absent on the last page
+  urls: string[]; // Every page's URL; urls[0] is the first page
+}
+
+interface GeneratedPageData {
+  key: string; // In the URL: 'css'
+  label: string; // As written: 'CSS'
+  items: PageModel[]; // Pages with this key, newest first
+  template: string; // 'blog/tags/[tag].md'
+  data?: Record<string, unknown>; // From a collections.generate entry
+}
 ```
+
+`stati.collection` is the page's own collection on a folder's index page, the collection it belongs to on other pages, or the one its `collection` front matter names. `stati.pagination` and `stati.generated` are set on the pages they describe and `undefined` elsewhere; a custom filter named `pagination`, `generated` or `slugify` takes the name over. Reading `stati.collection` or `stati.nav` makes the page depend on that data for [ISG](/core-concepts/isg#dependency-tracking). See [Collections and generated pages](/core-concepts/collections).
 
 Front matter values are exposed through `stati.page`. Additional properties you place on `site` in a JavaScript config are available at runtime as `stati.site.yourKey`, but the `SiteConfig` type only declares the four fields above, so a TypeScript config rejects them.
 

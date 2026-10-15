@@ -1,11 +1,26 @@
 import { basename } from 'node:path';
 import type { PageModel, NavNode } from '../types/index.js';
+import { isVirtualPage } from './utils/index.js';
+
+/**
+ * Whether a page appears in navigation. Pages generated from a `[param].md` template appear
+ * only when the template sets `nav: true`; later pages of a paginated listing never do.
+ */
+function isInNavigation(page: PageModel): boolean {
+  if (!isVirtualPage(page)) {
+    return true;
+  }
+  const firstPage = (page.pagination?.pageNumber ?? 1) === 1;
+  return page.generated !== undefined && firstPage && page.frontMatter.nav === true;
+}
 
 /**
  * Builds a hierarchical navigation structure from pages.
  * Groups pages by directory structure and sorts them appropriately.
+ * Generated pages are left out unless their template sets `nav: true`, and so are the
+ * later pages of paginated listings.
  *
- * @param pages - Array of page models to build navigation from
+ * @param allPages - Array of page models to build navigation from
  * @returns Array of top-level navigation nodes
  *
  * @example
@@ -19,7 +34,9 @@ import type { PageModel, NavNode } from '../types/index.js';
  * // Results in hierarchical structure with sorted blog posts
  * ```
  */
-export function buildNavigation(pages: PageModel[]): NavNode[] {
+export function buildNavigation(allPages: PageModel[]): NavNode[] {
+  const pages = allPages.filter(isInNavigation);
+
   // Group pages by their collection (directory)
   const collections = new Map<string, PageModel[]>();
 

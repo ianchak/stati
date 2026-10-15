@@ -315,6 +315,13 @@ function validateCacheEntry(entry: unknown, path: string): entry is CacheEntry {
     }
   }
 
+  for (const field of ['readsCollection', 'readsNav'] as const) {
+    if (entryObj[field] !== undefined && typeof entryObj[field] !== 'boolean') {
+      console.warn(`Invalid cache entry for ${path}: "${field}" must be a boolean if present`);
+      return false;
+    }
+  }
+
   // Validate that deps and tags arrays contain strings
   if (!entryObj.deps.every((dep: unknown) => typeof dep === 'string')) {
     console.warn(`Invalid cache entry for ${path}: all "deps" must be strings`);

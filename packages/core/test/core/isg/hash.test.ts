@@ -52,6 +52,17 @@ describe('Hash Utilities', () => {
       expect(hash1).not.toBe(hash2);
     });
 
+    it('should include dates, which unquoted YAML dates parse to', () => {
+      const hash = (updated: Date) =>
+        computeContentHash('', { updated, nested: { dates: [updated] } });
+
+      expect(hash(new Date('2026-01-01'))).toBe(hash(new Date('2026-01-01')));
+      expect(hash(new Date('2026-01-01'))).not.toBe(hash(new Date('2026-01-02')));
+      expect(computeContentHash('', { updated: new Date('2026-01-01') })).not.toBe(
+        computeContentHash('', { updated: {} }),
+      );
+    });
+
     it('should sort frontmatter keys for consistency', () => {
       const content = '# Test';
 
@@ -386,6 +397,26 @@ describe('Hash Utilities', () => {
 
       // Hashes should be the same because only title, url, order, and children matter
       expect(hash1).toBe(hash2);
+    });
+
+    it('should change with every field a navigation node carries', () => {
+      const node = {
+        title: 'Post',
+        url: '/blog/post',
+        path: '/blog/post',
+        publishedAt: new Date('2026-01-01'),
+        isCollection: false,
+      };
+      const base = computeNavigationHash([node]);
+
+      expect(computeNavigationHash([{ ...node, publishedAt: new Date('2026-02-01') }])).not.toBe(
+        base,
+      );
+      expect(computeNavigationHash([{ ...node, isCollection: true }])).not.toBe(base);
+      expect(computeNavigationHash([{ ...node, path: '/blog/other' }])).not.toBe(base);
+      expect(computeNavigationHash([{ ...node, publishedAt: new Date('invalid') }])).toBe(
+        computeNavigationHash([{ ...node, publishedAt: undefined }]),
+      );
     });
 
     it('should handle nodes with undefined or missing fields', () => {

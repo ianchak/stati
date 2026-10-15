@@ -33,6 +33,13 @@ export type {
   AgingRule,
   BuildStats,
   BundleConfig,
+  CollectionData,
+  CollectionsConfig,
+  GeneratedPageEntry,
+  PaginationData,
+  GeneratedPageData,
+  PaginateOptions,
+  GenerateOptions,
 } from './types/index.js';
 
 // SEO and Sitemap types

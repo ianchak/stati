@@ -29,20 +29,23 @@ The `rss` block in the config controls it. To publish a second feed, for one tag
 
 `/sitemap.xml` lists every public page for search engines, with posts ranked above other pages. The 404 page is left out. `/robots.txt` allows every crawler and points them at the sitemap.
 
-## Link previews and structured data
+## Link previews
 
-Each page gets a description, a canonical link, Open Graph and Twitter tags, so a shared link shows a title, a summary and an image. Posts are marked as articles, with their publish date, update date and tags, and carry `BlogPosting` structured data that search engines read.
-
-All of this comes from front matter you already write: `title`, `description`, `publishedAt`, `updated` and `tags`.
+Each page gets a description, a canonical link, Open Graph and Twitter tags, so a shared link shows a title, a summary and, when the page has one, an image. They come from front matter you already write, `title` and `description`, and from the author in `stati.config.js`.
 
 ---
 
-Pages without their own image use `/images/social-card.png`. Replace it with a 1200 by 630 pixel image of your own, or give a post its own picture. If you added image tools when you created the blog, each page gets its own card instead, drawn from `site/og.eta` with the page's title and description:
+If you added image tools when you created the blog, each page gets its own preview image, drawn from `site/og.eta` with the page's title and description. Without them, a page has an image only when you give it one. Either way, a post's own picture wins; 1200 by 630 pixels suits every network:
 
 ```yaml
-image: /images/my-post-card.png
-imageAlt: A short description of the picture
+seo:
+  openGraph:
+    image:
+      url: /images/my-post-card.png
+      alt: A short description of the picture
 ```
+
+The same `seo` block takes other overrides, such as `title`, `description` or `structuredData` for search engines.
 
 ## Checking the output
 

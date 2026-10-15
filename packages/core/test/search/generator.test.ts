@@ -10,6 +10,7 @@ import {
   buildBreadcrumb,
   extractSectionsFromMarkdown,
   shouldExcludePage,
+  isGeneratedPageExcludedFromSearch,
   generateSearchIndex,
   writeSearchIndex,
   computeSearchIndexFilename,
@@ -328,6 +329,47 @@ describe('shouldExcludePage', () => {
     const page = createPage({ url: '/public/page' });
     const config: SearchConfig = { enabled: true, exclude: ['/private/**'] };
     expect(shouldExcludePage(page, config)).toBe(false);
+  });
+
+  describe('generated and pagination pages', () => {
+    const generated = { key: 'css', label: 'CSS', items: [], template: 'tags/[tag].md' };
+    const config: SearchConfig = { enabled: true };
+
+    it('excludes generated pages unless their template sets search: true', () => {
+      expect(shouldExcludePage(createPage({ url: '/tags/css', generated }), config)).toBe(true);
+      expect(
+        shouldExcludePage(
+          createPage({ url: '/tags/css', generated, frontMatter: { search: true } }),
+          config,
+        ),
+      ).toBe(false);
+      expect(isGeneratedPageExcludedFromSearch(createPage())).toBe(false);
+    });
+
+    it('always excludes later pages of a listing', () => {
+      const pagination = {
+        pageNumber: 2,
+        totalPages: 2,
+        items: [],
+        urls: ['/blog', '/blog/page/2'],
+      };
+      expect(shouldExcludePage(createPage({ url: '/blog/page/2', pagination }), config)).toBe(true);
+      expect(
+        shouldExcludePage(
+          createPage({
+            url: '/tags/css/page/2',
+            generated,
+            pagination,
+            frontMatter: { search: true },
+          }),
+          config,
+        ),
+      ).toBe(true);
+      // The first page of a listing is the page itself
+      expect(
+        shouldExcludePage(createPage({ pagination: { ...pagination, pageNumber: 1 } }), config),
+      ).toBe(false);
+    });
   });
 });
 

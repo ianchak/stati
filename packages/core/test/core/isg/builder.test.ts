@@ -24,6 +24,7 @@ import {
   shouldRebuildPage,
   createCacheEntry,
   updateCacheEntry,
+  hasRecordedReads,
 } from '../../../src/core/isg/builder.js';
 
 // Get references to the mocked functions
@@ -359,6 +360,89 @@ describe('ISG Build Integration', () => {
       const result = await createCacheEntry(blogPage, mockConfig, allPages, fixedDate);
 
       expect(result.tags).toContain('page');
+    });
+
+    it('should record what the render read, false included', async () => {
+      const result = await createCacheEntry(mockPage, mockConfig, allPages, fixedDate, 'r', {
+        assetDeps: [],
+        images: [],
+        reads: { collection: true, nav: false },
+      });
+
+      expect(result).toMatchObject({ readsCollection: true, readsNav: false });
+      expect(hasRecordedReads(result)).toBe(true);
+    });
+
+    it('should leave the read flags out when the render did not report them', async () => {
+      const result = await createCacheEntry(mockPage, mockConfig, allPages, fixedDate);
+
+      expect(result).not.toHaveProperty('readsCollection');
+      expect(hasRecordedReads(result)).toBe(false);
+    });
+
+    it('should tag a generated page with its key and label', async () => {
+      const tagPage: PageModel = {
+        ...mockPage,
+        url: '/tags/css',
+        frontMatter: { title: 'Tagged CSS', tags: ['topic'] },
+        generated: { key: 'css', label: 'CSS', items: [], template: 'tags/[tag].md' },
+      };
+
+      const result = await createCacheEntry(tagPage, mockConfig, allPages, fixedDate);
+
+      expect(result.tags).toEqual(['topic', 'css', 'CSS']);
+    });
+  });
+
+  describe('read flags', () => {
+    const entryWithReads: CacheEntry = {
+      path: '/test.html',
+      inputsHash: 'inputs123',
+      deps: [testLayoutPath],
+      tags: [],
+      renderedAt: fixedDate.toISOString(),
+      ttlSeconds: 3600,
+      readsCollection: true,
+      readsNav: true,
+    };
+
+    it('should replace the flags in a fast update with the new render', async () => {
+      const result = await updateCacheEntry(
+        entryWithReads,
+        mockPage,
+        mockConfig,
+        allPages,
+        fixedDate,
+        true,
+        'r',
+        { assetDeps: [], images: [], reads: { collection: false, nav: true } },
+      );
+
+      expect(result).toMatchObject({ readsCollection: false, readsNav: true });
+    });
+
+    it('should drop the flags when an update has no render to take them from', async () => {
+      const result = await updateCacheEntry(
+        entryWithReads,
+        mockPage,
+        mockConfig,
+        allPages,
+        fixedDate,
+        true,
+      );
+
+      expect(hasRecordedReads(result)).toBe(false);
+    });
+
+    it('should rebuild a page whose entry has a flag that is not a boolean', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const invalid = { ...entryWithReads, readsNav: 'yes' } as unknown as CacheEntry;
+
+      expect(await shouldRebuildPage(mockPage, invalid, mockConfig, allPages, fixedDate)).toBe(
+        true,
+      );
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('Invalid cache entry'));
+      warn.mockRestore();
     });
   });
 
@@ -1284,6 +1368,32 @@ describe('ISG Build Integration', () => {
       // Should fall back to full tracking on any stat failure
       expect(mockTrackTemplateDependencies).toHaveBeenCalled();
       expect(result.deps).toEqual(newDeps);
+
+      vi.doUnmock('node:fs/promises');
+    });
+
+    it('should refresh the cache tags in fast update mode', async () => {
+      vi.doMock('node:fs/promises', () => ({
+        stat: vi.fn().mockResolvedValue({ mtimeMs: fixedDate.getTime() - 10000 }),
+      }));
+      // A tag page whose label changed from CSS to Css, and front matter tags that changed
+      const tagPage: PageModel = {
+        ...mockPage,
+        frontMatter: { ...mockPage.frontMatter, tags: ['news'] },
+        generated: { key: 'css', label: 'Css', items: [], template: 'tags/[tag].md' },
+      };
+
+      const result = await updateCacheEntry(
+        { ...existingEntry, tags: ['page', 'css', 'CSS'] },
+        tagPage,
+        mockConfig,
+        allPages,
+        fixedDate,
+        true, // fastUpdate = true
+      );
+
+      expect(mockTrackTemplateDependencies).not.toHaveBeenCalled();
+      expect(result.tags).toEqual(['news', 'css', 'Css']);
 
       vi.doUnmock('node:fs/promises');
     });

@@ -49,7 +49,8 @@ export async function loadContent(
       continue;
     }
 
-    const relativePath = relative(contentDir, file);
+    // POSIX separators, so a page two folders deep gets /a/b/page on Windows too
+    const relativePath = relative(contentDir, file).replace(/\\/g, '/');
     const slug = computeSlug(relativePath);
     const url = computeUrl(slug, frontMatter);
 

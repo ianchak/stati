@@ -21,7 +21,7 @@ Use it sparingly, for a label above a list or a table.
 
 ## Text
 
-Paragraphs are separated by a blank line. Inside them you can use **bold** for words that must not be missed, _italics_ for titles and emphasis, `inline code` for anything typed, and [links](/archive) to other pages or other sites. Markdown also turns "straight quotes" into curly ones, and two hyphens into a dash -- like this.
+Paragraphs are separated by a blank line. Inside them you can use **bold** for words that must not be missed, _italics_ for titles and emphasis, `inline code` for anything typed, and [links](/posts) to other pages or other sites. Markdown also turns "straight quotes" into curly ones, and two hyphens into a dash -- like this.
 
 > A blockquote sets off someone else's words. Use it for quotations, not for decoration, and say who said it in the paragraph around it.
 
@@ -73,9 +73,9 @@ Images span the column. Store them in `public/images/`, or next to the post's Ma
 
 <figure>
 
-![The blog name in large serif letters above the address and the leaf ornament](/images/social-card.png)
+![The blog name in large serif letters above the address and the leaf ornament](/images/sample.png)
 
-<figcaption>The default link preview card, public/images/social-card.png. Replace it with your own.</figcaption>
+<figcaption>A sample image, public/images/sample.png. Replace it with your own.</figcaption>
 </figure>
 
 That is everything. If this page reads well, so will your posts.

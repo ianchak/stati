@@ -189,7 +189,11 @@ describe('HTML Output Snapshots', () => {
 
     mockLoadContent.mockResolvedValue([blogPage]);
     mockRenderMarkdown.mockReturnValue({ html: renderedMarkdown, toc: [] });
-    mockRenderPage.mockResolvedValue({ html: renderedHtml, templatesLoaded: 1 });
+    mockRenderPage.mockResolvedValue({
+      html: renderedHtml,
+      templatesLoaded: 1,
+      reads: { collection: false, nav: false },
+    });
 
     await build();
 
@@ -263,7 +267,11 @@ describe('HTML Output Snapshots', () => {
 
     mockLoadContent.mockResolvedValue([homePage]);
     mockRenderMarkdown.mockReturnValue({ html: renderedMarkdown, toc: [] });
-    mockRenderPage.mockResolvedValue({ html: renderedHtml, templatesLoaded: 1 });
+    mockRenderPage.mockResolvedValue({
+      html: renderedHtml,
+      templatesLoaded: 1,
+      reads: { collection: false, nav: false },
+    });
 
     await build();
 
@@ -388,7 +396,11 @@ await build({
 
     mockLoadContent.mockResolvedValue([apiPage]);
     mockRenderMarkdown.mockReturnValue({ html: renderedMarkdown, toc: [] });
-    mockRenderPage.mockResolvedValue({ html: renderedHtml, templatesLoaded: 1 });
+    mockRenderPage.mockResolvedValue({
+      html: renderedHtml,
+      templatesLoaded: 1,
+      reads: { collection: false, nav: false },
+    });
 
     await build();
 
@@ -430,7 +442,11 @@ await build({
 
     mockLoadContent.mockResolvedValue([minimalPage]);
     mockRenderMarkdown.mockReturnValue({ html: renderedMarkdown, toc: [] });
-    mockRenderPage.mockResolvedValue({ html: fallbackHtml, templatesLoaded: 0 });
+    mockRenderPage.mockResolvedValue({
+      html: fallbackHtml,
+      templatesLoaded: 0,
+      reads: { collection: false, nav: false },
+    });
 
     await build();
 
@@ -491,7 +507,11 @@ await build({
 
     mockLoadContent.mockResolvedValue([listPage]);
     mockRenderMarkdown.mockReturnValue({ html: renderedMarkdown, toc: [] });
-    mockRenderPage.mockResolvedValue({ html: renderedHtml, templatesLoaded: 1 });
+    mockRenderPage.mockResolvedValue({
+      html: renderedHtml,
+      templatesLoaded: 1,
+      reads: { collection: false, nav: false },
+    });
 
     await build();
 
@@ -585,7 +605,11 @@ console.log(\`Message: \${message}\`);
 
     mockLoadContent.mockResolvedValue([unicodePage]);
     mockRenderMarkdown.mockReturnValue({ html: renderedMarkdown, toc: [] });
-    mockRenderPage.mockResolvedValue({ html: renderedHtml, templatesLoaded: 1 });
+    mockRenderPage.mockResolvedValue({
+      html: renderedHtml,
+      templatesLoaded: 1,
+      reads: { collection: false, nav: false },
+    });
 
     await build();
 

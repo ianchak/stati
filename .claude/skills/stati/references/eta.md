@@ -71,6 +71,9 @@ safe: validate externally supplied destinations separately.
 | `stati.page.navNode`                  | Current node, possibly undefined                                 |
 | `stati.nav`                           | Navigation helper object, not a bare array                       |
 | `stati.collection`                    | Optional aggregation object; see below                           |
+| `stati.pagination`                    | Page of a `paginate` listing (1.29+), else undefined             |
+| `stati.generated`                     | Key, label, items of a `[param].md` page (1.29+), else undefined |
+| `stati.slugify(text)`                 | Stati's slug for generated page keys (1.29+)                     |
 | `stati.partials`                      | Exact-name callable partials                                     |
 | `stati.props`                         | Only supplied on a nonempty-props component render               |
 | `stati.generator.version`             | Core package version                                             |
@@ -86,6 +89,7 @@ Frontmatter keys `path`, `url`, `content`, `navNode`, `toc` conflict with runtim
 fields: Stati warns and overwrites them. Filters are spread into the base context;
 avoid names such as `site`, `page`, `content`, `nav`, `collection`, `partials`,
 `props`, `generator`, `generateSEO`, `propValue`, `image`, `og`, `ogImage` and `assets`.
+A filter named `pagination`, `generated` or `slugify` hides the built-in one.
 
 `stati.image(src, { alt, sizes, priority, class, title })` resolves `src` like a
 Markdown image: from `public/` when it starts with `/`, otherwise next to the page's
@@ -316,17 +320,23 @@ collection behavior is direct-root membership, not all site descendants.
 `recentPages` sorts parsed `PageModel.publishedAt` (first valid of `publishedAt`,
 `published`, `date`, `createdAt`) newest first; undated pages follow,
 alphabetically by frontmatter title/URL fallback. `pagesByTag` uses string tags.
-Neither links nor tags generate additional content routes.
+Links and tags alone generate no routes; `paginate` and `[param].md` templates do
+(see [content](./content.md#collections-pagination-and-generated-pages)).
 
-**Checked-version caveat:** child-page parent collection lookup constructs a
-trailing-slash parent URL, but normalized section index URLs commonly lack that
-slash. Despite broad type/docs claims, `stati.collection` may be undefined on
-ordinary child pages. Guard it; use navigation helpers or explicit data for
-related-content UI rather than depending on a parent collection.
+From core 1.29, ordinary child pages read the collection they belong to
+(`/blog/post` reads `/blog`), so prev/next and related posts can come from
+`stati.collection.recentPages`; `collection: /blog` in frontmatter names another
+one. Before 1.29 a trailing-slash lookup bug left nested child pages with
+`undefined`. Always guard it. Each render gets its own array copies, so sorting
+in place is safe. Reading `stati.collection`, `stati.nav` or
+`stati.page.navNode` is recorded: ISG rebuilds the page when that data changes.
+Read `stati.pagination.items` rather than the whole collection on paginated
+pages, so a page only rebuilds when its own slice changes.
 
-Authority: `packages/core/src/core/templates.ts`,
-`core/utils/template-discovery.utils.ts`, `callable-partials.utils.ts`,
-`partial-validation.utils.ts`, `template.utils.ts`, `types/content.ts`;
-`packages/core/test/core/templates.test.ts`, `collection-aggregation.test.ts`,
-and `test/utils/callable-partials.test.ts`. Paths are relative to the Stati source
+Authority: `packages/core/src/core/templates.ts`, `core/collections.ts`,
+`core/expand.ts`, `core/utils/template-discovery.utils.ts`,
+`callable-partials.utils.ts`, `partial-validation.utils.ts`, `template.utils.ts`,
+`types/content.ts`; `packages/core/test/core/templates.test.ts`,
+`collection-aggregation.test.ts`, `collections.test.ts`, `expand.test.ts`,
+`*-integration.test.ts`, and `test/utils/callable-partials.test.ts`. Paths are relative to the Stati source
 checkout, not guaranteed to exist in a generated site.

@@ -9,6 +9,8 @@ const {
   ensureDir: fseEnsureDir,
   remove: fseRemove,
   stat: fseStat,
+  lstat: fseLstat,
+  realpath: fseRealpath,
   readdir: fseReaddir,
   copyFile: fseCopyFile,
 } = fse;
@@ -98,6 +100,20 @@ export async function remove(path: string): Promise<void> {
  */
 export async function stat(filePath: string): Promise<fse.Stats> {
   return wrapFsOperation('get stats for', fseStat(filePath), filePath);
+}
+
+/**
+ * Gets file stats without following a symbolic link at the path, with consistent error handling.
+ */
+export async function lstat(filePath: string): Promise<fse.Stats> {
+  return wrapFsOperation('get stats for', fseLstat(filePath), filePath);
+}
+
+/**
+ * Resolves a path to its real location, following symbolic links, with consistent error handling.
+ */
+export async function realpath(filePath: string): Promise<string> {
+  return wrapFsOperation('resolve', fseRealpath(filePath), filePath);
 }
 
 /**

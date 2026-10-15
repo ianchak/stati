@@ -21,12 +21,21 @@ import {
   autoInjectBundles,
   getBundlePathsForPage,
   formatBytes,
+  isVirtualPage,
+  getPageOutputFile,
 } from './utils/index.js';
 import type { CompiledBundleInfo } from './utils/index.js';
 import { join, dirname, relative, posix } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { loadConfig } from '../config/loader.js';
 import { loadContent } from './content.js';
+import { expandPages } from './expand.js';
+import {
+  createSummaryHasher,
+  resolveCollectionPath,
+  resolveSummaryFields,
+  type PageReads,
+} from './collections.js';
 import { createMarkdownProcessor, renderMarkdown, extractToc } from './markdown.js';
 import { createTemplateEngine, renderPage } from './templates.js';
 import { buildNavigation } from './navigation.js';
@@ -36,6 +45,8 @@ import {
   shouldRebuildPage,
   createCacheEntry,
   updateCacheEntry,
+  hasRecordedReads,
+  pruneOrphanedPages,
   withBuildLock,
   computeNavigationHash,
   computeContentHash,
@@ -54,6 +65,7 @@ import {
   generateSearchIndex,
   writeSearchIndex,
   autoInjectSearchMeta,
+  isGeneratedPageExcludedFromSearch,
 } from '../search/index.js';
 import { getEnv, isDevelopment } from '../env.js';
 import { DEFAULT_OUT_DIR } from '../constants.js';
@@ -337,7 +349,7 @@ async function setupCacheAndManifest(cacheDir: string): Promise<{
 }
 
 /**
- * Loads content and builds navigation.
+ * Loads content, expands generated and paginated pages, and builds navigation.
  */
 async function loadContentAndBuildNavigation(
   config: StatiConfig,
@@ -345,14 +357,21 @@ async function loadContentAndBuildNavigation(
   logger: Logger,
 ): Promise<{
   pages: PageModel[];
+  markdownFiles: number;
   navigation: NavNode[];
   md: MarkdownIt;
   eta: ReturnType<typeof createTemplateEngine>;
   navigationHash: string;
 }> {
-  // Load all content
-  const pages = await loadContent(config, options.includeDrafts);
-  logger.status(`Found ${pages.length} pages`);
+  // Load all content, then replace [param].md templates with their pages and add the
+  // pages of paginated listings. Navigation, SEO, sitemap and search see the result.
+  const loaded = await loadContent(config, options.includeDrafts);
+  const pages = await expandPages(loaded, config, logger);
+  const virtualCount = pages.filter((page) => isVirtualPage(page)).length;
+  logger.status(`Found ${pages.length - virtualCount} pages`);
+  if (virtualCount > 0) {
+    logger.status(`Generated ${virtualCount} more from templates and pagination`);
+  }
 
   // Build navigation from pages
   if (logger.step) {
@@ -374,7 +393,7 @@ async function loadContentAndBuildNavigation(
   const md = await createMarkdownProcessor(config);
   const eta = createTemplateEngine(config);
 
-  return { pages, navigation, md, eta, navigationHash };
+  return { pages, markdownFiles: loaded.length, navigation, md, eta, navigationHash };
 }
 
 /**
@@ -400,19 +419,25 @@ interface ProcessPagesResult {
  * Output file and ISG cache key of a page.
  */
 function getPageOutput(page: PageModel, outDir: string): { outputPath: string; cacheKey: string } {
-  let outputPath: string;
-  if (page.url === '/') {
-    outputPath = join(outDir, 'index.html');
-  } else if (page.url.endsWith('/')) {
-    outputPath = join(outDir, page.url, 'index.html');
-  } else {
-    outputPath = join(outDir, `${page.url}.html`);
-  }
+  const outputPath = join(outDir, getPageOutputFile(page.url));
 
   // Cache key is the output path relative to outDir
   const relativePath = relative(outDir, outputPath).replace(/\\/g, '/');
   const cacheKey = relativePath.startsWith('/') ? relativePath : `/${relativePath}`;
   return { outputPath, cacheKey };
+}
+
+/**
+ * Hashes a value for the render inputs, or returns a value that never matches when it
+ * cannot be serialized, so the page rebuilds instead of keeping stale output.
+ */
+function hashableData(value: unknown): unknown {
+  try {
+    JSON.stringify(value);
+    return value ?? null;
+  } catch {
+    return `unserializable:${Date.now()}:${Math.random()}`;
+  }
 }
 
 /**
@@ -433,6 +458,7 @@ async function processPagesWithCache(
   recorder: MetricRecorder = noopMetricRecorder,
   searchIndexFilename?: string,
   imageRuntime: ImageRuntime | null = null,
+  navigationHash: string = computeNavigationHash(navigation),
 ): Promise<ProcessPagesResult> {
   let cacheHits = 0;
   let cacheMisses = 0;
@@ -447,6 +473,20 @@ async function processPagesWithCache(
     await config.hooks.beforeAll(buildContext);
     endHookBeforeAll();
   }
+
+  // Collection summaries, hashed after beforeAll because the hook can change front matter
+  const summaries = createSummaryHasher(pages, resolveSummaryFields(config));
+
+  // The pages of a listing share one array of page URLs, hashed once for all of them
+  const urlListHashes = new WeakMap<readonly string[], string>();
+  const hashUrlList = (urls: readonly string[]): string => {
+    let hash = urlListHashes.get(urls);
+    if (hash === undefined) {
+      hash = computeContentHash('', { urls });
+      urlListHashes.set(urls, hash);
+    }
+    return hash;
+  };
 
   // Render each page with progress tracking and ISG
   if (logger.step) {
@@ -495,13 +535,56 @@ async function processPagesWithCache(
           searchIndexPath: `/${searchIndexFilename}`,
         }),
     };
-    const renderInputsHash = computeContentHash('', {
+
+    // Collection the page sees as stati.collection; a page whose collection appears,
+    // disappears or changes rebuilds even when it never read it
+    const collectionPath = resolveCollectionPath(page, pages);
+    const staticRenderInputs = {
       ...assets,
       bundleAutoInject: config.typescript?.autoInject !== false,
       searchAutoInject: config.search?.autoInjectMetaTag !== false,
       // Omitted with images: false, so the hash matches builds without the image pipeline
       ...(imageFingerprint && { images: imageFingerprint }),
-    });
+      collection: collectionPath ?? null,
+      // A listing page depends on its own slice and on the page count, which every page
+      // shows in its numbered links
+      ...(page.pagination && {
+        pagination: {
+          pageNumber: page.pagination.pageNumber,
+          totalPages: page.pagination.totalPages,
+          urls: hashUrlList(page.pagination.urls),
+          items: summaries.pages(page.pagination.items),
+        },
+      }),
+      // A generated page depends on its own items only, not on the whole collection
+      ...(page.generated && {
+        generated: {
+          key: page.generated.key,
+          label: page.generated.label,
+          template: page.generated.template,
+          items: summaries.pages(page.generated.items),
+          data: hashableData(page.generated.data),
+        },
+      }),
+    };
+    // The data a render read: the collection summary and the navigation tree
+    const renderInputsHashFor = (reads: PageReads | undefined) =>
+      computeContentHash('', {
+        ...staticRenderInputs,
+        ...(reads?.collection && {
+          collectionSummary:
+            collectionPath !== undefined ? summaries.collection(collectionPath) : 'none',
+        }),
+        ...(reads?.nav && { navigation: navigationHash }),
+      });
+
+    // Entries written before Stati recorded what pages read are rebuilt once to record it
+    const readsKnown = existingEntry !== undefined && hasRecordedReads(existingEntry);
+    const renderInputsHash = renderInputsHashFor(
+      readsKnown
+        ? { collection: existingEntry.readsCollection!, nav: existingEntry.readsNav! }
+        : undefined,
+    );
 
     // Check if we should rebuild this page (considering ISG logic)
     const shouldRebuildStart = performance.now();
@@ -509,6 +592,7 @@ async function processPagesWithCache(
       options.force ||
       config.isg?.enabled === false ||
       !(await pathExists(outputPath)) ||
+      (existingEntry !== undefined && !readsKnown) ||
       // A cached page whose generated images are gone is rebuilt to regenerate them
       (imageRuntime !== null && !imageRuntime.outputsExist(existingEntry?.images)) ||
       (await shouldRebuildPage(page, existingEntry, config, pages, buildTime, renderInputsHash));
@@ -526,7 +610,7 @@ async function processPagesWithCache(
 
       // Collect searchable page data for cached pages if search is enabled
       // Extract TOC without full HTML rendering for efficiency
-      if (config.search?.enabled === true) {
+      if (config.search?.enabled === true && !isGeneratedPageExcludedFromSearch(page)) {
         const tocEnabled = config.markdown?.toc !== false;
         const toc = tocEnabled ? extractToc(page.content, md) : [];
         searchablePages.push({ page, toc, markdownContent: page.content });
@@ -608,11 +692,18 @@ async function processPagesWithCache(
       finalHtml = autoInjectBundles(finalHtml, assets.bundlePaths);
     }
 
-    // Start the image jobs the final HTML needs and record its image files for the cache
-    const renderedAssets =
+    // Start the image jobs the final HTML needs and record its image files for the cache,
+    // along with what the render read, which decides the hash it is stored under
+    const committedImages =
       pageImages && imageRuntime
         ? imageRuntime.commitPage(pageImages, finalHtml, { outputPath, cacheKey })
         : undefined;
+    const renderedAssets: RenderedAssets = {
+      assetDeps: committedImages?.assetDeps ?? [],
+      images: committedImages?.images ?? [],
+      reads: renderResult.reads,
+    };
+    const renderedInputsHash = renderInputsHashFor(renderResult.reads);
 
     const renderTime = Math.round(performance.now() - startTime);
 
@@ -626,7 +717,13 @@ async function processPagesWithCache(
     // In dev mode, batch writes for parallel execution to avoid Windows filesystem slowdown
     if (isDevMode) {
       pendingWrites.push({ outputPath, content: finalHtml });
-      pendingCacheUpdates.push({ cacheKey, page, existingEntry, renderInputsHash, renderedAssets });
+      pendingCacheUpdates.push({
+        cacheKey,
+        page,
+        existingEntry,
+        renderInputsHash: renderedInputsHash,
+        renderedAssets,
+      });
     } else {
       // Production mode: write immediately
       const fileWriteStart = performance.now();
@@ -645,7 +742,7 @@ async function processPagesWithCache(
             pages,
             buildTime,
             false,
-            renderInputsHash,
+            renderedInputsHash,
             renderedAssets,
           );
         } else {
@@ -654,7 +751,7 @@ async function processPagesWithCache(
             config,
             pages,
             buildTime,
-            renderInputsHash,
+            renderedInputsHash,
             renderedAssets,
           );
         }
@@ -664,7 +761,7 @@ async function processPagesWithCache(
 
     // Collect searchable page data if search is enabled
     // Uses TOC entries and markdown content instead of parsing rendered HTML
-    if (config.search?.enabled === true) {
+    if (config.search?.enabled === true && !isGeneratedPageExcludedFromSearch(page)) {
       searchablePages.push({ page, toc, markdownContent: page.content });
     }
 
@@ -903,20 +1000,16 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     console.log(); // Add spacing before content loading
   }
   const endContentSpan = recorder.startSpan('contentDiscoveryMs');
-  const { pages, navigation, md, eta, navigationHash } = await loadContentAndBuildNavigation(
-    config,
-    options,
-    logger,
-  );
+  const { pages, markdownFiles, navigation, md, eta, navigationHash } =
+    await loadContentAndBuildNavigation(config, options, logger);
   endContentSpan();
 
-  // Record content discovery counts.
-  // Both totalPages and markdownFilesProcessed are incremented by pages.length
-  // because loadContent() only processes *.md files, so all pages are markdown files.
+  // Record content discovery counts. Pages include the ones generated from [param].md
+  // templates and pagination; Markdown files include the templates.
   recorder.increment('totalPages', pages.length);
-  recorder.increment('markdownFilesProcessed', pages.length);
+  recorder.increment('markdownFilesProcessed', markdownFiles);
 
-  // Store navigation hash in manifest for change detection in dev server
+  // Recorded in the manifest; pages that read the navigation also hash it into their inputs
   manifest.navigationHash = navigationHash;
 
   // Compile TypeScript if enabled
@@ -987,9 +1080,27 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     recorder,
     searchIndexFilename,
     imageRuntime,
+    navigationHash,
   );
   endPageRenderSpan();
   const { cacheHits, cacheMisses, searchablePages } = pageProcessingResult;
+
+  // Remove the output of pages that no longer exist, such as a deleted post or a tag no post
+  // uses anymore. Runs before static assets are copied, so a file in the static directory at
+  // the same path is copied afterwards.
+  const liveCacheKeys = new Set(pages.map((page) => getPageOutput(page, outDir).cacheKey));
+  const pruned = await pruneOrphanedPages(manifest, liveCacheKeys, outDir);
+  for (const failure of pruned.failed) {
+    logger.warning(`Could not remove the stale page ${failure.key}: ${failure.message}`);
+  }
+  if (pruned.removed.length > 0) {
+    const count = pruned.removed.length;
+    logger.info(
+      count === 1
+        ? 'Removed 1 page that no longer exists'
+        : `Removed ${count} pages that no longer exist`,
+    );
+  }
 
   // Wait for image jobs; pages whose images failed are rewritten to show plain images
   let imageFailures: SettleResult['failures'] = [];

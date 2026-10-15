@@ -1,0 +1,28 @@
+<%
+  /* Links between the pages of a paginated listing.
+     Props:
+       pagination  stati.pagination (required; nothing renders for a single page)
+       newer       label of the link to the previous page, default 'Newer'
+       older       label of the link to the next page, default 'Older' */
+  if (!stati.props || !stati.props.pagination || stati.props.pagination.totalPages < 2) { return; }
+  const { pageNumber, prevUrl, nextUrl, urls } = stati.props.pagination;
+%>
+<nav class="page-nav" aria-label="Pages">
+  <% if (prevUrl) { %>
+  <a class="page-nav-newer" href="<%= prevUrl %>" rel="prev"><%= stati.props.newer ?? 'Newer' %></a>
+  <% } %>
+  <ol role="list">
+    <% urls.forEach((url, i) => { %>
+    <li>
+      <% if (i + 1 === pageNumber) { %>
+      <span aria-current="page"><%= i + 1 %></span>
+      <% } else { %>
+      <a href="<%= url %>" aria-label="<%= `Page ${i + 1}` %>"><%= i + 1 %></a>
+      <% } %>
+    </li>
+    <% }) %>
+  </ol>
+  <% if (nextUrl) { %>
+  <a class="page-nav-older" href="<%= nextUrl %>" rel="next"><%= stati.props.older ?? 'Older' %></a>
+  <% } %>
+</nav>

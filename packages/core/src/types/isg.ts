@@ -91,6 +91,18 @@ export interface CacheEntry {
   assetDeps?: readonly string[];
   /** Generated image files this page references, relative to the output directory */
   images?: readonly string[];
+  /**
+   * Whether the last render read `stati.collection`. When it did, the collection's summary
+   * (each member's URL, publish date and summary fields) is part of `inputsHash`, so the page
+   * rebuilds when a page it lists changes. Missing in entries written before Stati recorded
+   * it; such a page rebuilds once to record it.
+   */
+  readsCollection?: boolean;
+  /**
+   * Whether the last render read the navigation tree (`stati.nav` or `stati.page.navNode`).
+   * When it did, the navigation hash is part of `inputsHash`.
+   */
+  readsNav?: boolean;
 }
 
 /**

@@ -28,7 +28,9 @@ Edit this file, not the tool-specific ones, when guidance changes.
 
 ## Core engine hotspots
 
-- `core/build.ts` streams Markdown through `renderMarkdown` into Eta `renderPage`, writing HTML under `dist/` and recording cache metadata in `.stati/manifest.json`.
+- `core/build.ts` streams Markdown through `renderMarkdown` into Eta `renderPage`, writing HTML under `dist/` and recording cache metadata in `.stati/manifest.json`. After rendering it deletes the output of pages that no longer exist (`core/isg/prune.ts`), but only files the manifest records.
+- `core/expand.ts` runs between `loadContent` and `buildNavigation`: it removes `[param].md` templates, expands them (and `collections.generate` entries) into generated pages, and adds the later pages of `paginate` listings. Generated and pagination pages are "virtual" (`isVirtualPage`): never collection members, and out of navigation, search and RSS unless they opt in.
+- `core/collections.ts` computes every collection once per page list (`getCollections`), resolves which collection a page reads (`resolveCollectionPath`: `collection` front matter, own index, then nearest), hashes collection summaries, and builds the per-render views that record whether a page read `stati.collection`.
 - The image runtime (`ImageRuntime`, created per build) registers each page's images while it renders, starts only the jobs the written HTML references, then settles them: a failed job rewrites the page to plain image markup and marks its cache entry `STALE`. `stati build` prunes generated files in `dist/_img/` that no page uses, and only files recorded in `.stati/images/manifest.json`.
 - Rebuild decisions come from `shouldRebuildPage` plus config hooks (`beforeAll`, `beforeRender`, `afterRender`) defined via `defineConfig()`.
 - Static assets move through `copyStaticAssetsWithLogging`; preserve `logger.*` calls to keep CLI output structured.
@@ -104,6 +106,7 @@ All config blocks live under `defineConfig()`. Key sections:
 - **eta.filters**: Object of custom filter functions available in templates as `<%= stati.filterName(value) %>` (called as functions, not pipes).
 - **typescript**: `enabled`, `srcDir`, `outDir`, `hash`, `minify`, `bundles[]` with `entryPoint`, `bundleName`, `include`/`exclude` glob patterns for selective bundle injection.
 - **isg**: `enabled`, `ttlSeconds`, `maxAgeCapDays`, `aging[]` (array of `{ untilDays, ttlSeconds }` rules).
+- **collections**: `summaryFields[]` (front matter that rebuilds listings; default `title`, `description`, `tags`, `draft`), `generate(ctx)` returning `{ url, template, key?, label?, items?, data? }` pages rendered with a `[param].md` template.
 - **seo**: `defaultAuthor`, `autoInject`, `debug` - SEO metadata configuration.
 - **search**: `enabled`, `indexName`, `hashFilename`, `maxContentLength`, `maxPreviewLength`, `headingLevels[]`, `exclude[]`, `includeHomePage`, `autoInjectMetaTag`.
 - **sitemap**: `enabled`, `defaultPriority`, `defaultChangeFreq`, `excludePatterns[]`, `includePatterns[]`, `filter()`, `transformUrl()`, `transformEntry()`, `priorityRules[]` with `pattern` and `priority`, `generateIndex`.
@@ -127,8 +130,8 @@ All config blocks live under `defineConfig()`. Key sections:
 
 All utilities in `packages/core/src/core/utils/` follow the `*.utils.ts` naming convention:
 
-- **fs.utils.ts**: `ensureDir`, `readFile`, `writeFile`, `pathExists`, `remove`, `stat`, `copyFile`, `readdir`, `readFileBuffer`, `readFileBufferSync`, `statSyncOrNull`, `listFilesRecursiveSync` - safe filesystem helpers with consistent error handling (the sync ones serve template helpers such as `stati.image()`, which must stay synchronous).
-- **paths.utils.ts**: `resolveSrcDir`, `resolveOutDir`, `resolveStaticDir`, `resolveCacheDir`, `normalizePathForComparison`, `isPathWithinDirectory` - path resolution and cross-platform comparison utilities.
+- **fs.utils.ts**: `ensureDir`, `readFile`, `writeFile`, `pathExists`, `remove`, `stat`, `lstat`, `realpath`, `copyFile`, `readdir`, `readFileBuffer`, `readFileBufferSync`, `statSyncOrNull`, `listFilesRecursiveSync` - safe filesystem helpers with consistent error handling (the sync ones serve template helpers such as `stati.image()`, which must stay synchronous).
+- **paths.utils.ts**: `resolveSrcDir`, `resolveOutDir`, `resolveStaticDir`, `resolveCacheDir`, `normalizePathForComparison`, `isPathWithinDirectory`, `getPageOutputFile` - path resolution, cross-platform comparison, and the output file of a page URL.
 - **slugify.utils.ts**: `slugify(text)` - URL-safe slug generation.
 - **html.utils.ts**: `findHeadClosePosition`, `injectBeforeHeadClose` - HTML manipulation for SEO/meta tag injection.
 - **navigation-helpers.utils.ts**: `createNavigationHelpers` - creates navigation helper object with `findNode`, `getChildren`, `getParent`, `getSiblings`, `getSubtree`, `getBreadcrumbs`, `getCurrentNode` methods.
@@ -150,8 +153,8 @@ Import from the barrel: `import { slugify, normalizePathForComparison } from './
 ## ISG and cache internals
 
 - Cache manifest lives at `.stati/manifest.json`; structure defined by `CacheManifest` type.
-- Each entry tracks: `path` (output path), `inputsHash` (content+deps hash), `deps` (template dependencies), `tags`, `publishedAt`, `renderedAt` timestamp, `ttlSeconds`, `maxAgeCapDays`, plus `assetDeps` (files found while rendering, such as source images, hashed by content in `inputsHash`) and `images` (generated files the page references).
-- `deps` are recomputed statically on every check; render-discovered files belong in `assetDeps`, never in `deps`. Settings that change rendered HTML without a file change, such as the image settings, go into the render-inputs hash in `core/build.ts`.
+- Each entry tracks: `path` (output path), `inputsHash` (content+deps hash), `deps` (template dependencies), `tags`, `publishedAt`, `renderedAt` timestamp, `ttlSeconds`, `maxAgeCapDays`, plus `assetDeps` (files found while rendering, such as source images, hashed by content in `inputsHash`), `images` (generated files the page references), and `readsCollection`/`readsNav` (whether the last render read `stati.collection` or the navigation).
+- `deps` are recomputed statically on every check; render-discovered files belong in `assetDeps`, never in `deps`. Settings that change rendered HTML without a file change, such as the image settings, go into the render-inputs hash in `core/build.ts`. So do the page's collection path, its pagination slice and page count, and a generated page's items; the collection summary and the navigation hash are added only when the entry's read flags say the page read them. An entry without the flags (older versions) forces one rebuild; never treat a missing flag as `false`.
 - `shouldRebuildPage` compares current content/template hashes against manifest; cache hit skips render.
 - Template changes trigger `handleTemplateChange` which invalidates all pages listing that template in `deps`.
 - Dependency tracking happens during render: `renderPage` records each `<%~ include() %>` call.

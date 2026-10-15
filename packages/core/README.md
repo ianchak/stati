@@ -166,7 +166,8 @@ Customize layouts with [Eta templates](https://eta.js.org):
 
 Only rebuild what changed:
 
-- Smart caching based on hashes of each page's content and templates
+- Smart caching based on hashes of each page's content and templates, and of the collection and navigation data it reads
+- Removal of pages that no longer exist, such as deleted posts and unused tag pages
 - TTL-based refresh for dynamic content
 - Tag-based invalidation for related content
 
@@ -182,6 +183,10 @@ await invalidate('path:/posts');
 // Invalidate pages rendered within the last 3 months
 await invalidate('age:3months');
 ```
+
+#### Collections, Pagination and Generated Pages
+
+A folder with an `index.md` is a collection: templates read its pages as `stati.collection`, sorted by date and grouped by tag. `paginate: 10` in front matter splits a listing into `/blog`, `/blog/page/2` and so on (`stati.pagination`), and a `[tag].md` template becomes one page per tag (`stati.generated`). See [Collections and generated pages](https://stati.build/core-concepts/collections).
 
 #### Built-In SEO
 

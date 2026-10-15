@@ -29,7 +29,7 @@ The block between the `---` lines at the top of a file is front matter, written 
 | `sidebarTitle` | A shorter label for the sidebar, when the title is long                                                            |
 | `sidebar`      | Set to `false` to keep a page out of the sidebar and the previous and next links. It is still built and searchable |
 | `draft`        | Set to `true` to leave the page out of the build. See [Drafts](#drafts)                                            |
-| `image`        | A link-preview image for this page, instead of the site's default                                                  |
+| `image`        | A link-preview image for this page; with image tools on, it replaces the generated card                            |
 | `seo`          | Overrides for search engines, such as `seo.title` or `seo.noindex: true`                                           |
 
 A complete example:

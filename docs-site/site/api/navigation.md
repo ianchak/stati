@@ -18,6 +18,10 @@ The navigation system is available in all templates via the `stati.nav` object, 
 - **Helper methods** for querying and traversing
 - **Current page context** via `stati.page.navNode`
 
+A page that reads `stati.nav` or `stati.page.navNode` depends on the navigation tree: when a page is added, removed or renamed, or its `order` or date changes, Stati rebuilds every page that read the tree, in `stati build` and in the dev server. Pages that don't read it stay cached. See [ISG](/core-concepts/isg#dependency-tracking).
+
+Pages created from a `[param].md` template are left out of the tree unless the template sets `nav: true`, and the later pages of a paginated listing are always left out. See [Collections and generated pages](/core-concepts/collections).
+
 ## Navigation structure
 
 ### NavNode interface

@@ -11,7 +11,7 @@ order: 3
 │   └── docs.js            # Builds the sidebar, pager and breadcrumbs
 ├── public/
 │   ├── fonts/             # Inter and its license
-│   ├── images/            # Link-preview image, sample screenshot
+│   ├── images/            # Sample screenshot
 │   ├── scripts/docs.js    # Search, theme toggle, menu, copy buttons
 │   ├── favicon.svg        # Your logo
 │   └── styles.css         # All styles; colors and fonts at the top

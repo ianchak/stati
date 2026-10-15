@@ -57,8 +57,8 @@ The [quick start](/getting-started/quick-start) walks through the prompts and th
 A complete blog, ready to write in:
 
 - **Location:** [`examples/blog/`](https://github.com/ianchak/stati/tree/main/examples/blog)
-- **Features:** Posts with tags, a yearly archive, newer, older and related posts, an RSS feed, a sitemap, `robots.txt`, Open Graph and `BlogPosting` metadata, drafts and a 404 page. The sample posts explain how each part works.
-- **Best for:** Starting a personal or team blog, and seeing how hooks and filters share data across pages
+- **Features:** Posts with tags, a page for every tag, a paginated home page, a yearly archive, newer, older and related posts, an RSS feed, a sitemap, `robots.txt`, Open Graph and Twitter tags, drafts and a 404 page. The sample posts explain how each part works.
+- **Best for:** Starting a personal or team blog, and seeing collections, pagination and generated pages at work
 
 <figure>
 
@@ -72,13 +72,14 @@ A complete blog, ready to write in:
 
 ```text
 examples/blog/
-├── helpers/blog.js       # Post index, listing filters and article SEO
+├── helpers/blog.js       # Template filters for related posts and dates
 ├── site/
-│   ├── _partials/        # Head, header, footer, post lists, tag links
-│   ├── posts/            # One Markdown file per post, plus the post layout
+│   ├── _partials/        # Head, header, footer, post lists, page links, tag links
+│   ├── posts/            # One Markdown file per post, the archive and the post layout
+│   ├── tags/             # The tags page and [tag].md, which makes a page per tag
 │   ├── layout.eta        # Layout for home, archive, tags, about and 404
-│   └── *.md              # Home, archive, tags, about and 404 pages
-├── public/               # Styles, self-hosted font, ornament, social card
+│   └── *.md              # Home, about and 404 pages
+├── public/               # Styles, self-hosted font, ornament, sample image
 └── stati.config.js       # Name, author, header links, feed, sitemap, SEO
 ```
 
@@ -115,7 +116,7 @@ examples/docs/
 │   ├── layout.eta        # Layout for docs pages, section overviews and 404
 │   ├── home.eta          # Home page layout
 │   └── index.md          # Home page
-├── public/               # Styles, client script, self-hosted font, social card
+├── public/               # Styles, client script, self-hosted font, sample screenshot
 └── stati.config.js       # Name, header links, search, sitemap, SEO
 ```
 

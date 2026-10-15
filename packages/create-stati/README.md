@@ -156,7 +156,7 @@ In interactive mode you're asked where to install it. In non-interactive mode it
 
 ## The Blog Template
 
-A complete blog that works on first run: Markdown posts, a tags page, a yearly archive, newer, older and related posts, an RSS feed, a sitemap, `robots.txt`, Open Graph and `BlogPosting` metadata, drafts and a 404 page. The sample posts explain how each part works.
+A complete blog that works on first run: Markdown posts five to a page on the home page, a tags page with a page for every tag, a yearly archive, newer, older and related posts, an RSS feed, a sitemap, `robots.txt`, Open Graph and Twitter tags, drafts and a 404 page. The sample posts explain how each part works.
 
 ```bash
 npx create-stati my-blog --template=blog

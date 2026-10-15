@@ -49,7 +49,8 @@ Save it as `site/hello.md`, add a layout at `site/layout.eta`, install Stati wit
 
 - **Small and simple**: Markdown plus Eta templates, nine runtime dependencies in `@stati/core`, and no framework runtime in the browser.
 - **TypeScript-first**: `defineConfig()` gives you a typed `stati.config.ts`, and client-side TypeScript is compiled with esbuild and injected only on the pages that need it.
-- **Incremental Static Generation**: a build cache with TTLs, age-based aging rules, and invalidation by tag, path or age (`stati invalidate "tag:news"`).
+- **Incremental Static Generation**: a build cache that rebuilds a listing when a post it lists changes, removes the pages of deleted posts, and supports TTLs, age-based aging rules and invalidation by tag, path or age (`stati invalidate "tag:news"`).
+- **Collections**: folder listings sorted by date and grouped by tag, split into pages with `paginate`, and one page per tag or author from a `[tag].md` template.
 - **Built in, not bolted on**: search index, sitemap, robots.txt, RSS feeds, SEO metadata, sized and lazy-loaded images, build hooks and build metrics ship with Stati. The optional `@stati/images` package adds responsive AVIF and WebP images and an Open Graph image for every page.
 - **Fast feedback**: a dev server with live reload, incremental rebuilds and an in-browser error overlay.
 

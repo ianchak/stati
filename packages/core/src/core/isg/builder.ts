@@ -1,4 +1,5 @@
 import type { PageModel, CacheEntry, StatiConfig } from '../../types/index.js';
+import type { PageReads } from '../collections.js';
 import {
   computeContentHash,
   computeFileHash,
@@ -75,18 +76,57 @@ function isValidCacheEntry(entry: CacheEntry): boolean {
     }
   }
 
+  for (const flag of [entry.readsCollection, entry.readsNav]) {
+    if (flag !== undefined && typeof flag !== 'boolean') {
+      return false;
+    }
+  }
+
   return true;
 }
 
 /**
- * Files a render discovered: the source images a page displays (`assetDeps`) and the
- * generated images it references (`images`).
+ * What a render discovered: the source images a page displays (`assetDeps`), the generated
+ * images it references (`images`) and the shared data it read (`reads`).
  */
 export interface RenderedAssets {
   /** Absolute paths of files whose content affects the page, such as source images */
   assetDeps: readonly string[];
   /** Generated image files the page references, relative to the output directory */
   images: readonly string[];
+  /** Whether the render read the collection and the navigation tree */
+  reads?: PageReads | undefined;
+}
+
+/**
+ * Whether a cache entry records what its page read while rendering. Entries written before
+ * Stati recorded it don't, and their page must be rebuilt once: whether it depends on its
+ * collection or the navigation tree is unknown, and assuming it doesn't could keep stale
+ * listings or prev/next links.
+ *
+ * @param entry - The cache entry
+ * @returns True when `readsCollection` and `readsNav` are both recorded
+ */
+export function hasRecordedReads(entry: CacheEntry): boolean {
+  return typeof entry.readsCollection === 'boolean' && typeof entry.readsNav === 'boolean';
+}
+
+/**
+ * Tags a page's cache entry carries for `stati invalidate "tag:…"`: its front matter tags,
+ * plus the key and label of a generated page, so `tag:css` also refreshes `/tags/css`.
+ */
+function getCacheTags(page: PageModel): string[] {
+  const tags = Array.isArray(page.frontMatter.tags)
+    ? page.frontMatter.tags.filter((tag): tag is string => typeof tag === 'string')
+    : [];
+  if (page.generated) {
+    for (const tag of [page.generated.key, page.generated.label]) {
+      if (tag && !tags.includes(tag)) {
+        tags.push(tag);
+      }
+    }
+  }
+  return tags;
 }
 
 /**
@@ -102,14 +142,25 @@ async function hashAssetDeps(assetDeps: readonly string[] | undefined): Promise<
 
 /**
  * Returns the entry with its `assetDeps` and `images` replaced by this render's,
- * dropping the fields when a render found none.
+ * dropping the fields when a render found none, and with what the render read.
  */
 function withRenderedAssets(entry: CacheEntry, rendered: RenderedAssets | undefined): CacheEntry {
-  const { assetDeps: _assetDeps, images: _images, ...rest } = entry;
+  const {
+    assetDeps: _assetDeps,
+    images: _images,
+    readsCollection: _readsCollection,
+    readsNav: _readsNav,
+    ...rest
+  } = entry;
   return {
     ...rest,
     ...(rendered && rendered.assetDeps.length > 0 && { assetDeps: [...rendered.assetDeps] }),
     ...(rendered && rendered.images.length > 0 && { images: [...rendered.images] }),
+    // Always written, false included: a missing flag means "unknown" and forces a rebuild
+    ...(rendered?.reads && {
+      readsCollection: rendered.reads.collection,
+      readsNav: rendered.reads.nav,
+    }),
   };
 }
 
@@ -366,10 +417,7 @@ export async function createCacheEntry(
   const inputsHash = computeInputsHash(contentHash, depsHashes, renderInputsHash);
 
   // Extract tags from front matter
-  let tags: string[] = [];
-  if (Array.isArray(page.frontMatter.tags)) {
-    tags = page.frontMatter.tags.filter((tag): tag is string => typeof tag === 'string');
-  }
+  const tags = getCacheTags(page);
 
   // Get published date
   const publishedAt = getPublishedDateISO(page);
@@ -538,6 +586,8 @@ export async function updateCacheEntry(
         {
           ...entry,
           inputsHash,
+          // Front matter tags, and a generated page's label, can change without a layout change
+          tags: getCacheTags(page),
           renderedAt: renderedAt.toISOString(),
         },
         rendered,

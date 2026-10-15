@@ -157,25 +157,26 @@ will not execute Stati to refresh expired cache entries on visitor requests.
 
 ## Troubleshooting by symptom
 
-| Symptom                               | Investigate                                                                             |
-| ------------------------------------- | --------------------------------------------------------------------------------------- |
-| Wrong title/domain or output location | Config import errors/fallback, recognized filename, working directory                   |
-| Missing component                     | `_` folder discovery, exact basename, source ancestry, Windows intermediate-path caveat |
-| Error despite supplying props         | All components pre-render without props; add safe guard/defaults                        |
-| Blank component from `{}`             | Empty object returns pre-rendered content; supply a real prop                           |
-| Escaped tags displayed as text        | Use raw output for rendered Markdown/partial results only                               |
-| Template syntax failure               | JavaScript only; no `as string`, JSX, type declarations, or undeclared locals           |
-| `post.title` missing                  | Collection entries require `post.frontMatter.title`                                     |
-| Missing post sidebar collection       | Parent URL normalization caveat; use guarded navigation helpers                         |
-| Date sort not applied                 | Check for an invalid-date warning; use a valid `publishedAt`, `published`, `date`, etc. |
-| Missing Tailwind variant              | Inventory/build order, literal class map, branches actually rendered                    |
-| Bundle on wrong page                  | Output-path include/exclude patterns and unique bundle names                            |
-| Missing feed/sitemap/robots in dev    | Production-only generators; run production build                                        |
-| Stale rendered content                | Cache hit, hook timing, dependency tracking, force vs invalidation                      |
-| Missing search file                   | Search enablement, actual hash/meta URL, excluded pages, generation logs                |
-| Old route still present               | Clean disposable output after rename/delete                                             |
-| Preview differs from dev              | Fresh production artifacts, host pretty-URL behavior, stale CSS/bundles                 |
-| Successful build but broken page      | Read warnings/errors and inspect fallback HTML/error comments                           |
+| Symptom                               | Investigate                                                                                  |
+| ------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Wrong title/domain or output location | Config import errors/fallback, recognized filename, working directory                        |
+| Missing component                     | `_` folder discovery, exact basename, source ancestry, Windows intermediate-path caveat      |
+| Error despite supplying props         | All components pre-render without props; add safe guard/defaults                             |
+| Blank component from `{}`             | Empty object returns pre-rendered content; supply a real prop                                |
+| Escaped tags displayed as text        | Use raw output for rendered Markdown/partial results only                                    |
+| Template syntax failure               | JavaScript only; no `as string`, JSX, type declarations, or undeclared locals                |
+| `post.title` missing                  | Collection entries require `post.frontMatter.title`                                          |
+| Missing post sidebar collection       | Core < 1.29 parent URL caveat; 1.29+: no index page above the post, or wrong `collection`    |
+| Date sort not applied                 | Check for an invalid-date warning; use a valid `publishedAt`, `published`, `date`, etc.      |
+| Missing Tailwind variant              | Inventory/build order, literal class map, branches actually rendered                         |
+| Bundle on wrong page                  | Output-path include/exclude patterns and unique bundle names                                 |
+| Missing feed/sitemap/robots in dev    | Production-only generators; run production build                                             |
+| Stale rendered content                | Cache hit, hook timing, data via filters (untracked), `summaryFields`, force vs invalidation |
+| Missing search file                   | Search enablement, actual hash/meta URL, excluded pages, generation logs                     |
+| Old route still present               | Core 1.29+ build removes it if the manifest knows it; else clean output after rename/delete  |
+| Unexpected `/page/2` or tag pages     | `paginate` or a `[name].md` file; virtual pages also reach hooks and the sitemap             |
+| Preview differs from dev              | Fresh production artifacts, host pretty-URL behavior, stale CSS/bundles                      |
+| Successful build but broken page      | Read warnings/errors and inspect fallback HTML/error comments                                |
 
 ## Working in the Stati monorepo
 

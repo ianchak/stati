@@ -47,6 +47,9 @@ interface StatiConfig {
   /** Incremental Static Generation configuration */
   isg?: ISGConfig;
 
+  /** Collection listings: which fields rebuild them, and pages generated from data */
+  collections?: CollectionsConfig;
+
   /** SEO configuration */
   seo?: SEOConfig;
 
@@ -86,6 +89,33 @@ interface StatiConfig {
   hooks?: BuildHooks;
 }
 ```
+
+### Collections configuration
+
+```typescript
+interface CollectionsConfig {
+  /**
+   * Front matter fields of collection pages that listings show; changing one rebuilds the pages
+   * that list the page. URLs and publish dates always count; 'content' stands for the body.
+   * Default: ['title', 'description', 'tags', 'draft']
+   */
+  summaryFields?: string[];
+
+  /** Pages to create from data, each rendered with a [param].md template */
+  generate?: (ctx: BuildContext) => GeneratedPageEntry[] | Promise<GeneratedPageEntry[]>;
+}
+
+interface GeneratedPageEntry {
+  url: string; // '/authors/ada'
+  template: string; // 'authors/[author].md', relative to the source directory
+  key?: string; // Defaults to the last segment of url
+  label?: string; // Defaults to key; the value of {param} placeholders
+  items?: PageModel[]; // stati.generated.items
+  data?: Record<string, unknown>; // stati.generated.data; JSON-serializable
+}
+```
+
+See [Collections and generated pages](/core-concepts/collections).
 
 ### Site configuration
 
@@ -167,7 +197,7 @@ interface BuildContext {
   /** The resolved Stati configuration */
   config: StatiConfig;
 
-  /** Array of all loaded page models */
+  /** Every page of the build, generated and paginated pages included */
   pages: PageModel[];
 }
 
@@ -229,8 +259,16 @@ interface PageModel {
 
   /** Publication date, from the first valid of `publishedAt`, `published`, `date`, `createdAt` */
   publishedAt?: Date;
+
+  /** Position in a paginated listing; set on every page of a listing with `paginate` */
+  pagination?: PaginationData;
+
+  /** Set on pages created from a [param].md template or a collections.generate entry */
+  generated?: GeneratedPageData;
 }
 ```
+
+Generated pages and the pages after the first of a listing share the template's or the first page's `sourcePath`, `content` and front matter, with `{param}` placeholders filled in. `PaginationData` and `GeneratedPageData` are described under [Template API](/api/templates#template-context-stati).
 
 ### FrontMatter interface
 
@@ -279,6 +317,21 @@ interface FrontMatter {
 
   /** Sitemap configuration for the page */
   sitemap?: SitemapMetadata;
+
+  /** URL of the collection index page this page reads as stati.collection, such as '/blog' */
+  collection?: string;
+
+  /** Splits the page's collection into pages: a size, or { size, path } */
+  paginate?: number | { size: number; path?: string };
+
+  /** In a [param].md template: { from: 'tags', paginate?: number | { size, path } } */
+  generate?: { from?: string; paginate?: number | { size: number; path?: string } };
+
+  /** In a [param].md template: include its pages in navigation */
+  nav?: boolean;
+
+  /** In a [param].md template: include its pages in the search index */
+  search?: boolean;
 
   /** Additional custom properties */
   [key: string]: unknown;
@@ -360,8 +413,17 @@ interface TemplateContext {
   /** Discovered partials from underscore folders in hierarchy */
   partials: Record<string, string>;
 
-  /** Collection data (available on index pages and collection children) */
+  /** The page's collection: its own, the one it belongs to, or the one `collection` names */
   collection?: CollectionData;
+
+  /** This page's part of a listing with `paginate` */
+  pagination?: PaginationData;
+
+  /** Key and items of a page created from a [param].md template */
+  generated?: GeneratedPageData;
+
+  /** The URL slug Stati gives generated page keys */
+  slugify?: (text: string) => string;
 
   /** Bundle and search index paths (passed on every render) */
   assets?: StatiAssets;
@@ -439,8 +501,16 @@ interface CacheEntry {
 
   /** Generated image files the page references, relative to the output directory */
   images?: readonly string[];
+
+  /** Whether the last render read stati.collection; its summary is then part of inputsHash */
+  readsCollection?: boolean;
+
+  /** Whether the last render read stati.nav or stati.page.navNode */
+  readsNav?: boolean;
 }
 ```
+
+An entry without `readsCollection` and `readsNav` was written by a version of Stati that didn't record them; its page rebuilds once.
 
 ### TypeScript configuration
 
@@ -673,6 +743,14 @@ import type {
   AgingRule,
   BuildStats,
   BundleConfig,
+  // Collections, pagination and generated pages
+  CollectionData,
+  CollectionsConfig,
+  GeneratedPageEntry,
+  PaginationData,
+  GeneratedPageData,
+  PaginateOptions,
+  GenerateOptions,
   // Build, servers and invalidation
   BuildOptions,
   BuildResult,

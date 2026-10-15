@@ -269,6 +269,24 @@ site/
 │       └── react-native.md → /projects/mobile-apps/react-native
 ```
 
+### Generated and paginated URLs
+
+Two kinds of pages get their URLs from data rather than from a file of their own. See [Collections and generated pages](/core-concepts/collections).
+
+```text
+site/
+├── blog/
+│   ├── index.md         → /blog, with `paginate: 10`
+│   │                    → /blog/page/2, /blog/page/3… (dist/blog/page/2.html)
+│   └── tags/
+│       └── [tag].md     → /blog/tags/css, /blog/tags/javascript… (one per tag)
+```
+
+- **Pagination:** `paginate` in front matter adds `/page/2`, `/page/3` and so on after the page's URL. With a trailing-slash permalink such as `/blog/`, page 2 is `/blog/page/2/`.
+- **Templates:** a file named `[tag].md` (any word in brackets) renders nothing at its own URL. It becomes one page per key, at its URL with the bracketed part replaced by the key, or at its `permalink` with `[tag]` replaced.
+
+Stati deletes the output of these pages when they are no longer needed, such as a tag that no post uses.
+
 ## Front matter URL override
 
 You can completely override the automatic URL generation using the `permalink` field in front matter:

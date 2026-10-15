@@ -1,9 +1,10 @@
 <%
-  /* Inline list of tag links. Props: tags (array of tag names), label (accessible name). */
+  /* Inline list of tag links. Props: tags (array of tag names), label (accessible name).
+     Each tag's page comes from site/tags/[tag].md, at the address stati.slugify gives it. */
   if (!stati.props || !stati.props.tags || stati.props.tags.length === 0) { return; }
 %>
 <ul class="tag-links" role="list" aria-label="<%= stati.props.label ?? 'Tags' %>">
   <% for (const tag of stati.props.tags) { %>
-  <li><a href="<%= stati.tagUrl(tag) %>"><%= tag %></a></li>
+  <li><a href="<%= `/tags/${stati.slugify(tag)}` %>"><%= tag %></a></li>
   <% } %>
 </ul>

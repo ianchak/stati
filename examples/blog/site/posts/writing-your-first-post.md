@@ -27,10 +27,9 @@ tags: ['notes', 'travel']
 | `title`       | Yes      | The post's heading, page title and feed entry               |
 | `description` | Yes      | Shown under the title on the home page and in link previews |
 | `publishedAt` | Yes      | Orders posts and groups them by year. Keep the quotes       |
-| `updated`     | No       | Adds an "Updated" date to the post and its metadata         |
-| `tags`        | No       | Files the post under each tag on the tags page              |
-| `image`       | No       | A picture for link previews, such as `/images/my-post.png`  |
-| `imageAlt`    | No       | Describes that picture for people who cannot see it         |
+| `updated`     | No       | Adds an "Updated" date to the post and the sitemap          |
+| `tags`        | No       | Files the post under each tag; every tag has its own page   |
+| `seo`         | No       | Link-preview and search settings, such as a preview image   |
 | `draft`       | No       | `true` keeps the post out of the build                      |
 
 Write the date as `'YYYY-MM-DD'` in quotes. Without quotes, some dates are read as something other than text and sort unpredictably.

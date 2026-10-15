@@ -42,9 +42,10 @@ Read the other references that match the work; do not load everything by default
    components. Use frontmatter, config filters, and hooks for data preparation.
    Browser interactivity is authored separately, not magically hydrated.
 4. **Implement end to end.** Wire pages, layouts, components, navigation, CSS,
-   browser code, assets, metadata, and relevant generated files. Create actual
-   content pages for links to tags, feeds, archives, pagination, or languages;
-   Stati does not generate those routes merely because a template links to them.
+   browser code, assets, metadata, and relevant generated files. Every linked
+   route needs a source: a Markdown page, `paginate` for numbered listing pages,
+   or a `[tag].md` template for one page per tag (core 1.29+). Stati does not
+   generate routes merely because a template links to them.
 5. **Build and inspect output.** Use the site's scripts. A successful exit code
    is insufficient: inspect expected page files, rendered content/components,
    asset URLs, metadata, and warning/error output. Fallback HTML and HTML error
@@ -88,6 +89,10 @@ Read the other references that match the work; do not load everything by default
 - Never assume a collection, page nav node, props, bundle, or search index exists.
   Use actual collection membership and guarded APIs. For optional partials, use
   `'name' in stati.partials`, not a truthiness read that can activate an error proxy.
+- Read listings from `stati.collection` (any page can name one with
+  `collection: /blog`), `stati.pagination` and `stati.generated`, not from data
+  a `beforeAll` hook hands to filters: Stati records which pages read collections
+  and the navigation, and rebuilds them when that data changes (core 1.29+).
 - A section layout **replaces**, rather than wraps, its ancestor layout.
   Explicit `layout` values are source-root-relative names **without `.eta`**.
   `index.eta` is an aggregation layout, not an independent content page.
@@ -99,8 +104,9 @@ Read the other references that match the work; do not load everything by default
 - ISG is build-time caching, not request-time regeneration on a static host.
 - Avoid manually duplicating auto-injected SEO, search metadata, or bundle tags.
 - Do not assume framework features such as MDX, React/Vue components, hydration,
-  CMS routing, automatic pagination, or internationalization. Verify an API before
-  using it.
+  CMS routing, or internationalization. Pagination (`paginate`) and generated
+  pages (`[param].md`) exist from core 1.29 and are opt-in per page; they are not
+  automatic. Verify an API, and the installed version, before using it.
 - Images: core (1.28+) sizes Markdown images and lazy-loads them on its own.
   Responsive variants and generated Open Graph cards exist only with the
   `@stati/images` package installed and `images.responsive` / `images.og` on; do
@@ -133,7 +139,8 @@ not a replacement for `create-stati`'s styling installers.
 
 Verified against Stati core **1.24.1**, Eta **3.5.0**, source revision
 `64df3241ad897fe479d9b8fb7723752d25fe9f07`, and live documentation on
-**2026-10-10**. See [resources](./references/resources.md) for authority rules and
+**2026-10-10**; collections, pagination and generated pages against core
+**1.29** on **2026-10-15**. See [resources](./references/resources.md) for authority rules and
 known discrepancies. When upgrading, recheck the contracts and rerun
 [the bundled smoke test](./scripts/smoke-test.mjs) from an installed Stati project;
 it builds only an isolated temporary fixture and checks its generated output.

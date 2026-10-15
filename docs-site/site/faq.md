@@ -54,7 +54,11 @@ Choose Stati if you want:
 
 ## Does Stati support Incremental Static Generation (ISG)?
 
-Yes. ISG is enabled by default: Stati caches rendered pages between builds and re-renders only the pages whose content, templates or TTL require it. Configure TTLs and aging rules under `isg`, and clear entries with `stati invalidate`. See [ISG](/core-concepts/isg).
+Yes. ISG is enabled by default: Stati caches rendered pages between builds and re-renders only the pages whose content, templates, data they show or TTL require it. A listing rebuilds when a post it lists is added, removed or retitled, and a deleted page's HTML is removed. Configure TTLs and aging rules under `isg`, and clear entries with `stati invalidate`. See [ISG](/core-concepts/isg).
+
+## Can Stati generate tag pages and paginated listings?
+
+Yes. `paginate: 10` in a listing's front matter splits it into `/blog`, `/blog/page/2` and so on, and a file named `[tag].md` becomes one page per tag, such as `/blog/tags/css`. See [Collections and generated pages](/core-concepts/collections).
 
 ## What templating engine does Stati use?
 

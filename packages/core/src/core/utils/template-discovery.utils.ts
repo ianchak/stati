@@ -10,10 +10,34 @@ import { resolveSrcDir } from './paths.utils.js';
  */
 
 /**
+ * Whether a page was created by Stati rather than loaded from a Markdown file: a page expanded
+ * from a `[param].md` template, or page 2 or later of a paginated listing.
+ *
+ * Virtual pages are never collection members, never make a folder a collection, and are left
+ * out of navigation, search and RSS unless they opt in.
+ *
+ * @param page - The page to check
+ * @returns True for generated pages and for pagination pages after the first
+ */
+export function isVirtualPage(page: PageModel): boolean {
+  return page.generated !== undefined || (page.pagination?.pageNumber ?? 1) > 1;
+}
+
+/**
  * Maps each directory prefix (ending in `/`) found in page URLs to the URL that contains it,
  * or to `null` when two or more different URLs contain it.
  */
 type DirectoryPrefixIndex = Map<string, string | null>;
+
+/**
+ * Lookups computed once per page list.
+ */
+interface PageListIndex {
+  /** Directory prefixes of the URLs of pages loaded from Markdown files */
+  prefixes: DirectoryPrefixIndex;
+  /** Every page by URL; the first page wins when two share a URL */
+  byUrl: Map<string, PageModel>;
+}
 
 /**
  * Directory prefix index per page list, so a build computes it once instead of
@@ -26,47 +50,86 @@ type DirectoryPrefixIndex = Map<string, string | null>;
  * loads a new array and gets a new snapshot. Taking one snapshot keeps rendering and
  * ISG dependency tracking in agreement for the whole build.
  */
-const directoryPrefixCache = new WeakMap<PageModel[], DirectoryPrefixIndex>();
+const pageListCache = new WeakMap<PageModel[], PageListIndex>();
 
-function getDirectoryPrefixIndex(allPages: PageModel[]): DirectoryPrefixIndex {
-  const cached = directoryPrefixCache.get(allPages);
+function getPageListIndex(allPages: PageModel[]): PageListIndex {
+  const cached = pageListCache.get(allPages);
   if (cached) {
     return cached;
   }
 
-  const index: DirectoryPrefixIndex = new Map();
-  for (const { url } of allPages) {
+  const prefixes: DirectoryPrefixIndex = new Map();
+  const byUrl = new Map<string, PageModel>();
+  for (const page of allPages) {
+    if (!byUrl.has(page.url)) {
+      byUrl.set(page.url, page);
+    }
+    // Generated and pagination pages don't turn the folders they live in into collections
+    if (isVirtualPage(page)) {
+      continue;
+    }
+    const { url } = page;
     // Every prefix ending at a '/' is a directory this URL lives in (or is, for trailing-slash URLs)
     for (let i = url.indexOf('/'); i !== -1; i = url.indexOf('/', i + 1)) {
       const prefix = url.slice(0, i + 1);
-      const existing = index.get(prefix);
+      const existing = prefixes.get(prefix);
       if (existing === undefined) {
-        index.set(prefix, url);
+        prefixes.set(prefix, url);
       } else if (existing !== null && existing !== url) {
-        index.set(prefix, null);
+        prefixes.set(prefix, null);
       }
     }
   }
 
-  directoryPrefixCache.set(allPages, index);
+  const index = { prefixes, byUrl };
+  pageListCache.set(allPages, index);
   return index;
+}
+
+/**
+ * Finds the first page of a paginated listing, which later pages render like.
+ *
+ * @param page - A page with `pagination`
+ * @param allPages - All pages in the site
+ * @returns The listing's first page, or undefined when it is not in the list
+ */
+export function getFirstPaginationPage(
+  page: PageModel,
+  allPages: PageModel[],
+): PageModel | undefined {
+  const firstUrl = page.pagination?.urls[0];
+  if (firstUrl === undefined || firstUrl === page.url) {
+    return undefined;
+  }
+  return getPageListIndex(allPages).byUrl.get(firstUrl);
 }
 
 /**
  * Determines if the given page is a collection index page.
  * A collection index page is one whose URL matches a directory path that contains other pages.
+ * Generated pages never are; pagination pages after the first are when their first page is.
  *
  * Rendering and ISG dependency tracking must both call this with the same page list,
  * otherwise they can pick different layouts for the same page.
  *
  * Page URLs are read once per `allPages` array, at the first call; see
- * `directoryPrefixCache` for when changes to the pages are picked up.
+ * `pageListCache` for when changes to the pages are picked up.
  *
  * @param page - The page to check
  * @param allPages - All pages in the site (treated as unchanging after the first call)
  * @returns True if the page is a collection index page
  */
 export function isCollectionIndexPage(page: PageModel, allPages: PageModel[]): boolean {
+  if (page.generated) {
+    return false;
+  }
+
+  // Later pages of a listing render with the layout of its first page
+  if ((page.pagination?.pageNumber ?? 1) > 1) {
+    const first = getFirstPaginationPage(page, allPages);
+    return first !== undefined && !isVirtualPage(first) && isCollectionIndexPage(first, allPages);
+  }
+
   // Root index page is always a collection index
   if (page.url === '/') {
     return true;
@@ -74,7 +137,7 @@ export function isCollectionIndexPage(page: PageModel, allPages: PageModel[]): b
 
   // The page is an index when a different page's URL lives under this page's URL as a directory
   const pageUrlAsDir = page.url.endsWith('/') ? page.url : page.url + '/';
-  const containingUrl = getDirectoryPrefixIndex(allPages).get(pageUrlAsDir);
+  const containingUrl = getPageListIndex(allPages).prefixes.get(pageUrlAsDir);
   return containingUrl === null || (containingUrl !== undefined && containingUrl !== page.url);
 }
 
