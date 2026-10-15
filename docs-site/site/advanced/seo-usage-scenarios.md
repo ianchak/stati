@@ -561,7 +561,8 @@ export default defineConfig({
   <meta property="og:type" content="<%= stati.page.type || 'website' %>">
 
   <% if (stati.page.shareImage) { %>
-    <meta property="og:image" content="<%= stati.site.baseUrl + stati.page.shareImage %>">
+    <!-- new URL() accepts both absolute URLs and paths such as /images/og.png -->
+    <meta property="og:image" content="<%= new URL(stati.page.shareImage, stati.site.baseUrl).href %>">
     <% if (stati.page.shareImageWidth) { %>
       <meta property="og:image:width" content="<%= stati.page.shareImageWidth %>">
     <% } %>
@@ -578,7 +579,7 @@ export default defineConfig({
     <meta name="twitter:description" content="<%= stati.page.description %>">
   <% } %>
   <% if (stati.page.twitterImage || stati.page.shareImage) { %>
-    <meta name="twitter:image" content="<%= stati.site.baseUrl + (stati.page.twitterImage || stati.page.shareImage) %>">
+    <meta name="twitter:image" content="<%= new URL(stati.page.twitterImage || stati.page.shareImage, stati.site.baseUrl).href %>">
   <% } %>
 
   <!-- Manual structured data (escape "<" so the JSON cannot close the script tag) -->
