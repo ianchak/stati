@@ -1,5 +1,11 @@
 # create-stati
 
+## 1.17.0
+
+### Minor Changes
+
+- b7f6663: The blog template now uses Stati's collections: every tag has its own page at `/tags/<tag>`, generated from `site/tags/[tag].md`, the home page lists five posts at a time with links to `/page/2` and on, and the archive moves to `/posts`. Listings read `stati.collection`, so the blog uses no build hooks anymore: `helpers/blog.js` keeps only template filters for related posts and dates, and retitling a post rebuilds the pages that list it instead of the whole blog. Link previews come from Stati's built-in SEO tags; posts no longer get article Open Graph tags or `BlogPosting` structured data, and a post's preview image moves from `image` to `seo.openGraph.image` in its front matter. The blog and docs templates no longer give every page a default link-preview image: a page shows the image its front matter sets, or with image tools installed, the card drawn for it. The bundled agent skill documents collections, pagination, generated pages and how ISG tracks them.
+
 ## 1.16.1
 
 ### Patch Changes
