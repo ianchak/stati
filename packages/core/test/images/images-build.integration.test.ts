@@ -17,7 +17,12 @@ vi.mock('../../src/config/loader.js', () => ({
 
 interface FakeCalls {
   variants: Array<{ sourcePath: string; outputs: Array<{ filePath: string; format: string }> }>;
-  og: Array<{ html: string; filePath: string; templatePath: string }>;
+  og: Array<{
+    html: string;
+    filePath: string;
+    templatePath: string;
+    fonts: Array<{ name: string; weight?: number; style?: string }>;
+  }>;
 }
 
 declare global {
@@ -26,11 +31,18 @@ declare global {
 
 /**
  * Installs a stand-in for @stati/images in the project's node_modules. It writes small
- * placeholder files and records every request.
+ * placeholder files and records every request. `failOn` and `failOgOn` make the matching
+ * variant or card requests fail; `source` replaces the module entirely.
  */
 async function installFakeImagesPackage(
   projectDir: string,
-  options: { apiVersion?: number; failOn?: string } = {},
+  options: {
+    apiVersion?: number;
+    failOn?: string;
+    failOgOn?: string;
+    noDefaults?: boolean;
+    source?: string;
+  } = {},
 ): Promise<void> {
   const dir = join(projectDir, 'node_modules', '@stati', 'images');
   await mkdir(dir, { recursive: true });
@@ -45,10 +57,13 @@ async function installFakeImagesPackage(
   );
   await writeFile(
     join(dir, 'index.js'),
-    `
+    options.source ??
+      `
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 const failOn = ${JSON.stringify(options.failOn ?? null)};
+const failOgOn = ${JSON.stringify(options.failOgOn ?? null)};
+const noDefaults = ${JSON.stringify(options.noDefaults ?? false)};
 export function createImageProvider() {
   const calls = globalThis.__statiImagesCalls;
   return {
@@ -64,14 +79,15 @@ export function createImageProvider() {
     },
     async renderOgImage(request) {
       calls.og.push(request);
+      if (failOgOn && request.filePath.includes(failOgOn)) throw new Error('card exploded');
       writeFileSync(request.filePath, 'png');
     },
-    async loadOgDefaults() {
-      return {
-        template: '<div style="display:flex"><%= stati.page.title %></div>',
-        fonts: [{ name: 'Fake', data: Buffer.from('font') }],
-      };
-    },
+    loadOgDefaults: noDefaults
+      ? undefined
+      : async () => ({
+          template: '<div style="display:flex"><%= stati.page.title %></div>',
+          fonts: [{ name: 'Fake', data: Buffer.from('font') }],
+        }),
   };
 }
 `,
@@ -185,6 +201,53 @@ describe('image pipeline in builds', () => {
       );
     });
 
+    it('renders stati.image() as a plain, escaped <img> with images: false', async () => {
+      config.images = false;
+      await write(
+        'site/about.eta',
+        `<html><head></head><body><%~ stati.image('/images/hero.png?v="2"', { alt: 'Tom & "Jerry"', title: 'T', class: 'hero' }) %><%~ stati.image('') %></body></html>`,
+      );
+      await write('site/about.md', '---\ntitle: About\nlayout: about\n---\nNo images here.');
+      await runBuild();
+
+      expect(await read('dist/about.html')).toContain(
+        '<body><img src="/images/hero.png?v=&quot;2&quot;" alt="Tom &amp; &quot;Jerry&quot;" title="T" class="hero"></body>',
+      );
+    });
+
+    it('leaves remote and unreadable template images as written and asks for alt text', async () => {
+      await write('public/images/broken.png', 'not a png');
+      await write(
+        'site/about.eta',
+        "<html><head></head><body><%~ stati.image('/images/hero.png') %><%~ stati.image('https://cdn.example.com/a.png', { alt: 'Remote' }) %><%~ stati.image('/images/broken.png', { alt: 'Broken' }) %></body></html>",
+      );
+      await write('site/about.md', '---\ntitle: About\nlayout: about\n---\nNo images here.');
+      await runBuild();
+
+      const about = await read('dist/about.html');
+      expect(about).toContain(
+        '<img src="/images/hero.png" alt="" width="1600" height="900" loading="lazy" decoding="async">',
+      );
+      expect(about).toContain(
+        '<img src="https://cdn.example.com/a.png" alt="Remote" loading="lazy" decoding="async">',
+      );
+      expect(about).toContain(
+        '<img src="/images/broken.png" alt="Broken" loading="lazy" decoding="async">',
+      );
+      expect(logger.warning).toHaveBeenCalledWith(
+        "stati.image('/images/hero.png') on /about has no alt text. Pass { alt: '' } for decorative images.",
+      );
+      expect(logger.warning).toHaveBeenCalledWith(
+        'Could not read the dimensions of public/images/broken.png. It is left as written.',
+      );
+    });
+
+    it('leaves a Markdown image marked ?raw as written, without the marker', async () => {
+      await write('site/about.md', '---\ntitle: About\n---\n![Raw](/images/hero.png?raw)');
+      await runBuild();
+      expect(await read('dist/about.html')).toContain('<img src="/images/hero.png" alt="Raw">');
+    });
+
     it('rebuilds only the pages that show a replaced image', async () => {
       expect(await runBuild()).toMatchObject({ cacheMisses: 3 });
       expect(await runBuild()).toMatchObject({ cacheHits: 3, cacheMisses: 0 });
@@ -281,6 +344,37 @@ describe('image pipeline in builds', () => {
       expect(await read('dist/blog/post.html')).toContain('<picture>');
 
       expect(await runBuild()).toMatchObject({ cacheMisses: 1 });
+    });
+
+    it('copies a co-located image for the fallback when its variants fail', async () => {
+      await installFakeImagesPackage(projectDir, { failOn: 'photo' });
+      config.images = { responsive: true };
+      await runBuild();
+
+      const post = await read('dist/blog/post.html');
+      expect(post).not.toContain('<picture>');
+      const copy = post.match(
+        /<img src="\/(_img\/photo-[0-9a-f]{8}\.png)" alt="Photo" width="800" height="600"/,
+      );
+      expect(copy).not.toBeNull();
+      expect(await exists(`dist/${copy![1]}`)).toBe(true);
+    });
+
+    it('explains a package that does not export createImageProvider', async () => {
+      await installFakeImagesPackage(projectDir, { source: 'export const version = 1;' });
+      config.images = { responsive: true };
+      await expect(runBuild()).rejects.toThrow(
+        'Failed to load @stati/images: @stati/images does not export createImageProvider()',
+      );
+    });
+
+    it('asks for a newer package when the provider cannot draw Open Graph images', async () => {
+      await installFakeImagesPackage(projectDir, {
+        source:
+          "export function createImageProvider() { return { apiVersion: 1, version: 'old', async createVariants() {} }; }",
+      });
+      config.images = { og: true };
+      await expect(runBuild()).rejects.toThrow('images.og needs a newer @stati/images (old)');
     });
 
     it('skips variants in the dev server and re-renders them for production', async () => {
@@ -438,9 +532,94 @@ describe('image pipeline in builds', () => {
       );
     });
 
-    it('requires a public site.baseUrl in production', async () => {
-      config.site = { title: 'Image Test', baseUrl: 'http://localhost:3000' };
-      await expect(runBuild()).rejects.toThrow('images.og needs site.baseUrl');
+    it('gives generateSEO() in the layout the generated image', async () => {
+      config.seo = { autoInject: false };
+      await write(
+        'site/layout.eta',
+        '<!DOCTYPE html><html><head><%~ stati.generateSEO() %></head><body><%~ stati.content %></body></html>',
+      );
+      await runBuild();
+
+      const home = await read('dist/index.html');
+      expect(ogImageOf(home)).toMatch(/^https:\/\/example\.com\/_img\/og\/index-[0-9a-f]{8}\.png$/);
+      expect(home).toContain('<meta name="twitter:image"');
     });
+
+    it('passes configured fonts ahead of the built-in ones', async () => {
+      await write('og/brand.woff', 'wOFF brand');
+      config.images = {
+        og: { fonts: [{ name: 'Brand', path: 'og/brand.woff', weight: 700, style: 'italic' }] },
+      };
+      await runBuild();
+
+      const fonts = globalThis.__statiImagesCalls!.og[0]!.fonts;
+      expect(fonts.map(({ name, weight, style }) => ({ name, weight, style }))).toEqual([
+        { name: 'Brand', weight: 700, style: 'italic' },
+        { name: 'Fake', weight: undefined, style: undefined },
+      ]);
+    });
+
+    it.each([
+      ['og/missing.woff', 'images.og.fonts: font file not found: og/missing.woff'],
+      ['og/brand.woff2', "og/brand.woff2 is WOFF2, which the image renderer can't read"],
+    ])('rejects the font %s', async (path, message) => {
+      await write('og/brand.woff2', 'wOF2 data');
+      config.images = { og: { fonts: [{ name: 'Brand', path }] } };
+      await expect(runBuild()).rejects.toThrow(message);
+    });
+
+    it('needs at least one font', async () => {
+      await installFakeImagesPackage(projectDir, { noDefaults: true });
+      await expect(runBuild()).rejects.toThrow('images.og needs at least one font');
+    });
+
+    it('logs an og.eta that fails and leaves its pages without a generated image', async () => {
+      await write('site/blog/og.eta', '<div><%= stati.page.missing.title %></div>');
+      await runBuild();
+
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to render site/blog/og.eta for /blog/post:'),
+      );
+      expect(await read('dist/blog/post.html')).not.toContain('og:image');
+      expect(ogImageOf(await read('dist/index.html'))).toBeDefined();
+    });
+
+    it('sends an og.eta error to the dev server overlay', async () => {
+      setEnv('development');
+      config.images = { og: true, dev: 'full' };
+      await write('site/blog/og.eta', '<div><%= stati.page.missing.title %></div>');
+      await expect(runBuild()).rejects.toMatchObject({ name: 'TemplateError' });
+    });
+
+    it('removes the generated tags and retries when a card fails', async () => {
+      await installFakeImagesPackage(projectDir, { failOgOn: 'blog-post' });
+      await runBuild();
+
+      const post = await read('dist/blog/post.html');
+      expect(post).not.toContain('og:image');
+      expect(post).not.toContain('twitter:image');
+      expect(logger.warning).toHaveBeenCalledWith(expect.stringContaining('card exploded'));
+      const manifest = await loadCacheManifest(join(projectDir, '.stati'));
+      expect(manifest!.entries['/blog/post.html']!.inputsHash).toBe('STALE');
+      expect(ogImageOf(await read('dist/index.html'))).toBeDefined();
+    });
+
+    it('fails the dev build when a card fails, after saving the cache', async () => {
+      await installFakeImagesPackage(projectDir, { failOgOn: 'blog-post' });
+      setEnv('development');
+      config.images = { og: true, dev: 'full' };
+      await expect(runBuild()).rejects.toThrow(
+        'Open Graph image failed for built-in Open Graph template (/blog/post): card exploded',
+      );
+      expect(await exists('.stati/manifest.json')).toBe(true);
+    });
+
+    it.each(['http://localhost:3000', 'example.com', 'ftp://example.com'])(
+      'requires a public site.baseUrl in production, not %s',
+      async (baseUrl) => {
+        config.site = { title: 'Image Test', baseUrl };
+        await expect(runBuild()).rejects.toThrow('images.og needs site.baseUrl');
+      },
+    );
   });
 });

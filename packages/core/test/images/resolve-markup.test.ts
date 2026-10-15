@@ -45,6 +45,7 @@ describe('resolveImageSource', () => {
     'data:image/png;base64,AAAA',
     '/images/logo.svg',
     '/files/report.pdf',
+    '/images/%E0%A4%A.png',
     '',
   ])('leaves %j as authored', (src) => {
     expect(resolveImageSource(src, context)).toMatchObject({ kind: 'skip' });

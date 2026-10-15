@@ -42,7 +42,8 @@ export function pngBytes(width: number, height: number, frames = 1): Buffer {
   return Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), ...chunks]);
 }
 
-function exifSegment(orientation: number, littleEndian: boolean): Buffer {
+/** An APP1 EXIF segment with one IFD entry: the orientation, or `tag` with the same value. */
+export function exifSegment(orientation: number, littleEndian = false, tag = 0x0112): Buffer {
   const u16 = (v: number) => {
     const b = Buffer.alloc(2);
     if (littleEndian) b.writeUInt16LE(v);
@@ -60,7 +61,7 @@ function exifSegment(orientation: number, littleEndian: boolean): Buffer {
     u16(42),
     u32(8),
     u16(1), // one IFD entry
-    u16(0x0112), // orientation
+    u16(tag),
     u16(3), // SHORT
     u32(1),
     u16(orientation),
@@ -174,11 +175,22 @@ function box(type: string, ...payload: Buffer[]): Buffer {
   return Buffer.concat([u32be(body.length + 8), Buffer.from(type, 'latin1'), body]);
 }
 
-/** An AVIF with an ispe property and optional irot rotation; `avis` marks a sequence. */
+/** A box with a 64-bit size field. */
+function largeBox(type: string, ...payload: Buffer[]): Buffer {
+  const body = Buffer.concat(payload);
+  const size = Buffer.alloc(8);
+  size.writeBigUInt64BE(BigInt(body.length + 16));
+  return Buffer.concat([u32be(1), Buffer.from(type, 'latin1'), size, body]);
+}
+
+/**
+ * An AVIF with an ispe property and optional irot rotation; `avis` marks a sequence.
+ * `extendedSizes` writes meta with a 64-bit size and mdat with size 0 (to the end of the file).
+ */
 export function avifBytes(
   width: number,
   height: number,
-  options: { rotation?: number; animated?: boolean } = {},
+  options: { rotation?: number; animated?: boolean; extendedSizes?: boolean } = {},
 ): Buffer {
   const brand = options.animated ? 'avis' : 'avif';
   const ftyp = box(
@@ -195,11 +207,14 @@ export function avifBytes(
   if (options.rotation !== undefined) {
     properties.push(box('irot', Buffer.from([options.rotation])));
   }
-  const meta = box(
-    'meta',
+  const metaPayload = [
     u32be(0),
     box('hdlr', Buffer.alloc(24)),
     box('iprp', box('ipco', ...properties)),
-  );
-  return Buffer.concat([ftyp, meta, box('mdat', Buffer.alloc(8))]);
+  ];
+  if (options.extendedSizes) {
+    const mdat = Buffer.concat([u32be(0), Buffer.from('mdat', 'latin1'), Buffer.alloc(8)]);
+    return Buffer.concat([ftyp, largeBox('meta', ...metaPayload), mdat]);
+  }
+  return Buffer.concat([ftyp, box('meta', ...metaPayload), box('mdat', Buffer.alloc(8))]);
 }

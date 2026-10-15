@@ -26,6 +26,10 @@ describe('planWidths', () => {
     expect(planWidths(1440, [480, 960, 1440])).toEqual([480, 960, 1440]);
     expect(planWidths(960, [480, 960, 1440])).toEqual([480, 960]);
   });
+
+  it('uses the intrinsic width when no widths are configured', () => {
+    expect(planWidths(800, [])).toEqual([800]);
+  });
 });
 
 describe('fallbackFormatFor', () => {

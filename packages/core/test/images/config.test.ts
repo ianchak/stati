@@ -47,6 +47,7 @@ describe('validateImagesConfig', () => {
       { responsive: { quality: { avif: 0 } } },
       'images.responsive.quality.avif must be a whole number',
     ],
+    [{ responsive: { quality: 80 } }, 'images.responsive.quality must be an object (got 80)'],
     [{ responsive: { quality: { gif: 50 } } }, 'Unknown option images.responsive.quality.gif'],
     [{ responsive: { width: [100] } }, 'Unknown option images.responsive.width'],
     [{ responsive: { sizes: '' } }, 'images.responsive.sizes must be a non-empty string'],
@@ -57,7 +58,18 @@ describe('validateImagesConfig', () => {
     ],
     [{ og: { width: 0 } }, 'images.og.width must be a whole number of pixels'],
     [{ og: { format: 'webp' } }, "images.og.format must be 'png' or 'jpeg'"],
+    [{ og: 'yes' }, 'images.og must be true, false or an object (got "yes")'],
+    [{ og: { fonts: {} } }, 'images.og.fonts must be an array'],
+    [{ og: { fonts: ['inter.woff'] } }, 'images.og.fonts[0] must be an object with name and path'],
+    [
+      { og: { fonts: [{ name: ' ', path: 'a.ttf' }] } },
+      'images.og.fonts[0].name must be a non-empty',
+    ],
     [{ og: { fonts: [{ name: 'Inter' }] } }, 'images.og.fonts[0].path must be a non-empty string'],
+    [
+      { og: { fonts: [{ name: 'Inter', path: 'a.ttf', style: 'oblique' }] } },
+      "images.og.fonts[0].style must be 'normal' or 'italic'",
+    ],
     [
       { og: { fonts: [{ name: 'Inter', path: 'a.ttf', weight: 950 }] } },
       'images.og.fonts[0].weight',
@@ -69,6 +81,12 @@ describe('validateImagesConfig', () => {
   ])('rejects %j', (images, message) => {
     expect(() => validateImagesConfig(images)).toThrow(ConfigValidationError);
     expect(() => validateImagesConfig(images)).toThrow(message);
+  });
+
+  it('shows values that JSON cannot represent in messages', () => {
+    expect(() => validateImagesConfig({ dev: 10n })).toThrow(
+      "images.dev must be 'fast' or 'full' (got 10)",
+    );
   });
 });
 

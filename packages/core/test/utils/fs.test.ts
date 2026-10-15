@@ -16,7 +16,10 @@ vi.mock('fs-extra', () => ({
 }));
 
 import fse from 'fs-extra';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import type { WriteFileOptions, Stats, Dirent } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import {
   readFile,
   writeFile,
@@ -26,6 +29,9 @@ import {
   stat,
   readdir,
   copyFile,
+  readFileBufferSync,
+  statSyncOrNull,
+  listFilesRecursiveSync,
 } from '../../src/core/utils/fs.utils.js';
 
 // Get the mocked functions from the default export
@@ -342,6 +348,40 @@ describe('File System Utilities', () => {
       await expect(copyFile(srcPath, destPath)).rejects.toThrow(
         'Failed to copy /test/source.txt to /test/destination.txt: Source file not found',
       );
+    });
+  });
+
+  // These use node:fs directly, so they run against a real temporary directory
+  describe('synchronous helpers', () => {
+    let dir: string;
+
+    beforeEach(() => {
+      dir = mkdtempSync(join(tmpdir(), 'stati-fs-sync-'));
+    });
+
+    afterEach(() => {
+      rmSync(dir, { recursive: true, force: true });
+    });
+
+    it('should read bytes, stats and nested file lists', () => {
+      mkdirSync(join(dir, 'a', 'b'), { recursive: true });
+      writeFileSync(join(dir, 'a', 'b', 'c.png'), Buffer.from([1, 2, 3]));
+
+      expect(readFileBufferSync(join(dir, 'a', 'b', 'c.png'))).toEqual(Buffer.from([1, 2, 3]));
+      expect(statSyncOrNull(join(dir, 'a'))?.isDirectory()).toBe(true);
+      expect(listFilesRecursiveSync(dir)).toEqual(['a/b/c.png']);
+    });
+
+    it('should return null or an empty list for missing paths', () => {
+      expect(readFileBufferSync(join(dir, 'missing.png'))).toBeNull();
+      expect(statSyncOrNull(join(dir, 'missing.png'))).toBeNull();
+      expect(listFilesRecursiveSync(join(dir, 'missing'))).toEqual([]);
+    });
+
+    it('should throw for errors other than a missing path', () => {
+      expect(() => readFileBufferSync(dir)).toThrow(`Failed to read file ${dir}`);
+      expect(() => statSyncOrNull('bad\0path')).toThrow('Failed to get stats for');
+      expect(() => listFilesRecursiveSync('bad\0path')).toThrow('Failed to read directory');
     });
   });
 });
