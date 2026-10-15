@@ -155,15 +155,131 @@ export function parseStyle(style: string): Record<string, string> {
   return result;
 }
 
-const TOKEN =
-  /<!--[\s\S]*?-->|<![^>]*>|<\/\s*([a-zA-Z][\w:-]*)\s*>|<([a-zA-Z][\w:-]*)((?:\s+[^\s"'>/=]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>`]+))?)*)\s*(\/?)>|[^<]+|</g;
-const ATTRIBUTE = /([^\s"'>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
+/** HTML whitespace. */
+const SPACE = new Set([' ', '\t', '\n', '\r', '\f']);
 
-function parseAttributes(source: string): Record<string, unknown> {
+/** Characters that end a tag or attribute name. */
+const NAME_END = new Set([...SPACE, '/', '>']);
+
+type Attribute = [name: string, value: string];
+
+/** A piece of HTML: text, a start tag or an end tag. */
+type Token =
+  | { kind: 'text'; text: string }
+  | { kind: 'start'; name: string; attributes: Attribute[]; selfClosing: boolean }
+  | { kind: 'end'; name: string };
+
+interface Tag {
+  name: string;
+  attributes: Attribute[];
+  selfClosing: boolean;
+  /** Index after the closing `>` */
+  end: number;
+}
+
+function isAsciiLetter(char: string | undefined): boolean {
+  return char !== undefined && ((char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z'));
+}
+
+/**
+ * Reads a tag's name and attributes, starting at the name, as the HTML tokenizer does:
+ * quoted values may contain `>`, and a `/` outside an unquoted value only counts before `>`.
+ *
+ * @returns The tag, or null when the input ends inside it
+ */
+function readTag(html: string, from: number): Tag | null {
+  let i = from;
+  while (i < html.length && !NAME_END.has(html[i]!)) i++;
+  const name = html.slice(from, i);
+  const attributes: Attribute[] = [];
+
+  while (i < html.length) {
+    const char = html[i]!;
+    if (char === '>') {
+      return { name, attributes, selfClosing: false, end: i + 1 };
+    }
+    if (char === '/' && html[i + 1] === '>') {
+      return { name, attributes, selfClosing: true, end: i + 2 };
+    }
+    if (SPACE.has(char) || char === '/') {
+      i++;
+      continue;
+    }
+
+    // A name runs to whitespace, `/`, `>` or `=`, except that it may start with `=`
+    const nameStart = i;
+    i++;
+    while (i < html.length && !NAME_END.has(html[i]!) && html[i] !== '=') i++;
+    const attributeName = html.slice(nameStart, i);
+    while (i < html.length && SPACE.has(html[i]!)) i++;
+
+    let value = '';
+    if (html[i] === '=') {
+      i++;
+      while (i < html.length && SPACE.has(html[i]!)) i++;
+      const quote = html[i];
+      if (quote === '"' || quote === "'") {
+        const close = html.indexOf(quote, i + 1);
+        if (close === -1) return null;
+        value = html.slice(i + 1, close);
+        i = close + 1;
+      } else {
+        const valueStart = i;
+        while (i < html.length && !SPACE.has(html[i]!) && html[i] !== '>') i++;
+        value = html.slice(valueStart, i);
+      }
+    }
+    attributes.push([attributeName, value]);
+  }
+  return null;
+}
+
+/**
+ * Splits HTML into text, start tags and end tags, dropping comments, doctypes and other
+ * declarations. It reads each character once, so no input makes it slow. Like an HTML
+ * parser, it stops at a comment or tag that is never closed.
+ */
+function* tokenize(html: string): Generator<Token> {
+  let i = 0;
+  while (i < html.length) {
+    const open = html.indexOf('<', i);
+    if (open === -1) {
+      yield { kind: 'text', text: html.slice(i) };
+      return;
+    }
+    if (open > i) {
+      yield { kind: 'text', text: html.slice(i, open) };
+    }
+
+    const next = html[open + 1];
+    if (html.startsWith('<!--', open)) {
+      // Searching from the dashes also ends `<!-->` and `<!--->`, as browsers do
+      const close = html.indexOf('-->', open + 2);
+      if (close === -1) return;
+      i = close + 3;
+    } else if (next === '!' || next === '?' || (next === '/' && !isAsciiLetter(html[open + 2]))) {
+      const close = html.indexOf('>', open + 2);
+      if (close === -1) return;
+      i = close + 1;
+    } else if (next === '/' || isAsciiLetter(next)) {
+      const isEnd = next === '/';
+      const tag = readTag(html, isEnd ? open + 2 : open + 1);
+      if (!tag) return;
+      const { name, attributes, selfClosing } = tag;
+      yield isEnd ? { kind: 'end', name } : { kind: 'start', name, attributes, selfClosing };
+      i = tag.end;
+    } else {
+      // A `<` that starts no tag is text
+      yield { kind: 'text', text: '<' };
+      i = open + 1;
+    }
+  }
+}
+
+function parseAttributes(attributes: Attribute[]): Record<string, unknown> {
   const props: Record<string, unknown> = {};
-  for (const match of source.matchAll(ATTRIBUTE)) {
-    const name = match[1]!;
-    const value = decodeEntities(match[2] ?? match[3] ?? match[4] ?? '');
+  for (const [name, rawValue] of attributes) {
+    const value = decodeEntities(rawValue);
     const lower = name.toLowerCase();
     if (lower === 'style') {
       props.style = parseStyle(value);
@@ -224,17 +340,15 @@ export function htmlToSatori(html: string): SatoriElement {
   const top = () => stack[stack.length - 1]!;
   let skipUntil: string | null = null;
 
-  for (const match of html.matchAll(TOKEN)) {
-    const [token, closeName, openName, attributes, selfClosing] = match;
-
+  for (const token of tokenize(html)) {
     if (skipUntil) {
-      if (closeName?.toLowerCase() === skipUntil) skipUntil = null;
+      if (token.kind === 'end' && token.name.toLowerCase() === skipUntil) skipUntil = null;
       continue;
     }
 
-    if (closeName) {
+    if (token.kind === 'end') {
       // Close the nearest open element with this name, and any left open inside it
-      const name = closeName.toLowerCase();
+      const name = token.name.toLowerCase();
       for (let i = stack.length - 1; i > 0; i--) {
         if (stack[i]!.type.toLowerCase() === name) {
           stack.length = i;
@@ -244,15 +358,16 @@ export function htmlToSatori(html: string): SatoriElement {
       continue;
     }
 
-    if (openName) {
-      const lower = openName.toLowerCase();
+    if (token.kind === 'start') {
+      const { name, attributes, selfClosing } = token;
+      const lower = name.toLowerCase();
       if (SKIPPED_ELEMENTS.has(lower)) {
         if (!selfClosing) skipUntil = lower;
         continue;
       }
       // HTML element names are case-insensitive; SVG ones such as linearGradient are not
-      const type = /[A-Z]/.test(openName) && openName !== openName.toUpperCase() ? openName : lower;
-      const node: BuildNode = { type, props: parseAttributes(attributes ?? ''), children: [] };
+      const type = /[A-Z]/.test(name) && name !== name.toUpperCase() ? name : lower;
+      const node: BuildNode = { type, props: parseAttributes(attributes), children: [] };
       top().children.push(node);
       if (!selfClosing && !VOID_ELEMENTS.has(lower)) {
         stack.push(node);
@@ -260,14 +375,15 @@ export function htmlToSatori(html: string): SatoriElement {
       continue;
     }
 
-    if (token.startsWith('<!') || token.startsWith('<!--')) {
-      continue;
-    }
-
-    // Whitespace-only text between elements would count as children in Satori's layout
-    const text = decodeEntities(token);
-    if (/[^ \t\n\r\f]/.test(text)) {
-      top().children.push(text);
+    // Text split by a comment or a stray `<` stays one child. Whitespace-only text between
+    // elements is dropped, because it would count as a child in Satori's layout.
+    const text = decodeEntities(token.text);
+    const siblings = top().children;
+    const last = siblings[siblings.length - 1];
+    if (typeof last === 'string') {
+      siblings[siblings.length - 1] = last + text;
+    } else if (/[^ \t\n\r\f]/.test(text)) {
+      siblings.push(text);
     }
   }
 

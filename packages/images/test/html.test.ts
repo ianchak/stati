@@ -1,3 +1,4 @@
+import { performance } from 'node:perf_hooks';
 import { describe, expect, it } from 'vitest';
 import { decodeEntities, htmlToSatori, parseStyle, toCamelCase } from '../src/og/html.js';
 
@@ -102,6 +103,37 @@ describe('htmlToSatori', () => {
       type: 'div',
       props: { children: { type: 'span', props: { children: 'one' } } },
     });
+  });
+
+  it('treats a < that starts no tag as text and keeps split text together', () => {
+    expect(htmlToSatori('<div>1 < 2 <!-- note --> &amp; 3</div>')).toEqual({
+      type: 'div',
+      props: { children: '1 < 2 & 3' },
+    });
+  });
+
+  it('reads quoted values containing > and unquoted values, and drops declarations', () => {
+    expect(
+      htmlToSatori('<!DOCTYPE html><img alt="a > b" src=/x.png width=40 data-Kind="logo">'),
+    ).toEqual({
+      type: 'img',
+      props: { alt: 'a > b', src: '/x.png', width: 40, 'data-kind': 'logo' },
+    });
+  });
+
+  it('stops at a comment or tag that is never closed, as browsers do', () => {
+    const title = { type: 'div', props: { children: 'Title' } };
+    expect(htmlToSatori('<div>Title</div><!-- unclosed <div>More</div>')).toEqual(title);
+    expect(htmlToSatori('<div>Title</div><img src="x.png>')).toEqual(title);
+  });
+
+  it('takes linear time on input that never closes its tags', () => {
+    // A regular expression that looks for `-->` or `>` after every `<` would take quadratic time
+    for (const unit of ['<!--', '<!', '</', '<a ', '<a b="']) {
+      const started = performance.now();
+      htmlToSatori(unit.repeat(50_000));
+      expect(performance.now() - started).toBeLessThan(1000);
+    }
   });
 
   it('wraps several top-level elements in a full-size flex container', () => {
