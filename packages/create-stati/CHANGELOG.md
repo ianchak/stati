@@ -1,5 +1,11 @@
 # create-stati
 
+## 1.17.1
+
+### Patch Changes
+
+- c26ed9f: `@stati/cli` requires `@stati/core` `^1.29.0`. New sites depend on `@stati/core` `^1.29.0` and `@stati/cli` `^1.15.4`.
+
 ## 1.17.0
 
 ### Minor Changes
