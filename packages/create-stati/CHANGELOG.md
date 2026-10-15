@@ -1,5 +1,11 @@
 # create-stati
 
+## 1.16.1
+
+### Patch Changes
+
+- c09477d: New projects and the CLI now require @stati/core 1.28.0, the release that adds image sizes, responsive images and Open Graph cards.
+
 ## 1.16.0
 
 ### Minor Changes
