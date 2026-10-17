@@ -1,5 +1,11 @@
 # create-stati
 
+## 1.17.2
+
+### Patch Changes
+
+- 1f8707e: The bundled Stati agent skill describes TypeScript bundle `include`/`exclude` patterns correctly: they match page URLs such as `/docs/guide`, not output files such as `/docs/guide.html`, and `/docs/**` does not match the `/docs` page. Its smoke test now checks that a repeat build reuses every cached page.
+
 ## 1.17.1
 
 ### Patch Changes
