@@ -1,6 +1,87 @@
-import { join } from 'node:path';
+import { extname, join } from 'node:path';
 import { stat } from 'node:fs/promises';
 import { createServer } from 'node:net';
+
+/**
+ * Content types the dev and preview servers send, by file extension. Covers the files Stati
+ * generates (pages, bundles, search index, sitemap, robots.txt, feeds, responsive images) and
+ * common static assets; anything else is sent as `application/octet-stream`.
+ */
+const MIME_TYPES: Record<string, string> = {
+  '.html': 'text/html',
+  '.js': 'application/javascript',
+  '.mjs': 'application/javascript',
+  '.css': 'text/css',
+  '.json': 'application/json',
+  '.map': 'application/json',
+  '.webmanifest': 'application/manifest+json',
+  '.xml': 'application/xml',
+  '.txt': 'text/plain',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.webp': 'image/webp',
+  '.avif': 'image/avif',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
+  '.otf': 'font/otf',
+  '.eot': 'application/vnd.ms-fontobject',
+  '.pdf': 'application/pdf',
+  '.mp4': 'video/mp4',
+  '.webm': 'video/webm',
+  '.wasm': 'application/wasm',
+};
+
+/**
+ * Gets the content type for a file from its extension.
+ *
+ * @param filePath - Path or file name of the file being served
+ * @returns The content type, or `application/octet-stream` for unknown extensions
+ */
+export function getMimeType(filePath: string): string {
+  return MIME_TYPES[extname(filePath).toLowerCase()] ?? 'application/octet-stream';
+}
+
+/**
+ * Turns a request URL into the path of the file it asks for: the query string is dropped and
+ * percent-escapes are decoded, so `/about?ref=x` asks for `/about` and `/my%20file.pdf` for
+ * `/my file.pdf`.
+ *
+ * @param url - The request URL as received (`req.url`)
+ * @returns The decoded path, or null when the URL is malformed (a bad escape or a NUL byte)
+ */
+export function parseRequestPath(url: string | undefined): string | null {
+  const rawPath = (url || '/').split(/[?#]/, 1)[0] || '/';
+  try {
+    const path = decodeURIComponent(rawPath);
+    return path.includes('\0') ? null : path;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Finds the site's custom not-found page, the one static hosts serve for a missing URL.
+ *
+ * @param outDir - The output directory being served
+ * @returns The path of `404.html` (or `404/index.html` for a `/404/` permalink), or null
+ */
+export async function resolveNotFoundPage(outDir: string): Promise<string | null> {
+  for (const candidate of [join(outDir, '404.html'), join(outDir, '404', 'index.html')]) {
+    try {
+      if ((await stat(candidate)).isFile()) {
+        return candidate;
+      }
+    } catch {
+      // Not there; try the next one
+    }
+  }
+  return null;
+}
 
 /**
  * Error codes for which a port is considered unavailable

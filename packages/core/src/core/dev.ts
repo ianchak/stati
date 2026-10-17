@@ -1,5 +1,5 @@
 import { createServer } from 'node:http';
-import { join, extname } from 'node:path';
+import { join } from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { WebSocketServer } from 'ws';
 import chokidar from 'chokidar';
@@ -16,6 +16,9 @@ import {
   resolveDevPaths,
   resolveCacheDir,
   resolvePrettyUrl,
+  resolveNotFoundPage,
+  getMimeType,
+  parseRequestPath,
   createErrorOverlay,
   parseErrorDetails,
   TemplateError,
@@ -500,31 +503,6 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
   const disableWsReload = isEnabledEnvFlag(process.env.STATI_DEV_DISABLE_WS_RELOAD);
 
   /**
-   * Gets MIME type for a file based on its extension
-   */
-  function getMimeType(filePath: string): string {
-    const ext = extname(filePath).toLowerCase();
-    const mimeTypes: Record<string, string> = {
-      '.html': 'text/html',
-      '.js': 'application/javascript',
-      '.css': 'text/css',
-      '.json': 'application/json',
-      '.png': 'image/png',
-      '.jpg': 'image/jpeg',
-      '.jpeg': 'image/jpeg',
-      '.gif': 'image/gif',
-      '.svg': 'image/svg+xml',
-      '.ico': 'image/x-icon',
-      '.webp': 'image/webp',
-      '.woff': 'font/woff',
-      '.woff2': 'font/woff2',
-      '.ttf': 'font/ttf',
-      '.eot': 'application/vnd.ms-fontobject',
-    };
-    return mimeTypes[ext] || 'application/octet-stream';
-  }
-
-  /**
    * Injects live reload script into HTML responses
    */
   function injectLiveReloadScript(html: string): string {
@@ -660,6 +638,17 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
         };
       }
 
+      // Serve the site's 404 page, as static hosts do, with live reload so it updates on edits
+      const notFoundPage = await resolveNotFoundPage(outDir);
+      if (notFoundPage) {
+        const html = await readFile(notFoundPage, 'utf-8');
+        return {
+          content: injectLiveReloadScript(html),
+          mimeType: 'text/html',
+          statusCode: 404,
+        };
+      }
+
       return {
         content: requestPath.endsWith('/')
           ? '404 - Directory listing not available'
@@ -761,12 +750,18 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
 
       // Create HTTP server
       httpServer = createServer(async (req, res) => {
-        const requestPath = req.url || '/';
+        const requestPath = parseRequestPath(req.url);
         const requestStart = Date.now();
 
         // Handle WebSocket upgrade path
         if (requestPath === '/__ws') {
           return; // Let WebSocket server handle this
+        }
+
+        if (requestPath === null) {
+          res.writeHead(400, { 'Content-Type': 'text/plain' });
+          res.end('400 - Bad Request');
+          return;
         }
 
         // Only log page requests, not static assets (files with extensions)

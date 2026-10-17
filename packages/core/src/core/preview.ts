@@ -1,11 +1,14 @@
 import { createServer } from 'node:http';
-import { join, extname } from 'node:path';
+import { join } from 'node:path';
 import { readFile } from 'node:fs/promises';
 import type { Logger, StatiConfig } from '../types/index.js';
 import { loadConfig } from '../config/loader.js';
 import {
   resolveDevPaths,
   resolvePrettyUrl,
+  resolveNotFoundPage,
+  getMimeType,
+  parseRequestPath,
   createFallbackLogger,
   mergeServerOptions,
   isPathWithinDirectory,
@@ -83,31 +86,6 @@ export async function createPreviewServer(
   let httpServer: ReturnType<typeof createServer> | null = null;
 
   /**
-   * Gets MIME type for a file based on its extension
-   */
-  function getMimeType(filePath: string): string {
-    const ext = extname(filePath).toLowerCase();
-    const mimeTypes: Record<string, string> = {
-      '.html': 'text/html',
-      '.js': 'application/javascript',
-      '.css': 'text/css',
-      '.json': 'application/json',
-      '.png': 'image/png',
-      '.jpg': 'image/jpeg',
-      '.jpeg': 'image/jpeg',
-      '.gif': 'image/gif',
-      '.svg': 'image/svg+xml',
-      '.ico': 'image/x-icon',
-      '.webp': 'image/webp',
-      '.woff': 'font/woff',
-      '.woff2': 'font/woff2',
-      '.ttf': 'font/ttf',
-      '.eot': 'application/vnd.ms-fontobject',
-    };
-    return mimeTypes[ext] || 'application/octet-stream';
-  }
-
-  /**
    * Serves files from the dist directory
    */
   async function serveFile(
@@ -128,6 +106,16 @@ export async function createPreviewServer(
     const { filePath, found } = await resolvePrettyUrl(outDir, requestPath, originalFilePath);
 
     if (!found || !filePath) {
+      // Serve the site's 404 page, as static hosts do
+      const notFoundPage = await resolveNotFoundPage(outDir);
+      if (notFoundPage) {
+        return {
+          content: await readFile(notFoundPage),
+          mimeType: 'text/html',
+          statusCode: 404,
+        };
+      }
+
       return {
         content: requestPath.endsWith('/')
           ? '404 - Directory listing not available'
@@ -165,9 +153,14 @@ export async function createPreviewServer(
 
       // Create HTTP server
       httpServer = createServer(async (req, res) => {
-        const requestPath = req.url || '/';
+        logger.processing?.(`${req.method} ${req.url || '/'}`);
 
-        logger.processing?.(`${req.method} ${requestPath}`);
+        const requestPath = parseRequestPath(req.url);
+        if (requestPath === null) {
+          res.writeHead(400, { 'Content-Type': 'text/plain' });
+          res.end('400 - Bad Request');
+          return;
+        }
 
         try {
           const { content, mimeType, statusCode } = await serveFile(requestPath);

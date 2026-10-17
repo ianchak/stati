@@ -1,8 +1,12 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { mkdir, writeFile, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { createServer, type Server } from 'node:net';
+import { tmpdir } from 'node:os';
 import {
+  getMimeType,
+  parseRequestPath,
+  resolveNotFoundPage,
   resolvePrettyUrl,
   mergeServerOptions,
   assertPortAvailable,
@@ -289,5 +293,82 @@ describe('resolvePrettyUrl', () => {
 
     expect(result.found).toBe(false);
     expect(result.filePath).toBe(null);
+  });
+});
+
+describe('getMimeType', () => {
+  it.each([
+    ['/_assets/main-ABC12345.js', 'application/javascript'],
+    ['/vendor/lib.mjs', 'application/javascript'],
+    ['/_img/photo-480.avif', 'image/avif'],
+    ['/sitemap.xml', 'application/xml'],
+    ['/rss.xml', 'application/xml'],
+    ['/robots.txt', 'text/plain'],
+    ['/search-index-a1b2c3d4.json', 'application/json'],
+    ['/_assets/main.js.map', 'application/json'],
+    ['/site.webmanifest', 'application/manifest+json'],
+    ['/fonts/Inter.OTF', 'font/otf'],
+    ['/module.wasm', 'application/wasm'],
+  ])('should serve %s as %s', (path, type) => {
+    expect(getMimeType(path)).toBe(type);
+  });
+
+  it('should fall back to application/octet-stream for unknown extensions', () => {
+    expect(getMimeType('/archive.xyz')).toBe('application/octet-stream');
+    expect(getMimeType('/no-extension')).toBe('application/octet-stream');
+  });
+});
+
+describe('parseRequestPath', () => {
+  it('should drop the query string', () => {
+    expect(parseRequestPath('/?utm_source=feed')).toBe('/');
+    expect(parseRequestPath('/about?ref=x')).toBe('/about');
+    expect(parseRequestPath('/styles.css?v=2')).toBe('/styles.css');
+  });
+
+  it('should decode percent-escapes', () => {
+    expect(parseRequestPath('/my%20file.pdf')).toBe('/my file.pdf');
+    expect(parseRequestPath('/caf%C3%A9')).toBe('/café');
+  });
+
+  it('should default a missing URL to the root', () => {
+    expect(parseRequestPath(undefined)).toBe('/');
+    expect(parseRequestPath('')).toBe('/');
+  });
+
+  it('should reject malformed escapes and NUL bytes', () => {
+    expect(parseRequestPath('/bad%E0%A4%A')).toBeNull();
+    expect(parseRequestPath('/file%00.html')).toBeNull();
+  });
+
+  it('should leave traversal segments for the directory check to reject', () => {
+    expect(parseRequestPath('/%2e%2e/%2e%2e/etc/passwd')).toBe('/../../etc/passwd');
+  });
+});
+
+describe('resolveNotFoundPage', () => {
+  let outDir: string;
+
+  beforeAll(async () => {
+    outDir = await mkdtemp(join(tmpdir(), 'stati-not-found-'));
+  });
+
+  afterAll(async () => {
+    await rm(outDir, { recursive: true, force: true });
+  });
+
+  it('should return null when the site has no 404 page', async () => {
+    expect(await resolveNotFoundPage(outDir)).toBeNull();
+  });
+
+  it('should find 404/index.html from a /404/ permalink', async () => {
+    await mkdir(join(outDir, '404'));
+    await writeFile(join(outDir, '404', 'index.html'), '<h1>Gone</h1>');
+    expect(await resolveNotFoundPage(outDir)).toBe(join(outDir, '404', 'index.html'));
+  });
+
+  it('should prefer 404.html', async () => {
+    await writeFile(join(outDir, '404.html'), '<h1>Not found</h1>');
+    expect(await resolveNotFoundPage(outDir)).toBe(join(outDir, '404.html'));
   });
 });

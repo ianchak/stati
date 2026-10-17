@@ -93,6 +93,9 @@ export { createNavigationHelpers } from './navigation-helpers.utils.js';
 
 // Server utilities
 export {
+  getMimeType,
+  parseRequestPath,
+  resolveNotFoundPage,
   resolvePrettyUrl,
   mergeServerOptions,
   assertPortAvailable,
