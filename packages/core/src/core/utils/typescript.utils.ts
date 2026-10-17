@@ -161,20 +161,38 @@ export async function detectExistingBundles(
 }
 
 /**
+ * Options for {@link removeStaleBundleFiles}.
+ */
+export interface RemoveStaleBundlesOptions {
+  /** Root directory of the project */
+  projectRoot: string;
+  /** TypeScript configuration */
+  config: TypeScriptConfig;
+  /** Output directory (defaults to 'dist') */
+  outDir?: string;
+  /** The bundles this build compiled */
+  compiled: CompiledBundleInfo[];
+}
+
+/**
  * Deletes the files of compiled bundles that earlier builds left in the bundle output
  * directory: hashed copies from builds whose code differed, and the unhashed file and source
  * map the dev server writes, which production pages never load. Only files named after a
  * bundle compiled in this build are deleted, and never a file this build wrote, so other files
  * in the directory stay.
  *
- * @param outDir - The bundle output directory, such as `dist/_assets`
- * @param compiled - The bundles this build compiled
- * @internal
+ * The build calls this after every page is written: until then, pages from the previous
+ * build still load the old files.
+ *
+ * @param options - The project, its TypeScript config and output directory, and the bundles
+ *   this build compiled
  */
-async function removeStaleBundleFiles(
-  outDir: string,
-  compiled: CompiledBundleInfo[],
-): Promise<void> {
+export async function removeStaleBundleFiles(options: RemoveStaleBundlesOptions): Promise<void> {
+  const { projectRoot, config, outDir: globalOutDir = DEFAULT_OUT_DIR, compiled } = options;
+  if (compiled.length === 0) {
+    return;
+  }
+  const outDir = path.join(projectRoot, globalOutDir, resolveConfig(config, 'production').outDir);
   const current = new Set(compiled.map((bundle) => bundle.filename));
   // name.js, name-HASH.js (esbuild's 8-character hash) and their source maps
   const patterns = compiled.map(({ config }) => {
@@ -315,14 +333,6 @@ export async function compileTypeScript(options: CompileOptions): Promise<Compil
 
   // Filter out null results (skipped bundles) and collect successful ones
   const successfulResults = results.filter((r): r is CompiledBundleInfo => r !== null);
-
-  // Each production build writes new hashed files; delete the ones earlier builds left behind
-  if (mode === 'production' && successfulResults.length > 0) {
-    await removeStaleBundleFiles(
-      path.join(projectRoot, outputDir, resolved.outDir),
-      successfulResults,
-    );
-  }
 
   if (successfulResults.length > 0) {
     // Log each bundle on its own line

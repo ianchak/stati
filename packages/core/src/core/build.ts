@@ -18,6 +18,7 @@ import {
   loadPreviousInventory,
   compileTypeScript,
   detectExistingBundles,
+  removeStaleBundleFiles,
   autoInjectBundles,
   getBundlePathsForPage,
   formatBytes,
@@ -411,6 +412,8 @@ interface SearchablePageData {
 interface ProcessPagesResult {
   cacheHits: number;
   cacheMisses: number;
+  /** The search index file the pages link to (only when search is enabled) */
+  searchIndexFilename: string | undefined;
 }
 
 /**
@@ -473,10 +476,6 @@ async function writeSearchIndexBeforeRendering(
   const writeStart = performance.now();
   // In dev mode, skip write if content hasn't changed (template-only changes)
   const metadata = await writeSearchIndex(index, outDir, filename, isDevMode);
-  // Production names the file after its content; delete the ones earlier builds wrote
-  if (!isDevMode) {
-    await removeStaleSearchIndexes(outDir, config.search, filename);
-  }
   recorder.recordPhase('searchIndexWriteMs', performance.now() - writeStart);
   logger.success(`Generated search index with ${metadata.documentCount} documents`);
 
@@ -899,7 +898,7 @@ async function processPagesWithCache(
     }
   }
 
-  return { cacheHits, cacheMisses };
+  return { cacheHits, cacheMisses, searchIndexFilename };
 }
 
 /**
@@ -1136,7 +1135,7 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     navigationHash,
   );
   endPageRenderSpan();
-  const { cacheHits, cacheMisses } = pageProcessingResult;
+  const { cacheHits, cacheMisses, searchIndexFilename } = pageProcessingResult;
 
   // Remove the output of pages that no longer exist, such as a deleted post or a tag no post
   // uses anymore. Runs before static assets are copied, so a file in the static directory at
@@ -1213,6 +1212,23 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
         .map((failure) => `Open Graph image failed for ${failure.label}: ${failure.message}`)
         .join('\n'),
     );
+  }
+
+  // Delete the bundles and search indexes earlier builds wrote under other names, now that
+  // every page links to this build's files. Before the static copy, so a file in the static
+  // directory with such a name is copied afterwards.
+  if (!isDevMode) {
+    if (config.typescript?.enabled) {
+      await removeStaleBundleFiles({
+        projectRoot: process.cwd(),
+        config: config.typescript,
+        outDir: config.outDir || DEFAULT_OUT_DIR,
+        compiled: compiledBundles,
+      });
+    }
+    if (config.search?.enabled && searchIndexFilename) {
+      await removeStaleSearchIndexes(outDir, config.search, searchIndexFilename);
+    }
   }
 
   // Copy static assets and count them (skip for template-only changes in dev mode)

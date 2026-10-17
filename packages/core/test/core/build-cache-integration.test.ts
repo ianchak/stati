@@ -260,6 +260,36 @@ describe('build cache integration', () => {
     expect(await readHome()).toBe(html);
   });
 
+  it('keeps the files earlier pages load when a build fails before rewriting them', async () => {
+    config.search = { enabled: true };
+    await runBuild();
+    const html = await readHome();
+    const oldBundle = html.match(/src="\/_assets\/(main-[^"]+\.js)"/)?.[1];
+    const oldIndex = html.match(/name="stati:search-index" content="\/([^"]+)"/)?.[1];
+    expect(oldBundle).toBeDefined();
+    expect(oldIndex).toBeDefined();
+    const assets = () => readdir(join(projectDir, 'dist', '_assets'));
+    const outputs = () => readdir(join(projectDir, 'dist'));
+
+    // A new bundle and a new index name, then a hook that stops the build
+    await writeFile(join(projectDir, 'src', 'main.ts'), 'console.log("second bundle");');
+    await writeFile(join(projectDir, 'site', 'about.md'), '---\ntitle: About\n---\n# About us');
+    config.hooks = {
+      beforeRender: async () => {
+        throw new Error('hook failed');
+      },
+    };
+    await expect(runBuild()).rejects.toThrow('hook failed');
+    expect(await readHome()).toBe(html);
+    expect(await assets()).toContain(oldBundle);
+    expect(await outputs()).toContain(oldIndex);
+
+    delete config.hooks;
+    await runBuild();
+    expect(await assets()).not.toContain(oldBundle);
+    expect(await outputs()).not.toContain(oldIndex);
+  });
+
   it('keeps the hashed search index name when content discovery order changes', async () => {
     config.search = { enabled: true };
     // Pages in many folders come back from discovery in a different order on each run

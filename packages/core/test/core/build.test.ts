@@ -134,6 +134,7 @@ vi.mock('../../src/core/isg/build-lock.js', () => ({
 vi.mock('../../src/core/utils/typescript.utils.js', () => ({
   compileTypeScript: mockCompileTypeScript,
   detectExistingBundles: mockDetectExistingBundles,
+  removeStaleBundleFiles: vi.fn().mockResolvedValue(undefined),
   autoInjectBundles: mockAutoInjectBundles,
   formatBytes: () => '1.00 KB',
 }));

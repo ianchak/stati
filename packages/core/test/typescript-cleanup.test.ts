@@ -5,8 +5,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { join } from 'node:path';
 import { mkdirSync, writeFileSync, rmSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { compileTypeScript } from '../src/core/utils/typescript.utils.js';
+import { compileTypeScript, removeStaleBundleFiles } from '../src/core/utils/typescript.utils.js';
 import { readdir } from '../src/core/utils/fs.utils.js';
+import type { TypeScriptConfig } from '../src/types/config.js';
 import type { Logger } from '../src/types/logging.js';
 
 // The real fs helpers, with readdir replaceable per test
@@ -15,7 +16,7 @@ vi.mock('../src/core/utils/fs.utils.js', async (importOriginal) => {
   return { ...actual, readdir: vi.fn(actual.readdir) };
 });
 
-describe('compileTypeScript stale bundle cleanup', () => {
+describe('removeStaleBundleFiles', () => {
   let projectDir: string;
   let assetsDir: string;
   const logger = {
@@ -24,6 +25,15 @@ describe('compileTypeScript stale bundle cleanup', () => {
     warning: vi.fn(),
     error: vi.fn(),
   } as unknown as Logger;
+
+  const compile = (config: TypeScriptConfig) =>
+    compileTypeScript({
+      projectRoot: projectDir,
+      config,
+      outDir: 'dist',
+      mode: 'production',
+      logger,
+    });
 
   beforeEach(() => {
     projectDir = join(
@@ -41,47 +51,67 @@ describe('compileTypeScript stale bundle cleanup', () => {
     rmSync(projectDir, { recursive: true, force: true });
   });
 
+  it('leaves earlier files in place while compiling, for pages not yet rewritten', async () => {
+    writeFileSync(join(assetsDir, 'main-ABCDEFGH.js'), 'stale');
+
+    const compiled = await compile({
+      enabled: true,
+      bundles: [{ entryPoint: 'main.ts', bundleName: 'main' }],
+    });
+
+    expect(readdirSync(assetsDir).sort()).toEqual(
+      [compiled[0]!.filename, 'main-ABCDEFGH.js'].sort(),
+    );
+  });
+
   it('keeps every bundle this build wrote, including names that extend another bundle', async () => {
     // Unhashed production names: main.js, and main-extra.js, which looks like a main- file
     for (const file of ['main.js.map', 'main-ABCDEFGH.js', 'main-extra.js.map']) {
       writeFileSync(join(assetsDir, file), 'stale');
     }
+    const config: TypeScriptConfig = {
+      enabled: true,
+      hash: false,
+      bundles: [
+        { entryPoint: 'main.ts', bundleName: 'main' },
+        { entryPoint: 'extra.ts', bundleName: 'main-extra' },
+      ],
+    };
 
-    await compileTypeScript({
-      projectRoot: projectDir,
-      config: {
-        enabled: true,
-        hash: false,
-        bundles: [
-          { entryPoint: 'main.ts', bundleName: 'main' },
-          { entryPoint: 'extra.ts', bundleName: 'main-extra' },
-        ],
-      },
-      outDir: 'dist',
-      mode: 'production',
-      logger,
-    });
+    const compiled = await compile(config);
+    await removeStaleBundleFiles({ projectRoot: projectDir, config, outDir: 'dist', compiled });
 
     expect(readdirSync(assetsDir).sort()).toEqual(['main-extra.js', 'main.js']);
   });
 
-  it('keeps the build going when the bundle directory cannot be listed', async () => {
+  it('does nothing when no bundle compiled', async () => {
     writeFileSync(join(assetsDir, 'main-ABCDEFGH.js'), 'stale');
-    vi.mocked(readdir).mockRejectedValueOnce(new Error('EPERM: operation not permitted'));
 
-    const results = await compileTypeScript({
+    await removeStaleBundleFiles({
       projectRoot: projectDir,
-      config: { enabled: true, bundles: [{ entryPoint: 'main.ts', bundleName: 'main' }] },
+      config: { enabled: true },
       outDir: 'dist',
-      mode: 'production',
-      logger,
+      compiled: [],
     });
 
-    // The bundle compiled; the stale file stays for the next build to delete
+    expect(readdirSync(assetsDir)).toEqual(['main-ABCDEFGH.js']);
+  });
+
+  it('leaves files in place when the bundle directory cannot be listed', async () => {
+    writeFileSync(join(assetsDir, 'main-ABCDEFGH.js'), 'stale');
+    const config: TypeScriptConfig = {
+      enabled: true,
+      bundles: [{ entryPoint: 'main.ts', bundleName: 'main' }],
+    };
+    const compiled = await compile(config);
+    vi.mocked(readdir).mockRejectedValueOnce(new Error('EPERM: operation not permitted'));
+
+    await removeStaleBundleFiles({ projectRoot: projectDir, config, outDir: 'dist', compiled });
+
+    // The stale file stays for the next build to delete
     expect(readdir).toHaveBeenCalledWith(assetsDir, { withFileTypes: true });
-    expect(results).toHaveLength(1);
     expect(readdirSync(assetsDir).sort()).toEqual(
-      [results[0]!.filename, 'main-ABCDEFGH.js'].sort(),
+      [compiled[0]!.filename, 'main-ABCDEFGH.js'].sort(),
     );
   });
 });
