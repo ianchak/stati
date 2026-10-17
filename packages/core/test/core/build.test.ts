@@ -1472,6 +1472,22 @@ describe('build.ts', () => {
       ]);
     });
 
+    it('should order pages that share a URL by source path', async () => {
+      const about = mockPages[1]!;
+      mockLoadContent.mockResolvedValue([
+        { ...about, sourcePath: '/src/about/index.md' },
+        { ...about, sourcePath: '/src/about.md' },
+      ]);
+      mockLoadConfig.mockResolvedValue({ ...mockConfig, search: { enabled: true } });
+
+      await build();
+
+      const [searchablePages] = mockGenerateSearchIndex.mock.calls[0]!;
+      expect(
+        searchablePages.map(({ page }: { page: { sourcePath: string } }) => page.sourcePath),
+      ).toEqual(['/src/about.md', '/src/about/index.md']);
+    });
+
     it('should generate the index before rendering, with extracted TOC for rendered pages', async () => {
       const configWithSearch: StatiConfig = {
         ...mockConfig,

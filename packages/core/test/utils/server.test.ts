@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { mkdir, mkdtemp, writeFile, rm } from 'node:fs/promises';
-import { basename, join, resolve, sep } from 'node:path';
+import { basename, join, parse, resolve, sep } from 'node:path';
 import { createServer, type Server } from 'node:net';
 import { tmpdir } from 'node:os';
 import {
@@ -335,6 +335,7 @@ describe('parseRequestPath', () => {
   it('should default a missing URL to the root', () => {
     expect(parseRequestPath(undefined)).toBe('/');
     expect(parseRequestPath('')).toBe('/');
+    expect(parseRequestPath('?utm_source=feed')).toBe('/');
   });
 
   it('should reject malformed escapes and NUL bytes', () => {
@@ -366,6 +367,12 @@ describe('resolveRequestFile', () => {
     expect(resolveRequestFile(root, parseRequestPath('/%2e%2e/secret.txt')!)).toBeNull();
     // A sibling directory that shares the name as a prefix is outside too
     expect(resolveRequestFile(root, '/../dist-other/a.html')).toBeNull();
+  });
+
+  it('should serve from a file system root, which already ends with a separator', () => {
+    const fsRoot = parse(root).root;
+    expect(resolveRequestFile(fsRoot, '/')).toBe(fsRoot);
+    expect(resolveRequestFile(fsRoot, '/site/index.html')).toBe(join(fsRoot, 'site', 'index.html'));
   });
 
   it('should never return a path outside the directory for separators or drive paths', () => {

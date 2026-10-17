@@ -182,10 +182,7 @@ async function removeStaleBundleFiles(
     return new RegExp(`^${name}(?:-[A-Z0-9]{8})?\\.js(?:\\.map)?$`);
   });
 
-  const entries = await readdir(outDir, { withFileTypes: true }).catch(() => null);
-  if (!entries) {
-    return;
-  }
+  const entries = await readdir(outDir, { withFileTypes: true }).catch(() => []);
 
   // Files only: remove() deletes folders with their contents, and links are left alone
   const stale = entries
