@@ -145,12 +145,18 @@ describe('build cache integration', () => {
     await writeFile(join(assetsDir, 'main.js'), 'dev bundle');
     await writeFile(join(assetsDir, 'main.js.map'), '{}');
     await writeFile(join(assetsDir, 'vendor.js'), 'not a bundle');
+    // A folder named like a bundle is not a bundle file
+    await mkdir(join(assetsDir, 'main-ABCDEFGH.js'));
+    await writeFile(join(assetsDir, 'main-ABCDEFGH.js', 'keep.txt'), 'keep');
     await writeFile(join(projectDir, 'src', 'main.ts'), 'console.log("second bundle");');
 
     await runBuild();
     const bundle = (await readHome()).match(/src="\/_assets\/(main-[^"]+\.js)"/)?.[1];
     expect(bundle).toBeDefined();
-    expect((await readdir(assetsDir)).sort()).toEqual([bundle, 'vendor.js']);
+    expect((await readdir(assetsDir)).sort()).toEqual(
+      [bundle, 'main-ABCDEFGH.js', 'vendor.js'].sort(),
+    );
+    expect(await readdir(join(assetsDir, 'main-ABCDEFGH.js'))).toEqual(['keep.txt']);
   });
 
   it('invalidates only pages matched by a changed bundle', async () => {
@@ -251,6 +257,27 @@ describe('build cache integration', () => {
     expect(indexPath).toMatch(/^search-index-[0-9a-f]{8}\.json$/);
 
     expect(await runBuild()).toMatchObject({ cacheHits: 3, cacheMisses: 0 });
+    expect(await readHome()).toBe(html);
+  });
+
+  it('keeps the hashed search index name when content discovery order changes', async () => {
+    config.search = { enabled: true };
+    // Pages in many folders come back from discovery in a different order on each run
+    for (let folder = 0; folder < 10; folder++) {
+      await mkdir(join(projectDir, 'site', `section-${folder}`));
+      for (let page = 0; page < 3; page++) {
+        await writeFile(
+          join(projectDir, 'site', `section-${folder}`, `page-${page}.md`),
+          `---\ntitle: Page ${folder}.${page}\n---\n# Page ${folder}.${page}\n\n## Part\n\nText.`,
+        );
+      }
+    }
+    await runBuild();
+    const html = await readHome();
+
+    for (let run = 0; run < 3; run++) {
+      expect(await runBuild()).toMatchObject({ cacheHits: 33, cacheMisses: 0 });
+    }
     expect(await readHome()).toBe(html);
   });
 

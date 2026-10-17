@@ -182,16 +182,16 @@ async function removeStaleBundleFiles(
     return new RegExp(`^${name}(?:-[A-Z0-9]{8})?\\.js(?:\\.map)?$`);
   });
 
-  let files: string[];
-  try {
-    files = await readdir(outDir);
-  } catch {
+  const entries = await readdir(outDir, { withFileTypes: true }).catch(() => null);
+  if (!entries) {
     return;
   }
 
-  const stale = files.filter(
-    (file) => !current.has(file) && patterns.some((pattern) => pattern.test(file)),
-  );
+  // Files only: remove() deletes folders with their contents, and links are left alone
+  const stale = entries
+    .filter((entry) => entry.isFile())
+    .map((entry) => entry.name)
+    .filter((file) => !current.has(file) && patterns.some((pattern) => pattern.test(file)));
   await Promise.all(stale.map((file) => remove(path.join(outDir, file))));
 }
 

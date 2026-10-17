@@ -4,7 +4,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { removeStaleSearchIndexes } from '../../src/search/generator.js';
@@ -67,6 +67,27 @@ describe('removeStaleSearchIndexes', () => {
       'search-index-0a1b2c3d.json',
       'search-index-notes.json',
     ]);
+  });
+
+  it('leaves folders named like an index file and their contents alone', async () => {
+    await files('search-index-0a1b2c3d.json');
+    for (const folder of ['search-index.json', 'search-index-deadbeef.json']) {
+      await mkdir(join(outDir, folder));
+      await writeFile(join(outDir, folder, 'keep.txt'), 'keep');
+    }
+
+    const removed = await removeStaleSearchIndexes(
+      outDir,
+      { enabled: true },
+      'search-index-e77989ed.json',
+    );
+
+    expect(removed).toEqual(['search-index-0a1b2c3d.json']);
+    expect((await readdir(outDir)).sort()).toEqual([
+      'search-index-deadbeef.json',
+      'search-index.json',
+    ]);
+    expect(await readdir(join(outDir, 'search-index.json'))).toEqual(['keep.txt']);
   });
 
   it('escapes regular expression characters in indexName', async () => {

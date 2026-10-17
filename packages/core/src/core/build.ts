@@ -437,10 +437,15 @@ async function writeSearchIndexBeforeRendering(
   const isDevMode = isDevelopment();
 
   const endSearchIndexSpan = recorder.startSpan('searchIndexGenerationMs');
-  // TOC entries and markdown content, the same data a render produces, without rendering
+  // TOC entries and markdown content, the same data a render produces, without rendering.
+  // Sorted by URL: content discovery returns files in a different order on each run, which
+  // would change the index content, and with it the name, on every build.
   const tocEnabled = config.markdown?.toc !== false;
+  const byUrl = (a: PageModel, b: PageModel) =>
+    a.url.localeCompare(b.url) || a.sourcePath.localeCompare(b.sourcePath);
   const searchablePages: SearchablePageData[] = pages
     .filter((page) => !isGeneratedPageExcludedFromSearch(page))
+    .sort(byUrl)
     .map((page) => ({
       page,
       toc: tocEnabled ? extractToc(page.content, md) : [],

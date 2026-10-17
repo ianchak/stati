@@ -1457,6 +1457,21 @@ describe('build.ts', () => {
       expect(mockExtractToc).toHaveBeenCalled();
     });
 
+    it('should index pages in URL order whatever order content discovery returns', async () => {
+      // Discovery order varies between runs; the index content, and its name, must not
+      mockLoadContent.mockResolvedValue([...mockPages].reverse());
+      mockLoadConfig.mockResolvedValue({ ...mockConfig, search: { enabled: true } });
+
+      await build();
+
+      const [searchablePages] = mockGenerateSearchIndex.mock.calls[0]!;
+      expect(searchablePages.map(({ page }: { page: { url: string } }) => page.url)).toEqual([
+        '/',
+        '/about',
+        '/blog/post',
+      ]);
+    });
+
     it('should generate the index before rendering, with extracted TOC for rendered pages', async () => {
       const configWithSearch: StatiConfig = {
         ...mockConfig,

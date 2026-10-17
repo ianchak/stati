@@ -494,14 +494,16 @@ export async function removeStaleSearchIndexes(
   // name.json and name-HASH.json (generateContentHash's 8 hex characters)
   const pattern = new RegExp(`^${indexName}(?:-[0-9a-f]{8})?\\.json$`);
 
-  let files: string[];
-  try {
-    files = await readdir(outDir);
-  } catch {
+  const entries = await readdir(outDir, { withFileTypes: true }).catch(() => null);
+  if (!entries) {
     return [];
   }
 
-  const stale = files.filter((file) => file !== currentFilename && pattern.test(file));
+  // Files only: remove() deletes folders with their contents, and links are left alone
+  const stale = entries
+    .filter((entry) => entry.isFile())
+    .map((entry) => entry.name)
+    .filter((file) => file !== currentFilename && pattern.test(file));
   await Promise.all(stale.map((file) => remove(join(outDir, file))));
   return stale;
 }
