@@ -1,17 +1,16 @@
 import { createServer } from 'node:http';
-import { join } from 'node:path';
 import { readFile } from 'node:fs/promises';
 import type { Logger, StatiConfig } from '../types/index.js';
 import { loadConfig } from '../config/loader.js';
 import {
   resolveDevPaths,
   resolvePrettyUrl,
+  resolveRequestFile,
   resolveNotFoundPage,
   getMimeType,
   parseRequestPath,
   createFallbackLogger,
   mergeServerOptions,
-  isPathWithinDirectory,
   assertPortAvailable,
   toPortUnavailableError,
 } from './utils/index.js';
@@ -91,10 +90,9 @@ export async function createPreviewServer(
   async function serveFile(
     requestPath: string,
   ): Promise<{ content: Buffer | string; mimeType: string; statusCode: number }> {
-    const originalFilePath = join(outDir, requestPath === '/' ? 'index.html' : requestPath);
-
-    // Security: Prevent path traversal attacks
-    if (!isPathWithinDirectory(outDir, originalFilePath)) {
+    // Security: the file the request names, or null when it is outside the output directory
+    const requestFile = resolveRequestFile(outDir, requestPath);
+    if (requestFile === null) {
       return {
         content: '403 - Forbidden',
         mimeType: 'text/plain',
@@ -103,7 +101,7 @@ export async function createPreviewServer(
     }
 
     // Use the shared pretty URL resolver
-    const { filePath, found } = await resolvePrettyUrl(outDir, requestPath, originalFilePath);
+    const { filePath, found } = await resolvePrettyUrl(outDir, requestPath, requestFile);
 
     if (!found || !filePath) {
       // Serve the site's 404 page, as static hosts do

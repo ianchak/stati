@@ -1,5 +1,4 @@
 import { createServer } from 'node:http';
-import { join } from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { WebSocketServer } from 'ws';
 import chokidar from 'chokidar';
@@ -16,6 +15,7 @@ import {
   resolveDevPaths,
   resolveCacheDir,
   resolvePrettyUrl,
+  resolveRequestFile,
   resolveNotFoundPage,
   getMimeType,
   parseRequestPath,
@@ -28,7 +28,6 @@ import {
   isEnabledEnvFlag,
   refreshCssOutputWatcher,
   normalizePathForComparison,
-  isPathWithinDirectory,
   assertPortAvailable,
   toPortUnavailableError,
 } from './utils/index.js';
@@ -582,10 +581,9 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
       };
     }
 
-    const originalFilePath = join(outDir, requestPath === '/' ? 'index.html' : requestPath);
-
-    // Security: Prevent path traversal attacks
-    if (!isPathWithinDirectory(outDir, originalFilePath)) {
+    // Security: the file the request names, or null when it is outside the output directory
+    const requestFile = resolveRequestFile(outDir, requestPath);
+    if (requestFile === null) {
       return {
         content: '403 - Forbidden',
         mimeType: 'text/plain',
@@ -594,7 +592,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
     }
 
     // Use the shared pretty URL resolver
-    const { filePath, found } = await resolvePrettyUrl(outDir, requestPath, originalFilePath);
+    const { filePath, found } = await resolvePrettyUrl(outDir, requestPath, requestFile);
 
     if (!found || !filePath) {
       // If we have a build error and this is an HTML request, show error overlay instead of 404

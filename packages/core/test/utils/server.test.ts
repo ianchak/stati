@@ -1,12 +1,13 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { mkdir, mkdtemp, writeFile, rm } from 'node:fs/promises';
-import { join } from 'node:path';
+import { basename, join, resolve, sep } from 'node:path';
 import { createServer, type Server } from 'node:net';
 import { tmpdir } from 'node:os';
 import {
   getMimeType,
   parseRequestPath,
   resolveNotFoundPage,
+  resolveRequestFile,
   resolvePrettyUrl,
   mergeServerOptions,
   assertPortAvailable,
@@ -343,6 +344,61 @@ describe('parseRequestPath', () => {
 
   it('should leave traversal segments for the directory check to reject', () => {
     expect(parseRequestPath('/%2e%2e/%2e%2e/etc/passwd')).toBe('/../../etc/passwd');
+  });
+});
+
+describe('resolveRequestFile', () => {
+  const root = resolve(tmpdir(), 'stati-request-file', 'dist');
+  const isInsideRoot = (path: string | null) =>
+    path === null || path === root || path.startsWith(root + sep);
+
+  it('should resolve request paths inside the served directory', () => {
+    expect(resolveRequestFile(root, '/')).toBe(root);
+    expect(resolveRequestFile(root, '/about.html')).toBe(join(root, 'about.html'));
+    expect(resolveRequestFile(root, '/blog/')).toBe(join(root, 'blog'));
+    expect(resolveRequestFile(root, '/a/../b.css')).toBe(join(root, 'b.css'));
+    expect(resolveRequestFile(root, '//etc/passwd')).toBe(join(root, 'etc', 'passwd'));
+  });
+
+  it('should reject paths that leave the served directory', () => {
+    expect(resolveRequestFile(root, '/../secret.txt')).toBeNull();
+    expect(resolveRequestFile(root, '/../../../etc/passwd')).toBeNull();
+    expect(resolveRequestFile(root, parseRequestPath('/%2e%2e/secret.txt')!)).toBeNull();
+    // A sibling directory that shares the name as a prefix is outside too
+    expect(resolveRequestFile(root, '/../dist-other/a.html')).toBeNull();
+  });
+
+  it('should never return a path outside the directory for separators or drive paths', () => {
+    // Backslashes separate on Windows only; elsewhere they are part of a file name
+    for (const requestPath of ['/..\\secret.txt', '/C:/Windows/win.ini', '/\\\\server\\share']) {
+      expect(isInsideRoot(resolveRequestFile(root, requestPath))).toBe(true);
+    }
+  });
+});
+
+describe('resolvePrettyUrl outside the output directory', () => {
+  let parent: string;
+  let outDir: string;
+
+  beforeAll(async () => {
+    parent = await mkdtemp(join(tmpdir(), 'stati-pretty-url-'));
+    outDir = join(parent, 'dist');
+    await mkdir(outDir);
+    // No index.html, and a file next to the output directory named like its .html sibling
+    await writeFile(join(parent, 'dist.html'), 'outside the output directory');
+  });
+
+  afterAll(async () => {
+    await rm(parent, { recursive: true, force: true });
+  });
+
+  it('should not serve the .html sibling of the output directory', async () => {
+    const requestPath = `/../${basename(outDir)}`;
+    const requestFile = resolveRequestFile(outDir, requestPath);
+    expect(requestFile).toBe(resolve(outDir));
+
+    const result = await resolvePrettyUrl(outDir, requestPath, requestFile!);
+    expect(result).toEqual({ filePath: null, found: false });
   });
 });
 

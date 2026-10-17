@@ -96,6 +96,7 @@ export {
   getMimeType,
   parseRequestPath,
   resolveNotFoundPage,
+  resolveRequestFile,
   resolvePrettyUrl,
   mergeServerOptions,
   assertPortAvailable,
