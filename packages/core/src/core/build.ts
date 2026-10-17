@@ -18,6 +18,7 @@ import {
   loadPreviousInventory,
   compileTypeScript,
   detectExistingBundles,
+  removeStaleBundleFiles,
   autoInjectBundles,
   getBundlePathsForPage,
   formatBytes,
@@ -64,6 +65,7 @@ import {
   computeSearchIndexFilename,
   generateSearchIndex,
   writeSearchIndex,
+  removeStaleSearchIndexes,
   autoInjectSearchMeta,
   isGeneratedPageExcludedFromSearch,
 } from '../search/index.js';
@@ -80,7 +82,6 @@ import type {
   NavNode,
   StatiAssets,
   TocEntry,
-  SearchIndexMetadata,
 } from '../types/index.js';
 import type MarkdownIt from 'markdown-it';
 import { ImageRuntime } from '../images/runtime.js';
@@ -411,8 +412,74 @@ interface SearchablePageData {
 interface ProcessPagesResult {
   cacheHits: number;
   cacheMisses: number;
-  /** Searchable page data for search indexing (only populated when search is enabled) */
-  searchablePages: SearchablePageData[];
+  /** The search index file the pages link to (only when search is enabled) */
+  searchIndexFilename: string | undefined;
+}
+
+/**
+ * Generates the search index from the page models and writes it before any page renders,
+ * returning the file name pages link to. Every page links to the index, and the name is part
+ * of each page's cache hash, so a production build names a hashed file after the index
+ * content: a build that leaves the indexed text alone keeps the name and its cached pages.
+ * Development keeps one name, so a content edit does not re-render every page. Writing the
+ * index first means it is not held in memory while the pages render.
+ *
+ * @returns The index file name, or undefined when search is disabled
+ */
+async function writeSearchIndexBeforeRendering(
+  pages: PageModel[],
+  config: StatiConfig,
+  md: MarkdownIt,
+  outDir: string,
+  logger: Logger,
+  recorder: MetricRecorder,
+): Promise<string | undefined> {
+  if (config.search?.enabled !== true) {
+    return undefined;
+  }
+  const isDevMode = isDevelopment();
+
+  const endSearchIndexSpan = recorder.startSpan('searchIndexGenerationMs');
+  // TOC entries and markdown content, the same data a render produces, without rendering.
+  // Sorted by URL: content discovery returns files in a different order on each run, which
+  // would change the index content, and with it the name, on every build.
+  const tocEnabled = config.markdown?.toc !== false;
+  const byUrl = (a: PageModel, b: PageModel) =>
+    a.url.localeCompare(b.url) || a.sourcePath.localeCompare(b.sourcePath);
+  const searchablePages: SearchablePageData[] = pages
+    .filter((page) => !isGeneratedPageExcludedFromSearch(page))
+    .sort(byUrl)
+    .map((page) => ({
+      page,
+      toc: tocEnabled ? extractToc(page.content, md) : [],
+      markdownContent: page.content,
+    }));
+  const index = generateSearchIndex(searchablePages, config.search);
+
+  // A production hash covers the documents and schema version, not generatedAt, which
+  // changes on every build; serializing them is skipped when the name has no hash
+  const hashInput = isDevMode
+    ? 'dev'
+    : config.search.hashFilename !== false
+      ? JSON.stringify({ version: index.version, documents: index.documents })
+      : undefined;
+  const filename = computeSearchIndexFilename(config.search, hashInput);
+  endSearchIndexSpan();
+
+  // Pages still link to the name when nothing is searchable, but no file is written
+  if (searchablePages.length === 0) {
+    return filename;
+  }
+
+  logger.info('');
+  logger.info(`Generating search index to ${filename}`);
+  const writeStart = performance.now();
+  // In dev mode, skip write if content hasn't changed (template-only changes)
+  const metadata = await writeSearchIndex(index, outDir, filename, isDevMode);
+  recorder.recordPhase('searchIndexWriteMs', performance.now() - writeStart);
+  logger.success(`Generated search index with ${metadata.documentCount} documents`);
+
+  return filename;
 }
 
 /**
@@ -456,13 +523,11 @@ async function processPagesWithCache(
   logger: Logger,
   compiledBundles: CompiledBundleInfo[],
   recorder: MetricRecorder = noopMetricRecorder,
-  searchIndexFilename?: string,
   imageRuntime: ImageRuntime | null = null,
   navigationHash: string = computeNavigationHash(navigation),
 ): Promise<ProcessPagesResult> {
   let cacheHits = 0;
   let cacheMisses = 0;
-  const searchablePages: SearchablePageData[] = [];
 
   // Build context
   const buildContext: BuildContext = { config, pages };
@@ -476,6 +541,16 @@ async function processPagesWithCache(
 
   // Collection summaries, hashed after beforeAll because the hook can change front matter
   const summaries = createSummaryHasher(pages, resolveSummaryFields(config));
+
+  // Generated after beforeAll for the same reason; pages render with its file name
+  const searchIndexFilename = await writeSearchIndexBeforeRendering(
+    pages,
+    config,
+    md,
+    outDir,
+    logger,
+    recorder,
+  );
 
   // The pages of a listing share one array of page URLs, hashed once for all of them
   const urlListHashes = new WeakMap<readonly string[], string>();
@@ -607,14 +682,6 @@ async function processPagesWithCache(
       }
       // Record page timing for cached pages (0ms render time)
       recorder.recordPageTiming(page.url, 0, true);
-
-      // Collect searchable page data for cached pages if search is enabled
-      // Extract TOC without full HTML rendering for efficiency
-      if (config.search?.enabled === true && !isGeneratedPageExcludedFromSearch(page)) {
-        const tocEnabled = config.markdown?.toc !== false;
-        const toc = tocEnabled ? extractToc(page.content, md) : [];
-        searchablePages.push({ page, toc, markdownContent: page.content });
-      }
       continue;
     }
 
@@ -759,12 +826,6 @@ async function processPagesWithCache(
       }
     }
 
-    // Collect searchable page data if search is enabled
-    // Uses TOC entries and markdown content instead of parsing rendered HTML
-    if (config.search?.enabled === true && !isGeneratedPageExcludedFromSearch(page)) {
-      searchablePages.push({ page, toc, markdownContent: page.content });
-    }
-
     // Run afterRender hook
     if (config.hooks?.afterRender) {
       const hookStart = performance.now();
@@ -837,7 +898,7 @@ async function processPagesWithCache(
     }
   }
 
-  return { cacheHits, cacheMisses, searchablePages };
+  return { cacheHits, cacheMisses, searchIndexFilename };
 }
 
 /**
@@ -1051,14 +1112,6 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     endTsSpan();
   }
 
-  // Pre-compute search index filename if search is enabled
-  // In dev mode, use a stable filename to simlplify testing and debugging
-  let searchIndexFilename: string | undefined;
-  if (config.search?.enabled) {
-    const buildId = isDevMode ? 'dev' : buildStartTime.toString();
-    searchIndexFilename = computeSearchIndexFilename(config.search, buildId);
-  }
-
   // Process pages with ISG caching logic
   if (logger.step) {
     console.log(); // Add spacing before page processing
@@ -1078,12 +1131,11 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     logger,
     compiledBundles,
     recorder,
-    searchIndexFilename,
     imageRuntime,
     navigationHash,
   );
   endPageRenderSpan();
-  const { cacheHits, cacheMisses, searchablePages } = pageProcessingResult;
+  const { cacheHits, cacheMisses, searchIndexFilename } = pageProcessingResult;
 
   // Remove the output of pages that no longer exist, such as a deleted post or a tag no post
   // uses anymore. Runs before static assets are copied, so a file in the static directory at
@@ -1123,31 +1175,6 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     }
   }
 
-  // Generate search index if enabled
-  // Uses markdown content and TOC entries
-  let searchIndexMetadata: SearchIndexMetadata | undefined;
-  if (config.search?.enabled && searchablePages.length > 0 && searchIndexFilename) {
-    logger.info('');
-    logger.info(`Generating search index to ${searchIndexFilename}`);
-
-    const endSearchIndexSpan = recorder.startSpan('searchIndexGenerationMs');
-    const searchIndex = generateSearchIndex(searchablePages, config.search);
-    endSearchIndexSpan();
-    const writeStart = performance.now();
-    // In dev mode, skip write if content hasn't changed (template-only changes)
-    const skipIfUnchanged = isDevMode;
-    searchIndexMetadata = await writeSearchIndex(
-      searchIndex,
-      outDir,
-      searchIndexFilename,
-      skipIfUnchanged,
-    );
-    const writeTime = performance.now() - writeStart;
-    recorder.recordPhase('searchIndexWriteMs', writeTime);
-
-    logger.success(`Generated search index with ${searchIndexMetadata.documentCount} documents`);
-  }
-
   // Record page rendering counts
   recorder.increment('renderedPages', cacheMisses);
   recorder.increment('cachedPages', cacheHits);
@@ -1185,6 +1212,23 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
         .map((failure) => `Open Graph image failed for ${failure.label}: ${failure.message}`)
         .join('\n'),
     );
+  }
+
+  // Delete the bundles and search indexes earlier builds wrote under other names, now that
+  // every page links to this build's files. Before the static copy, so a file in the static
+  // directory with such a name is copied afterwards.
+  if (!isDevMode) {
+    if (config.typescript?.enabled) {
+      await removeStaleBundleFiles({
+        projectRoot: process.cwd(),
+        config: config.typescript,
+        outDir: config.outDir || DEFAULT_OUT_DIR,
+        compiled: compiledBundles,
+      });
+    }
+    if (config.search?.enabled && searchIndexFilename) {
+      await removeStaleSearchIndexes(outDir, config.search, searchIndexFilename);
+    }
   }
 
   // Copy static assets and count them (skip for template-only changes in dev mode)

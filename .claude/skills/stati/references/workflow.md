@@ -169,7 +169,7 @@ will not execute Stati to refresh expired cache entries on visitor requests.
 | Missing post sidebar collection       | Core < 1.29 parent URL caveat; 1.29+: no index page above the post, or wrong `collection`    |
 | Date sort not applied                 | Check for an invalid-date warning; use a valid `publishedAt`, `published`, `date`, etc.      |
 | Missing Tailwind variant              | Inventory/build order, literal class map, branches actually rendered                         |
-| Bundle on wrong page                  | Output-path include/exclude patterns and unique bundle names                                 |
+| Bundle on wrong page                  | URL patterns (`/docs/guide`, no `.html`; `/docs/**` skips `/docs`), unique names             |
 | Missing feed/sitemap/robots in dev    | Production-only generators; run production build                                             |
 | Stale rendered content                | Cache hit, hook timing, data via filters (untracked), `summaryFields`, force vs invalidation |
 | Missing search file                   | Search enablement, actual hash/meta URL, excluded pages, generation logs                     |

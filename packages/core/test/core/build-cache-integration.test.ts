@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { build } from '../../src/core/build.js';
@@ -138,6 +138,27 @@ describe('build cache integration', () => {
     expect(await runBuild()).toMatchObject({ cacheHits: 3, cacheMisses: 0 });
   });
 
+  it('deletes bundle files that earlier builds and the dev server left behind', async () => {
+    await runBuild();
+    const assetsDir = join(projectDir, 'dist', '_assets');
+    // The dev server writes stable names and source maps into the same directory
+    await writeFile(join(assetsDir, 'main.js'), 'dev bundle');
+    await writeFile(join(assetsDir, 'main.js.map'), '{}');
+    await writeFile(join(assetsDir, 'vendor.js'), 'not a bundle');
+    // A folder named like a bundle is not a bundle file
+    await mkdir(join(assetsDir, 'main-ABCDEFGH.js'));
+    await writeFile(join(assetsDir, 'main-ABCDEFGH.js', 'keep.txt'), 'keep');
+    await writeFile(join(projectDir, 'src', 'main.ts'), 'console.log("second bundle");');
+
+    await runBuild();
+    const bundle = (await readHome()).match(/src="\/_assets\/(main-[^"]+\.js)"/)?.[1];
+    expect(bundle).toBeDefined();
+    expect((await readdir(assetsDir)).sort()).toEqual(
+      [bundle, 'main-ABCDEFGH.js', 'vendor.js'].sort(),
+    );
+    expect(await readdir(join(assetsDir, 'main-ABCDEFGH.js'))).toEqual(['keep.txt']);
+  });
+
   it('invalidates only pages matched by a changed bundle', async () => {
     config.typescript!.bundles![0]!.include = ['/'];
     await runBuild();
@@ -226,5 +247,85 @@ describe('build cache integration', () => {
     expect(html).toContain('/second-index.json');
     expect(html).not.toContain('/first-index.json');
     expect(await readFile(join(projectDir, 'dist', 'second-index.json'), 'utf-8')).not.toBe('');
+  });
+
+  it('reuses cached pages with the default hashed search index name', async () => {
+    config.search = { enabled: true };
+    await runBuild();
+    const html = await readHome();
+    const indexPath = html.match(/name="stati:search-index" content="\/([^"]+)"/)?.[1];
+    expect(indexPath).toMatch(/^search-index-[0-9a-f]{8}\.json$/);
+
+    expect(await runBuild()).toMatchObject({ cacheHits: 3, cacheMisses: 0 });
+    expect(await readHome()).toBe(html);
+  });
+
+  it('keeps the files earlier pages load when a build fails before rewriting them', async () => {
+    config.search = { enabled: true };
+    await runBuild();
+    const html = await readHome();
+    const oldBundle = html.match(/src="\/_assets\/(main-[^"]+\.js)"/)?.[1];
+    const oldIndex = html.match(/name="stati:search-index" content="\/([^"]+)"/)?.[1];
+    expect(oldBundle).toBeDefined();
+    expect(oldIndex).toBeDefined();
+    const assets = () => readdir(join(projectDir, 'dist', '_assets'));
+    const outputs = () => readdir(join(projectDir, 'dist'));
+
+    // A new bundle and a new index name, then a hook that stops the build
+    await writeFile(join(projectDir, 'src', 'main.ts'), 'console.log("second bundle");');
+    await writeFile(join(projectDir, 'site', 'about.md'), '---\ntitle: About\n---\n# About us');
+    config.hooks = {
+      beforeRender: async () => {
+        throw new Error('hook failed');
+      },
+    };
+    await expect(runBuild()).rejects.toThrow('hook failed');
+    expect(await readHome()).toBe(html);
+    expect(await assets()).toContain(oldBundle);
+    expect(await outputs()).toContain(oldIndex);
+
+    delete config.hooks;
+    await runBuild();
+    expect(await assets()).not.toContain(oldBundle);
+    expect(await outputs()).not.toContain(oldIndex);
+  });
+
+  it('keeps the hashed search index name when content discovery order changes', async () => {
+    config.search = { enabled: true };
+    // Pages in many folders come back from discovery in a different order on each run
+    for (let folder = 0; folder < 10; folder++) {
+      await mkdir(join(projectDir, 'site', `section-${folder}`));
+      for (let page = 0; page < 3; page++) {
+        await writeFile(
+          join(projectDir, 'site', `section-${folder}`, `page-${page}.md`),
+          `---\ntitle: Page ${folder}.${page}\n---\n# Page ${folder}.${page}\n\n## Part\n\nText.`,
+        );
+      }
+    }
+    await runBuild();
+    const html = await readHome();
+
+    for (let run = 0; run < 3; run++) {
+      expect(await runBuild()).toMatchObject({ cacheHits: 33, cacheMisses: 0 });
+    }
+    expect(await readHome()).toBe(html);
+  });
+
+  it('renames the hashed search index when indexed text changes and deletes the old one', async () => {
+    config.search = { enabled: true };
+    await runBuild();
+    const indexFiles = async () =>
+      (await readdir(join(projectDir, 'dist'))).filter((file) => file.startsWith('search-index'));
+    const [oldIndex] = await indexFiles();
+    expect(oldIndex).toBeDefined();
+
+    await writeFile(join(projectDir, 'site', 'about.md'), '---\ntitle: About\n---\n# About us');
+    // Every page links to the index, so every page renders with the new name
+    expect(await runBuild()).toMatchObject({ cacheHits: 0, cacheMisses: 3 });
+    const [newIndex, ...others] = await indexFiles();
+    expect(others).toEqual([]);
+    expect(newIndex).not.toBe(oldIndex);
+    expect(await readHome()).toContain(`/${newIndex}`);
+    expect(await readFile(join(projectDir, 'dist', newIndex!), 'utf-8')).toContain('About us');
   });
 });

@@ -1,6 +1,87 @@
-import { join } from 'node:path';
+import { extname, join, resolve, sep } from 'node:path';
 import { stat } from 'node:fs/promises';
 import { createServer } from 'node:net';
+
+/**
+ * Content types the dev and preview servers send, by file extension. Covers the files Stati
+ * generates (pages, bundles, search index, sitemap, robots.txt, feeds, responsive images) and
+ * common static assets; anything else is sent as `application/octet-stream`.
+ */
+const MIME_TYPES: Record<string, string> = {
+  '.html': 'text/html',
+  '.js': 'application/javascript',
+  '.mjs': 'application/javascript',
+  '.css': 'text/css',
+  '.json': 'application/json',
+  '.map': 'application/json',
+  '.webmanifest': 'application/manifest+json',
+  '.xml': 'application/xml',
+  '.txt': 'text/plain',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.webp': 'image/webp',
+  '.avif': 'image/avif',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
+  '.otf': 'font/otf',
+  '.eot': 'application/vnd.ms-fontobject',
+  '.pdf': 'application/pdf',
+  '.mp4': 'video/mp4',
+  '.webm': 'video/webm',
+  '.wasm': 'application/wasm',
+};
+
+/**
+ * Gets the content type for a file from its extension.
+ *
+ * @param filePath - Path or file name of the file being served
+ * @returns The content type, or `application/octet-stream` for unknown extensions
+ */
+export function getMimeType(filePath: string): string {
+  return MIME_TYPES[extname(filePath).toLowerCase()] ?? 'application/octet-stream';
+}
+
+/**
+ * Turns a request URL into the path of the file it asks for: the query string is dropped and
+ * percent-escapes are decoded, so `/about?ref=x` asks for `/about` and `/my%20file.pdf` for
+ * `/my file.pdf`.
+ *
+ * @param url - The request URL as received (`req.url`)
+ * @returns The decoded path, or null when the URL is malformed (a bad escape or a NUL byte)
+ */
+export function parseRequestPath(url: string | undefined): string | null {
+  const rawPath = (url || '/').split(/[?#]/, 1)[0] || '/';
+  try {
+    const path = decodeURIComponent(rawPath);
+    return path.includes('\0') ? null : path;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Finds the site's custom not-found page, the one static hosts serve for a missing URL.
+ *
+ * @param outDir - The output directory being served
+ * @returns The path of `404.html` (or `404/index.html` for a `/404/` permalink), or null
+ */
+export async function resolveNotFoundPage(outDir: string): Promise<string | null> {
+  for (const candidate of [join(outDir, '404.html'), join(outDir, '404', 'index.html')]) {
+    try {
+      if ((await stat(candidate)).isFile()) {
+        return candidate;
+      }
+    } catch {
+      // Not there; try the next one
+    }
+  }
+  return null;
+}
 
 /**
  * Error codes for which a port is considered unavailable
@@ -90,6 +171,45 @@ export interface PrettyUrlResult {
 }
 
 /**
+ * Resolves a request path to the file it names inside the served directory. This is where a
+ * request path becomes a file system path: every file the servers read is this path or
+ * derived from it, so no request reaches outside the directory, whether through `..`
+ * segments (raw or percent-encoded), backslashes or an absolute path.
+ *
+ * @param outDir - The directory being served
+ * @param requestPath - The decoded request path, from {@link parseRequestPath}
+ * @returns The absolute path, or null when it points outside the directory
+ */
+export function resolveRequestFile(outDir: string, requestPath: string): string | null {
+  const root = resolve(outDir);
+  const filePath = resolve(root, requestPath.replace(/^[/\\]+/, ''));
+  if (filePath === root) {
+    return root;
+  }
+  const rootPrefix = root.endsWith(sep) ? root : root + sep;
+  if (!filePath.startsWith(rootPrefix)) {
+    return null;
+  }
+  return filePath;
+}
+
+/**
+ * The result for a candidate file: found when it exists and is a file.
+ */
+async function fileResult(candidate: string | null): Promise<PrettyUrlResult> {
+  if (candidate !== null) {
+    try {
+      if ((await stat(candidate)).isFile()) {
+        return { filePath: candidate, found: true };
+      }
+    } catch {
+      // Not there
+    }
+  }
+  return { filePath: null, found: false };
+}
+
+/**
  * Attempts to resolve pretty URL paths by trying various fallback strategies.
  * This handles common patterns like:
  * - /path/ -> /path/index.html
@@ -97,71 +217,43 @@ export interface PrettyUrlResult {
  * - /path -> /path.html (when original path is not found and has no extension)
  *
  * @param outDir The output directory to serve files from
- * @param requestPath The requested URL path
- * @param originalFilePath The original file path that was attempted
+ * @param requestPath The requested URL path, which decides the fallbacks
+ * @param requestFile The file the request names, from {@link resolveRequestFile}. Every
+ *   candidate is derived from it, so none is outside the output directory
  * @returns Promise resolving to the file path to serve or null if not found
  */
 export async function resolvePrettyUrl(
   outDir: string,
   requestPath: string,
-  originalFilePath: string,
+  requestFile: string,
 ): Promise<PrettyUrlResult> {
+  // The sibling .html file: /blog/ and /blog are served from blog.html. The output
+  // directory itself has none, as its sibling is outside it.
+  const htmlFile = requestFile === resolve(outDir) ? null : `${requestFile}.html`;
+
   try {
-    const stats = await stat(originalFilePath);
+    const stats = await stat(requestFile);
 
     if (stats.isDirectory()) {
       // Try to serve index.html from directory
-      const indexPath = join(originalFilePath, 'index.html');
+      const indexPath = join(requestFile, 'index.html');
       try {
         await stat(indexPath);
         return { filePath: indexPath, found: true };
       } catch {
         // If no index.html in directory, try to serve corresponding .html file
         // For example: /examples/ -> examples.html
-        const directoryName = requestPath.replace(/\/$/, ''); // Remove trailing slash
-        const fallbackPath = join(outDir, `${directoryName}.html`);
-
-        try {
-          await stat(fallbackPath);
-          return { filePath: fallbackPath, found: true };
-        } catch {
-          return { filePath: null, found: false };
-        }
+        return await fileResult(htmlFile);
       }
     }
 
     // File exists and is not a directory
-    return { filePath: originalFilePath, found: true };
+    return { filePath: requestFile, found: true };
   } catch {
-    // File not found, try fallback strategies for pretty URLs
-    if (requestPath.endsWith('/')) {
-      // For requests ending with /, try the corresponding .html file
-      const pathWithoutSlash = requestPath.slice(0, -1);
-      const htmlPath = join(outDir, `${pathWithoutSlash}.html`);
-
-      try {
-        const stats = await stat(htmlPath);
-        if (stats.isFile()) {
-          return { filePath: htmlPath, found: true };
-        }
-      } catch {
-        // Continue to not found
-      }
-    } else if (!requestPath.includes('.')) {
-      // For requests without trailing slash and without extension, try .html
-      const htmlPath = join(outDir, `${requestPath}.html`);
-
-      try {
-        const stats = await stat(htmlPath);
-        if (stats.isFile()) {
-          return { filePath: htmlPath, found: true };
-        }
-      } catch {
-        // Continue to not found
-      }
+    // File not found: try the .html file for /path/ and for /path without an extension
+    if (requestPath.endsWith('/') || !requestPath.includes('.')) {
+      return await fileResult(htmlFile);
     }
-
-    // No fallback worked
     return { filePath: null, found: false };
   }
 }

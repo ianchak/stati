@@ -370,6 +370,15 @@ invalid yaml: [unclosed array
         writeFile(join(testDir, 'dist', 'fonts', 'font.woff2'), 'fake font data'),
         writeFile(join(testDir, 'dist', 'unknown.xyz'), 'unknown file type'),
         writeFile(join(testDir, 'dist', 'about', 'index.html'), '<html><body>About</body></html>'),
+        writeFile(join(testDir, 'dist', 'js', 'module.mjs'), 'export const answer = 42;'),
+        writeFile(join(testDir, 'dist', 'images', 'photo.avif'), 'fake avif data'),
+        writeFile(join(testDir, 'dist', 'feed.xml'), '<?xml version="1.0"?><rss/>'),
+        writeFile(join(testDir, 'dist', 'notes.txt'), 'User-agent: *'),
+        writeFile(join(testDir, 'dist', 'my file.txt'), 'spaced name'),
+        writeFile(
+          join(testDir, 'dist', '404.html'),
+          '<html><body><h1>404 custom page</h1></body></html>',
+        ),
       ]);
 
       // Start one server for all file serving tests
@@ -379,6 +388,45 @@ invalid yaml: [unclosed array
 
     afterAll(async () => {
       await sharedServer.stop();
+      await rm(join(testDir, 'dist', '404.html'), { force: true });
+    });
+
+    it('should serve the site 404 page with a 404 status and live reload', async () => {
+      const response = await makeRequest(`http://localhost:${sharedPort}/no-such-page`);
+      expect(response.status).toBe(404);
+      expect(response.headers['content-type']).toBe('text/html');
+      expect(response.body).toContain('404 custom page');
+      expect(response.body).toContain('__ws');
+    });
+
+    it.each([
+      ['/js/module.mjs', 'application/javascript'],
+      ['/images/photo.avif', 'image/avif'],
+      ['/feed.xml', 'application/xml'],
+      ['/notes.txt', 'text/plain'],
+    ])('should serve %s as %s', async (path, type) => {
+      const response = await makeRequest(`http://localhost:${sharedPort}${path}`);
+      expect(response.status).toBe(200);
+      expect(response.headers['content-type']).toBe(type);
+    });
+
+    it('should ignore query strings and decode escaped file names', async () => {
+      const home = await makeRequest(`http://localhost:${sharedPort}/?utm_source=feed`);
+      expect(home.status).toBe(200);
+      expect(home.body).toContain('Home');
+
+      const about = await makeRequest(`http://localhost:${sharedPort}/about?ref=nav`);
+      expect(about.status).toBe(200);
+      expect(about.body).toContain('About');
+
+      const spaced = await makeRequest(`http://localhost:${sharedPort}/my%20file.txt`);
+      expect(spaced.status).toBe(200);
+      expect(spaced.body).toBe('spaced name');
+    });
+
+    it('should reject malformed URLs with 400', async () => {
+      const response = await makeRequest(`http://localhost:${sharedPort}/bad%E0%A4%A`);
+      expect(response.status).toBe(400);
     });
 
     it('should serve index.html for root path', async () => {

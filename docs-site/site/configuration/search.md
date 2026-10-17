@@ -66,7 +66,7 @@ export default defineConfig({
 |--------|------|---------|-------------|
 | `enabled` | `boolean` | `false` | Enable search index generation |
 | `indexName` | `string` | `'search-index'` | Base filename for the search index (without extension) |
-| `hashFilename` | `boolean` | `true` | Add a per-build hash to the filename for cache busting |
+| `hashFilename` | `boolean` | `true` | Add a hash of the index content to the filename for cache busting |
 | `maxContentLength` | `number` | `1000` | Maximum content length per section (in characters) |
 | `maxPreviewLength` | `number` | `500` | Maximum preview length for page-level entries (in characters) |
 | `headingLevels` | `number[]` | `[2, 3, 4, 5, 6]` | Heading levels to include in the index |
@@ -246,7 +246,11 @@ When `hashFilename` is enabled (default), the search index filename includes a h
 search-index-a1b2c3d4.json
 ```
 
-The hash is derived from the build's start time, not from the index content, so every production build writes a new filename and browsers never use a stale cached index. During `stati dev` the name stays the same between rebuilds. Because the name changes, read it from the meta tag or `stati.assets.searchIndexPath` instead of hard-coding it.
+In a production build the hash is computed from the index content, so the filename changes only when the indexed text does and browsers never use a stale cached index. `stati build` deletes the index files earlier builds wrote under other names. During `stati dev` the name stays the same between rebuilds. Because the name changes, read it from the meta tag or `stati.assets.searchIndexPath` instead of hard-coding it.
+
+Every page links to the index, so the filename is part of each page's [cache](/configuration/isg) hash. A build that changes no indexed text reuses every cached page. A build that changes indexed text, such as a heading or a paragraph on one page, renames the index and renders every page again with the new name. With `hashFilename: false` the name never changes, so only the changed pages render; serve `search-index.json` with a short cache lifetime instead.
+
+The index is generated from each page's Markdown after the `beforeAll` hook and before any page renders, so changes a `beforeRender` hook makes to a page's content do not reach the index.
 
 To disable hash-based filenames:
 

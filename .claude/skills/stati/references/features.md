@@ -122,6 +122,12 @@ search: {
 Those values show the feature defaults; search is disabled until enabled.
 Default output is `search-index-<8-character-hash>.json`, not a fixed
 `search-index.json`. With `hashFilename: false`, the filename is stable.
+Core 1.29.1+ hashes the index content (1.24.3–1.29.0 hashed the build time, so
+every production build with search re-rendered every page). The name is in each
+page's cache hash: editing indexed text re-renders all pages once; a build with
+no indexed-text change reuses them. `stati build` deletes older index files.
+The index is built after `beforeAll`, before rendering; `beforeRender` content
+changes do not reach it.
 Generated pages (`[param].md`) are left out unless the template sets
 `search: true`; pages 2+ of a paginated listing are always left out.
 

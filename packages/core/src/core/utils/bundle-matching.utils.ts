@@ -88,7 +88,7 @@ export interface CompiledBundleInfo {
  * 3. If page matches any `exclude` pattern: bundle is excluded (exclude takes precedence)
  * 4. Bundle order from config is preserved
  *
- * @param pageOutputPath - The page's output URL path (e.g., '/docs/api/hooks.html')
+ * @param pageUrl - The page URL (e.g., '/docs/api/hooks'), not its output file
  * @param bundles - Array of bundle configurations to filter
  * @returns Array of bundles that match this page, in config order
  *
@@ -100,26 +100,23 @@ export interface CompiledBundleInfo {
  *   { entryPoint: 'playground.ts', bundleName: 'playground', include: ['/examples/**'], exclude: ['/examples/simple/**'] }
  * ];
  *
- * matchBundlesForPage('/docs/api/hooks.html', bundles);
+ * matchBundlesForPage('/docs/api/hooks', bundles);
  * // Returns: [{ entryPoint: 'core.ts', ... }, { entryPoint: 'docs.ts', ... }]
  *
- * matchBundlesForPage('/examples/advanced/demo.html', bundles);
+ * matchBundlesForPage('/examples/advanced/demo', bundles);
  * // Returns: [{ entryPoint: 'core.ts', ... }, { entryPoint: 'playground.ts', ... }]
  *
- * matchBundlesForPage('/examples/simple/basic.html', bundles);
+ * matchBundlesForPage('/examples/simple/basic', bundles);
  * // Returns: [{ entryPoint: 'core.ts', ... }] - playground excluded
  * ```
  */
-export function matchBundlesForPage(
-  pageOutputPath: string,
-  bundles: BundleConfig[],
-): BundleConfig[] {
+export function matchBundlesForPage(pageUrl: string, bundles: BundleConfig[]): BundleConfig[] {
   if (!bundles || bundles.length === 0) {
     return [];
   }
 
   // Normalize path to use forward slashes
-  const normalizedPath = pageOutputPath.replace(/\\/g, '/');
+  const normalizedPath = pageUrl.replace(/\\/g, '/');
 
   return bundles.filter((bundle) => {
     // Check exclude patterns first (they take precedence)
@@ -144,7 +141,7 @@ export function matchBundlesForPage(
  * Gets bundle paths for a page from compiled bundle info.
  * Filters compiled bundles based on page matching and returns only the paths.
  *
- * @param pageOutputPath - The page's output URL path (e.g., '/docs/api/hooks.html')
+ * @param pageUrl - The page URL (e.g., '/docs/api/hooks'), not its output file
  * @param compiledBundles - Array of compiled bundle info
  * @returns Array of bundle paths matched for this page, in config order
  *
@@ -155,12 +152,12 @@ export function matchBundlesForPage(
  *   { config: { entryPoint: 'docs.ts', bundleName: 'docs', include: ['/docs/**'] }, filename: 'docs-def.js', path: '/_assets/docs-def.js' }
  * ];
  *
- * getBundlePathsForPage('/docs/api/hooks.html', compiled);
+ * getBundlePathsForPage('/docs/api/hooks', compiled);
  * // Returns: ['/_assets/core-abc.js', '/_assets/docs-def.js']
  * ```
  */
 export function getBundlePathsForPage(
-  pageOutputPath: string,
+  pageUrl: string,
   compiledBundles: CompiledBundleInfo[],
 ): string[] {
   if (!compiledBundles || compiledBundles.length === 0) {
@@ -168,7 +165,7 @@ export function getBundlePathsForPage(
   }
 
   const matchedConfigs = matchBundlesForPage(
-    pageOutputPath,
+    pageUrl,
     compiledBundles.map((b) => b.config),
   );
 

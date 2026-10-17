@@ -144,7 +144,7 @@ stati preview --port 8080 --host 0.0.0.0
 stati preview --open
 ```
 
-The preview server serves `dist/` as built, with no live reload. Extensionless URLs such as `/about` are served from `about.html`, and a missing file returns a plain-text 404.
+The preview server serves `dist/` as built, with no live reload. Extensionless URLs such as `/about` are served from `about.html`, and query strings are ignored, so `/about?ref=nav` serves the same file. A missing file gets your site's `404.html` (from `site/404.md`) with a 404 status, as most static hosts do, or a plain-text 404 when the site has none. `stati dev` serves files the same way, with live reload added to the 404 page.
 
 ### `stati build`
 
@@ -190,6 +190,8 @@ stati build --metrics --metrics-detailed --metrics-html
 ```
 
 **Removed pages:** `stati build` deletes the HTML of pages that no longer exist, such as a deleted post, a tag no post uses or the last page of a listing that got shorter, along with folders left empty. It only deletes files it recorded in `.stati/manifest.json`, so files from `public/` or other tools stay. See [ISG](/core-concepts/isg#removing-pages-that-no-longer-exist).
+
+**Bundles and search index:** a production build writes TypeScript bundles and the search index under hashed names, and deletes the copies earlier builds wrote under other names: `dist/_assets/<bundleName>-<hash>.js` files and the `<bundleName>.js` and source map `stati dev` writes, for the bundles in your config, and `dist/<indexName>-<hash>.json`. Files with other names, such as your own files in `public/_assets/`, stay. Files of a bundle you removed from the config stay until you run `stati build --clean`.
 
 **Images:** `stati build` reuses generated images from earlier builds and deletes the ones in `dist/_img/` that no page uses any more. It only deletes files it generated, never files from `public/`. The dev server doesn't delete them. `--clean` removes the image cache with the rest of `.stati/`, so the next build encodes every image again. See [Images](/configuration/images#caching-and-cleanup).
 

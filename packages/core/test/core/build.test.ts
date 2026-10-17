@@ -134,6 +134,7 @@ vi.mock('../../src/core/isg/build-lock.js', () => ({
 vi.mock('../../src/core/utils/typescript.utils.js', () => ({
   compileTypeScript: mockCompileTypeScript,
   detectExistingBundles: mockDetectExistingBundles,
+  removeStaleBundleFiles: vi.fn().mockResolvedValue(undefined),
   autoInjectBundles: mockAutoInjectBundles,
   formatBytes: () => '1.00 KB',
 }));
@@ -144,6 +145,7 @@ vi.mock('../../src/search/index.js', async (importOriginal) => ({
   computeSearchIndexFilename: mockComputeSearchIndexFilename,
   generateSearchIndex: mockGenerateSearchIndex,
   writeSearchIndex: mockWriteSearchIndex,
+  removeStaleSearchIndexes: vi.fn().mockResolvedValue([]),
   autoInjectSearchMeta: mockAutoInjectSearchMeta,
 }));
 
@@ -1456,7 +1458,38 @@ describe('build.ts', () => {
       expect(mockExtractToc).toHaveBeenCalled();
     });
 
-    it('should use TOC from rendered markdown for non-cached pages', async () => {
+    it('should index pages in URL order whatever order content discovery returns', async () => {
+      // Discovery order varies between runs; the index content, and its name, must not
+      mockLoadContent.mockResolvedValue([...mockPages].reverse());
+      mockLoadConfig.mockResolvedValue({ ...mockConfig, search: { enabled: true } });
+
+      await build();
+
+      const [searchablePages] = mockGenerateSearchIndex.mock.calls[0]!;
+      expect(searchablePages.map(({ page }: { page: { url: string } }) => page.url)).toEqual([
+        '/',
+        '/about',
+        '/blog/post',
+      ]);
+    });
+
+    it('should order pages that share a URL by source path', async () => {
+      const about = mockPages[1]!;
+      mockLoadContent.mockResolvedValue([
+        { ...about, sourcePath: '/src/about/index.md' },
+        { ...about, sourcePath: '/src/about.md' },
+      ]);
+      mockLoadConfig.mockResolvedValue({ ...mockConfig, search: { enabled: true } });
+
+      await build();
+
+      const [searchablePages] = mockGenerateSearchIndex.mock.calls[0]!;
+      expect(
+        searchablePages.map(({ page }: { page: { sourcePath: string } }) => page.sourcePath),
+      ).toEqual(['/src/about.md', '/src/about/index.md']);
+    });
+
+    it('should generate the index before rendering, with extracted TOC for rendered pages', async () => {
       const configWithSearch: StatiConfig = {
         ...mockConfig,
         search: {
@@ -1464,24 +1497,24 @@ describe('build.ts', () => {
         },
       };
 
-      const mockToc = [{ id: 'section-1', text: 'Section 1', level: 2 }];
-      mockRenderMarkdown.mockReturnValue({
-        html: '<h1>Rendered</h1>',
-        toc: mockToc,
-      });
+      // The index is named after its content, so it exists before any page renders
+      const extractedToc = [{ id: 'section-1', text: 'Section 1', level: 2 }];
+      mockExtractToc.mockReturnValue(extractedToc);
       mockShouldRebuildPage.mockResolvedValue(true); // Force rebuild
       mockLoadConfig.mockResolvedValue(configWithSearch);
 
       await build();
 
-      // Search index should include the TOC from rendering
       expect(mockGenerateSearchIndex).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.objectContaining({
-            toc: mockToc,
+            toc: extractedToc,
           }),
         ]),
         expect.any(Object),
+      );
+      expect(mockGenerateSearchIndex.mock.invocationCallOrder[0]).toBeLessThan(
+        mockRenderPage.mock.invocationCallOrder[0]!,
       );
     });
   });

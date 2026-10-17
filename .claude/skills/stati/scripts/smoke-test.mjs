@@ -121,7 +121,11 @@ try {
   check((rss.match(/<item>/g) ?? []).length === 1, 'RSS filter excludes collection index');
 
   const cached = await build({ logger });
-  check(cached.cacheHits > 0, 'second build exercises the cache');
+  check(
+    cached.cacheHits > 0 && cached.cacheMisses === 0,
+    `second build reuses every cached page (hits ${cached.cacheHits}, misses ${cached.cacheMisses}; ` +
+      '@stati/core 1.24.3-1.29.0 re-render every page when search uses a hashed index name)',
+  );
   check(
     (await readFile(join(out, 'blog.html'), 'utf8')) === blog,
     'cached HTML preserves component output',

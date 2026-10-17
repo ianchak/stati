@@ -56,6 +56,9 @@ jobs:
             exit 1
           }
 
+      - name: Run the Stati skill smoke test
+        run: node .claude/skills/stati/scripts/smoke-test.mjs
+
       - name: Run tests with coverage (excluding perf tests)
         run: |
           set -e

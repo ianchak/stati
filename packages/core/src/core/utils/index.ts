@@ -93,6 +93,10 @@ export { createNavigationHelpers } from './navigation-helpers.utils.js';
 
 // Server utilities
 export {
+  getMimeType,
+  parseRequestPath,
+  resolveNotFoundPage,
+  resolveRequestFile,
   resolvePrettyUrl,
   mergeServerOptions,
   assertPortAvailable,
@@ -137,8 +141,13 @@ export {
   autoInjectBundles,
   formatBytes,
   detectExistingBundles,
+  removeStaleBundleFiles,
 } from './typescript.utils.js';
-export type { CompileOptions, WatchOptions } from './typescript.utils.js';
+export type {
+  CompileOptions,
+  WatchOptions,
+  RemoveStaleBundlesOptions,
+} from './typescript.utils.js';
 
 // HTML manipulation utilities
 export { findHeadClosePosition, injectBeforeHeadClose } from './html.utils.js';

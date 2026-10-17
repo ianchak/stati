@@ -2137,10 +2137,7 @@ describe('Development Server', () => {
 
   describe('request handling security', () => {
     it('should return 403 for path traversal attempts', async () => {
-      // Get the mocked isPathWithinDirectory and configure it to reject the path
-      const { isPathWithinDirectory } = await import('../../src/core/utils/paths.utils.js');
-      vi.mocked(isPathWithinDirectory).mockReturnValue(false);
-
+      // The request resolves outside the output directory
       const devServer = await createDevServer({
         port: 8200,
       });

@@ -221,17 +221,19 @@ export interface BundleConfig {
 
   /**
    * Glob patterns for pages that should include this bundle.
-   * Matches against page output path (e.g., '/docs/api/hooks.html').
+   * Matches against the page URL (e.g., '/docs/api/hooks', or '/' for the home page),
+   * not its output file. A pattern must match the whole URL: '/docs/**' does not match
+   * the '/docs' index page itself.
    * If omitted, bundle is included on ALL pages (global bundle).
    *
-   * Supports glob syntax: `*`, `**`, `?`, `[abc]`, `{a,b}`
+   * Supports glob syntax: `*`, `**`, `?`, `[abc]` (no `{a,b}`; list each pattern instead)
    *
-   * @example ['/docs/**', '/api/**']
+   * @example ['/docs', '/docs/**', '/api/**']
    */
   include?: string[];
 
   /**
-   * Glob patterns for pages to exclude from this bundle.
+   * Glob patterns for page URLs to exclude from this bundle.
    * Takes precedence over include patterns.
    *
    * @example ['/docs/legacy/**']

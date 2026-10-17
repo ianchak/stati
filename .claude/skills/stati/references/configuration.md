@@ -233,7 +233,7 @@ typescript: {
     {
       entryPoint: 'docs.ts',
       bundleName: 'docs',
-      include: ['/docs/**', '/api/**'],
+      include: ['/docs', '/docs/**', '/api/**'],
       exclude: ['/docs/legacy/**'],
     },
   ],
@@ -248,8 +248,12 @@ typescript: {
 - Production hashing/minification default on; development uses stable filenames,
   source maps, and unminified output. Do not hardcode a production hash.
 - Bundle names must be unique.
-- Include/exclude matching uses page **output paths**, e.g.
-  `/docs/guide.html`, not Markdown source paths. No includes means global;
+- Include/exclude patterns match the page **URL**, e.g. `/docs/guide` (`/` for
+  the home page), not the output file `/docs/guide.html` or the Markdown source
+  path. ISG invalidation keys are output paths; bundle patterns are not.
+- A pattern must match the whole URL: `/docs/**` matches `/docs/guide` but not
+  the `/docs` index page, so list `/docs` too. Brace alternatives such as
+  `{a,b}` are not supported; list each pattern. No includes means global;
   excludes win. Matching bundle order follows config order.
 - Templates can inspect `stati.assets?.bundlePaths ?? []`.
 - Standard builds auto-inject matching module script tags. Do not emit a second

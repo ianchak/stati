@@ -8,7 +8,7 @@
 import * as esbuild from 'esbuild';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
-import { pathExists } from './fs.utils.js';
+import { pathExists, readdir, remove } from './fs.utils.js';
 import { validateUniqueBundleNames, type CompiledBundleInfo } from './bundle-matching.utils.js';
 import type { TypeScriptConfig, BundleConfig } from '../../types/config.js';
 import type { Logger } from '../../types/logging.js';
@@ -158,6 +158,56 @@ export async function detectExistingBundles(
   }
 
   return results;
+}
+
+/**
+ * Options for {@link removeStaleBundleFiles}.
+ */
+export interface RemoveStaleBundlesOptions {
+  /** Root directory of the project */
+  projectRoot: string;
+  /** TypeScript configuration */
+  config: TypeScriptConfig;
+  /** Output directory (defaults to 'dist') */
+  outDir?: string;
+  /** The bundles this build compiled */
+  compiled: CompiledBundleInfo[];
+}
+
+/**
+ * Deletes the files of compiled bundles that earlier builds left in the bundle output
+ * directory: hashed copies from builds whose code differed, and the unhashed file and source
+ * map the dev server writes, which production pages never load. Only files named after a
+ * bundle compiled in this build are deleted, and never a file this build wrote, so other files
+ * in the directory stay.
+ *
+ * The build calls this after every page is written: until then, pages from the previous
+ * build still load the old files.
+ *
+ * @param options - The project, its TypeScript config and output directory, and the bundles
+ *   this build compiled
+ */
+export async function removeStaleBundleFiles(options: RemoveStaleBundlesOptions): Promise<void> {
+  const { projectRoot, config, outDir: globalOutDir = DEFAULT_OUT_DIR, compiled } = options;
+  if (compiled.length === 0) {
+    return;
+  }
+  const outDir = path.join(projectRoot, globalOutDir, resolveConfig(config, 'production').outDir);
+  const current = new Set(compiled.map((bundle) => bundle.filename));
+  // name.js, name-HASH.js (esbuild's 8-character hash) and their source maps
+  const patterns = compiled.map(({ config }) => {
+    const name = config.bundleName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`^${name}(?:-[A-Z0-9]{8})?\\.js(?:\\.map)?$`);
+  });
+
+  const entries = await readdir(outDir, { withFileTypes: true }).catch(() => []);
+
+  // Files only: remove() deletes folders with their contents, and links are left alone
+  const stale = entries
+    .filter((entry) => entry.isFile())
+    .map((entry) => entry.name)
+    .filter((file) => !current.has(file) && patterns.some((pattern) => pattern.test(file)));
+  await Promise.all(stale.map((file) => remove(path.join(outDir, file))));
 }
 
 /**
