@@ -144,6 +144,7 @@ vi.mock('../../src/search/index.js', async (importOriginal) => ({
   computeSearchIndexFilename: mockComputeSearchIndexFilename,
   generateSearchIndex: mockGenerateSearchIndex,
   writeSearchIndex: mockWriteSearchIndex,
+  removeStaleSearchIndexes: vi.fn().mockResolvedValue([]),
   autoInjectSearchMeta: mockAutoInjectSearchMeta,
 }));
 
@@ -1456,7 +1457,7 @@ describe('build.ts', () => {
       expect(mockExtractToc).toHaveBeenCalled();
     });
 
-    it('should use TOC from rendered markdown for non-cached pages', async () => {
+    it('should generate the index before rendering, with extracted TOC for rendered pages', async () => {
       const configWithSearch: StatiConfig = {
         ...mockConfig,
         search: {
@@ -1464,24 +1465,24 @@ describe('build.ts', () => {
         },
       };
 
-      const mockToc = [{ id: 'section-1', text: 'Section 1', level: 2 }];
-      mockRenderMarkdown.mockReturnValue({
-        html: '<h1>Rendered</h1>',
-        toc: mockToc,
-      });
+      // The index is named after its content, so it exists before any page renders
+      const extractedToc = [{ id: 'section-1', text: 'Section 1', level: 2 }];
+      mockExtractToc.mockReturnValue(extractedToc);
       mockShouldRebuildPage.mockResolvedValue(true); // Force rebuild
       mockLoadConfig.mockResolvedValue(configWithSearch);
 
       await build();
 
-      // Search index should include the TOC from rendering
       expect(mockGenerateSearchIndex).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.objectContaining({
-            toc: mockToc,
+            toc: extractedToc,
           }),
         ]),
         expect.any(Object),
+      );
+      expect(mockGenerateSearchIndex.mock.invocationCallOrder[0]).toBeLessThan(
+        mockRenderPage.mock.invocationCallOrder[0]!,
       );
     });
   });

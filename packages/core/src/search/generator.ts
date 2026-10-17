@@ -5,7 +5,7 @@
 
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
-import { writeFile, ensureDir } from '../core/utils/fs.utils.js';
+import { writeFile, ensureDir, readdir, remove } from '../core/utils/fs.utils.js';
 import { matchesGlob } from '../core/utils/glob-patterns.utils.js';
 import { isVirtualPage } from '../core/utils/template-discovery.utils.js';
 import { SEARCH_INDEX_VERSION, SEARCH_DEFAULTS } from './constants.js';
@@ -443,34 +443,65 @@ export async function writeSearchIndex(
 
 /**
  * Computes the search index filename based on configuration.
- * When hashFilename is true, generates a deterministic hash based on the build ID.
- * This allows the filename to be known before the index is generated,
- * enabling meta tag injection during initial template render.
+ * When hashFilename is true, the name carries a hash of `hashInput`. Production builds pass
+ * the index content, so the name changes only when the indexed text does; every page links to
+ * the index, so the name is part of each page's cache hash.
  *
  * @param config - Search configuration
- * @param buildId - Unique identifier for this build (e.g., timestamp or build ID)
+ * @param hashInput - The value the hash is computed from, such as the serialized documents
  * @returns The search index filename (without leading slash)
  *
  * @example
  * ```typescript
- * // At build start, compute the filename
- * const filename = computeSearchIndexFilename(config.search, Date.now().toString());
+ * const filename = computeSearchIndexFilename(config.search, JSON.stringify(index.documents));
  * // filename: 'search-index-a1b2c3d4.json' (when hashFilename is true)
  * // filename: 'search-index.json' (when hashFilename is false)
  * ```
  */
-export function computeSearchIndexFilename(config: SearchConfig, buildId?: string): string {
+export function computeSearchIndexFilename(config: SearchConfig, hashInput?: string): string {
   const indexName = config.indexName ?? SEARCH_DEFAULTS.indexName;
   const hashFilename = config.hashFilename ?? SEARCH_DEFAULTS.hashFilename;
 
   if (hashFilename) {
-    // Generate a deterministic hash based on build ID
-    // This allows the filename to be known before content is generated
-    const hashInput = buildId ?? Date.now().toString();
-    const hash = generateContentHash(hashInput);
+    const hash = generateContentHash(hashInput ?? Date.now().toString());
     return `${indexName}-${hash}.json`;
   }
 
   // Return base filename (without hash)
   return `${indexName}.json`;
+}
+
+/**
+ * Deletes search index files that earlier builds wrote under another name: hashed files from
+ * builds whose indexed text differed, and the file of a build with the other `hashFilename`
+ * setting. Only files in the output directory named after `indexName` are deleted, never the
+ * current one.
+ *
+ * @param outDir - The output directory
+ * @param config - Search configuration
+ * @param currentFilename - The index file this build wrote
+ * @returns The deleted file names
+ */
+export async function removeStaleSearchIndexes(
+  outDir: string,
+  config: SearchConfig,
+  currentFilename: string,
+): Promise<string[]> {
+  const indexName = (config.indexName ?? SEARCH_DEFAULTS.indexName).replace(
+    /[.*+?^${}()|[\]\\]/g,
+    '\\$&',
+  );
+  // name.json and name-HASH.json (generateContentHash's 8 hex characters)
+  const pattern = new RegExp(`^${indexName}(?:-[0-9a-f]{8})?\\.json$`);
+
+  let files: string[];
+  try {
+    files = await readdir(outDir);
+  } catch {
+    return [];
+  }
+
+  const stale = files.filter((file) => file !== currentFilename && pattern.test(file));
+  await Promise.all(stale.map((file) => remove(join(outDir, file))));
+  return stale;
 }

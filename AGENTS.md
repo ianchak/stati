@@ -123,6 +123,7 @@ All config blocks live under `defineConfig()`. Key sections:
 - Configure with `indexName`, `maxContentLength`, `maxPreviewLength`, `headingLevels[]` to control index size.
 - Use `exclude[]` glob patterns and `includeHomePage` to control which pages are indexed.
 - Set `autoInjectMetaTag: true` (default) to inject `<meta name="stati:search-index">` into rendered HTML.
+- `core/build.ts` generates and writes the index before any page renders (`writeSearchIndexBeforeRendering`, after `beforeAll`), from each page's Markdown and `extractToc`. The index path is part of every page's render-inputs hash, so a production build hashes the index content, never something that changes per build: editing indexed text re-renders every page, an unchanged build reuses them all. Dev keeps one fixed name. Production builds delete index files and hashed bundles from earlier builds (`removeStaleSearchIndexes`, `removeStaleBundleFiles`).
 - Client-side search (e.g., in docs-site) loads the index and performs fuzzy matching; Stati does not bundle a search UI - that's up to the site.
 - Exclusions: pages with `draft: true` in frontmatter are omitted from the index. Use `search.exclude[]` glob patterns for additional exclusions.
 

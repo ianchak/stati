@@ -27,6 +27,7 @@ export {
   generateContentHash,
   buildBreadcrumb,
   computeSearchIndexFilename,
+  removeStaleSearchIndexes,
 } from './generator.js';
 export type { SearchablePage } from './generator.js';
 
