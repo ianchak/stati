@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   createTemplateEngine,
   clearTemplateEngineCache,
+  discoverPartials,
   renderPage,
 } from '../../src/core/templates.js';
 import type { StatiConfig, PageModel } from '../../src/types/index.js';
@@ -859,6 +860,43 @@ describe('templates.ts', () => {
           expect(layoutCall![1].partials.header).toBeInstanceOf(Function);
           expect(layoutCall![1].partials.header.toString()).toBe(docsHeaderContent); // Should be docs version, not root
         });
+
+        // Windows passes backslash paths. Both forms are plain strings, so every OS runs both.
+        it.each([
+          ['forward slashes', 'a/b/deep.md'],
+          ['backslashes', 'a\\b\\deep.md'],
+        ])(
+          'should scan every folder between the root and a deep page (%s)',
+          async (_, pagePath) => {
+            const srcDir = join(mockProjectRoot, 'src');
+            const folders = {
+              root: join(srcDir, '_partials'),
+              middle: join(srcDir, 'a', '_partials'),
+              deep: join(srcDir, 'a', 'b', '_partials'),
+            };
+            const scanPattern = (folder: string) => join(folder, '..', '_*/').replace(/\\/g, '/');
+
+            mockGlob.mockImplementation(async (pattern: string, options: { cwd?: string }) => {
+              for (const [name, folder] of Object.entries(folders)) {
+                if (pattern === scanPattern(folder)) return [folder];
+                if (options.cwd === folder) return [`${name}.eta`];
+              }
+              return [];
+            });
+
+            const partials = await discoverPartials(pagePath, mockConfig);
+
+            const scannedPatterns = mockGlob.mock.calls
+              .filter(([, options]) => options.onlyDirectories)
+              .map(([pattern]) => pattern);
+            expect(scannedPatterns).toEqual(Object.values(folders).map(scanPattern));
+            expect(partials).toEqual({
+              root: join('_partials', 'root.eta'),
+              middle: join('a', '_partials', 'middle.eta'),
+              deep: join('a', 'b', '_partials', 'deep.eta'),
+            });
+          },
+        );
       });
 
       describe('callable partials', () => {
