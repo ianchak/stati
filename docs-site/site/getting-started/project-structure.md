@@ -22,7 +22,7 @@ my-stati-site/
 └── site/
     ├── index.md
     ├── layout.eta
-    └── _partials/
+    └── partials/
         ├── header.eta
         └── footer.eta
 ```
@@ -66,17 +66,17 @@ Static assets that should be copied directly to the output directory. Everything
 - **`public/images/logo.png`** → `/images/logo.png`
 - **`public/styles.css`** → `/styles.css`
 
-### `_partials/`
+### `site/partials/`
 
-Template partials that can be included in your layouts and pages (or even other partials).
+Templates that layouts and other templates include with `stati.include()`, such as the header and footer. Only Markdown files become pages, so a folder of templates adds no URLs.
 
-Directories starting with `_` are excluded from routing, so you can organize your partials as you see fit.
+The folder name is a convention: any `.eta` file under `site/` can be included by its path, without the extension.
 
 **Example organization:**
 
-- **`_partials/header.eta`** - Site header
-- **`_components/footer.eta`** - Site footer
-- **`_navigation/sidebar.eta`** - Navigation sidebar
+- **`site/partials/header.eta`** - Site header, included with `stati.include('partials/header')`
+- **`site/partials/footer.eta`** - Site footer
+- **`site/partials/nav/sidebar.eta`** - Navigation sidebar, included with `stati.include('partials/nav/sidebar')`
 
 ## Configuration files
 
@@ -129,13 +129,14 @@ Standard Node.js package file with your dependencies and build scripts.
 
 - **`layout.eta`** - Default layout template
 - **`blog/layout.eta`** - Section-specific layout
+- **`base.eta`** - Optional page shell that layouts share, named with `stati.layout('base')`
 
-You can also give a page its own layout by naming it in the page's front matter, relative to `site/` and without the `.eta` extension. For example, `layout: home` uses `site/home.eta`. If that file does not exist, Stati silently falls back to the usual `layout.eta` lookup.
+You can also give a page its own layout by naming it in the page's front matter, without the `.eta` extension. Stati looks for the name from the page's folder up to `site/`, so `layout: home` on a page in `site/` uses `site/home.eta`; a name starting with `/`, such as `layout: /home`, is read from `site/` only. If no file matches, the build warns and falls back to the usual `layout.eta` lookup.
 
 ### Content files
 
 - **`.md` files** - Markdown content with front matter; every `.md` file outside an underscore folder becomes a page
-- **`.eta` files** - Layouts and partials only; an `.eta` file never becomes a page on its own
+- **`.eta` files** - Layouts, shells and included templates; an `.eta` file never becomes a page on its own
 - **`og.eta`** - With [`images.og`](/configuration/images#open-graph-images), the template for the link preview image of the pages in its folder and below
 
 ## Advanced structure
@@ -153,7 +154,7 @@ site/
 │   ├── 2024/
 │   │   ├── first-post.md
 │   │   └── second-post.md
-│   └── _partials/
+│   └── partials/
 │       └── post-meta.eta
 ├── docs/
 │   ├── index.md
@@ -161,7 +162,8 @@ site/
 │   └── api/
 │       ├── index.md
 │       └── reference.md
-└── _partials/
+├── base.eta
+└── partials/
     ├── header.eta
     ├── footer.eta
     └── nav.eta
@@ -171,19 +173,21 @@ site/
 
 ### Directories starting with `_`
 
-- **Excluded from routing** - Contents won't generate pages
-- **Used for partials and utilities** - Templates can be included via `stati.partials`
-- **Examples**: `_partials/`, `_components/`, `_data/`
+- **Excluded from routing** - Markdown inside them won't generate pages
+- **Templates still work** - Like any `.eta` file under `site/`, a template in one can be included with `stati.include()`
+- **Examples**: `_drafts/`, `_data/`
 
 > **Note:** Individual files starting with `_` (like `_draft.md`) are NOT automatically excluded. Use `draft: true` in frontmatter to exclude drafts.
 
 ### Template inheritance
 
-Layouts and partials cascade down the directory tree:
+Layouts cascade down the directory tree:
 
 1. `site/layout.eta` (root layout)
 2. `site/blog/layout.eta` (override for /blog pages)
 3. `site/blog/tutorials/layout.eta` (override for /blog/tutorials pages)
+
+Included templates are looked up the same way, from the page's folder up: `site/blog/partials/header.eta` replaces `site/partials/header.eta` on the pages in `site/blog/`.
 
 ### Index files
 

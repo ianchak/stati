@@ -365,7 +365,7 @@ Access in templates:
 Stati does not currently provide built-in excerpt support. To create excerpts, you can:
 
 1. Add an `excerpt` field to your frontmatter
-2. Use custom filters to truncate content
+2. Use a template helper to truncate content
 3. Process content in build hooks
 
 **Example using frontmatter:**
@@ -419,7 +419,7 @@ Stati's ISG system provides intelligent caching for rendered pages:
 
 - **Page caching** - Rendered HTML is cached and only rebuilt when content or dependencies change
 - **Content hash tracking** - Changes trigger rebuilds automatically
-- **Template dependency tracking** - Updates to layouts or partials invalidate dependent pages
+- **Template dependency tracking** - Updates to a template invalidate the pages that rendered it
 - **TTL-based rebuilds** - Configure how long pages stay cached
 
 See the [ISG Configuration](/configuration/isg) documentation for details on cache TTL, aging rules, and invalidation strategies.

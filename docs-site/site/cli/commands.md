@@ -363,11 +363,13 @@ The development server automatically rebuilds affected pages and refreshes the b
 ```text
 ▸ site/blog/post.md rebuilt
    Done in 120ms
-▸ site/layout.eta rebuilt
+▸ site/layout.eta changed
    12/12 pages rebuilt in 340ms
+▸ site/partials/banner.eta changed
+   No page uses it
 ```
 
-Template or partial changes mark the dependent pages as stale in the cache before the rebuild, so those pages always render with the latest layout. A Markdown change rebuilds the page, the pages that list it, and the pages that render the navigation when it changed; a deleted page's HTML is removed. Changes to `stati.config.*` are not watched; restart `stati dev` after editing the config.
+A template change rebuilds the pages that rendered it, and adding or deleting a template rebuilds the pages whose template names now find a different file; a template no page uses rebuilds nothing. A Markdown change rebuilds the page, the pages that list it, and the pages that render the navigation when it changed; a deleted page's HTML is removed. Changes to `stati.config.*` are not watched; restart `stati dev` after editing the config.
 
 ### Preview builds
 

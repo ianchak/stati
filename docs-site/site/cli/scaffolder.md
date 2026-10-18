@@ -108,7 +108,7 @@ The package includes a native image encoder, so the prompt defaults to no.
 
 ## Agent skill
 
-The scaffolder can copy the Stati agent skill into your project. The skill teaches AI coding assistants Stati's conventions for content, Eta templates, partials, configuration, and deployment.
+The scaffolder can copy the Stati agent skill into your project. The skill teaches AI coding assistants Stati's conventions for content, Eta templates, includes and helpers, configuration, and deployment.
 
 | Target             | Installed to            | Discovered by                          |
 | ------------------ | ----------------------- | -------------------------------------- |
@@ -153,7 +153,7 @@ A blog that works on first run. Its sample posts explain how each part of it wor
 - Open Graph and Twitter tags on every page
 - Drafts that stay out of the build until you publish them, and a 404 page
 - Light and dark themes with a self-hosted display face, styled from custom properties
-- Listings read from Stati's [collections](/core-concepts/collections): `paginate` splits the home page, `site/tags/[tag].md` generates the tag pages, and `helpers/blog.js` adds filters for related posts and dates; the blog uses no build hooks
+- Listings read from Stati's [collections](/core-concepts/collections): `paginate` splits the home page, `site/tags/[tag].md` generates the tag pages, and `helpers/blog.js` adds helpers for related posts and dates; the blog uses no build hooks
 
 The blog template ships its own `stati.config.js` with the feed, sitemap and SEO settings, and adds a `build:drafts` script (`stati build --include-drafts`). With TypeScript it becomes `stati.config.ts`; with Sass or Tailwind its stylesheet is carried over into `src/` so the design stays intact.
 
@@ -171,7 +171,7 @@ A documentation site that works on first run. Its sample pages explain how each 
 - Light and dark themes with a toggle, a mobile navigation drawer, and self-hosted Inter
 - A sitemap, `robots.txt`, Open Graph and Twitter tags, and breadcrumb structured data
 - Drafts that stay out of the build until you publish them, and a 404 page
-- `helpers/docs.js`, which groups pages into sections in the `beforeAll` hook and exposes them to templates as filters such as `stati.docsSections()` and `stati.docsPager()`
+- `helpers/docs.js`, which groups pages into sections in the `beforeAll` hook and exposes them to templates as helpers such as `stati.helpers.docsSections()` and `stati.helpers.docsPager()`
 - `public/scripts/docs.js`, a dependency-free script for search, the theme toggle, the drawer and copy buttons; pages read fine without it
 
 Like the blog, the docs template ships its own `stati.config.js`, which becomes `stati.config.ts` with TypeScript, and its stylesheet is carried over into `src/` with Sass or Tailwind.

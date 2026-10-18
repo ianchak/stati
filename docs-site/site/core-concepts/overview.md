@@ -77,8 +77,8 @@ You write content in Markdown files with front matter metadata. The file locatio
 Stati uses Eta templates to render your content, with support for:
 
 - Layouts chosen by folder (the nearest `layout.eta`) or per page
-- Partial templates
-- Custom filters and helpers
+- Includes and shared page shells
+- Template helpers
 - Dynamic content generation
 
 ### 3. Asset processing

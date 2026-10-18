@@ -1,6 +1,6 @@
 ---
 title: 'Templates'
-description: 'Configure custom template filters for the Eta template engine.'
+description: 'Register template helpers and learn which Eta settings Stati fixes.'
 order: 3
 seo:
   title: 'Template configuration'
@@ -8,112 +8,104 @@ seo:
 
 # Templates
 
-Stati uses the [Eta template engine](https://eta.js.org/) to process templates and layouts. Most Eta settings are hardcoded for reliability, but you can define custom filters to extend template functionality.
+Stati uses the [Eta template engine](https://eta.js.org/) to process templates and layouts. Most Eta settings are hardcoded for reliability, but you can register your own helper functions for templates to call.
 
 ## Configuration options
 
-Stati's template engine configuration is minimal by design. The only configurable option is `eta.filters`:
+Stati's template configuration is minimal by design. The only template option is `helpers`, at the top level of the config:
 
 ```javascript
 // stati.config.js
 import { defineConfig } from '@stati/core';
 
 export default defineConfig({
-  eta: {
-    // Define custom template filters
-    filters: {
-      uppercase: (str) => String(str).toUpperCase(),
-      lowercase: (str) => String(str).toLowerCase(),
-    },
+  // Functions templates call as stati.helpers.name()
+  helpers: {
+    uppercase: (str) => String(str).toUpperCase(),
+    lowercase: (str) => String(str).toLowerCase(),
   },
 });
 ```
 
-## Custom filters
+## Helpers
 
-Filters are functions that transform values in templates. They're useful for formatting dates, manipulating strings, or performing calculations.
+Helpers are functions your templates call. They're useful for formatting dates, manipulating strings, or performing calculations that several templates share.
 
-### Defining filters
+### Defining helpers
 
 ```javascript
 export default defineConfig({
-  eta: {
-    filters: {
-      // Date formatting
-      formatDate: (date) => {
-        return new Date(date).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        });
-      },
+  helpers: {
+    // Date formatting
+    formatDate: (date) => {
+      return new Date(date).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+    },
 
-      // Text truncation
-      truncate: (text, length = 100) => {
-        if (!text || text.length <= length) return text;
-        return text.substring(0, length) + '...';
-      },
+    // Text truncation
+    truncate: (text, length = 100) => {
+      if (!text || text.length <= length) return text;
+      return text.substring(0, length) + '...';
+    },
 
-      // URL slug generation
-      slugify: (text) => {
-        return String(text)
-          .toLowerCase()
-          .replace(/[^\w\s-]/g, '')
-          .replace(/[\s_-]+/g, '-')
-          .replace(/^-+|-+$/g, '');
-      },
+    // Number formatting
+    formatNumber: (num) => {
+      return Number(num).toLocaleString('en-US');
+    },
 
-      // Number formatting
-      formatNumber: (num) => {
-        return Number(num).toLocaleString('en-US');
-      },
+    // Relative time
+    timeAgo: (date) => {
+      const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
+      const intervals = {
+        year: 31536000,
+        month: 2592000,
+        week: 604800,
+        day: 86400,
+        hour: 3600,
+        minute: 60,
+      };
 
-      // Relative time
-      timeAgo: (date) => {
-        const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
-        const intervals = {
-          year: 31536000,
-          month: 2592000,
-          week: 604800,
-          day: 86400,
-          hour: 3600,
-          minute: 60,
-        };
-
-        for (const [unit, secondsInUnit] of Object.entries(intervals)) {
-          const interval = Math.floor(seconds / secondsInUnit);
-          if (interval >= 1) {
-            return `${interval} ${unit}${interval !== 1 ? 's' : ''} ago`;
-          }
+      for (const [unit, secondsInUnit] of Object.entries(intervals)) {
+        const interval = Math.floor(seconds / secondsInUnit);
+        if (interval >= 1) {
+          return `${interval} ${unit}${interval !== 1 ? 's' : ''} ago`;
         }
-        return 'just now';
-      },
+      }
+      return 'just now';
     },
   },
 });
 ```
 
-### Using custom filters
+`helpers` must be an object of functions: the config fails to load when it is something else or when one of its entries is not a function. In a TypeScript config, `helpers` is typed `Record<string, (...args: any[]) => unknown>`, so each helper declares whatever parameters it needs.
 
-Access filters directly from the `stati` context:
+### Using helpers
+
+Call helpers from any template as `stati.helpers.name()`:
 
 ```eta
-<!-- Built-in filters from config -->
-<h1><%= stati.uppercase('hello world') %></h1>
+<h1><%= stati.helpers.uppercase('hello world') %></h1>
 <!-- Result: HELLO WORLD -->
 
-<time><%= stati.formatDate(stati.page.date) %></time>
+<time><%= stati.helpers.formatDate(stati.page.date) %></time>
 <!-- Result: January 15, 2024 -->
 
-<p><%= stati.truncate(stati.page.description, 150) %></p>
+<p><%= stati.helpers.truncate(stati.page.description, 150) %></p>
 <!-- Result: First 150 characters... -->
 
-<a href="<%= `/tags#${stati.slugify(tag)}` %>"><%= tag %></a>
-<!-- Result: /tags#my-tag -->
-
-<span><%= stati.timeAgo(stati.page.publishedAt) %></span>
+<span><%= stati.helpers.timeAgo(stati.page.publishedAt) %></span>
 <!-- Result: 3 days ago -->
 ```
+
+Helpers reach every template Stati renders: layouts, the shells they name with `stati.layout()`, templates included with `stati.include()` and the Open Graph template.
+
+- The root of `stati` belongs to Stati, so a helper never replaces one of its values: a helper named `slugify` is `stati.helpers.slugify`, and `stati.slugify()` stays Stati's own.
+- A helper written with `function` or method syntax gets the helpers object as `this`, so it can call another helper as `this.formatDate()`. Helpers do not receive the template context; pass what they need as arguments.
+- During `stati dev`, a misspelled helper (`stati.helpers.formatDat`) and a call without the `helpers.` part (`stati.formatDate`) both throw an error suggesting `stati.helpers.formatDate`.
+- Helpers are config code. Changing one does not rebuild cached pages, so run `stati build --force` after editing a helper whose output appears on cached pages.
 
 ## Hardcoded settings
 
@@ -125,187 +117,184 @@ The following Eta settings are hardcoded and cannot be configured:
 - **Escaping**: `<%= %>` HTML-escapes its value; `<%~ %>` prints it as-is
 - **Caching**: Compiled templates are cached in production and development; the dev server clears the cache when a template changes
 - **File extension**: Always `.eta`
+- **Composition**: Templates combine with `stati.include()` and `stati.layout()`; Eta's own `include()`, `layout()` and `block()` are not available. See [Includes and layouts](/api/templates#includes-and-layouts).
 
-## Advanced: Custom filter patterns
+## Advanced helper patterns
 
-### Chaining filters
+### Combining helpers
 
-You can combine filters for complex transformations:
+You can combine helpers for complex transformations:
 
 ```eta
-<!-- Chain multiple transformations -->
-<%= stati.slugify(stati.lowercase(stati.page.title)) %>
+<!-- Combine helpers with Stati's own functions -->
+<%= stati.slugify(stati.helpers.lowercase(stati.page.title)) %>
 
-<!-- Or create a composite filter -->
+<!-- Or build a local function from them -->
 <%
-const titleSlug = (title) => stati.slugify(stati.lowercase(title));
+const titleSlug = (title) => stati.slugify(stati.helpers.lowercase(title));
 %>
 <a href="<%= `/posts/${titleSlug(stati.page.title)}` %>"><%= stati.page.title %></a>
 ```
 
-### Conditional filters
+### Conditional helpers
 
-Apply filters based on conditions:
+Choose a helper based on a condition:
 
 ```eta
 <%
 const displayDate = (date, format = 'short') => {
   if (format === 'relative') {
-    return stati.timeAgo(date);
+    return stati.helpers.timeAgo(date);
   }
-  return stati.formatDate(date);
+  return stati.helpers.formatDate(date);
 };
 %>
 
 <time><%= displayDate(stati.page.date, 'relative') %></time>
 ```
 
-### Filters with external dependencies
+### Helpers with external dependencies
 
-Import utilities in your config file for use in filters:
+Import utilities in your config file for use in helpers:
 
 ```javascript
 import { marked } from 'marked';
 import hljs from 'highlight.js';
 
 export default defineConfig({
-  eta: {
-    filters: {
-      // Process markdown in templates
-      renderMarkdown: (content) => {
-        return marked(String(content));
-      },
+  helpers: {
+    // Process markdown in templates
+    renderMarkdown: (content) => {
+      return marked(String(content));
+    },
 
-      // Syntax highlighting
-      highlight: (code, lang) => {
-        if (lang && hljs.getLanguage(lang)) {
-          return hljs.highlight(String(code), { language: lang }).value;
-        }
-        return hljs.highlightAuto(String(code)).value;
-      },
+    // Syntax highlighting
+    highlight: (code, lang) => {
+      if (lang && hljs.getLanguage(lang)) {
+        return hljs.highlight(String(code), { language: lang }).value;
+      }
+      return hljs.highlightAuto(String(code)).value;
     },
   },
 });
 ```
 
-These filters return HTML, so print them raw: `<%~ stati.highlight(snippet, 'ts') %>`. Only pass trusted content. In a TypeScript config, give extra parameters a default value (`(code, lang = 'plaintext') => …`), because the `eta.filters` type only allows one required parameter.
+These helpers return HTML, so print them raw: `<%~ stati.helpers.highlight(snippet, 'ts') %>`. Only pass trusted content.
 
-## Filter examples
+## Helper examples
 
-Here are practical filter examples you can use in your project:
+Here are practical helper examples you can use in your project:
 
 ```javascript
 export default defineConfig({
-  eta: {
-    filters: {
-      // Date and time filters
-      formatDate: (date, options = {}) => {
-          const defaults = {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          };
-          return new Date(date).toLocaleDateString('en-US', {
-            ...defaults,
-            ...options,
-          });
-        },
+  helpers: {
+    // Date and time helpers
+    formatDate: (date, options = {}) => {
+      const defaults = {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      };
+      return new Date(date).toLocaleDateString('en-US', {
+        ...defaults,
+        ...options,
+      });
+    },
 
-        timeAgo: (date) => {
-          const now = new Date();
-          const diffMs = now - new Date(date);
-          const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    timeAgo: (date) => {
+      const now = new Date();
+      const diffMs = now - new Date(date);
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-          if (diffDays === 0) return 'Today';
-          if (diffDays === 1) return 'Yesterday';
-          if (diffDays < 7) return `${diffDays} days ago`;
-          if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-          return `${Math.floor(diffDays / 30)} months ago`;
-        },
+      if (diffDays === 0) return 'Today';
+      if (diffDays === 1) return 'Yesterday';
+      if (diffDays < 7) return `${diffDays} days ago`;
+      if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+      return `${Math.floor(diffDays / 30)} months ago`;
+    },
 
-        // String manipulation filters
-        capitalize: (str) => {
-          return str.charAt(0).toUpperCase() + str.slice(1);
-        },
+    // String manipulation helpers
+    capitalize: (str) => {
+      return str.charAt(0).toUpperCase() + str.slice(1);
+    },
 
-        camelCase: (str) => {
-          return str.replace(/[-_\s]+(.)?/g, (_, c) => (c ? c.toUpperCase() : ''));
-        },
+    camelCase: (str) => {
+      return str.replace(/[-_\s]+(.)?/g, (_, c) => (c ? c.toUpperCase() : ''));
+    },
 
-        kebabCase: (str) => {
-          return str
-            .replace(/([a-z])([A-Z])/g, '$1-$2')
-            .replace(/[\s_]+/g, '-')
-            .toLowerCase();
-        },
+    kebabCase: (str) => {
+      return str
+        .replace(/([a-z])([A-Z])/g, '$1-$2')
+        .replace(/[\s_]+/g, '-')
+        .toLowerCase();
+    },
 
-        // Content filters
-        excerpt: (content, length = 150) => {
-          // Remove HTML tags and truncate
-          const text = content.replace(/<[^>]*>/g, '');
-          return text.length > length ? text.substring(0, length).trim() + '...' : text;
-        },
+    // Content helpers
+    excerpt: (content, length = 150) => {
+      // Remove HTML tags and truncate
+      const text = content.replace(/<[^>]*>/g, '');
+      return text.length > length ? text.substring(0, length).trim() + '...' : text;
+    },
 
-        readingTime: (content) => {
-          const wordsPerMinute = 200;
-          const words = content.trim().split(/\s+/).length;
-          const minutes = Math.ceil(words / wordsPerMinute);
-          return `${minutes} min read`;
-        },
+    readingTime: (content) => {
+      const wordsPerMinute = 200;
+      const words = content.trim().split(/\s+/).length;
+      const minutes = Math.ceil(words / wordsPerMinute);
+      return `${minutes} min read`;
+    },
 
-        // URL and path filters
-        absoluteUrl: (path, base) => {
-          if (path.startsWith('http')) return path;
-          return new URL(path, base || 'https://example.com').href;
-        },
+    // URL and path helpers
+    absoluteUrl: (path, base) => {
+      if (path.startsWith('http')) return path;
+      return new URL(path, base || 'https://example.com').href;
+    },
 
-        // Array and object filters
-        sortBy: (array, key, direction = 'asc') => {
-          return [...array].sort((a, b) => {
-            const aVal = key.split('.').reduce((obj, k) => obj?.[k], a);
-            const bVal = key.split('.').reduce((obj, k) => obj?.[k], b);
+    // Array and object helpers
+    sortBy: (array, key, direction = 'asc') => {
+      return [...array].sort((a, b) => {
+        const aVal = key.split('.').reduce((obj, k) => obj?.[k], a);
+        const bVal = key.split('.').reduce((obj, k) => obj?.[k], b);
 
-            if (direction === 'desc') {
-              return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
-            }
-            return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
-          });
-        },
+        if (direction === 'desc') {
+          return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+        }
+        return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+      });
+    },
 
-        groupBy: (array, key) => {
-          return array.reduce((groups, item) => {
-            const group = key.split('.').reduce((obj, k) => obj?.[k], item);
-            groups[group] = groups[group] || [];
-            groups[group].push(item);
-            return groups;
-          }, {});
-        },
-      },
+    groupBy: (array, key) => {
+      return array.reduce((groups, item) => {
+        const group = key.split('.').reduce((obj, k) => obj?.[k], item);
+        groups[group] = groups[group] || [];
+        groups[group].push(item);
+        return groups;
+      }, {});
+    },
   },
 });
 ```
 
-## Using filters in templates
+## Using helpers in templates
 
-Once defined, filters are available directly in the `stati` context:
+Once defined, helpers are available on `stati.helpers`:
 
 ```eta
 <!-- String manipulation -->
-<h1><%= stati.capitalize(stati.page.title) %></h1>
-<p class="<%= stati.kebabCase(category) %>"></p>
+<h1><%= stati.helpers.capitalize(stati.page.title) %></h1>
+<p class="<%= stati.helpers.kebabCase(category) %>"></p>
 
 <!-- Date formatting -->
-<time><%= stati.formatDate(stati.page.date) %></time>
-<span><%= stati.timeAgo(stati.page.publishedAt) %></span>
+<time><%= stati.helpers.formatDate(stati.page.date) %></time>
+<span><%= stati.helpers.timeAgo(stati.page.publishedAt) %></span>
 
 <!-- Content processing -->
-<p><%= stati.excerpt(stati.page.content, 200) %></p>
-<span><%= stati.readingTime(stati.page.content) %></span>
+<p><%= stati.helpers.excerpt(stati.page.content, 200) %></p>
+<span><%= stati.helpers.readingTime(stati.page.content) %></span>
 
 <!-- Arrays and objects -->
 <%
-const sortedPosts = stati.sortBy(posts, 'publishedAt', 'desc');
-const postsByTag = stati.groupBy(posts, 'category');
+const sortedPosts = stati.helpers.sortBy(posts, 'publishedAt', 'desc');
+const postsByTag = stati.helpers.groupBy(posts, 'category');
 %>
 ```
 
@@ -373,14 +362,14 @@ For more details on configuring multiple bundles, see [TypeScript Support](/conf
 
 ## Best practices
 
-1. **Keep filters simple**: Each filter should do one thing well
+1. **Keep helpers simple**: Each helper should do one thing well
 2. **Handle edge cases**: Check for null, undefined, and invalid inputs
 3. **Return consistent types**: Always return the same data type
-4. **Avoid side effects**: Filters should be pure functions
-5. **Document complex filters**: Add comments for non-obvious logic
+4. **Avoid side effects**: Helpers should be pure functions
+5. **Document complex helpers**: Add comments for non-obvious logic
 
 ## Next steps
 
 - See [Templates & Layouts](/core-concepts/templates) for template usage
-- Learn about [built-in helpers](/api/templates) like `stati.propValue()`
+- Learn about [built-in functions](/api/templates#built-in-functions) like `stati.propValue()`
 - Explore [SEO configuration](/configuration/seo) for meta tag generation

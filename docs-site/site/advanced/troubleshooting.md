@@ -101,7 +101,7 @@ See [Images troubleshooting](/configuration/images#troubleshooting) for each mes
 ## Cache hiccups or stale content
 
 **Cause:**
-ISG cache is outdated or corrupted, or a page shows data that Stati doesn't track. Stati rebuilds a page when its own files change and when data it read changes: its [collection](/core-concepts/collections) or the navigation. Data that a filter collects in a `beforeAll` hook isn't tracked.
+ISG cache is outdated or corrupted, or a page shows data that Stati doesn't track. Stati rebuilds a page when its own files change and when data it read changes: its [collection](/core-concepts/collections) or the navigation. Data that a helper collects in a `beforeAll` hook isn't tracked, and neither is a change to a helper itself.
 
 **Solution:**
 

@@ -72,9 +72,9 @@ A complete blog, ready to write in:
 
 ```text
 examples/blog/
-├── helpers/blog.js       # Template filters for related posts and dates
+├── helpers/blog.js       # Template helpers for related posts and dates
 ├── site/
-│   ├── _partials/        # Head, header, footer, post lists, page links, tag links
+│   ├── partials/         # Head, header, footer, post lists, page links, tag links
 │   ├── posts/            # One Markdown file per post, the archive and the post layout
 │   ├── tags/             # The tags page and [tag].md, which makes a page per tag
 │   ├── layout.eta        # Layout for home, archive, tags, about and 404
@@ -95,7 +95,7 @@ A complete documentation site, ready to fill in:
 
 - **Location:** [`examples/docs/`](https://github.com/ianchak/stati/tree/main/examples/docs)
 - **Features:** A sidebar built from folders and front matter `order`, search with <kbd>Ctrl</kbd> <kbd>K</kbd>, an on-page table of contents, previous and next links, breadcrumbs, section overview pages, build-time syntax highlighting with copy buttons, light and dark themes, a mobile drawer, a sitemap, `robots.txt`, link previews and drafts. The sample pages explain how each part works.
-- **Best for:** Documenting a library, CLI, API or product, and seeing how a hook and filters build site-wide navigation
+- **Best for:** Documenting a library, CLI, API or product, and seeing how a hook and helpers build site-wide navigation
 
 <figure>
 
@@ -111,7 +111,7 @@ A complete documentation site, ready to fill in:
 examples/docs/
 ├── helpers/docs.js       # Sections, sidebar order, pager, breadcrumbs, SEO
 ├── site/
-│   ├── _partials/        # Head, header, sidebar, TOC, pager, search, footer, icons
+│   ├── partials/         # Head, header, sidebar, TOC, pager, search, footer, icons
 │   ├── getting-started/  # One folder per section, with an index.md
 │   ├── layout.eta        # Layout for docs pages, section overviews and 404
 │   ├── home.eta          # Home page layout

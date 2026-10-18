@@ -91,19 +91,24 @@ Your content here...
 
 ### Flexible Templating
 
-Customize layouts with [Eta templates](https://eta.js.org):
+Customize layouts with [Eta templates](https://eta.js.org). Layouts share one page shell with `stati.layout()` and reuse other templates with `stati.include()`:
 
 ```html
-<!-- site/layout.eta -->
+<!-- site/base.eta -->
 <!DOCTYPE html>
 <html>
   <head>
     <title><%= stati.page.title %></title>
   </head>
   <body>
-    <%~ stati.content %>
+    <%~ stati.include('partials/header') %>
+    <%~ stati.body %>
   </body>
 </html>
+
+<!-- site/layout.eta -->
+<% stati.layout('base') %>
+<main><%~ stati.content %></main>
 ```
 
 ### Incremental Static Generation (ISG)
@@ -246,12 +251,9 @@ export default defineConfig({
     },
   },
 
-  // Eta template engine
-  eta: {
-    filters: {
-      formatDate: (date) => new Date(date).toLocaleDateString('en-US'),
-      slugify: (text) => text.toLowerCase().replace(/\s+/g, '-'),
-    },
+  // Template helpers, called as stati.helpers.formatDate()
+  helpers: {
+    formatDate: (date) => new Date(date).toLocaleDateString('en-US'),
   },
 
   // Incremental Static Generation (enabled by default)

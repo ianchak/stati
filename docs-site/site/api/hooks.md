@@ -35,9 +35,9 @@ A hook that throws, or returns a rejected promise, fails the build. Hooks have n
 
 ### `beforeAll`
 
-Called once, after the content has been loaded and before any page is rendered. `ctx.pages` holds every page, including [generated and paginated pages](/core-concepts/collections) (with `page.generated` or `page.pagination` set), so this is the place to build indexes or other data that templates read through [filters](/configuration/templates#custom-filters) or module-level variables. Listings of a folder's pages need no hook: templates read them from [`stati.collection`](/core-concepts/collections).
+Called once, after the content has been loaded and before any page is rendered. `ctx.pages` holds every page, including [generated and paginated pages](/core-concepts/collections) (with `page.generated` or `page.pagination` set), so this is the place to build indexes or other data that templates read through [helpers](/configuration/templates#helpers) or module-level variables. Listings of a folder's pages need no hook: templates read them from [`stati.collection`](/core-concepts/collections).
 
-`beforeAll` runs before the cache check, so values it writes into `page.frontMatter` are part of each page's cache hash. Data a filter hands to templates is not: Stati can't tell which pages use it. To make a page rebuild when such data changes, write what the page shows into its front matter here; see [Dependency tracking](/core-concepts/isg#dependency-tracking).
+`beforeAll` runs before the cache check, so values it writes into `page.frontMatter` are part of each page's cache hash. Data a helper hands to templates is not: Stati can't tell which pages use it. To make a page rebuild when such data changes, write what the page shows into its front matter here; see [Dependency tracking](/core-concepts/isg#dependency-tracking).
 
 Generated pages and pagination are worked out before `beforeAll` runs, from the content as loaded: tags a hook adds don't create tag pages.
 
@@ -189,18 +189,16 @@ interface PageContext {
 
 ### External state management
 
-Each hook receives a new context object, so values you attach to `ctx` do not carry over to later hooks. Use module-level state to share data between hooks, and expose it to templates through a filter:
+Each hook receives a new context object, so values you attach to `ctx` do not carry over to later hooks. Use module-level state to share data between hooks, and expose it to templates through a helper:
 
 ```javascript
 // Module-level state
 let sharedBuildData = { posts: [], authors: [] };
 
 export default defineConfig({
-  eta: {
-    filters: {
-      // Templates call stati.authors()
-      authors: () => sharedBuildData.authors,
-    },
+  helpers: {
+    // Templates call stati.helpers.authors()
+    authors: () => sharedBuildData.authors,
   },
   hooks: {
     beforeAll: async (ctx) => {

@@ -164,6 +164,6 @@ These members are objects, so read their properties rather than printing them:
 - `stati.nav`: the navigation tree and helpers such as `getChildren()` and `getBreadcrumbs()`
 - `stati.collection`: the pages of the page's collection (a folder's `index.md` and the pages in that folder, or the one named by `collection` in front matter)
 
-For comprehensive template configuration including Eta filters, see the [Template Configuration](/configuration/templates) documentation.
+For comprehensive template configuration including template helpers, see the [Template Configuration](/configuration/templates) documentation.
 
 For specific implementation details, refer to the [API overview](/api/reference) or explore the [configuration file guide](/configuration/file) for complete setup instructions.

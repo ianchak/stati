@@ -142,7 +142,7 @@ The bundle paths are also available as `stati.assets.bundlePaths` (an array) for
 
 ## Agent Skill
 
-create-stati can copy the [Stati agent skill](https://github.com/ianchak/stati/tree/main/.claude/skills/stati) into your project so AI coding assistants follow Stati's conventions (Eta templates, partials, configuration, and more).
+create-stati can copy the [Stati agent skill](https://github.com/ianchak/stati/tree/main/.claude/skills/stati) into your project so AI coding assistants follow Stati's conventions (Eta templates, includes, configuration, and more).
 
 | Target             | Installed to            | Discovered by                          |
 | ------------------ | ----------------------- | -------------------------------------- |
@@ -354,7 +354,7 @@ my-site/
 ├── site/             # Your content and templates
 │   ├── *.md          # Markdown pages
 │   ├── *.eta         # Eta templates
-│   └── _partials/    # Reusable template parts (optional)
+│   └── partials/     # Reusable template parts (optional)
 ├── public/           # Static assets (CSS, images, fonts)
 ├── stati.config.ts   # Stati configuration (.js for JavaScript projects)
 ├── package.json      # Project metadata and scripts
@@ -383,7 +383,7 @@ my-site/
 
 - Modify layouts and styles to match your brand
 - Add new pages in the `site/` directory
-- Create reusable partials in `site/_partials/`
+- Create reusable templates in `site/partials/` and include them with `stati.include()`
 - Configure SEO, sitemap, and robots.txt
 
 ### Deploy

@@ -138,53 +138,40 @@ export default defineConfig({
 
 ### Template configuration
 
-Configure the Eta template engine:
+Register functions for your templates under `helpers`:
 
 ```javascript
 export default defineConfig({
-  eta: {
-    // Custom filters for Eta templates
-    filters: {
-      // Date formatting
-      date: (date) => {
-        return new Intl.DateTimeFormat('en-US', {
-          dateStyle: 'long',
-        }).format(new Date(date));
-      },
-
-      // Slugify text
-      slug: (text) => {
-        return String(text)
-          .toLowerCase()
-          .replace(/[^\w\s-]/g, '')
-          .replace(/[\s_-]+/g, '-')
-          .replace(/^-+|-+$/g, '');
-      },
-
-      // Uppercase transform
-      upper: (text) => String(text).toUpperCase(),
+  helpers: {
+    // Date formatting
+    date: (date) => {
+      return new Intl.DateTimeFormat('en-US', {
+        dateStyle: 'long',
+      }).format(new Date(date));
     },
+
+    // Uppercase transform
+    upper: (text) => String(text).toUpperCase(),
   },
 });
 ```
 
-> **Note:** Filters are added to the `stati` context and called as functions.
+> **Note:** Helpers are called from templates as `stati.helpers.name()`. Stati's own functions, such as `stati.slugify()`, stay on `stati` itself.
 
-**Using filters in templates:**
+**Using helpers in templates:**
 
 ```eta
-<!-- Apply date filter -->
-<time><%= stati.date(stati.page.date) %></time>
+<!-- Format a date -->
+<time><%= stati.helpers.date(stati.page.date) %></time>
 
-<!-- Apply slug filter -->
-<a href="<%= `/${stati.slug(stati.page.title)}` %>">Link</a>
+<!-- Uppercase text -->
+<span><%= stati.helpers.upper(stati.page.category) %></span>
 
-<!-- Apply uppercase filter -->
-<span><%= stati.upper(stati.page.category) %></span>
-
-<!-- Chain filters -->
-<span><%= stati.upper(stati.slug(stati.page.title)) %></span>
+<!-- Combine with Stati's slugify -->
+<a href="<%= `/${stati.slugify(stati.page.title)}` %>"><%= stati.helpers.upper(stati.page.title) %></a>
 ```
+
+See [Template configuration](/configuration/templates) for more helper patterns.
 
 ### ISG configuration
 

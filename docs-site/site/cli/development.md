@@ -48,15 +48,17 @@ File watching is handled by `chokidar` with listeners for file additions, edits,
 
 ## Template changes and cache invalidation
 
-Templates (`*.eta`) and partials get special handling:
+Each page's cache entry records the templates it rendered and the template names it looked up, so a template change rebuilds only the pages it affects:
 
-- Stati inspects the cache manifest to find pages that depend on the changed template.
-- The affected entries are marked stale so the rebuild renders them again.
-- If no dependency matches are found, Stati falls back to a full rebuild to keep output consistent.
+- **A changed template** rebuilds the pages that rendered it. A template no page renders rebuilds nothing, and the log says `No page uses it`.
+- **A new template** rebuilds the pages whose recorded template names now find it, such as the pages of a section that gains its own `partials/header.eta`, or pages whose `stati.include.has()` check now finds a file.
+- **A deleted template** rebuilds the pages that rendered it, and the pages whose template names now find a different file.
+
+Pages whose cache entries predate this record are rebuilt in full once.
 
 Markdown changes rebuild the edited page, plus the pages whose output depends on it: pages that read its [collection](/core-concepts/collections) when its title, description, tags or date changed, and pages that render the navigation when the edit changed it (a `title` or `order`, or a page added or removed). Deleting a page removes its HTML from the output directory.
 
-This logic lives in `handleTemplateChange` inside `packages/core/src/core/dev.ts`.
+This logic lives in `markTemplateChanges` inside `packages/core/src/core/dev.ts`.
 
 ## Static assets
 
@@ -94,7 +96,7 @@ stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css --ta
 
 - Successful rebuilds simply reload the page.
 - When a build error occurs, Stati serves an error overlay in place of the page you requested. See [Error overlay](/api/error-handling#error-overlay) for what it shows.
-- A template that reads a `stati.*` property that does not exist, such as `stati.paeg` or a misspelled filter, fails with a "Did you mean ...?" suggestion instead of rendering `undefined`. See [Unknown template properties](/api/error-handling#unknown-template-properties).
+- A template that reads a `stati.*` property that does not exist, such as `stati.paeg` or a misspelled helper, fails with a "Did you mean ...?" suggestion instead of rendering `undefined`. See [Unknown template properties](/api/error-handling#unknown-template-properties).
 - The overlay stays connected to the dev server. Fix the error and save, and the page reloads on the next successful rebuild. The header shows whether the connection is live, and **Refresh** (or `Ctrl+R` / `Cmd+R`) reloads by hand.
 
 ## Stopping the server

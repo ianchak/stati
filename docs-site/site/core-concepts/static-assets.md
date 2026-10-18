@@ -111,7 +111,7 @@ npx tailwindcss init
 
 ### Configuration
 
-**Important**: Add `./.stati/tailwind-classes.html` to your content array to ensure dynamic classes are detected:
+**Important**: Add `./.stati/tailwind-classes.html` to your content array to ensure dynamic classes are detected. The content globs must also cover every folder that holds templates: `./site/**/*.{md,eta,html}` includes `site/partials/` and any other folder under `site/`, but a template folder you keep elsewhere needs its own entry.
 
 ```javascript
 // tailwind.config.js

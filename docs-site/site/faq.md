@@ -22,7 +22,7 @@ seo:
         "name": "What templating engine does Stati use?"
         "acceptedAnswer":
           "@type": "Answer"
-          "text": "Stati uses Eta, a fast and lightweight templating engine. Eta supports layouts, partials, filters, and async rendering."
+          "text": "Stati uses Eta, a fast and lightweight templating engine. Stati adds shared layouts, includes with props and template helpers."
       - "@type": "Question"
         "name": "How does Stati handle SEO?"
         "acceptedAnswer":
@@ -65,9 +65,10 @@ Yes. `paginate: 10` in a listing's front matter splits it into `/blog`, `/blog/p
 Stati uses [Eta](https://eta.js.org/), a fast and lightweight templating engine. Features include:
 
 - Layout inheritance
-- Reusable partials
-- Custom filters
-- Async rendering support
+- Shared page shells
+- Includes with props and content
+- Template helpers
+- `await` in layouts and the shells they name
 
 ## How does Stati handle SEO?
 

@@ -260,7 +260,9 @@ stati build --clean
 ISG maintains a cache manifest at `.stati/manifest.json`, with one entry per output path (such as `/blog/first-post.html`) that tracks:
 
 - **inputsHash**: Hash of page content and all dependencies
-- **deps**: Array of file paths this page depends on (templates, partials)
+- **deps**: The template files the page rendered, layout first: its layout, the shells it names with `stati.layout()`, the templates it includes and its Open Graph template
+- **templateLookups**: Every template name the page looked up, the folder the lookup started from, and the file it found (`null` when none)
+- **templatesRecorded**: `true` when `deps` and `templateLookups` were recorded while the page rendered
 - **assetDeps**: Files found while rendering, such as the images the page shows; their content is part of `inputsHash`
 - **images**: Generated image files the page references, such as responsive variants and its Open Graph card
 - **tags**: Tags from front matter for invalidation
@@ -280,7 +282,8 @@ A page is rebuilt if:
 4. Page's `inputsHash` has changed (its own content or front matter, one of its templates, an image it shows, the `images` settings, or data it read: the summary of its collection, the pages of its listing, or the navigation tree)
 5. Page's TTL has expired and the page is not frozen by `maxAgeCapDays`
 6. An image job for the page failed in the previous build
-7. Its cache entry was written before Stati recorded what pages read, which happens once after upgrading
+7. Its layout would now be a different file, a template name it looked up would now find a different file, or a template it rendered was deleted
+8. Its cache entry has no record of what the page read and rendered, which happens once after upgrading to a version that records more
 
 Changes to other pages rebuild a page only through data it read: a listing that reads `stati.collection` rebuilds when a post's title, description, tags or publish date changes, not when its body does. See [Dependency tracking](/core-concepts/isg#dependency-tracking).
 
@@ -290,12 +293,17 @@ When a page no longer exists, `stati build` deletes its HTML file and its cache 
 
 ### Template dependency tracking
 
-ISG automatically tracks template dependencies:
+Stati records each page's templates while it renders, so it tracks exactly what rendered:
 
-- The page's layout (the nearest `layout.eta`, or the `layout` named in front matter)
-- Partials it references by name: `stati.partials.header`, `stati.partials['header']`, `stati.partials.card({ ... })`
-- Templates inside `_` folders loaded with `include('…')` or `layout('…')`
-- Changes to any dependency invalidate affected pages
+- The page's layout: the `layout` named in front matter, or the nearest `layout.eta` (`index.eta` first for index pages)
+- Every shell the layout names with `stati.layout()`, and the shells those name
+- Every template rendered with `stati.include()`, including the ones included templates render
+- The Open Graph template, with `images.og`
+- Every template name the page looked up and the file it found, including names `stati.include.has()` and `stati.layout.has()` did not find
+
+Editing one of these templates rebuilds the pages that rendered it, and deleting one rebuilds them too. Adding a template rebuilds the pages whose recorded names would now find it, such as a section's own `partials/header.eta`. A template a page includes only under a condition is recorded only on the pages where it rendered.
+
+Helpers are config code, not templates, so they are not tracked. After changing a helper whose output appears on cached pages, run `stati build --force`.
 
 ### Tag extraction
 
@@ -336,7 +344,7 @@ Only values in the `tags` array become searchable tags for invalidation. Individ
 ### Build tips
 
 1. **Enable ISG**: ISG can reduce build times for incremental updates
-2. **Template Organization**: Keep partials small and focused to minimize invalidation scope
+2. **Template Organization**: Keep included templates small and focused: a page depends only on the templates it renders
 3. **Tag Granularity**: Balance between too many tags (complex management) and too few (broad invalidation)
 4. **TTL Tuning**: Start with conservative TTL values and adjust based on content update patterns
 
@@ -352,7 +360,7 @@ Only values in the `tags` array become searchable tags for invalidation. Individ
 ### Unexpected rebuilds
 
 - Check `inputsHash` in manifest for changed dependencies
-- Verify template partials aren't changing unintentionally
+- Verify the templates the page rendered aren't changing unintentionally; its `deps` lists them
 - Review TTL settings - may be too short
 - Check `beforeRender` hooks: a hook that writes to `page.frontMatter` changes the page's hash, so that page is re-rendered on every build (do such work in `beforeAll` instead)
 

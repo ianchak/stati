@@ -43,6 +43,7 @@ A minimal starter template for [Stati](https://github.com/ianchak/stati) static 
 
 - Add more pages by creating `.md` files in the `site/` directory
 - Create additional layouts in `site/` for different page types
+- Move shared pieces such as the header into their own templates, for example `site/partials/header.eta`, and include them with `<%~ stati.include('partials/header') %>`
 - Add collections for blog posts or documentation
 - Customize the CSS or switch to Sass/Tailwind
 - Enable [TypeScript compilation](https://stati.build/configuration/typescript/) for client-side code
