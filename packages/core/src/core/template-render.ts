@@ -541,7 +541,8 @@ export class RenderScope {
     if (awaitErrors.has(failure)) {
       return '';
     }
-    return `<!-- Error rendering ${this.display(failed)}: ${message.replace(/--/g, '- -')} -->`;
+    // A comment cannot contain "--", which would let the message end it early
+    return `<!-- Error rendering ${this.display(failed)}: ${message.replace(/-(?=-)/g, '- ')} -->`;
   }
 }
 

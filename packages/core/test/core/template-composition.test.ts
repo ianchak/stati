@@ -295,6 +295,17 @@ describe('template composition', () => {
       );
     });
 
+    it('keeps an error message from ending its comment early', async () => {
+      await site.write('site/partials/broken.eta', `<% throw new Error('a ---> b <!-- c') %>`);
+      await site.write('site/layout.eta', `before<%~ stati.include('partials/broken') %>after`);
+      await site.build({ allowErrors: true });
+
+      const html = await site.read('dist/index.html');
+      expect(html).toBe(
+        'before<!-- Error rendering site/partials/broken.eta: a - - -> b <!- - c -->after',
+      );
+    });
+
     it('renders nothing for an unknown name in production and logs it with suggestions', async () => {
       await site.write('site/_partials/header.eta', 'H');
       await site.write('site/layout.eta', `[<%~ stati.include('header') %>]`);
