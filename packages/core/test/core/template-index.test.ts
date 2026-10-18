@@ -89,9 +89,19 @@ describe('parseTemplateName', () => {
     for (const name of ['', '.eta', '/', 'partials/', '.', '..']) {
       expect(parseTemplateName(name, 'layout.eta')).toMatchObject({ kind: 'invalid' });
     }
+    for (const name of ['partials/..', 'a/b/../..']) {
+      expect(parseTemplateName(name, 'layout.eta')).toEqual({
+        kind: 'invalid',
+        reason: 'names a folder, not a template',
+      });
+    }
     expect(parseTemplateName(undefined, null)).toEqual({
       kind: 'invalid',
-      reason: 'must be a string, not undefined undefined',
+      reason: 'must be a string, not undefined',
+    });
+    expect(parseTemplateName(4, null)).toEqual({
+      kind: 'invalid',
+      reason: 'must be a string, not number 4',
     });
     expect(parseTemplateName({ name: 'x' }, null)).toEqual({
       kind: 'invalid',
@@ -312,8 +322,10 @@ describe('loading the index', () => {
   let root: string | undefined;
 
   afterEach(async () => {
-    endTemplateIndexSession();
-    if (root) await rm(root, { recursive: true, force: true });
+    if (root) {
+      endTemplateIndexSession(root);
+      await rm(root, { recursive: true, force: true });
+    }
   });
 
   it('globs every .eta file once, without dotfiles or node_modules', async () => {
@@ -356,8 +368,24 @@ describe('loading the index', () => {
     expect(await loadTemplateIndex(join(root, 'other'))).not.toBe(first);
     expect(getCachedTemplateIndex(join(root, 'other'))).toBeNull();
 
-    endTemplateIndexSession();
+    // Ending another directory's session leaves this one
+    endTemplateIndexSession(join(root, 'other'));
+    expect(getCachedTemplateIndex(root)).toBe(first);
+
+    endTemplateIndexSession(root);
     expect(getCachedTemplateIndex(root)).toBeNull();
     expect(await loadTemplateIndex(root)).not.toBe(first);
+  });
+
+  it('returns the index when the session ends while it loads', async () => {
+    root = await mkdtemp(join(tmpdir(), 'stati-template-index-'));
+    await writeFile(join(root, 'layout.eta'), '');
+    startTemplateIndexSession(root);
+
+    const loading = loadTemplateIndex(root);
+    endTemplateIndexSession(root);
+
+    expect((await loading).files()).toEqual(['layout.eta']);
+    expect(getCachedTemplateIndex(root)).toBeNull();
   });
 });

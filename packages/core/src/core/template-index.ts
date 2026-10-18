@@ -106,11 +106,14 @@ export function parseTemplateName(raw: unknown, callerFile: string | null): Temp
   if (normalized === null) {
     return { kind: 'invalid', reason: 'resolves outside the source directory' };
   }
+  if (normalized === '') {
+    return { kind: 'invalid', reason: 'names a folder, not a template' };
+  }
   return { kind: 'lookup', name: normalized };
 }
 
 function describeValue(value: unknown): string {
-  if (value === null) return 'null';
+  if (value === null || value === undefined) return String(value);
   if (Array.isArray(value)) return 'an array';
   return typeof value === 'object' ? 'an object' : `${typeof value} ${String(value)}`;
 }
@@ -545,10 +548,13 @@ export function startTemplateIndexSession(srcDir: string): void {
 }
 
 /**
- * Ends the dev server session; later builds read the source directory again.
+ * Ends the dev server session for a source directory; later builds read it again. A session
+ * another dev server started for a different directory is left alone.
  */
-export function endTemplateIndexSession(): void {
-  session = null;
+export function endTemplateIndexSession(srcDir: string): void {
+  if (session && session.srcDir === resolve(srcDir)) {
+    session = null;
+  }
 }
 
 /**
@@ -558,9 +564,11 @@ export function endTemplateIndexSession(): void {
  * @param srcDir - Absolute source directory
  */
 export async function loadTemplateIndex(srcDir: string): Promise<TemplateIndex> {
-  if (session && session.srcDir === resolve(srcDir)) {
-    session.index ??= await TemplateIndex.load(srcDir);
-    return session.index;
+  // The session can end while the glob runs, when the dev server stops mid-build
+  const current = session;
+  if (current && current.srcDir === resolve(srcDir)) {
+    current.index ??= await TemplateIndex.load(srcDir);
+    return current.index;
   }
   return TemplateIndex.load(srcDir);
 }

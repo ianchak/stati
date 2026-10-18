@@ -972,7 +972,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
 
       // Release cached dev-session engines so they can be garbage collected
       clearTemplateEngineCache();
-      endTemplateIndexSession();
+      endTemplateIndexSession(srcDir);
       clearMarkdownProcessorCache();
 
       logger.info?.('Dev server stopped');
