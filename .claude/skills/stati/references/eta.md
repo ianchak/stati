@@ -1,12 +1,12 @@
-# Eta, layouts, partials, and components
+# Eta, layouts, includes, and components
 
 ## Engine contract
 
-Stati creates Eta with `views` set to the resolved content source directory and
+Stati creates Eta 4 with `views` set to the resolved content source directory and
 `varName: 'stati'`. Delimiters are `<%` and `%>`, extension `.eta`. Config exposes
-`eta.filters`, not arbitrary Eta options. Current source caches compiled templates
-in development as well as production and clears the engine cache on template
-changes; older docs describing development caching as disabled are stale.
+a top-level `helpers` object, not arbitrary Eta options; an `eta` key fails config
+validation as an unknown option. Compiled templates are cached in development as
+well as production, and the engine cache is cleared on template changes.
 
 | Syntax                                        | Meaning                    |
 | --------------------------------------------- | -------------------------- |
@@ -20,7 +20,7 @@ changes; older docs describing development caching as disabled are stale.
 There is no TypeScript transpilation of template code. Do not copy documentation
 snippets containing `as string`, type annotations, or interfaces into `.eta`.
 Template locals are not a module-import surface. Import libraries into config
-filters or build tooling, not into templates. Browser DOM APIs belong in browser
+helpers or build tooling, not into templates. Browser DOM APIs belong in browser
 scripts, not server-side rendering.
 
 ## Full dynamic HTML attributes
@@ -55,9 +55,9 @@ Actual `propValue` behavior:
   and does not make arbitrary dynamic classes valid Tailwind utilities.
 
 Escape text by default. Raw output is for trusted rendered HTML only. A trusted
-component result may be passed to a wrapper's `content` prop and emitted raw;
-do not do that with user input. HTML escaping does not make `javascript:` URLs
-safe: validate externally supplied destinations separately.
+include result may be passed as another include's `body` and printed raw as
+`stati.body`; do not do that with user input. HTML escaping does not make
+`javascript:` URLs safe: validate externally supplied destinations separately.
 
 ## Runtime context: know which object you have
 
@@ -74,8 +74,12 @@ safe: validate externally supplied destinations separately.
 | `stati.pagination`                    | Page of a `paginate` listing (1.29+), else undefined             |
 | `stati.generated`                     | Key, label, items of a `[param].md` page (1.29+), else undefined |
 | `stati.slugify(text)`                 | Stati's slug for generated page keys (1.29+)                     |
-| `stati.partials`                      | Exact-name callable partials                                     |
-| `stati.props`                         | Only supplied on a nonempty-props component render               |
+| `stati.include(name, props?, body?)`  | Renders another template here and returns its HTML (2.0+)        |
+| `stati.layout(name, props?)`          | Wraps this template's output in another template; returns `''` (2.0+) |
+| `stati.include.has(name)`             | Whether a name resolves for this page; same as `stati.layout.has` |
+| `stati.body`                          | HTML this template wraps; absent in the page's layout and `og.eta` |
+| `stati.props`                         | Props of the include/layout call that rendered it, else undefined |
+| `stati.helpers`                       | Functions from the config's `helpers` (2.0+)                     |
 | `stati.generator.version`             | Core package version                                             |
 | `stati.assets`                        | Optional asset object with `bundlePaths`, `searchIndexPath`      |
 | `stati.propValue(...)`                | Token-list attribute helper                                      |
@@ -83,13 +87,13 @@ safe: validate externally supplied destinations separately.
 | `stati.image(src, options?)`          | Sized `<img>` (or `<picture>`) HTML, synchronous; print with `<%~ %>` |
 | `stati.ogImage`                       | Generated Open Graph image `{ url, path, width, height, alt }`, or undefined |
 | `stati.og`                            | `{ width, height }` inside an `og.eta` card template; undefined elsewhere |
-| `stati.someFilter(...)`               | A function you registered in `eta.filters`                       |
 
 Frontmatter keys `path`, `url`, `content`, `navNode`, `toc` conflict with runtime
-fields: Stati warns and overwrites them. Filters are spread into the base context;
-avoid names such as `site`, `page`, `content`, `nav`, `collection`, `partials`,
-`props`, `generator`, `generateSEO`, `propValue`, `image`, `og`, `ogImage` and `assets`.
-A filter named `pagination`, `generated` or `slugify` hides the built-in one.
+fields: Stati warns and overwrites them. The root of `stati` holds only Stati's
+API: helpers live under `stati.helpers`, so a helper named `page`, `image` or
+`slugify` never shadows Stati's value. Inside a helper written with `function` or
+method syntax, `this` is the helpers object (its validating proxy in development),
+not the template context; pass what a helper needs as arguments.
 
 `stati.image(src, { alt, sizes, priority, class, title })` resolves `src` like a
 Markdown image: from `public/` when it starts with `/`, otherwise next to the page's
@@ -97,31 +101,32 @@ Markdown file. It returns `''` for an empty `src`, so `stati.image(stati.page.co
 needs no guard, and warns when `alt` is missing (pass `alt: ''` for decorative
 images). `priority: true` loads the image eagerly with high fetch priority.
 
-The public `TemplateContext` type is not the complete runtime shape (notably
-`partials` is typed as strings in the checked version). Do not infer that
-callable partials are unsupported, or that any arbitrary context property exists.
+The public `TemplateContext` type covers the runtime shape, including `include`,
+`layout`, `body`, `props` and `helpers`; `page.toc` is the one runtime field it
+leaves out. Do not infer that any other context property exists.
 
 ### Unknown-property check in development
 
-In core versions after 1.26.2, the dev server wraps the context in a validating
-proxy. Reading a `stati.*` property that does not exist throws, and the error
-overlay shows the template file, line, and a "Did you mean" suggestion
-(`stati.paeg` → `stati.page`, `stati.title` → `stati.page.title`, `stati.header`
-→ `stati.partials.header`, misspelled filters). It checks top-level keys
-(including `eta.filters`) and the keys of
-`site`, `nav`, `collection`, and `generator`. Unset optional `SiteConfig` fields
-(`description`, `defaultLocale`) are allowed. It does **not** check frontmatter
-under `stati.page`, code that doesn't run on the current page, or production builds.
+The dev server wraps the context in a validating proxy. Reading a `stati.*`
+property that does not exist throws, and the error overlay shows the template
+file, line, and a "Did you mean" suggestion (`stati.paeg` → `stati.page`,
+`stati.title` → `stati.page.title`, `stati.formatDate` and
+`stati.helpers.formatDat` → `stati.helpers.formatDate`). It checks top-level keys
+and the keys of `site`, `nav`, `collection`, `generator` and `helpers`. Unset
+optional `SiteConfig` fields (`description`, `defaultLocale`) are allowed. Reading
+`stati.body` where it is absent throws with a hint pointing at `stati.content`.
+It does **not** check frontmatter under `stati.page`, code that doesn't run on the
+current page, or production builds.
 
 Consequences for template code:
 
-- Test for an optional filter or property with `'name' in stati`. A read such as
-  `typeof stati.myFilter` or `stati.myFilter ?? fallback` throws in dev when the
-  key is absent.
+- Test for an optional helper with `'name' in stati.helpers`, and for an optional
+  template with `stati.include.has(name)`. A read such as
+  `typeof stati.helpers.myHelper` or `stati.helpers.myHelper ?? fallback` throws in
+  dev when the key is absent.
 - `stati.props` is always present (undefined without props), so
-  `stati.props?.title` and `if (!stati.props) return;` are safe. The same holds
-  for `stati.og` and `stati.ogImage`.
-- A typo now fails the dev build instead of printing `undefined`. Production is
+  `stati.props?.title` is safe. The same holds for `stati.og` and `stati.ogImage`.
+- A typo fails the dev build instead of printing `undefined`. Production is
   unchanged: the same typo still renders `undefined` or falls back to the
   fallback layout, so fix what the dev overlay reports before shipping.
 
@@ -129,17 +134,21 @@ Consequences for template code:
 
 For a page, the runtime:
 
-1. Checks frontmatter `layout`, as `srcDir/<layout>.eta`.
-2. Walks the **source page's directory**, nearest first, back to the source root.
+1. Resolves frontmatter `layout` with the template lookup below: `layout: article`
+   is the nearest `article.eta` from the page's folder up, `layout: /article` is
+   `srcDir/article.eta` only.
+2. Otherwise walks the **source page's directory**, nearest first, back to the
+   source root.
 3. At each directory, checks `index.eta` first **if this page is an aggregation
    page**, then `layout.eta`.
 4. Uses fallback HTML if no layout exists.
 
-An explicit layout that does not exist currently falls through to automatic
-discovery; it is not a reliable typo detector. Check it yourself. Do not append
-`.eta` in frontmatter (`article.eta` would be looked up as `article.eta.eta`).
-`layout: blog/article` refers to a source-root-relative template. Do not use
-directory traversal.
+A frontmatter `layout` that names no template logs a warning with similar names
+and falls through to step 2. A `.eta` suffix is accepted and dropped. Names never
+resolve outside the source directory. The lookup matters when a section has a
+template with the same name: on a page in `site/posts/` with its own `layout.eta`,
+`layout: layout` finds `site/posts/layout.eta`; write `layout: /layout` for the
+root one.
 
 The root URL is always considered an aggregation page when all pages are supplied.
 A nonroot page is considered one when another page URL is its descendant; this is
@@ -147,157 +156,141 @@ not strictly limited to filenames `index.md`. An empty section's `index.md` may
 therefore use `layout.eta`, not `index.eta`. A nearer `layout.eta` wins over a
 farther ancestor's `index.eta`; Stati does not scan all index layouts first.
 
-Section layouts completely replace ancestor layouts. Keep each selected layout a
-complete HTML document, sharing head/header/footer partials where useful.
-An `.eta` file by itself is not emitted as a page: it needs a Markdown page.
+A section's `layout.eta` replaces ancestor layouts for its pages. Share the
+document around them with a shell named by `stati.layout()` (below) rather than
+repeating the `<head>`, header and footer in every layout. An `.eta` file by
+itself is never emitted as a page: it needs a Markdown page.
 
-## Discovery and naming
+## Template names and lookup
 
 ```text
 site/
+  base.eta
   layout.eta
-  _partials/
+  partials/
     header.eta
-    footer.eta
     ui/
       card.eta
   blog/
     layout.eta
-    _components/
-      card.eta
-      post-meta.eta
+    partials/
+      header.eta
     index.md
     entry.md
 ```
 
-- At each level of the **page's** source ancestry, Stati scans immediate `_*/`
-  directories and recursively discovers their `.eta` files.
-- `card.eta` under `_partials/ui/` is `stati.partials.card`, not
-  `stati.partials.ui.card` or `stati.partials['ui/card']`.
-- `post-meta.eta` is `stati.partials['post-meta']`, not `postMeta`.
-- Deeper source-directory definitions override ancestors with the same basename.
-  Duplicate basenames within one level have no author-facing priority contract:
-  avoid them even if in differently named underscore folders.
-- No sibling/child-source-directory discovery. Put globally shared components in
-  a root underscore directory. `_components`, `_partials`, `_sections`, `_scripts`,
-  and other underscore names are conventions, not different runtime APIs.
-- Visibility depends on the page, **not the selected layout's physical directory**.
-  A root layout rendering a blog page can see that page's discovered blog partials.
+- Any `.eta` file under the source directory can be included or named as a layout.
+  Underscore folders are not required; content discovery still skips `_` folders,
+  so `_` means "no pages here", not "templates here".
+- Names are paths without `.eta`, not basenames: `card.eta` under `partials/ui/`
+  is `stati.include('partials/ui/card')`. `post-meta.eta` stays `post-meta`.
+- A plain name (`header`, `partials/header`) is looked up from the **page's**
+  folder up to the source root; the nearest match wins. `blog/partials/header.eta`
+  therefore overrides `partials/header.eta` for blog pages, even when the include
+  sits in the root `base.eta`: lookup follows the page, not the calling template.
+- `/partials/header` is read from the source root only. `./icon` and
+  `../icons/arrow` are relative to the calling template's folder.
+- Backslashes are normalized to `/`. Empty names, names ending in `/`, drive
+  letters, and names escaping the source directory are errors. The built-in Open
+  Graph template has no file, so relative names fail inside it.
+- One `**/*.eta` index is built per build (a dev session keeps and updates it), so
+  lookups do not glob per page and behave the same on Windows.
 - Do not confuse a source `srcDir` directory with the client TypeScript `src/`.
 
-**Windows caveat in the checked source:** partial ancestry splits a directory
-string on `/` only, unlike layout discovery. For nested source paths using native
-backslashes, an intermediate ancestor may be skipped. Do not rely on intermediate
-partial overrides without an actual Windows build test. Global root components
-are the most portable shared location. Recheck this caveat after upgrading.
+## Includes, props, and content
 
-## Component lifecycle and props
-
-Stati pre-renders **every discovered partial** for each page, even if the layout
-never uses it. Pre-rendering receives no `stati.props`; dependencies are retried
-in at most three passes. Then rendered results are wrapped as callable partials.
+`stati.include(name, props?, body?)` renders the template synchronously with
+`eta.render` in its own context (`{ ...page values, props, body, include, layout }`)
+and returns its HTML:
 
 ```eta
-<%~ stati.partials.header %>
-<%~ stati.partials.header() %>
-<%~ stati.partials.header({}) %>
-<%~ stati.partials.card({ title: 'A post', url: '/blog/a-post' }) %>
+<%~ stati.include('partials/header') %>
+<%~ stati.include('partials/card', { title: 'A post', url: '/blog/a-post' }) %>
+<%~ stati.include('partials/panel', { tone: 'note' }, stati.include('partials/card', { title: 'Inside a panel' })) %>
 ```
 
-The first three return the pre-rendered result. Only a **nonempty** props object
-re-renders with `{ ...baseContext, props }`. Props do not replace `stati.page` or
-become bare `title`, `url`, or `it.title` variables.
+- A template renders only where it is included; there is no pre-render pass, so
+  component templates need no `if (!stati.props) { return; }` guard. Keep checks
+  only for props a template really treats as optional.
+- Props arrive as `stati.props`, never as bare `title` or `it.title` variables, and
+  do not replace `stati.page`. A nested include receives only the props it is
+  given; parent props and locals are not inherited.
+- The third argument is printed by the template as `stati.body` (raw). This is the
+  children mechanism for wrappers; there is no named-slot API. Pass extra regions
+  as props.
+- Without props and body, the first render of a template on a page is cached and
+  reused by later includes on that page. The cache is keyed by file **and** base
+  context, so the Open Graph template's renders never leak into the layout's.
+- Props must be an object and `body` a string: anything else is a dev error and a
+  production warning, and the value is dropped.
+- A template that includes itself without props, directly or through others, is a
+  cycle: dev error naming the chain, production error with the repeat skipped.
+  With props, recursion (trees) is allowed up to a depth of 100.
+- `await` in an included template is an error with a hint that includes render
+  synchronously. Layouts and shells render asynchronously and may await.
+- An unknown name is a dev overlay listing similar paths; production logs an error
+  and the include returns `''`. A runtime error inside an included template opens
+  the overlay at that file in dev; production logs it and emits
+  `<!-- Error rendering site/...: message -->` in its place.
 
-Two safe partial strategies:
-
-**Content partial usable without props:**
-
-```eta
-<header>
-  <a href="/"><%= stati.props?.title ?? stati.site.title %></a>
-</header>
-```
-
-**Component-only partial:**
-
-```eta
-<% if (!stati.props) { return; } %>
-<article class="<%= stati.propValue('card', stati.props.featured && 'featured') %>">
-  <h2><%= stati.props.title ?? 'Untitled' %></h2>
-  <% if (stati.props.url) { %>
-    <a href="<%= stati.props.url %>">Read more</a>
-  <% } %>
-</article>
-```
-
-Using `stati.props.title || 'Untitled'` without guarding `stati.props` throws
-during pre-rendering, even if every intended caller supplies props.
-
-### Nested components and trusted slots
-
-Nested callable partials can call other callable partials using the full base
-context, but each nested call needs its own props:
+Use `stati.include.has(name)` for optional templates:
 
 ```eta
-<% if (!stati.props) { return; } %>
-<button type="button">
-  <%~ stati.partials.icon({ name: stati.props.icon ?? 'check' }) %>
-  <%= stati.props.label %>
-</button>
-```
-
-Do not assume parent locals or parent props are inherited by the child. For a
-wrapper, explicitly supply a trusted HTML result:
-
-```eta
-<%~ stati.partials.panel({
-  content: stati.partials.card({ title: 'Inside a panel' })
-}) %>
-```
-
-This is an explicit prop pattern, not a built-in slot API. Avoid cyclic component
-calls. Three pre-render passes are not a guarantee of arbitrary ordering or
-arbitrary-depth no-props composition. Keep helpers pure: they may execute several
-times per page. Do expensive/remote work in build preparation, not components.
-Callable rendering is synchronous (`eta.render`); do not design components around
-`await`, async filters, or async-only includes.
-
-### Optional and missing partials
-
-Use membership:
-
-```eta
-<% if ('sidebar' in stati.partials) { %>
-  <%~ stati.partials.sidebar %>
+<% if (stati.include.has('partials/sidebar')) { %>
+  <%~ stati.include('partials/sidebar') %>
 <% } %>
 ```
 
-A truthiness test (`if (stati.partials.sidebar)`) can be misleading: outside
-explicit production mode, a missing-name read on a nonempty partial registry
-returns an inline error-overlay value/function, which is truthy. In production a
-missing partial can be undefined or a failed call. Required partials should exist,
-not be hidden by optional checks.
+Check both logs and output. Layout failures produce fallback documents and include
+failures produce `<!-- Error rendering ... -->` comments even when the overall
+build completes. Treat both as validation failures.
 
-Check both logs and output. Layout failures can produce fallback documents;
-failed pre-renders can produce `<!-- Error rendering partial: ... -->`;
-callable failures log to the console and return an error comment even when the
-overall build completes. Treat all of these as validation failures. In core
-versions after 1.26.2, a callable (props) render failure in the dev server is
-rethrown instead, so it reaches the error overlay; production builds still return
-the comment.
+## Shells: `stati.layout()`
 
-## Native Eta includes: advanced, not the Stati component API
+```eta
+<!-- site/base.eta -->
+<!DOCTYPE html>
+<html lang="<%= stati.site.defaultLocale || 'en' %>">
+  <%~ stati.include('partials/head') %>
+  <body class="<%= stati.propValue(stati.props?.bodyClass) %>">
+    <%~ stati.include('partials/header') %>
+    <%~ stati.body %>
+    <%~ stati.include('partials/footer') %>
+  </body>
+</html>
+```
 
-Eta's `include(template, data)` / `includeAsync(template, data)` operate on
-file-based templates and explicitly passed data. They do not invoke Stati's
-basename discovery, pre-rendered wrappers, or automatic props merging.
+```eta
+<!-- site/blog/layout.eta -->
+<% stati.layout('base', { bodyClass: 'post' }) %>
+<main id="main"><%~ stati.content %></main>
+```
 
-Prefer `stati.partials` for site components. If integrating a native include,
-inspect the installed Eta version, its relative-path resolution, and the data
-argument. Pass the desired context explicitly; do not assume `include('card',
-{ title })` supplies `stati.site` or `stati.props`. Verify incremental dependency
-invalidation too; a working render is not proof that custom include relationships
-are tracked correctly.
+- `stati.layout(name, props?)` can be called anywhere in a template; the wrapping
+  happens after the template finishes. It returns `''`.
+- The named template prints the output as `stati.body` and reads props as
+  `stati.props`; it can name its own parent, so shells nest.
+- Each render has its own layout slot: a component calling `stati.layout()` wraps
+  only itself, never the page.
+- One call per template: a second call is a dev error and a production warning
+  (last call wins). A call after the template finished rendering is a dev error
+  and is ignored in production. An unknown name is a dev error; production logs it
+  and renders the template unwrapped.
+- Discovery only picks `layout.eta`/`index.eta`, so a shell such as `base.eta` is
+  never a page's layout by accident.
+- `<body class="">` differs from `<body>`: when a starter must keep a bare tag,
+  branch on `stati.props?.bodyClass` instead of always printing the attribute.
+
+## Eta's own include, layout, and block are blocked
+
+Stati's Eta plugin redefines Eta's `include`, `includeAsync`, `layout`, `block`
+and `blockAsync` inside every compiled template. A call is a dev error overlay
+that names the replacement (`include('x', data)` → `stati.include('./x', data)`;
+`layout('x', data)` → `stati.layout('./x', data)` with the data as `stati.props`;
+`block()` → pass the content to the layout as a prop) and, in production, a
+logged error with `''` rendered and no layout applied. The suggested name keeps
+Eta's resolution: a bare name becomes `./name`. Templates may still declare their
+own variables named `layout`, `block` or `output`.
 
 ## Collections inside templates
 
@@ -307,7 +300,7 @@ All arrays contain **PageModel**, not flattened frontmatter:
 
 ```eta
 <% for (const post of stati.collection?.recentPages ?? []) { %>
-  <%~ stati.partials.card({
+  <%~ stati.include('partials/card', {
     title: post.frontMatter.title ?? 'Untitled',
     url: post.url,
     featured: post.frontMatter.featured
@@ -333,10 +326,25 @@ in place is safe. Reading `stati.collection`, `stati.nav` or
 Read `stati.pagination.items` rather than the whole collection on paginated
 pages, so a page only rebuilds when its own slice changes.
 
-Authority: `packages/core/src/core/templates.ts`, `core/collections.ts`,
-`core/expand.ts`, `core/utils/template-discovery.utils.ts`,
-`callable-partials.utils.ts`, `partial-validation.utils.ts`, `template.utils.ts`,
-`types/content.ts`; `packages/core/test/core/templates.test.ts`,
-`collection-aggregation.test.ts`, `collections.test.ts`, `expand.test.ts`,
-`*-integration.test.ts`, and `test/utils/callable-partials.test.ts`. Paths are relative to the Stati source
-checkout, not guaranteed to exist in a generated site.
+## Template dependency recording
+
+Each page's cache entry stores the template files it rendered (layout first,
+then shells, includes and the Open Graph template) and every name it looked up
+with the folder and the file found (`null` on a miss, including `.has()` misses).
+A cached page rebuilds when a recorded template changes or disappears, when its
+layout would now be a different file, or when a recorded name would now find a
+different file, such as a new section override. A conditional include that did not
+render on a page is not recorded for it. The dev server rebuilds only affected
+pages on template add/change/unlink; editing a template no page renders rebuilds
+nothing. Helpers are config code and are not recorded: after changing one, rebuild
+with `--force`.
+
+Authority: `packages/core/src/core/templates.ts`, `core/template-render.ts`,
+`core/template-index.ts`, `core/eta-plugin.ts`, `core/collections.ts`,
+`core/expand.ts`, `core/isg/builder.ts`, `core/utils/template-discovery.utils.ts`,
+`core/utils/context-validation.utils.ts`, `template.utils.ts`, `types/content.ts`;
+`packages/core/test/core/templates.test.ts`, `template-composition.test.ts`,
+`template-index.test.ts`, `template-recording.test.ts`, `eta-plugin.test.ts`,
+`dev-template-changes.test.ts`, `collection-aggregation.test.ts`,
+`collections.test.ts`, `expand.test.ts` and `*-integration.test.ts`. Paths are
+relative to the Stati source checkout, not guaranteed to exist in a generated site.

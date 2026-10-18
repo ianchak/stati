@@ -3,8 +3,9 @@
 ## Content sources
 
 The content loader reads `**/*.md` below `srcDir` (`site` by default), excluding
-underscore-prefixed directories. Markdown in `_partials/` is not an ordinary
-page. `.eta` files are templates, not standalone routes. Markdown is not MDX and
+underscore-prefixed directories. Markdown in `_drafts/` is not an ordinary
+page. `.eta` files are templates, not standalone routes, wherever they are, so
+template folders such as `site/partials/` need no underscore. Markdown is not MDX and
 does not run Eta expressions as a second template pass.
 
 Use UTF-8 Markdown with YAML frontmatter:
@@ -228,7 +229,7 @@ older sites computed prev/next and related posts in `beforeAll`.
 ISG tracks reads: a page that reads `stati.collection` rebuilds when a member is
 added, removed or moved, or its `title`, `description`, `tags`, `draft` or
 publish date changes. `collections.summaryFields` replaces that field list
-(`content` means the body). Data handed over through `beforeAll` and filters is
+(`content` means the body). Data handed over through `beforeAll` and helpers is
 not tracked; prefer `stati.collection`.
 
 **Pagination:** `paginate: 10` or `paginate: { size: 10, path: 'page' }` on a page

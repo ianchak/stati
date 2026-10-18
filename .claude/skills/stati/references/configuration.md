@@ -94,10 +94,8 @@ export default defineConfig({
       md.set({ typographer: false });
     },
   },
-  eta: {
-    filters: {
-      uppercase: (value: string) => value.toUpperCase(),
-    },
+  helpers: {
+    uppercase: (value: string) => value.toUpperCase(),
   },
 });
 ```
@@ -107,11 +105,14 @@ The runtime tries the site first, then core dependencies. A missing plugin can
 warn and continue; assert its expected rendered behavior instead of trusting the
 exit status. `configure` runs after plugin loading.
 
-`stati.uppercase(value)` is a registered filter; pipes are not supported.
-Avoid context-reserved filter names. Prefer synchronous, deterministic helpers
-safe for repeated component pre-rendering. Full rules are in the Eta reference.
-Data a filter returns is invisible to ISG: a page listing posts through a
-filter is not rebuilt when the posts change. Prefer `stati.collection`.
+`stati.helpers.uppercase(value)` calls a registered helper (core 2.0+; 1.x used
+`eta.filters` and `stati.uppercase()`); pipes are not supported. `helpers` must be
+an object of functions, checked when the config loads, and an `eta` key is
+rejected as an unknown option. Helpers live under `stati.helpers`, so they never
+shadow Stati's own keys. Prefer synchronous, deterministic helpers. Full rules are
+in the Eta reference. Data a helper returns is invisible to ISG, and so is a change
+to a helper: a page listing posts through a helper is not rebuilt when the posts
+change. Prefer `stati.collection`, and rebuild with `--force` after editing a helper.
 
 ## Collections
 

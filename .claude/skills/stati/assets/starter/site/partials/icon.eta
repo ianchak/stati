@@ -1,0 +1,1 @@
+<span class="article-label"><%= stati.helpers.uppercase(stati.props.label) %></span>

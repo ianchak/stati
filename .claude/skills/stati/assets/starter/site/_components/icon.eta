@@ -1,2 +1,0 @@
-<% if (!stati.props) { return; } %>
-<span class="article-label"><%= stati.uppercase(stati.props.label) %></span>

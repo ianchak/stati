@@ -8,11 +8,12 @@ not generic Eta/EJS, Astro, or Eleventy examples.
 The bundled `assets/starter/` contains:
 
 - An ESM package manifest with core/CLI dependencies and standard site scripts.
-- A `defineConfig` configuration with a synchronous filter, client TypeScript,
+- A `defineConfig` configuration with a synchronous helper, client TypeScript,
   search, sitemap, robots, and a filtered RSS feed.
 - A complete layout with a skip link, navigation, Markdown output, collection
   cards, and extracted TOC links.
-- A pre-render-safe hyphenated-name card component and nested callable component.
+- A hyphenated-name card component included with props, which includes a
+  sibling template by relative path and calls a helper.
 - Home, blog landing, article, and unpublished draft Markdown fixtures.
 - Plain CSS and a minimal browser TypeScript entry.
 
@@ -47,10 +48,12 @@ Failures are assertions/errors and exit nonzero; diagnostic warnings are failure
 It checks:
 
 - A real full-document layout, escaped titles, raw Markdown.
-- Callable components with no-props guards, exact hyphenated basenames, nested
-  props, and explicitly registered filters.
-- Explicit/section/index layout precedence, page-scoped partial overrides,
-  optional-partial membership checks, and empty-props reuse.
+- Includes with props, hyphenated template paths, a nested relative include, and
+  an explicitly registered helper.
+- Explicit/section/index layout precedence, a shell named with `stati.layout()`
+  that receives props and `stati.body`, a section override at the same template
+  path, an optional include behind `stati.include.has()`, and an include with
+  props and children.
 - Collection item access via `frontMatter`.
 - TOC IDs, including duplicate heading IDs.
 - A copied stylesheet and an existing hashed auto-injected browser bundle.
@@ -77,7 +80,7 @@ In the listing:
     <p>No articles have been published yet.</p>
   <% } else { %>
     <% for (const post of posts) { %>
-      <%~ stati.partials.card({
+      <%~ stati.include('partials/card', {
         title: post.frontMatter.title ?? 'Untitled',
         description: post.frontMatter.description,
         url: post.url
@@ -87,10 +90,10 @@ In the listing:
 </section>
 ```
 
-Create/guard `card.eta` in an underscore directory. Quote publication dates for
+Create `site/partials/card.eta`; it reads `stati.props`. Quote publication dates for
 reliable parsed-date sorting. Do not link tags to nonexistent archive pages.
 
-## Props-first but pre-render-safe component
+## Component with optional props
 
 ```eta
 <article class="<%= stati.propValue('author', stati.props?.featured && 'featured') %>">
@@ -98,37 +101,38 @@ reliable parsed-date sorting. Do not link tags to nonexistent archive pages.
 </article>
 ```
 
-This content partial can render without props. For a component-only fragment,
-use a no-props early return instead. Validate required props explicitly rather
-than accidentally rendering malformed URLs or `"undefined"` text.
+This template renders with or without props, because `stati.props` is
+`undefined` when an include passes none. A template that always gets props can
+read `stati.props.name` directly: templates render only where they are included.
+Validate required props explicitly rather than accidentally rendering malformed
+URLs or `"undefined"` text.
 
-## Exact optional partial
+## Optional template
 
-For a filename `site/_partials/post-meta.eta`:
+For a file `site/partials/post-meta.eta`, which a section may or may not have:
 
 ```eta
-<% if ('post-meta' in stati.partials) { %>
-  <%~ stati.partials['post-meta'] %>
+<% if (stati.include.has('partials/post-meta')) { %>
+  <%~ stati.include('partials/post-meta') %>
 <% } %>
 ```
 
-Do not camel-case filenames or test truthiness through the development proxy.
+Names are paths without `.eta`, not camel-cased basenames. Do not wrap an include
+in `try` or test truthiness through the development proxy.
 
-## Synchronous formatting filter
+## Synchronous formatting helper
 
 Config:
 
 ```ts
-eta: {
-  filters: {
-    formatDate: (value: string) =>
-      new Date(value).toLocaleDateString('en', {
-        timeZone: 'UTC',
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      }),
-  },
+helpers: {
+  formatDate: (value: string) =>
+    new Date(value).toLocaleDateString('en', {
+      timeZone: 'UTC',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    }),
 }
 ```
 
@@ -137,7 +141,7 @@ Template:
 ```eta
 <% if (stati.page.publishedAt) { %>
   <time datetime="<%= stati.page.publishedAt %>">
-    <%= stati.formatDate(stati.page.publishedAt) %>
+    <%= stati.helpers.formatDate(stati.page.publishedAt) %>
   </time>
 <% } %>
 ```
