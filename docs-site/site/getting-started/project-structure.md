@@ -54,7 +54,7 @@ This is where all your content lives. Stati uses filesystem-based routing, so th
 - **`site/about.md`** → `/about`
 - **`site/blog/index.md`** → `/blog`
 - **`site/blog/first-post.md`** → `/blog/first-post`
-- **`site/blog/tags/[tag].md`** → `/blog/tags/css`, `/blog/tags/javascript`… one page per tag, and none at its own URL. See [Generated pages](/core-concepts/collections#generated-pages).
+- **`site/blog/tags/[tag].md`** with `generate: { from: tags }` → `/blog/tags/css`, `/blog/tags/javascript`… one page per tag, and none at its own URL. See [Generated pages](/core-concepts/collections#generated-pages).
 
 Images can sit next to the pages that use them. In `site/blog/first-post.md`, `![Map](./map.png)` refers to `site/blog/map.png`, which Stati copies to `/_img/` with its size added to the page. See [Images](/configuration/images).
 
@@ -129,6 +129,7 @@ Standard Node.js package file with your dependencies and build scripts.
 
 - **`layout.eta`** - Default layout template
 - **`blog/layout.eta`** - Section-specific layout
+- **`blog/index.eta`** - Optional layout of the index page `blog/index.md`, used ahead of `layout.eta` once the folder holds other pages
 - **`base.eta`** - Optional page shell that layouts share, named with `stati.layout('base')`
 
 You can also give a page its own layout by naming it in the page's front matter, without the `.eta` extension. Stati looks for the name from the page's folder up to `site/`, so `layout: home` on a page in `site/` uses `site/home.eta`; a name starting with `/`, such as `layout: /home`, is read from `site/` only. If no file matches, the build warns and falls back to the usual `layout.eta` lookup.

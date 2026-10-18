@@ -55,7 +55,7 @@ Your compiled bundles are automatically injected into pages before the closing `
 
 Stati does not include a built-in CSS preprocessor. Instead, CSS processing is configured at the project level using standard tools like Sass, PostCSS, or Tailwind CSS.
 
-The `create-stati` scaffolder can set up these tools for you. See the [Styling Solutions](/cli/scaffolder/#styling-solutions) section for available options.
+The `create-stati` scaffolder can set up these tools for you. See the [Styling Solutions](/cli/scaffolder#styling-solutions) section for available options.
 
 ### Basic CSS
 
@@ -240,14 +240,14 @@ See the [Development Server](/cli/development) documentation for more details on
 
 ## Images and media
 
-Images in `public/` are copied to the output as they are. When a Markdown page shows one, Stati adds its `width`, `height` and lazy loading:
+Images in `public/` are copied to the output as they are. When a Markdown page shows one, Stati adds its `width` and `height` and loads it lazily, except the page's first image near the top, such as a hero image, which loads eagerly:
 
 ```markdown
 ![Hero image](/images/hero.jpg)
 ```
 
 ```html
-<img src="/images/hero.jpg" alt="Hero image" width="1600" height="900" loading="lazy" decoding="async">
+<img src="/images/hero.jpg" alt="Hero image" width="1600" height="900" loading="eager" fetchpriority="high" decoding="async">
 ```
 
 Images can also sit next to the pages that use them: `![Map](./map.png)` in `site/blog/post.md` reads `site/blog/map.png`, and Stati copies it to `/_img/` under a name that changes with its content. In layouts and partials, `stati.image()` does the same for images such as a post's cover:

@@ -12,7 +12,7 @@ Stati uses [markdown-it](https://github.com/markdown-it/markdown-it) as its mark
 
 ## Configuration options
 
-Stati provides two options for markdown customization:
+Stati provides three options for markdown customization:
 
 ```javascript
 // stati.config.js
@@ -55,6 +55,7 @@ When enabled, Stati automatically:
 
 ```typescript
 export default defineConfig({
+  // site: { … },
   markdown: {
     toc: false, // Disable TOC extraction and anchor generation
   },
@@ -366,7 +367,7 @@ All front matter fields are available in templates:
 ### Performance
 
 1. **Limit plugins** - Too many plugins slow down builds
-2. **Rely on ISG** - Unchanged pages are served from the build cache and are not re-parsed (see [ISG](/core-concepts/isg))
+2. **Rely on ISG** - Unchanged pages are served from the build cache and are not re-rendered (see [ISG](/core-concepts/isg)); with search on, every page's Markdown is still parsed for the search index
 3. **Keep `configure` cheap** - It runs once per build (once per dev server session)
 
 ## Complete example

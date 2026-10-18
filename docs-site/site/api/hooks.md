@@ -17,14 +17,16 @@ A build runs in this order:
    (collections.generate runs here), build the navigation tree
 2. Compile TypeScript bundles (when enabled)
 3. beforeAll    → once, with every page (ctx.pages)
-4. For each page:
+4. Search index written (when search is enabled), from the pages as beforeAll left them
+5. For each page:
    - cache check: an unchanged page is skipped here, with no hooks
    - beforeRender → before the page renders
    - Markdown → HTML, layout rendering, SEO/search/script injection, file write
+     (the dev server writes the files once every page has rendered)
    - afterRender  → after the page renders
-5. Removal of pages that no longer exist, search index, cache manifest, static asset copy
-6. sitemap.xml, robots.txt, RSS feeds (production builds only)
-7. afterAll     → once, at the end
+6. Removal of pages that no longer exist, cache manifest, static asset copy
+7. sitemap.xml, robots.txt, RSS feeds (production builds only)
+8. afterAll     → once, at the end
 ```
 
 > **Per-page hooks only run for pages that are rendered.** With ISG enabled (the default), unchanged pages are served from the cache and skip `beforeRender` and `afterRender`. Do work that every page needs, or that other pages depend on, in `beforeAll`. Use `stati build --force` to run the per-page hooks for every page.
@@ -338,23 +340,9 @@ export default defineConfig({
 
 ### Content processing helpers
 
+Templates already get the page's headings as `stati.page.toc`, so hooks need no heading parser.
+
 ```javascript
-function extractHeadings(html) {
-  const headings = [];
-  const regex = /<h([1-6])[^>]*>([^<]+)<\/h[1-6]>/gi;
-  let match;
-
-  while ((match = regex.exec(html)) !== null) {
-    headings.push({
-      level: parseInt(match[1]),
-      text: match[2].trim(),
-      id: slugify(match[2])
-    });
-  }
-
-  return headings;
-}
-
 function calculateReadingTime(content) {
   const wordsPerMinute = 200;
   const wordCount = content.split(/\s+/).length;

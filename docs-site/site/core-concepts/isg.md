@@ -40,7 +40,8 @@ When the body of blog/post-1.md changes:
 When the title of blog/post-1.md changes:
 ✅ Rebuild blog/post-1
 ✅ Rebuild blog, and every page that reads the blog collection, such as posts with newer and older links
-❌ Skip pages that don't read it, such as /about
+✅ Rebuild the pages that render the navigation, which shows the title
+❌ Skip pages that read neither the collection nor the navigation
 
 When blog/post-3.md is added, or deleted:
 ✅ Render blog/post-3, or delete its HTML
@@ -270,7 +271,7 @@ Traditional SSG (full rebuild):
 Stati with ISG (incremental):
 ├── First build: Full build
 ├── Body edit: Only the edited page
-├── Title or tag edit: The edited page and the pages that list it
+├── Title or tag edit: The edited page, the pages that list it, and for a title the pages that show the navigation
 └── Layout change: Only pages using that layout
 ```
 

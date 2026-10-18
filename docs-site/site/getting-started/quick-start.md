@@ -22,7 +22,7 @@ Press Enter to accept each default; the scaffolder installs dependencies for you
 
 ## Prerequisites
 
-- Node.js 22.12 or higher, or 24 and later
+- Node.js 22.12 or a later 22.x release, or 24 and later
 - npm, pnpm, yarn or bun
 - A text editor (VS Code recommended)
 
@@ -40,6 +40,7 @@ The scaffolder asks, in order:
 - **Template** - Blank, a minimal starter; Blog, a complete blog with tag pages, an archive and an RSS feed; or Docs, a complete documentation site with a sidebar, search and a table of contents
 - **CSS solution** - Plain CSS, Sass/SCSS, or Tailwind CSS
 - **TypeScript** - On by default, for a typed `stati.config.ts` and client TypeScript bundles; answer no for JavaScript
+- **Image tools** - Off by default; yes adds `@stati/images` for responsive images and link preview cards
 - **Agent skill** - Optionally install the Stati skill for Claude Code or GitHub Copilot
 - **Git** - Initialize a git repository (on by default)
 - **Install dependencies** - Run the install for you (on by default)
@@ -202,6 +203,11 @@ export default defineConfig({
     title: 'My First Stati Site',
     description: 'A modern static site built with Stati',
     baseUrl: 'https://my-site.com', // Your domain when deployed
+  },
+
+  // TypeScript projects: compile src/main.ts (keep this from the generated config)
+  typescript: {
+    enabled: true,
   },
 
   dev: {

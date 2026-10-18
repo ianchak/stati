@@ -166,7 +166,7 @@ export default defineConfig({
 
 ## Maximum age cap
 
-`maxAgeCapDays` freezes old content. A dated page older than `maxAgeCapDays` is never rebuilt because its TTL expired; it is rebuilt only when its own content or one of its templates changes, or when you force it (`stati build --force` or `stati invalidate`):
+`maxAgeCapDays` freezes old content. A dated page older than `maxAgeCapDays` is never rebuilt because its TTL expired. Every other reason still rebuilds it, such as a change to its content, its templates or what it lists, and so does forcing it (`stati build --force` or `stati invalidate`):
 
 ```javascript
 export default defineConfig({

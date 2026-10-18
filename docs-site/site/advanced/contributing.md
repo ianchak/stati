@@ -37,7 +37,7 @@ cd stati
 # Install dependencies
 npm install
 
-# Build all packages (core → cli → create-stati)
+# Build all packages (core → images → cli → create-stati)
 npm run build
 
 # Run the test suite
@@ -62,7 +62,11 @@ stati/
 │   │   ├── src/
 │   │   ├── test/
 │   │   └── package.json
-│   └── create-stati/      # Project scaffolder
+│   ├── create-stati/      # Project scaffolder
+│   │   ├── src/
+│   │   ├── test/
+│   │   └── package.json
+│   └── images/            # Image processing (@stati/images)
 │       ├── src/
 │       ├── test/
 │       └── package.json
@@ -83,7 +87,7 @@ Stati uses a monorepo structure with multiple packages:
 # Install dependencies for all packages
 npm install
 
-# Build all packages (required order: core → cli → create-stati)
+# Build all packages (required order: core → images → cli → create-stati)
 npm run build
 
 # Test all packages
@@ -137,14 +141,15 @@ npx vitest
 
 ### CI pipeline
 
-Every push and pull request triggers the CI workflow (`.github/workflows/ci.yml`):
+Pushes to `main` and every pull request trigger the CI workflow (`.github/workflows/ci.yml`):
 
 1. **Dependency Install** - `npm ci` with npm 11.5.1+
-2. **Build Packages** - `npm run build` (core → cli → create-stati)
-3. **Run Tests** - Vitest with coverage (perf tests excluded from CI)
-4. **Upload Coverage** - Reports sent to Codecov
+2. **Build Packages** - `npm run build` (core → images → cli → create-stati)
+3. **Smoke-test the agent skill** - `node .claude/skills/stati/scripts/smoke-test.mjs`
+4. **Run Tests** - Vitest with coverage (perf tests excluded from CI)
+5. **Upload Coverage** - Reports sent to Codecov
 
-The pipeline runs on Ubuntu with Node.js 22. Version commits from the publish workflow are automatically skipped.
+The test job runs on Ubuntu with Node.js 22; the `@stati/images` tests also run on macOS and Windows. Version commits from the publish workflow are automatically skipped.
 
 ### Performance benchmarks
 
@@ -160,7 +165,7 @@ Performance tests live in `packages/core/test/perf/` and measure build speed acr
 Run benchmarks locally:
 
 ```bash
-# Run perf tests (excluded from regular test runs)
+# Run only the perf tests (CI skips them; npm test runs them too)
 npx vitest run packages/core/test/perf
 
 # Benchmarks use 100 generated pages with warmup runs
@@ -230,7 +235,7 @@ Brief description of changes
 
 ### Commit messages
 
-We use [Conventional Commits](https://www.conventionalcommits.org/), and a `commit-msg` hook enforces the format:
+We use [Conventional Commits](https://www.conventionalcommits.org/), and a `commit-msg` hook rejects anything after the subject line. The type and scope are a convention the hook does not check:
 
 ```bash
 # Format: <type>(<scope>): <subject>
@@ -247,7 +252,7 @@ feat(core)!: rename the isg.ttl option
 
 - One line only: no body, no trailers such as `Co-Authored-By:` or `Signed-off-by:`, and no closing keywords such as `Closes #123`. Put details, issue links and co-author credits in the pull request description. The changeset generator reads every line of a commit as a separate change.
 - Imperative mood, subject of 72 characters or less.
-- Scope is usually the package (`core`, `cli`, `create-stati`) or an area such as `isg`, `search` or `docs`.
+- Scope is usually the package (`core`, `images`, `cli`, `create-stati`) or an area such as `isg`, `search` or `docs`.
 - Mark breaking changes with `!` after the type. A `BREAKING CHANGE:` footer is rejected.
 
 **Types:**
@@ -306,14 +311,15 @@ export class ISGConfigurationError extends Error {
   }
 }
 
-// Error with dependency chain for debugging
-export class CircularDependencyError extends Error {
-  constructor(
-    public readonly dependencyChain: string[],
-    message: string,
-  ) {
+// Error that carries the fixes the dev server's error overlay shows
+export class TemplateUsageError extends Error {
+  /** Fixes to show in the error overlay */
+  public readonly suggestions: string[];
+
+  constructor(message: string, suggestions: string[] = []) {
     super(message);
-    this.name = 'CircularDependencyError';
+    this.name = 'TemplateUsageError';
+    this.suggestions = suggestions;
   }
 }
 
@@ -344,13 +350,11 @@ Stati uses several patterns to optimize build performance:
 
 ```typescript
 // Cache expensive operations at module level
-const templatePathCache = new Map<string, string | null>();
-const templateContentCache = new Map<string, string | null>();
+const fileHashCache = new Map<string, string | null>();
 
 // Clear at the start of each build
-export function clearTemplatePathCache(): void {
-  templatePathCache.clear();
-  templateContentCache.clear();
+export function clearFileHashCache(): void {
+  fileHashCache.clear();
 }
 
 // Use cache in hot paths
@@ -361,7 +365,8 @@ export async function computeFileHash(filePath: string): Promise<string | null> 
     return fileHashCache.get(normalizedPath) ?? null;
   }
 
-  const hash = createSha256Hash(await readFile(filePath, 'utf-8'));
+  const content = await readFile(filePath, 'utf-8');
+  const hash = content === null ? null : createSha256Hash(content);
   fileHashCache.set(normalizedPath, hash);
   return hash;
 }

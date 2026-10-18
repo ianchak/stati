@@ -8,7 +8,7 @@ seo:
 
 # Recipes
 
-Practical recipes and patterns for building sites with Stati. Each recipe solves a common use case with code you can adapt. A recipe that starts with a file name, such as `site/partials/menu.eta`, is a template to include from a layout: `<%~ stati.include('partials/menu') %>`.
+Practical recipes and patterns for building sites with Stati. Each recipe solves a common use case with code you can adapt. A recipe that starts with a `site/partials/` file name, such as `site/partials/menu.eta`, is a template to include from a layout: `<%~ stati.include('partials/menu') %>`. The others are layouts, and say which pages they lay out.
 
 ## Content management
 
@@ -70,6 +70,8 @@ Use `stati.page.navNode` to show the current page's child pages:
 ```
 
 `navNode.children` is only set on collection pages (a folder's `index.md`), and the children are the pages in that folder. A subfolder appears there as a single page without its own children.
+
+The navigation tree is flat: every folder with pages is a top-level node. A nested folder's `index.md` therefore also appears, without children, among its parent folder's pages, and `stati.page.navNode` can be that entry. On such a page, look its node up among the top-level nodes instead: `stati.nav.tree.find((node) => node.url === stati.page.url)?.children ?? []`.
 
 Common navigation patterns:
 
@@ -263,7 +265,7 @@ Here are practical examples:
 Use collection data provided to index pages to list and filter content:
 
 ```html
-<!-- blog/index.eta -->
+<!-- site/blog/index.eta: layout of site/blog/index.md -->
 <% // Collection data is automatically provided to index pages %>
 <% const posts = stati.collection ? stati.collection.recentPages : [] %>
 <% const tags = stati.collection ? Object.keys(stati.collection.pagesByTag) : [] %>
@@ -322,7 +324,7 @@ Use collection data provided to index pages to list and filter content:
 A post reads the collection of its folder, so the post layout can pick related posts from `stati.collection` with no hook:
 
 ```html
-<!-- blog/layout.eta -->
+<!-- site/blog/layout.eta: layout of the posts -->
 <%
   const tags = stati.page.tags ?? [];
   const related = (stati.collection?.recentPages ?? [])
@@ -369,7 +371,7 @@ paginate: 10
 ```
 
 ```html
-<!-- blog/index.eta -->
+<!-- site/blog/index.eta: layout of site/blog/index.md -->
 <% const { items, pageNumber, totalPages, prevUrl, nextUrl, urls } = stati.pagination; %>
 <% items.forEach((post) => { %>
   <h2><a href="<%= post.url %>"><%= post.frontMatter.title %></a></h2>
@@ -406,7 +408,7 @@ generate:
 ```
 
 ```html
-<!-- blog/tags/layout.eta -->
+<!-- site/blog/tags/layout.eta: layout of the pages from site/blog/tags/[tag].md -->
 <h1><%= stati.page.title %></h1>
 <ul>
   <% stati.generated.items.forEach((post) => { %>
@@ -484,9 +486,12 @@ Call them in templates as `stati.helpers.name()`. For slugs, Stati's own `stati.
 <article class="post">
   <header>
     <h1><%= stati.page.title %></h1>
+    <% const published = stati.page.publishedAt ?? stati.page.date; %>
     <div class="meta">
-      <time><%= stati.helpers.formatDate(stati.page.publishedAt) %></time>
-      <span><%= stati.helpers.timeAgo(stati.page.publishedAt) %></span>
+      <% if (published) { %>
+        <time><%= stati.helpers.formatDate(published) %></time>
+        <span><%= stati.helpers.timeAgo(published) %></span>
+      <% } %>
       <span><%= stati.helpers.readingTime(stati.content) %></span>
     </div>
   </header>

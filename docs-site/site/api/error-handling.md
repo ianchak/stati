@@ -29,6 +29,8 @@ Stati follows these key principles:
 - **Config file fails to load** (syntax error, failing import): the error is printed, followed by "Falling back to default configuration.", and the build **continues with the defaults**. Check the output if your title, base URL or other settings seem to be ignored.
 - **Invalid `isg` values**: the build stops with an `Invalid ISG configuration` error that names the field (see [ISG configuration errors](#isg-configuration-errors))
 - **Invalid `images` values**: the build stops with an `Invalid images configuration in <config file>` error that names the option. Unknown keys are rejected too, which catches typos (see [Image errors](#image-errors))
+- **Unknown options**: an option Stati does not know, such as Stati 1's `eta`, stops the build with `Invalid configuration in <config file>` and `Unknown option eta.`, naming a similar option when there is one (`Unknown option sitmap. Did you mean sitemap?`)
+- **`helpers` that are not functions**: the build stops with, for example, `helpers.formatDate must be a function that templates call as stati.helpers.formatDate() (got number 1).`
 - **Other values are not validated** at load time. A wrong type usually surfaces later as a generic error, for example `srcDir: 123` fails with `The "path" argument must be of type string`.
 
 **Example errors**:
@@ -51,7 +53,8 @@ export default {
 
 **Handling**:
 
-- **Individual file errors**: Skips unreadable files with warning and continues
+- **Unreadable files**: A file that disappears during the build, or an empty file, is skipped with a warning; other read errors, such as missing permissions, stop the build with `Failed to read file <path>`
+- **Invalid front matter**: YAML that cannot be read, or front matter that is a list or a single value instead of `key: value` lines, stops the build with `Invalid front matter in <file>` and the line of the problem
 - **Missing or empty content directory**: The build succeeds with 0 pages ("Found 0 pages"), so check `srcDir` if a build produces nothing
 - **Unsupported front matter format**: A front matter block marked with an unknown language (for example `---toml`) fails the build; YAML (the default) and `---json` are supported
 
@@ -117,7 +120,7 @@ Check an optional template with `stati.include.has(name)` instead of including i
 <!-- ❌ Unknown property "stati.paeg". Did you mean "stati.page"? -->
 
 <h1><%= stati.title %></h1>
-<!-- ❌ Unknown property "stati.title". Did you mean "stati.page.title"? -->
+<!-- ❌ Unknown property "stati.title". Did you mean "stati.page.title" or "stati.site.title"? -->
 
 <%= stati.formatDate(stati.page.date) %>
 <!-- ❌ Unknown property "stati.formatDate". Did you mean "stati.helpers.formatDate"? -->
@@ -195,7 +198,7 @@ export default defineConfig({
 
 Stati uses domain-specific error classes that capture relevant context for debugging. Each error type includes structured information to help identify and resolve issues quickly.
 
-These classes are internal: `@stati/core` does not export them, so you cannot use `instanceof` with them in your own code. Check `error.name` (for example `'ISGConfigurationError'`) instead.
+These classes are internal: `@stati/core` does not export them, so you cannot use `instanceof` with them in your own code. Check `error.name` instead, or `error.cause?.name` for configuration errors: an invalid `isg` block arrives as an `Error` whose `cause` is the `ISGConfigurationError`.
 
 ### Template errors
 
@@ -352,7 +355,7 @@ The overlay follows your system's light or dark setting. It reloads by itself af
 Error messages include relevant context:
 
 ```text
-× Error rendering layout blog/layout.eta: Cannot read properties of undefined (reading 'title')
+× Error rendering site/blog/layout.eta for /blog/my-post: Cannot read properties of undefined (reading 'title')
 ```
 
 ### Build statistics
@@ -437,7 +440,7 @@ export default defineConfig({
 });
 ```
 
-Stati itself only validates the `isg` settings at load time, so the type check is your safeguard for everything else.
+At load time Stati checks the option names, `helpers`, and the `isg` and `images` settings, so the type check is your safeguard for everything else.
 
 ### 2. Handle hook errors gracefully
 

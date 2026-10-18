@@ -34,7 +34,7 @@ interface NavNode {
   url: string;                // URL path
   path: string;               // URL path of the page or collection folder
   order?: number;             // Sort order (from front matter)
-  publishedAt?: Date;         // Publication date (quoted publishedAt front matter)
+  publishedAt?: Date;         // Publication date: the first valid publishedAt, published, date or createdAt
   children?: NavNode[];       // Pages in the collection (collection nodes only)
   isCollection?: boolean;     // True if this represents a folder
 }

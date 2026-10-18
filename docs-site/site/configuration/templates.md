@@ -281,7 +281,7 @@ Once defined, helpers are available on `stati.helpers`:
 ```eta
 <!-- String manipulation -->
 <h1><%= stati.helpers.capitalize(stati.page.title) %></h1>
-<p class="<%= stati.helpers.kebabCase(category) %>"></p>
+<p class="<%= stati.helpers.kebabCase(stati.page.category) %>"></p>
 
 <!-- Date formatting -->
 <time><%= stati.helpers.formatDate(stati.page.date) %></time>
@@ -293,8 +293,9 @@ Once defined, helpers are available on `stati.helpers`:
 
 <!-- Arrays and objects -->
 <%
+const posts = stati.collection?.recentPages ?? [];
 const sortedPosts = stati.helpers.sortBy(posts, 'publishedAt', 'desc');
-const postsByTag = stati.helpers.groupBy(posts, 'category');
+const postsByTag = stati.helpers.groupBy(posts, 'frontMatter.category');
 %>
 ```
 

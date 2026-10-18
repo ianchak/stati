@@ -90,7 +90,7 @@ stati dev [options]
 | `--port` | number | 3000 | Port to run the dev server on |
 | `--host` | string | localhost | Host to bind the dev server to |
 | `--open` | boolean | false | Open browser after starting server |
-| `--config` | string | - | Accepted, but `dev` currently loads the config from the current directory (see [Config file location](#config-file-location)) |
+| `--config` | string | - | Builds pages with the config in this path's directory; the server's own settings still come from the current directory (see [Config file location](#config-file-location)) |
 | `--tailwind-input` | string | - | Input file path for Tailwind CSS watcher |
 | `--tailwind-output` | string | - | Output file path for compiled Tailwind CSS |
 | `--tailwind-verbose` | boolean | false | Show all Tailwind CSS output (default shows errors only) |
@@ -344,12 +344,12 @@ stati.config.js   # JavaScript config
 stati.config.mjs  # ES module config
 ```
 
-If none exists, Stati builds with its defaults (site title "My Stati Site", base URL `http://localhost:3000`). If the file exists but fails to load (for example, a syntax error), the error is printed, followed by "Falling back to default configuration.", and the build continues with those defaults, so read the output when a build looks wrong. Invalid `isg` settings are the exception: they stop the build with an "Invalid ISG configuration" error.
+If none exists, Stati builds with its defaults (site title "My Stati Site", base URL `http://localhost:3000`). If the file exists but fails to load (for example, a syntax error), the error is printed, followed by "Falling back to default configuration.", and the build continues with those defaults, so read the output when a build looks wrong. Validation errors are the exception: an option Stati does not know (such as Stati 1's `eta`), `helpers` that are not functions, and invalid `isg` or `images` settings stop the build with an error that names the setting.
 
 `--config` does not select a file by name:
 
 - `stati build --config path/to/stati.config.ts` uses only the **directory** of the path and loads the standard file name from it. `--config stati.staging.js` is ignored and `./stati.config.*` is used.
-- `stati dev` and `stati preview` currently always load the config from the current directory.
+- `stati dev` takes its port, host and the folders it serves and watches from `./stati.config.*`, but builds pages with the config in the `--config` path's directory, so the two can differ. `stati preview` ignores `--config`.
 - `srcDir`, `outDir`, `staticDir` and the `.stati/` cache are resolved from the current directory in every case.
 
 Run commands from the project root, and keep one config file per project; switch environments with environment variables instead of separate config files.
@@ -382,8 +382,6 @@ stati build && stati preview
 # Or use npx serve
 stati build && npx serve dist
 
-# Or with custom server
-stati build && python -m http.server 8080 --directory dist
 ```
 
 ### Debugging
@@ -446,24 +444,24 @@ echo "Deployment complete!"
 .PHONY: dev build deploy clean
 
 dev:
-  stati dev --open
+	stati dev --open
 
 build:
-  stati build --clean
+	stati build --clean
 
 deploy: build
-  rsync -av dist/ user@server:/var/www/html/
+	rsync -av dist/ user@server:/var/www/html/
 
 clean:
-  rm -rf dist .stati
+	rm -rf dist .stati
 
 fresh: clean build
 
 invalidate-blog:
-  stati invalidate tag:blog
+	stati invalidate tag:blog
 
 invalidate-all:
-  stati invalidate
+	stati invalidate
 ```
 
 ## Error handling
@@ -488,18 +486,14 @@ stati build --clean
 
 **Cache corruption:**
 
-```bash
-# Error: Cache manifest corrupted
-# Solution: Clean cache and rebuild
-stati build --clean
-```
+A cache manifest Stati cannot read is not an error: the build warns, for example "Cache manifest contains invalid JSON, ignoring existing cache", and renders every page. Nothing needs fixing; the build writes a new manifest.
 
 ## Exit codes
 
 Stati uses conventional exit codes:
 
 - `0` - Command completed successfully
-- `1` - An error occurred (build failure, invalid command, etc.)
+- `1` - The command failed, or no command or an unknown command was given
 
 ```bash
 # Use in scripts

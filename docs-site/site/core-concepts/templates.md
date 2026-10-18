@@ -155,7 +155,7 @@ The `layout` value is a template name without the `.eta` extension, looked up th
 
 The first match wins, providing maximum flexibility while maintaining sensible defaults.
 
-Index pages of a [collection](#collections) check for an `index.eta` in each directory before its `layout.eta`, so a listing page can have its own layout.
+Index pages of a [collection](#collections) check for an `index.eta` in each directory before its `layout.eta`, so a listing page can have its own layout. The root `index.md` is always an index page; a folder's `index.md` is one once the folder holds another page.
 
 ### Root layout example
 
@@ -260,7 +260,7 @@ With more than one layout, keep the document around them in one template and let
 
 - `stati.layout(name, props?)` names the template that wraps the current one. It prints nothing and can be called anywhere in the template; the wrapping happens once the template has rendered.
 - The named template receives that output as `stati.body`, printed raw with `<%~`, and the props as `stati.props`.
-- A shell can call `stati.layout()` itself, so wrappers nest: `blog/layout.eta` can name `blog/base.eta`, which names `base.eta`.
+- A shell can call `stati.layout()` itself, so wrappers nest: `blog/layout.eta` can name `blog/base.eta`, which names `/base` for `site/base.eta`. A plain `'base'` there would find `blog/base.eta` itself, because names are looked up from the page's folder.
 - Discovery only ever picks `layout.eta` and `index.eta`, so `base.eta` is never a page's layout by accident.
 - `stati.body` exists only in templates rendered by `stati.layout()` or `stati.include()`. In the page's own layout, the page's Markdown is `stati.content`.
 - One `stati.layout()` call per template. In development a second call is an error; in production the build warns and uses the last one. Choose the name with a condition instead, using `stati.layout.has()` for optional shells:
@@ -438,7 +438,7 @@ A folder of pages with an `index.md` is a collection. Templates read it as `stat
 
 Each entry is a page model, not a template context: read front matter through `frontMatter`, and use `url` for links. Stati rebuilds the pages that read a collection when one of its pages is added, removed, retitled or retagged.
 
-An `index.eta` next to an index page is used for that page ahead of `layout.eta`, so the listing can have its own template while the posts keep the folder layout.
+An `index.eta` next to an index page is used for that page ahead of `layout.eta`, so the listing can have its own template while the posts keep the folder layout. A folder's `index.md` is an index page once the folder holds another page; the root `index.md` always is.
 
 [Collections and generated pages](/core-concepts/collections) covers the collection data, which collection a page reads, pagination with `paginate`, and one page per tag or author from a `[param].md` template.
 

@@ -35,7 +35,7 @@ await build({ force: false });
 
 Eta caches compiled templates in memory; the dev server keeps them between rebuilds and clears them when a template changes. This is separate from ISG, which caches rendered pages between builds.
 
-For detailed template configuration and `propValue` utility documentation, see [Template Configuration](/configuration/templates).
+For detailed template configuration and `propValue` utility documentation, see [Template Configuration](/configuration/templates) and [`stati.propValue()`](/api/templates#stati-propvalue-args).
 
 #### Static asset optimization
 

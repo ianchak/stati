@@ -172,7 +172,7 @@ To design your own, add `og.eta` to `site/`. For a section with its own card, ad
 </div>
 ```
 
-Card templates receive the same `stati` object as layouts, with two differences: `stati.content` is empty, because cards don't show the page body, and `stati.og` holds the card's `width` and `height`. Partials and filters work as in layouts.
+Card templates receive the same `stati` object as layouts, with two differences: `stati.content` is empty, because cards don't show the page body, and `stati.og` holds the card's `width` and `height`. `stati.include()`, `stati.layout()` and `stati.helpers` work as in layouts.
 
 Cards are drawn by [Satori](https://github.com/vercel/satori), which supports a subset of CSS:
 

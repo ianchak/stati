@@ -11,27 +11,27 @@ Common errors you may encounter when using Stati and how to fix them.
 ## Site uses the default title or `localhost` URLs
 
 **Cause:**
-Stati did not use your configuration. Without a `stati.config.ts`, `stati.config.js` or `stati.config.mjs` in the current directory, Stati silently uses its defaults (site title "My Stati Site", base URL `http://localhost:3000`). If the file exists but fails to load, the build prints the error followed by "Falling back to default configuration." and continues with the defaults. Invalid `isg` or `images` settings are different: they stop the build with an error that names the setting.
+Stati did not use your configuration. Without a `stati.config.ts`, `stati.config.js` or `stati.config.mjs` in the current directory, Stati silently uses its defaults (site title "My Stati Site", base URL `http://localhost:3000`). If the file exists but fails to load, the build prints the error followed by "Falling back to default configuration." and continues with the defaults. Validation errors are different: an option Stati does not know (such as Stati 1's `eta`), `helpers` that are not functions, and invalid `isg` or `images` settings stop the build with an error that names the setting.
 
 **Solution:**
 
 1. Run commands from the project root, where the config file is
 2. Read the start of the build output for "Error loading config" and fix the reported error
 3. Use one of the standard file names; `--config` cannot point to a file with another name (see [Config file location](/cli/commands#config-file-location))
-4. A `.js` config that uses `import` needs `"type": "module"` in `package.json` (or rename it to `.mjs`)
+4. A `.js` config that uses `import` loads anyway, but Node prints a warning unless `package.json` has `"type": "module"`, and the config fails to load if it says `"type": "commonjs"`. Add `"type": "module"` or rename the file to `.mjs`
 
 ---
 
 ## Page renders with the wrong layout or no styling
 
 **Cause:**
-A `layout` named in front matter that does not exist is ignored without an error: Stati falls back to the nearest `layout.eta`. If no layout exists at all, Stati logs "No layout template found, using fallback" and writes a bare HTML page.
+A `layout` named in front matter that names no template logs a warning with similar names, and Stati falls back to the nearest `layout.eta` (or `index.eta` on index pages). If no layout exists at all, Stati logs "No layout template found, using fallback" and writes a bare HTML page.
 
 **Solution:**
 
 1. Check the `layout` field in your page's front matter
 2. Ensure the layout file exists in `site/` (e.g., `site/layout.eta`)
-3. Use paths relative to `site/` **without** the `.eta` extension: `layout: post` or `layout: layouts/blog`
+3. Name it the way [template names](/core-concepts/templates#template-resolution-order) work: `layout: post` uses the nearest `post.eta` from the page's folder up to `site/`, and `layout: /layouts/blog` uses `site/layouts/blog.eta` only
 
 ---
 
@@ -263,7 +263,7 @@ hooks: {
       console.error('Hook failed:', error);
       // Decide: throw to stop build, or continue
     }
-  };
+  },
 }
 ```
 
@@ -276,7 +276,7 @@ Tailwind watcher may not be started or is misconfigured.
 
 **Solution:**
 
-1. Ensure `tailwindcss` is installed locally: `npm install -D tailwindcss`
+1. Ensure the `tailwindcss` command is installed locally: `npm install -D tailwindcss@3`, the version the scaffolder installs. Tailwind 4 moved the command to `@tailwindcss/cli`, so with Tailwind 4 install that package too
 2. Use both flags: `stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css`
 3. Verify `tailwind.config.js` exists and has correct content paths
 4. Add `--tailwind-verbose` to see Tailwind output for debugging

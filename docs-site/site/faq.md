@@ -58,7 +58,7 @@ Yes. ISG is enabled by default: Stati caches rendered pages between builds and r
 
 ## Can Stati generate tag pages and paginated listings?
 
-Yes. `paginate: 10` in a listing's front matter splits it into `/blog`, `/blog/page/2` and so on, and a file named `[tag].md` becomes one page per tag, such as `/blog/tags/css`. See [Collections and generated pages](/core-concepts/collections).
+Yes. `paginate: 10` in a listing's front matter splits it into `/blog`, `/blog/page/2` and so on, and a `[tag].md` file with `generate: { from: tags }` in its front matter becomes one page per tag, such as `/blog/tags/css`. See [Collections and generated pages](/core-concepts/collections).
 
 ## What templating engine does Stati use?
 

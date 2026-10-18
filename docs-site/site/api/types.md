@@ -915,10 +915,13 @@ export default defineConfig({
   hooks: {
     beforeAll: async (ctx) => {
       console.log(`Starting build with ${ctx.pages.length} pages`);
+      // Change page data here: beforeAll runs before the cache check
+      for (const page of ctx.pages) {
+        page.frontMatter.description ??= ctx.config.site.description;
+      }
     },
     beforeRender: async (ctx) => {
-      // Modify page data before rendering
-      ctx.page.frontMatter.description ??= ctx.config.site.description;
+      console.log(`Rendering: ${ctx.page.url}`);
     },
     afterRender: async (ctx) => {
       console.log(`Rendered: ${ctx.page.url}`);

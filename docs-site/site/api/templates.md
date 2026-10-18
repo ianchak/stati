@@ -130,7 +130,7 @@ The root of `stati` holds only Stati's own API. Your functions live under [`stat
 
 Front matter values are exposed through `stati.page`. Additional properties you place on `site` in a JavaScript config are available at runtime as `stati.site.yourKey`, but the `SiteConfig` type only declares the four fields above, so a TypeScript config rejects them.
 
-During `stati dev`, reading a `stati.*` property that does not exist (for example a misspelled helper, or `stati.site.author` when your config has no `site.author`) throws an error with a "Did you mean …?" hint instead of returning `undefined`: `stati.helpers.formatDat` and `stati.formatDate` both suggest `stati.helpers.formatDate`. Front matter under `stati.page` is not checked. Test for optional values with the `in` operator: `'author' in stati.site`. See [Unknown template properties](/api/error-handling#unknown-template-properties).
+During `stati dev`, reading a `stati.*` property that does not exist (for example a misspelled helper, or `stati.site.author` when your config has no `site.author`) throws an error instead of returning `undefined`, suggesting the property you probably meant or listing the available ones: `stati.helpers.formatDat` and `stati.formatDate` both suggest `stati.helpers.formatDate`. Front matter under `stati.page` is not checked. Test for optional values with the `in` operator: `'author' in stati.site`. See [Unknown template properties](/api/error-handling#unknown-template-properties).
 
 The `nav` object provides helper methods for working with navigation. See [Navigation API](/api/navigation) for details on `getTree()`, `findNode()`, `getBreadcrumbs()`, and other navigation helpers.
 
@@ -213,7 +213,7 @@ Eta's own `include()`, `includeAsync()`, `layout()`, `block()` and `blockAsync()
 | `layout('x', data)` | Error: "Use `stati.layout('./x', data)` instead; the data arrives as `stati.props`" | Error logged; no layout applied |
 | `block()`, `blockAsync()` | Error: pass the content to the layout as a prop | Error logged; renders `''` |
 
-The suggested name keeps Eta's resolution: a name without `/` becomes `./name`, relative to the calling template.
+The suggested name keeps Eta's resolution: a name that does not start with `/`, `./` or `../` gets `./` in front, so it stays relative to the calling template.
 
 ## Built-in functions
 

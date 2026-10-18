@@ -58,7 +58,7 @@ blog/my-post.md → /blog/my-post    → dist/blog/my-post.html
 index.md        → /                → dist/index.html
 ```
 
-Every page is written as a `.html` file named after its URL. Only the root page becomes an `index.html`. A `permalink` that ends in `/` is the one way to get a folder-style `…/index.html` output (see [Front matter URL override](#front-matter-url-override)).
+Every page is written as a `.html` file named after its URL. Only the root page becomes an `index.html`. A URL that ends in `/`, from a `permalink` or a `collections.generate` entry, is the way to get a folder-style `…/index.html` output (see [Front matter URL override](#front-matter-url-override)).
 
 `stati preview` serves `/blog`, `/blog.html` and `/blog/` from `dist/blog.html`. On your production host, check that an extensionless URL such as `/blog` is served from `blog.html`, including when a `blog/` folder sits next to it. Many static hosts do this by default; others need a "clean URLs" or rewrite setting.
 

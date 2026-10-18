@@ -24,7 +24,7 @@ Stati's templating engine. Eta files (`.eta`) hold HTML with embedded JavaScript
 
 ## Layout
 
-The template that renders a page: the nearest `layout.eta`, or the one named in front matter without the extension (`layout: layouts/post`). A layout can name a [shell](#shell) to wrap it with `stati.layout()`.
+The template that renders a page: the nearest `layout.eta` (on index pages, an `index.eta` in the same or a nearer folder wins), or the one named in front matter without the extension (`layout: layouts/post`). A layout can name a [shell](#shell) to wrap it with `stati.layout()`.
 
 ## Layout inheritance
 
@@ -138,7 +138,7 @@ Splitting a collection listing into numbered pages with `paginate` in front matt
 
 ## Generated page
 
-A page Stati creates from a `[param].md` template, one per key: `site/blog/tags/[tag].md` becomes `/blog/tags/css`, `/blog/tags/javascript` and so on, one for each tag in its collection. Templates read the key and its pages as `stati.generated`. See [Generated pages](/core-concepts/collections#generated-pages).
+A page Stati creates from a `[param].md` template, one per key: `site/blog/tags/[tag].md` with `generate: { from: tags }` becomes `/blog/tags/css`, `/blog/tags/javascript` and so on, one for each tag in its collection. Templates read the key and its pages as `stati.generated`. See [Generated pages](/core-concepts/collections#generated-pages).
 
 ## Helpers
 

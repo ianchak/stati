@@ -11,7 +11,7 @@ seo:
     'applicationCategory': 'DeveloperApplication'
     'applicationSubCategory': 'Static Site Generator'
     'description': 'Stati is a TypeScript-first static site generator with Markdown and Eta templates, typed configuration, esbuild client bundles, and Incremental Static Generation.'
-    'operatingSystem': 'Cross-platform (Node.js 22.12+)'
+    'operatingSystem': 'Cross-platform (Node.js 22.12+ or 24+)'
     'programmingLanguage': 'TypeScript'
     'url': 'https://stati.build/'
     'sameAs':
@@ -33,7 +33,7 @@ hero:
   specs:
     - '9 core dependencies'
     - 'No client runtime'
-    - 'Node 22.12+'
+    - 'Node 22.12+ or 24+'
     - 'MIT'
   config: |
     import { defineConfig } from '@stati/core';

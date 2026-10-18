@@ -25,7 +25,7 @@ Stati looks in the directory you run it from for `stati.config.ts`, then `stati.
 | `site.baseUrl` | `'http://localhost:3000'` |
 | `isg` | `{ enabled: true, ttlSeconds: 21600, maxAgeCapDays: 365 }` |
 
-Your config is merged over these defaults: `site` and `isg` are merged field by field, every other section replaces the default as a whole. If the file fails to load (for example, a syntax error), Stati prints the error and builds with the defaults, so watch the output for "Falling back to default configuration."; only invalid `isg` values stop the build. A `.js` config with `import` statements needs `"type": "module"` in `package.json` (or use `.mjs`).
+Your config is merged over these defaults: `site` and `isg` are merged field by field, every other section replaces the default as a whole. If the file fails to load (for example, a syntax error), Stati prints the error and builds with the defaults, so watch the output for "Falling back to default configuration.". Invalid `isg` or `images` values, an option Stati does not know (such as a leftover `eta` block) and `helpers` entries that are not functions stop the build instead. A `.js` config with `import` statements loads without `"type": "module"` in `package.json`, but Node prints a warning; add it, or name the file `.mjs`.
 
 ### Basic setup
 
@@ -110,7 +110,7 @@ export default defineConfig({
     // Plugin configuration - array of plugin names or [name, options] tuples
     plugins: [
       'footnote',                          // markdown-it-footnote - Footnotes
-      ['container', { validate: () => true }],  // markdown-it-container with options
+      ['container', 'tip'],                // markdown-it-container: [plugin, container name]
     ],
 
     // Custom markdown-it configuration function (runs after plugins)
@@ -328,11 +328,15 @@ Add custom logic at various stages of the build process:
 ```javascript
 export default defineConfig({
   hooks: {
-    // After pages are loaded, before any page renders - receives BuildContext
+    // After pages are loaded, before any page renders - receives BuildContext.
+    // Change page data here: beforeAll runs before the cache check.
     async beforeAll(context) {
       console.log('Starting build...');
       console.log(`Building ${context.pages.length} pages`);
-      console.log(`Output directory: ${context.config.outDir}`);
+      for (const page of context.pages) {
+        page.frontMatter.readingTime = calculateReadingTime(page.content);
+        page.frontMatter.wordCount = countWords(page.content);
+      }
     },
 
     // After build completes - receives BuildContext
@@ -341,11 +345,10 @@ export default defineConfig({
       console.log(`Generated ${context.pages.length} pages`);
     },
 
-    // Before each page renders - receives PageContext
+    // Before each page renders - receives PageContext. Front matter changed here
+    // misses the cache check, so the page would re-render on every build.
     async beforeRender(context) {
-      // Add computed properties to the page
-      context.page.frontMatter.readingTime = calculateReadingTime(context.page.content);
-      context.page.frontMatter.wordCount = countWords(context.page.content);
+      console.log(`Rendering: ${context.page.url}`);
     },
 
     // After each page renders - receives PageContext
@@ -452,7 +455,7 @@ export default defineConfig({
 
    // config/markdown.js
    export const markdownConfig = {
-     plugins: ['footnote', 'container'],  // Stati auto-prepends 'markdown-it-'
+     plugins: ['footnote', ['container', 'tip']],  // Stati auto-prepends 'markdown-it-'
    };
 
    // stati.config.js
@@ -540,7 +543,7 @@ Stati does not set `process.env.NODE_ENV`. A config that selects its settings wi
 For detailed information about specific configuration options, see:
 
 - **[Site Metadata](/configuration/site-metadata)** - Site title, base URL, and locale settings
-- **[Template Settings](/configuration/templates)** - Eta template engine configuration
+- **[Templates](/configuration/templates)** - Template helpers and the Eta settings Stati fixes
 - **[Markdown Configuration](/configuration/markdown)** - Plugins and markdown-it processing
 - **[ISG Options](/configuration/isg)** - Incremental static generation and caching
 - **[Collections](/core-concepts/collections)** - Listings, pagination and generated pages

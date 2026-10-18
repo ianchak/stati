@@ -91,7 +91,7 @@ ISG tracks dependencies and only rebuilds what's necessary:
 
 - A changed page is re-rendered; unchanged pages are served from the cache
 - Template changes rebuild the pages that use them
-- Static assets are copied on every build; they do not invalidate pages
+- Static assets are copied on every build; an image a page shows is one of its dependencies, so replacing it rebuilds that page
 - Time-based cache expiration for content that changes over time
 
 ### 5. Output generation
