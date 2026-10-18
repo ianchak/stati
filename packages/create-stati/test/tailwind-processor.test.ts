@@ -88,8 +88,9 @@ describe('tailwind-processor', () => {
       expect(result.filesToDelete).toEqual(['public/styles.css']);
     });
 
-    it('should not delete anything when generating starter styles', () => {
-      expect(setupTailwind().filesToDelete).toBeUndefined();
+    it('should remove the template stylesheet with starter styles too', () => {
+      // A copy in public/ would be written over Tailwind's output by every build
+      expect(setupTailwind().filesToDelete).toEqual(['public/styles.css']);
     });
   });
 });

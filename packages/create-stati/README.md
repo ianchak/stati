@@ -234,7 +234,6 @@ my-site/
 ├── src/
 │   └── styles.css        # Tailwind source file
 ├── public/
-│   ├── styles.css        # Blank template only: the starter stylesheet is kept
 │   └── favicon.svg       # Site icon
 ├── tailwind.config.js    # Tailwind configuration
 ├── stati.config.ts
@@ -408,6 +407,8 @@ export default defineConfig({
   site: {
     title: 'my-site',
     description: 'A Stati site',
+    // Your site's public address, used for absolute URLs
+    baseUrl: 'https://example.com',
   },
   typescript: {
     enabled: true,
@@ -415,7 +416,7 @@ export default defineConfig({
 });
 ```
 
-Add `site.baseUrl` with your real address before you deploy: until you do, canonical links, the sitemap and feeds use the default `http://localhost:3000`. The blog and docs templates ship their own config with a placeholder `baseUrl` to replace.
+Set `site.baseUrl` to your real address before you deploy: canonical links, the sitemap and feeds start with it. The blog and docs templates ship their own config, with a placeholder `baseUrl` to replace as well.
 
 You can customize this file to add features like SEO, sitemap, ISG caching, and more. See the [Configuration Guide](https://stati.build/configuration/file/) for all options.
 

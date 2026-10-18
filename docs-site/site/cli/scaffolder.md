@@ -99,7 +99,7 @@ npx create-stati my-blog --template=blog --images
 With image tools, the scaffolder:
 
 - adds `@stati/images` to the project's dev dependencies;
-- turns on `images.responsive` and `images.og` in the config, and sets `site.baseUrl` in the blank template, because preview images need absolute URLs;
+- turns on `images.responsive` and `images.og` in the config, and explains `site.baseUrl` in the blank template's config, because preview images need absolute URLs;
 - keeps the card template of the blog and docs templates, `site/og.eta`, with its fonts in `og/fonts/`. The blank template uses the card built into `@stati/images`.
 
 Without image tools, the blog and docs templates' card template and fonts are left out. You can add the package later; see [Images](/configuration/images).
@@ -251,7 +251,7 @@ my-site/
 └── README.md            # Getting started guide
 ```
 
-For the blank template, the scaffolder writes a fresh `stati.config.ts` that sets `site.title` (your project name) and `site.description`, and turns on `typescript`. (The blog and docs templates keep their own config, which already contains a placeholder `baseUrl`.) Add `site.baseUrl` with your real address before you deploy: until you do, canonical links, the sitemap and feeds use the default `http://localhost:3000`.
+For the blank template, the scaffolder writes a fresh `stati.config.ts` that sets `site.title` (your project name), `site.description` and a placeholder `site.baseUrl` of `https://example.com`, and turns on `typescript`. (The blog and docs templates keep their own config, which also contains a placeholder `baseUrl`.) Set `site.baseUrl` to your real address before you deploy: canonical links, the sitemap and feeds start with it.
 
 ### With Sass
 
@@ -276,14 +276,13 @@ my-site/
 ├── src/
 │   └── styles.css        # Tailwind source file
 ├── public/
-│   ├── styles.css        # Blank template only: the starter stylesheet is kept
 │   └── favicon.svg       # Site icon
 ├── tailwind.config.js    # Tailwind configuration
 ├── stati.config.ts
 └── package.json          # Includes Tailwind scripts
 ```
 
-With the blog and docs templates, `public/styles.css` is moved into `src/styles.css` instead.
+With the blog and docs templates, `public/styles.css` is moved into `src/styles.css`, below the Tailwind directives. The blank template gets Tailwind starter styles there instead. Either way `public/styles.css` is removed, because the build would copy it over the compiled `dist/styles.css`.
 
 The `typecheck` script is added to `package.json` for validating your TypeScript code.
 

@@ -773,7 +773,7 @@ describe('create-stati scaffolding', () => {
       expect(packageJson.devDependencies['@stati/images']).toBe('^1.0.0');
     });
 
-    it('should leave baseUrl and images out without image tools', async () => {
+    it('should set a placeholder baseUrl and leave images out without image tools', async () => {
       const projectDir = join(tempDir, 'test-blank-plain');
       const result = await createSite({
         projectName: 'test-blank-plain',
@@ -785,7 +785,8 @@ describe('create-stati scaffolding', () => {
       });
 
       const config = await readFile(join(result.targetDir, 'stati.config.ts'), 'utf-8');
-      expect(config).not.toContain('baseUrl');
+      // SiteConfig requires baseUrl, so a TypeScript config without one does not type-check
+      expect(config).toContain("    baseUrl: 'https://example.com',");
       expect(config).not.toContain('images:');
     });
   });

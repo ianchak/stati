@@ -12,8 +12,9 @@ import type { ProcessorResultWithDeletions } from './types.js';
  * Returns all files and configuration needed for Tailwind support.
  *
  * @param templateCSS - The template's own stylesheet. When given, it is carried over
- *   below the Tailwind directives (and public/styles.css is removed) instead of
- *   replacing the template's design with Tailwind starter styles.
+ *   below the Tailwind directives instead of replacing the template's design with
+ *   Tailwind starter styles. Either way public/styles.css is removed: every build copies the
+ *   static files, which would write it over Tailwind's dist/styles.css.
  * @returns Processor result with files, dependencies, and scripts
  *
  * @example
@@ -43,7 +44,7 @@ export function setupTailwind(templateCSS?: string): ProcessorResultWithDeletion
       build: 'stati build && npm run build:css',
       dev: 'stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css',
     },
-    ...(templateCSS !== undefined && { filesToDelete: ['public/styles.css'] }),
+    filesToDelete: ['public/styles.css'],
   };
 }
 
