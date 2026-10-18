@@ -15,7 +15,7 @@ export interface ExampleMetadata {
   estimatedSetupTime: string;
   /**
    * The template ships a stati.config.js that the generated project must keep
-   * (hooks, filters, feeds). The scaffolder adapts it instead of replacing it.
+   * (hooks, helpers, feeds). The scaffolder adapts it instead of replacing it.
    */
   ownConfig: boolean;
   /**

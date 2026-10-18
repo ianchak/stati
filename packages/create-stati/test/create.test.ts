@@ -643,7 +643,7 @@ describe('create-stati scaffolding', () => {
       await expect(access(join(result.targetDir, 'helpers', 'docs.js'))).resolves.not.toThrow();
       await expect(access(join(result.targetDir, 'site', 'home.eta'))).resolves.not.toThrow();
       await expect(
-        access(join(result.targetDir, 'site', '_partials', 'sidebar.eta')),
+        access(join(result.targetDir, 'site', 'partials', 'sidebar.eta')),
       ).resolves.not.toThrow();
       await expect(
         access(join(result.targetDir, 'site', 'getting-started', 'index.md')),
