@@ -428,6 +428,9 @@ const cli = yargs(hideBin(process.argv))
     },
   )
   .demandCommand(1)
+  // A mistyped command fails, naming the command it was probably meant to be
+  .strictCommands()
+  .recommendCommands()
   .help();
 
 cli.parse();
