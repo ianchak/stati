@@ -16,8 +16,8 @@ vi.mock('fs-extra', () => ({
   },
 }));
 
-vi.mock('fast-glob', () => ({
-  default: mockGlob,
+vi.mock('tinyglobby', () => ({
+  glob: mockGlob,
 }));
 
 describe('content.ts', () => {
@@ -31,8 +31,19 @@ describe('content.ts', () => {
     },
   };
 
+  const DRAFT_AND_PUBLISHED = {
+    '/test/project/src/published.md': '---\ntitle: Published\n---\n# Published content',
+    '/test/project/src/draft.md': '---\ntitle: Draft\ndraft: true\n---\n# Draft content',
+  };
+
+  /** Mocks the content directory: glob lists the files in the given order, read by path */
+  function mockContentFiles(files: Record<string, string>): void {
+    mockGlob.mockResolvedValue(Object.keys(files));
+    mockReadFile.mockImplementation(async (path: string) => files[path]);
+  }
+
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     // Mock process.cwd() to return a consistent path
     vi.spyOn(process, 'cwd').mockReturnValue('/test/project');
   });
@@ -42,40 +53,34 @@ describe('content.ts', () => {
   });
 
   describe('loadContent', () => {
-    it('should load content from markdown files', async () => {
-      const mockFiles = ['/test/project/src/index.md', '/test/project/src/about.md'];
-      mockGlob.mockResolvedValue(mockFiles);
-
-      mockReadFile
-        .mockResolvedValueOnce('---\ntitle: Home\n---\n# Welcome')
-        .mockResolvedValueOnce('---\ntitle: About\n---\n# About us');
+    it('should load content from markdown files, in path order', async () => {
+      mockContentFiles({
+        '/test/project/src/index.md': '---\ntitle: Home\n---\n# Welcome',
+        '/test/project/src/about.md': '---\ntitle: About\n---\n# About us',
+      });
 
       const pages = await loadContent(mockConfig);
 
-      expect(pages).toHaveLength(2);
-      expect(pages[0]).toEqual({
-        slug: '/',
-        url: '/',
-        sourcePath: '/test/project/src/index.md',
-        frontMatter: { title: 'Home' },
-        content: '# Welcome',
-      });
-      expect(pages[1]).toEqual({
-        slug: '/about',
-        url: '/about',
-        sourcePath: '/test/project/src/about.md',
-        frontMatter: { title: 'About' },
-        content: '# About us',
-      });
+      expect(pages).toEqual([
+        {
+          slug: '/about',
+          url: '/about',
+          sourcePath: '/test/project/src/about.md',
+          frontMatter: { title: 'About' },
+          content: '# About us',
+        },
+        {
+          slug: '/',
+          url: '/',
+          sourcePath: '/test/project/src/index.md',
+          frontMatter: { title: 'Home' },
+          content: '# Welcome',
+        },
+      ]);
     });
 
     it('should skip draft posts by default', async () => {
-      const mockFiles = ['/test/project/src/published.md', '/test/project/src/draft.md'];
-      mockGlob.mockResolvedValue(mockFiles);
-
-      mockReadFile
-        .mockResolvedValueOnce('---\ntitle: Published\n---\n# Published content')
-        .mockResolvedValueOnce('---\ntitle: Draft\ndraft: true\n---\n# Draft content');
+      mockContentFiles(DRAFT_AND_PUBLISHED);
 
       const pages = await loadContent(mockConfig);
 
@@ -84,12 +89,7 @@ describe('content.ts', () => {
     });
 
     it('should include draft posts when includeDrafts is true', async () => {
-      const mockFiles = ['/test/project/src/published.md', '/test/project/src/draft.md'];
-      mockGlob.mockResolvedValue(mockFiles);
-
-      mockReadFile
-        .mockResolvedValueOnce('---\ntitle: Published\n---\n# Published content')
-        .mockResolvedValueOnce('---\ntitle: Draft\ndraft: true\n---\n# Draft content');
+      mockContentFiles(DRAFT_AND_PUBLISHED);
 
       const pages = await loadContent(mockConfig, true);
 
@@ -98,12 +98,7 @@ describe('content.ts', () => {
     });
 
     it('should skip draft posts when includeDrafts is explicitly false', async () => {
-      const mockFiles = ['/test/project/src/published.md', '/test/project/src/draft.md'];
-      mockGlob.mockResolvedValue(mockFiles);
-
-      mockReadFile
-        .mockResolvedValueOnce('---\ntitle: Published\n---\n# Published content')
-        .mockResolvedValueOnce('---\ntitle: Draft\ndraft: true\n---\n# Draft content');
+      mockContentFiles(DRAFT_AND_PUBLISHED);
 
       const pages = await loadContent(mockConfig, false);
 
@@ -185,43 +180,40 @@ describe('content.ts', () => {
     });
 
     it('should handle nested directory structure', async () => {
-      const mockFiles = [
-        '/test/project/src/blog/first-post.md',
-        '/test/project/src/blog/category/second-post.md',
-      ];
-      mockGlob.mockResolvedValue(mockFiles);
-
-      mockReadFile
-        .mockResolvedValueOnce('---\ntitle: First Post\n---\n# First post content')
-        .mockResolvedValueOnce('---\ntitle: Second Post\n---\n# Second post content');
+      mockContentFiles({
+        '/test/project/src/blog/first-post.md': '---\ntitle: First Post\n---\n# First post content',
+        '/test/project/src/blog/category/second-post.md':
+          '---\ntitle: Second Post\n---\n# Second post content',
+      });
 
       const pages = await loadContent(mockConfig);
 
       expect(pages).toHaveLength(2);
-      expect(pages[0]!.slug).toBe('/blog/first-post');
-      expect(pages[0]!.url).toBe('/blog/first-post');
       // Forward slashes on every platform, also two folders deep
-      expect(pages[1]!.slug).toBe('/blog/category/second-post');
-      expect(pages[1]!.url).toBe('/blog/category/second-post');
+      expect(pages[0]!.slug).toBe('/blog/category/second-post');
+      expect(pages[0]!.url).toBe('/blog/category/second-post');
+      expect(pages[0]!.frontMatter.title).toBe('Second Post');
+      expect(pages[1]!.slug).toBe('/blog/first-post');
+      expect(pages[1]!.url).toBe('/blog/first-post');
+      expect(pages[1]!.frontMatter.title).toBe('First Post');
     });
 
     it('should handle index files correctly', async () => {
-      const mockFiles = ['/test/project/src/index.md', '/test/project/src/blog/index.md'];
-      mockGlob.mockResolvedValue(mockFiles);
-
-      mockReadFile
-        .mockResolvedValueOnce('---\ntitle: Home\n---\n# Home content')
-        .mockResolvedValueOnce('---\ntitle: Blog\n---\n# Blog index');
+      mockContentFiles({
+        '/test/project/src/index.md': '---\ntitle: Home\n---\n# Home content',
+        '/test/project/src/blog/index.md': '---\ntitle: Blog\n---\n# Blog index',
+      });
 
       const pages = await loadContent(mockConfig);
 
       expect(pages).toHaveLength(2);
-      expect(pages[0]!.slug).toBe('/');
-      expect(pages[0]!.url).toBe('/');
-      expect(pages[1]!.slug).toBe('/blog');
       // The slug for /blog/index.md should be /blog, not /blog/index
-      // But the URL should be /blog/ because it's an index page
-      expect(pages[1]!.url).toBe('/blog');
+      expect(pages[0]!.slug).toBe('/blog');
+      expect(pages[0]!.url).toBe('/blog');
+      expect(pages[0]!.frontMatter.title).toBe('Blog');
+      expect(pages[1]!.slug).toBe('/');
+      expect(pages[1]!.url).toBe('/');
+      expect(pages[1]!.frontMatter.title).toBe('Home');
     });
 
     it('should respect permalink in frontmatter', async () => {
@@ -267,6 +259,7 @@ describe('content.ts', () => {
         cwd: expect.stringMatching(/[\\/]test[\\/]project[\\/]src$/),
         absolute: true,
         ignore: ['**/_*/**', '_*/**'],
+        expandDirectories: false,
       });
     });
 

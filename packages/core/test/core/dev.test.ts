@@ -76,8 +76,8 @@ vi.mock('chokidar', () => ({
   },
 }));
 
-vi.mock('fast-glob', () => ({
-  default: mockFg,
+vi.mock('tinyglobby', () => ({
+  glob: mockFg,
 }));
 
 vi.mock('open', () => ({

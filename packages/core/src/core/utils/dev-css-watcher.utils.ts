@@ -1,5 +1,5 @@
 import chokidar from 'chokidar';
-import fg from 'fast-glob';
+import { glob } from 'tinyglobby';
 import type { FSWatcher } from 'chokidar';
 import type { WebSocketServer } from 'ws';
 import type { Logger } from '../../types/index.js';
@@ -16,11 +16,12 @@ export async function discoverOutputCssFiles(outDir: string): Promise<string[]> 
     return [];
   }
 
-  const cssFiles = await fg('**/*.css', {
+  const cssFiles = await glob('**/*.css', {
     cwd: outDir,
     absolute: true,
     onlyFiles: true,
     dot: false,
+    expandDirectories: false,
   });
 
   return cssFiles;

@@ -441,8 +441,7 @@ async function writeSearchIndexBeforeRendering(
 
   const endSearchIndexSpan = recorder.startSpan('searchIndexGenerationMs');
   // TOC entries and markdown content, the same data a render produces, without rendering.
-  // Sorted by URL: content discovery returns files in a different order on each run, which
-  // would change the index content, and with it the name, on every build.
+  // Sorted by URL, so the index content, and with it the name, changes only when pages do.
   const tocEnabled = config.markdown?.toc !== false;
   const byUrl = (a: PageModel, b: PageModel) =>
     a.url.localeCompare(b.url) || a.sourcePath.localeCompare(b.sourcePath);

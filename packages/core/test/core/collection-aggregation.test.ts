@@ -10,8 +10,8 @@ const { mockGlob, MockEta } = vi.hoisted(() => ({
 }));
 
 // Mock dependencies
-vi.mock('fast-glob', () => ({
-  default: mockGlob,
+vi.mock('tinyglobby', () => ({
+  glob: mockGlob,
 }));
 
 vi.mock('eta', () => ({

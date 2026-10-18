@@ -25,8 +25,8 @@ const mockLoadConfig = vi.mocked(loadConfig);
 const mockBuild = vi.mocked(build);
 const mockInvalidate = vi.mocked(invalidate);
 
-vi.mock('fast-glob', () => ({
-  default: mockFg,
+vi.mock('tinyglobby', () => ({
+  glob: mockFg,
 }));
 
 vi.mock('ws', () => ({

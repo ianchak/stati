@@ -6,7 +6,7 @@
  */
 
 import { posix, resolve } from 'node:path';
-import glob from 'fast-glob';
+import { glob } from 'tinyglobby';
 import type { TemplateLookup } from '../types/index.js';
 import { TEMPLATE_EXTENSION } from '../constants.js';
 import { editDistance, findSimilarNames } from './utils/similarity.utils.js';
@@ -276,6 +276,7 @@ export class TemplateIndex {
       cwd: srcDir,
       onlyFiles: true,
       ignore: ['**/node_modules/**'],
+      expandDirectories: false,
     });
     return new TemplateIndex(srcDir, files);
   }

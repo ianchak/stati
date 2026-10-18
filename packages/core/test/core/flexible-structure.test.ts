@@ -8,15 +8,15 @@ const { mockReadFile, mockGlob } = vi.hoisted(() => ({
   mockGlob: vi.fn(),
 }));
 
-// Mock fs-extra and fast-glob
+// Mock fs-extra and tinyglobby
 vi.mock('fs-extra', () => ({
   default: {
     readFile: mockReadFile,
   },
 }));
 
-vi.mock('fast-glob', () => ({
-  default: mockGlob,
+vi.mock('tinyglobby', () => ({
+  glob: mockGlob,
 }));
 
 describe('Flexible Structure Tests', () => {
@@ -61,6 +61,7 @@ title: Test Page
         cwd: expect.stringContaining('site'),
         absolute: true,
         ignore: ['**/_*/**', '_*/**'],
+        expandDirectories: false,
       });
     });
 
@@ -80,18 +81,8 @@ title: Test Page
       // Act
       const pages = await loadContent(mockConfig);
 
-      // Assert
-      expect(pages).toHaveLength(2);
-      expect(pages[0]?.slug).toBe('/');
-      expect(pages[1]?.slug).toBe('/blog/post');
-    });
-  });
-
-  describe('partial discovery', () => {
-    it('should discover partials in underscore folders throughout hierarchy', async () => {
-      // This would require mocking the template rendering process
-      // For now, we'll test the content exclusion which is the foundation
-      expect(true).toBe(true);
+      // Assert: in path order
+      expect(pages.map((page) => page.slug)).toEqual(['/blog/post', '/']);
     });
   });
 });
