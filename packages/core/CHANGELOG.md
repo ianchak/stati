@@ -1,5 +1,11 @@
 # @stati/core
 
+## 1.29.2
+
+### Patch Changes
+
+- bea0079: scan middle folders for partials on deep Windows pages
+
 ## 1.29.1
 
 ### Patch Changes
