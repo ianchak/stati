@@ -12,8 +12,9 @@ const { mockFg } = vi.hoisted(() => ({
   mockFg: vi.fn(),
 }));
 
-// Store the request handler for testing
-let capturedRequestHandler: ((req: IncomingMessage, res: ServerResponse) => void) | null = null;
+// Store the request handler for testing; the dev server's handler is async
+let capturedRequestHandler:
+  ((req: IncomingMessage, res: ServerResponse) => Promise<void> | void) | null = null;
 
 // Mock dependencies
 vi.mock('ws', () => ({
@@ -1951,7 +1952,11 @@ describe('Development Server', () => {
         { entries: { '/index.html': recordedEntry('/index.html', [`${cwd}/site/layout.eta`]) } },
         8139,
       );
-      const wsServer = vi.mocked(WebSocketServer).mock.results.at(-1)?.value as {
+      const wsResult = vi.mocked(WebSocketServer).mock.results.at(-1);
+      if (!wsResult) {
+        throw new Error('Expected WebSocketServer to be instantiated');
+      }
+      const wsServer = wsResult.value as {
         clients: Set<{ readyState: number; send: (data: string) => void }>;
       };
       const open = { readyState: 1, send: vi.fn() };
