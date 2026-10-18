@@ -319,6 +319,19 @@ describe('template composition', () => {
       expect(await site.read('dist/index.html')).toBe('[]');
     });
 
+    it('names the one file it tried for an unknown path', async () => {
+      await site.write('site/partials/header.eta', 'H');
+      await site.write('site/layout.eta', `[<%~ stati.include('/partials/headr') %>]`);
+      const { errors } = await site.build({ allowErrors: true });
+
+      expect(errors).toEqual([
+        expect.stringContaining(
+          `stati.include('/partials/headr'): no template at site/partials/headr.eta. Did you mean "/partials/header"?`,
+        ),
+      ]);
+      expect(await site.read('dist/index.html')).toBe('[]');
+    });
+
     it('reports an included template that uses await, and renders it empty', async () => {
       await site.write('site/partials/slow.eta', '<%= await Promise.resolve(1) %>');
       await site.write('site/layout.eta', `[<%~ stati.include('partials/slow') %>]`);

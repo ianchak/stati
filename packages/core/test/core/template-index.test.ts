@@ -95,6 +95,12 @@ describe('parseTemplateName', () => {
         reason: 'names a folder, not a template',
       });
     }
+    for (const name of ['/.', '/partials/..']) {
+      expect(parseTemplateName(name, 'layout.eta')).toEqual({
+        kind: 'invalid',
+        reason: 'names the source directory, not a template',
+      });
+    }
     expect(parseTemplateName(undefined, null)).toEqual({
       kind: 'invalid',
       reason: 'must be a string, not undefined',

@@ -235,6 +235,15 @@ describe('templates.ts', () => {
       );
     });
 
+    it('warns without suggestions when no template is close to the front matter layout', async () => {
+      const page = { ...mockPage, frontMatter: { ...mockPage.frontMatter, layout: 'qwxz' } };
+      await render(page, ['layout.eta', 'article.eta']);
+
+      expect(logger.warning).toHaveBeenCalledWith(
+        'src/test-page.md: front matter layout "qwxz" names no template; using src/layout.eta.',
+      );
+    });
+
     it('looks a front matter layout up from the page folder, so a section file wins', async () => {
       const page: PageModel = {
         ...mockPage,

@@ -159,6 +159,37 @@ describe('parseFrontMatter', () => {
       'Invalid front matter in site/post.md: front matter must be "key: value" lines, such as "title: My page", not the text "just text".',
     );
     expect(errorFor('---json\n[1, 2]\n---\n').message).toContain('not a list.');
+    expect(errorFor('---\n42\n---\n').message).toContain('not the number 42.');
+    expect(errorFor('---\ntrue\n---\n').message).toContain('not the boolean true.');
+    expect(errorFor('---\n2024-01-15\n---\n').message).toContain('not a date.');
+    expect(errorFor('---\n!!binary aGVsbG8=\n---\n').message).toContain('not binary data.');
+  });
+
+  it('reports invalid JSON front matter with the file', () => {
+    const error = errorFor('---json\n{ "title": "json", }\n---\nBody');
+    expect(error.message).toMatch(/^Invalid front matter in site\/post\.md: .*JSON.*\.$/);
+    expect(error.filePath).toBe(file);
+  });
+
+  it('reports an error of the YAML parser itself with the file', async () => {
+    vi.resetModules();
+    vi.doMock('js-yaml', async (importOriginal) => ({
+      ...(await importOriginal<typeof import('js-yaml')>()),
+      load: () => {
+        throw new RangeError('Maximum call stack size exceeded');
+      },
+    }));
+    try {
+      const { parseFrontMatter: parse, FrontMatterError: Thrown } =
+        await import('../../../src/core/utils/front-matter.utils.js');
+      expect(() => parse('---\ntitle: x\n---\n', file)).toThrow(Thrown);
+      expect(() => parse('---\ntitle: x\n---\n', file)).toThrow(
+        'Invalid front matter in site/post.md: Maximum call stack size exceeded.',
+      );
+    } finally {
+      vi.doUnmock('js-yaml');
+      vi.resetModules();
+    }
   });
 
   it('returns new objects for files with the same text', () => {

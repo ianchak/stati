@@ -1945,6 +1945,49 @@ describe('Development Server', () => {
       await watching.stop();
     });
 
+    it('reloads the open browsers after a rebuild', async () => {
+      const { WebSocketServer } = await import('ws');
+      const watching = await startWatching(
+        { entries: { '/index.html': recordedEntry('/index.html', [`${cwd}/site/layout.eta`]) } },
+        8139,
+      );
+      const wsServer = vi.mocked(WebSocketServer).mock.results.at(-1)?.value as {
+        clients: Set<{ readyState: number; send: (data: string) => void }>;
+      };
+      const open = { readyState: 1, send: vi.fn() };
+      const closing = { readyState: 2, send: vi.fn() };
+      wsServer.clients.add(open);
+      wsServer.clients.add(closing);
+
+      watching.handlers.change!(`${cwd}/site/layout.eta`);
+      await setTimeout(100);
+
+      expect(open.send).toHaveBeenCalledWith(JSON.stringify({ type: 'reload' }));
+      expect(closing.send).not.toHaveBeenCalled();
+
+      await watching.stop();
+    });
+
+    it('lets the build decide what to rebuild when the cache manifest cannot be read', async () => {
+      const isg = await import('../../src/core/isg/index.js');
+      const watching = await startWatching({ entries: {} }, 8140);
+      vi.mocked(isg.loadCacheManifest).mockRejectedValueOnce(
+        new Error('EACCES: permission denied'),
+      );
+
+      watching.handlers.change!(`${cwd}/site/layout.eta`);
+      await setTimeout(100);
+
+      expect(mockBuild).toHaveBeenCalledWith(
+        expect.objectContaining({ force: false, skipAssetCopy: true }),
+      );
+      expect(watching.logger.info).toHaveBeenCalledWith(
+        expect.stringMatching(/^ {3}Done in \d+ms$/),
+      );
+
+      await watching.stop();
+    });
+
     it('treats .eta files outside the source directory as static files', async () => {
       const watching = await startWatching({ entries: {} }, 8138);
 
@@ -1955,6 +1998,53 @@ describe('Development Server', () => {
       expect(watching.logger.info).toHaveBeenCalledWith('▸ public/snippet.eta copied');
 
       await watching.stop();
+    });
+  });
+
+  describe('error overlay', () => {
+    /** Starts a dev server whose initial build fails with the error, and requests a page */
+    async function overlayFor(error: Error): Promise<string> {
+      mockBuild.mockRejectedValueOnce(error);
+      const devServer = await createDevServer({ port: 8210, logger: createMockLogger() });
+      await devServer.start();
+
+      const end = vi.fn();
+      const res = { writeHead: vi.fn(), end } as unknown as ServerResponse;
+      await capturedRequestHandler!({ url: '/blog/post', method: 'GET' } as IncomingMessage, res);
+      await devServer.stop();
+
+      expect(res.writeHead).toHaveBeenCalledWith(500, expect.anything());
+      return String(end.mock.calls[0]?.[0]);
+    }
+
+    it.each([
+      ['Template not found: header', 'Error', 'Template rendering failed'],
+      ['bad indentation of a mapping entry', 'YAMLException', 'Markdown processing failed'],
+      ['Invalid config: srcDir must be a string', 'Error', 'Configuration error'],
+      ['ENOSPC: no space left on device', 'Error', 'Build process failed'],
+    ])('classifies the build error "%s"', async (message, name, headline) => {
+      const error = new Error(message);
+      error.name = name;
+
+      expect(await overlayFor(error)).toContain(headline);
+    });
+
+    it('points a front matter error at the Markdown file and line', async () => {
+      const { FrontMatterError } = await import('../../src/core/utils/front-matter.utils.js');
+      const file = `${process.cwd()}/site/blog/post.md`;
+      const html = await overlayFor(
+        new FrontMatterError(
+          'Invalid front matter in site/blog/post.md at line 3, column 7: duplicated mapping key.',
+          file,
+          3,
+          7,
+        ),
+      );
+
+      expect(html).toContain('Markdown processing failed');
+      expect(html).toContain(`<dd>${file}</dd>`);
+      expect(html).toMatch(/<dt>Line<\/dt>\s*<dd>3[^<]*<\/dd>/);
+      expect(html).toContain('Check the YAML front-matter syntax for errors');
     });
   });
 

@@ -599,21 +599,6 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
     const { filePath, found } = await resolvePrettyUrl(outDir, requestPath, requestFile);
 
     if (!found || !filePath) {
-      // If we have a build error and this is an HTML request, show error overlay instead of 404
-      const errorToShow = lastBuildError;
-
-      if (
-        errorToShow &&
-        (requestPath === '/' || requestPath.endsWith('.html') || !requestPath.includes('.'))
-      ) {
-        const errorHtml = createErrorOverlay(await describeBuildError(errorToShow), requestPath);
-        return {
-          content: errorHtml,
-          mimeType: 'text/html',
-          statusCode: 500,
-        };
-      }
-
       // Serve the site's 404 page, as static hosts do, with live reload so it updates on edits
       const notFoundPage = await resolveNotFoundPage(outDir);
       if (notFoundPage) {

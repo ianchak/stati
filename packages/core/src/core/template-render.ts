@@ -494,13 +494,13 @@ export class RenderScope {
     const filePath = frame.file !== null ? join(this.index.srcDir, frame.file) : undefined;
     // Eta appends the whole compiled function to syntax errors; the first part is the reason
     const [reason] = failure.message.split(/\n=+\n/);
-    if (sync && frame.file !== null && filePath && this.compilesAsync(filePath)) {
-      const source = readTemplate(filePath);
-      const line = source === null ? undefined : lineOf(source, /\bawait\b/);
+    // An include renders synchronously: a template that compiles as an async function uses await
+    const source = sync && filePath !== undefined ? readTemplate(filePath) : null;
+    if (filePath !== undefined && source !== null && this.compilesAsync(source, filePath)) {
       const awaitError = new TemplateError(
         `${this.display(frame.file)} uses await, but templates rendered by stati.include() render synchronously. Move the awaited work into a build hook or into data a helper prepares.`,
         filePath,
-        line,
+        lineOf(source, /\bawait\b/),
         undefined,
         undefined,
         ['Templates rendered by stati.include() cannot use await'],
@@ -520,11 +520,7 @@ export class RenderScope {
   }
 
   /** Whether a template that failed to compile synchronously compiles as an async function */
-  private compilesAsync(filePath: string): boolean {
-    const source = readTemplate(filePath);
-    if (source === null) {
-      return false;
-    }
+  private compilesAsync(source: string, filePath: string): boolean {
     try {
       this.eta.compile(source, { async: true, filepath: filePath });
       return true;

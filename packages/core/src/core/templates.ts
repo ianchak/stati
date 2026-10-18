@@ -361,10 +361,9 @@ async function renderPageInScope(
 
     // In development, throw the error for the overlay; it points at the innermost template
     if (isDevelopment()) {
-      const templateError = createTemplateError(failure, join(index.srcDir, failed));
-      const where = templateError.filePath
-        ? scope.displayPath(templateError.filePath)
-        : scope.display(failed);
+      const failedPath = join(index.srcDir, failed);
+      const templateError = createTemplateError(failure, failedPath);
+      const where = scope.displayPath(templateError.filePath ?? failedPath);
       log.error(`Error rendering ${where} for ${page.url}: ${templateError.message}`);
       throw templateError;
     }
