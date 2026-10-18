@@ -1,5 +1,5 @@
 import { Eta } from 'eta';
-import { join, dirname, relative, basename, posix } from 'node:path';
+import { join, relative, basename, posix } from 'node:path';
 import glob from 'fast-glob';
 import type {
   StatiConfig,
@@ -104,19 +104,20 @@ function createNavView<T extends object>(helpers: T, reads: PageReads): T {
  * Discovers partials in the hierarchy for a given page path.
  * Scans all parent directories for folders starting with underscore.
  *
- * @param pagePath - The path to the page (relative to srcDir)
+ * @param pagePath - The path to the page (relative to srcDir), with `/` or `\` separators
  * @param config - Stati configuration
  * @returns Object mapping partial names to their file paths
  */
-async function discoverPartials(
+export async function discoverPartials(
   pagePath: string,
   config: StatiConfig,
 ): Promise<Record<string, string>> {
   const srcDir = resolveSrcDir(config);
   const partials: Record<string, string> = {};
 
-  // Get the directory of the current page
-  const pageDir = dirname(pagePath);
+  // Get the directory of the current page. Windows paths use backslashes, so convert them
+  // first, or the folders between the root and the page's own folder are skipped.
+  const pageDir = posix.dirname(pagePath.replace(/\\/g, '/'));
   const pathSegments = pageDir === '.' ? [] : pageDir.split('/');
 
   // Scan from root to current directory (least specific first)
