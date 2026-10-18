@@ -128,3 +128,5 @@ Templates no longer need underscore folders: any `.eta` file under `site/` can b
 - **`this` in a helper** is the helpers object, not the template context.
 - **Build metrics** count templates differently: `templatesLoaded` is the number of distinct templates each rendered page used, and `templateRenders`, `includeCacheHits` and `templatesIndexed` are new. See [Build metrics](/advanced/metrics#templates-loaded-and-renders).
 - **Eta 4.** Stati now uses Eta 4. Templates need no changes for it.
+- **Front matter follows YAML 1.2.** A few unquoted values read differently: `time: 10:30` is the text `10:30` instead of the number 630, `0755` is the number 755 instead of 493, and `1_000` is text. Dates, booleans and everything else read as before. Front matter that is not valid YAML, or that names another language after `---` (such as `---js`), stops the build with an error naming the file and the line.
+- **Content files are read in path order,** so pages that sort equally, such as undated pages in the RSS feed and the sitemap, keep the same order on every build. It can differ from the order a Stati 1 build happened to use.
