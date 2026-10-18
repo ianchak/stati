@@ -68,8 +68,8 @@ const ABSENT_PROPERTY_HINTS: Record<string, string> = {
  * Thrown in development when a template reads a property that does not exist
  * on the template context.
  *
- * The suggestions are encoded in the message because Eta's debug mode rethrows
- * runtime errors as a new error that only keeps the original message and name.
+ * The suggestions are encoded in the message, which Eta's debug mode copies into
+ * the error it rethrows for each template the error passes through.
  * Use {@link parseUnknownPropertyMessage} to read them back.
  */
 export class UnknownTemplatePropertyError extends Error {
