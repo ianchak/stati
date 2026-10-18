@@ -8,8 +8,8 @@
  * CRITICAL: This script MUST remain in <head> BEFORE any CSS <link> tags.
  * Moving it will cause theme flicker on page load.
  *
- * Usage in layout.eta:
- *   <%~ stati.partials.themeInit %>
+ * Usage in base.eta:
+ *   <%~ stati.include('partials/scripts/themeInit') %>
  *
  * How it works:
  * 1. Reads stored theme from localStorage ('stati-theme')

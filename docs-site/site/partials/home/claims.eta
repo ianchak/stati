@@ -7,9 +7,6 @@
  * (src/home/rebuild-log.ts). Content lives in index.md front matter.
  */
 
-// Pre-rendered on every page: render nothing where the homepage data is absent
-if (!stati.page.claims) { %><% return; } %>
-<%
 const claims = stati.page.claims;
 %>
 <section class="border-b border-line" aria-labelledby="claims-title">
@@ -24,13 +21,13 @@ const claims = stati.page.claims;
                     <p class="mt-4 leading-7 text-muted"><%= claim.text %></p>
                     <a href="<%= claim.link.href %>" class="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-accent-ink hover:underline hover:underline-offset-4">
                         <%= claim.link.text %>
-                        <%~ stati.partials.icon({ name: 'arrow-right', size: 'sm' }) %>
+                        <%~ stati.include('../components/icon', { name: 'arrow-right', size: 'sm' }) %>
                     </a>
                 </div>
 
                 <div class="ticks grid min-w-0 grid-cols-1 gap-4">
                     <% claim.panels.forEach((panel, i) => { %>
-                    <%~ stati.partials.codePanel({ id: `claim-${claim.id}-${i}`, file: panel.file, lang: panel.lang, code: panel.code, ticks: false }) %>
+                    <%~ stati.include('../components/codePanel', { id: `claim-${claim.id}-${i}`, file: panel.file, lang: panel.lang, code: panel.code, ticks: false }) %>
                     <% }) %>
 
                     <% if (claim.log) { %>

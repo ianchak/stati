@@ -17,7 +17,7 @@ const suggestions = [
 <dialog id="search-dialog" class="search-dialog m-0 h-full max-h-none w-full max-w-none bg-canvas p-0 text-ink backdrop:bg-ink/40 sm:mx-auto sm:mt-[12vh] sm:h-auto sm:max-h-[70vh] sm:w-[min(40rem,calc(100vw-2rem))] sm:rounded-xl sm:border sm:border-line-strong" aria-labelledby="search-label">
     <div class="flex h-full flex-col sm:max-h-[70vh]">
         <div class="flex items-center gap-3 border-b border-line px-4">
-            <%~ stati.partials.icon({ name: 'search', size: 'md', class: 'flex-none text-faint' }) %>
+            <%~ stati.include('./icon', { name: 'search', size: 'md', class: 'flex-none text-faint' }) %>
             <label id="search-label" for="search-input" class="sr-only">Search the documentation</label>
             <input id="search-input" type="search" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="search-results" placeholder="Search docs" autocomplete="off" spellcheck="false" class="h-14 min-w-0 flex-1 bg-transparent text-base text-ink placeholder:text-faint focus-visible:outline-none [&::-webkit-search-cancel-button]:hidden">
             <button type="button" class="rounded-md border border-line px-2 py-1 text-xs font-medium text-muted hover:text-ink" data-search-close>

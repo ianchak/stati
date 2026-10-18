@@ -5,9 +5,6 @@
  * Proof that this site is built with Stati: an excerpt of its real config.
  */
 
-// Pre-rendered on every page: render nothing where the homepage data is absent
-if (!stati.page.dogfood) { %><% return; } %>
-<%
 const dogfood = stati.page.dogfood;
 %>
 <section class="border-b border-line bg-raised" aria-labelledby="dogfood-title">
@@ -17,12 +14,12 @@ const dogfood = stati.page.dogfood;
             <p class="mt-4 max-w-md leading-7 text-muted"><%= dogfood.text %></p>
             <a href="<%= dogfood.link.href %>" class="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-accent-ink hover:underline hover:underline-offset-4" target="_blank" rel="noopener noreferrer">
                 <%= dogfood.link.text %>
-                <%~ stati.partials.icon({ name: 'external', size: 'sm' }) %>
+                <%~ stati.include('../components/icon', { name: 'external', size: 'sm' }) %>
                 <span class="sr-only">(opens in a new tab)</span>
             </a>
         </div>
         <div class="min-w-0">
-            <%~ stati.partials.codePanel({ id: 'dogfood-config', file: dogfood.file, lang: 'typescript', code: dogfood.code, class: 'bg-canvas' }) %>
+            <%~ stati.include('../components/codePanel', { id: 'dogfood-config', file: dogfood.file, lang: 'typescript', code: dogfood.code, class: 'bg-canvas' }) %>
         </div>
     </div>
 </section>

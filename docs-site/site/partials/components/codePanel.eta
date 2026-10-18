@@ -3,7 +3,7 @@
  * Code Panel Component
  *
  * A framed, build-time highlighted code sample with a filename bar and a
- * copy button. Highlighting comes from the `highlight` Eta filter.
+ * copy button. Highlighting comes from the `highlight` helper in stati.config.ts.
  *
  * Props:
  *   - id (required): Unique id for the code element (used by the copy button)
@@ -14,12 +14,9 @@
  *   - ticks (optional): false to omit corner ticks when a parent stack carries them
  *
  * Usage:
- *   <%~ stati.partials.codePanel({ id: 'hero-config', file: 'stati.config.ts', lang: 'typescript', code: snippet }) %>
+ *   <%~ stati.include('partials/components/codePanel', { id: 'hero-config', file: 'stati.config.ts', lang: 'typescript', code: snippet }) %>
  */
 
-// Guard for standalone rendering - this partial is only used as a callable
-if (!stati.props) { %><% return; } %>
-<%
 const { id, code, lang, file } = stati.props;
 %>
 <figure class="<%= stati.propValue(stati.props.ticks !== false && 'ticks', 'code-panel m-0', stati.props.class) %>">
@@ -27,5 +24,5 @@ const { id, code, lang, file } = stati.props;
         <span class="truncate"><%= file || lang %></span>
         <button type="button" class="copy-button -my-1" data-copy-target="<%= id %>" aria-label="<%= `Copy ${file || 'code'}` %>"><span data-copy-label>Copy</span></button>
     </figcaption>
-    <pre class="<%= `language-${lang}` %>"><code id="<%= id %>" class="<%= `language-${lang}` %>"><%~ stati.highlight(code, lang) %></code></pre>
+    <pre class="<%= `language-${lang}` %>"><code id="<%= id %>" class="<%= `language-${lang}` %>"><%~ stati.helpers.highlight(code, lang) %></code></pre>
 </figure>

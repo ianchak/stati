@@ -9,7 +9,7 @@
  * menu button opens.
  */
 
-const sections = stati.docsSections();
+const sections = stati.helpers.docsSections();
 const normalize = (p) => (p || '').replace(/\/index\.html$/, '/').replace(/\.html$/, '').replace(/(.)\/$/, '$1');
 const current = normalize(stati.page.url);
 
@@ -30,7 +30,7 @@ const reference = [
                 <details class="group"<% if (isOpen) { %> open<% } %>>
                     <summary class="sidebar-group-toggle cursor-pointer list-none [&::-webkit-details-marker]:hidden">
                         <%= section.title %>
-                        <%~ stati.partials.icon({ name: 'chevron-right', size: 'sm', class: 'text-faint transition-transform duration-150 group-open:rotate-90' }) %>
+                        <%~ stati.include('../components/icon', { name: 'chevron-right', size: 'sm', class: 'text-faint transition-transform duration-150 group-open:rotate-90' }) %>
                     </summary>
                     <ul class="mb-3 ml-2 mt-1">
                         <% pages.forEach(page => { %>

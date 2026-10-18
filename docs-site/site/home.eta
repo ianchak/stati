@@ -1,38 +1,11 @@
-<!DOCTYPE html>
-<html lang="<%= stati.site.defaultLocale || 'en-US' %>" data-theme="light">
-<head>
-    <%~ stati.partials.themeInit %>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="view-transition" content="same-origin">
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-
-    <link rel="preload" href="/fonts/archivo.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
-
-    <link rel="stylesheet" href="/styles.css">
-    <link rel="stylesheet" href="/prism-stati.css">
-    <link rel="alternate" type="application/rss+xml" title="Stati Documentation Updates" href="/feed.xml">
-<% if (stati.assets?.bundlePaths && stati.assets.bundlePaths.length > 0) { _%>
-<% for (const bundlePath of stati.assets.bundlePaths) { %>
-    <link rel="modulepreload" href="<%= bundlePath %>">
-<% } _%>
-<% } _%>
-</head>
-<body>
-    <a href="#main-content" class="skip-link">Skip to main content</a>
-
-    <%~ stati.partials.header %>
-
-    <main id="main-content" tabindex="-1">
-        <%~ stati.partials.hero %>
-        <%~ stati.partials.features %>
-        <%~ stati.partials.claims %>
-        <%~ stati.partials.dogfood %>
-        <%~ stati.partials.quickStart %>
-    </main>
-
-    <%~ stati.partials.footer %>
-    <%~ stati.partials.searchTemplates %>
-</body>
-</html>
+<%
+// The page around the homepage, with its display face (Archivo) preloaded first
+stati.layout('base', { fonts: ['archivo', 'inter'] });
+%>
+<main id="main-content" tabindex="-1">
+    <%~ stati.include('partials/home/hero') %>
+    <%~ stati.include('partials/home/features') %>
+    <%~ stati.include('partials/home/claims') %>
+    <%~ stati.include('partials/home/dogfood') %>
+    <%~ stati.include('partials/home/quickStart') %>
+</main>

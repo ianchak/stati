@@ -11,12 +11,9 @@
  *   - strokeWidth (optional): SVG stroke width (default: 2)
  *
  * Usage:
- *   <%~ stati.partials.icon({ name: 'bolt', size: 'lg', class: 'text-primary-600' }) %>
+ *   <%~ stati.include('partials/components/icon', { name: 'bolt', size: 'lg', class: 'text-primary-600' }) %>
  */
 
-// Guard for standalone rendering - this partial is only used as a callable
-if (!stati.props) { %><% return; } %>
-<%
 const icons = {
   // Core brand
   bolt: 'M13 10V3L4 14h7v7l9-11h-7z',
