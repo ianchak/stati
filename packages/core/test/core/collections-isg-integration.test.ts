@@ -295,7 +295,7 @@ describe('navigation-aware ISG', () => {
       `<html><body><ul><% for (const node of stati.nav.getChildren('/docs')) { %><li><%= node.title %></li><% } %></ul><%~ stati.content %></body></html>`,
     );
     await site.write('site/index.md', page({ title: 'Home' }));
-    await site.write('site/docs/index.md', page({ title: 'Docs', layout: 'layout' }));
+    await site.write('site/docs/index.md', page({ title: 'Docs', layout: '/layout' }));
     await site.write('site/docs/intro.md', page({ title: 'Intro', order: 1 }));
     await site.write('site/docs/setup.md', page({ title: 'Setup', order: 2 }));
   });

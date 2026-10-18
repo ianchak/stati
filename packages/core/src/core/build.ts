@@ -24,6 +24,7 @@ import {
   formatBytes,
   isVirtualPage,
   getPageOutputFile,
+  resolveSrcDir,
 } from './utils/index.js';
 import type { CompiledBundleInfo } from './utils/index.js';
 import { join, dirname, relative, posix } from 'node:path';
@@ -39,6 +40,7 @@ import {
 } from './collections.js';
 import { createMarkdownProcessor, renderMarkdown, extractToc } from './markdown.js';
 import { createTemplateEngine, renderPage } from './templates.js';
+import { loadTemplateIndex, type TemplateIndex } from './template-index.js';
 import { buildNavigation } from './navigation.js';
 import {
   loadCacheManifest,
@@ -52,7 +54,6 @@ import {
   computeNavigationHash,
   computeContentHash,
   clearFileHashCache,
-  clearTemplatePathCache,
 } from './isg/index.js';
 import {
   generateSitemap,
@@ -290,7 +291,6 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
   // Clear per-build caches at the start of each build
   // This prevents stale data from previous builds and ensures consistent state
   clearFileHashCache();
-  clearTemplatePathCache();
 
   // Ensure cache directory exists before acquiring build lock
   await ensureDir(cacheDir);
@@ -525,9 +525,13 @@ async function processPagesWithCache(
   recorder: MetricRecorder = noopMetricRecorder,
   imageRuntime: ImageRuntime | null = null,
   navigationHash: string = computeNavigationHash(navigation),
+  templateIndex?: TemplateIndex,
 ): Promise<ProcessPagesResult> {
   let cacheHits = 0;
   let cacheMisses = 0;
+
+  // Every .eta file under the source directory, read once for all pages
+  const index = templateIndex ?? (await loadTemplateIndex(resolveSrcDir(config)));
 
   // Build context
   const buildContext: BuildContext = { config, pages };
@@ -670,7 +674,15 @@ async function processPagesWithCache(
       (existingEntry !== undefined && !readsKnown) ||
       // A cached page whose generated images are gone is rebuilt to regenerate them
       (imageRuntime !== null && !imageRuntime.outputsExist(existingEntry?.images)) ||
-      (await shouldRebuildPage(page, existingEntry, config, pages, buildTime, renderInputsHash));
+      (await shouldRebuildPage(
+        page,
+        existingEntry,
+        config,
+        pages,
+        buildTime,
+        renderInputsHash,
+        index,
+      ));
     const shouldRebuildTime = performance.now() - shouldRebuildStart;
     totalShouldRebuildTime += shouldRebuildTime;
 
@@ -717,14 +729,16 @@ async function processPagesWithCache(
       assets,
       toc,
       logger,
-      { images: pageImages },
+      { images: pageImages, templateIndex: index },
     );
     const renderPageTime = performance.now() - renderPageStart;
     totalRenderTime += renderPageTime;
     let finalHtml = renderResult.html;
 
-    // Record templates loaded for this page
+    // Record the templates this page used and how often templates rendered
     recorder.increment('templatesLoaded', renderResult.templatesLoaded);
+    recorder.increment('templateRenders', renderResult.templateRenders);
+    recorder.increment('includeCacheHits', renderResult.includeCacheHits);
 
     // Auto-inject SEO tags if enabled
     if (config.seo?.autoInject !== false) {
@@ -769,13 +783,21 @@ async function processPagesWithCache(
       assetDeps: committedImages?.assetDeps ?? [],
       images: committedImages?.images ?? [],
       reads: renderResult.reads,
+      templates: renderResult.templates,
+      templateLookups: renderResult.templateLookups,
     };
     const renderedInputsHash = renderInputsHashFor(renderResult.reads);
 
     const renderTime = Math.round(performance.now() - startTime);
 
     // Record page timing for rendered pages (includes template count)
-    recorder.recordPageTiming(page.url, renderTime, false, renderResult.templatesLoaded);
+    recorder.recordPageTiming(
+      page.url,
+      renderTime,
+      false,
+      renderResult.templatesLoaded,
+      renderResult.templateRenders,
+    );
 
     if (logger.updateProgress) {
       logger.updateProgress('rendered', page.url, renderTime);
@@ -801,27 +823,16 @@ async function processPagesWithCache(
       // Update cache manifest
       if (!options.skipCacheUpdate) {
         const cacheEntryStart = performance.now();
-        if (existingEntry) {
-          manifest.entries[cacheKey] = await updateCacheEntry(
-            existingEntry,
-            page,
-            config,
-            pages,
-            buildTime,
-            false,
-            renderedInputsHash,
-            renderedAssets,
-          );
-        } else {
-          manifest.entries[cacheKey] = await createCacheEntry(
-            page,
-            config,
-            pages,
-            buildTime,
-            renderedInputsHash,
-            renderedAssets,
-          );
-        }
+        manifest.entries[cacheKey] = existingEntry
+          ? await updateCacheEntry(
+              existingEntry,
+              page,
+              config,
+              buildTime,
+              renderedInputsHash,
+              renderedAssets,
+            )
+          : await createCacheEntry(page, config, buildTime, renderedInputsHash, renderedAssets);
         totalCacheEntryTime += performance.now() - cacheEntryStart;
       }
     }
@@ -846,8 +857,7 @@ async function processPagesWithCache(
     await Promise.all(pendingWrites.map((w) => writeFile(w.outputPath, w.content, 'utf-8')));
     totalFileWriteTime = performance.now() - fileWriteStart;
 
-    // Update cache entries SEQUENTIALLY with fast update (reuse existing deps)
-    // This avoids expensive template dependency tracking on each incremental rebuild
+    // Update cache entries sequentially, from the templates each render recorded
     if (!options.skipCacheUpdate) {
       const cacheEntryStart = performance.now();
       for (const {
@@ -857,28 +867,16 @@ async function processPagesWithCache(
         renderInputsHash,
         renderedAssets,
       } of pendingCacheUpdates) {
-        if (existingEntry) {
-          // Fast update: reuse existing deps, just update hashes and timestamp
-          manifest.entries[cacheKey] = await updateCacheEntry(
-            existingEntry,
-            page,
-            config,
-            pages,
-            buildTime,
-            true, // fastUpdate = true in dev mode
-            renderInputsHash,
-            renderedAssets,
-          );
-        } else {
-          manifest.entries[cacheKey] = await createCacheEntry(
-            page,
-            config,
-            pages,
-            buildTime,
-            renderInputsHash,
-            renderedAssets,
-          );
-        }
+        manifest.entries[cacheKey] = existingEntry
+          ? await updateCacheEntry(
+              existingEntry,
+              page,
+              config,
+              buildTime,
+              renderInputsHash,
+              renderedAssets,
+            )
+          : await createCacheEntry(page, config, buildTime, renderInputsHash, renderedAssets);
       }
       totalCacheEntryTime = performance.now() - cacheEntryStart;
     }
@@ -1116,6 +1114,13 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
   if (logger.step) {
     console.log(); // Add spacing before page processing
   }
+  // Every template under the source directory, read once per build; a dev server session
+  // keeps one between rebuilds and updates it as templates are added and deleted
+  const endTemplateIndexSpan = recorder.startSpan('templateIndexMs');
+  const templateIndex = await loadTemplateIndex(resolveSrcDir(config));
+  endTemplateIndexSpan();
+  recorder.increment('templatesIndexed', templateIndex.size);
+
   const endPageRenderSpan = recorder.startSpan('pageRenderingMs');
   const buildTime = new Date();
   const pageProcessingResult = await processPagesWithCache(
@@ -1133,6 +1138,7 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     recorder,
     imageRuntime,
     navigationHash,
+    templateIndex,
   );
   endPageRenderSpan();
   const { cacheHits, cacheMisses, searchIndexFilename } = pageProcessingResult;

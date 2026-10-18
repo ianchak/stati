@@ -7,7 +7,6 @@
 import { createHash } from 'node:crypto';
 import { dirname, join, posix, relative, resolve } from 'node:path';
 import { URL } from 'node:url';
-import type { Eta } from 'eta';
 import type Token from 'markdown-it/lib/token.mjs';
 import {
   copyFile,
@@ -58,13 +57,7 @@ import {
 import { resolveImageSource, type ImageResolveContext } from './resolve.js';
 import { planCopy, planVariants, type CopyPlan, type VariantPlan } from './plan.js';
 import { renderImg, renderResponsiveImage, type ImgMarkupOptions } from './markup.js';
-import {
-  displayTemplatePath,
-  findOgTemplatePath,
-  inlineLocalImages,
-  isOgImageExcluded,
-  ogImageSlug,
-} from './og.js';
+import { displayTemplatePath, inlineLocalImages, isOgImageExcluded, ogImageSlug } from './og.js';
 
 /**
  * Bumped when the generated markup changes, so pages rendered by an older pipeline rebuild.
@@ -73,6 +66,23 @@ const IMAGE_PIPELINE_VERSION = 1;
 
 /** Host names that cannot appear in an absolute og:image URL. */
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '0.0.0.0', '[::1]']);
+
+/**
+ * Finds and renders a page's Open Graph template, for {@link PageImages.renderOg}. Core's
+ * renderer resolves the template through the template index and renders it like any other
+ * template, so it can use `stati.include()` and `stati.layout()`.
+ */
+export interface OgTemplateRenderer {
+  /**
+   * Finds the page's template by file name, such as `og.eta`: the nearest one in the page's
+   * folder or a parent folder.
+   *
+   * @returns The template's absolute path, or null when there is none
+   */
+  find(templateName: string): string | null;
+  /** Renders a template that `find` returned, or the source of the built-in template */
+  render(template: { path: string } | { source: string }): Promise<string>;
+}
 
 /**
  * Options for `stati.image()` in templates.
@@ -373,17 +383,17 @@ export class PageImages {
   /**
    * Renders this page's Open Graph template and registers the card.
    *
-   * @param context - Template context: the layout's, with an empty body and `stati.og`
-   * @param eta - The template engine
+   * @param renderer - Finds the page's template and renders it, or the built-in template, with
+   *   the layout's values, an empty body and `stati.og`
    * @returns The generated image, or null when the page gets none
    */
-  async renderOg(context: object, eta: Eta): Promise<GeneratedOgImage | null> {
+  async renderOg(renderer: OgTemplateRenderer): Promise<GeneratedOgImage | null> {
     const { og, ogState, provider } = this.runtime;
     if (!og || !ogState || !provider?.renderOgImage) return null;
     if (isOgImageExcluded(this.page, og.exclude)) return null;
 
     const srcDir = this.runtime.srcDir;
-    const templatePath = await findOgTemplatePath(this.page.sourcePath, srcDir, og.template);
+    const templatePath = renderer.find(og.template);
     if (!templatePath && !ogState.defaultTemplate) return null;
     const templateLabel = templatePath
       ? displayTemplatePath(templatePath)
@@ -391,9 +401,9 @@ export class PageImages {
 
     let html: string;
     try {
-      html = templatePath
-        ? await eta.renderAsync(toPosix(relative(srcDir, templatePath)), context)
-        : await eta.renderStringAsync(ogState.defaultTemplate!, context);
+      html = await renderer.render(
+        templatePath ? { path: templatePath } : { source: ogState.defaultTemplate! },
+      );
     } catch (error) {
       const failure = error instanceof Error ? error : new Error(String(error));
       if (this.runtime.development) {
@@ -639,7 +649,8 @@ export class ImageRuntime {
     html: string,
     info: { outputPath: string; cacheKey: string },
   ): RenderedAssets {
-    // Partials are pre-rendered for every page, so keep only images the page really shows
+    // A template can render an image and then discard the output, so keep only images the
+    // written page really shows
     const used = pageImages.uses.filter((use) => html.includes(use.marker));
     for (const use of used) {
       this.startJob(use.jobKey);

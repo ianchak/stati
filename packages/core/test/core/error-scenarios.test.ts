@@ -289,7 +289,7 @@ describe('Error Scenario Tests', () => {
         expect.objectContaining({ bundlePaths: [] }), // assets parameter
         expect.any(Array), // toc parameter
         expect.objectContaining({ error: expect.any(Function) }), // logger parameter
-        { images: expect.anything() }, // page image state
+        { images: expect.anything(), templateIndex: expect.anything() }, // page image state, template index
       );
     });
   });
@@ -648,7 +648,7 @@ describe('Error Scenario Tests', () => {
         expect.objectContaining({ bundlePaths: [] }), // assets parameter
         expect.any(Array), // toc parameter
         expect.objectContaining({ error: expect.any(Function) }), // logger parameter
-        { images: expect.anything() }, // page image state
+        { images: expect.anything(), templateIndex: expect.anything() }, // page image state, template index
       );
     });
 

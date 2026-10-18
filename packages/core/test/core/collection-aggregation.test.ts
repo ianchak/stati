@@ -4,19 +4,12 @@ import type { StatiConfig, PageModel } from '../../src/types/index.js';
 import type { Eta } from 'eta';
 
 // Create hoisted mocks
-const { mockPathExists, mockGlob, MockEta } = vi.hoisted(() => ({
-  mockPathExists: vi.fn(),
+const { mockGlob, MockEta } = vi.hoisted(() => ({
   mockGlob: vi.fn(),
   MockEta: vi.fn(),
 }));
 
 // Mock dependencies
-vi.mock('fs-extra', () => ({
-  default: {
-    pathExists: mockPathExists,
-  },
-}));
-
 vi.mock('fast-glob', () => ({
   default: mockGlob,
 }));
@@ -49,8 +42,10 @@ describe('Collection Aggregation', () => {
     };
 
     MockEta.mockReturnValue(mockEtaInstance);
-    mockGlob.mockResolvedValue([]);
-    mockPathExists.mockResolvedValue(true);
+    // Pages live under /test/project/src, the source directory
+    vi.spyOn(process, 'cwd').mockReturnValue('/test/project');
+    // The template index: one layout at the root of the source directory
+    mockGlob.mockResolvedValue(['layout.eta']);
   });
 
   it('should provide collection data for blog index page', async () => {
@@ -411,13 +406,8 @@ describe('Collection Aggregation', () => {
 
     const allPages = [blogIndexPage, blogPost];
 
-    // Mock pathExists to return true for blog/index.eta but false for blog/layout.eta
-    mockPathExists.mockImplementation((path: string) => {
-      if (path.includes('index.eta') && path.includes('blog')) {
-        return Promise.resolve(true);
-      }
-      return Promise.resolve(false);
-    });
+    // The source directory has blog/index.eta and no blog/layout.eta
+    mockGlob.mockResolvedValue(['blog/index.eta']);
 
     mockEtaInstance.renderAsync.mockResolvedValue('<html>Blog index template</html>');
 
@@ -432,7 +422,7 @@ describe('Collection Aggregation', () => {
 
     // Verify it used the index.eta template
     expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
-      expect.stringContaining('index.eta'),
+      'blog/index.eta',
       expect.objectContaining({
         collection: expect.any(Object),
       }),
@@ -458,13 +448,8 @@ describe('Collection Aggregation', () => {
 
     const allPages = [blogIndexPage, blogPost];
 
-    // Mock pathExists to return false for blog/index.eta but true for blog/layout.eta
-    mockPathExists.mockImplementation((path: string) => {
-      if (path.includes('layout.eta') && path.includes('blog')) {
-        return Promise.resolve(true);
-      }
-      return Promise.resolve(false);
-    });
+    // The source directory has blog/layout.eta and no index.eta
+    mockGlob.mockResolvedValue(['blog/layout.eta']);
 
     mockEtaInstance.renderAsync.mockResolvedValue('<html>Blog layout template</html>');
 
@@ -479,7 +464,7 @@ describe('Collection Aggregation', () => {
 
     // Verify it fell back to layout.eta
     expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
-      expect.stringContaining('layout.eta'),
+      'blog/layout.eta',
       expect.objectContaining({
         collection: expect.any(Object),
       }),
@@ -505,13 +490,8 @@ describe('Collection Aggregation', () => {
 
     const allPages = [blogPost, blogIndexPage];
 
-    // Mock pathExists to return true for both index.eta and layout.eta
-    mockPathExists.mockImplementation((path: string) => {
-      if ((path.includes('index.eta') || path.includes('layout.eta')) && path.includes('blog')) {
-        return Promise.resolve(true);
-      }
-      return Promise.resolve(false);
-    });
+    // The source directory has both blog/index.eta and blog/layout.eta
+    mockGlob.mockResolvedValue(['blog/index.eta', 'blog/layout.eta']);
 
     mockEtaInstance.renderAsync.mockResolvedValue('<html>Blog post template</html>');
 
@@ -527,7 +507,7 @@ describe('Collection Aggregation', () => {
     // Verify it used layout.eta instead of index.eta (since this is not a collection index page),
     // while still reading the collection it belongs to
     expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
-      expect.stringContaining('layout.eta'),
+      'blog/layout.eta',
       expect.objectContaining({
         collection: expect.objectContaining({
           metadata: expect.objectContaining({ collectionPath: '/blog' }),

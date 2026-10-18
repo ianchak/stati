@@ -1,4 +1,4 @@
-import type { PageModel, CacheEntry, StatiConfig } from '../../types/index.js';
+import type { PageModel, CacheEntry, StatiConfig, TemplateLookup } from '../../types/index.js';
 import type { PageReads } from '../collections.js';
 import {
   computeContentHash,
@@ -6,11 +6,11 @@ import {
   computeBinaryFileHash,
   computeInputsHash,
 } from './hash.js';
-import { trackTemplateDependencies, resolveLayoutDependency } from './deps.js';
+import { resolveLayoutDependency } from './deps.js';
 import { computeEffectiveTTL, computeNextRebuildAt, isPageFrozen } from './ttl.js';
 import { validatePageISGOverrides, extractNumericOverride } from './validation.js';
-import { getFrontMatterDate } from '../utils/index.js';
-import { performance } from 'node:perf_hooks';
+import { getFrontMatterDate, resolveSrcDir } from '../utils/index.js';
+import { TemplateIndex, isTemplateLookupList } from '../template-index.js';
 
 /**
  * Determines the output path for a page.
@@ -76,18 +76,23 @@ function isValidCacheEntry(entry: CacheEntry): boolean {
     }
   }
 
-  for (const flag of [entry.readsCollection, entry.readsNav]) {
+  for (const flag of [entry.readsCollection, entry.readsNav, entry.templatesRecorded]) {
     if (flag !== undefined && typeof flag !== 'boolean') {
       return false;
     }
+  }
+
+  if (entry.templateLookups !== undefined && !isTemplateLookupList(entry.templateLookups)) {
+    return false;
   }
 
   return true;
 }
 
 /**
- * What a render discovered: the source images a page displays (`assetDeps`), the generated
- * images it references (`images`) and the shared data it read (`reads`).
+ * What a render discovered: the templates it used (`templates`, `templateLookups`), the source
+ * images a page displays (`assetDeps`), the generated images it references (`images`) and the
+ * shared data it read (`reads`).
  */
 export interface RenderedAssets {
   /** Absolute paths of files whose content affects the page, such as source images */
@@ -96,6 +101,10 @@ export interface RenderedAssets {
   images: readonly string[];
   /** Whether the render read the collection and the navigation tree */
   reads?: PageReads | undefined;
+  /** Template files the render used, absolute POSIX paths, the page's layout first */
+  templates?: readonly string[] | undefined;
+  /** Template names the render looked up, with what each resolved to */
+  templateLookups?: readonly TemplateLookup[] | undefined;
 }
 
 /**
@@ -109,6 +118,18 @@ export interface RenderedAssets {
  */
 export function hasRecordedReads(entry: CacheEntry): boolean {
   return typeof entry.readsCollection === 'boolean' && typeof entry.readsNav === 'boolean';
+}
+
+/**
+ * Whether a cache entry's templates and name lookups were recorded while its page rendered.
+ * An entry without them cannot tell when a template change affects its page, so the page is
+ * rebuilt once to record them.
+ *
+ * @param entry - The cache entry
+ * @returns True when `templatesRecorded` is set
+ */
+export function hasRecordedTemplates(entry: CacheEntry): boolean {
+  return entry.templatesRecorded === true;
 }
 
 /**
@@ -166,8 +187,12 @@ function withRenderedAssets(entry: CacheEntry, rendered: RenderedAssets | undefi
 
 /**
  * Determines if a page should be rebuilt based on ISG logic.
- * Checks content changes, dependency changes, TTL expiration, and freeze status.
- * Handles edge cases like missing dates, corrupted cache entries, and dependency errors.
+ * Checks content changes, the templates the last render recorded, the page's layout, TTL
+ * expiration, and freeze status. Handles edge cases like missing dates and corrupted entries.
+ *
+ * A cached page is stale when a template it rendered changed or no longer exists, when its
+ * layout would now be a different file, or when a template name it looked up would now
+ * resolve differently (checked against the template index, without reading files).
  *
  * @param page - The page model to check
  * @param entry - Existing cache entry, or undefined if not cached
@@ -175,6 +200,7 @@ function withRenderedAssets(entry: CacheEntry, rendered: RenderedAssets | undefi
  * @param allPages - All pages in the site, used to resolve the same layout as rendering
  * @param now - Current date/time
  * @param renderInputsHash - Optional hash of asset URLs and injection settings
+ * @param templateIndex - The build's template index; read from the source directory when omitted
  * @returns True if the page should be rebuilt
  *
  * @example
@@ -192,6 +218,7 @@ export async function shouldRebuildPage(
   allPages: PageModel[],
   now: Date,
   renderInputsHash?: string,
+  templateIndex?: TemplateIndex,
 ): Promise<boolean> {
   if (config.isg?.enabled === false) {
     return true;
@@ -209,52 +236,38 @@ export async function shouldRebuildPage(
       return true;
     }
 
+    // Entries from before templates were recorded while rendering rebuild once to record them
+    if (!hasRecordedTemplates(entry)) {
+      return true;
+    }
+
+    const index = templateIndex ?? (await TemplateIndex.load(resolveSrcDir(config)));
+
+    // The page can switch layouts without a template file changing, for example when a
+    // collection gains its first child page. deps[0] is the layout. A page without a layout
+    // renders Stati's fallback HTML; it always rebuilds, so a new layout.eta takes effect.
+    const layout = resolveLayoutDependency(page, allPages, index);
+    if (layout === null || layout !== entry.deps[0]) {
+      return true;
+    }
+
+    // A name the page looked up would now find another template, such as a section override
+    // added at the same path, or a file that stati.include.has() did not find
+    if (index.lookupsChanged(entry.templateLookups)) {
+      return true;
+    }
+
     // Check if inputs (content + dependencies) have changed
     const currentContentHash = computeContentHash(page.content, page.frontMatter);
 
-    // Track dependencies with error handling
-    let deps: string[];
-    try {
-      deps = await trackTemplateDependencies(page, config, allPages);
-    } catch (error) {
-      if (error instanceof Error && error.name === 'CircularDependencyError') {
-        console.error(`Circular dependency detected for ${page.url}: ${error.message}`);
-        throw error; // Re-throw circular dependency errors as they're fatal
-      }
-
-      // For other dependency errors, log warning and assume dependencies changed
-      console.warn(
-        `Failed to track dependencies for ${page.url}: ${error instanceof Error ? error.message : String(error)}`,
-      );
-      console.warn('Assuming dependencies changed, forcing rebuild');
-      return true;
-    }
-
-    // Compute hashes for all dependencies with error handling
+    // Hash every template the page rendered; one that no longer exists rebuilds the page
     const depsHashes: string[] = [];
-    let dependencyErrors = 0;
-
-    for (const dep of deps) {
-      try {
-        const depHash = await computeFileHash(dep);
-        if (depHash) {
-          depsHashes.push(depHash);
-        } else {
-          dependencyErrors++;
-          console.warn(`Missing dependency file: ${dep} (used by ${page.url})`);
-        }
-      } catch (error) {
-        dependencyErrors++;
-        console.warn(
-          `Failed to hash dependency ${dep}: ${error instanceof Error ? error.message : String(error)}`,
-        );
+    for (const dep of entry.deps) {
+      const depHash = await computeFileHash(dep);
+      if (!depHash) {
+        return true;
       }
-    }
-
-    // If we had dependency errors, force rebuild to be safe
-    if (dependencyErrors > 0) {
-      console.warn(`${dependencyErrors} dependency errors for ${page.url}, forcing rebuild`);
-      return true;
+      depsHashes.push(depHash);
     }
 
     // Files found during the last render, such as images, are hashed by content
@@ -362,48 +375,36 @@ export async function shouldRebuildPage(
 }
 
 /**
- * Creates a new cache entry for a page after it has been rendered.
+ * Creates a new cache entry for a page after it has been rendered, with the templates and name
+ * lookups the render recorded (`rendered`).
  *
  * @param page - The page model
  * @param config - Stati configuration
- * @param allPages - All pages in the site, used to resolve the same layout as rendering
  * @param renderedAt - When the page was rendered
  * @param renderInputsHash - Optional hash of asset URLs and injection settings
- * @param rendered - Files the render discovered, such as images
+ * @param rendered - What the render used: templates, lookups, images and shared data. Without
+ *   recorded templates the entry is not marked `templatesRecorded` and the page rebuilds next time.
  * @returns New cache entry
  *
  * @example
  * ```typescript
- * const entry = await createCacheEntry(page, config, pages, new Date());
+ * const entry = await createCacheEntry(page, config, new Date(), renderInputsHash, rendered);
  * ```
  */
 export async function createCacheEntry(
   page: PageModel,
   config: StatiConfig,
-  allPages: PageModel[],
   renderedAt: Date,
   renderInputsHash?: string,
   rendered?: RenderedAssets,
 ): Promise<CacheEntry> {
-  const timings: Record<string, number> = {};
-  let start = performance.now();
-
   // Validate page-level ISG overrides first
   validatePageISGOverrides(page.frontMatter, page.sourcePath);
-  timings.validate = performance.now() - start;
 
-  // Compute content hash
-  start = performance.now();
   const contentHash = computeContentHash(page.content, page.frontMatter);
-  timings.contentHash = performance.now() - start;
 
-  // Track all template dependencies
-  start = performance.now();
-  const deps = await trackTemplateDependencies(page, config, allPages);
-  timings.trackDeps = performance.now() - start;
-
-  // Compute hashes for all dependencies
-  start = performance.now();
+  // The templates the render used, the layout first
+  const deps = [...(rendered?.templates ?? [])];
   const depsHashes: string[] = [];
   for (const dep of deps) {
     const depHash = await computeFileHash(dep);
@@ -412,7 +413,6 @@ export async function createCacheEntry(
     }
   }
   depsHashes.push(...(await hashAssetDeps(rendered?.assetDeps)));
-  timings.depsHashes = performance.now() - start;
 
   const inputsHash = computeInputsHash(contentHash, depsHashes, renderInputsHash);
 
@@ -452,6 +452,10 @@ export async function createCacheEntry(
     path: outputPath,
     inputsHash,
     deps,
+    ...(rendered?.templates && {
+      templateLookups: [...(rendered.templateLookups ?? [])],
+      templatesRecorded: true,
+    }),
     tags,
     renderedAt: renderedAt.toISOString(),
     ttlSeconds,
@@ -470,140 +474,31 @@ export async function createCacheEntry(
 }
 
 /**
- * Checks if the template structure has changed by comparing the layout file's
- * modification time against when the cache entry was last rendered.
- * This detects when new includes/extends have been added to templates.
- *
- * @param entry - The existing cache entry
- * @returns True if template structure may have changed, false if structure is unchanged
- */
-async function hasTemplateStructureChanged(entry: CacheEntry): Promise<boolean> {
-  try {
-    // If the entry has a layout in its deps, check if that layout file has been modified
-    // since the last render. Layout files are typically the first dep or contain the
-    // includes/extends declarations.
-    if (entry.deps.length === 0) {
-      return false;
-    }
-
-    // Get the timestamp of the last render
-    const lastRendered = new Date(entry.renderedAt).getTime();
-
-    // Import stat from node:fs/promises at runtime to avoid circular dependency issues
-    const { stat } = await import('node:fs/promises');
-
-    // Check if any template files (layout or partials) have been modified
-    // We only need to check the first few deps (usually layout and immediate includes)
-    // as a heuristic to detect structural changes without expensive full tracking
-    const depsToCheck = entry.deps.slice(0, 3);
-
-    for (const depPath of depsToCheck) {
-      try {
-        const stats = await stat(depPath);
-        if (stats.mtimeMs > lastRendered) {
-          // Template file was modified after last render - structure may have changed
-          return true;
-        }
-      } catch (_error) {
-        // If we can't stat the file, assume it might have changed
-        return true;
-      }
-    }
-
-    return false;
-  } catch (_error) {
-    // On any error, be conservative and assume structure changed
-    return true;
-  }
-}
-
-/**
- * Updates an existing cache entry with new information after rebuilding.
- * In dev mode, this is optimized to reuse the existing deps array since
- * template structure rarely changes between incremental rebuilds.
+ * Updates an existing cache entry after its page rendered again: a new entry from this
+ * render, keeping the original publish date when the page no longer sets one.
  *
  * @param entry - Existing cache entry
  * @param page - The page model
  * @param config - Stati configuration
- * @param allPages - All pages in the site, used to resolve the same layout as rendering
  * @param renderedAt - When the page was rendered
- * @param fastUpdate - If true, skip expensive dep tracking (dev mode optimization)
  * @param renderInputsHash - Optional hash of asset URLs and injection settings
- * @param rendered - Files the render discovered, such as images
+ * @param rendered - What the render used: templates, lookups, images and shared data
  * @returns Updated cache entry
  *
  * @example
  * ```typescript
- * const updatedEntry = await updateCacheEntry(existingEntry, page, config, pages, new Date());
+ * const updatedEntry = await updateCacheEntry(existingEntry, page, config, new Date(), hash, rendered);
  * ```
  */
 export async function updateCacheEntry(
   entry: CacheEntry,
   page: PageModel,
   config: StatiConfig,
-  allPages: PageModel[],
   renderedAt: Date,
-  fastUpdate = false,
   renderInputsHash?: string,
   rendered?: RenderedAssets,
 ): Promise<CacheEntry> {
-  // In fast update mode (dev), reuse existing deps to avoid expensive tracking
-  if (fastUpdate && entry.deps.length > 0) {
-    // Detect if template structure has changed (new includes/extends added)
-    // by checking if the layout file has been modified or if template content
-    // contains different dependency patterns
-    const structureChanged = await hasTemplateStructureChanged(entry);
-
-    // The page can also switch layouts without any template file changing, for example
-    // when a collection gains its first child page or a front matter layout is edited.
-    // deps[0] is always the layout, so compare it against the layout used now.
-    const layoutChanged =
-      !structureChanged &&
-      (await resolveLayoutDependency(page, config, allPages)) !== entry.deps[0];
-
-    if (structureChanged || layoutChanged) {
-      // Template structure or layout changed - fall through to full dependency tracking
-      // This ensures we pick up new includes/extends and the newly selected layout
-    } else {
-      // Structure unchanged - safe to reuse existing deps
-      // Just update the content hash and timestamp, keep existing deps
-      const contentHash = computeContentHash(page.content, page.frontMatter);
-
-      // Compute hashes for existing dependencies (fast - files are cached)
-      const depsHashes: string[] = [];
-      for (const dep of entry.deps) {
-        const depHash = await computeFileHash(dep);
-        if (depHash) {
-          depsHashes.push(depHash);
-        }
-      }
-      // Asset deps come from this render, not from the previous entry
-      depsHashes.push(...(await hashAssetDeps(rendered?.assetDeps)));
-
-      const inputsHash = computeInputsHash(contentHash, depsHashes, renderInputsHash);
-
-      return withRenderedAssets(
-        {
-          ...entry,
-          inputsHash,
-          // Front matter tags, and a generated page's label, can change without a layout change
-          tags: getCacheTags(page),
-          renderedAt: renderedAt.toISOString(),
-        },
-        rendered,
-      );
-    }
-  }
-
-  // Full update - create new entry and preserve original publishedAt
-  const newEntry = await createCacheEntry(
-    page,
-    config,
-    allPages,
-    renderedAt,
-    renderInputsHash,
-    rendered,
-  );
+  const newEntry = await createCacheEntry(page, config, renderedAt, renderInputsHash, rendered);
 
   // Preserve original publishedAt if no new one is specified
   if (!newEntry.publishedAt && entry.publishedAt) {

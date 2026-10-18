@@ -23,6 +23,10 @@
 export type {
   SiteConfig,
   StatiConfig,
+  StatiHelpers,
+  TemplateContext,
+  TemplateIncludeFunction,
+  TemplateLayoutFunction,
   PageModel,
   FrontMatter,
   BuildContext,

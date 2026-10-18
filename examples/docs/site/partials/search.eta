@@ -3,12 +3,12 @@
      public/scripts/docs.js loads Stati's search index on first open and fills
      the result list. Without JavaScript the search button stays hidden.
      The section list lets results use the sidebar's section titles. */
-  const sectionTitles = stati.docsSections().map((section) => ({ url: section.url, title: section.title }));
+  const sectionTitles = stati.helpers.docsSections().map((section) => ({ url: section.url, title: section.title }));
 %>
 <dialog class="search-dialog" id="search-dialog" aria-label="Search documentation">
   <div class="search-panel">
     <div class="search-field">
-      <%~ stati.partials.icon({ name: 'search', size: 20 }) %>
+      <%~ stati.include('partials/icon', { name: 'search', size: 20 }) %>
       <input
         id="search-input"
         type="search"
@@ -34,7 +34,7 @@
     </div>
     <script type="application/json" data-search-sections><%~ JSON.stringify(sectionTitles).replace(/</g, '\\u003c') %></script>
     <div class="search-footer" aria-hidden="true">
-      <span><kbd><%~ stati.partials.icon({ name: 'arrow-up', size: 12 }) %></kbd> <kbd><%~ stati.partials.icon({ name: 'arrow-down', size: 12 }) %></kbd> to move</span>
+      <span><kbd><%~ stati.include('partials/icon', { name: 'arrow-up', size: 12 }) %></kbd> <kbd><%~ stati.include('partials/icon', { name: 'arrow-down', size: 12 }) %></kbd> to move</span>
       <span><kbd>Enter</kbd> to open</span>
       <span><kbd>Esc</kbd> to close</span>
     </div>

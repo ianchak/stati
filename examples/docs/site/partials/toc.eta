@@ -11,7 +11,7 @@
 <details class="toc-inline">
   <summary>
     On this page
-    <%~ stati.partials.icon({ name: 'chevron-right', size: 16 }) %>
+    <%~ stati.include('partials/icon', { name: 'chevron-right', size: 16 }) %>
   </summary>
   <ul role="list">
     <% for (const entry of entries) { %>

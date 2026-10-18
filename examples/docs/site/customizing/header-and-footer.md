@@ -32,8 +32,8 @@ A link is highlighted when the reader is on that page or anywhere in the section
 
 ## Footer
 
-The footer shows the copyright year, the site title and the `footer` line from the config, such as a license. To change its structure, edit `site/_partials/footer.eta`.
+The footer shows the copyright year, the site title and the `footer` line from the config, such as a license. To change its structure, edit `site/partials/footer.eta`.
 
 ## Search and theme buttons
 
-The search button and theme toggle are in `site/_partials/header.eta`. They appear once `public/scripts/docs.js` has loaded, since neither works without JavaScript.
+The search button and theme toggle are in `site/partials/header.eta`. They appear once `public/scripts/docs.js` has loaded, since neither works without JavaScript.

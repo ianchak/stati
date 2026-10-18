@@ -4,12 +4,13 @@
  */
 
 // ISG types
-export type { AgingRule, ISGConfig, CacheEntry, CacheManifest } from './isg.js';
+export type { AgingRule, ISGConfig, CacheEntry, CacheManifest, TemplateLookup } from './isg.js';
 
 // Configuration types
 export type {
   SiteConfig,
   StatiConfig,
+  StatiHelpers,
   BuildContext,
   PageContext,
   BuildHooks,
@@ -32,6 +33,8 @@ export type {
   PaginateOptions,
   GenerateOptions,
   TemplateContext,
+  TemplateIncludeFunction,
+  TemplateLayoutFunction,
   SEOMetadata,
   SitemapMetadata,
   RobotsConfig,

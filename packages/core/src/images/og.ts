@@ -1,62 +1,13 @@
 /**
- * Helpers for Open Graph image generation: template lookup, exclusions and inlining.
+ * Helpers for Open Graph image generation: exclusions and inlining. Core finds a page's
+ * template through the template index, nearest folder first.
  * @module images/og
  */
 
-import { dirname, extname, join, relative, resolve } from 'node:path';
-import { isPathWithinDirectory, pathExists, readFileBuffer } from '../core/utils/index.js';
+import { extname, join, relative, resolve } from 'node:path';
+import { isPathWithinDirectory, readFileBuffer } from '../core/utils/index.js';
 import { matchesGlob } from '../core/utils/glob-patterns.utils.js';
 import type { PageModel } from '../types/index.js';
-
-/** Cache of template lookups per directory, cleared at the start of each build. */
-const templateCache = new Map<string, string | null>();
-
-/**
- * Clears the Open Graph template lookup cache.
- */
-export function clearOgTemplateCache(): void {
-  templateCache.clear();
-}
-
-/**
- * Finds the Open Graph template for a page: the nearest file named `templateName` in the
- * page's directory or one of its parents, up to the source directory.
- *
- * @param pageSourcePath - Absolute path of the page's Markdown file
- * @param srcDir - Absolute source directory
- * @param templateName - Template file name, such as `og.eta`
- * @returns Absolute path of the template, or null when there is none
- */
-export async function findOgTemplatePath(
-  pageSourcePath: string,
-  srcDir: string,
-  templateName: string,
-): Promise<string | null> {
-  const root = resolve(srcDir);
-  let dir = dirname(resolve(pageSourcePath));
-  const visited: string[] = [];
-
-  while (isPathWithinDirectory(root, dir)) {
-    const cacheKey = `${dir}|${templateName}`;
-    if (templateCache.has(cacheKey)) {
-      const cached = templateCache.get(cacheKey)!;
-      for (const key of visited) templateCache.set(key, cached);
-      return cached;
-    }
-    visited.push(cacheKey);
-
-    const candidate = join(dir, templateName);
-    if (await pathExists(candidate)) {
-      for (const key of visited) templateCache.set(key, candidate);
-      return candidate;
-    }
-    if (dir === root) break;
-    dir = dirname(dir);
-  }
-
-  for (const key of visited) templateCache.set(key, null);
-  return null;
-}
 
 /**
  * Whether a page gets no generated Open Graph image: it sets its own image in front matter

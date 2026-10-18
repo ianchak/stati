@@ -51,14 +51,14 @@ It appears on the home page, in the archive, under its tags and in the feed. Add
 
 ```
 ├── helpers/
-│   └── blog.js           # Related posts and dates, as template filters
+│   └── blog.js           # Related posts and dates, as template helpers
 ├── public/
 │   ├── fonts/            # Young Serif and its licence
 │   ├── images/           # Ornament and a sample image
 │   ├── favicon.svg
 │   └── styles.css        # All styles; colours and fonts at the top
 ├── site/
-│   ├── _partials/        # Head, header, footer, post lists, page links, tag links
+│   ├── partials/         # Head, header, footer, post lists, page links, tag links
 │   ├── posts/
 │   │   ├── index.md      # The archive: all posts by year
 │   │   ├── layout.eta    # Post layout
@@ -66,6 +66,7 @@ It appears on the home page, in the archive, under its tags and in the feed. Add
 │   ├── tags/
 │   │   ├── index.md      # All tags
 │   │   └── [tag].md      # One page per tag
+│   ├── base.eta          # The page around both layouts: head, header, footer
 │   ├── layout.eta        # Layout for every other page
 │   ├── index.md          # Home page
 │   ├── about.md
@@ -79,7 +80,7 @@ Every list comes from Stati's collection of the posts in `site/posts/`. The arch
 
 - **Pages of posts:** `paginate: 5` in `site/index.md` splits the home page into `/`, `/page/2` and so on; templates read the current page's posts from `stati.pagination`.
 - **Tag pages:** `site/tags/[tag].md` is a template. Stati makes one page from it for every tag, with `{tag}` in its front matter replaced by the tag, and gives each page its tag and posts as `stati.generated`.
-- **Under each post:** the post layout finds the newer and older posts in `stati.collection`, and `stati.relatedPosts(posts, url)` from `helpers/blog.js` picks related ones.
+- **Under each post:** the post layout finds the newer and older posts in `stati.collection`, and `stati.helpers.relatedPosts(posts, url)` from `helpers/blog.js` picks related ones.
 
 Stati rebuilds the pages that list a post when the post is added, removed, retitled or retagged, and removes the pages of deleted posts and unused tags.
 

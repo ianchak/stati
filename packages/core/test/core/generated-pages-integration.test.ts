@@ -229,7 +229,7 @@ describe('generated pages', () => {
   });
 
   it('reads the collection of the nearest folder with pages when its own folder has an index page', async () => {
-    await site.write('site/blog/tags/index.md', page({ title: 'All tags', layout: 'layout' }));
+    await site.write('site/blog/tags/index.md', page({ title: 'All tags', layout: '/layout' }));
     await site.build();
 
     // /blog/tags has an index page but no pages of its own, so keys come from /blog
@@ -263,7 +263,7 @@ describe('generated pages', () => {
   it('skips a generated page whose URL a real page has', async () => {
     await site.write(
       'site/blog/tags/css.md',
-      page({ title: 'Hand-written CSS page', layout: 'layout' }),
+      page({ title: 'Hand-written CSS page', layout: '/layout' }),
     );
     const { warnings } = await site.build();
 
@@ -275,7 +275,7 @@ describe('generated pages', () => {
     // /blog/tags/ and /blog/tags/index both write blog/tags/index.html
     await site.write(
       'site/blog/tags/index.md',
-      page({ title: 'All tags', layout: 'layout', permalink: '/blog/tags/' }),
+      page({ title: 'All tags', layout: '/layout', permalink: '/blog/tags/' }),
     );
     await site.write(
       'site/blog/third.md',

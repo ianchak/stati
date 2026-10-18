@@ -6,14 +6,13 @@
        dateStyle     'short' (default), 'long' or 'day' (no year, for lists grouped by year)
        transition    true animates the title into the post page (only where each post is listed once)
      Each post is a page: its front matter is under post.frontMatter. */
-  if (!stati.props || !stati.props.posts) { return; }
   const dateStyle = stati.props.dateStyle ?? 'short';
 %>
 <ol class="post-list" role="list">
   <% for (const post of stati.props.posts) { %>
   <% const { title, description, draft } = post.frontMatter; %>
   <li class="post-row">
-    <time datetime="<%= stati.isoDate(post.publishedAt) %>"><%= post.publishedAt ? stati.formatDate(post.publishedAt, dateStyle) : 'Undated' %></time>
+    <time datetime="<%= stati.helpers.isoDate(post.publishedAt) %>"><%= post.publishedAt ? stati.helpers.formatDate(post.publishedAt, dateStyle) : 'Undated' %></time>
     <div>
       <% if (stati.props.transition) { %>
       <a class="post-row-title" href="<%= post.url %>" style="<%= `view-transition-name: post${post.url.replace(/[^a-z0-9]+/gi, '-')}` %>"><%= title %></a>

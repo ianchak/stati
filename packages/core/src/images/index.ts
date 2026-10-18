@@ -7,9 +7,13 @@
 export { resolveImagesConfig, validateImagesConfig } from './config.js';
 export type { ResolvedImagesConfig, ResolvedResponsiveConfig, ResolvedOgConfig } from './config.js';
 export { ImageRuntime, PageImages, validateOgBaseUrl } from './runtime.js';
-export type { StatiImageOptions, SettleResult, ImageRuntimeOptions } from './runtime.js';
+export type {
+  StatiImageOptions,
+  SettleResult,
+  ImageRuntimeOptions,
+  OgTemplateRenderer,
+} from './runtime.js';
 export { installImageRule, selectEagerImage } from './markdown-rule.js';
-export { findOgTemplatePath, clearOgTemplateCache } from './og.js';
 export { loadImageProvider, resolveImagesPackage, missingPackageMessage } from './provider.js';
 export { probeImage } from './utils/index.js';
 export type { ImageProbeResult } from './utils/index.js';

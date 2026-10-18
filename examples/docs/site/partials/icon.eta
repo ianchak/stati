@@ -2,8 +2,8 @@
   /* Inline SVG icons, drawn on a 24px grid with a 1.75 stroke.
      Props: name (required) and size in px (default 18). Icons are decorative:
      put the accessible name in visible or .sr-only text next to them. */
-  const name = stati.props?.name;
-  const size = stati.props?.size ?? 18;
+  const name = stati.props.name;
+  const size = stati.props.size ?? 18;
   const paths = {
     search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
     menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',

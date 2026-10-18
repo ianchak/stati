@@ -3,9 +3,16 @@ import { Eta } from 'eta';
 import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { parseEtaError, TemplateError } from '../../src/core/utils/template-errors.utils.js';
+import {
+  createTemplateError,
+  parseEtaError,
+  TemplateError,
+} from '../../src/core/utils/template-errors.utils.js';
 import { createValidatingContextProxy } from '../../src/core/utils/context-validation.utils.js';
-import { wrapPartialsAsCallable } from '../../src/core/utils/callable-partials.utils.js';
+import { createStatiEtaPlugin, installEtaPlugin } from '../../src/core/eta-plugin.js';
+import { TemplateIndex } from '../../src/core/template-index.js';
+import { RenderScope } from '../../src/core/template-render.js';
+import { createFallbackLogger } from '../../src/core/utils/logger.utils.js';
 import { setEnv, getEnv } from '../../src/env.js';
 
 async function captureRenderError(eta: Eta, template: string, data: object): Promise<Error> {
@@ -30,9 +37,17 @@ describe('parseEtaError with Eta debug output', () => {
     );
     await writeFile(
       join(viewsDir, 'uses-card.eta'),
-      '<main>\n<%~ stati.partials.card({ title: "x" }) %>\n</main>',
+      '<main>\n<%~ stati.include("card", { title: "x" }) %>\n</main>',
     );
-    await writeFile(join(viewsDir, 'card.eta'), '<div>\n  <%= stati.fromatDate(1) %>\n</div>');
+    await writeFile(
+      join(viewsDir, 'card.eta'),
+      '<div>\n  <%= stati.helpers.fromatDate(1) %>\n</div>',
+    );
+    await writeFile(
+      join(viewsDir, 'uses-broken.eta'),
+      '<main>\n<%~ stati.include("broken") %>\n</main>',
+    );
+    await writeFile(join(viewsDir, 'broken.eta'), '<p>\n<%= stati.page.title\n</p>');
     await writeFile(join(viewsDir, 'uses-it.eta'), '<p><%= it.page.title %></p>');
   });
 
@@ -65,21 +80,53 @@ describe('parseEtaError with Eta debug output', () => {
     expect(details.code).toBe('<title><%= stati.paeg.title %></title>');
   });
 
-  it('reports the innermost template when a partial called with props fails', async () => {
-    const baseContext = { page: {}, site: {}, formatDate: () => '' };
-    const partials = wrapPartialsAsCallable(
-      eta,
-      { card: '' },
-      { card: 'card.eta' }, // Stati passes partial paths relative to the views directory
-      baseContext,
-    );
-    const context = createValidatingContextProxy({ ...baseContext, partials });
-    const error = await captureRenderError(eta, 'uses-card.eta', context);
+  /** Renders a template the way a page's layout renders, with stati.include() available */
+  async function captureScopeError(template: string): Promise<Error> {
+    const engine = new Eta({
+      views: viewsDir,
+      varName: 'stati',
+      debug: true,
+      plugins: [createStatiEtaPlugin()],
+    });
+    installEtaPlugin(engine);
+    const scope = new RenderScope({
+      page: {
+        slug: '/',
+        url: '/',
+        sourcePath: join(viewsDir, 'index.md'),
+        frontMatter: {},
+        content: '',
+      },
+      eta: engine,
+      index: await TemplateIndex.load(viewsDir),
+      logger: createFallbackLogger(),
+      development: true,
+    });
+    const values = { page: {}, site: {}, helpers: { formatDate: () => '' } };
+    try {
+      await scope.renderAsync({ id: 'page', values }, { file: template });
+    } catch (error) {
+      return error as Error;
+    }
+    throw new Error('Expected the template to throw');
+  }
+
+  it('reports the innermost template when an included template fails', async () => {
+    const error = await captureScopeError('uses-card.eta');
 
     const templateError = parseEtaError(error);
     expect(templateError.filePath).toBe(join(viewsDir, 'card.eta'));
     expect(templateError.line).toBe(2);
-    expect(templateError.suggestions).toEqual(['Did you mean "stati.formatDate"?']);
+    expect(templateError.suggestions).toEqual(['Did you mean "stati.helpers.formatDate"?']);
+  });
+
+  it('points at an included template that does not compile, not at the include', async () => {
+    const error = await captureScopeError('uses-broken.eta');
+
+    const templateError = createTemplateError(error);
+    expect(templateError.filePath).toBe(join(viewsDir, 'broken.eta'));
+    expect(templateError.line).toBe(2);
+    expect(templateError.message).toContain('broken.eta');
   });
 
   it('explains that templates use stati instead of it', async () => {

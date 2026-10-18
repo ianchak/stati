@@ -36,6 +36,7 @@ type MutablePhases = {
   navigationBuildMs?: number;
   cacheManifestLoadMs?: number;
   typescriptCompileMs?: number;
+  templateIndexMs?: number;
   pageRenderingMs?: number;
   shouldRebuildTotalMs?: number;
   renderPageTotalMs?: number;
@@ -68,6 +69,9 @@ type MutableCounts = {
   cachedPages: number;
   assetsCopied: number;
   templatesLoaded: number;
+  templateRenders: number;
+  includeCacheHits: number;
+  templatesIndexed: number;
   markdownFilesProcessed: number;
   imagesGenerated: number;
   imagesCached: number;
@@ -94,6 +98,9 @@ class ActiveMetricRecorder implements MetricRecorder {
     cachedPages: 0,
     assetsCopied: 0,
     templatesLoaded: 0,
+    templateRenders: 0,
+    includeCacheHits: 0,
+    templatesIndexed: 0,
     markdownFilesProcessed: 0,
     imagesGenerated: 0,
     imagesCached: 0,
@@ -156,14 +163,16 @@ class ActiveMetricRecorder implements MetricRecorder {
     durationMs: number,
     cached: boolean,
     templatesLoaded?: number,
+    templateRenders?: number,
   ): void {
     if (this.detailed) {
-      const timing: PageTiming = { url, durationMs, cached };
-      if (templatesLoaded !== undefined) {
-        this.pageTimings.push({ ...timing, templatesLoaded });
-      } else {
-        this.pageTimings.push(timing);
-      }
+      this.pageTimings.push({
+        url,
+        durationMs,
+        cached,
+        ...(templatesLoaded !== undefined && { templatesLoaded }),
+        ...(templateRenders !== undefined && { templateRenders }),
+      });
     }
   }
 

@@ -63,15 +63,15 @@ function createSilentLogger() {
 function createTestFixture(baseDir: string, pageCount: number): void {
   const siteDir = join(baseDir, 'site');
   const publicDir = join(baseDir, 'public');
-  const partialsDir = join(siteDir, '_partials');
+  const partialsDir = join(siteDir, 'partials');
   mkdirSync(siteDir, { recursive: true });
   mkdirSync(publicDir, { recursive: true });
   mkdirSync(partialsDir, { recursive: true });
 
-  // A header partial so layout edits cascade through partial compilation too.
+  // An included header, so layout edits cascade through include compilation too.
   writeFileSync(
     join(partialsDir, 'header.eta'),
-    `<% if (!stati.props) { %><% return; } %><header><%= stati.props.title || 'Site' %></header>`,
+    `<header><%= stati.props.title || 'Site' %></header>`,
   );
 
   for (let i = 0; i < pageCount; i++) {
@@ -98,7 +98,7 @@ function writeLayout(siteDir: string, marker: number): void {
 <html>
 <head><title><%= stati.page.title %> | rev ${marker}</title></head>
 <body>
-  <%~ stati.partials.header({ title: 'rev ${marker}' }) %>
+  <%~ stati.include('partials/header', { title: 'rev ${marker}' }) %>
   <main><%~ stati.content %></main>
   <footer>rev ${marker}</footer>
 </body>

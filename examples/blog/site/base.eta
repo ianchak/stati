@@ -1,0 +1,17 @@
+<%
+  /* The page around every layout: site/layout.eta and site/posts/layout.eta call
+     stati.layout('base'), and what they render arrives here as stati.body. The pieces
+     in site/partials/ are included by path. */
+%>
+<!DOCTYPE html>
+<html lang="<%= stati.site.defaultLocale || 'en' %>">
+  <%~ stati.include('partials/head') %>
+  <body>
+    <a href="#main" class="skip-link">Skip to content</a>
+    <%~ stati.include('partials/header') %>
+
+    <%~ stati.body %>
+
+    <%~ stati.include('partials/footer') %>
+  </body>
+</html>

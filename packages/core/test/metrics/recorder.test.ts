@@ -111,12 +111,41 @@ describe('MetricRecorder', () => {
       const recorder = createMetricRecorder({ enabled: true });
 
       // Simulate template loading during page rendering
-      recorder.increment('templatesLoaded', 3); // Page 1: 2 partials + 1 layout
-      recorder.increment('templatesLoaded', 2); // Page 2: 1 partial + 1 layout
+      recorder.increment('templatesLoaded', 3); // Page 1: layout and two included templates
+      recorder.increment('templatesLoaded', 2); // Page 2: layout and one included template
       recorder.increment('templatesLoaded', 1); // Page 3: just layout
 
       const metrics = recorder.finalize();
       expect(metrics.counts.templatesLoaded).toBe(6); // Total templates loaded across all pages
+    });
+
+    it('should count template renders, include cache hits and indexed templates', () => {
+      const recorder = createMetricRecorder({ enabled: true });
+
+      recorder.increment('templatesIndexed', 12);
+      recorder.increment('templateRenders', 5); // Page 1: one include rendered twice with props
+      recorder.increment('includeCacheHits', 2); // Page 1: the same include twice without props
+      recorder.increment('templateRenders', 3);
+
+      const metrics = recorder.finalize();
+      expect(metrics.counts.templatesIndexed).toBe(12);
+      expect(metrics.counts.templateRenders).toBe(8);
+      expect(metrics.counts.includeCacheHits).toBe(2);
+    });
+
+    it('should start the template counters at zero', () => {
+      const metrics = createMetricRecorder({ enabled: true }).finalize();
+      expect(metrics.counts.templatesIndexed).toBe(0);
+      expect(metrics.counts.templateRenders).toBe(0);
+      expect(metrics.counts.includeCacheHits).toBe(0);
+    });
+
+    it('should record the template index phase', () => {
+      const recorder = createMetricRecorder({ enabled: true });
+
+      recorder.recordPhase('templateIndexMs', 4.5);
+
+      expect(recorder.finalize().phases.templateIndexMs).toBe(4.5);
     });
 
     it('should track templatesLoaded alongside other content counts', () => {
@@ -127,7 +156,7 @@ describe('MetricRecorder', () => {
       recorder.increment('markdownFilesProcessed', 10);
       recorder.increment('renderedPages', 3);
       recorder.increment('cachedPages', 7);
-      recorder.increment('templatesLoaded', 4); // 3 partials + 1 layout used across rendered pages
+      recorder.increment('templatesLoaded', 4); // Layout and three included templates
       recorder.increment('assetsCopied', 5);
 
       const metrics = recorder.finalize();
@@ -207,6 +236,25 @@ describe('MetricRecorder', () => {
 
       // Cached page should not have templatesLoaded property
       expect(metrics.pageTimings?.[2]?.templatesLoaded).toBeUndefined();
+    });
+
+    it('should include template renders in page timings when provided', () => {
+      const recorder = createMetricRecorder({ enabled: true, detailed: true });
+
+      recorder.recordPageTiming('/docs/intro', 75, false, 5, 9);
+      recorder.recordPageTiming('/plain', 30, false, 1, 1);
+      recorder.recordPageTiming('/cached', 0, true);
+
+      const metrics = recorder.finalize();
+      expect(metrics.pageTimings?.[0]).toEqual({
+        url: '/docs/intro',
+        durationMs: 75,
+        cached: false,
+        templatesLoaded: 5,
+        templateRenders: 9,
+      });
+      expect(metrics.pageTimings?.[1]?.templateRenders).toBe(1);
+      expect(metrics.pageTimings?.[2]).not.toHaveProperty('templateRenders');
     });
 
     it('should not record page timings when not in detailed mode', () => {

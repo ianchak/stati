@@ -16,10 +16,11 @@ order: 3
 │   ├── favicon.svg        # Your logo
 │   └── styles.css         # All styles; colors and fonts at the top
 ├── site/
-│   ├── _partials/         # Header, sidebar, table of contents, search...
+│   ├── partials/          # Header, sidebar, table of contents, search...
 │   ├── getting-started/   # A section: one folder per section
 │   │   ├── index.md       # The section's title, description and order
 │   │   └── *.md           # Its pages
+│   ├── base.eta           # The page around both layouts
 │   ├── home.eta           # Layout for the home page
 │   ├── layout.eta         # Layout for every other page
 │   ├── index.md           # The home page
@@ -36,7 +37,7 @@ order: 3
 ## What you can leave alone
 
 - **`helpers/docs.js`** groups pages into sections. You only need it to change how grouping works.
-- **`site/_partials/`** holds the page pieces. Edit them when you want to change the page structure; see [Layouts and partials](/customizing/layouts-and-partials).
+- **`site/partials/`** and **`site/base.eta`** hold the page pieces. Edit them when you want to change the page structure; see [Layouts and partials](/customizing/layouts-and-partials).
 - **`public/scripts/docs.js`** runs search and the interactive parts.
 
 ## Generated folders

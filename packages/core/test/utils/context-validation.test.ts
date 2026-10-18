@@ -14,10 +14,17 @@ function createContext() {
     nav: { tree: [], getBreadcrumbs: () => [] },
     collection: undefined,
     generator: { version: '1.0.0' },
-    partials: { header: '<header></header>' },
     props: undefined,
     propValue: () => '',
-    formatDate: () => '2026-01-01',
+    helpers: {
+      formatDate: () => '2026-01-01',
+      formatTwice(this: Record<string, () => string>) {
+        return `${this.formatDate!()} ${this.formatDate!()}`;
+      },
+      callMissing(this: Record<string, () => string>) {
+        return this.formatDat!();
+      },
+    },
   };
 }
 
@@ -51,10 +58,10 @@ describe('createValidatingContextProxy', () => {
     }
   });
 
-  it('returns existing properties, including custom filters', () => {
+  it('returns existing properties, including helpers', () => {
     const stati = createValidatingContextProxy(createContext());
     expect(stati.content).toBe('<p>Hi</p>');
-    expect(stati.formatDate()).toBe('2026-01-01');
+    expect(stati.helpers.formatDate()).toBe('2026-01-01');
     expect(stati.collection).toBeUndefined();
   });
 
@@ -71,7 +78,7 @@ describe('createValidatingContextProxy', () => {
     const stati = createValidatingContextProxy(createContext()) as Record<string, unknown>;
     expect(captureError(() => stati.title).suggestions[0]).toBe('stati.page.title');
     expect(captureError(() => stati.customField).suggestions).toEqual(['stati.page.customField']);
-    expect(captureError(() => stati.header).suggestions).toEqual(['stati.partials.header']);
+    expect(captureError(() => stati.formatDate).suggestions).toEqual(['stati.helpers.formatDate']);
   });
 
   it('lists the available properties when nothing is similar', () => {
@@ -91,6 +98,47 @@ describe('createValidatingContextProxy', () => {
 
     const generatorError = captureError(() => (stati.generator as Record<string, unknown>).versoin);
     expect(generatorError.suggestions).toEqual(['stati.generator.version']);
+  });
+
+  it('validates helpers as a closed set', () => {
+    const stati = createValidatingContextProxy(createContext());
+    const helpers = stati.helpers as Record<string, unknown>;
+
+    const error = captureError(() => helpers.fromatDate);
+    expect(error.propertyPath).toBe('stati.helpers.fromatDate');
+    expect(error.suggestions).toEqual(['stati.helpers.formatDate']);
+
+    const empty = createValidatingContextProxy({ ...createContext(), helpers: {} });
+    expect(captureError(() => (empty.helpers as Record<string, unknown>).anything).message).toBe(
+      'Unknown property "stati.helpers.anything". Available properties: .',
+    );
+  });
+
+  it('calls a helper with the validating helpers object as this', () => {
+    const stati = createValidatingContextProxy(createContext());
+
+    expect(stati.helpers.formatTwice()).toBe('2026-01-01 2026-01-01');
+    expect(captureError(() => stati.helpers.callMissing()).suggestions).toEqual([
+      'stati.helpers.formatDate',
+    ]);
+  });
+
+  it('explains stati.body in a template that has none', () => {
+    const stati = createValidatingContextProxy(createContext()) as Record<string, unknown>;
+    const error = captureError(() => stati.body);
+
+    expect(error.propertyPath).toBe('stati.body');
+    expect(error.message).toContain(
+      'stati.body is set only in templates rendered by stati.layout()',
+    );
+    expect(error.message).toContain('stati.content');
+    expect(parseUnknownPropertyMessage(error.message)).toEqual({
+      message: 'Unknown property "stati.body"',
+      suggestions: [error.suggestions[0]],
+    });
+
+    const withBody = createValidatingContextProxy({ ...createContext(), body: undefined });
+    expect(withBody.body).toBeUndefined();
   });
 
   it('allows optional SiteConfig fields that are not set', () => {
@@ -117,7 +165,7 @@ describe('createValidatingContextProxy', () => {
     const props = stati.props as { title?: string } | undefined;
 
     expect(props?.title ?? 'fallback').toBe('fallback');
-    expect('formatDate' in stati).toBe(true);
+    expect('helpers' in stati).toBe(true);
     expect('missing' in stati).toBe(false);
   });
 
@@ -143,11 +191,11 @@ describe('parseUnknownPropertyMessage', () => {
   it('turns suggestions into overlay entries', () => {
     expect(
       parseUnknownPropertyMessage(
-        'Unknown property "stati.paeg". Did you mean "stati.page" or "stati.partials"?',
+        'Unknown property "stati.paeg". Did you mean "stati.page" or "stati.props"?',
       ),
     ).toEqual({
       message: 'Unknown property "stati.paeg"',
-      suggestions: ['Did you mean "stati.page"?', 'Did you mean "stati.partials"?'],
+      suggestions: ['Did you mean "stati.page"?', 'Did you mean "stati.props"?'],
     });
   });
 

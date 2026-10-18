@@ -103,7 +103,8 @@ export async function computeFileHash(filePath: string): Promise<string | null> 
     }
 
     const content = await readFile(filePath, 'utf-8');
-    if (!content) {
+    // An empty file has a hash too: a page that includes an empty template must stay cached
+    if (content === null) {
       fileHashCache.set(normalizedPath, null);
       return null;
     }

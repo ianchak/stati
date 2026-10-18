@@ -1,12 +1,8 @@
-import { join, dirname, posix } from 'node:path';
-import { pathExists } from './fs.utils.js';
-import type { StatiConfig, PageModel } from '../../types/index.js';
-import { LAYOUT_TEMPLATE } from '../../constants.js';
-import { resolveSrcDir } from './paths.utils.js';
+import type { PageModel } from '../../types/index.js';
 
 /**
- * Shared template discovery utilities.
- * Extracted from templates.ts and isg/deps.ts to eliminate duplication.
+ * Page list utilities shared by rendering and the ISG cache: collection index pages, virtual
+ * pages and collection paths. Layout discovery uses the template index (core/template-index.ts).
  */
 
 /**
@@ -139,77 +135,6 @@ export function isCollectionIndexPage(page: PageModel, allPages: PageModel[]): b
   const pageUrlAsDir = page.url.endsWith('/') ? page.url : page.url + '/';
   const containingUrl = getPageListIndex(allPages).prefixes.get(pageUrlAsDir);
   return containingUrl === null || (containingUrl !== undefined && containingUrl !== page.url);
-}
-
-/**
- * Discovers layout files by searching up the directory hierarchy.
- * Supports both explicit layout specification and automatic discovery.
- *
- * @param pagePath - The path to the page (relative to srcDir)
- * @param config - Stati configuration
- * @param explicitLayout - Explicit layout name from front-matter
- * @param isIndexPage - Whether this is an aggregation/index page (enables index.eta lookup)
- * @returns The layout file path (relative to srcDir) or null if none found
- */
-export async function discoverLayout(
-  pagePath: string,
-  config: StatiConfig,
-  explicitLayout?: string,
-  isIndexPage?: boolean,
-): Promise<string | null> {
-  // Early return if required config values are missing
-  if (!config.srcDir) {
-    return null;
-  }
-
-  const srcDir = resolveSrcDir(config);
-
-  // If explicit layout is specified, use it
-  if (explicitLayout) {
-    const layoutPath = join(srcDir, `${explicitLayout}.eta`);
-    if (await pathExists(layoutPath)) {
-      return `${explicitLayout}.eta`;
-    }
-  }
-
-  // Get the directory of the current page
-  const pageDir = dirname(pagePath);
-  const pathSegments = pageDir === '.' ? [] : pageDir.split(/[/\\]/); // Handle both separators
-
-  // Search for layout.eta from current directory up to root
-  const dirsToSearch = [];
-
-  // Add current directory if not root
-  if (pathSegments.length > 0) {
-    for (let i = pathSegments.length; i > 0; i--) {
-      dirsToSearch.push(pathSegments.slice(0, i).join('/'));
-    }
-  }
-
-  // Add root directory
-  dirsToSearch.push('');
-
-  for (const dir of dirsToSearch) {
-    // For index pages, first check for index.eta in each directory
-    if (isIndexPage) {
-      const indexLayoutPath = dir ? join(srcDir, dir, 'index.eta') : join(srcDir, 'index.eta');
-      if (await pathExists(indexLayoutPath)) {
-        // Return relative path with forward slashes for Eta
-        const relativePath = dir ? `${dir}/index.eta` : 'index.eta';
-        return posix.normalize(relativePath);
-      }
-    }
-
-    // Then check for layout.eta as fallback
-    const layoutPath = dir ? join(srcDir, dir, LAYOUT_TEMPLATE) : join(srcDir, LAYOUT_TEMPLATE);
-    if (await pathExists(layoutPath)) {
-      // Return relative path with forward slashes for Eta
-      const relativePath = dir ? `${dir}/${LAYOUT_TEMPLATE}` : LAYOUT_TEMPLATE;
-      return posix.normalize(relativePath);
-    }
-  }
-
-  return null;
 }
 
 /**

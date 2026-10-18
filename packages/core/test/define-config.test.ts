@@ -37,10 +37,8 @@ describe('defineConfig', () => {
           md.set({ html: true });
         },
       },
-      eta: {
-        filters: {
-          uppercase: (str: unknown) => String(str).toUpperCase(),
-        },
+      helpers: {
+        uppercase: (str: string) => str.toUpperCase(),
       },
       isg: {
         enabled: true,
@@ -81,30 +79,21 @@ describe('defineConfig', () => {
     expect(minimalConfig.site.baseUrl).toBe('https://minimal.com');
   });
 
-  it('should handle configuration with custom filters', () => {
+  it('should accept helpers with typed and multiple parameters', () => {
     const config = defineConfig({
       site: {
-        title: 'Filter Test',
+        title: 'Helper Test',
         baseUrl: 'https://test.com',
       },
-      eta: {
-        filters: {
-          formatDate: (date: unknown) => {
-            if (date instanceof Date) {
-              return date.toLocaleDateString();
-            }
-            return String(date);
-          },
-          truncate: (str: unknown) => {
-            const text = String(str);
-            const maxLength = 100; // Fixed length for simplicity
-            return text.length > maxLength ? text.slice(0, maxLength) + '...' : text;
-          },
-        },
+      helpers: {
+        formatDate: (date: Date | string, locale = 'en-US') =>
+          new Date(date).toLocaleDateString(locale),
+        truncate: (text: string, maxLength: number) =>
+          text.length > maxLength ? text.slice(0, maxLength) + '...' : text,
       },
     });
 
-    expect(config.eta?.filters?.formatDate).toBeDefined();
-    expect(config.eta?.filters?.truncate).toBeDefined();
+    expect(config.helpers?.formatDate).toBeDefined();
+    expect(config.helpers?.truncate?.('abcdef', 3)).toBe('abc...');
   });
 });

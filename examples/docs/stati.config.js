@@ -39,9 +39,7 @@ export default defineConfig({
     plugins: [['prism', { defaultLanguageForUnknown: 'plain' }]],
   },
 
-  eta: {
-    filters: docs.filters,
-  },
+  helpers: docs.helpers,
 
   hooks: docs.hooks,
 

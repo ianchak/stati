@@ -3,14 +3,14 @@
      Props: sidebar (false hides the menu button, for pages without a sidebar). */
   const nav = stati.site.nav ?? [];
   const here = stati.page.url;
-  const section = stati.docsSection(here);
+  const section = stati.helpers.docsSection(here);
   const showMenu = stati.props?.sidebar !== false;
 %>
 <header class="site-header">
   <div class="header-inner">
     <% if (showMenu) { %>
     <button type="button" class="icon-button menu-button" aria-controls="sidebar" aria-expanded="false" data-menu-open>
-      <%~ stati.partials.icon({ name: 'menu', size: 20 }) %>
+      <%~ stati.include('partials/icon', { name: 'menu', size: 20 }) %>
       <span class="sr-only">Open navigation</span>
     </button>
     <% } %>
@@ -26,8 +26,8 @@
         <% for (const item of nav) { %>
         <%
           const covers = Array.isArray(item.match) ? item.match : [];
-          const active = stati.isCurrent(item.url, here)
-            || (section && (stati.isCurrent(item.url, section.url) || covers.some((url) => stati.isCurrent(url, section.url))));
+          const active = stati.helpers.isCurrent(item.url, here)
+            || (section && (stati.helpers.isCurrent(item.url, section.url) || covers.some((url) => stati.helpers.isCurrent(url, section.url))));
         %>
         <li><a href="<%= item.url %>"<% if (active) { %> aria-current="true"<% } %>><%= item.label %></a></li>
         <% } %>
@@ -37,20 +37,20 @@
 
     <div class="header-actions">
       <button type="button" class="search-button" data-search-open hidden>
-        <%~ stati.partials.icon({ name: 'search', size: 16 }) %>
+        <%~ stati.include('partials/icon', { name: 'search', size: 16 }) %>
         <span class="search-button-label">Search</span>
         <kbd class="search-button-keys" data-search-keys>Ctrl K</kbd>
       </button>
 
       <button type="button" class="icon-button theme-button" data-theme-toggle hidden>
-        <span class="theme-icon-sun"><%~ stati.partials.icon({ name: 'sun', size: 18 }) %></span>
-        <span class="theme-icon-moon"><%~ stati.partials.icon({ name: 'moon', size: 18 }) %></span>
+        <span class="theme-icon-sun"><%~ stati.include('partials/icon', { name: 'sun', size: 18 }) %></span>
+        <span class="theme-icon-moon"><%~ stati.include('partials/icon', { name: 'moon', size: 18 }) %></span>
         <span class="sr-only">Dark mode</span>
       </button>
 
       <% if (stati.site.repository) { %>
       <a class="icon-button" href="<%= stati.site.repository %>">
-        <%~ stati.partials.icon({ name: 'github', size: 18 }) %>
+        <%~ stati.include('partials/icon', { name: 'github', size: 18 }) %>
         <span class="sr-only">Source repository</span>
       </a>
       <% } %>

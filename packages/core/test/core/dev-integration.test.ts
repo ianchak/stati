@@ -54,7 +54,7 @@ describe('Dev Server Integration Tests', () => {
     // Create a basic config file
     await writeFile(
       join(testDir, 'stati.config.js'),
-      `export default { title: 'Test Site', description: 'Test' };`,
+      `export default { site: { title: 'Test Site', description: 'Test', baseUrl: 'http://localhost:3000' } };`,
     );
 
     // Create a basic layout

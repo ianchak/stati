@@ -1,10 +1,10 @@
 <%
   /* Links between the pages of a paginated listing.
      Props:
-       pagination  stati.pagination (required; nothing renders for a single page)
+       pagination  stati.pagination; nothing renders without it or for a single page
        newer       label of the link to the previous page, default 'Newer'
        older       label of the link to the next page, default 'Older' */
-  if (!stati.props || !stati.props.pagination || stati.props.pagination.totalPages < 2) { return; }
+  if (!stati.props.pagination || stati.props.pagination.totalPages < 2) { return; }
   const { pageNumber, prevUrl, nextUrl, urls } = stati.props.pagination;
 %>
 <nav class="page-nav" aria-label="Pages">

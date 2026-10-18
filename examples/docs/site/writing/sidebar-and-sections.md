@@ -49,10 +49,10 @@ Pages in subfolders, such as `site/guides/advanced/caching.md`, belong to their 
 
 ## Under the hood
 
-Every template can read Stati's navigation tree as `stati.nav`, with each page's title, address and order. The sidebar needs a little more from front matter, such as section descriptions, `sidebarTitle` and `sidebar: false`, so `helpers/docs.js` reads every page in Stati's `beforeAll` hook and builds the list of sections. Templates read it through filters:
+Every template can read Stati's navigation tree as `stati.nav`, with each page's title, address and order. The sidebar needs a little more from front matter, such as section descriptions, `sidebarTitle` and `sidebar: false`, so `helpers/docs.js` reads every page in Stati's `beforeAll` hook and builds the list of sections. Templates read it through helpers:
 
 ```eta
-<% for (const section of stati.docsSections()) { %>
+<% for (const section of stati.helpers.docsSections()) { %>
   <h2><%= section.title %></h2>
   <% for (const page of section.pages) { %>
     <a href="<%= page.url %>"><%= page.label %></a>
@@ -60,4 +60,4 @@ Every template can read Stati's navigation tree as `stati.nav`, with each page's
 <% } %>
 ```
 
-`stati.docsPager(url)` gives the previous and next pages and `stati.docsBreadcrumbs(url)` the breadcrumb trail.
+`stati.helpers.docsPager(url)` gives the previous and next pages and `stati.helpers.docsBreadcrumbs(url)` the breadcrumb trail.

@@ -22,6 +22,8 @@ export interface FixtureBuild {
   warnings: string[];
   /** Messages logged as info */
   info: string[];
+  /** Messages logged as errors; only with `allowErrors`, which otherwise fail the build */
+  errors: string[];
   result: BuildResult;
 }
 
@@ -35,8 +37,15 @@ export interface SiteFixture {
   read(path: string): Promise<string>;
   /** Whether a file relative to the project directory exists */
   exists(path: string): Promise<boolean>;
-  /** Runs a build and records what it rendered */
-  build(options?: { force?: boolean; includeDrafts?: boolean }): Promise<FixtureBuild>;
+  /**
+   * Runs a build and records what it rendered. A logged error fails the build unless
+   * `allowErrors` is set, which collects them instead.
+   */
+  build(options?: {
+    force?: boolean;
+    includeDrafts?: boolean;
+    allowErrors?: boolean;
+  }): Promise<FixtureBuild>;
   /** The ISG cache manifest */
   manifest(): Promise<CacheManifest>;
   /** Writes the ISG cache manifest */
@@ -89,17 +98,21 @@ export async function createSiteFixture(
         return false;
       }
     },
-    async build(options = {}) {
+    async build({ allowErrors = false, ...options } = {}) {
       const rendered: string[] = [];
       const cached: string[] = [];
       const warnings: string[] = [];
       const info: string[] = [];
+      const errors: string[] = [];
       const logger: Logger = {
         info: (message) => info.push(message),
         success: () => {},
         warning: (message) => warnings.push(message),
         error: (message) => {
-          throw new Error(`Unexpected build error: ${message}`);
+          if (!allowErrors) {
+            throw new Error(`Unexpected build error: ${message}`);
+          }
+          errors.push(message);
         },
         status: () => {},
         building: () => {},
@@ -110,7 +123,7 @@ export async function createSiteFixture(
         },
       };
       const result = await build({ logger, ...options });
-      return { rendered, cached, warnings, info, result };
+      return { rendered, cached, warnings, info, errors, result };
     },
     async manifest() {
       const manifest = await loadCacheManifest(join(dir, '.stati'));

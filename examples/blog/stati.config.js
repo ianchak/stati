@@ -29,9 +29,7 @@ export default defineConfig({
   outDir: 'dist',
   staticDir: 'public',
 
-  eta: {
-    filters: blog.filters,
-  },
+  helpers: blog.helpers,
 
   seo: {
     autoInject: true,

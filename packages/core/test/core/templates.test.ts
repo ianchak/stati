@@ -2,37 +2,23 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   createTemplateEngine,
   clearTemplateEngineCache,
-  discoverPartials,
   renderPage,
 } from '../../src/core/templates.js';
-import type { StatiConfig, PageModel } from '../../src/types/index.js';
+import { TemplateIndex } from '../../src/core/template-index.js';
+import type { StatiConfig, PageModel, Logger } from '../../src/types/index.js';
 import type { Eta } from 'eta';
 import { join } from 'node:path';
 
 // Create hoisted mocks
-const { mockPathExists, mockGlob, MockEta, mockIsDevelopment, mockIsProduction } = vi.hoisted(
-  () => ({
-    mockPathExists: vi.fn(),
-    mockGlob: vi.fn(),
-    MockEta: vi.fn(),
-    mockIsDevelopment: vi.fn(),
-    mockIsProduction: vi.fn(),
-  }),
-);
-
-// Mock dependencies
-vi.mock('fs-extra', () => ({
-  default: {
-    pathExists: mockPathExists,
-  },
-}));
-
-vi.mock('fast-glob', () => ({
-  default: mockGlob,
+const { MockEta, mockIsDevelopment, mockIsProduction } = vi.hoisted(() => ({
+  MockEta: vi.fn(),
+  mockIsDevelopment: vi.fn(),
+  mockIsProduction: vi.fn(),
 }));
 
 vi.mock('eta', () => ({
   Eta: MockEta,
+  EtaParseError: class EtaParseError extends Error {},
 }));
 
 vi.mock('../../src/env.js', () => ({
@@ -52,12 +38,12 @@ describe('templates.ts', () => {
   };
 
   const mockProjectRoot = join('test', 'project');
-  const mockPageSourcePath = join(mockProjectRoot, 'src', 'test-page.md');
+  const srcDir = join(mockProjectRoot, 'src');
 
   const mockPage: PageModel = {
     slug: '/test-page',
     url: '/test-page',
-    sourcePath: mockPageSourcePath,
+    sourcePath: join(srcDir, 'test-page.md'),
     frontMatter: {
       title: 'Test Page',
       description: 'A test page',
@@ -65,40 +51,92 @@ describe('templates.ts', () => {
     content: '# Test content',
   };
 
-  let mockEtaInstance: Omit<Partial<Eta>, 'renderAsync'> & {
+  let mockEtaInstance: {
     renderAsync: ReturnType<typeof vi.fn>;
-    filters: Record<string, unknown>;
+    render: ReturnType<typeof vi.fn>;
+    compileToString: ReturnType<typeof vi.fn>;
   };
+
+  let logger: Record<
+    'info' | 'success' | 'warning' | 'error' | 'status' | 'building' | 'processing' | 'stats',
+    ReturnType<typeof vi.fn>
+  >;
+
+  /** Renders a page with the given templates in the source directory */
+  function render(
+    page: PageModel,
+    templates: string[],
+    options: { config?: StatiConfig; allPages?: PageModel[] } = {},
+  ) {
+    return renderPage(
+      page,
+      '<h1>Test content</h1>',
+      options.config ?? mockConfig,
+      mockEtaInstance as unknown as Eta,
+      undefined,
+      options.allPages,
+      undefined,
+      undefined,
+      logger as unknown as Logger,
+      { templateIndex: new TemplateIndex(srcDir, templates) },
+    );
+  }
 
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(process, 'cwd').mockReturnValue(mockProjectRoot);
     clearTemplateEngineCache();
     mockIsDevelopment.mockReturnValue(false);
-    mockIsProduction.mockReturnValue(false);
+    mockIsProduction.mockReturnValue(true);
 
     mockEtaInstance = {
-      renderAsync: vi.fn(),
-      filters: {},
+      renderAsync: vi.fn().mockResolvedValue('<html>Rendered content</html>'),
+      render: vi.fn().mockReturnValue(''),
+      compileToString: vi.fn().mockReturnValue(''),
     };
     MockEta.mockImplementation(function () {
       return mockEtaInstance;
     });
-    mockGlob.mockResolvedValue([]);
+    logger = {
+      info: vi.fn(),
+      success: vi.fn(),
+      warning: vi.fn(),
+      error: vi.fn(),
+      status: vi.fn(),
+      building: vi.fn(),
+      processing: vi.fn(),
+      stats: vi.fn(),
+    };
   });
 
   describe('createTemplateEngine', () => {
-    it('should create Eta instance with correct configuration', () => {
+    it("creates Eta with stati as its variable and Stati's plugin", () => {
       const eta = createTemplateEngine(mockConfig);
 
       expect(MockEta).toHaveBeenCalledWith({
         views: join(mockProjectRoot, 'src'),
-        cache: process.env.NODE_ENV === 'production',
-        cacheFilepaths: process.env.NODE_ENV === 'production',
+        cache: true,
+        cacheFilepaths: true,
         varName: 'stati',
         debug: false,
+        plugins: [
+          expect.objectContaining({
+            processAST: expect.any(Function),
+            processFnString: expect.any(Function),
+          }),
+        ],
       });
       expect(eta).toBe(mockEtaInstance);
+      // The plugin is checked against the installed Eta when the engine is created
+      expect(mockEtaInstance.compileToString).toHaveBeenCalledWith('', { async: false });
+    });
+
+    it('turns on debug mode in development, for the error overlay', () => {
+      mockIsDevelopment.mockReturnValue(true);
+      mockIsProduction.mockReturnValue(false);
+      createTemplateEngine(mockConfig);
+
+      expect(MockEta).toHaveBeenCalledWith(expect.objectContaining({ debug: true, cache: true }));
     });
 
     it('should reuse cached Eta instance in development for the same template directory', () => {
@@ -110,23 +148,19 @@ describe('templates.ts', () => {
       expect(MockEta).toHaveBeenCalledTimes(1);
       expect(secondEta).toBe(firstEta);
     });
+
+    it('fails when the plugin does not recognize the installed Eta', () => {
+      mockEtaInstance.compileToString.mockImplementation(() => {
+        throw new Error("Stati could not find Eta's layout() function");
+      });
+
+      expect(() => createTemplateEngine(mockConfig)).toThrow("could not find Eta's layout()");
+    });
   });
 
   describe('renderPage', () => {
-    it('should render page with default layout when none specified', async () => {
-      // Mock path exists for default layout discovery
-      mockPathExists
-        .mockResolvedValueOnce(true) // layout.eta in root exists
-        .mockResolvedValue(false);
-
-      mockEtaInstance.renderAsync.mockResolvedValue('<html>Rendered content</html>');
-
-      const result = await renderPage(
-        mockPage,
-        '<h1>Test content</h1>',
-        mockConfig,
-        mockEtaInstance as Eta,
-      );
+    it('renders the discovered layout with the page context', async () => {
+      const result = await render(mockPage, ['layout.eta']);
 
       expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
         'layout.eta',
@@ -137,118 +171,154 @@ describe('templates.ts', () => {
             description: 'A test page',
             path: '/test-page',
             content: '<h1>Test content</h1>',
+            toc: [],
           }),
-          partials: {},
-          site: {
-            title: 'Test Site',
-            baseUrl: 'https://example.com',
-          },
+          site: { title: 'Test Site', baseUrl: 'https://example.com' },
+          props: undefined,
+          helpers: {},
+          include: expect.any(Function),
+          layout: expect.any(Function),
         }),
       );
       expect(result.html).toBe('<html>Rendered content</html>');
-      expect(result.templatesLoaded).toBe(1); // 1 layout
+      expect(result.templatesLoaded).toBe(1);
+      expect(result.templates).toEqual([`${srcDir.replace(/\\/g, '/')}/layout.eta`]);
+      expect(result.templateLookups).toEqual([{ name: 'layout', from: '', file: 'layout.eta' }]);
     });
 
-    it('should render page with specified layout', async () => {
-      const pageWithLayout = {
-        ...mockPage,
-        frontMatter: { ...mockPage.frontMatter, layout: 'custom' },
-      };
+    it("leaves stati.body out of the page's layout", async () => {
+      await render(mockPage, ['layout.eta']);
+      const context = mockEtaInstance.renderAsync.mock.calls[0]![1] as Record<string, unknown>;
 
-      // Mock path exists for explicit layout
-      mockPathExists
-        .mockResolvedValueOnce(true) // custom.eta exists
-        .mockResolvedValue(false);
+      expect('body' in context).toBe(false);
+      expect(Object.keys(context).sort()).toEqual([
+        'assets',
+        'collection',
+        'content',
+        'generateSEO',
+        'generated',
+        'generator',
+        'helpers',
+        'image',
+        'include',
+        'layout',
+        'nav',
+        'og',
+        'ogImage',
+        'page',
+        'pagination',
+        'propValue',
+        'props',
+        'site',
+        'slugify',
+      ]);
+    });
 
-      mockEtaInstance.renderAsync.mockResolvedValue('<html>Custom layout</html>');
-
-      const result = await renderPage(
-        pageWithLayout,
-        '<h1>Test content</h1>',
-        mockConfig,
-        mockEtaInstance as Eta,
-      );
+    it('renders the layout named in front matter, by the name lookup', async () => {
+      const page = { ...mockPage, frontMatter: { ...mockPage.frontMatter, layout: 'custom' } };
+      await render(page, ['layout.eta', 'custom.eta']);
 
       expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
         'custom.eta',
-        expect.objectContaining({
-          content: '<h1>Test content</h1>',
-          page: expect.objectContaining({
-            title: 'Test Page',
-            description: 'A test page',
-            layout: 'custom',
-            path: '/test-page',
-            content: '<h1>Test content</h1>',
-          }),
-          partials: {},
-          site: {
-            title: 'Test Site',
-            baseUrl: 'https://example.com',
-          },
-        }),
+        expect.objectContaining({ page: expect.objectContaining({ layout: 'custom' }) }),
       );
-      expect(result.html).toBe('<html>Custom layout</html>');
-      expect(result.templatesLoaded).toBe(1); // 1 layout
+      expect(logger.warning).not.toHaveBeenCalled();
     });
 
-    it('should use fallback when template not found', async () => {
-      // Mock all path exists to return false
-      mockPathExists.mockResolvedValue(false);
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    it('warns when the front matter layout names no template, then uses discovery', async () => {
+      const page = { ...mockPage, frontMatter: { ...mockPage.frontMatter, layout: 'artcle' } };
+      await render(page, ['layout.eta', 'article.eta']);
 
-      const result = await renderPage(
-        mockPage,
-        '<h1>Test content</h1>',
-        mockConfig,
-        mockEtaInstance as Eta,
+      expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith('layout.eta', expect.any(Object));
+      expect(logger.warning).toHaveBeenCalledWith(
+        'src/test-page.md: front matter layout "artcle" names no template; using src/layout.eta. Did you mean "article"?',
       );
-
-      expect(consoleSpy).toHaveBeenCalledWith('No layout template found, using fallback');
-      expect(result.html).toContain('<h1>Test content</h1>');
-      expect(result.html).toContain('<!DOCTYPE html>');
-      expect(result.html).toContain('<title>Test Page</title>');
-      expect(result.templatesLoaded).toBe(0); // no layout found
-
-      consoleSpy.mockRestore();
     });
 
-    it('should handle template rendering errors', async () => {
-      // Mock path exists for layout.eta
-      mockPathExists
-        .mockResolvedValueOnce(true) // layout.eta exists
-        .mockResolvedValue(false);
-
-      const error = new Error('Template error');
-      mockEtaInstance.renderAsync.mockRejectedValue(error);
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-      const result = await renderPage(
-        mockPage,
-        '<h1>Test content</h1>',
-        mockConfig,
-        mockEtaInstance as Eta,
+    it('looks a front matter layout up from the page folder, so a section file wins', async () => {
+      const page: PageModel = {
+        ...mockPage,
+        sourcePath: join(srcDir, 'posts', 'index.md'),
+        frontMatter: { title: 'Posts', layout: 'layout' },
+      };
+      await render(page, ['layout.eta', 'posts/layout.eta']);
+      expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
+        'posts/layout.eta',
+        expect.any(Object),
       );
 
-      expect(consoleSpy).toHaveBeenCalledWith('Error rendering layout layout.eta: Template error');
+      await render({ ...page, frontMatter: { layout: '/layout' } }, [
+        'layout.eta',
+        'posts/layout.eta',
+      ]);
+      expect(mockEtaInstance.renderAsync).toHaveBeenLastCalledWith(
+        'layout.eta',
+        expect.any(Object),
+      );
+      expect(logger.warning).not.toHaveBeenCalled();
+    });
+
+    it("discovers the nearest layout.eta from the page's folder", async () => {
+      const deepPage = { ...mockPage, sourcePath: join(srcDir, 'blog', 'tech', 'js', 'post.md') };
+      await render(deepPage, ['layout.eta', 'blog/layout.eta']);
+
+      expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
+        'blog/layout.eta',
+        expect.any(Object),
+      );
+    });
+
+    it('uses index.eta for collection index pages', async () => {
+      const blogIndex = { ...mockPage, url: '/blog', sourcePath: join(srcDir, 'blog', 'index.md') };
+      const post = { ...mockPage, url: '/blog/post', sourcePath: join(srcDir, 'blog', 'post.md') };
+      await render(blogIndex, ['layout.eta', 'blog/index.eta'], { allPages: [blogIndex, post] });
+
+      expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
+        'blog/index.eta',
+        expect.any(Object),
+      );
+    });
+
+    it('uses the fallback HTML when no layout exists, recording the misses', async () => {
+      const result = await render(mockPage, ['partials/header.eta']);
+
+      expect(logger.warning).toHaveBeenCalledWith('No layout template found, using fallback');
       expect(result.html).toContain('<h1>Test content</h1>');
+      expect(result.html).toContain('<title>Test Page</title>');
+      expect(result.templatesLoaded).toBe(0);
+      expect(result.templateLookups).toEqual([{ name: 'layout', from: '', file: null }]);
+    });
+
+    it('logs a layout that fails in production and returns the fallback HTML', async () => {
+      mockEtaInstance.renderAsync.mockRejectedValue(new Error('Template error'));
+
+      const result = await render(mockPage, ['layout.eta']);
+
+      expect(logger.error).toHaveBeenCalledWith(
+        'Error rendering src/layout.eta for /test-page: Template error',
+      );
       expect(result.html).toContain('<!DOCTYPE html>');
       expect(result.html).toContain('<title>Test Page</title>');
-      expect(result.templatesLoaded).toBe(1); // layout was found even though it errored
+      // The failing layout is recorded, so fixing it rebuilds the page
+      expect(result.templatesLoaded).toBe(1);
+      expect(result.templates).toEqual([`${srcDir.replace(/\\/g, '/')}/layout.eta`]);
+    });
 
-      consoleSpy.mockRestore();
+    it('throws a template error for the overlay in development', async () => {
+      mockIsDevelopment.mockReturnValue(true);
+      mockIsProduction.mockReturnValue(false);
+      mockEtaInstance.renderAsync.mockRejectedValue(new Error('Template error'));
+
+      await expect(render(mockPage, ['layout.eta'])).rejects.toMatchObject({
+        name: 'TemplateError',
+        message: 'Template error',
+        filePath: join(srcDir, 'layout.eta'),
+      });
     });
 
     it('should pass TOC entries to template context', async () => {
-      // Mock path exists for default layout discovery
-      mockPathExists
-        .mockResolvedValueOnce(true) // layout.eta in root exists
-        .mockResolvedValue(false);
-
-      mockEtaInstance.renderAsync.mockResolvedValue('<html>Rendered content</html>');
-
       const toc = [
         { id: 'introduction', text: 'Introduction', level: 2 },
-        { id: 'getting-started', text: 'Getting Started', level: 2 },
         { id: 'installation', text: 'Installation', level: 3 },
       ];
 
@@ -256,922 +326,63 @@ describe('templates.ts', () => {
         mockPage,
         '<h1>Test content</h1>',
         mockConfig,
-        mockEtaInstance as Eta,
-        undefined, // navigation
-        undefined, // allPages
-        undefined, // assets
+        mockEtaInstance as unknown as Eta,
+        undefined,
+        undefined,
+        undefined,
         toc,
+        logger as unknown as Logger,
+        { templateIndex: new TemplateIndex(srcDir, ['layout.eta']) },
       );
 
       expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
         'layout.eta',
-        expect.objectContaining({
-          page: expect.objectContaining({
-            toc: toc,
-          }),
-        }),
+        expect.objectContaining({ page: expect.objectContaining({ toc }) }),
       );
     });
 
-    it('should pass empty TOC array when no TOC provided', async () => {
-      // Mock path exists for default layout discovery
-      mockPathExists
-        .mockResolvedValueOnce(true) // layout.eta in root exists
-        .mockResolvedValue(false);
-
-      mockEtaInstance.renderAsync.mockResolvedValue('<html>Rendered content</html>');
-
-      await renderPage(
+    it('reads the template index from the source directory when none is passed', async () => {
+      const result = await renderPage(
         mockPage,
-        '<h1>Test content</h1>',
-        mockConfig,
-        mockEtaInstance as Eta,
-        undefined, // navigation
-        undefined, // allPages
-        undefined, // assets
-        undefined, // toc - not provided
+        '<p>x</p>',
+        { ...mockConfig, srcDir: 'no-such-folder' },
+        mockEtaInstance as unknown as Eta,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        logger as unknown as Logger,
       );
 
-      expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
-        'layout.eta',
-        expect.objectContaining({
-          page: expect.objectContaining({
-            toc: [], // Should default to empty array
-          }),
-        }),
-      );
+      expect(result.html).toContain('<!DOCTYPE html>');
+      expect(mockEtaInstance.renderAsync).not.toHaveBeenCalled();
     });
 
-    describe('hierarchical layout discovery (layout.eta convention)', () => {
-      it('should use explicit layout when specified in front matter', async () => {
-        const pageWithLayout = {
-          ...mockPage,
-          sourcePath: join(mockProjectRoot, 'src', 'blog', 'post.md'),
-          frontMatter: { ...mockPage.frontMatter, layout: 'custom' },
-        };
-
-        // Mock path exists calls for layout discovery
-        mockPathExists
-          .mockResolvedValueOnce(true) // custom.eta exists
-          .mockResolvedValue(false); // other checks
-
-        mockEtaInstance.renderAsync.mockResolvedValue('<html>Custom layout</html>');
-
-        const result = await renderPage(
-          pageWithLayout,
-          '<h1>Test content</h1>',
-          mockConfig,
-          mockEtaInstance as Eta,
-        );
-
-        expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
-          'custom.eta',
-          expect.objectContaining({
-            page: expect.objectContaining({
-              layout: 'custom',
-            }),
-          }),
-        );
-        expect(result.html).toBe('<html>Custom layout</html>');
-        expect(result.templatesLoaded).toBe(1); // 1 layout
-      });
-
-      it('should discover layout.eta in current directory', async () => {
-        const blogPage = {
-          ...mockPage,
-          sourcePath: join(mockProjectRoot, 'src', 'blog', 'my-post.md'),
-          frontMatter: { ...mockPage.frontMatter },
-        };
-        delete blogPage.frontMatter.layout; // No explicit layout
-
-        // Mock path exists calls for layout discovery
-        // First check: blog/layout.eta exists
-        mockPathExists
-          .mockResolvedValueOnce(true) // blog/layout.eta exists
-          .mockResolvedValue(false); // other checks
-
-        mockEtaInstance.renderAsync.mockResolvedValue('<html>Blog layout</html>');
-
-        const result = await renderPage(
-          blogPage,
-          '<h1>Blog post</h1>',
-          mockConfig,
-          mockEtaInstance as Eta,
-        );
-
-        expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
-          'blog/layout.eta',
-          expect.objectContaining({
-            page: expect.objectContaining({
-              title: 'Test Page',
-            }),
-          }),
-        );
-        expect(result.html).toBe('<html>Blog layout</html>');
-        expect(result.templatesLoaded).toBe(1); // 1 layout
-      });
-
-      it('should cascade up directory hierarchy for layout.eta', async () => {
-        const deepPage = {
-          ...mockPage,
-          sourcePath: join(mockProjectRoot, 'src', 'blog', 'tech', 'javascript', 'deep-post.md'),
-          frontMatter: { ...mockPage.frontMatter },
-        };
-        delete deepPage.frontMatter.layout; // No explicit layout
-
-        // Mock path exists calls for layout discovery
-        // Check order: blog/tech/javascript/layout.eta -> blog/tech/layout.eta -> blog/layout.eta
-        mockPathExists
-          .mockResolvedValueOnce(false) // blog/tech/javascript/layout.eta doesn't exist
-          .mockResolvedValueOnce(false) // blog/tech/layout.eta doesn't exist
-          .mockResolvedValueOnce(true) // blog/layout.eta exists
-          .mockResolvedValue(false); // other checks
-
-        mockEtaInstance.renderAsync.mockResolvedValue('<html>Blog layout from parent</html>');
-
-        const result = await renderPage(
-          deepPage,
-          '<h1>Deep post</h1>',
-          mockConfig,
-          mockEtaInstance as Eta,
-        );
-
-        expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
-          'blog/layout.eta',
-          expect.objectContaining({
-            page: expect.objectContaining({
-              title: 'Test Page',
-            }),
-          }),
-        );
-        expect(result.html).toBe('<html>Blog layout from parent</html>');
-        expect(result.templatesLoaded).toBe(1); // 1 layout
-      });
-
-      it('should fall back to root layout.eta', async () => {
-        const rootPage = {
-          ...mockPage,
-          sourcePath: join(mockProjectRoot, 'src', 'about.md'),
-          frontMatter: { ...mockPage.frontMatter },
-        };
-        delete rootPage.frontMatter.layout; // No explicit layout
-
-        // Mock path exists calls for layout discovery
-        // Check order: layout.eta in root exists
-        mockPathExists
-          .mockResolvedValueOnce(true) // root layout.eta exists
-          .mockResolvedValue(false); // other checks
-
-        mockEtaInstance.renderAsync.mockResolvedValue('<html>Root layout</html>');
-
-        const result = await renderPage(
-          rootPage,
-          '<h1>About page</h1>',
-          mockConfig,
-          mockEtaInstance as Eta,
-        );
-
-        expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
-          'layout.eta',
-          expect.objectContaining({
-            page: expect.objectContaining({
-              title: 'Test Page',
-            }),
-          }),
-        );
-        expect(result.html).toBe('<html>Root layout</html>');
-        expect(result.templatesLoaded).toBe(1); // 1 layout
-      });
-
-      it('should use fallback HTML when no layout.eta found', async () => {
-        const rootPage = {
-          ...mockPage,
-          sourcePath: join(mockProjectRoot, 'src', 'about.md'),
-          frontMatter: { ...mockPage.frontMatter },
-        };
-        delete rootPage.frontMatter.layout; // No explicit layout
-
-        // Mock path exists calls for layout discovery
-        // Check order: layout.eta doesn't exist, go to fallback HTML
-        mockPathExists.mockResolvedValue(false); // no layouts found
-
-        const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-        const result = await renderPage(
-          rootPage,
-          '<h1>About page</h1>',
-          mockConfig,
-          mockEtaInstance as Eta,
-        );
-
-        expect(consoleSpy).toHaveBeenCalledWith('No layout template found, using fallback');
-        expect(result.html).toContain('<!DOCTYPE html>');
-        expect(result.html).toContain('<title>Test Page</title>');
-        expect(result.html).toContain('<h1>About page</h1>');
-        expect(result.templatesLoaded).toBe(0); // no layout found
-
-        consoleSpy.mockRestore();
-      });
-
-      it('should use fallback HTML when no layout templates found', async () => {
-        const rootPage = {
-          ...mockPage,
-          sourcePath: join(mockProjectRoot, 'src', 'about.md'),
-          frontMatter: { ...mockPage.frontMatter },
-        };
-        delete rootPage.frontMatter.layout; // No explicit layout
-
-        // Mock all path exists calls to return false
-        mockPathExists.mockResolvedValue(false);
-
-        const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-        const result = await renderPage(
-          rootPage,
-          '<h1>About page</h1>',
-          mockConfig,
-          mockEtaInstance as Eta,
-        );
-
-        expect(consoleSpy).toHaveBeenCalledWith('No layout template found, using fallback');
-        expect(result.html).toContain('<h1>About page</h1>');
-        expect(result.html).toContain('<!DOCTYPE html>');
-        expect(result.html).toContain('<title>Test Page</title>');
-        expect(result.templatesLoaded).toBe(0); // no layout found
-
-        consoleSpy.mockRestore();
-      });
-
-      it('should prioritize explicit layout over layout.eta', async () => {
-        const blogPage = {
-          ...mockPage,
-          sourcePath: join(mockProjectRoot, 'src', 'blog', 'my-post.md'),
-          frontMatter: { ...mockPage.frontMatter, layout: 'article' },
-        };
-
-        // Mock path exists calls - explicit layout exists
-        mockPathExists
-          .mockResolvedValueOnce(true) // article.eta exists
-          .mockResolvedValue(false); // other checks not needed
-
-        mockEtaInstance.renderAsync.mockResolvedValue('<html>Article layout</html>');
-
-        const result = await renderPage(
-          blogPage,
-          '<h1>Blog post</h1>',
-          mockConfig,
-          mockEtaInstance as Eta,
-        );
-
-        expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
-          'article.eta',
-          expect.objectContaining({
-            page: expect.objectContaining({
-              layout: 'article',
-            }),
-          }),
-        );
-        expect(result.html).toBe('<html>Article layout</html>');
-        expect(result.templatesLoaded).toBe(1); // 1 layout
-      });
-
-      it('should discover and render partials', async () => {
-        // Mock partial discovery - find header and footer partials
-        mockGlob
-          .mockResolvedValueOnce([join(mockProjectRoot, 'src', '_partials')]) // First call: find underscore folders
-          .mockResolvedValueOnce(['header.eta', 'footer.eta']) // Second call: find eta files in _partials (relative paths)
-          .mockResolvedValue([]); // Subsequent calls: no more partials
-
-        // Mock path exists for layout discovery
-        mockPathExists
-          .mockResolvedValueOnce(true) // layout.eta exists
-          .mockResolvedValue(false);
-
-        // Mock rendered partial content
-        const mockHeaderContent = '<header class="site-header"><h1>My Site</h1></header>';
-        const mockFooterContent = '<footer class="site-footer"><p>&copy; 2025</p></footer>';
-        const mockLayoutContent = '<html><body>{{content}}</body></html>';
-
-        // Setup renderAsync to return different content based on the template being rendered
-        mockEtaInstance.renderAsync.mockImplementation((template: string) => {
-          if (template.includes('header.eta')) {
-            return Promise.resolve(mockHeaderContent);
-          } else if (template.includes('footer.eta')) {
-            return Promise.resolve(mockFooterContent);
-          } else if (template === 'layout.eta') {
-            return Promise.resolve(mockLayoutContent);
-          }
-          return Promise.resolve('');
+    describe('helpers', () => {
+      it('puts the config helpers under stati.helpers, never on the root', async () => {
+        const formatDate = () => 'today';
+        const page = vi.fn(() => 'a helper named page');
+        await render(mockPage, ['layout.eta'], {
+          config: { ...mockConfig, helpers: { formatDate, page, image: page } },
         });
+        const context = mockEtaInstance.renderAsync.mock.calls[0]![1] as Record<string, unknown>;
 
-        const result = await renderPage(
-          mockPage,
-          '<h1>Test content</h1>',
-          mockConfig,
-          mockEtaInstance as Eta,
-        );
-
-        // Verify partials were rendered first - check for partial paths using pattern matching
-        expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
-          expect.stringMatching(/.*_partials.*header\.eta/),
-          expect.objectContaining({
-            site: mockConfig.site,
-            page: expect.objectContaining({
-              url: '/test-page',
-              path: '/test-page',
-              title: 'Test Page',
-            }),
-          }),
-        );
-
-        expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
-          expect.stringMatching(/.*_partials.*footer\.eta/),
-          expect.objectContaining({
-            site: mockConfig.site,
-            page: expect.objectContaining({
-              url: '/test-page',
-              path: '/test-page',
-              title: 'Test Page',
-            }),
-          }),
-        );
-
-        // Verify final layout was rendered with callable partials in context
-        const layoutCall = mockEtaInstance.renderAsync.mock.calls.find(
-          (call) => call[0] === 'layout.eta',
-        );
-        expect(layoutCall).toBeDefined();
-        expect(layoutCall![1]).toMatchObject({
-          page: expect.objectContaining({
-            url: '/test-page',
-            path: '/test-page',
-          }),
-        });
-        // Verify partials are callable and return expected content
-        expect(layoutCall![1].partials.header).toBeInstanceOf(Function);
-        expect(layoutCall![1].partials.footer).toBeInstanceOf(Function);
-        expect(layoutCall![1].partials.header.toString()).toBe(mockHeaderContent);
-        expect(layoutCall![1].partials.footer.toString()).toBe(mockFooterContent);
-
-        expect(result.html).toBe(mockLayoutContent);
-        expect(result.templatesLoaded).toBe(3); // 2 partials + 1 layout
+        expect(context.helpers).toEqual({ formatDate, page, image: page });
+        expect(context.formatDate).toBeUndefined();
+        // Helpers named like Stati's own keys leave those alone
+        expect(context.page).toMatchObject({ title: 'Test Page' });
+        expect(typeof context.image).toBe('function');
+        expect(context.image).not.toBe(page);
       });
 
-      it('should handle partial rendering errors gracefully', async () => {
-        // Mock partial discovery - find one partial that will fail
-        mockGlob
-          .mockResolvedValueOnce([join(mockProjectRoot, 'src', '_partials')]) // Find underscore folders
-          .mockResolvedValueOnce(['broken.eta']) // Find eta files in _partials (relative path)
-          .mockResolvedValue([]);
-
-        // Mock path exists for layout discovery
-        mockPathExists
-          .mockResolvedValueOnce(true) // layout.eta exists
-          .mockResolvedValue(false);
-
-        const mockLayoutContent = '<html><body>{{content}}</body></html>';
-
-        // Setup renderAsync to fail for the partial but succeed for layout
-        mockEtaInstance.renderAsync.mockImplementation((template: string) => {
-          if (template.includes('broken.eta')) {
-            return Promise.reject(new Error('Template syntax error'));
-          } else if (template === 'layout.eta') {
-            return Promise.resolve(mockLayoutContent);
-          }
-          return Promise.resolve('');
-        });
-
-        // Spy on console.warn to verify error handling
-        const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-        const result = await renderPage(
-          mockPage,
-          '<h1>Test content</h1>',
-          mockConfig,
-          mockEtaInstance as Eta,
-        );
-
-        // Verify error was logged - check for the path in the warning message
-        expect(consoleSpy).toHaveBeenCalledWith(
-          expect.stringMatching(/Failed to render partial broken at/),
-        );
-
-        // Verify the partial was attempted to be rendered with the correct pattern
-        expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
-          expect.stringMatching(/.*_partials.*broken\.eta/),
-          expect.objectContaining({
-            site: mockConfig.site,
-            page: expect.objectContaining({
-              url: '/test-page',
-              path: '/test-page',
-              title: 'Test Page',
-            }),
-          }),
-        );
-
-        // Verify layout was still rendered with error placeholder for broken partial
-        const layoutCall = mockEtaInstance.renderAsync.mock.calls.find(
-          (call) => call[0] === 'layout.eta',
-        );
-        expect(layoutCall).toBeDefined();
-        // Verify partial is callable and returns error placeholder
-        expect(layoutCall![1].partials.broken).toBeInstanceOf(Function);
-        expect(layoutCall![1].partials.broken.toString()).toBe(
-          '<!-- Error rendering partial: broken -->',
-        );
-
-        expect(result.html).toBe(mockLayoutContent);
-        expect(result.templatesLoaded).toBe(2); // 1 partial (broken) + 1 layout
-
-        consoleSpy.mockRestore();
-      });
-
-      it('should handle cross-platform path separators correctly', async () => {
-        // This test verifies that our path handling works on both Windows (\) and Unix (/)
-        mockGlob
-          .mockResolvedValueOnce([join(mockProjectRoot, 'src', '_partials')])
-          .mockResolvedValueOnce(['test.eta']) // Relative path as it should be
-          .mockResolvedValue([]);
-
-        mockPathExists.mockResolvedValueOnce(true).mockResolvedValue(false);
-
-        const mockContent = '<div>test partial</div>';
-        const mockLayoutContent = '<html><body>test</body></html>';
-
-        mockEtaInstance.renderAsync.mockImplementation((template: string) => {
-          if (template.includes('test.eta')) {
-            return Promise.resolve(mockContent);
-          } else if (template === 'layout.eta') {
-            return Promise.resolve(mockLayoutContent);
-          }
-          return Promise.resolve('');
-        });
-
-        const result = await renderPage(
-          mockPage,
-          '<h1>Test content</h1>',
-          mockConfig,
-          mockEtaInstance as Eta,
-        );
-
-        // Verify that the partial was called with the correct platform-specific path pattern
-        expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
-          expect.stringMatching(/.*_partials.*test\.eta/),
-          expect.any(Object),
-        );
-
-        // Verify that the rendered content made it to the final context
-        const layoutCall = mockEtaInstance.renderAsync.mock.calls.find(
-          (call) => call[0] === 'layout.eta',
-        );
-        expect(layoutCall).toBeDefined();
-        // Verify partial is callable and returns expected content
-        expect(layoutCall![1].partials.test).toBeInstanceOf(Function);
-        expect(layoutCall![1].partials.test.toString()).toBe(mockContent);
-
-        expect(result.html).toBe(mockLayoutContent);
-        expect(result.templatesLoaded).toBe(2); // 1 partial + 1 layout
-      });
-
-      describe('hierarchical partial discovery', () => {
-        it('should discover partials from multiple directory levels', async () => {
-          // Test a page in a nested directory to verify hierarchical discovery
-          const nestedPage = {
-            ...mockPage,
-            sourcePath: join(mockProjectRoot, 'src', 'blog', 'article.md'),
-            url: '/blog/article',
-          };
-
-          const rootPartialsDir = join(mockProjectRoot, 'src', '_partials');
-          const blogPartialsDir = join(mockProjectRoot, 'src', 'blog', '_partials');
-
-          // Mock the glob calls for hierarchical discovery
-          mockGlob
-            // Root level scan: find src/_partials/
-            .mockResolvedValueOnce([rootPartialsDir])
-            .mockResolvedValueOnce(['header.eta', 'footer.eta'])
-            // Blog level scan: find src/blog/_partials/
-            .mockResolvedValueOnce([blogPartialsDir])
-            .mockResolvedValueOnce(['sidebar.eta'])
-            .mockResolvedValue([]);
-
-          mockPathExists.mockResolvedValueOnce(true).mockResolvedValue(false);
-
-          const rootHeaderContent = '<header>Site Header</header>';
-          const rootFooterContent = '<footer>Site Footer</footer>';
-          const blogSidebarContent = '<aside>Blog Sidebar</aside>';
-          const mockLayoutContent = '<html><body>content</body></html>';
-
-          // Mock renderAsync to return content for each partial
-          mockEtaInstance.renderAsync.mockImplementation((template: string) => {
-            if (template.includes('_partials') && template.includes('header.eta')) {
-              return Promise.resolve(rootHeaderContent);
-            } else if (template.includes('_partials') && template.includes('footer.eta')) {
-              return Promise.resolve(rootFooterContent);
-            } else if (template.includes('blog') && template.includes('sidebar.eta')) {
-              return Promise.resolve(blogSidebarContent);
-            } else if (template.includes('layout.eta')) {
-              return Promise.resolve(mockLayoutContent);
-            }
-            return Promise.resolve('');
-          });
-
-          await renderPage(nestedPage, '<h1>Blog article</h1>', mockConfig, mockEtaInstance as Eta);
-
-          // Verify that all partials from different levels were discovered and rendered
-          expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
-            expect.stringMatching(/.*_partials.*header\.eta/),
-            expect.any(Object),
-          );
-
-          expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
-            expect.stringMatching(/.*_partials.*footer\.eta/),
-            expect.any(Object),
-          );
-
-          expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
-            expect.stringMatching(/.*blog.*_partials.*sidebar\.eta/),
-            expect.any(Object),
-          );
-
-          // Verify final layout was called with all discovered partials
-          const layoutCall = mockEtaInstance.renderAsync.mock.calls.find(
-            (call) => typeof call[0] === 'string' && call[0].endsWith('layout.eta'),
-          );
-          expect(layoutCall).toBeDefined();
-          // Verify all partials are callable and return expected content
-          expect(layoutCall![1].partials.header).toBeInstanceOf(Function);
-          expect(layoutCall![1].partials.footer).toBeInstanceOf(Function);
-          expect(layoutCall![1].partials.sidebar).toBeInstanceOf(Function);
-          expect(layoutCall![1].partials.header.toString()).toBe(rootHeaderContent);
-          expect(layoutCall![1].partials.footer.toString()).toBe(rootFooterContent);
-          expect(layoutCall![1].partials.sidebar.toString()).toBe(blogSidebarContent);
-        });
-
-        it('should allow more specific partials to override general ones', async () => {
-          // Test that partials with the same name override each other hierarchically
-          const deepPage = {
-            ...mockPage,
-            sourcePath: join(mockProjectRoot, 'src', 'docs', 'guide.md'),
-            url: '/docs/guide',
-          };
-
-          const rootPartialsDir = join(mockProjectRoot, 'src', '_partials');
-          const docsPartialsDir = join(mockProjectRoot, 'src', 'docs', '_partials');
-
-          mockGlob
-            // Root level: has general header
-            .mockResolvedValueOnce([rootPartialsDir])
-            .mockResolvedValueOnce(['header.eta'])
-            // Docs level: has specific header that should override
-            .mockResolvedValueOnce([docsPartialsDir])
-            .mockResolvedValueOnce(['header.eta'])
-            .mockResolvedValue([]);
-
-          mockPathExists.mockResolvedValueOnce(true).mockResolvedValue(false);
-
-          const docsHeaderContent = '<header class="docs">Docs Header</header>';
-          const mockLayoutContent = '<html><body>content</body></html>';
-
-          // The more specific docs header should be used, not the root one
-          mockEtaInstance.renderAsync.mockImplementation((template: string) => {
-            if (template.includes('docs') && template.includes('header.eta')) {
-              return Promise.resolve(docsHeaderContent);
-            } else if (template.includes('layout.eta')) {
-              return Promise.resolve(mockLayoutContent);
-            }
-            return Promise.resolve('');
-          });
-
-          await renderPage(deepPage, '<h1>Documentation</h1>', mockConfig, mockEtaInstance as Eta);
-
-          // Verify the more specific docs header was used
-          expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
-            expect.stringMatching(/.*docs.*_partials.*header\.eta/),
-            expect.any(Object),
-          );
-
-          // Verify final layout uses the overridden partial
-          const layoutCall = mockEtaInstance.renderAsync.mock.calls.find(
-            (call) => typeof call[0] === 'string' && call[0].endsWith('layout.eta'),
-          );
-          expect(layoutCall).toBeDefined();
-          // Verify partial is callable and returns the docs version
-          expect(layoutCall![1].partials.header).toBeInstanceOf(Function);
-          expect(layoutCall![1].partials.header.toString()).toBe(docsHeaderContent); // Should be docs version, not root
-        });
-
-        // Windows passes backslash paths. Both forms are plain strings, so every OS runs both.
-        it.each([
-          ['forward slashes', 'a/b/deep.md'],
-          ['backslashes', 'a\\b\\deep.md'],
-        ])(
-          'should scan every folder between the root and a deep page (%s)',
-          async (_, pagePath) => {
-            const srcDir = join(mockProjectRoot, 'src');
-            const folders = {
-              root: join(srcDir, '_partials'),
-              middle: join(srcDir, 'a', '_partials'),
-              deep: join(srcDir, 'a', 'b', '_partials'),
-            };
-            const scanPattern = (folder: string) => join(folder, '..', '_*/').replace(/\\/g, '/');
-
-            mockGlob.mockImplementation(async (pattern: string, options: { cwd?: string }) => {
-              for (const [name, folder] of Object.entries(folders)) {
-                if (pattern === scanPattern(folder)) return [folder];
-                if (options.cwd === folder) return [`${name}.eta`];
-              }
-              return [];
-            });
-
-            const partials = await discoverPartials(pagePath, mockConfig);
-
-            const scannedPatterns = mockGlob.mock.calls
-              .filter(([, options]) => options.onlyDirectories)
-              .map(([pattern]) => pattern);
-            expect(scannedPatterns).toEqual(Object.values(folders).map(scanPattern));
-            expect(partials).toEqual({
-              root: join('_partials', 'root.eta'),
-              middle: join('a', '_partials', 'middle.eta'),
-              deep: join('a', 'b', '_partials', 'deep.eta'),
-            });
-          },
-        );
-      });
-
-      describe('callable partials', () => {
-        it('should make partials callable with props', async () => {
-          mockGlob
-            .mockResolvedValueOnce([join(mockProjectRoot, 'src', '_partials')])
-            .mockResolvedValueOnce(['card.eta'])
-            .mockResolvedValue([]);
-
-          mockPathExists.mockResolvedValueOnce(true).mockResolvedValue(false);
-
-          const mockCardContent = '<div class="card">Default Card</div>';
-          const mockLayoutContent = '<html><body>layout</body></html>';
-
-          // Track calls to verify callable behavior
-          const renderCalls: Array<{ template: string; context: unknown }> = [];
-
-          mockEtaInstance.renderAsync.mockImplementation((template: string, context?: unknown) => {
-            renderCalls.push({ template, context });
-
-            if (template.includes('card.eta')) {
-              return Promise.resolve(mockCardContent);
-            } else if (template === 'layout.eta') {
-              return Promise.resolve(mockLayoutContent);
-            }
-            return Promise.resolve('');
-          });
-
-          await renderPage(mockPage, '<h1>Test content</h1>', mockConfig, mockEtaInstance as Eta);
-
-          // Verify that partials in the layout context are callable
-          const layoutCall = renderCalls.find((call) => call.template === 'layout.eta');
-          expect(layoutCall).toBeDefined();
-
-          // The partials should be wrapped as callable
-          const partialsInContext = (layoutCall?.context as Record<string, unknown>)
-            ?.partials as Record<string, unknown>;
-          expect(partialsInContext).toBeDefined();
-          expect(partialsInContext.card).toBeDefined();
-
-          // Verify that the callable partial has toString method
-          const cardPartial = partialsInContext.card as { toString: () => string };
-          expect(typeof cardPartial.toString).toBe('function');
-          expect(cardPartial.toString()).toBe(mockCardContent);
-        });
-
-        it('should support backwards compatibility with direct partial usage', async () => {
-          mockGlob
-            .mockResolvedValueOnce([join(mockProjectRoot, 'src', '_partials')])
-            .mockResolvedValueOnce(['header.eta'])
-            .mockResolvedValue([]);
-
-          mockPathExists.mockResolvedValueOnce(true).mockResolvedValue(false);
-
-          const mockHeaderContent = '<header>Site Header</header>';
-          const mockLayoutContent = '<html><body>layout</body></html>';
-
-          mockEtaInstance.renderAsync.mockImplementation((template: string) => {
-            if (template.includes('header.eta')) {
-              return Promise.resolve(mockHeaderContent);
-            } else if (template === 'layout.eta') {
-              return Promise.resolve(mockLayoutContent);
-            }
-            return Promise.resolve('');
-          });
-
-          const result = await renderPage(
-            mockPage,
-            '<h1>Test content</h1>',
-            mockConfig,
-            mockEtaInstance as Eta,
-          );
-
-          // Verify that old-style partial usage still works
-          expect(mockEtaInstance.renderAsync).toHaveBeenCalledWith(
-            'layout.eta',
-            expect.objectContaining({
-              partials: expect.objectContaining({
-                header: expect.objectContaining({
-                  toString: expect.any(Function),
-                }),
-              }),
-            }),
-          );
-
-          expect(result.html).toBe(mockLayoutContent);
-          expect(result.templatesLoaded).toBe(2); // 1 partial + 1 layout
-        });
-      });
-    });
-
-    describe('RenderResult type and templatesLoaded counter', () => {
-      it('should return RenderResult with html and templatesLoaded properties', async () => {
-        mockPathExists.mockResolvedValueOnce(true).mockResolvedValue(false);
-        mockEtaInstance.renderAsync.mockResolvedValue('<html>Test</html>');
-
-        const result = await renderPage(
-          mockPage,
-          '<h1>Test</h1>',
-          mockConfig,
-          mockEtaInstance as Eta,
-        );
-
-        // Verify RenderResult structure
-        expect(result).toHaveProperty('html');
-        expect(result).toHaveProperty('templatesLoaded');
-        expect(typeof result.html).toBe('string');
-        expect(typeof result.templatesLoaded).toBe('number');
-      });
-
-      it('should count zero templates when no layout and no partials found', async () => {
-        // Mock all path exists to return false (no layout found)
-        mockPathExists.mockResolvedValue(false);
-        mockGlob.mockResolvedValue([]); // No partials
-
-        vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-        const result = await renderPage(
-          mockPage,
-          '<h1>Test</h1>',
-          mockConfig,
-          mockEtaInstance as Eta,
-        );
-
-        expect(result.templatesLoaded).toBe(0);
-        expect(result.html).toContain('<!DOCTYPE html>'); // Fallback HTML
-      });
-
-      it('should count only layout when no partials exist', async () => {
-        mockPathExists.mockResolvedValueOnce(true).mockResolvedValue(false);
-        mockGlob.mockResolvedValue([]); // No underscore folders
-        mockEtaInstance.renderAsync.mockResolvedValue('<html>Layout only</html>');
-
-        const result = await renderPage(
-          mockPage,
-          '<h1>Test</h1>',
-          mockConfig,
-          mockEtaInstance as Eta,
-        );
-
-        expect(result.templatesLoaded).toBe(1); // Just the layout
-      });
-
-      it('should count partials from multiple underscore folders', async () => {
-        const rootPartialsDir = join(mockProjectRoot, 'src', '_components');
-        const secondPartialsDir = join(mockProjectRoot, 'src', '_partials');
-
-        mockGlob
-          .mockResolvedValueOnce([rootPartialsDir, secondPartialsDir]) // Two underscore folders found
-          .mockResolvedValueOnce(['header.eta', 'footer.eta']) // 2 files in _components
-          .mockResolvedValueOnce(['sidebar.eta']) // 1 file in _partials
-          .mockResolvedValue([]);
-
-        mockPathExists.mockResolvedValueOnce(true).mockResolvedValue(false);
-
-        mockEtaInstance.renderAsync.mockImplementation((template: string) => {
-          if (template.includes('header.eta')) return Promise.resolve('<header/>');
-          if (template.includes('footer.eta')) return Promise.resolve('<footer/>');
-          if (template.includes('sidebar.eta')) return Promise.resolve('<aside/>');
-          if (template.includes('layout.eta')) return Promise.resolve('<html>Layout</html>');
-          return Promise.resolve('');
-        });
-
-        const result = await renderPage(
-          mockPage,
-          '<h1>Test</h1>',
-          mockConfig,
-          mockEtaInstance as Eta,
-        );
-
-        // 3 partials (header, footer, sidebar) + 1 layout = 4
-        expect(result.templatesLoaded).toBe(4);
-      });
-
-      it('should count correctly when explicit layout is specified in frontmatter', async () => {
-        const pageWithLayout = {
-          ...mockPage,
-          frontMatter: { ...mockPage.frontMatter, layout: 'custom-layout' },
-        };
-
-        mockPathExists.mockResolvedValueOnce(true).mockResolvedValue(false); // custom-layout.eta exists
-        mockGlob.mockResolvedValue([]); // No partials
-        mockEtaInstance.renderAsync.mockResolvedValue('<html>Custom Layout</html>');
-
-        const result = await renderPage(
-          pageWithLayout,
-          '<h1>Test</h1>',
-          mockConfig,
-          mockEtaInstance as Eta,
-        );
-
-        expect(result.templatesLoaded).toBe(1); // Custom layout counts as 1
-      });
-
-      it('should still count layout even when rendering throws error', async () => {
-        mockPathExists.mockResolvedValueOnce(true).mockResolvedValue(false);
-        mockGlob.mockResolvedValue([]);
-        mockEtaInstance.renderAsync.mockRejectedValue(new Error('Render error'));
-
-        vi.spyOn(console, 'error').mockImplementation(() => {});
-
-        const result = await renderPage(
-          mockPage,
-          '<h1>Test</h1>',
-          mockConfig,
-          mockEtaInstance as Eta,
-        );
-
-        // Layout was found, so count is 1 even though rendering failed
-        expect(result.templatesLoaded).toBe(1);
-        expect(result.html).toContain('<!DOCTYPE html>'); // Fallback HTML
-      });
-
-      it('should count partials correctly when some partials fail to render', async () => {
-        const partialsDir = join(mockProjectRoot, 'src', '_partials');
-
-        mockGlob
-          .mockResolvedValueOnce([partialsDir])
-          .mockResolvedValueOnce(['good.eta', 'bad.eta']) // 2 partials
-          .mockResolvedValue([]);
-
-        mockPathExists.mockResolvedValueOnce(true).mockResolvedValue(false);
-
-        mockEtaInstance.renderAsync.mockImplementation((template: string) => {
-          if (template.includes('good.eta')) return Promise.resolve('<div>Good</div>');
-          if (template.includes('bad.eta')) return Promise.reject(new Error('Bad template'));
-          if (template.includes('layout.eta')) return Promise.resolve('<html>Layout</html>');
-          return Promise.resolve('');
-        });
-
-        vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-        const result = await renderPage(
-          mockPage,
-          '<h1>Test</h1>',
-          mockConfig,
-          mockEtaInstance as Eta,
-        );
-
-        // 2 partials + 1 layout = 3 (partials count even if they fail)
-        expect(result.templatesLoaded).toBe(3);
-      });
-
-      it('should count templates correctly for deeply nested pages', async () => {
-        // Simpler test: just verify that we count partials + layout correctly
-        // when glob returns partials from multiple locations
-        const partialsDir1 = join(mockProjectRoot, 'src', '_components');
-        const partialsDir2 = join(mockProjectRoot, 'src', '_partials');
-
-        // Return two underscore folders and their contents
-        mockGlob
-          .mockResolvedValueOnce([partialsDir1, partialsDir2]) // Two underscore folders
-          .mockResolvedValueOnce(['header.eta', 'footer.eta']) // Files in _components
-          .mockResolvedValueOnce(['sidebar.eta']) // Files in _partials
-          .mockResolvedValue([]);
-
-        mockPathExists.mockResolvedValueOnce(true).mockResolvedValue(false);
-
-        mockEtaInstance.renderAsync.mockImplementation((template: string) => {
-          if (template.includes('header.eta')) return Promise.resolve('<header/>');
-          if (template.includes('footer.eta')) return Promise.resolve('<footer/>');
-          if (template.includes('sidebar.eta')) return Promise.resolve('<aside/>');
-          if (template.includes('layout.eta')) return Promise.resolve('<html>Layout</html>');
-          return Promise.resolve('');
-        });
-
-        const result = await renderPage(
-          mockPage,
-          '<h1>Test</h1>',
-          mockConfig,
-          mockEtaInstance as Eta,
-        );
-
-        // 3 partials (header, footer, sidebar) + 1 layout = 4
-        expect(result.templatesLoaded).toBe(4);
+      it('gives each page its own copy of the helpers object', async () => {
+        const helpers = { formatDate: () => 'today' };
+        await render(mockPage, ['layout.eta'], { config: { ...mockConfig, helpers } });
+        const context = mockEtaInstance.renderAsync.mock.calls[0]![1] as Record<string, unknown>;
+
+        expect(context.helpers).not.toBe(helpers);
+        (context.helpers as Record<string, unknown>).formatDate = () => 'replaced';
+        expect(helpers.formatDate()).toBe('today');
       });
     });
 
@@ -1179,14 +390,14 @@ describe('templates.ts', () => {
       const blogIndex: PageModel = {
         slug: '/blog',
         url: '/blog',
-        sourcePath: join(mockProjectRoot, 'src', 'blog', 'index.md'),
+        sourcePath: join(srcDir, 'blog', 'index.md'),
         frontMatter: { title: 'Blog' },
         content: '',
       };
       const post: PageModel = {
         slug: '/blog/post',
         url: '/blog/post',
-        sourcePath: join(mockProjectRoot, 'src', 'blog', 'post.md'),
+        sourcePath: join(srcDir, 'blog', 'post.md'),
         frontMatter: { title: 'Post' },
         content: '',
       };
@@ -1197,9 +408,7 @@ describe('templates.ts', () => {
       async function renderWith(
         read: (context: Record<string, unknown>) => unknown,
         page: PageModel = post,
-        config: StatiConfig = mockConfig,
       ) {
-        mockPathExists.mockResolvedValueOnce(true).mockResolvedValue(false);
         let seen: Record<string, unknown> = {};
         mockEtaInstance.renderAsync.mockImplementation(async (_path, context) => {
           seen = context as Record<string, unknown>;
@@ -1208,10 +417,14 @@ describe('templates.ts', () => {
         const result = await renderPage(
           page,
           '<p>Body</p>',
-          config,
-          mockEtaInstance as Eta,
+          mockConfig,
+          mockEtaInstance as unknown as Eta,
           navigation,
           allPages,
+          undefined,
+          undefined,
+          logger as unknown as Logger,
+          { templateIndex: new TemplateIndex(srcDir, ['layout.eta']) },
         );
         return { result, context: seen };
       }
@@ -1255,7 +468,7 @@ describe('templates.ts', () => {
         expect(reread.result.html).toBe('<html>0</html>');
       });
 
-      it('does not count spreading the context, as callable partials do, as a read', async () => {
+      it('does not count spreading the context, as includes do, as a read', async () => {
         const { result } = await renderWith((context) => Object.keys({ ...context }).length);
         expect(result.reads).toEqual({ collection: false, nav: false });
       });
@@ -1277,17 +490,6 @@ describe('templates.ts', () => {
         expect(context.pagination).not.toBe(pagination);
         expect(context.generated).toBeUndefined();
         expect((context.slugify as (text: string) => string)('Hello World')).toBe('hello-world');
-      });
-
-      it('lets an existing filter with the same name win', async () => {
-        const slugify = () => 'custom';
-        const { context } = await renderWith(() => '', post, {
-          ...mockConfig,
-          eta: { filters: { slugify, pagination: slugify } },
-        });
-
-        expect(context.slugify).toBe(slugify);
-        expect(context.pagination).toBe(slugify);
       });
     });
   });

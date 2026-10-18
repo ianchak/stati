@@ -114,43 +114,41 @@ This is the home page.
   // Create a static asset
   writeFileSync(join(publicDir, 'styles.css'), 'body { margin: 0; }');
 
-  // Create components directory for nested Eta components
-  const componentsDir = join(siteDir, '_components');
+  // Create a folder of nested Eta components, rendered with stati.include()
+  const componentsDir = join(siteDir, 'partials');
   mkdirSync(componentsDir, { recursive: true });
 
-  // Create nested Eta components using Stati's partial syntax
-  // Components need the guard pattern since they're processed even when not called as partials
   // Note: Eta templates do NOT support partial dynamic attributes, so we use template literals
-  const buttonComponent = `<% if (!stati.props) { %><% return; } %><button class="<%= \`btn \${stati.props.variant || 'primary'}\` %>">
+  const buttonComponent = `<button class="<%= \`btn \${stati.props.variant || 'primary'}\` %>">
   <%= stati.props.text || 'Click me' %>
 </button>`;
   writeFileSync(join(componentsDir, 'button.eta'), buttonComponent);
 
-  const cardComponent = `<% if (!stati.props) { %><% return; } %><div class="card">
+  const cardComponent = `<div class="card">
   <h3><%= stati.props.title %></h3>
   <p><%= stati.props.description %></p>
-  <%~ stati.partials.button({ text: stati.props.buttonText || 'Learn more', variant: 'secondary' }) %>
+  <%~ stati.include('./button', { text: stati.props.buttonText || 'Learn more', variant: 'secondary' }) %>
 </div>`;
   writeFileSync(join(componentsDir, 'card.eta'), cardComponent);
 
-  const heroComponent = `<% if (!stati.props) { %><% return; } %><section class="hero">
+  const heroComponent = `<section class="hero">
   <h1><%= stati.props.headline %></h1>
   <p><%= stati.props.subheadline %></p>
   <div class="hero-actions">
-    <%~ stati.partials.button({ text: 'Get Started', variant: 'primary' }) %>
-    <%~ stati.partials.button({ text: 'Learn More', variant: 'outline' }) %>
+    <%~ stati.include('./button', { text: 'Get Started', variant: 'primary' }) %>
+    <%~ stati.include('./button', { text: 'Learn More', variant: 'outline' }) %>
   </div>
 </section>`;
   writeFileSync(join(componentsDir, 'hero.eta'), heroComponent);
 
-  const gridComponent = `<% if (!stati.props) { %><% return; } %><div class="grid">
+  const gridComponent = `<div class="grid">
   <% for (const item of stati.props.items) { %>
-    <%~ stati.partials.card({ title: item.title, description: item.description, buttonText: item.cta }) %>
+    <%~ stati.include('./card', { title: item.title, description: item.description, buttonText: item.cta }) %>
   <% } %>
 </div>`;
   writeFileSync(join(componentsDir, 'grid.eta'), gridComponent);
 
-  const navComponent = `<% if (!stati.props) { %><% return; } %><nav class="nav">
+  const navComponent = `<nav class="nav">
   <% for (const link of stati.props.links) { %>
     <a href="<%= link.href %>" class="<%= \`\${link.active ? 'active' : ''}\` %>">
       <%= link.label %>
@@ -159,16 +157,16 @@ This is the home page.
 </nav>`;
   writeFileSync(join(componentsDir, 'nav.eta'), navComponent);
 
-  const footerComponent = `<% if (!stati.props) { %><% return; } %><footer class="footer">
+  const footerComponent = `<footer class="footer">
   <div class="footer-grid">
     <% for (const section of stati.props.sections) { %>
       <div class="footer-section">
         <h4><%= section.title %></h4>
-        <%~ stati.partials.nav({ links: section.links }) %>
+        <%~ stati.include('./nav', { links: section.links }) %>
       </div>
     <% } %>
   </div>
-  <%~ stati.partials.button({ text: 'Back to top', variant: 'ghost' }) %>
+  <%~ stati.include('./button', { text: 'Back to top', variant: 'ghost' }) %>
 </footer>`;
   writeFileSync(join(componentsDir, 'footer.eta'), footerComponent);
 
@@ -189,7 +187,7 @@ This is the home page.
 /**
  * Create complex pages with multiple nested Eta components.
  * Note: Pages must be .md files as Stati only processes markdown as content.
- * The components are called via stati.partials in the markdown's template.
+ * The components are rendered with stati.include() from the pages' layout.
  */
 function createComplexFixture(baseDir: string, pageCount: number): void {
   const siteDir = join(baseDir, 'site');
@@ -201,11 +199,11 @@ function createComplexFixture(baseDir: string, pageCount: number): void {
   <title><%= stati.page.title ? \`\${stati.page.title} | Test Site\` : 'Test Site' %></title>
 </head>
 <body>
-  <%~ stati.partials.hero({
+  <%~ stati.include('partials/hero', {
     headline: stati.page.title || 'Welcome',
     subheadline: stati.page.description || 'A complex page'
   }) %>
-  <%~ stati.partials.grid({
+  <%~ stati.include('partials/grid', {
     items: [
       { title: 'Feature 1', description: 'Description for feature 1', cta: 'Explore' },
       { title: 'Feature 2', description: 'Description for feature 2', cta: 'Discover' },
@@ -219,10 +217,10 @@ function createComplexFixture(baseDir: string, pageCount: number): void {
     <%~ stati.content %>
   </main>
   <div class="cards-row">
-    <%~ stati.partials.card({ title: 'Card A', description: 'Standalone card A', buttonText: 'Click A' }) %>
-    <%~ stati.partials.card({ title: 'Card B', description: 'Standalone card B', buttonText: 'Click B' }) %>
+    <%~ stati.include('partials/card', { title: 'Card A', description: 'Standalone card A', buttonText: 'Click A' }) %>
+    <%~ stati.include('partials/card', { title: 'Card B', description: 'Standalone card B', buttonText: 'Click B' }) %>
   </div>
-  <%~ stati.partials.footer({
+  <%~ stati.include('partials/footer', {
     sections: [
       {
         title: 'Company',
@@ -584,6 +582,12 @@ describe('Build Performance Benchmarks', () => {
         const minExpectedPages = BENCHMARK_CONFIG.pageCount + 1 + BENCHMARK_CONFIG.complexPageCount;
         expect(result.cacheMisses).toBeGreaterThanOrEqual(minExpectedPages);
       }
+
+      // The nested components rendered, rather than an error or the fallback page
+      const complexPage = readFileSync(join(testDir, 'dist', 'complex-0.html'), 'utf-8');
+      expect(complexPage).toContain('<section class="hero">');
+      expect(complexPage).toContain('<button class="btn secondary">');
+      expect(complexPage).toContain('<footer class="footer">');
 
       const medianDuration = median(durations);
       const p95Duration = p95(durations);

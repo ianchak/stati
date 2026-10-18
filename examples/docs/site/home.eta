@@ -2,62 +2,52 @@
   /* Layout for the home page (`layout: home` in site/index.md).
      The heading, tagline and buttons come from front matter; the Markdown body
      of index.md fills the panel beside them. Below, every section of the docs
-     is listed with its pages, straight from stati.docsSections(). */
-  const sections = stati.docsSections();
+     is listed with its pages, straight from stati.helpers.docsSections(). */
+  const sections = stati.helpers.docsSections();
   const actions = Array.isArray(stati.page.actions) ? stati.page.actions : [];
+  stati.layout('base', { bodyClass: 'page-home' });
 %>
-<!DOCTYPE html>
-<html lang="<%= stati.site.defaultLocale || 'en' %>">
-  <%~ stati.partials.head %>
-  <body class="page-home">
-    <a href="#main" class="skip-link">Skip to content</a>
-    <%~ stati.partials.header %>
-    <%~ stati.partials.sidebar %>
+<%~ stati.include('partials/sidebar') %>
 
-    <main id="main" class="home" tabindex="-1">
-      <section class="hero" aria-labelledby="hero-heading">
-        <div class="hero-text">
-          <h1 id="hero-heading"><%= stati.page.heading ?? stati.site.title %></h1>
-          <% if (stati.page.tagline ?? stati.page.description) { %>
-          <p class="hero-tagline"><%= stati.page.tagline ?? stati.page.description %></p>
-          <% } %>
-          <% if (actions.length > 0) { %>
-          <div class="hero-actions">
-            <% actions.forEach((action, index) => { %>
-            <a class="<%= stati.propValue('button', index === 0 ? 'button-primary' : 'button-secondary') %>" href="<%= action.url %>">
-              <%= action.label %>
-              <% if (index === 0) { %><%~ stati.partials.icon({ name: 'arrow-right', size: 16 }) %><% } %>
-            </a>
-            <% }) %>
-          </div>
-          <% } %>
-        </div>
-        <div class="hero-panel prose"><%~ stati.content %></div>
-      </section>
+<main id="main" class="home" tabindex="-1">
+  <section class="hero" aria-labelledby="hero-heading">
+    <div class="hero-text">
+      <h1 id="hero-heading"><%= stati.page.heading ?? stati.site.title %></h1>
+      <% if (stati.page.tagline ?? stati.page.description) { %>
+      <p class="hero-tagline"><%= stati.page.tagline ?? stati.page.description %></p>
+      <% } %>
+      <% if (actions.length > 0) { %>
+      <div class="hero-actions">
+        <% actions.forEach((action, index) => { %>
+        <a class="<%= stati.propValue('button', index === 0 ? 'button-primary' : 'button-secondary') %>" href="<%= action.url %>">
+          <%= action.label %>
+          <% if (index === 0) { %><%~ stati.include('partials/icon', { name: 'arrow-right', size: 16 }) %><% } %>
+        </a>
+        <% }) %>
+      </div>
+      <% } %>
+    </div>
+    <div class="hero-panel prose"><%~ stati.content %></div>
+  </section>
 
-      <% if (sections.length > 0) { %>
-      <section class="home-sections" aria-labelledby="sections-heading">
-        <h2 id="sections-heading">Browse the documentation</h2>
-        <div class="section-grid">
-          <% for (const section of sections) { %>
-          <section class="section-block" aria-labelledby="<%= `section-${section.url.slice(1)}` %>">
-            <h3 id="<%= `section-${section.url.slice(1)}` %>">
-              <% if (section.hasOverview) { %><a href="<%= section.url %>"><%= section.title %></a><% } else { %><%= section.title %><% } %>
-            </h3>
-            <% if (section.description) { %><p><%= section.description %></p><% } %>
-            <ul role="list">
-              <% for (const page of section.pages) { %>
-              <li><a href="<%= page.url %>"><%= page.title %></a></li>
-              <% } %>
-            </ul>
-          </section>
+  <% if (sections.length > 0) { %>
+  <section class="home-sections" aria-labelledby="sections-heading">
+    <h2 id="sections-heading">Browse the documentation</h2>
+    <div class="section-grid">
+      <% for (const section of sections) { %>
+      <section class="section-block" aria-labelledby="<%= `section-${section.url.slice(1)}` %>">
+        <h3 id="<%= `section-${section.url.slice(1)}` %>">
+          <% if (section.hasOverview) { %><a href="<%= section.url %>"><%= section.title %></a><% } else { %><%= section.title %><% } %>
+        </h3>
+        <% if (section.description) { %><p><%= section.description %></p><% } %>
+        <ul role="list">
+          <% for (const page of section.pages) { %>
+          <li><a href="<%= page.url %>"><%= page.title %></a></li>
           <% } %>
-        </div>
+        </ul>
       </section>
       <% } %>
-    </main>
-
-    <%~ stati.partials.footer %>
-    <%~ stati.partials.search %>
-  </body>
-</html>
+    </div>
+  </section>
+  <% } %>
+</main>
