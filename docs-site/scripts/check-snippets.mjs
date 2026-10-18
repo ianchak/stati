@@ -73,6 +73,8 @@ try {
     process.execPath,
     [
       tsc,
+      // The snippets are checked with the options below, not docs-site's tsconfig.json
+      '--ignoreConfig',
       '--noEmit',
       '--strict',
       '--skipLibCheck',

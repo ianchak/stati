@@ -12,7 +12,7 @@ export const DEPENDENCY_VERSIONS = {
   // Build Tools
   concurrently: '^9.0.0',
   // TypeScript
-  typescript: '^5.6.0',
+  typescript: '^6.0.3',
   // Image tools
   '@stati/images': '^1.0.0',
 } as const;

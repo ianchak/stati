@@ -20,7 +20,7 @@ describe('typescript-processor', () => {
 
       // Assert
       expect(result.devDependencies).toEqual({
-        typescript: '^5.6.0',
+        typescript: '^6.0.3',
       });
     });
 

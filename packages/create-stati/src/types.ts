@@ -15,7 +15,7 @@
  *     ['config.json', '{ "enabled": true }'],
  *     ['src/index.ts', 'console.log("Hello");'],
  *   ]),
- *   devDependencies: { typescript: '^5.6.0' },
+ *   devDependencies: { typescript: '^6.0.3' },
  *   scripts: { build: 'tsc' },
  * };
  * ```
