@@ -33,6 +33,7 @@ import {
   createErrorOverlay,
   parseErrorDetails,
   TemplateError,
+  FrontMatterError,
   createFallbackLogger,
   mergeServerOptions,
   createTypeScriptWatcher,
@@ -42,6 +43,7 @@ import {
   assertPortAvailable,
   toPortUnavailableError,
 } from './utils/index.js';
+import type { ErrorDetails } from './utils/index.js';
 import { setEnv, getEnv } from '../env.js';
 import { DEFAULT_DEV_PORT, DEFAULT_DEV_HOST, DEFAULT_OUT_DIR } from '../constants.js';
 
@@ -440,6 +442,48 @@ async function markTemplateChanges(
   }
 }
 
+/**
+ * The error overlay's details for a failed build: template errors point at the template and
+ * front matter errors at the Markdown file; other errors are classified by their message.
+ */
+async function describeBuildError(error: Error): Promise<ErrorDetails> {
+  if (error instanceof TemplateError) {
+    return error.toErrorDetails();
+  }
+  if (error instanceof FrontMatterError) {
+    // The file and line are the Markdown file's, not a stack frame's
+    const {
+      line: _line,
+      column: _column,
+      ...details
+    } = parseErrorDetails(error, 'markdown', error.filePath);
+    return {
+      ...details,
+      ...(error.line !== undefined && { line: error.line }),
+      ...(error.column !== undefined && { column: error.column }),
+    };
+  }
+
+  const message = error.message.toLowerCase();
+  const name = error.name ? error.name.toLowerCase() : '';
+  const errorType =
+    message.includes('template') ||
+    message.includes('eta') ||
+    message.includes('layout') ||
+    name.includes('template')
+      ? 'template'
+      : message.includes('front-matter') ||
+          message.includes('yaml') ||
+          name.includes('yaml') ||
+          name.includes('yamlexception')
+        ? 'markdown'
+        : message.includes('config') || name.includes('config')
+          ? 'config'
+          : 'build';
+
+  return parseErrorDetails(error, errorType);
+}
+
 export async function createDevServer(options: DevServerOptions = {}): Promise<DevServer> {
   const logger = options.logger ?? createFallbackLogger();
   const { configPath } = options;
@@ -533,34 +577,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
       errorToShow &&
       (requestPath === '/' || requestPath.endsWith('.html') || !requestPath.includes('.'))
     ) {
-      let errorDetails;
-
-      // Use enhanced error details for TemplateError instances
-      if (errorToShow instanceof TemplateError) {
-        errorDetails = await errorToShow.toErrorDetails();
-      } else {
-        // Determine error type based on error message
-        const message = errorToShow.message.toLowerCase();
-        const name = errorToShow.name ? errorToShow.name.toLowerCase() : '';
-        const errorType =
-          message.includes('template') ||
-          message.includes('eta') ||
-          message.includes('layout') ||
-          name.includes('template')
-            ? 'template'
-            : message.includes('front-matter') ||
-                message.includes('yaml') ||
-                name.includes('yaml') ||
-                name.includes('yamlexception')
-              ? 'markdown'
-              : message.includes('config') || name.includes('config')
-                ? 'config'
-                : 'build';
-
-        errorDetails = parseErrorDetails(errorToShow, errorType);
-      }
-
-      const errorHtml = createErrorOverlay(errorDetails, requestPath);
+      const errorHtml = createErrorOverlay(await describeBuildError(errorToShow), requestPath);
       return {
         content: errorHtml,
         mimeType: 'text/html',
@@ -589,33 +606,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
         errorToShow &&
         (requestPath === '/' || requestPath.endsWith('.html') || !requestPath.includes('.'))
       ) {
-        // Use enhanced error details for TemplateError instances
-        let errorDetails;
-        if (errorToShow instanceof TemplateError) {
-          errorDetails = await errorToShow.toErrorDetails();
-        } else {
-          // Determine error type based on error message
-          const message = errorToShow.message.toLowerCase();
-          const name = errorToShow.name ? errorToShow.name.toLowerCase() : '';
-          const errorType =
-            message.includes('template') ||
-            message.includes('eta') ||
-            message.includes('layout') ||
-            name.includes('template')
-              ? 'template'
-              : message.includes('front-matter') ||
-                  message.includes('yaml') ||
-                  name.includes('yaml') ||
-                  name.includes('yamlexception')
-                ? 'markdown'
-                : message.includes('config') || name.includes('config')
-                  ? 'config'
-                  : 'build';
-
-          errorDetails = parseErrorDetails(errorToShow, errorType);
-        }
-
-        const errorHtml = createErrorOverlay(errorDetails, requestPath);
+        const errorHtml = createErrorOverlay(await describeBuildError(errorToShow), requestPath);
         return {
           content: errorHtml,
           mimeType: 'text/html',

@@ -66,6 +66,10 @@ export {
   loadPreviousInventory,
 } from './tailwind-inventory.utils.js';
 
+// Front matter parsing
+export { parseFrontMatter, FrontMatterError } from './front-matter.utils.js';
+export type { ParsedFrontMatter } from './front-matter.utils.js';
+
 // Template context validation utilities
 export {
   createValidatingContextProxy,

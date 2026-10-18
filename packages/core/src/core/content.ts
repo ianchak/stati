@@ -1,6 +1,5 @@
 import glob from 'fast-glob';
-import { readFile, resolveSrcDir, getFrontMatterDate } from './utils/index.js';
-import matter from 'gray-matter';
+import { readFile, resolveSrcDir, getFrontMatterDate, parseFrontMatter } from './utils/index.js';
 import { relative, dirname, basename } from 'node:path';
 import type { PageModel, StatiConfig } from '../types/index.js';
 import { MARKDOWN_EXTENSION } from '../constants.js';
@@ -42,7 +41,7 @@ export async function loadContent(
       console.warn(`Skipping file ${file}: could not read content`);
       continue;
     }
-    const { data: frontMatter, content: markdown } = matter(content);
+    const { data: frontMatter, content: markdown } = parseFrontMatter(content, file);
 
     // Skip drafts unless explicitly included
     if (frontMatter.draft && !includeDrafts) {

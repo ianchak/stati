@@ -240,9 +240,15 @@ invalid yaml: [unclosed array
         // Request the homepage which should show error overlay
         const response = await makeRequest(`http://localhost:3113/`);
         expect(response.status).toBe(500);
-        expect(response.body).toContain('error');
+        expect(response.body).toContain('Markdown processing failed');
+        // The front matter error names the Markdown file, and the overlay points at it
+        expect(response.body).toContain('Invalid front matter in');
+        expect(response.body).toMatch(/<dt>File<\/dt>\s*<dd>[^<]*[\\/]site[\\/]bad\.md<\/dd>/);
+        expect(response.body).toContain('<dt>Line</dt>');
       } finally {
         await server.stop();
+        // Later tests expect a site that builds
+        await rm(join(testDir, 'site', 'bad.md'), { force: true });
       }
     });
 

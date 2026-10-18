@@ -1006,7 +1006,11 @@ function getErrorSuggestions(error: Error, type: ErrorDetails['type']): string[]
       suggestions.push('Check if the output directory has sufficient space');
     }
   } else if (type === 'markdown') {
-    if (message.includes('front-matter') || message.includes('yaml')) {
+    if (
+      message.includes('front matter') ||
+      message.includes('front-matter') ||
+      message.includes('yaml')
+    ) {
       suggestions.push('Check the YAML front-matter syntax for errors');
       suggestions.push('Ensure front-matter is properly enclosed in --- markers');
       suggestions.push(

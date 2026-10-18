@@ -320,7 +320,12 @@ Other server-side highlighters work through `configure` as long as they are read
 
 ## Front matter
 
-Stati automatically parses YAML front matter from markdown files using `gray-matter`. This is not configurable.
+Stati reads YAML front matter: the lines between a `---` line at the start of the file and the next line that starts with `---`. This is not configurable.
+
+- Quote a value that contains a colon followed by a space, such as `title: "Stati: a static site generator"`.
+- Unquoted dates such as `date: 2024-01-15` are read as dates, quoted ones as text. Both work wherever Stati reads a date.
+- Values follow YAML 1.2: `time: 10:30` is the text `10:30`, and `0755` is the number 755.
+- Front matter that is not valid YAML stops the build with an error that names the file and the line.
 
 **Example:**
 
