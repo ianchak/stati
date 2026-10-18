@@ -42,7 +42,7 @@ describe('Stati Eta plugin', () => {
       const compiled = engine(debug).compileToString('<p><%= stati.x %></p>', {});
       for (const name of ['include', 'includeAsync', 'layout', 'block', 'blockAsync']) {
         expect(compiled).toContain(
-          `${name} = (...__statiArgs) => this.__statiBlockedEtaCall("${name}"`,
+          `${name} = (...__statiArgs) => this.__statiBlockedEtaCall('${name}'`,
         );
       }
       // The template's code runs in a block of its own, after the replacements
@@ -97,6 +97,13 @@ describe('Stati Eta plugin', () => {
       'Pass the content to the layout as a prop',
     );
     expect(describeBlockedCall('include', [42]).suggestion).toBe("Use stati.include('path')");
+    // The name is written as a single-quoted string; backslashes count as separators
+    expect(describeBlockedCall('include', ["it's"]).suggestion).toBe(
+      "Use stati.include('./it\\'s')",
+    );
+    expect(describeBlockedCall('include', ['partials\\card']).suggestion).toBe(
+      "Use stati.include('./partials/card')",
+    );
   });
 
   it('throws in development, which Eta reports at the calling line', () => {

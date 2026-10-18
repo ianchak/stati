@@ -582,5 +582,37 @@ export default config;`;
 
       await expect(loadConfig(testDir)).rejects.toThrow(message);
     });
+
+    it('treats a config that throws while it is checked like one that fails to load', async () => {
+      // The getter works when the config is merged and fails when the helpers are checked
+      writeFileSync(
+        join(testDir, 'stati.config.js'),
+        `let reads = 0;\nexport default { site: { title: 'Throws' }, get helpers() { if (reads++) throw new TypeError('helpers are broken'); return {}; } };`,
+        'utf-8',
+      );
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const config = await loadConfig(testDir);
+
+      expect(config.site.title).toBe('My Stati Site');
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Error loading config from'),
+        expect.objectContaining({ message: 'helpers are broken' }),
+      );
+      consoleErrorSpy.mockRestore();
+    });
+
+    it.each([
+      [`'x'`, "string 'x'"],
+      ['1', 'number 1'],
+      ['undefined', 'undefined'],
+      ['{}', 'an object'],
+    ])('describes a helper set to %s in the message', async (value, described) => {
+      writeConfig(`{ site: { title: 'Bad helpers' }, helpers: { siteName: ${value} } }`);
+
+      await expect(loadConfig(testDir)).rejects.toThrow(
+        `helpers.siteName must be a function that templates call as stati.helpers.siteName() (got ${described}).`,
+      );
+    });
   });
 });

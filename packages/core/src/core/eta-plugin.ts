@@ -69,10 +69,11 @@ export function createStatiEtaPlugin(): EtaPlugin {
           "Stati could not find Eta's layout() function in a compiled template, so it cannot block Eta's own include(), layout() and block(). This Eta version is not supported; install the version @stati/core depends on.",
         );
       }
+      // The names are the identifiers listed in ETA_FUNCTIONS, so they need no escaping
       const replacements = ETA_FUNCTIONS.filter(({ declaration }) => fnString.includes(declaration))
         .map(
           ({ name }) =>
-            `${name} = (...__statiArgs) => this.${BLOCKED_CALL_HANDLER}(${JSON.stringify(name)}, __statiArgs, options && options.filepath);`,
+            `${name} = (...__statiArgs) => this.${BLOCKED_CALL_HANDLER}('${name}', __statiArgs, options && options.filepath);`,
         )
         .join(' ');
       // With debug on, Eta marks each tag's line with `__eta.line=N` and no semicolon, so a tag
@@ -110,7 +111,8 @@ function suggestedName(name: unknown): string {
   if (!path.startsWith('/') && !path.startsWith('./') && !path.startsWith('../')) {
     path = `./${path}`;
   }
-  return path.replace(/'/g, "\\'");
+  // Escaped for the single-quoted string of the suggested call
+  return path.replace(/[\\']/g, '\\$&');
 }
 
 /**
