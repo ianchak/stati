@@ -1,7 +1,6 @@
 import { existsSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { inspect } from 'node:util';
 import type { StatiConfig } from '../types/index.js';
 import { validateISGConfig, ISGConfigurationError } from '../core/isg/validation.js';
 import { validateImagesConfig } from '../images/config.js';
@@ -91,7 +90,8 @@ const CONFIG_KEYS: Record<keyof StatiConfig, true> = {
 function describeConfigValue(value: unknown): string {
   if (value === null || value === undefined) return String(value);
   if (Array.isArray(value)) return 'an array';
-  return typeof value === 'object' ? 'an object' : `${typeof value} ${inspect(value)}`;
+  if (typeof value === 'object') return 'an object';
+  return typeof value === 'string' ? `string '${value}'` : `${typeof value} ${String(value)}`;
 }
 
 /**
