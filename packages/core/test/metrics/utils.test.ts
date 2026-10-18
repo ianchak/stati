@@ -572,6 +572,27 @@ describe('html-report.utils', () => {
       );
     });
 
+    it('should nest Markdown rendering and the work after rendering under page rendering', () => {
+      const html = generateMetricsHtml({
+        ...mockMetrics,
+        phases: {
+          pageRenderingMs: 600,
+          shouldRebuildTotalMs: 10,
+          markdownRenderTotalMs: 200,
+          renderPageTotalMs: 100,
+          postRenderTotalMs: 50,
+        },
+      });
+      const timeline = phasePanel(html, 'timeline');
+      expect(phaseNames(timeline)).toEqual(['Page rendering']);
+      const steps = timeline.slice(timeline.indexOf('phase-steps'));
+      const stepNames = [...steps.matchAll(/<span class="phase-name">([^<]*)<\/span>/g)].map(
+        (match) => match[1],
+      );
+      expect(stepNames).toEqual(['Rebuild checks', 'Markdown', 'Render pages', 'After rendering']);
+      expect(html).toContain('rendering each rendered page&#39;s Markdown to HTML');
+    });
+
     it('should list the steps as phases when page rendering itself was not recorded', () => {
       const html = generateMetricsHtml({
         ...mockMetrics,

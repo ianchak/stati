@@ -580,7 +580,9 @@ async function processPagesWithCache(
 
   // Track timing for shouldRebuildPage
   let totalShouldRebuildTime = 0;
+  let totalMarkdownTime = 0;
   let totalRenderTime = 0;
+  let totalPostRenderTime = 0;
   let totalFileWriteTime = 0;
   let totalCacheEntryTime = 0;
 
@@ -712,10 +714,12 @@ async function processPagesWithCache(
     const pageImages = imageRuntime?.createPageContext(page);
 
     // Render markdown to HTML with TOC extraction
+    const markdownStart = performance.now();
     const tocEnabled = config.markdown?.toc !== false;
     const { html: htmlContent, toc } = renderMarkdown(page.content, md, tocEnabled, {
       images: pageImages,
     });
+    totalMarkdownTime += performance.now() - markdownStart;
 
     // Render with template
     const renderPageStart = performance.now();
@@ -733,6 +737,7 @@ async function processPagesWithCache(
     );
     const renderPageTime = performance.now() - renderPageStart;
     totalRenderTime += renderPageTime;
+    const postRenderStart = performance.now();
     let finalHtml = renderResult.html;
 
     // Record the templates this page used and how often templates rendered
@@ -787,8 +792,9 @@ async function processPagesWithCache(
       templateLookups: renderResult.templateLookups,
     };
     const renderedInputsHash = renderInputsHashFor(renderResult.reads);
+    totalPostRenderTime += performance.now() - postRenderStart;
 
-    const renderTime = Math.round(performance.now() - startTime);
+    const renderTime = performance.now() - startTime;
 
     // Record page timing for rendered pages (includes template count)
     recorder.recordPageTiming(
@@ -800,7 +806,7 @@ async function processPagesWithCache(
     );
 
     if (logger.updateProgress) {
-      logger.updateProgress('rendered', page.url, renderTime);
+      logger.updateProgress('rendered', page.url, Math.round(renderTime));
     }
 
     // In dev mode, batch writes for parallel execution to avoid Windows filesystem slowdown
@@ -884,7 +890,9 @@ async function processPagesWithCache(
 
   // Record detailed phase timings in metrics
   recorder.recordPhase('shouldRebuildTotalMs', totalShouldRebuildTime);
+  recorder.recordPhase('markdownRenderTotalMs', totalMarkdownTime);
   recorder.recordPhase('renderPageTotalMs', totalRenderTime);
+  recorder.recordPhase('postRenderTotalMs', totalPostRenderTime);
   recorder.recordPhase('fileWriteTotalMs', totalFileWriteTime);
   recorder.recordPhase('cacheEntryTotalMs', totalCacheEntryTime);
 

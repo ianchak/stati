@@ -39,7 +39,9 @@ type MutablePhases = {
   templateIndexMs?: number;
   pageRenderingMs?: number;
   shouldRebuildTotalMs?: number;
+  markdownRenderTotalMs?: number;
   renderPageTotalMs?: number;
+  postRenderTotalMs?: number;
   fileWriteTotalMs?: number;
   cacheEntryTotalMs?: number;
   searchIndexGenerationMs?: number;

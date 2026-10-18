@@ -103,12 +103,22 @@ export interface MetricsPhases {
   readonly typescriptCompileMs?: number;
   /** Reading the names of every template in the source directory, once per build */
   readonly templateIndexMs?: number;
-  /** Total page rendering time (includes shouldRebuild + render + fileWrite + cacheEntry) */
+  /**
+   * Total page pipeline time; includes the beforeAll hook, the search index and the per-page
+   * totals below
+   */
   readonly pageRenderingMs?: number;
   /** Aggregate time checking if pages need rebuild (shouldRebuildPage) */
   readonly shouldRebuildTotalMs?: number;
-  /** Aggregate time rendering pages (renderPage) */
+  /** Aggregate time rendering each page's Markdown to HTML */
+  readonly markdownRenderTotalMs?: number;
+  /** Aggregate time rendering pages through their templates (renderPage) */
   readonly renderPageTotalMs?: number;
+  /**
+   * Aggregate time spent on each rendered page between its templates and the file write: SEO,
+   * search and bundle tag injection, registering its images, and hashing what it read
+   */
+  readonly postRenderTotalMs?: number;
   /** Aggregate time writing HTML files to disk */
   readonly fileWriteTotalMs?: number;
   /** Aggregate time updating cache entries */

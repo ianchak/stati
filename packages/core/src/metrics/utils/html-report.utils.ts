@@ -75,7 +75,9 @@ function getPhaseLabel(key: string): string {
     templateIndexMs: 'Template index',
     pageRenderingMs: 'Page rendering',
     shouldRebuildTotalMs: 'Rebuild checks',
+    markdownRenderTotalMs: 'Markdown',
     renderPageTotalMs: 'Render pages',
+    postRenderTotalMs: 'After rendering',
     fileWriteTotalMs: 'File writing',
     cacheEntryTotalMs: 'Cache entry updates',
     searchIndexGenerationMs: 'Search index generation',
@@ -125,8 +127,12 @@ function getPhaseDescription(key: string): string {
       'Total time spent in the page pipeline: the beforeAll hook, the search index, and for every page the rebuild check, rendering, hooks, file writing and cache update. The steps listed under it are its parts; the per-page ones are summed over all pages. This is typically the largest phase in a build.',
     shouldRebuildTotalMs:
       'Aggregate time spent checking if each page needs to be rebuilt. This includes computing content hashes, hashing the templates each page rendered, and checking the template names it looked up against the template index.',
+    markdownRenderTotalMs:
+      "Aggregate time spent rendering each rendered page's Markdown to HTML with markdown-it, including its plugins, heading anchors, the table of contents and image sizing. Long pages and heavy plugins increase this time.",
     renderPageTotalMs:
       'Aggregate time spent actually rendering pages through the Eta template engine: each layout, the parents it names and the templates it includes. Templates a page does not use are never rendered. Complex templates with many includes or heavy computations will increase this time.',
+    postRenderTotalMs:
+      'Aggregate time spent on each rendered page between its templates and the file write: injecting SEO, search and bundle tags, registering the images the HTML uses, and hashing the data the page read for the cache.',
     fileWriteTotalMs:
       'Aggregate time spent writing rendered HTML files to the dist directory. Slow disk I/O or antivirus scanning can increase this time significantly.',
     cacheEntryTotalMs:
@@ -185,7 +191,9 @@ const PHASE_EXECUTION_ORDER: readonly string[] = [
   'searchIndexWriteMs',
   'shouldRebuildTotalMs',
   'hookBeforeRenderTotalMs',
+  'markdownRenderTotalMs',
   'renderPageTotalMs',
+  'postRenderTotalMs',
   'fileWriteTotalMs',
   'cacheEntryTotalMs',
   'hookAfterRenderTotalMs',
@@ -210,7 +218,9 @@ const PAGE_RENDERING_STEPS: ReadonlySet<string> = new Set([
   'searchIndexWriteMs',
   'shouldRebuildTotalMs',
   'hookBeforeRenderTotalMs',
+  'markdownRenderTotalMs',
   'renderPageTotalMs',
+  'postRenderTotalMs',
   'fileWriteTotalMs',
   'cacheEntryTotalMs',
   'hookAfterRenderTotalMs',
@@ -1165,7 +1175,6 @@ const REPORT_STYLES = `
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
-      font-size: 0.75rem;
       vertical-align: middle;
     }
 
