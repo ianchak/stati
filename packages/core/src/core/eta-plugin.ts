@@ -75,7 +75,11 @@ export function createStatiEtaPlugin(): EtaPlugin {
             `${name} = (...__statiArgs) => this.${BLOCKED_CALL_HANDLER}(${JSON.stringify(name)}, __statiArgs, options && options.filepath);`,
         )
         .join(' ');
-      return fnString.replace(BODY_START, `${replacements} {`);
+      // With debug on, Eta marks each tag's line with `__eta.line=N` and no semicolon, so a tag
+      // that starts with `(`, `[` or a template literal would continue that statement
+      return fnString
+        .replace(BODY_START, `${replacements} {`)
+        .replace(/__eta\.line=(\d+)\n/g, '__eta.line=$1;\n');
     },
   };
 }

@@ -57,6 +57,17 @@ describe('Stati Eta plugin', () => {
     }
   });
 
+  it('renders tags that start with a parenthesis or a bracket with debug on', () => {
+    // Each tag ends its statement; only the line markers Eta adds between them could continue one
+    const template =
+      '<% (stati.tags ?? []).forEach((tag) => { %><%= tag %>,<% }); %>' +
+      '<% [1, 2].forEach((n) => { %><%= n %><% }); %>' +
+      '<% `${stati.tags.length}`.length && (stati.count = 1) %><%= stati.count %>';
+    for (const debug of [false, true]) {
+      expect(engine(debug).renderString(template, { tags: ['a', 'b'] })).toBe('a,b,121');
+    }
+  });
+
   it('fails when the compiled template no longer has the anchor', () => {
     const plugin = createStatiEtaPlugin();
     expect(() => plugin.processFnString!('let include = () => 1;', {} as never)).toThrow(
