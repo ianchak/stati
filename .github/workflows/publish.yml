@@ -131,6 +131,17 @@ jobs:
           }
           echo "Version bump and changelogs created"
 
+      # The packages were built before the version bump, and create-stati copies the starters
+      # into its build. Build again so it ships them with their new @stati/* ranges.
+      - name: Rebuild packages with the new versions
+        if: steps.check-changesets.outputs.has-changesets == 'true' || steps.auto-generate.outputs.generated == 'true'
+        run: |
+          set -e
+          npm run build || {
+            echo "Build failed!"
+            exit 1
+          }
+
       - name: Commit version changes
         if: steps.check-changesets.outputs.has-changesets == 'true' || steps.auto-generate.outputs.generated == 'true'
         run: |
