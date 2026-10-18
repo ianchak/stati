@@ -9,7 +9,7 @@ import {
 import { resolveLayoutDependency } from './deps.js';
 import { computeEffectiveTTL, computeNextRebuildAt, isPageFrozen } from './ttl.js';
 import { validatePageISGOverrides, extractNumericOverride } from './validation.js';
-import { getFrontMatterDate, resolveSrcDir } from '../utils/index.js';
+import { getFrontMatterDate, normalizePathForComparison, resolveSrcDir } from '../utils/index.js';
 import { TemplateIndex, isTemplateLookupList } from '../template-index.js';
 
 /**
@@ -246,8 +246,14 @@ export async function shouldRebuildPage(
     // The page can switch layouts without a template file changing, for example when a
     // collection gains its first child page. deps[0] is the layout. A page without a layout
     // renders Stati's fallback HTML; it always rebuilds, so a new layout.eta takes effect.
+    // Compared in normalized form: the drive letter's case follows the shell that ran the build.
     const layout = resolveLayoutDependency(page, allPages, index);
-    if (layout === null || layout !== entry.deps[0]) {
+    const recordedLayout = entry.deps[0];
+    if (
+      layout === null ||
+      recordedLayout === undefined ||
+      normalizePathForComparison(layout) !== normalizePathForComparison(recordedLayout)
+    ) {
       return true;
     }
 

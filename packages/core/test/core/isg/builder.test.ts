@@ -203,6 +203,15 @@ describe('ISG Build Integration', () => {
       expect(mockResolveLayoutDependency).toHaveBeenCalledWith(mockPage, allPages, index);
     });
 
+    it('should keep a page whose layout path differs only in the case of the drive letter', async () => {
+      // A build from another shell can see the working directory as c:\ instead of C:\
+      mockResolveLayoutDependency.mockReturnValue('C:/site/layout.eta');
+
+      expect(await check(recordedEntry({ deps: ['c:/site/layout.eta', testHeaderPath] }))).toBe(
+        false,
+      );
+    });
+
     it('should always rebuild a page that has no layout, so a new one takes effect', async () => {
       mockResolveLayoutDependency.mockReturnValue(null);
 
