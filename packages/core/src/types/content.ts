@@ -508,7 +508,7 @@ export interface TemplateLayoutFunction {
    * @returns An empty string, so the call can be printed
    */
   (name: string, props?: Record<string, unknown> | null): string;
-  /** Whether `name` resolves to a template for this page; the same function as `stati.include.has` */
+  /** Whether `name` resolves to a template for this page; the same check as `stati.include.has` */
   has(name: string): boolean;
 }
 

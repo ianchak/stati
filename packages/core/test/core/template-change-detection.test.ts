@@ -24,7 +24,7 @@ describe('Template Change Detection', () => {
 
   describe('Path normalization in cache manifest', () => {
     it('should match template paths regardless of path format', async () => {
-      // Create a cache manifest with absolute paths (as stored by trackTemplateDependencies)
+      // Create a cache manifest with absolute paths, as renders record their templates
       const absoluteTemplatePath = join(testDir, 'site', '_partials', 'header.eta');
 
       const manifest: CacheManifest = {
