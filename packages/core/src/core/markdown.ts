@@ -1,5 +1,5 @@
-import MarkdownIt from 'markdown-it';
-import type Token from 'markdown-it/lib/token.mjs';
+// markdown-it's default export is a value only; the instance type is its named `MarkdownIt` export
+import MarkdownItConstructor, { type MarkdownIt, type Token } from 'markdown-it';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import path from 'node:path';
@@ -62,7 +62,7 @@ export async function createMarkdownProcessor(config: StatiConfig): Promise<Mark
     return cachedMarkdownProcessor;
   }
 
-  const md = new MarkdownIt({
+  const md = new MarkdownItConstructor({
     html: true,
     linkify: true,
     typographer: true,

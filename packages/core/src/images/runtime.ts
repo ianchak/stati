@@ -7,7 +7,7 @@
 import { createHash } from 'node:crypto';
 import { dirname, join, posix, relative, resolve } from 'node:path';
 import { URL } from 'node:url';
-import type Token from 'markdown-it/lib/token.mjs';
+import type { Token } from 'markdown-it';
 import {
   copyFile,
   createTemplateError,
@@ -249,12 +249,13 @@ export class PageImages {
    *   is left as authored
    */
   renderMarkdownImage(token: Token, alt: string): { html: string } | { src: string } {
-    const attributes = (token.attrs ?? []).filter(
-      ([name]) => !['src', 'alt', 'title', 'width', 'height'].includes(name.toLowerCase()),
-    );
-    return this.renderImage(token.attrGet('src') ?? '', {
+    // markdown-it types attribute values as string | number; Stati handles them as text
+    const attributes = (token.attrs ?? [])
+      .filter(([name]) => !['src', 'alt', 'title', 'width', 'height'].includes(name.toLowerCase()))
+      .map(([name, value]): [string, string] => [name, String(value)]);
+    return this.renderImage(token.attrGet('src')?.toString() ?? '', {
       alt,
-      title: token.attrGet('title') ?? undefined,
+      title: token.attrGet('title')?.toString(),
       attributes,
       width: token.attrGet('width') ?? undefined,
       height: token.attrGet('height') ?? undefined,

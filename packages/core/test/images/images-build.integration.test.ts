@@ -258,6 +258,28 @@ describe('image pipeline in builds', () => {
       expect(await read('dist/about.html')).toContain('<img src="/images/hero.png" alt="Raw">');
     });
 
+    it('keeps attributes that plugins set on a Markdown image, numbers included', async () => {
+      config.markdown = {
+        configure: (md) => {
+          md.core.ruler.push('test_image_attributes', (state) => {
+            for (const token of state.tokens) {
+              for (const child of token.children ?? []) {
+                if (child.type !== 'image') continue;
+                child.attrSet('title', 2);
+                child.attrSet('class', 'shot');
+                child.attrSet('data-index', 1);
+              }
+            }
+          });
+        },
+      };
+      await runBuild();
+
+      expect(await read('dist/index.html')).toContain(
+        '<img src="/images/hero.png" alt="Hero" title="2" class="shot" data-index="1" width="1600" height="900" loading="eager" fetchpriority="high" decoding="async">',
+      );
+    });
+
     it('rebuilds only the pages that show a replaced image', async () => {
       expect(await runBuild()).toMatchObject({ cacheMisses: 3 });
       expect(await runBuild()).toMatchObject({ cacheHits: 3, cacheMisses: 0 });

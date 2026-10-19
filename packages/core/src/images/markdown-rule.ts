@@ -3,8 +3,7 @@
  * @module images/markdown-rule
  */
 
-import type MarkdownIt from 'markdown-it';
-import type Token from 'markdown-it/lib/token.mjs';
+import type { MarkdownIt, Token } from 'markdown-it';
 import type { PageImages } from './runtime.js';
 
 /** Key of the page's image state in the markdown-it `env`. */

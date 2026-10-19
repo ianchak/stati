@@ -84,7 +84,7 @@ import type {
   StatiAssets,
   TocEntry,
 } from '../types/index.js';
-import type MarkdownIt from 'markdown-it';
+import type { MarkdownIt } from 'markdown-it';
 import { ImageRuntime } from '../images/runtime.js';
 import type { SettleResult } from '../images/runtime.js';
 import type { RenderedAssets } from './isg/index.js';

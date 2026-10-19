@@ -1,4 +1,4 @@
-import type MarkdownIt from 'markdown-it';
+import type { MarkdownIt } from 'markdown-it';
 import type { SitemapConfig } from './sitemap.js';
 import type { AuthorConfig } from './content.js';
 import type { SearchConfig } from './search.js';

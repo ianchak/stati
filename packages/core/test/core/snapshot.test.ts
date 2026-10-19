@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type MarkdownIt from 'markdown-it';
+import type { MarkdownIt } from 'markdown-it';
 import type { Eta } from 'eta';
 import { build } from '../../src/core/build.js';
 import { loadContent } from '../../src/core/content.js';

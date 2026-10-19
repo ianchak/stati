@@ -144,6 +144,30 @@ describe('markdown.ts', () => {
       expect(result.html).toContain('<a href="https://example.com">https://example.com</a>');
     });
 
+    it('should leave domains without a scheme and file names as text', async () => {
+      const md = await createMarkdownProcessor(baseConfig);
+      const content = 'See www.example.com, README.md and config.sh for details.';
+
+      const result = renderMarkdown(content, md);
+
+      expect(result.html).not.toContain('<a');
+    });
+
+    it('should linkify domains without a scheme when configure turns fuzzy links on', async () => {
+      const md = await createMarkdownProcessor({
+        ...baseConfig,
+        markdown: {
+          configure: (md) => {
+            md.linkify.set({ fuzzyLink: true });
+          },
+        },
+      });
+
+      const result = renderMarkdown('Visit www.example.com today.', md);
+
+      expect(result.html).toContain('<a href="http://www.example.com">www.example.com</a>');
+    });
+
     it('should handle empty content', async () => {
       const md = await createMarkdownProcessor(baseConfig);
       const content = '';
