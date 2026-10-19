@@ -100,6 +100,10 @@ production build after deleting or renaming routes.
 ## Markdown behavior
 
 Default MarkdownIt options enable raw HTML, linkification, and typography.
+Core 2.0 uses markdown-it 15: linkify turns URLs with a scheme and email
+addresses into links, but not domains without a scheme (`www.example.com`) or
+file names that look like domains (`README.md`), which 1.x linked.
+`md.linkify.set({ fuzzyLink: true })` in `markdown.configure` restores that.
 Raw HTML is trusted author input, not sanitization of arbitrary user content.
 Plugins are explicitly configured/installed, not assumed built-ins.
 

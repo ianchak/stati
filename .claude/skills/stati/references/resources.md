@@ -19,6 +19,8 @@ Verified baseline: core 1.24.1, Eta 3.5.0, Node 22.22.0; source commit
 `64df3241ad897fe479d9b8fb7723752d25fe9f07`; live docs checked 2026-10-10.
 Collections, pagination, generated pages, ISG read tracking and output
 pruning were verified against the core 1.29 source and tests on 2026-10-15.
+markdown-it 15 linkify, plugin loading and markdown-it-prism 3 and 4 output
+were compared with markdown-it 14 on the core 2.0 branch on 2026-10-19.
 Package versions may differ across workspaces/releases. Revalidate after upgrades.
 
 Official entry points:

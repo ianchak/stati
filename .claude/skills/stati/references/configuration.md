@@ -105,6 +105,17 @@ The runtime tries the site first, then core dependencies. A missing plugin can
 warn and continue; assert its expected rendered behavior instead of trusting the
 exit status. `configure` runs after plugin loading.
 
+Core 2.0 runs markdown-it 15, which removed the `markdown-it/lib/*` imports and
+`md.utils.assign`, `has` and `isString`; a plugin that uses them fails, and a
+plugin that fails to load is only a warning. markdown-it ships its own types, so
+`md` in `configure` is typed without `@types/markdown-it`, and the type is the
+named export: `import type { MarkdownIt } from 'markdown-it'`. markdown-it-prism
+3 and 4 both work on the instance Stati passes them. From 3.0.1 they declare
+markdown-it `<15`, so npm installs a second markdown-it 14 beside Stati's,
+without a warning. Version 4 puts the `language-*` class on `<code>` only, so
+Prism theme rules for `pre[class*="language-"]` also need
+`pre:has(> code[class*="language-"])`.
+
 `stati.helpers.uppercase(value)` calls a registered helper (core 2.0+; 1.x used
 `eta.filters` and `stati.uppercase()`); pipes are not supported. `helpers` must be
 an object of functions, checked when the config loads, and an `eta` key is
