@@ -127,7 +127,15 @@ See [Sharing a shell](/core-concepts/templates#sharing-a-shell).
 
 ## Optional: move templates out of `_` folders
 
-Templates no longer need underscore folders: any `.eta` file under `site/` can be included, and only Markdown files become pages. The starters keep theirs in `site/partials/`. Content discovery still skips `_` folders, so keep using them for drafts or data you don't want published. If Tailwind scans your templates, make sure its `content` globs cover the folders you move them to.
+Templates no longer need underscore folders: any `.eta` file under `site/` can be included, and only Markdown files become pages. The starters keep theirs in `site/partials/`. Content discovery still skips `_` folders, so keep using them for drafts or data you don't want published. With Tailwind CSS 3, make sure the `content` globs in `tailwind.config.js` cover the folders you move templates to. Tailwind CSS 4 finds them by itself.
+
+## Optional: move to Tailwind CSS 4
+
+Stati 2 works with Tailwind CSS 3 and 4, so a Tailwind 3 site keeps working as it is, and `stati dev --tailwind-input` runs either version. Sites scaffolded with Tailwind now get version 4. To move an existing site:
+
+1. Run Tailwind's upgrade tool, `npx @tailwindcss/upgrade`. It turns `tailwind.config.js` into CSS in your stylesheet, renames the classes that changed in your templates, and installs `tailwindcss` 4 and `@tailwindcss/cli`, which now provides the `tailwindcss` command.
+2. Add an `@source` rule for Stati's class inventory below `@import 'tailwindcss';`, with a path relative to the stylesheet: `@source '../.stati/tailwind-classes.html';`. Tailwind CSS 4 finds your templates by itself but skips gitignored folders such as `.stati/`, and the upgrade tool drops the file from the old `content` list, so without the rule the classes built with `stati.propValue()` go missing from the CSS.
+3. Build the site and compare it with the Tailwind 3 version. Tailwind's [upgrade guide](https://tailwindcss.com/docs/upgrade-guide) lists the default styles that changed, such as the default border color and the cursor on buttons.
 
 ## Other changes
 

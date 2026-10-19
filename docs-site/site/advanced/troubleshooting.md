@@ -272,15 +272,16 @@ hooks: {
 ## Tailwind CSS not compiling in development
 
 **Cause:**
-Tailwind watcher may not be started or is misconfigured.
+Tailwind watcher may not be started, may have stopped, or is misconfigured.
 
 **Solution:**
 
-1. Ensure the `tailwindcss` command is installed locally: `npm install -D tailwindcss@3`, the version the scaffolder installs. Tailwind 4 moved the command to `@tailwindcss/cli`, so with Tailwind 4 install that package too
+1. Ensure the Tailwind command is installed locally. Tailwind CSS 4, the version the scaffolder installs, ships it in `@tailwindcss/cli`: `npm install -D tailwindcss @tailwindcss/cli`. With Tailwind CSS 3, `npm install -D tailwindcss@3` includes it
 2. Use both flags: `stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css`
-3. Verify `tailwind.config.js` exists and has correct content paths
+3. Check where Tailwind looks for classes: the `@source` rules in your stylesheet with Tailwind CSS 4, or the `content` paths in `tailwind.config.js` with Tailwind CSS 3
 4. Add `--tailwind-verbose` to see Tailwind output for debugging
 5. Check that the input file path is correct
+6. If the dev server reported that the Tailwind CSS watcher stopped or exited, restart `stati dev`. Tailwind CSS 4 exits when the stylesheet has an error at startup, so fix the error first
 
 ---
 
@@ -297,7 +298,7 @@ Tailwind finds class names by scanning your files, so a class assembled at rende
    class="<%= stati.propValue('base-class', `bg-${color}-500`, isActive && 'active') %>"
    ```
 
-2. Add `./.stati/tailwind-classes.html` to the `content` array in `tailwind.config.js` (projects scaffolded with Tailwind already have it)
+2. Make sure Tailwind scans `.stati/tailwind-classes.html` (projects scaffolded with Tailwind already do). With Tailwind CSS 4, add `@source '../.stati/tailwind-classes.html';` to `src/styles.css`: Tailwind skips gitignored folders such as `.stati/` unless an `@source` rule names them. With Tailwind CSS 3, add `./.stati/tailwind-classes.html` to the `content` array in `tailwind.config.js`
 3. See [Tailwind CSS integration](/core-concepts/static-assets#tailwind-css-integration) and [Dynamic attribute values](/core-concepts/templates#dynamic-attribute-values) for details
 
 ---

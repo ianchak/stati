@@ -195,8 +195,9 @@ Choose your preferred styling approach:
 
 ### Tailwind CSS
 
-- Generates `tailwind.config.js` with content paths for `site/**/*.{md,eta,html}` and `.stati/tailwind-classes.html`
-- Creates source stylesheet at `src/styles.css` compiled directly to `dist/styles.css`; for the blank template it rebuilds the starter's look with `@apply`, Tailwind's slate and blue palette and `dark:` variants, and for the blog and docs templates it keeps the template's own stylesheet below the Tailwind directives
+- Installs Tailwind CSS 4: `tailwindcss` and its command line tool, `@tailwindcss/cli`
+- Creates source stylesheet at `src/styles.css` compiled directly to `dist/styles.css`. It imports Tailwind and adds an `@source` rule for `.stati/tailwind-classes.html`, the classes Stati records from `stati.propValue()`. Tailwind finds the templates itself, so there is no `tailwind.config.js`
+- For the blank template the stylesheet rebuilds the starter's look with `@apply`, Tailwind's slate and blue palette and `dark:` variants. For the blog and docs templates it keeps the template's own stylesheet in the `components` layer, where it overrides Tailwind's base styles and utility classes in your templates override it
 - Scripts added: `build:css`
 - Modified scripts:
   - `dev`: Uses Stati's built-in Tailwind integration (single process)
@@ -274,15 +275,14 @@ my-site/
 ├── site/
 │   └── ...
 ├── src/
-│   └── styles.css        # Tailwind source file
+│   └── styles.css        # Tailwind source file and configuration
 ├── public/
 │   └── favicon.svg       # Site icon
-├── tailwind.config.js    # Tailwind configuration
 ├── stati.config.ts
 └── package.json          # Includes Tailwind scripts
 ```
 
-With the blog and docs templates, `public/styles.css` is moved into `src/styles.css`, below the Tailwind directives. The blank template gets Tailwind starter styles there instead. Either way `public/styles.css` is removed, because the build would copy it over the compiled `dist/styles.css`.
+With the blog and docs templates, `public/styles.css` is moved into `src/styles.css`, below the Tailwind import. The blank template gets Tailwind starter styles there instead. Either way `public/styles.css` is removed, because the build would copy it over the compiled `dist/styles.css`.
 
 The `typecheck` script is added to `package.json` for validating your TypeScript code.
 

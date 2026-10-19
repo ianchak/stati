@@ -76,14 +76,16 @@ stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css
 
 **How it works:**
 
-- Stati spawns a Tailwind CLI process in watch mode using the locally installed `tailwindcss` executable from `node_modules/.bin/`.
+- Stati spawns a Tailwind CLI process in watch mode using the locally installed `tailwindcss` executable from `node_modules/.bin/`. Tailwind CSS 4 and 3 both work.
 - By default, only errors are shown (quiet mode) to keep the console clean.
 - Use `--tailwind-verbose` to see all Tailwind output including "done in Xms" messages.
-- When you stop the dev server (`Ctrl+C`), the Tailwind watcher is automatically stopped as well.
+- The watcher runs for as long as the dev server does, including when the dev server runs in a background or CI shell without a terminal.
+- When you stop the dev server (`Ctrl+C`), the Tailwind watcher is automatically stopped as well. It also exits when the dev server process is killed, so no watcher is left running.
+- If the watcher stops on its own, for example because Tailwind CSS 4 found an error in the stylesheet at startup, the dev server says so. Fix the error and restart `stati dev`.
 
 **Requirements:**
 
-- You must have the `tailwindcss` command installed locally in your project: `npm install -D tailwindcss@3`, the version the scaffolder installs. Tailwind 4 moved the command to `@tailwindcss/cli`, so with Tailwind 4 install that package too.
+- You must have the `tailwindcss` command installed locally in your project. Tailwind CSS 4, the version the scaffolder installs, ships it in `@tailwindcss/cli`: `npm install -D tailwindcss @tailwindcss/cli`. With Tailwind CSS 3, `npm install -D tailwindcss@3` includes it.
 - Stati will check for the installation and show an error if it's not found.
 
 **Example with verbose output:**
