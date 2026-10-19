@@ -90,11 +90,15 @@ A `layout` in front matter is now looked up like any other template name: from t
 
 A `layout` value that names no template now produces a warning with similar names, instead of falling back silently.
 
-## Check your Markdown plugins
+## Check your Markdown
 
-Stati 2 renders Markdown with markdown-it 15. Most plugins written for markdown-it 14 keep working, but markdown-it 15 removed the `markdown-it/lib/…` imports and the `md.utils.assign()`, `md.utils.has()` and `md.utils.isString()` helpers, so a plugin that uses them breaks. A plugin that fails to load only logs "Failed to load markdown plugin" and the build continues without it, so read the build output and check a page that uses each plugin. markdown-it-prism works in version 3 and 4; version 4 moves the `language-*` class off `<pre>` (see [Syntax highlighting](/configuration/markdown#syntax-highlighting)).
+Stati 2 renders Markdown with markdown-it 15.
 
-markdown-it now ships its own TypeScript types, and the `md` that `markdown.configure` receives is typed with them, so you can remove `@types/markdown-it`. If your own code imports the type, write `import type { MarkdownIt } from 'markdown-it'`; the default import is no longer a type.
+**Plugins.** Most plugins written for markdown-it 14 keep working, but markdown-it 15 removed the `markdown-it/lib/…` imports and the `md.utils.assign()`, `md.utils.has()` and `md.utils.isString()` helpers, so a plugin that uses them breaks. A plugin in `markdown.plugins` that fails to load only logs "Failed to load markdown plugin" and the build continues without it, so read the build output and check a page that uses each plugin. markdown-it-prism works in version 3 and 4; version 4 moves the `language-*` class off `<pre>` (see [Syntax highlighting](/configuration/markdown#syntax-highlighting)).
+
+**Links.** URLs with a scheme still become links, but domains without one, such as `www.example.com`, no longer do, and neither do file names such as `README.md`. Text shaped like an email address becomes a link whatever its domain, so a package version such as `react@18.3.1` turns into a `mailto:` link unless it is in backticks. A URL with a user name, such as `https://git@github.com/o/r.git`, is linked only up to the `@`. [Links](/configuration/markdown#links) shows how to change each of these.
+
+**Types.** markdown-it now ships its own TypeScript types, and the `md` that `markdown.configure` receives is typed with them, so `@types/markdown-it` can go. If your code needs the type, import it with `import type { MarkdownIt } from '@stati/core'`: importing it from `markdown-it` can pick up the older copy that a plugin such as markdown-it-prism installs. A typed `md` can also bring up errors that went unnoticed before, such as `md.use(prism)` failing markdown-it-prism's own types, which require every option. `stati build` doesn't type-check the config, so builds are unaffected, and loading the plugin by name in `markdown.plugins` avoids the error.
 
 ## Optional: share one page shell
 
@@ -136,4 +140,3 @@ Templates no longer need underscore folders: any `.eta` file under `site/` can b
 - **Eta 4.** Stati now uses Eta 4. Templates need no changes for it.
 - **Front matter follows YAML 1.2.** A few unquoted values read differently: `time: 10:30` is the text `10:30` instead of the number 630, `0755` is the number 755 instead of 493, and `1_000` is text. Dates, booleans and everything else read as before. Front matter that is not valid YAML, or that names another language after `---` (such as `---js`), stops the build with an error naming the file and the line.
 - **Content files are read in path order,** so pages that sort equally, such as undated pages in the RSS feed and the sitemap, keep the same order on every build. It can differ from the order a Stati 1 build happened to use.
-- **Domains without a scheme are no longer links.** Markdown still turns `https://example.com` and email addresses into links, but not `www.example.com` or `example.com`, so file names such as `README.md` stop becoming links too. Write the scheme, or call `md.linkify.set({ fuzzyLink: true })` in `markdown.configure` to link them again, file names included.

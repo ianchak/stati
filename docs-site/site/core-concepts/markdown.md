@@ -155,7 +155,7 @@ Task list syntax (`- [x] Done`) is **not** supported out of the box: markdown-it
 
 ### Auto-linking
 
-URLs with a scheme (`https://stati.build`) are converted to links. Bare domains and email addresses (`example.com`, `hello@example.com`) are linked too, but only when their top-level domain is a common one such as `.com`, `.org` or `.net`; `stati.build` or `hello@stati.build` stay plain text. Write a Markdown link when in doubt:
+URLs with a scheme (`https://stati.build`) are converted to links, and so is text shaped like an email address (`hello@stati.build`), whatever its domain. Domains without a scheme, such as `stati.build` or `www.example.com`, stay plain text. Write package versions such as `react@18.3.1` in backticks, or they become `mailto:` links; [Links](/configuration/markdown#links) lists the options. Write a Markdown link when in doubt:
 
 ```markdown
 Visit https://stati.build for more information.

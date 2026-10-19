@@ -71,10 +71,34 @@ See [Table of Contents (TOC)](#table-of-contents-toc) for template usage example
 Stati creates markdown-it with these settings:
 
 - **HTML enabled**: HTML tags are allowed in markdown source
-- **Linkify enabled**: URLs with a scheme, such as `https://example.com`, and email addresses become links. A domain without a scheme, such as `www.example.com`, stays text; `md.linkify.set({ fuzzyLink: true })` in `configure` links it, and file names such as `README.md` too
+- **Linkify enabled**: URLs and email addresses in the text become links (see [Links](#links))
 - **Typographer enabled**: Smart quotes and typography replacements
 
 To change them, call `md.set()` in `configure`, for example `md.set({ html: false })` when your Markdown comes from untrusted authors.
+
+### Links
+
+Linkify follows markdown-it 15:
+
+- URLs with a scheme, such as `https://example.com`, become links. A URL with a user name, such as `https://git@github.com/o/r.git`, is linked only up to the `@`.
+- Domains without a scheme, such as `www.example.com`, stay text, and so do file names such as `README.md`.
+- Text shaped like an email address becomes a `mailto:` link whatever its domain, package versions such as `react@18.3.1` included, so put those in backticks.
+
+Change these with `md.linkify.set()` in `configure`:
+
+```javascript
+export default defineConfig({
+  markdown: {
+    configure: (md) => {
+      md.linkify.set({
+        fuzzyLink: true, // link www.example.com, and README.md with it
+        fuzzyEmail: false, // stop linking email addresses
+        urlAuth: true, // link https://git@github.com/o/r.git in full
+      });
+    },
+  },
+});
+```
 
 ## Markdown plugins
 

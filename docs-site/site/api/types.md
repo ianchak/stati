@@ -782,6 +782,8 @@ import type {
   AgingRule,
   BuildStats,
   BundleConfig,
+  // The markdown-it instance that markdown.configure receives
+  MarkdownIt,
   // Collections, pagination and generated pages
   CollectionData,
   CollectionsConfig,
