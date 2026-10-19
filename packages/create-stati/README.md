@@ -232,10 +232,9 @@ my-site/
 ├── site/
 │   └── ...
 ├── src/
-│   └── styles.css        # Tailwind source file
+│   └── styles.css        # Tailwind source file and configuration
 ├── public/
 │   └── favicon.svg       # Site icon
-├── tailwind.config.js    # Tailwind configuration
 ├── stati.config.ts
 └── package.json          # Includes Tailwind scripts
 ```
@@ -289,7 +288,8 @@ Choose the styling approach that fits your workflow.
 - Utility-first framework
 - Rapid prototyping
 - Built-in design system
-- Automatic purging for production
+- Generates only the classes your templates use
+- Tailwind CSS 4 (`tailwindcss` and `@tailwindcss/cli`), configured in the stylesheet: there is no `tailwind.config.js`
 - Styles location: `src/styles.css` → compiles to `dist/styles.css`
 
 ---

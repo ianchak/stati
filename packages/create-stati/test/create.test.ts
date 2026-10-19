@@ -155,8 +155,8 @@ describe('create-stati scaffolding', () => {
 
       const result = await createSite(options);
 
-      // Verify Tailwind-specific files and configuration
-      await expect(access(join(result.targetDir, 'tailwind.config.js'))).resolves.not.toThrow();
+      // Tailwind CSS 4 is configured in the stylesheet
+      await expect(access(join(result.targetDir, 'tailwind.config.js'))).rejects.toThrow();
 
       // Verify package.json has Tailwind dependencies
       const packageJson = JSON.parse(
@@ -164,21 +164,16 @@ describe('create-stati scaffolding', () => {
       );
       expect(packageJson.name).toBe('test-tailwind');
       expect(packageJson.devDependencies).toHaveProperty('tailwindcss');
-      expect(packageJson.devDependencies).toHaveProperty('autoprefixer');
-      expect(packageJson.devDependencies).toHaveProperty('postcss');
+      expect(packageJson.devDependencies).toHaveProperty('@tailwindcss/cli');
+      expect(packageJson.devDependencies).not.toHaveProperty('autoprefixer');
+      expect(packageJson.devDependencies).not.toHaveProperty('postcss');
       expect(packageJson.devDependencies).not.toHaveProperty('concurrently');
 
-      // Verify Tailwind CSS content
+      // Verify Tailwind CSS content, including the inventory file Tailwind must scan
       const cssContent = await readFile(join(result.targetDir, 'src', 'styles.css'), 'utf-8');
-      expect(cssContent).toContain('@tailwind base');
-      expect(cssContent).toContain('@tailwind components');
-      expect(cssContent).toContain('@tailwind utilities');
+      expect(cssContent).toContain("@import 'tailwindcss';");
+      expect(cssContent).toContain("@source '../.stati/tailwind-classes.html';");
       expect(cssContent).toContain('@layer components');
-
-      // Verify Tailwind config includes both site files and inventory file
-      const configContent = await readFile(join(result.targetDir, 'tailwind.config.js'), 'utf-8');
-      expect(configContent).toContain('./site/**/*.{md,eta,html}');
-      expect(configContent).toContain('./.stati/tailwind-classes.html');
     });
 
     it('should create a project with TypeScript enabled', async () => {
@@ -550,7 +545,8 @@ describe('create-stati scaffolding', () => {
       });
 
       const css = await readFile(join(result.targetDir, 'src', 'styles.css'), 'utf-8');
-      expect(css).toContain('@tailwind base;');
+      expect(css).toContain("@import 'tailwindcss';");
+      expect(css).toContain('@layer components {\n');
       expect(css).toContain("font-family: 'Young Serif'");
       await expect(access(join(result.targetDir, 'public', 'styles.css'))).rejects.toThrow();
     });
@@ -696,7 +692,8 @@ describe('create-stati scaffolding', () => {
       });
 
       const css = await readFile(join(result.targetDir, 'src', 'styles.css'), 'utf-8');
-      expect(css).toContain('@tailwind base;');
+      expect(css).toContain("@import 'tailwindcss';");
+      expect(css).toContain('@layer components {\n');
       expect(css).toContain("font-family: 'Inter'");
       await expect(access(join(result.targetDir, 'public', 'styles.css'))).rejects.toThrow();
       await expect(

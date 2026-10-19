@@ -12,31 +12,31 @@ describe('tailwind-processor', () => {
       expect(typeof result.scripts).toBe('object');
     });
 
-    it('should include tailwind.config.js in files', () => {
+    it('should configure Tailwind CSS 4 in the stylesheet, without tailwind.config.js', () => {
       const result = setupTailwind();
 
-      expect(result.files.has('tailwind.config.js')).toBe(true);
-
-      const configContent = result.files.get('tailwind.config.js');
-      expect(configContent).toContain('module.exports');
-      expect(configContent).toContain('./site/**/*.{md,eta,html}');
-      expect(configContent).toContain('./.stati/tailwind-classes.html');
-      expect(configContent).toContain('theme:');
-      expect(configContent).toContain('plugins:');
+      expect(result.files.has('tailwind.config.js')).toBe(false);
+      expect([...result.files.keys()]).toEqual(['src/styles.css']);
     });
 
-    it('should include src/styles.css with Tailwind directives in files', () => {
+    it('should include src/styles.css with the Tailwind import in files', () => {
       const result = setupTailwind();
 
       expect(result.files.has('src/styles.css')).toBe(true);
 
       const cssContent = result.files.get('src/styles.css');
-      expect(cssContent).toContain('@tailwind base;');
-      expect(cssContent).toContain('@tailwind components;');
-      expect(cssContent).toContain('@tailwind utilities;');
+      expect(cssContent).toMatch(/^@import 'tailwindcss';\n/);
+      expect(cssContent).not.toContain('@tailwind');
       expect(cssContent).toContain('@layer components');
       expect(cssContent).toContain('.logo');
       expect(cssContent).toContain('.skip-link');
+    });
+
+    it("should scan Stati's class inventory, which is in a gitignored folder", () => {
+      const cssContent = setupTailwind().files.get('src/styles.css');
+
+      // Relative to src/styles.css
+      expect(cssContent).toContain("@source '../.stati/tailwind-classes.html';");
     });
 
     it('should include correct devDependencies', () => {
@@ -44,9 +44,10 @@ describe('tailwind-processor', () => {
 
       expect(result.devDependencies).toEqual({
         tailwindcss: DEPENDENCY_VERSIONS.tailwindcss,
-        autoprefixer: DEPENDENCY_VERSIONS.autoprefixer,
-        postcss: DEPENDENCY_VERSIONS.postcss,
+        '@tailwindcss/cli': DEPENDENCY_VERSIONS['@tailwindcss/cli'],
       });
+      expect(DEPENDENCY_VERSIONS.tailwindcss).toMatch(/^\^4\./);
+      expect(DEPENDENCY_VERSIONS['@tailwindcss/cli']).toBe(DEPENDENCY_VERSIONS.tailwindcss);
     });
 
     it('should include correct scripts', () => {
@@ -77,14 +78,18 @@ describe('tailwind-processor', () => {
       expect(result1.scripts).toEqual(result2.scripts);
     });
 
-    it('should carry a template stylesheet over below the Tailwind directives', () => {
-      const templateCSS = ':root {\n  --accent: #0f7b6c;\n}\n';
+    it('should carry a template stylesheet over in the components layer', () => {
+      const templateCSS = ':root {\n  --accent: #0f7b6c;\n}\n\na {\n  color: var(--accent);\n}\n';
       const result = setupTailwind(templateCSS);
 
       const cssContent = result.files.get('src/styles.css');
-      expect(cssContent).toMatch(/^@tailwind base;\n@tailwind components;\n@tailwind utilities;/);
-      expect(cssContent).toContain(templateCSS);
-      expect(cssContent).not.toContain('@layer components');
+      expect(cssContent).toMatch(/^@import 'tailwindcss';\n/);
+      expect(cssContent).toContain("@source '../.stati/tailwind-classes.html';");
+      // Above Tailwind's preflight, below its utilities
+      expect(cssContent).toContain(
+        '@layer components {\n  :root {\n    --accent: #0f7b6c;\n  }\n\n  a {\n    color: var(--accent);\n  }\n}\n',
+      );
+      expect(cssContent).not.toContain('.skip-link');
       expect(result.filesToDelete).toEqual(['public/styles.css']);
     });
 
