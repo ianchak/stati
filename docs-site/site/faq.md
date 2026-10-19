@@ -22,7 +22,7 @@ seo:
         "name": "What templating engine does Stati use?"
         "acceptedAnswer":
           "@type": "Answer"
-          "text": "Stati uses Eta, a fast and lightweight templating engine. Eta supports layouts, partials, filters, and async rendering."
+          "text": "Stati uses Eta, a fast and lightweight templating engine. Stati adds shared layouts, includes with props and template helpers."
       - "@type": "Question"
         "name": "How does Stati handle SEO?"
         "acceptedAnswer":
@@ -58,16 +58,17 @@ Yes. ISG is enabled by default: Stati caches rendered pages between builds and r
 
 ## Can Stati generate tag pages and paginated listings?
 
-Yes. `paginate: 10` in a listing's front matter splits it into `/blog`, `/blog/page/2` and so on, and a file named `[tag].md` becomes one page per tag, such as `/blog/tags/css`. See [Collections and generated pages](/core-concepts/collections).
+Yes. `paginate: 10` in a listing's front matter splits it into `/blog`, `/blog/page/2` and so on, and a `[tag].md` file with `generate: { from: tags }` in its front matter becomes one page per tag, such as `/blog/tags/css`. See [Collections and generated pages](/core-concepts/collections).
 
 ## What templating engine does Stati use?
 
 Stati uses [Eta](https://eta.js.org/), a fast and lightweight templating engine. Features include:
 
 - Layout inheritance
-- Reusable partials
-- Custom filters
-- Async rendering support
+- Shared page shells
+- Includes with props and content
+- Template helpers
+- `await` in layouts and the shells they name
 
 ## How does Stati handle SEO?
 

@@ -32,7 +32,7 @@ function check(condition, message) {
 
 function checkHtml(html, label) {
   check(
-    !/Error rendering partial|Stati Development Error Overlay|Template Error/.test(html),
+    !/Error rendering|Stati Development Error|Template Error/.test(html),
     `${label}: no template error placeholders`,
   );
   check(html.includes('Skip to content'), `${label}: real layout, not fallback HTML`);
@@ -71,9 +71,9 @@ try {
   check(post.includes('href="#escaped-text-1"'), 'TOC uses extracted anchor');
   check(post.includes('Rendering &lt; &amp; &gt;'), 'current-page title escapes HTML');
   check(blog.includes('Rendering &lt; &amp; &gt;'), 'collection uses frontMatter title');
-  check(blog.includes('class="post-card"'), 'hyphenated basename callable component');
-  check(blog.includes('READ ARTICLE'), 'nested component has props and custom filter');
-  check(!home.includes('class="post-card"'), 'guarded pre-render does not leak cards');
+  check(blog.includes('class="post-card"'), 'included component receives props');
+  check(blog.includes('READ ARTICLE'), 'nested relative include calls a helper');
+  check(!home.includes('class="post-card"'), 'a component renders only where it is included');
   check(home.includes('href="https://example.com/"'), 'absolute canonical URL');
 
   const bundleMatch = home.match(/<script[^>]*src="(\/_assets\/main-[^"]+\.js)"[^>]*>/);
@@ -123,8 +123,7 @@ try {
   const cached = await build({ logger });
   check(
     cached.cacheHits > 0 && cached.cacheMisses === 0,
-    `second build reuses every cached page (hits ${cached.cacheHits}, misses ${cached.cacheMisses}; ` +
-      '@stati/core 1.24.3-1.29.0 re-render every page when search uses a hashed index name)',
+    `second build reuses every cached page (hits ${cached.cacheHits}, misses ${cached.cacheMisses})`,
   );
   check(
     (await readFile(join(out, 'blog.html'), 'utf8')) === blog,
@@ -133,12 +132,18 @@ try {
 
   const site = join(fixture, 'site');
   const layout = await readFile(join(site, 'layout.eta'), 'utf8');
-  const optionalPartial =
-    "<% if ('missing' in stati.partials) { %><%~ stati.partials.missing %><% } %>";
-  const emptyProps = "<%~ stati.partials['post-card']({}) %>";
+  // An include that renders only when its file exists, and a wrapper with props and children
+  const optionalInclude =
+    "<% if (stati.include.has('partials/missing')) { %><%~ stati.include('partials/missing') %><% } %>";
+  const wrapper =
+    "<%~ stati.include('partials/callout', { tone: 'note' }, '<p>CHILD CONTENT</p>') %>";
+  await writeFile(
+    join(site, 'partials', 'callout.eta'),
+    '<aside class="<%= `callout-${stati.props.tone}` %>"><%~ stati.body %></aside>',
+  );
   await writeFile(
     join(site, 'layout.eta'),
-    layout.replace('<body>', `<body>${optionalPartial}${emptyProps}`),
+    layout.replace('<body>', `<body>${optionalInclude}${wrapper}`),
   );
   await writeFile(join(site, 'special.eta'), layout.replace('<body>', '<body><p>NAMED LAYOUT</p>'));
   await writeFile(
@@ -149,17 +154,34 @@ try {
     join(site, 'custom.md'),
     '---\ntitle: Custom route\npermalink: /custom/\n---\nA custom route page.\n',
   );
+  // A shell that a layout names with stati.layout(), receiving its output as stati.body
+  await writeFile(
+    join(site, 'base.eta'),
+    [
+      '<!DOCTYPE html>',
+      '<html lang="en">',
+      '<head><title><%= stati.page.title %></title></head>',
+      '<body>',
+      '<a class="skip-link" href="#main">Skip to content</a>',
+      "<%~ stati.include('partials/header') %>",
+      '<div class="<%= `shell-${stati.props.section}` %>"><%~ stati.body %></div>',
+      '</body>',
+      '</html>',
+    ].join('\n'),
+  );
   await writeFile(
     join(site, 'blog', 'layout.eta'),
-    layout.replace('<body>', '<body><p>SECTION LAYOUT</p>'),
+    "<% stati.layout('base', { section: 'blog' }) %>" +
+      '<main id="main"><p>SECTION LAYOUT</p><%~ stati.content %></main>',
   );
   await writeFile(
     join(site, 'blog', 'index.eta'),
     layout.replace('<body>', '<body><p>INDEX LAYOUT</p>'),
   );
-  await mkdir(join(site, 'blog', '_partials'));
+  // A section's own header, at the same path as the root one
+  await mkdir(join(site, 'blog', 'partials'));
   await writeFile(
-    join(site, 'blog', '_partials', 'header.eta'),
+    join(site, 'blog', 'partials', 'header.eta'),
     '<header>SCOPED HEADER: <%= stati.page.title %></header>',
   );
   await build({ force: true, logger });
@@ -187,11 +209,18 @@ try {
     'aggregation selects nearer index layout before layout',
   );
   check(
-    scopedPost.includes('SCOPED HEADER') && scopedBlog.includes('SCOPED HEADER'),
-    'page-scoped partial overrides root partial',
+    /<div class="shell-blog"><main id="main"><p>SECTION LAYOUT<\/p>/.test(scopedPost),
+    'shell named with stati.layout() wraps the layout output and receives its props',
   );
-  check(!updatedHome.includes('SCOPED HEADER'), 'root page cannot see child-scoped partial');
-  check(!updatedHome.includes('class="post-card"'), 'empty props reuse guarded pre-render');
+  check(
+    scopedPost.includes('SCOPED HEADER') && scopedBlog.includes('SCOPED HEADER'),
+    'section template overrides the root template at the same path',
+  );
+  check(!updatedHome.includes('SCOPED HEADER'), 'root page cannot see the section override');
+  check(
+    updatedHome.includes('<aside class="callout-note"><p>CHILD CONTENT</p></aside>'),
+    'include passes props and children',
+  );
   check(named.includes('NAMED LAYOUT'), 'explicit source-root layout name resolves');
   check(custom.includes('A custom route page.'), 'trailing-slash permalink emits index.html');
   check(diagnostics.length === 0, `no warnings/errors: ${JSON.stringify(diagnostics)}`);

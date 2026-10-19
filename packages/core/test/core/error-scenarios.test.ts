@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type MarkdownIt from 'markdown-it';
+import type { MarkdownIt } from 'markdown-it';
 import type { Eta } from 'eta';
 import { build } from '../../src/core/build.js';
 import type { PageModel, StatiConfig } from '../../src/types/index.js';
@@ -289,7 +289,7 @@ describe('Error Scenario Tests', () => {
         expect.objectContaining({ bundlePaths: [] }), // assets parameter
         expect.any(Array), // toc parameter
         expect.objectContaining({ error: expect.any(Function) }), // logger parameter
-        { images: expect.anything() }, // page image state
+        { images: expect.anything(), templateIndex: expect.anything() }, // page image state, template index
       );
     });
   });
@@ -648,7 +648,7 @@ describe('Error Scenario Tests', () => {
         expect.objectContaining({ bundlePaths: [] }), // assets parameter
         expect.any(Array), // toc parameter
         expect.objectContaining({ error: expect.any(Function) }), // logger parameter
-        { images: expect.anything() }, // page image state
+        { images: expect.anything(), templateIndex: expect.anything() }, // page image state, template index
       );
     });
 

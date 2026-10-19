@@ -184,13 +184,14 @@ describe('Hash Utilities', () => {
       expect(hash1).not.toBe(hash2);
     });
 
-    it('should return null for empty file', async () => {
+    it('should hash an empty file, so a page that includes an empty template stays cached', async () => {
       const filePath = join(tempDir, 'empty.eta');
       await writeFile(filePath, '');
 
       const hash = await computeFileHash(filePath);
 
-      expect(hash).toBeNull();
+      expect(hash).toMatch(/^sha256-[a-f0-9]{64}$/);
+      expect(hash).not.toBe(await computeFileHash(join(tempDir, 'missing.eta')));
     });
 
     it('should handle file read errors gracefully', async () => {

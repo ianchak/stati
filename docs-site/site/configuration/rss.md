@@ -194,8 +194,8 @@ Control the order of items in your feed:
   sortBy: 'custom',
   sortFn: (a, b) => {
     // Custom sorting logic
-    const priorityA = a.frontMatter.priority || 0;
-    const priorityB = b.frontMatter.priority || 0;
+    const priorityA = Number(a.frontMatter.priority ?? 0);
+    const priorityB = Number(b.frontMatter.priority ?? 0);
     return priorityB - priorityA;  // Higher priority first
   },
 }
@@ -261,7 +261,7 @@ Use functions for custom transformations:
 
     // Build custom description
     description: (page) =>
-      page.frontMatter.excerpt || page.frontMatter.description || 'Read more...',
+      String(page.frontMatter.excerpt || page.frontMatter.description || 'Read more...'),
 
     // Custom author format
     author: (page) => {
@@ -322,7 +322,7 @@ Add custom XML elements to each item:
   title: 'My Feed',
   description: 'Latest posts',
   customItemElements: (page) => ({
-    'dc:creator': page.frontMatter.author,
+    'dc:creator': String(page.frontMatter.author ?? ''),
     'custom:readTime': `${page.frontMatter.readTime} min`,
   }),
 }
@@ -342,8 +342,8 @@ Add enclosures for podcasts or other media:
   enclosure: (page) => {
     if (page.frontMatter.audioUrl) {
       return {
-        url: page.frontMatter.audioUrl,
-        length: page.frontMatter.audioSize,  // Size in bytes
+        url: String(page.frontMatter.audioUrl),
+        length: Number(page.frontMatter.audioSize),  // Size in bytes
         type: 'audio/mpeg',
       };
     }
@@ -429,8 +429,8 @@ rss: {
         link: 'https://example.com/podcast',
       },
       enclosure: (page) => ({
-        url: page.frontMatter.audioUrl,
-        length: page.frontMatter.audioSize,
+        url: String(page.frontMatter.audioUrl),
+        length: Number(page.frontMatter.audioSize),
         type: 'audio/mpeg',
       }),
       itemMapping: {
@@ -452,6 +452,7 @@ Validation happens automatically when you run a production build:
 
 ```typescript
 export default defineConfig({
+  // site: { … },
   rss: {
     enabled: true,
     feeds: [
@@ -537,6 +538,7 @@ If your feed isn't being generated:
 3. **Check feed config**: Verify your feed has required fields (`filename`, `title`, `description`)
 4. **Check validation errors**: Look for validation errors in the build output
 5. **Check content patterns**: If using `contentPatterns`, ensure they match your content
+6. **Check maxItems**: `maxItems` must be 1 or more; `0` fails validation, and then no feed is written
 
 ### Empty feed
 
@@ -545,7 +547,6 @@ If your feed is empty:
 1. **Check content patterns**: Patterns are matched against absolute source file paths, so folder patterns need a leading `**/` (`'**/blog/**'`, not `'blog/**'`)
 2. **Check exclude patterns**: Ensure you're not excluding all content
 3. **Check filter function**: Verify your custom filter isn't too restrictive
-4. **Check maxItems**: Ensure `maxItems` isn't set to 0
 
 ### Invalid XML
 

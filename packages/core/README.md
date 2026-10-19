@@ -260,12 +260,9 @@ export default defineConfig({
     },
   },
 
-  // Eta template engine
-  eta: {
-    filters: {
-      formatDate: (date) => new Date(date).toLocaleDateString('en-US'),
-      slugify: (text) => text.toLowerCase().replace(/\s+/g, '-'),
-    },
+  // Template helpers, called as stati.helpers.formatDate()
+  helpers: {
+    formatDate: (date) => new Date(date).toLocaleDateString('en-US'),
   },
 
   // Incremental Static Generation (enabled by default)
@@ -588,7 +585,7 @@ import type { TemplateContext, CacheManifest } from '@stati/core/types';
 Stati supports rich Markdown features out of the box:
 
 - **Front-matter** - YAML (default) or JSON (`---json`) metadata
-- **Plugins** - Full markdown-it ecosystem compatibility
+- **Plugins** - Any markdown-it plugin that supports markdown-it 15
 - **Syntax highlighting** - Code blocks get `language-*` classes; add a plugin such as `markdown-it-prism` to highlight them
 - **Custom rendering** - Configure parser behavior
 - **Draft mode** - Mark pages as `draft: true`
@@ -611,10 +608,10 @@ export default defineConfig({
 
 Powered by [Eta](https://eta.js.org) for fast, flexible templates:
 
-- **Layouts** - Template inheritance via `layout` property
-- **Partials** - Reusable components
-- **Custom filters** - Transform data in templates
-- **Type-safe helpers** - Access page data with autocomplete
+- **Layouts** - Chosen by folder or front matter, sharing one page shell through `stati.layout()`
+- **Includes** - Reusable templates with props and content through `stati.include()`
+- **Helpers** - Your own functions, called as `stati.helpers.name()`
+- **Typed context** - The `TemplateContext` type describes everything templates can read
 - **Live reload** - The browser reloads when a template changes
 
 **Template structure:**
@@ -627,11 +624,11 @@ Powered by [Eta](https://eta.js.org) for fast, flexible templates:
     <title><%= stati.page.title %> - <%= stati.site.title %></title>
   </head>
   <body>
-    <%~ stati.partials.header %>
+    <%~ stati.include('partials/header') %>
     <main>
       <%~ stati.content %>
     </main>
-    <%~ stati.partials.footer %>
+    <%~ stati.include('partials/footer') %>
   </body>
 </html>
 ```

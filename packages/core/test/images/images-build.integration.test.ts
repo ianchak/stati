@@ -258,6 +258,28 @@ describe('image pipeline in builds', () => {
       expect(await read('dist/about.html')).toContain('<img src="/images/hero.png" alt="Raw">');
     });
 
+    it('keeps attributes that plugins set on a Markdown image, numbers included', async () => {
+      config.markdown = {
+        configure: (md) => {
+          md.core.ruler.push('test_image_attributes', (state) => {
+            for (const token of state.tokens) {
+              for (const child of token.children ?? []) {
+                if (child.type !== 'image') continue;
+                child.attrSet('title', 2);
+                child.attrSet('class', 'shot');
+                child.attrSet('data-index', 1);
+              }
+            }
+          });
+        },
+      };
+      await runBuild();
+
+      expect(await read('dist/index.html')).toContain(
+        '<img src="/images/hero.png" alt="Hero" title="2" class="shot" data-index="1" width="1600" height="900" loading="eager" fetchpriority="high" decoding="async">',
+      );
+    });
+
     it('rebuilds only the pages that show a replaced image', async () => {
       expect(await runBuild()).toMatchObject({ cacheMisses: 3 });
       expect(await runBuild()).toMatchObject({ cacheHits: 3, cacheMisses: 0 });
@@ -560,18 +582,125 @@ describe('image pipeline in builds', () => {
       expect(await runBuild()).toMatchObject({ cacheMisses: 1, cacheHits: 2 });
     });
 
-    it('gives generateSEO() in a head partial the generated image', async () => {
-      await write('site/_partials/head.eta', '<%~ stati.generateSEO() %>');
+    it('gives generateSEO() in an included head template the generated image', async () => {
+      config.seo = { autoInject: false };
+      await write('site/partials/head.eta', '<%~ stati.generateSEO() %>');
       await write(
         'site/layout.eta',
-        '<!DOCTYPE html><html><head><%~ stati.partials.head %></head><body><%~ stati.content %></body></html>',
+        `<!DOCTYPE html><html><head><%~ stati.include('partials/head') %></head><body><%~ stati.content %></body></html>`,
       );
       await runBuild();
 
+      expect(logger.error).not.toHaveBeenCalled();
       const home = await read('dist/index.html');
       expect(ogImageOf(home)).toMatch(/\/_img\/og\/index-[0-9a-f]{8}\.png$/);
       expect(home).toContain('<meta name="twitter:image"');
       expect(home).not.toContain('<!--stati:');
+    });
+
+    it('renders og.eta like any template: includes, a layout and helpers', async () => {
+      config.helpers = { shout: (text: string) => text.toUpperCase() };
+      await write(
+        'site/og.eta',
+        `<% stati.layout('./og-frame', { tone: 'dark' }) %><%~ stati.include('partials/card-title') %>`,
+      );
+      await write(
+        'site/og-frame.eta',
+        `<div style="display:flex" data-tone="<%= stati.props.tone %>"><%~ stati.body %></div>`,
+      );
+      await write(
+        'site/partials/card-title.eta',
+        '<span><%= stati.helpers.shout(stati.page.title) %></span>',
+      );
+      await runBuild();
+
+      const home = globalThis.__statiImagesCalls!.og.find((call) =>
+        call.filePath.includes('index-'),
+      );
+      expect(home!.html).toBe('<div style="display:flex" data-tone="dark"><span>HOME</span></div>');
+      expect(logger.error).not.toHaveBeenCalled();
+    });
+
+    it("renders a template that og.eta and the layout both include with each one's values", async () => {
+      await write(
+        'site/partials/which.eta',
+        `<%= stati.og ? 'card' : 'page' %>:<%= stati.content === '' ? 'no body' : 'body' %>`,
+      );
+      await write(
+        'site/og.eta',
+        `<div style="display:flex"><%~ stati.include('partials/which') %></div>`,
+      );
+      await write(
+        'site/layout.eta',
+        `<html><head></head><body><%~ stati.include('partials/which') %></body></html>`,
+      );
+      await runBuild();
+
+      expect(globalThis.__statiImagesCalls!.og[0]!.html).toBe(
+        '<div style="display:flex">card:no body</div>',
+      );
+      expect(await read('dist/about.html')).toContain('<body>page:body</body>');
+    });
+
+    it('records og.eta and what it includes, so editing an include rebuilds its pages', async () => {
+      await write(
+        'site/blog/og.eta',
+        `<div style="display:flex"><%~ stati.include('partials/badge') %></div>`,
+      );
+      await write('site/partials/badge.eta', 'v1');
+      await runBuild();
+      const manifest = await loadCacheManifest(join(projectDir, '.stati'));
+      expect(manifest!.entries['/blog/post.html']!.deps).toEqual(
+        expect.arrayContaining([
+          expect.stringMatching(/site\/blog\/og\.eta$/),
+          expect.stringMatching(/site\/partials\/badge\.eta$/),
+        ]),
+      );
+      expect(manifest!.entries['/blog/post.html']!.deps[0]).toMatch(/site\/layout\.eta$/);
+
+      await replace('site/partials/badge.eta', 'v2');
+      expect(await runBuild()).toMatchObject({ cacheMisses: 1, cacheHits: 2 });
+    });
+
+    it('rebuilds the pages a new og.eta in their folder applies to', async () => {
+      await runBuild();
+      await write('site/blog/og.eta', '<div style="display:flex">Blog card</div>');
+
+      expect(await runBuild()).toMatchObject({ cacheMisses: 1, cacheHits: 2 });
+      const post = globalThis.__statiImagesCalls!.og.at(-1)!;
+      expect(post.templatePath).toBe('site/blog/og.eta');
+    });
+
+    it('lets the built-in template include templates by path, but not by relative name', async () => {
+      await installFakeImagesPackage(projectDir, {
+        source: `
+import { writeFileSync } from 'node:fs';
+export function createImageProvider() {
+  const calls = globalThis.__statiImagesCalls;
+  return {
+    apiVersion: 1,
+    version: 'fake-builtin',
+    async createVariants() {},
+    async renderOgImage(request) { calls.og.push(request); writeFileSync(request.filePath, 'png'); },
+    loadOgDefaults: async () => ({
+      template: "<div style=\\"display:flex\\"><%~ stati.include('partials/badge') %><%~ stati.include('./badge') %></div>",
+      fonts: [{ name: 'Fake', data: Buffer.from('font') }],
+    }),
+  };
+}
+`,
+      });
+      await write('site/partials/badge.eta', 'badge');
+      await runBuild();
+
+      expect(globalThis.__statiImagesCalls!.og[0]!.html).toBe(
+        '<div style="display:flex">badge</div>',
+      );
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.stringContaining(
+          "stati.include('./badge'): the name is relative, and the built-in Open Graph template has no file",
+        ),
+      );
     });
 
     it('exposes the generated image to layouts as stati.ogImage', async () => {

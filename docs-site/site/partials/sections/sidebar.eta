@@ -1,0 +1,53 @@
+<%
+/**
+ * Sidebar Section
+ *
+ * Docs navigation. Each section is a native <details> disclosure: the
+ * section containing the current page renders open, the rest closed, so
+ * the sidebar works without JavaScript and screen readers announce the
+ * expanded state. On small screens it becomes the drawer that the header
+ * menu button opens.
+ */
+
+const sections = stati.helpers.docsSections();
+const normalize = (p) => (p || '').replace(/\/index\.html$/, '/').replace(/\.html$/, '').replace(/(.)\/$/, '$1');
+const current = normalize(stati.page.url);
+
+const reference = [
+  { url: '/faq', title: 'FAQ' },
+  { url: '/glossary', title: 'Glossary' },
+  { url: '/information/ai-policy', title: 'AI and content policy' },
+];
+%>
+<aside id="sidebar" class="fixed bottom-0 left-0 top-header z-40 w-[min(20rem,85vw)] -translate-x-full overflow-y-auto overscroll-contain border-r border-line bg-canvas transition-transform duration-200 ease-out data-[open=true]:translate-x-0 lg:sticky lg:z-auto lg:h-[calc(100vh-4rem)] lg:w-64 lg:flex-none lg:translate-x-0 lg:transition-none" aria-label="Documentation">
+    <nav class="px-4 pb-10 pt-6">
+        <ul class="space-y-1">
+            <% sections.forEach(section => {
+              const pages = stati.nav.getChildren(section.path);
+              const isOpen = current === section.path || current.startsWith(`${section.path}/`);
+            %>
+            <li>
+                <details class="group"<% if (isOpen) { %> open<% } %>>
+                    <summary class="sidebar-group-toggle cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                        <%= section.title %>
+                        <%~ stati.include('../components/icon', { name: 'chevron-right', size: 'sm', class: 'text-faint transition-transform duration-150 group-open:rotate-90' }) %>
+                    </summary>
+                    <ul class="mb-3 ml-2 mt-1">
+                        <% pages.forEach(page => { %>
+                        <li><a href="<%= page.url %>" class="sidebar-link"<% if (normalize(page.url) === current) { %> aria-current="page"<% } %>><%= page.title %></a></li>
+                        <% }) %>
+                    </ul>
+                </details>
+            </li>
+            <% }) %>
+        </ul>
+
+        <ul class="mt-6 space-y-0.5 border-t border-line pt-5">
+            <% reference.forEach(page => { %>
+            <li><a href="<%= page.url %>" class="block rounded-md px-2 py-1.5 text-sm text-muted transition-colors duration-150 hover:text-ink aria-[current=page]:font-medium aria-[current=page]:text-accent-ink"<% if (page.url === current) { %> aria-current="page"<% } %>><%= page.title %></a></li>
+            <% }) %>
+        </ul>
+    </nav>
+</aside>
+
+<div id="sidebar-backdrop" class="fixed inset-0 top-header z-30 bg-ink/30 lg:hidden" hidden></div>

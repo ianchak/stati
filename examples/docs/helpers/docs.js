@@ -5,9 +5,9 @@
  * only carry a title, URL, order, date and children. The sidebar also needs
  * front matter the tree leaves out: each section's description, `sidebarTitle`,
  * `sidebar: false` and drafts. So this module reads every page in the
- * `beforeAll` hook and exposes the result to templates as filters: the sidebar comes from
- * `stati.docsSections()`, the previous and next links from `stati.docsPager()`
- * and the breadcrumbs from `stati.docsBreadcrumbs()`. The same hook fills in
+ * `beforeAll` hook and exposes the result to templates as helpers: the sidebar comes
+ * from `stati.helpers.docsSections()`, the previous and next links from
+ * `stati.helpers.docsPager()` and the breadcrumbs from `stati.helpers.docsBreadcrumbs()`. The same hook fills in
  * link-preview and structured-data metadata for every page.
  *
  * How pages are grouped:
@@ -201,7 +201,7 @@ export function createDocs(options) {
   }
 
   /** @type {Record<string, (...args: any[]) => unknown>} */
-  const filters = {
+  const helpers = {
     /** Every section with its pages, in sidebar order. */
     docsSections: () => sections,
 
@@ -289,5 +289,5 @@ export function createDocs(options) {
     },
   };
 
-  return { filters, hooks };
+  return { helpers, hooks };
 }

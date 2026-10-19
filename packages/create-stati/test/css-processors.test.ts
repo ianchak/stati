@@ -145,27 +145,20 @@ describe('CSSProcessor', () => {
       await writeFile(join(tempDir, 'public', 'styles.css'), 'body { margin: 0; }');
     });
 
-    it('should create Tailwind CSS file with directives', async () => {
+    it('should create Tailwind CSS file with the Tailwind import', async () => {
       await processStyling(tempDir, 'tailwind');
 
       const cssContent = await readFile(join(tempDir, 'src', 'styles.css'), 'utf-8');
 
-      expect(cssContent).toContain('@tailwind base;');
-      expect(cssContent).toContain('@tailwind components;');
-      expect(cssContent).toContain('@tailwind utilities;');
+      expect(cssContent).toContain("@import 'tailwindcss';");
+      expect(cssContent).toContain("@source '../.stati/tailwind-classes.html';");
       expect(cssContent).toContain('@layer components');
     });
 
-    it('should create tailwind.config.js file', async () => {
+    it('should not create tailwind.config.js', async () => {
       await processStyling(tempDir, 'tailwind');
 
-      await expect(access(join(tempDir, 'tailwind.config.js'))).resolves.not.toThrow();
-
-      const configContent = await readFile(join(tempDir, 'tailwind.config.js'), 'utf-8');
-      expect(configContent).toContain('./site/**/*.{md,eta,html}');
-      expect(configContent).toContain('./.stati/tailwind-classes.html');
-      expect(configContent).toContain('theme: {');
-      expect(configContent).toContain('plugins: []');
+      await expect(access(join(tempDir, 'tailwind.config.js'))).rejects.toThrow();
     });
 
     it('should add Tailwind dependencies to package.json', async () => {
@@ -174,8 +167,9 @@ describe('CSSProcessor', () => {
       const packageJson = JSON.parse(await readFile(join(tempDir, 'package.json'), 'utf-8'));
 
       expect(packageJson.devDependencies).toHaveProperty('tailwindcss');
-      expect(packageJson.devDependencies).toHaveProperty('autoprefixer');
-      expect(packageJson.devDependencies).toHaveProperty('postcss');
+      expect(packageJson.devDependencies).toHaveProperty('@tailwindcss/cli');
+      expect(packageJson.devDependencies).not.toHaveProperty('autoprefixer');
+      expect(packageJson.devDependencies).not.toHaveProperty('postcss');
       expect(packageJson.devDependencies).not.toHaveProperty('concurrently');
 
       // Preserved dependencies

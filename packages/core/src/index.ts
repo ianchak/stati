@@ -23,6 +23,10 @@
 export type {
   SiteConfig,
   StatiConfig,
+  StatiHelpers,
+  TemplateContext,
+  TemplateIncludeFunction,
+  TemplateLayoutFunction,
   PageModel,
   FrontMatter,
   BuildContext,
@@ -66,6 +70,9 @@ export type {
 
 // RSS types
 export type { RSSConfig, RSSFeedConfig, RSSGenerationResult } from './types/index.js';
+
+// Markdown types
+export type { MarkdownIt } from './types/index.js';
 
 // Image types
 export type {

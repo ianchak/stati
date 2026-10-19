@@ -12,8 +12,9 @@ const { mockFg } = vi.hoisted(() => ({
   mockFg: vi.fn(),
 }));
 
-// Store the request handler for testing
-let capturedRequestHandler: ((req: IncomingMessage, res: ServerResponse) => void) | null = null;
+// Store the request handler for testing; the dev server's handler is async
+let capturedRequestHandler:
+  ((req: IncomingMessage, res: ServerResponse) => Promise<void> | void) | null = null;
 
 // Mock dependencies
 vi.mock('ws', () => ({
@@ -76,8 +77,8 @@ vi.mock('chokidar', () => ({
   },
 }));
 
-vi.mock('fast-glob', () => ({
-  default: mockFg,
+vi.mock('tinyglobby', () => ({
+  glob: mockFg,
 }));
 
 vi.mock('open', () => ({
@@ -133,6 +134,8 @@ vi.mock('../../src/core/isg/index.js', () => ({
   loadCacheManifest: vi.fn().mockResolvedValue(null),
   saveCacheManifest: vi.fn().mockResolvedValue(undefined),
   computeNavigationHash: vi.fn().mockReturnValue('hash123'),
+  hasRecordedTemplates: (entry: { templatesRecorded?: boolean }) =>
+    entry.templatesRecorded === true,
   DevServerLockManager: class {
     async acquireLock() {
       return Promise.resolve();
@@ -1690,158 +1693,45 @@ describe('Development Server', () => {
     });
   });
 
-  describe('Template file change handling with path normalization', () => {
-    it('should use path normalization when matching template dependencies', async () => {
-      const chokidar = await import('chokidar');
-      const mockWatch = vi.mocked(chokidar.default.watch);
-      const { loadCacheManifest, saveCacheManifest } = await import('../../src/core/isg/index.js');
-      const mockLoadCacheManifest = vi.mocked(loadCacheManifest);
-      const mockSaveCacheManifest = vi.mocked(saveCacheManifest);
+  describe('Template file change handling', () => {
+    type WatcherHandler = (path: string) => void;
+    const cwd = process.cwd();
+    const posixCwd = cwd.replace(/\\/g, '/');
+    const srcDir = `${cwd}/site`;
 
-      let changeHandler: ((path: string) => void) | undefined;
-      let watcherIndex = 0;
-
-      mockWatch.mockImplementation(() => {
-        const currentIndex = watcherIndex++;
-        if (currentIndex === 0) {
-          return {
-            on: vi.fn((event: string, handler: (path: string) => void) => {
-              if (event === 'change') {
-                changeHandler = handler;
-              }
-              return { on: vi.fn().mockReturnThis(), close: vi.fn(() => Promise.resolve()) };
-            }),
-            close: vi.fn(() => Promise.resolve()),
-          } as unknown as ReturnType<typeof chokidar.default.watch>;
-        }
-        return {
-          on: vi.fn().mockReturnThis(),
-          close: vi.fn(() => Promise.resolve()),
-        } as unknown as ReturnType<typeof chokidar.default.watch>;
-      });
-
-      const cwd = process.cwd();
-
-      // Mock a cache manifest with template dependencies that use absolute paths
-      // This simulates what the cache would look like after an initial build
-      mockLoadCacheManifest.mockResolvedValue({
-        entries: {
-          '/index.html': {
-            path: '/index.html',
-            inputsHash: 'hash1',
-            deps: [`${cwd}/site/layout.eta`, `${cwd}/site/_partials/header.eta`],
-            tags: [],
-            renderedAt: new Date().toISOString(),
-            ttlSeconds: 3600,
-          },
-          '/about.html': {
-            path: '/about.html',
-            inputsHash: 'hash2',
-            deps: [`${cwd}/site/layout.eta`],
-            tags: [],
-            renderedAt: new Date().toISOString(),
-            ttlSeconds: 3600,
-          },
-        },
-      });
-
-      mockLoadConfig.mockResolvedValueOnce({
-        srcDir: 'site',
-        outDir: 'dist',
-        staticDir: 'public',
-        site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
-      });
-
-      const mockLogger = createMockLogger();
-
-      mockBuild.mockClear();
-
-      const devServer = await createDevServer({
-        port: 8130,
-        logger: mockLogger,
-      });
-
-      await devServer.start();
-      mockBuild.mockClear();
-      mockSaveCacheManifest.mockClear();
-
-      // Simulate changing a template file (layout.eta)
-      expect(changeHandler).toBeDefined();
-      changeHandler!(`${cwd}/site/layout.eta`);
-
-      // Wait for async operations
-      await setTimeout(100);
-
-      // Cache manifest should have been loaded
-      expect(mockLoadCacheManifest).toHaveBeenCalled();
-
-      // Since layout.eta is a dependency of both pages, saveCacheManifest should be called
-      // after removing affected entries
-      expect(mockSaveCacheManifest).toHaveBeenCalled();
-
-      // Build should have been triggered
-      expect(mockBuild).toHaveBeenCalled();
-
-      await devServer.stop();
-      watcherIndex = 0;
-
-      // Reset mock to default
-      mockLoadCacheManifest.mockResolvedValue(null);
+    /** A cache entry as a 2.0 render records it */
+    const recordedEntry = (
+      path: string,
+      deps: string[],
+      templateLookups: Array<{ name: string; from?: string; file: string | null }> = [],
+    ) => ({
+      path,
+      inputsHash: `hash-${path}`,
+      deps,
+      templateLookups,
+      templatesRecorded: true,
+      tags: [],
+      renderedAt: new Date().toISOString(),
+      ttlSeconds: 3600,
     });
 
-    it('should handle template change when only specific pages are affected', async () => {
+    /** Starts the dev server with the given manifest and returns the watcher's handlers */
+    async function startWatching(manifest: unknown, port: number) {
       const chokidar = await import('chokidar');
-      const mockWatch = vi.mocked(chokidar.default.watch);
-      const { loadCacheManifest, saveCacheManifest } = await import('../../src/core/isg/index.js');
-      const mockLoadCacheManifest = vi.mocked(loadCacheManifest);
-      const mockSaveCacheManifest = vi.mocked(saveCacheManifest);
-
-      let changeHandler: ((path: string) => void) | undefined;
+      const isg = await import('../../src/core/isg/index.js');
+      const handlers: Record<string, WatcherHandler> = {};
       let watcherIndex = 0;
-
-      mockWatch.mockImplementation(() => {
+      vi.mocked(chokidar.default.watch).mockImplementation(() => {
         const currentIndex = watcherIndex++;
-        if (currentIndex === 0) {
-          return {
-            on: vi.fn((event: string, handler: (path: string) => void) => {
-              if (event === 'change') {
-                changeHandler = handler;
-              }
-              return { on: vi.fn().mockReturnThis(), close: vi.fn(() => Promise.resolve()) };
-            }),
-            close: vi.fn(() => Promise.resolve()),
-          } as unknown as ReturnType<typeof chokidar.default.watch>;
-        }
         return {
-          on: vi.fn().mockReturnThis(),
+          on: vi.fn((event: string, handler: WatcherHandler) => {
+            if (currentIndex === 0) handlers[event] = handler;
+            return { on: vi.fn().mockReturnThis(), close: vi.fn(() => Promise.resolve()) };
+          }),
           close: vi.fn(() => Promise.resolve()),
         } as unknown as ReturnType<typeof chokidar.default.watch>;
       });
-
-      const cwd = process.cwd();
-
-      // Mock cache where header.eta is only used by index.html
-      mockLoadCacheManifest.mockResolvedValue({
-        entries: {
-          '/index.html': {
-            path: '/index.html',
-            inputsHash: 'hash1',
-            deps: [`${cwd}/site/layout.eta`, `${cwd}/site/_partials/header.eta`],
-            tags: [],
-            renderedAt: new Date().toISOString(),
-            ttlSeconds: 3600,
-          },
-          '/about.html': {
-            path: '/about.html',
-            inputsHash: 'hash2',
-            deps: [`${cwd}/site/layout.eta`], // No header dependency
-            tags: [],
-            renderedAt: new Date().toISOString(),
-            ttlSeconds: 3600,
-          },
-        },
-      });
-
+      vi.mocked(isg.loadCacheManifest).mockResolvedValue(manifest as never);
       mockLoadConfig.mockResolvedValueOnce({
         srcDir: 'site',
         outDir: 'dist',
@@ -1849,289 +1739,317 @@ describe('Development Server', () => {
         site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
       });
 
-      const mockLogger = createMockLogger();
-
-      mockBuild.mockClear();
-
-      const devServer = await createDevServer({
-        port: 8131,
-        logger: mockLogger,
-      });
-
+      const logger = createMockLogger();
+      const devServer = await createDevServer({ port, logger });
       await devServer.start();
       mockBuild.mockClear();
-      mockSaveCacheManifest.mockClear();
+      vi.mocked(isg.saveCacheManifest).mockClear();
 
-      // Simulate changing the header partial (only affects index.html)
-      expect(changeHandler).toBeDefined();
-      changeHandler!(`${cwd}/site/_partials/header.eta`);
+      return {
+        handlers,
+        logger,
+        devServer,
+        saved: () => vi.mocked(isg.saveCacheManifest).mock.calls.map(([, saved]) => saved),
+        async stop() {
+          await devServer.stop();
+          vi.mocked(isg.loadCacheManifest).mockResolvedValue(null);
+        },
+      };
+    }
 
-      // Wait for async operations
-      await setTimeout(100);
-
-      // Cache manifest should have been saved with /about.html still present
-      expect(mockSaveCacheManifest).toHaveBeenCalled();
-
-      // Check that the saved manifest still contains /about.html
-      const savedManifest = mockSaveCacheManifest.mock.calls[0]?.[1];
-      expect(savedManifest?.entries['/about.html']).toBeDefined();
-
-      // Build should have been called for incremental rebuild
-      expect(mockBuild).toHaveBeenCalled();
-
-      await devServer.stop();
-      watcherIndex = 0;
-
-      // Reset mock to default
-      mockLoadCacheManifest.mockResolvedValue(null);
-    });
-
-    it('should force full rebuild when template change affects no cached pages', async () => {
-      const chokidar = await import('chokidar');
-      const mockWatch = vi.mocked(chokidar.default.watch);
-      const { loadCacheManifest, saveCacheManifest } = await import('../../src/core/isg/index.js');
-      const mockLoadCacheManifest = vi.mocked(loadCacheManifest);
-      const mockSaveCacheManifest = vi.mocked(saveCacheManifest);
-
-      let changeHandler: ((path: string) => void) | undefined;
-      let watcherIndex = 0;
-
-      mockWatch.mockImplementation(() => {
-        const currentIndex = watcherIndex++;
-        if (currentIndex === 0) {
-          return {
-            on: vi.fn((event: string, handler: (path: string) => void) => {
-              if (event === 'change') {
-                changeHandler = handler;
-              }
-              return { on: vi.fn().mockReturnThis(), close: vi.fn(() => Promise.resolve()) };
-            }),
-            close: vi.fn(() => Promise.resolve()),
-          } as unknown as ReturnType<typeof chokidar.default.watch>;
-        }
-        return {
-          on: vi.fn().mockReturnThis(),
-          close: vi.fn(() => Promise.resolve()),
-        } as unknown as ReturnType<typeof chokidar.default.watch>;
-      });
-
-      const cwd = process.cwd();
-
-      // Mock cache where a different template is used
-      mockLoadCacheManifest.mockResolvedValue({
-        entries: {
-          '/index.html': {
-            path: '/index.html',
-            inputsHash: 'hash1',
-            deps: [`${cwd}/site/layout.eta`], // No footer dependency
-            tags: [],
-            renderedAt: new Date().toISOString(),
-            ttlSeconds: 3600,
+    it('rebuilds the pages that rendered a changed template, matching normalized paths', async () => {
+      const watching = await startWatching(
+        {
+          entries: {
+            '/index.html': recordedEntry('/index.html', [
+              `${cwd}/site/layout.eta`,
+              `${cwd}/site/partials/header.eta`,
+            ]),
+            '/about.html': recordedEntry('/about.html', [`${cwd}/site/layout.eta`]),
           },
         },
-      });
-
-      mockLoadConfig.mockResolvedValueOnce({
-        srcDir: 'site',
-        outDir: 'dist',
-        staticDir: 'public',
-        site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
-      });
-
-      const mockLogger = createMockLogger();
-
-      mockBuild.mockClear();
-
-      const devServer = await createDevServer({
-        port: 8132,
-        logger: mockLogger,
-      });
-
-      await devServer.start();
-      mockBuild.mockClear();
-      mockSaveCacheManifest.mockClear();
-
-      // Simulate changing a footer template that no cached page depends on
-      expect(changeHandler).toBeDefined();
-      changeHandler!(`${cwd}/site/_partials/footer.eta`);
-
-      // Wait for async operations
-      await setTimeout(100);
-
-      // saveCacheManifest should NOT be called (no entries were modified)
-      expect(mockSaveCacheManifest).not.toHaveBeenCalled();
-
-      // Build should have been called with force: true (full rebuild)
-      expect(mockBuild).toHaveBeenCalledWith(
-        expect.objectContaining({
-          force: true,
-        }),
+        8130,
       );
 
-      await devServer.stop();
-      watcherIndex = 0;
+      watching.handlers.change!(`${cwd}/site/layout.eta`);
+      await setTimeout(100);
 
-      // Reset mock to default
-      mockLoadCacheManifest.mockResolvedValue(null);
+      const [saved] = watching.saved();
+      expect(saved?.entries['/index.html']?.inputsHash).toBe('STALE');
+      expect(saved?.entries['/about.html']?.inputsHash).toBe('STALE');
+      // The build saves the entries it renders, with the templates they used this time
+      expect(mockBuild).toHaveBeenCalledWith(
+        expect.objectContaining({ force: false, skipAssetCopy: true }),
+      );
+      expect(mockBuild.mock.calls[0]?.[0]).not.toHaveProperty('skipManifestSave');
+      expect(watching.logger.info).toHaveBeenCalledWith('▸ site/layout.eta changed');
+      expect(watching.logger.info).toHaveBeenCalledWith(
+        expect.stringMatching(/^ {3}2\/2 pages rebuilt in \d+ms$/),
+      );
+
+      await watching.stop();
     });
 
-    it('should handle path normalization with Windows-style backslashes', async () => {
-      const chokidar = await import('chokidar');
-      const mockWatch = vi.mocked(chokidar.default.watch);
-      const { loadCacheManifest, saveCacheManifest } = await import('../../src/core/isg/index.js');
-      const mockLoadCacheManifest = vi.mocked(loadCacheManifest);
-      const mockSaveCacheManifest = vi.mocked(saveCacheManifest);
-
-      let changeHandler: ((path: string) => void) | undefined;
-      let watcherIndex = 0;
-
-      mockWatch.mockImplementation(() => {
-        const currentIndex = watcherIndex++;
-        if (currentIndex === 0) {
-          return {
-            on: vi.fn((event: string, handler: (path: string) => void) => {
-              if (event === 'change') {
-                changeHandler = handler;
-              }
-              return { on: vi.fn().mockReturnThis(), close: vi.fn(() => Promise.resolve()) };
-            }),
-            close: vi.fn(() => Promise.resolve()),
-          } as unknown as ReturnType<typeof chokidar.default.watch>;
-        }
-        return {
-          on: vi.fn().mockReturnThis(),
-          close: vi.fn(() => Promise.resolve()),
-        } as unknown as ReturnType<typeof chokidar.default.watch>;
-      });
-
-      const cwd = process.cwd();
-
-      // Mock cache with POSIX-style paths (as they would be stored)
-      const posixCwd = cwd.replace(/\\/g, '/');
-      mockLoadCacheManifest.mockResolvedValue({
-        entries: {
-          '/index.html': {
-            path: '/index.html',
-            inputsHash: 'hash1',
-            deps: [`${posixCwd}/site/layout.eta`],
-            tags: [],
-            renderedAt: new Date().toISOString(),
-            ttlSeconds: 3600,
+    it('marks only the pages that used the changed template', async () => {
+      const watching = await startWatching(
+        {
+          entries: {
+            '/index.html': recordedEntry('/index.html', [
+              `${cwd}/site/layout.eta`,
+              `${cwd}/site/partials/header.eta`,
+            ]),
+            '/about.html': recordedEntry('/about.html', [`${cwd}/site/layout.eta`]),
           },
         },
-      });
+        8131,
+      );
 
-      mockLoadConfig.mockResolvedValueOnce({
-        srcDir: 'site',
-        outDir: 'dist',
-        staticDir: 'public',
-        site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
-      });
-
-      const mockLogger = createMockLogger();
-
-      mockBuild.mockClear();
-
-      const devServer = await createDevServer({
-        port: 8133,
-        logger: mockLogger,
-      });
-
-      await devServer.start();
-      mockBuild.mockClear();
-      mockSaveCacheManifest.mockClear();
-
-      // Simulate file watcher providing Windows-style path (with backslashes)
-      expect(changeHandler).toBeDefined();
-      const windowsStylePath = `${cwd}\\site\\layout.eta`;
-      changeHandler!(windowsStylePath);
-
-      // Wait for async operations
+      watching.handlers.change!(`${cwd}/site/partials/header.eta`);
       await setTimeout(100);
 
-      // Path normalization should make the paths match
-      // saveCacheManifest should be called since a matching dependency was found
-      expect(mockSaveCacheManifest).toHaveBeenCalled();
+      const [saved] = watching.saved();
+      expect(saved?.entries['/index.html']?.inputsHash).toBe('STALE');
+      expect(saved?.entries['/about.html']?.inputsHash).toBe('hash-/about.html');
+      expect(mockBuild).toHaveBeenCalledTimes(1);
 
-      // Build should have been triggered for incremental rebuild
-      expect(mockBuild).toHaveBeenCalled();
-
-      await devServer.stop();
-      watcherIndex = 0;
-
-      // Reset mock to default
-      mockLoadCacheManifest.mockResolvedValue(null);
+      await watching.stop();
     });
 
-    it('should do full rebuild when no cache exists for template change', async () => {
-      const chokidar = await import('chokidar');
-      const mockWatch = vi.mocked(chokidar.default.watch);
-      const { loadCacheManifest, saveCacheManifest } = await import('../../src/core/isg/index.js');
-      const mockLoadCacheManifest = vi.mocked(loadCacheManifest);
-      const mockSaveCacheManifest = vi.mocked(saveCacheManifest);
+    it('rebuilds nothing when no page uses the changed template', async () => {
+      const watching = await startWatching(
+        { entries: { '/index.html': recordedEntry('/index.html', [`${cwd}/site/layout.eta`]) } },
+        8132,
+      );
 
-      let changeHandler: ((path: string) => void) | undefined;
-      let watcherIndex = 0;
-
-      mockWatch.mockImplementation(() => {
-        const currentIndex = watcherIndex++;
-        if (currentIndex === 0) {
-          return {
-            on: vi.fn((event: string, handler: (path: string) => void) => {
-              if (event === 'change') {
-                changeHandler = handler;
-              }
-              return { on: vi.fn().mockReturnThis(), close: vi.fn(() => Promise.resolve()) };
-            }),
-            close: vi.fn(() => Promise.resolve()),
-          } as unknown as ReturnType<typeof chokidar.default.watch>;
-        }
-        return {
-          on: vi.fn().mockReturnThis(),
-          close: vi.fn(() => Promise.resolve()),
-        } as unknown as ReturnType<typeof chokidar.default.watch>;
-      });
-
-      const cwd = process.cwd();
-
-      // Mock no cache (returns null)
-      mockLoadCacheManifest.mockResolvedValue(null);
-
-      mockLoadConfig.mockResolvedValueOnce({
-        srcDir: 'site',
-        outDir: 'dist',
-        staticDir: 'public',
-        site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
-      });
-
-      const mockLogger = createMockLogger();
-
-      mockBuild.mockClear();
-
-      const devServer = await createDevServer({
-        port: 8134,
-        logger: mockLogger,
-      });
-
-      await devServer.start();
-      mockBuild.mockClear();
-      mockSaveCacheManifest.mockClear();
-
-      // Simulate changing a template file when no cache exists
-      expect(changeHandler).toBeDefined();
-      changeHandler!(`${cwd}/site/layout.eta`);
-
-      // Wait for async operations
+      watching.handlers.change!(`${cwd}/site/partials/unused.eta`);
       await setTimeout(100);
 
-      // saveCacheManifest should NOT be called (no cache to update)
-      expect(mockSaveCacheManifest).not.toHaveBeenCalled();
+      expect(watching.saved()).toEqual([]);
+      expect(mockBuild).not.toHaveBeenCalled();
+      expect(watching.logger.info).toHaveBeenCalledWith('▸ site/partials/unused.eta changed');
+      expect(watching.logger.info).toHaveBeenCalledWith('   No page uses it');
 
-      // Build should have been called (full rebuild since no cache)
+      await watching.stop();
+    });
+
+    it('runs a forced full build for entries written before templates were recorded', async () => {
+      const { templatesRecorded: _, ...oldEntry } = recordedEntry('/index.html', [
+        `${cwd}/site/layout.eta`,
+      ]);
+      const watching = await startWatching({ entries: { '/index.html': oldEntry } }, 8133);
+
+      watching.handlers.change!(`${cwd}/site/partials/unused.eta`);
+      await setTimeout(100);
+
+      expect(mockBuild).toHaveBeenCalledWith(expect.objectContaining({ force: true }));
+
+      await watching.stop();
+    });
+
+    it('matches Windows-style backslash paths from the watcher', async () => {
+      const watching = await startWatching(
+        {
+          entries: {
+            '/index.html': recordedEntry('/index.html', [`${posixCwd}/site/layout.eta`]),
+          },
+        },
+        8134,
+      );
+
+      watching.handlers.change!(`${cwd}\\site\\layout.eta`);
+      await setTimeout(100);
+
+      expect(watching.saved()[0]?.entries['/index.html']?.inputsHash).toBe('STALE');
       expect(mockBuild).toHaveBeenCalled();
 
+      await watching.stop();
+    });
+
+    it('does a full build when no cache exists', async () => {
+      const watching = await startWatching(null, 8135);
+
+      watching.handlers.change!(`${cwd}/site/layout.eta`);
+      await setTimeout(100);
+
+      expect(watching.saved()).toEqual([]);
+      expect(mockBuild).toHaveBeenCalledWith(expect.objectContaining({ force: false }));
+
+      await watching.stop();
+    });
+
+    it('rebuilds the pages a new section override applies to, and only those', async () => {
+      const { loadTemplateIndex } = await import('../../src/core/template-index.js');
+      const watching = await startWatching(
+        {
+          entries: {
+            '/blog/post.html': recordedEntry(
+              '/blog/post.html',
+              [`${cwd}/site/layout.eta`, `${cwd}/site/partials/header.eta`],
+              [{ name: 'partials/header', from: 'blog', file: 'partials/header.eta' }],
+            ),
+            '/about.html': recordedEntry(
+              '/about.html',
+              [`${cwd}/site/layout.eta`, `${cwd}/site/partials/header.eta`],
+              [{ name: 'partials/header', from: '', file: 'partials/header.eta' }],
+            ),
+          },
+        },
+        8136,
+      );
+      // The session's template index, as the initial build leaves it
+      mockFg.mockResolvedValueOnce(['layout.eta', 'partials/header.eta']);
+      const index = await loadTemplateIndex(srcDir);
+
+      watching.handlers.add!(`${cwd}/site/blog/partials/header.eta`);
+      await setTimeout(100);
+
+      expect(index.has('blog/partials/header.eta')).toBe(true);
+      const [saved] = watching.saved();
+      expect(saved?.entries['/blog/post.html']?.inputsHash).toBe('STALE');
+      expect(saved?.entries['/about.html']?.inputsHash).toBe('hash-/about.html');
+      expect(watching.logger.info).toHaveBeenCalledWith('▸ site/blog/partials/header.eta added');
+
+      await watching.stop();
+    });
+
+    it('rebuilds the pages that rendered or found a deleted template', async () => {
+      const { loadTemplateIndex } = await import('../../src/core/template-index.js');
+      const watching = await startWatching(
+        {
+          entries: {
+            '/blog/post.html': recordedEntry(
+              '/blog/post.html',
+              [`${cwd}/site/layout.eta`, `${cwd}/site/blog/partials/header.eta`],
+              [{ name: 'partials/header', from: 'blog', file: 'blog/partials/header.eta' }],
+            ),
+            '/about.html': recordedEntry('/about.html', [`${cwd}/site/layout.eta`]),
+          },
+        },
+        8137,
+      );
+      mockFg.mockResolvedValueOnce([
+        'layout.eta',
+        'partials/header.eta',
+        'blog/partials/header.eta',
+      ]);
+      const index = await loadTemplateIndex(srcDir);
+
+      watching.handlers.unlink!(`${cwd}/site/blog/partials/header.eta`);
+      await setTimeout(100);
+
+      expect(index.has('blog/partials/header.eta')).toBe(false);
+      const [saved] = watching.saved();
+      expect(saved?.entries['/blog/post.html']?.inputsHash).toBe('STALE');
+      expect(saved?.entries['/about.html']?.inputsHash).toBe('hash-/about.html');
+      expect(watching.logger.info).toHaveBeenCalledWith('▸ site/blog/partials/header.eta deleted');
+
+      await watching.stop();
+    });
+
+    it('reloads the open browsers after a rebuild', async () => {
+      const { WebSocketServer } = await import('ws');
+      const watching = await startWatching(
+        { entries: { '/index.html': recordedEntry('/index.html', [`${cwd}/site/layout.eta`]) } },
+        8139,
+      );
+      const wsResult = vi.mocked(WebSocketServer).mock.results.at(-1);
+      if (!wsResult) {
+        throw new Error('Expected WebSocketServer to be instantiated');
+      }
+      const wsServer = wsResult.value as {
+        clients: Set<{ readyState: number; send: (data: string) => void }>;
+      };
+      const open = { readyState: 1, send: vi.fn() };
+      const closing = { readyState: 2, send: vi.fn() };
+      wsServer.clients.add(open);
+      wsServer.clients.add(closing);
+
+      watching.handlers.change!(`${cwd}/site/layout.eta`);
+      await setTimeout(100);
+
+      expect(open.send).toHaveBeenCalledWith(JSON.stringify({ type: 'reload' }));
+      expect(closing.send).not.toHaveBeenCalled();
+
+      await watching.stop();
+    });
+
+    it('lets the build decide what to rebuild when the cache manifest cannot be read', async () => {
+      const isg = await import('../../src/core/isg/index.js');
+      const watching = await startWatching({ entries: {} }, 8140);
+      vi.mocked(isg.loadCacheManifest).mockRejectedValueOnce(
+        new Error('EACCES: permission denied'),
+      );
+
+      watching.handlers.change!(`${cwd}/site/layout.eta`);
+      await setTimeout(100);
+
+      expect(mockBuild).toHaveBeenCalledWith(
+        expect.objectContaining({ force: false, skipAssetCopy: true }),
+      );
+      expect(watching.logger.info).toHaveBeenCalledWith(
+        expect.stringMatching(/^ {3}Done in \d+ms$/),
+      );
+
+      await watching.stop();
+    });
+
+    it('treats .eta files outside the source directory as static files', async () => {
+      const watching = await startWatching({ entries: {} }, 8138);
+
+      watching.handlers.change!(`${cwd}/public/snippet.eta`);
+      await setTimeout(100);
+
+      expect(mockBuild).toHaveBeenCalledWith(expect.not.objectContaining({ skipAssetCopy: true }));
+      expect(watching.logger.info).toHaveBeenCalledWith('▸ public/snippet.eta copied');
+
+      await watching.stop();
+    });
+  });
+
+  describe('error overlay', () => {
+    /** Starts a dev server whose initial build fails with the error, and requests a page */
+    async function overlayFor(error: Error): Promise<string> {
+      mockBuild.mockRejectedValueOnce(error);
+      const devServer = await createDevServer({ port: 8210, logger: createMockLogger() });
+      await devServer.start();
+
+      const end = vi.fn();
+      const res = { writeHead: vi.fn(), end } as unknown as ServerResponse;
+      await capturedRequestHandler!({ url: '/blog/post', method: 'GET' } as IncomingMessage, res);
       await devServer.stop();
-      watcherIndex = 0;
+
+      expect(res.writeHead).toHaveBeenCalledWith(500, expect.anything());
+      return String(end.mock.calls[0]?.[0]);
+    }
+
+    it.each([
+      ['Template not found: header', 'Error', 'Template rendering failed'],
+      ['bad indentation of a mapping entry', 'YAMLException', 'Markdown processing failed'],
+      ['Invalid config: srcDir must be a string', 'Error', 'Configuration error'],
+      ['ENOSPC: no space left on device', 'Error', 'Build process failed'],
+    ])('classifies the build error "%s"', async (message, name, headline) => {
+      const error = new Error(message);
+      error.name = name;
+
+      expect(await overlayFor(error)).toContain(headline);
+    });
+
+    it('points a front matter error at the Markdown file and line', async () => {
+      const { FrontMatterError } = await import('../../src/core/utils/front-matter.utils.js');
+      const file = `${process.cwd()}/site/blog/post.md`;
+      const html = await overlayFor(
+        new FrontMatterError(
+          'Invalid front matter in site/blog/post.md at line 3, column 7: duplicated mapping key.',
+          file,
+          3,
+          7,
+        ),
+      );
+
+      expect(html).toContain('Markdown processing failed');
+      expect(html).toContain(`<dd>${file}</dd>`);
+      expect(html).toMatch(/<dt>Line<\/dt>\s*<dd>3[^<]*<\/dd>/);
+      expect(html).toContain('Check the YAML front-matter syntax for errors');
     });
   });
 

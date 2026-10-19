@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type MarkdownIt from 'markdown-it';
+import type { MarkdownIt } from 'markdown-it';
 import type { Eta } from 'eta';
 import { build } from '../../src/core/build.js';
 import { loadContent } from '../../src/core/content.js';
@@ -192,7 +192,11 @@ describe('HTML Output Snapshots', () => {
     mockRenderPage.mockResolvedValue({
       html: renderedHtml,
       templatesLoaded: 1,
+      templateRenders: 1,
+      includeCacheHits: 0,
       reads: { collection: false, nav: false },
+      templates: [],
+      templateLookups: [],
     });
 
     await build();
@@ -270,7 +274,11 @@ describe('HTML Output Snapshots', () => {
     mockRenderPage.mockResolvedValue({
       html: renderedHtml,
       templatesLoaded: 1,
+      templateRenders: 1,
+      includeCacheHits: 0,
       reads: { collection: false, nav: false },
+      templates: [],
+      templateLookups: [],
     });
 
     await build();
@@ -399,7 +407,11 @@ await build({
     mockRenderPage.mockResolvedValue({
       html: renderedHtml,
       templatesLoaded: 1,
+      templateRenders: 1,
+      includeCacheHits: 0,
       reads: { collection: false, nav: false },
+      templates: [],
+      templateLookups: [],
     });
 
     await build();
@@ -445,7 +457,11 @@ await build({
     mockRenderPage.mockResolvedValue({
       html: fallbackHtml,
       templatesLoaded: 0,
+      templateRenders: 0,
+      includeCacheHits: 0,
       reads: { collection: false, nav: false },
+      templates: [],
+      templateLookups: [],
     });
 
     await build();
@@ -510,7 +526,11 @@ await build({
     mockRenderPage.mockResolvedValue({
       html: renderedHtml,
       templatesLoaded: 1,
+      templateRenders: 1,
+      includeCacheHits: 0,
       reads: { collection: false, nav: false },
+      templates: [],
+      templateLookups: [],
     });
 
     await build();
@@ -608,7 +628,11 @@ console.log(\`Message: \${message}\`);
     mockRenderPage.mockResolvedValue({
       html: renderedHtml,
       templatesLoaded: 1,
+      templateRenders: 1,
+      includeCacheHits: 0,
       reads: { collection: false, nav: false },
+      templates: [],
+      templateLookups: [],
     });
 
     await build();

@@ -1,0 +1,68 @@
+<%
+/**
+ * Header Section
+ *
+ * Sticky site header: wordmark, primary navigation, search trigger, GitHub,
+ * theme toggle, and the mobile menu button. On docs pages the mobile menu
+ * opens the sidebar drawer; on the homepage it opens the compact nav panel.
+ */
+
+const url = stati.page.url || '/';
+const isHome = url === '/' || url === '/index.html';
+
+const navItems = [
+  { href: '/getting-started/introduction', label: 'Docs', match: ['/getting-started', '/core-concepts', '/advanced', '/faq', '/glossary', '/information'] },
+  { href: '/configuration/file', label: 'Configuration', match: ['/configuration'] },
+  { href: '/cli/commands', label: 'CLI', match: ['/cli'] },
+  { href: '/api/reference', label: 'API', match: ['/api'] },
+  { href: '/examples/list', label: 'Examples', match: ['/examples'] },
+];
+
+const isCurrent = (item) => item.match.some((prefix) => url === prefix || url.startsWith(`${prefix}/`));
+%>
+<header id="site-header" class="sticky top-0 z-50 border-b border-line bg-canvas">
+    <div class="mx-auto flex h-header max-w-[96rem] items-center gap-4 px-4 sm:px-6">
+        <a href="/" class="flex items-center gap-2 rounded-md" aria-label="Stati home">
+            <svg class="h-6 w-6 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            <span class="font-display text-xl font-extrabold">Stati</span>
+        </a>
+
+        <nav class="ml-4 hidden items-center gap-1 lg:flex" aria-label="Main">
+            <% navItems.forEach(item => { %>
+            <a href="<%= item.href %>" class="nav-item"<% if (isCurrent(item)) { %> aria-current="page"<% } %>><%= item.label %></a>
+            <% }) %>
+        </nav>
+
+        <div class="ml-auto flex items-center gap-1">
+            <button type="button" class="search-trigger flex h-11 items-center gap-2 rounded-md text-sm text-muted transition-colors duration-150 hover:text-ink sm:h-9 sm:w-56 sm:border sm:border-line sm:bg-raised sm:px-3 sm:hover:border-line-strong" data-search-open aria-haspopup="dialog" aria-controls="search-dialog">
+                <%~ stati.include('../components/icon', { name: 'search', size: 'sm', class: 'mx-3.5 sm:mx-0' }) %>
+                <span class="sr-only sm:not-sr-only">Search docs</span>
+                <kbd class="ml-auto hidden rounded border border-line bg-canvas px-1.5 font-mono text-xs text-faint sm:inline">/</kbd>
+            </button>
+
+            <a href="https://github.com/ianchak/stati" class="icon-button" target="_blank" rel="noopener noreferrer" aria-label="Stati on GitHub (opens in a new tab)">
+                <%~ stati.include('../components/icon', { name: 'github', size: 'md' }) %>
+            </a>
+
+            <button type="button" id="theme-toggle" class="icon-button" aria-pressed="false" aria-label="Dark theme">
+                <span class="dark:hidden"><%~ stati.include('../components/icon', { name: 'moon', size: 'md' }) %></span>
+                <span class="hidden dark:inline"><%~ stati.include('../components/icon', { name: 'sun', size: 'md' }) %></span>
+            </button>
+
+            <button type="button" id="menu-button" class="icon-button lg:hidden" aria-expanded="false" aria-controls="<%= isHome ? 'mobile-nav' : 'sidebar' %>" aria-label="Open menu">
+                <span data-menu-icon="open"><%~ stati.include('../components/icon', { name: 'menu', size: 'md' }) %></span>
+                <span data-menu-icon="close" hidden><%~ stati.include('../components/icon', { name: 'close', size: 'md' }) %></span>
+            </button>
+        </div>
+    </div>
+
+    <% if (isHome) { %>
+    <nav id="mobile-nav" class="border-t border-line bg-canvas px-4 py-3 lg:hidden" aria-label="Main" hidden>
+        <ul class="grid gap-1">
+            <% navItems.forEach(item => { %>
+            <li><a href="<%= item.href %>" class="block rounded-md px-3 py-2.5 text-base font-medium text-ink hover:bg-raised"><%= item.label %></a></li>
+            <% }) %>
+        </ul>
+    </nav>
+    <% } %>
+</header>

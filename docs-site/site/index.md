@@ -11,7 +11,7 @@ seo:
     'applicationCategory': 'DeveloperApplication'
     'applicationSubCategory': 'Static Site Generator'
     'description': 'Stati is a TypeScript-first static site generator with Markdown and Eta templates, typed configuration, esbuild client bundles, and Incremental Static Generation.'
-    'operatingSystem': 'Cross-platform (Node.js 22.12+)'
+    'operatingSystem': 'Cross-platform (Node.js 22.12+ or 24+)'
     'programmingLanguage': 'TypeScript'
     'url': 'https://stati.build/'
     'sameAs':
@@ -33,7 +33,7 @@ hero:
   specs:
     - '9 core dependencies'
     - 'No client runtime'
-    - 'Node 22.12+'
+    - 'Node 22.12+ or 24+'
     - 'MIT'
   config: |
     import { defineConfig } from '@stati/core';
@@ -73,12 +73,12 @@ inventory:
           }
         - {
             name: 'Eta layouts',
-            text: 'Layouts inherit by folder, with no wiring.',
+            text: 'Layouts by folder, wrapped in one shared page.',
             href: '/core-concepts/templates',
           }
         - {
-            name: 'Callable partials',
-            text: 'Reusable components that take props, scoped by folder.',
+            name: 'Includes',
+            text: 'Reusable templates with props and children, overridable per section.',
             href: '/api/templates',
           }
         - {
@@ -97,8 +97,8 @@ inventory:
             href: '/api/navigation',
           }
         - {
-            name: 'Custom filters',
-            text: 'Your own template helpers, defined in config.',
+            name: 'Template helpers',
+            text: 'Your own functions for templates, defined in config.',
             href: '/configuration/templates',
           }
     - title: 'Build'
@@ -244,7 +244,7 @@ claims:
             <html lang="en">
               <head><title><%= stati.page.title %></title></head>
               <body>
-                <%~ stati.partials.header %>
+                <%~ stati.include('partials/header') %>
                 <main><%~ stati.content %></main>
               </body>
             </html>

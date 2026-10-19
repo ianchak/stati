@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { loadContent } from '../../src/core/content.js';
+import { FrontMatterError } from '../../src/core/utils/front-matter.utils.js';
 import type { StatiConfig } from '../../src/types/index.js';
 
 // Create hoisted mocks
-const { mockReadFile, mockGlob, mockMatter } = vi.hoisted(() => ({
+const { mockReadFile, mockGlob } = vi.hoisted(() => ({
   mockReadFile: vi.fn(),
   mockGlob: vi.fn(),
-  mockMatter: vi.fn(),
 }));
 
 // Mock all dependencies at the top level
@@ -16,23 +16,9 @@ vi.mock('fs-extra', () => ({
   },
 }));
 
-vi.mock('fast-glob', () => ({
-  default: mockGlob,
+vi.mock('tinyglobby', () => ({
+  glob: mockGlob,
 }));
-
-vi.mock('gray-matter', () => ({
-  default: mockMatter,
-}));
-
-// Helper to create mock matter result
-const createMockMatterResult = (data: Record<string, unknown>, content: string) => ({
-  data,
-  content,
-  orig: '',
-  language: '',
-  matter: '',
-  stringify: vi.fn(),
-});
 
 describe('content.ts', () => {
   const mockConfig: StatiConfig = {
@@ -45,8 +31,19 @@ describe('content.ts', () => {
     },
   };
 
+  const DRAFT_AND_PUBLISHED = {
+    '/test/project/src/published.md': '---\ntitle: Published\n---\n# Published content',
+    '/test/project/src/draft.md': '---\ntitle: Draft\ndraft: true\n---\n# Draft content',
+  };
+
+  /** Mocks the content directory: glob lists the files in the given order, read by path */
+  function mockContentFiles(files: Record<string, string>): void {
+    mockGlob.mockResolvedValue(Object.keys(files));
+    mockReadFile.mockImplementation(async (path: string) => files[path]);
+  }
+
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     // Mock process.cwd() to return a consistent path
     vi.spyOn(process, 'cwd').mockReturnValue('/test/project');
   });
@@ -56,50 +53,34 @@ describe('content.ts', () => {
   });
 
   describe('loadContent', () => {
-    it('should load content from markdown files', async () => {
-      const mockFiles = ['/test/project/src/index.md', '/test/project/src/about.md'];
-      mockGlob.mockResolvedValue(mockFiles);
-
-      mockReadFile
-        .mockResolvedValueOnce('---\ntitle: Home\n---\n# Welcome')
-        .mockResolvedValueOnce('---\ntitle: About\n---\n# About us');
-
-      mockMatter
-        .mockReturnValueOnce(createMockMatterResult({ title: 'Home' }, '# Welcome'))
-        .mockReturnValueOnce(createMockMatterResult({ title: 'About' }, '# About us'));
+    it('should load content from markdown files, in path order', async () => {
+      mockContentFiles({
+        '/test/project/src/index.md': '---\ntitle: Home\n---\n# Welcome',
+        '/test/project/src/about.md': '---\ntitle: About\n---\n# About us',
+      });
 
       const pages = await loadContent(mockConfig);
 
-      expect(pages).toHaveLength(2);
-      expect(pages[0]).toEqual({
-        slug: '/',
-        url: '/',
-        sourcePath: '/test/project/src/index.md',
-        frontMatter: { title: 'Home' },
-        content: '# Welcome',
-      });
-      expect(pages[1]).toEqual({
-        slug: '/about',
-        url: '/about',
-        sourcePath: '/test/project/src/about.md',
-        frontMatter: { title: 'About' },
-        content: '# About us',
-      });
+      expect(pages).toEqual([
+        {
+          slug: '/about',
+          url: '/about',
+          sourcePath: '/test/project/src/about.md',
+          frontMatter: { title: 'About' },
+          content: '# About us',
+        },
+        {
+          slug: '/',
+          url: '/',
+          sourcePath: '/test/project/src/index.md',
+          frontMatter: { title: 'Home' },
+          content: '# Welcome',
+        },
+      ]);
     });
 
     it('should skip draft posts by default', async () => {
-      const mockFiles = ['/test/project/src/published.md', '/test/project/src/draft.md'];
-      mockGlob.mockResolvedValue(mockFiles);
-
-      mockReadFile
-        .mockResolvedValueOnce('---\ntitle: Published\n---\n# Published content')
-        .mockResolvedValueOnce('---\ntitle: Draft\ndraft: true\n---\n# Draft content');
-
-      mockMatter
-        .mockReturnValueOnce(createMockMatterResult({ title: 'Published' }, '# Published content'))
-        .mockReturnValueOnce(
-          createMockMatterResult({ title: 'Draft', draft: true }, '# Draft content'),
-        );
+      mockContentFiles(DRAFT_AND_PUBLISHED);
 
       const pages = await loadContent(mockConfig);
 
@@ -108,18 +89,7 @@ describe('content.ts', () => {
     });
 
     it('should include draft posts when includeDrafts is true', async () => {
-      const mockFiles = ['/test/project/src/published.md', '/test/project/src/draft.md'];
-      mockGlob.mockResolvedValue(mockFiles);
-
-      mockReadFile
-        .mockResolvedValueOnce('---\ntitle: Published\n---\n# Published content')
-        .mockResolvedValueOnce('---\ntitle: Draft\ndraft: true\n---\n# Draft content');
-
-      mockMatter
-        .mockReturnValueOnce(createMockMatterResult({ title: 'Published' }, '# Published content'))
-        .mockReturnValueOnce(
-          createMockMatterResult({ title: 'Draft', draft: true }, '# Draft content'),
-        );
+      mockContentFiles(DRAFT_AND_PUBLISHED);
 
       const pages = await loadContent(mockConfig, true);
 
@@ -128,18 +98,7 @@ describe('content.ts', () => {
     });
 
     it('should skip draft posts when includeDrafts is explicitly false', async () => {
-      const mockFiles = ['/test/project/src/published.md', '/test/project/src/draft.md'];
-      mockGlob.mockResolvedValue(mockFiles);
-
-      mockReadFile
-        .mockResolvedValueOnce('---\ntitle: Published\n---\n# Published content')
-        .mockResolvedValueOnce('---\ntitle: Draft\ndraft: true\n---\n# Draft content');
-
-      mockMatter
-        .mockReturnValueOnce(createMockMatterResult({ title: 'Published' }, '# Published content'))
-        .mockReturnValueOnce(
-          createMockMatterResult({ title: 'Draft', draft: true }, '# Draft content'),
-        );
+      mockContentFiles(DRAFT_AND_PUBLISHED);
 
       const pages = await loadContent(mockConfig, false);
 
@@ -155,10 +114,6 @@ describe('content.ts', () => {
         '---\ntitle: Post\npublishedAt: 2023-01-01\n---\n# Post content',
       );
 
-      mockMatter.mockReturnValue(
-        createMockMatterResult({ title: 'Post', publishedAt: '2023-01-01' }, '# Post content'),
-      );
-
       const pages = await loadContent(mockConfig);
 
       expect(pages[0]!.publishedAt).toEqual(new Date('2023-01-01'));
@@ -171,10 +126,6 @@ describe('content.ts', () => {
 
       mockReadFile.mockResolvedValue('---\ntitle: Post\npublishedAt: 123\n---\n# Post content');
 
-      mockMatter.mockReturnValue(
-        createMockMatterResult({ title: 'Post', publishedAt: 123 }, '# Post content'),
-      );
-
       const pages = await loadContent(mockConfig);
 
       expect(pages[0]!.publishedAt).toBeUndefined();
@@ -184,9 +135,6 @@ describe('content.ts', () => {
     it('should parse an unquoted YAML date (Date object) in publishedAt', async () => {
       mockGlob.mockResolvedValue(['/test/project/src/post.md']);
       mockReadFile.mockResolvedValue('---\npublishedAt: 2026-01-01\n---\n# Post');
-      mockMatter.mockReturnValue(
-        createMockMatterResult({ publishedAt: new Date('2026-01-01') }, '# Post'),
-      );
 
       const pages = await loadContent(mockConfig);
 
@@ -196,7 +144,6 @@ describe('content.ts', () => {
     it('should fall back to the date field', async () => {
       mockGlob.mockResolvedValue(['/test/project/src/post.md']);
       mockReadFile.mockResolvedValue("---\ndate: '2026-06-01'\n---\n# Post");
-      mockMatter.mockReturnValue(createMockMatterResult({ date: '2026-06-01' }, '# Post'));
 
       const pages = await loadContent(mockConfig);
 
@@ -207,9 +154,6 @@ describe('content.ts', () => {
       mockGlob.mockResolvedValue(['/test/project/src/post.md']);
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       mockReadFile.mockResolvedValue("---\npublishedAt: soon\ndate: '2026-06-01'\n---\n# Post");
-      mockMatter.mockReturnValue(
-        createMockMatterResult({ publishedAt: 'soon', date: '2026-06-01' }, '# Post'),
-      );
 
       const pages = await loadContent(mockConfig);
 
@@ -222,12 +166,6 @@ describe('content.ts', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       mockReadFile.mockResolvedValue(
         "---\npublishedAt: { toString: invalid }\npublished: [soon]\ndate: '2026-06-01'\n---\n# Post",
-      );
-      mockMatter.mockReturnValue(
-        createMockMatterResult(
-          { publishedAt: { toString: 'invalid' }, published: ['soon'], date: '2026-06-01' },
-          '# Post',
-        ),
       );
 
       const pages = await loadContent(mockConfig);
@@ -242,55 +180,40 @@ describe('content.ts', () => {
     });
 
     it('should handle nested directory structure', async () => {
-      const mockFiles = [
-        '/test/project/src/blog/first-post.md',
-        '/test/project/src/blog/category/second-post.md',
-      ];
-      mockGlob.mockResolvedValue(mockFiles);
-
-      mockReadFile
-        .mockResolvedValueOnce('---\ntitle: First Post\n---\n# First post content')
-        .mockResolvedValueOnce('---\ntitle: Second Post\n---\n# Second post content');
-
-      mockMatter
-        .mockReturnValueOnce(
-          createMockMatterResult({ title: 'First Post' }, '# First post content'),
-        )
-        .mockReturnValueOnce(
-          createMockMatterResult({ title: 'Second Post' }, '# Second post content'),
-        );
+      mockContentFiles({
+        '/test/project/src/blog/first-post.md': '---\ntitle: First Post\n---\n# First post content',
+        '/test/project/src/blog/category/second-post.md':
+          '---\ntitle: Second Post\n---\n# Second post content',
+      });
 
       const pages = await loadContent(mockConfig);
 
       expect(pages).toHaveLength(2);
-      expect(pages[0]!.slug).toBe('/blog/first-post');
-      expect(pages[0]!.url).toBe('/blog/first-post');
       // Forward slashes on every platform, also two folders deep
-      expect(pages[1]!.slug).toBe('/blog/category/second-post');
-      expect(pages[1]!.url).toBe('/blog/category/second-post');
+      expect(pages[0]!.slug).toBe('/blog/category/second-post');
+      expect(pages[0]!.url).toBe('/blog/category/second-post');
+      expect(pages[0]!.frontMatter.title).toBe('Second Post');
+      expect(pages[1]!.slug).toBe('/blog/first-post');
+      expect(pages[1]!.url).toBe('/blog/first-post');
+      expect(pages[1]!.frontMatter.title).toBe('First Post');
     });
 
     it('should handle index files correctly', async () => {
-      const mockFiles = ['/test/project/src/index.md', '/test/project/src/blog/index.md'];
-      mockGlob.mockResolvedValue(mockFiles);
-
-      mockReadFile
-        .mockResolvedValueOnce('---\ntitle: Home\n---\n# Home content')
-        .mockResolvedValueOnce('---\ntitle: Blog\n---\n# Blog index');
-
-      mockMatter
-        .mockReturnValueOnce(createMockMatterResult({ title: 'Home' }, '# Home content'))
-        .mockReturnValueOnce(createMockMatterResult({ title: 'Blog' }, '# Blog index'));
+      mockContentFiles({
+        '/test/project/src/index.md': '---\ntitle: Home\n---\n# Home content',
+        '/test/project/src/blog/index.md': '---\ntitle: Blog\n---\n# Blog index',
+      });
 
       const pages = await loadContent(mockConfig);
 
       expect(pages).toHaveLength(2);
-      expect(pages[0]!.slug).toBe('/');
-      expect(pages[0]!.url).toBe('/');
-      expect(pages[1]!.slug).toBe('/blog');
       // The slug for /blog/index.md should be /blog, not /blog/index
-      // But the URL should be /blog/ because it's an index page
-      expect(pages[1]!.url).toBe('/blog');
+      expect(pages[0]!.slug).toBe('/blog');
+      expect(pages[0]!.url).toBe('/blog');
+      expect(pages[0]!.frontMatter.title).toBe('Blog');
+      expect(pages[1]!.slug).toBe('/');
+      expect(pages[1]!.url).toBe('/');
+      expect(pages[1]!.frontMatter.title).toBe('Home');
     });
 
     it('should respect permalink in frontmatter', async () => {
@@ -299,13 +222,6 @@ describe('content.ts', () => {
 
       mockReadFile.mockResolvedValue(
         '---\ntitle: Special\npermalink: /custom-url/\n---\n# Special content',
-      );
-
-      mockMatter.mockReturnValue(
-        createMockMatterResult(
-          { title: 'Special', permalink: '/custom-url/' },
-          '# Special content',
-        ),
       );
 
       const pages = await loadContent(mockConfig);
@@ -319,10 +235,6 @@ describe('content.ts', () => {
       mockGlob.mockResolvedValue(mockFiles);
 
       mockReadFile.mockResolvedValue('---\ntitle: Special\npermalink: 123\n---\n# Special content');
-
-      mockMatter.mockReturnValue(
-        createMockMatterResult({ title: 'Special', permalink: 123 }, '# Special content'),
-      );
 
       const pages = await loadContent(mockConfig);
 
@@ -347,6 +259,7 @@ describe('content.ts', () => {
         cwd: expect.stringMatching(/[\\/]test[\\/]project[\\/]src$/),
         absolute: true,
         ignore: ['**/_*/**', '_*/**'],
+        expandDirectories: false,
       });
     });
 
@@ -362,8 +275,9 @@ describe('content.ts', () => {
         order: 1,
       };
 
-      mockReadFile.mockResolvedValue('---\ntitle: Post\n---\n# Post content');
-      mockMatter.mockReturnValue(createMockMatterResult(frontMatter, '# Post content'));
+      mockReadFile.mockResolvedValue(
+        '---\ntitle: Post\ndescription: A test post\ntags: [test, example]\ncustomField: custom value\norder: 1\n---\n# Post content',
+      );
 
       const pages = await loadContent(mockConfig);
 
@@ -375,10 +289,6 @@ describe('content.ts', () => {
       mockGlob.mockResolvedValue(mockFiles);
 
       mockReadFile.mockResolvedValue('# Simple markdown without frontmatter');
-
-      mockMatter.mockReturnValue(
-        createMockMatterResult({}, '# Simple markdown without frontmatter'),
-      );
 
       const pages = await loadContent(mockConfig);
 
@@ -393,10 +303,6 @@ describe('content.ts', () => {
 
       mockReadFile.mockResolvedValue('---\ntitle: API Docs\n---\n# API Documentation');
 
-      mockMatter.mockReturnValue(
-        createMockMatterResult({ title: 'API Docs' }, '# API Documentation'),
-      );
-
       const pages = await loadContent(mockConfig);
 
       // Handle Windows path separators in slug
@@ -406,14 +312,37 @@ describe('content.ts', () => {
       expect(pages[0]!.url.replace(/\\/g, '/')).toBe('/docs/api');
     });
 
+    it('should read unquoted dates in front matter as dates', async () => {
+      mockGlob.mockResolvedValue(['/test/project/src/post.md']);
+      mockReadFile.mockResolvedValue('---\ndate: 2026-01-01\nupdated: 2026-02-01T10:00:00Z\n---\n');
+
+      const pages = await loadContent(mockConfig);
+
+      expect(pages[0]!.frontMatter).toEqual({
+        date: new Date('2026-01-01T00:00:00.000Z'),
+        updated: new Date('2026-02-01T10:00:00.000Z'),
+      });
+      expect(pages[0]!.publishedAt).toEqual(new Date('2026-01-01T00:00:00.000Z'));
+    });
+
+    it('should report invalid front matter with its file and line', async () => {
+      mockGlob.mockResolvedValue(['/test/project/src/post.md']);
+      mockReadFile.mockResolvedValue('---\ntitle: One\ntitle: Two\n---\n# Post');
+
+      const loading = loadContent(mockConfig);
+
+      await expect(loading).rejects.toThrow(FrontMatterError);
+      await expect(loading).rejects.toThrow(
+        'Invalid front matter in src/post.md at line 3, column 1: duplicated mapping key.',
+      );
+    });
+
     it('should handle files with Windows path separators', async () => {
       // Mock Windows-style paths
       const mockFiles = ['/test/project/src/blog\\post.md'];
       mockGlob.mockResolvedValue(mockFiles);
 
       mockReadFile.mockResolvedValue('---\ntitle: Post\n---\n# Post content');
-
-      mockMatter.mockReturnValue(createMockMatterResult({ title: 'Post' }, '# Post content'));
 
       const pages = await loadContent(mockConfig);
 

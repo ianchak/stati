@@ -29,6 +29,8 @@ Stati follows these key principles:
 - **Config file fails to load** (syntax error, failing import): the error is printed, followed by "Falling back to default configuration.", and the build **continues with the defaults**. Check the output if your title, base URL or other settings seem to be ignored.
 - **Invalid `isg` values**: the build stops with an `Invalid ISG configuration` error that names the field (see [ISG configuration errors](#isg-configuration-errors))
 - **Invalid `images` values**: the build stops with an `Invalid images configuration in <config file>` error that names the option. Unknown keys are rejected too, which catches typos (see [Image errors](#image-errors))
+- **Unknown options**: an option Stati does not know, such as Stati 1's `eta`, stops the build with `Invalid configuration in <config file>` and `Unknown option eta.`, naming a similar option when there is one (`Unknown option sitmap. Did you mean sitemap?`)
+- **`helpers` that are not functions**: the build stops with, for example, `helpers.formatDate must be a function that templates call as stati.helpers.formatDate() (got number 1).`
 - **Other values are not validated** at load time. A wrong type usually surfaces later as a generic error, for example `srcDir: 123` fails with `The "path" argument must be of type string`.
 
 **Example errors**:
@@ -51,7 +53,8 @@ export default {
 
 **Handling**:
 
-- **Individual file errors**: Skips unreadable files with warning and continues
+- **Unreadable files**: A file that disappears during the build, or an empty file, is skipped with a warning; other read errors, such as missing permissions, stop the build with `Failed to read file <path>`
+- **Invalid front matter**: YAML that cannot be read, or front matter that is a list or a single value instead of `key: value` lines, stops the build with `Invalid front matter in <file>` and the line of the problem
 - **Missing or empty content directory**: The build succeeds with 0 pages ("Found 0 pages"), so check `srcDir` if a build produces nothing
 - **Unsupported front matter format**: A front matter block marked with an unknown language (for example `---toml`) fails the build; YAML (the default) and `---json` are supported
 
@@ -67,17 +70,17 @@ export default {
 
 **Handling**:
 
-- **Development mode**: Throws `TemplateError` with detailed context (file, line, column), shown in the error overlay
-- **Production mode**: A failing layout is logged as an error and the page is written with the built-in fallback template (see Fallback Mechanisms section); a failing partial is logged as a warning and replaced by `<!-- Error rendering partial: name -->`
+- **Development mode**: Throws `TemplateError` with detailed context (file, line, column) for the template that failed, even when it was included or named as a shell, shown in the error overlay
+- **Production mode**: A failing layout or shell is logged as an error and the page is written with the built-in fallback template (see Fallback Mechanisms section); a failing include is logged as an error and replaced by `<!-- Error rendering site/partials/card.eta: message -->`, and the rest of the page renders
 
 **Common scenarios**:
 
-- Template file not found
+- A template name that matches no file
 - Template syntax errors
-- Template rendering failures (both layouts and partials)
+- Template rendering failures (layouts, shells and included templates)
 - Missing template data
 
-**Applies to**: Both layout templates and partial templates
+**Applies to**: Layouts, the shells they name with `stati.layout()`, and templates rendered by `stati.include()`
 
 ```eta
 <!-- Template syntax error -->
@@ -90,6 +93,22 @@ export default {
 <% } %>
 ```
 
+### Include and layout errors
+
+Mistakes in `stati.include()` and `stati.layout()` calls stop the dev server with an error overlay at the template that made the call. Production builds keep going:
+
+| Case                                                             | Development                                                          | Production                                                                            |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| A name that resolves to no template                              | Overlay, listing templates with similar paths                        | Error logged; the include renders nothing, or the template renders without the layout |
+| Props that are not an object, or a `body` that is not a string   | Error                                                                | Warning; the template renders without them                                            |
+| A second `stati.layout()` in one template                        | Error                                                                | Warning; the last call wins                                                           |
+| `stati.layout()` after its template finished rendering           | Error                                                                | Warning; the call is ignored                                                          |
+| A template that includes or wraps itself without props (a cycle) | Error naming the chain                                               | Error logged; the repeated template is skipped                                        |
+| `await` in an included template                                  | Overlay explaining that includes render synchronously                | Error logged; the include renders nothing                                             |
+| Eta's own `include()`, `layout()` or `block()`                   | Overlay naming the `stati.include()` or `stati.layout()` call to use | Error logged; the call renders nothing                                                |
+
+Check an optional template with `stati.include.has(name)` instead of including it and catching the error. See [Includes and layouts](/api/templates#includes-and-layouts).
+
 ### Unknown template properties
 
 **When they occur**: In the dev server, when a template reads a `stati.*` property that does not exist
@@ -101,24 +120,26 @@ export default {
 <!-- ❌ Unknown property "stati.paeg". Did you mean "stati.page"? -->
 
 <h1><%= stati.title %></h1>
-<!-- ❌ Unknown property "stati.title". Did you mean "stati.page.title"? -->
+<!-- ❌ Unknown property "stati.title". Did you mean "stati.page.title" or "stati.site.title"? -->
 
-<%~ stati.header %>
-<!-- ❌ Unknown property "stati.header". Did you mean "stati.partials.header"? -->
+<%= stati.formatDate(stati.page.date) %>
+<!-- ❌ Unknown property "stati.formatDate". Did you mean "stati.helpers.formatDate"? -->
+
+<%~ stati.body %>
+<!-- ❌ In the page's layout: stati.body is set only in templates rendered by stati.layout() or stati.include(); the page's Markdown is stati.content -->
 ```
 
 **What is checked**:
 
-- Top-level `stati.*` properties, including the filters registered in `eta.filters`
-- Properties of `stati.site`, `stati.nav`, `stati.collection`, and `stati.generator`. Optional `site` fields such as `description` are allowed even when they are not set.
-- `stati.partials.*`, in layouts and in partials rendered with props alike, which shows its own inline "Partial not found" message instead
+- Top-level `stati.*` properties, in every template Stati renders
+- Properties of `stati.site`, `stati.nav`, `stati.collection`, `stati.generator` and `stati.helpers`. Optional `site` fields such as `description` are allowed even when they are not set.
 
 **What is not checked**:
 
 - Frontmatter under `stati.page`, because each page can have different fields. Use optional chaining for fields that some pages leave out: `stati.page.hero?.image`.
 - Code that does not run on the page being rendered, such as the branch of an `if` that is not taken
 
-To test whether an optional filter exists, use the `in` operator, which never throws: `<% if ('formatDate' in stati) { %>`. `stati.props` always exists, so `stati.props?.title ?? 'Default'` works in every partial.
+To test whether an optional helper exists, use the `in` operator, which never throws: `<% if ('formatDate' in stati.helpers) { %>`. `stati.props` always exists, so `stati.props?.title ?? 'Default'` works in every template.
 
 The overlay also gives a hint when a template uses `it` or a bare context name such as `page`: Stati templates read their data from `stati`, not Eta's default `it`.
 
@@ -177,7 +198,7 @@ export default defineConfig({
 
 Stati uses domain-specific error classes that capture relevant context for debugging. Each error type includes structured information to help identify and resolve issues quickly.
 
-These classes are internal: `@stati/core` does not export them, so you cannot use `instanceof` with them in your own code. Check `error.name` (for example `'ISGConfigurationError'`) instead.
+These classes are internal: `@stati/core` does not export them, so you cannot use `instanceof` with them in your own code. Check `error.name` instead, or `error.cause?.name` for configuration errors: an invalid `isg` block arrives as an `Error` whose `cause` is the `ISGConfigurationError`.
 
 ### Template errors
 
@@ -241,22 +262,6 @@ enum ISGValidationError {
 ```
 
 **Thrown when**: ISG configuration validation fails (invalid TTL, aging rules, etc.).
-
-### Circular dependency errors
-
-```typescript
-class CircularDependencyError extends Error {
-  constructor(
-    public readonly dependencyChain: string[],
-    message: string,
-  ) {
-    super(message);
-    this.name = 'CircularDependencyError';
-  }
-}
-```
-
-**Thrown when**: Template dependencies form a circular reference.
 
 ### Bundle configuration errors
 
@@ -350,7 +355,7 @@ The overlay follows your system's light or dark setting. It reloads by itself af
 Error messages include relevant context:
 
 ```text
-× Error rendering layout blog/layout.eta: Cannot read properties of undefined (reading 'title')
+× Error rendering site/blog/layout.eta for /blog/my-post: Cannot read properties of undefined (reading 'title')
 ```
 
 ### Build statistics
@@ -435,7 +440,7 @@ export default defineConfig({
 });
 ```
 
-Stati itself only validates the `isg` settings at load time, so the type check is your safeguard for everything else.
+At load time Stati checks the option names, `helpers`, and the `isg` and `images` settings, so the type check is your safeguard for everything else.
 
 ### 2. Handle hook errors gracefully
 
@@ -485,7 +490,7 @@ Use one date field across the site. Stati reads the page's publication date (use
 
 ### Partial build success
 
-In production builds, a page whose layout fails is still written, using the fallback template, and the build continues. Search the build output for `Error rendering layout` and `Failed to render partial` before deploying. Hook errors, file system errors and invalid `isg` settings still stop the build.
+In production builds, a page whose layout fails is still written, using the fallback template, and the build continues. Search the build output for `Error rendering` before deploying: it starts every message about a layout, shell or include that failed. Hook errors, file system errors and invalid `isg` settings still stop the build.
 
 ### Build interruption recovery
 

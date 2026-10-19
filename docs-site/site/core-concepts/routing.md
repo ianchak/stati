@@ -58,7 +58,7 @@ blog/my-post.md → /blog/my-post    → dist/blog/my-post.html
 index.md        → /                → dist/index.html
 ```
 
-Every page is written as a `.html` file named after its URL. Only the root page becomes an `index.html`. A `permalink` that ends in `/` is the one way to get a folder-style `…/index.html` output (see [Front matter URL override](#front-matter-url-override)).
+Every page is written as a `.html` file named after its URL. Only the root page becomes an `index.html`. A URL that ends in `/`, from a `permalink` or a `collections.generate` entry, is the way to get a folder-style `…/index.html` output (see [Front matter URL override](#front-matter-url-override)).
 
 `stati preview` serves `/blog`, `/blog.html` and `/blog/` from `dist/blog.html`. On your production host, check that an extensionless URL such as `/blog` is served from `blog.html`, including when a `blog/` folder sits next to it. Many static hosts do this by default; others need a "clean URLs" or rewrite setting.
 
@@ -138,24 +138,17 @@ Stati excludes certain files and directories from URL generation:
 
 ```text
 site/
-├── _partials/           ❌ Not routed - Partial templates
-│   ├── header.eta
-│   ├── footer.eta
-│   └── components/
-│       └── button.eta
-├── _components/         ❌ Not routed - Reusable components
-│   └── card.eta
-├── _includes/           ❌ Not routed - Include files
-│   └── analytics.eta
-├── _data/               ❌ Not routed - Data files
-│   └── config.json
 ├── _drafts/             ❌ Not routed - Draft content
 │   └── upcoming-post.md
+├── _data/               ❌ Not routed - Data files
+│   └── config.json
 ├── _notes.md            ✅ ROUTED! - Individual files with _ ARE processed → /_notes
-├── partials/            ✅ Routed - Creates /partials/ (no underscore)
-│   └── content.md       ✅ Routed - Creates /partials/content
+├── guides/              ✅ Routed (no underscore)
+│   └── setup.md         ✅ Routed - Creates /guides/setup
 └── published.md         ✅ Routed - Creates /published
 ```
+
+Templates don't need an underscore folder: only Markdown files become pages, so `site/partials/header.eta` creates no URL. See [Non-Markdown files](#non-markdown-files).
 
 > **Tip:** To exclude individual files, use `draft: true` in frontmatter instead of filename prefixes.
 
@@ -179,28 +172,6 @@ site/
 
 #### **Use cases for underscore exclusion**
 
-**Partial Templates:**
-
-```text
-_partials/
-├── header.eta          # Site header
-├── navigation.eta      # Main navigation
-├── sidebar.eta         # Blog sidebar
-└── footer.eta          # Site footer
-```
-
-**Component Library:**
-
-```text
-_components/
-├── button.eta          # Reusable button
-├── card.eta            # Content cards
-├── modal.eta           # Modal dialogs
-└── forms/
-    ├── input.eta       # Form inputs
-    └── validation.eta  # Form validation
-```
-
 **Data and Configuration:**
 
 ```text
@@ -220,11 +191,11 @@ _backup/                # Content backups
 _assets/                # Source assets (pre-processing)
 ```
 
-This convention allows you to organize helper files, templates, and components without creating unwanted routes, keeping your URL structure clean and intentional.
+This convention allows you to keep data, drafts and other working files next to your content without creating unwanted routes, keeping your URL structure clean and intentional.
 
 ### Layout files
 
-`layout.eta` files are special template files that don't generate routes but define the layout for their directory and subdirectories:
+`layout.eta` files are special template files that don't generate routes but define the layout for their directory and subdirectories. Other templates, such as a shared `base.eta` shell or the files in `partials/`, don't generate routes either:
 
 ```text
 site/
@@ -415,7 +386,7 @@ See the [Navigation API](/api/navigation) for more details on breadcrumb customi
    └── blog/
        ├── index.md        # Blog homepage
        ├── layout.eta      # Blog-specific layout
-       ├── _partials/      # Blog-specific components
+       ├── partials/       # Blog-specific templates, replacing root ones
        └── posts/          # All blog posts
    ```
 

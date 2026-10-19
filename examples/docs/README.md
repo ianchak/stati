@@ -65,13 +65,14 @@ To add a section, create a folder in `site/` with an `index.md` giving its `titl
 │   ├── favicon.svg       # Your logo
 │   └── styles.css        # All styles; colors, fonts and widths at the top
 ├── site/
-│   ├── _partials/        # Head, header, sidebar, TOC, pager, search, footer, icons
+│   ├── partials/         # Head, header, sidebar, TOC, pager, search, footer, icons
 │   ├── getting-started/  # One folder per section
 │   │   ├── index.md      # Section title, description and order
 │   │   └── *.md          # Its pages
 │   ├── writing/
 │   ├── customizing/
 │   ├── publishing/
+│   ├── base.eta          # The page around both layouts
 │   ├── home.eta          # Home page layout
 │   ├── layout.eta        # Layout for every other page
 │   ├── index.md          # Home page
@@ -81,7 +82,7 @@ To add a section, create a folder in `site/` with an `index.md` giving its `titl
 
 ## How the sidebar works
 
-Templates can read Stati's navigation tree as `stati.nav`, but its nodes only carry a title, URL, order, date and children. The sidebar also needs each section's description, `sidebarTitle`, `sidebar: false` and drafts, so `helpers/docs.js` reads every page's front matter in the `beforeAll` hook and groups the pages into sections. Templates read the result through filters: `stati.docsSections()`, `stati.docsSection(url)`, `stati.docsPager(url)` and `stati.docsBreadcrumbs(url)`.
+Templates can read Stati's navigation tree as `stati.nav`, but its nodes only carry a title, URL, order, date and children. The sidebar also needs each section's description, `sidebarTitle`, `sidebar: false` and drafts, so `helpers/docs.js` reads every page's front matter in the `beforeAll` hook and groups the pages into sections. Templates read the result through helpers: `stati.helpers.docsSections()`, `stati.helpers.docsSection(url)`, `stati.helpers.docsPager(url)` and `stati.helpers.docsBreadcrumbs(url)`.
 
 ## Before you deploy
 

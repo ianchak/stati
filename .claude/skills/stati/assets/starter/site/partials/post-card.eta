@@ -1,0 +1,7 @@
+<article class="<%= stati.propValue('post-card', stati.props.featured && 'featured') %>">
+  <h2><a href="<%= stati.props.url %>"><%= stati.props.title %></a></h2>
+  <% if (stati.props.description) { %>
+    <p><%= stati.props.description %></p>
+  <% } %>
+  <%~ stati.include('./icon', { label: 'Read article' }) %>
+</article>

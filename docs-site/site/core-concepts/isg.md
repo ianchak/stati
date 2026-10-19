@@ -23,7 +23,7 @@ Unlike traditional static site generators that rebuild everything, Stati only re
 
 ### Dependency tracking
 
-For each page, Stati records the **templates** it was rendered with: its layout, plus the partials it references by name (`stati.partials.header`, `stati.partials.card({ … })`) or loads from `_` folders with `include()`. It also records the **images** the page shows, from Markdown or `stati.image()`, hashed by content. The [ISG configuration](/configuration/isg#template-dependency-tracking) page lists the template changes that are not detected.
+For each page, Stati records the **templates** it rendered: its layout, the shells it names with `stati.layout()`, the templates it includes with `stati.include()` and its Open Graph template, along with every template name it looked up and the file that name found. Recording happens while the page renders, so an include behind a condition counts only on the pages where it rendered. It also records the **images** the page shows, from Markdown or `stati.image()`, hashed by content. See [Template dependency tracking](/configuration/isg#template-dependency-tracking).
 
 It also records what the page **read** while it rendered:
 
@@ -40,7 +40,8 @@ When the body of blog/post-1.md changes:
 When the title of blog/post-1.md changes:
 ✅ Rebuild blog/post-1
 ✅ Rebuild blog, and every page that reads the blog collection, such as posts with newer and older links
-❌ Skip pages that don't read it, such as /about
+✅ Rebuild the pages that render the navigation, which shows the title
+❌ Skip pages that read neither the collection nor the navigation
 
 When blog/post-3.md is added, or deleted:
 ✅ Render blog/post-3, or delete its HTML
@@ -48,9 +49,16 @@ When blog/post-3.md is added, or deleted:
 
 When blog/layout.eta changes:
 ✅ Rebuild every page rendered with blog/layout.eta
+
+When blog/partials/header.eta is added:
+✅ Rebuild the pages in blog/ whose partials/header lookup now finds it
+❌ Skip pages outside blog/, which keep partials/header.eta
+
+When partials/banner.eta changes and no page includes it:
+❌ Skip every page
 ```
 
-Data that reaches a template some other way is not tracked, for example a filter that returns posts it collected in a `beforeAll` hook. Read listings from `stati.collection`, or, in that hook, write what the page shows into its front matter, which is part of its hash.
+Data that reaches a template some other way is not tracked, for example a helper that returns posts it collected in a `beforeAll` hook. Read listings from `stati.collection`, or, in that hook, write what the page shows into its front matter, which is part of its hash.
 
 ### Removing pages that no longer exist
 
@@ -58,7 +66,7 @@ Data that reaches a template some other way is not tracked, for example a filter
 
 ### Upgrading
 
-Stati 1.29 started recording what each page reads. The first build after upgrading from an earlier version re-renders every page once to record it; later builds use the cache as usual.
+When a Stati release records more about each page, the first build after upgrading re-renders every page once to record it; later builds use the cache as usual.
 
 ### Cache manifest
 
@@ -70,7 +78,17 @@ Stati maintains a cache manifest at `.stati/manifest.json`. Entries are keyed by
     "/blog/first-post.html": {
       "path": "/blog/first-post.html",
       "inputsHash": "sha256-cf6a9a641fd5…",
-      "deps": ["/home/me/my-site/site/blog/layout.eta", "/home/me/my-site/site/_partials/header.eta"],
+      "deps": [
+        "/home/me/my-site/site/blog/layout.eta",
+        "/home/me/my-site/site/base.eta",
+        "/home/me/my-site/site/partials/header.eta"
+      ],
+      "templateLookups": [
+        { "name": "layout", "from": "blog", "file": "blog/layout.eta" },
+        { "name": "base", "from": "blog", "file": "base.eta" },
+        { "name": "partials/header", "from": "blog", "file": "partials/header.eta" }
+      ],
+      "templatesRecorded": true,
       "assetDeps": ["/home/me/my-site/site/blog/map.png"],
       "tags": ["blog", "news"],
       "publishedAt": "2024-01-15T00:00:00.000Z",
@@ -85,7 +103,7 @@ Stati maintains a cache manifest at `.stati/manifest.json`. Entries are keyed by
 }
 ```
 
-`readsCollection` and `readsNav` record whether the last render read `stati.collection` and the navigation. An entry without them, written before Stati recorded them, makes its page rebuild once.
+`deps` lists the template files the page rendered, layout first, and `templateLookups` the names it looked up, each with the folder the lookup started from and the file it found. `readsCollection` and `readsNav` record whether the last render read `stati.collection` and the navigation. An entry without these records makes its page rebuild once.
 
 ### Build process
 
@@ -253,7 +271,7 @@ Traditional SSG (full rebuild):
 Stati with ISG (incremental):
 ├── First build: Full build
 ├── Body edit: Only the edited page
-├── Title or tag edit: The edited page and the pages that list it
+├── Title or tag edit: The edited page, the pages that list it, and for a title the pages that show the navigation
 └── Layout change: Only pages using that layout
 ```
 
@@ -263,7 +281,8 @@ During development, ISG provides fast feedback:
 
 - **Initial build** - The dev server clears the cache and builds every page
 - **Content change** - The edited page rebuilds, along with the pages that list it or render the navigation when what they show changed; a deleted page's HTML is removed
-- **Template change** - All pages using that template rebuild
+- **Template change** - The pages that rendered the template rebuild; a template no page renders rebuilds nothing
+- **Template added or deleted** - The pages whose template names now find a different file rebuild, along with the pages that rendered a deleted template
 
 This means most edits during development result in significantly faster rebuilds compared to full site regeneration.
 

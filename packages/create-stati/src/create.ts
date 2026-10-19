@@ -261,20 +261,18 @@ export function adaptTemplateConfig(
 }
 
 /**
- * The `site` block of a generated config. With image tools, `baseUrl` is set too, because
- * link preview images need absolute URLs.
+ * The `site` block of a generated config, with a placeholder `baseUrl`: the config type requires
+ * one, and absolute URLs, such as those of link preview images, start with it.
  */
 function generatedSiteBlock(options: CreateOptions): string {
   return [
     '  site: {',
     `    title: '${options.projectName}',`,
     "    description: 'A Stati site',",
-    ...(options.images
-      ? [
-          "    // Your site's public address, used for link preview images",
-          "    baseUrl: 'https://example.com',",
-        ]
-      : []),
+    options.images
+      ? "    // Your site's public address, used for link preview images"
+      : "    // Your site's public address, used for absolute URLs",
+    "    baseUrl: 'https://example.com',",
     '  },',
   ].join('\n');
 }

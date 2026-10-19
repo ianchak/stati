@@ -17,7 +17,7 @@ import type { ProcessorResult } from './types.js';
  * ```typescript
  * const tsSetup = setupTypeScript();
  * // tsSetup.files contains: tsconfig.json, src/main.ts
- * // tsSetup.devDependencies contains: { typescript: '^5.6.0' }
+ * // tsSetup.devDependencies contains: { typescript: '^6.0.3' }
  * // tsSetup.scripts contains: { typecheck: 'tsc --noEmit' }
  * ```
  */

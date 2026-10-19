@@ -54,6 +54,7 @@ class NoopMetricRecorder implements MetricRecorder {
     _durationMs: number,
     _cached: boolean,
     _templatesLoaded?: number,
+    _templateRenders?: number,
   ): void {
     /* noop */
   }
@@ -98,6 +99,9 @@ class NoopMetricRecorder implements MetricRecorder {
         cachedPages: 0,
         assetsCopied: 0,
         templatesLoaded: 0,
+        templateRenders: 0,
+        includeCacheHits: 0,
+        templatesIndexed: 0,
         markdownFilesProcessed: 0,
         imagesGenerated: 0,
         imagesCached: 0,

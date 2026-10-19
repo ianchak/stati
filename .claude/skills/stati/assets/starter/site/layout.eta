@@ -9,14 +9,14 @@
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
-  <%~ stati.partials.header %>
+  <%~ stati.include('partials/header') %>
   <main id="main">
     <h1><%= stati.page.title ?? stati.site.title %></h1>
     <div class="content"><%~ stati.content %></div>
     <% if (stati.page.url === '/blog') { %>
       <section aria-label="Articles">
         <% for (const post of stati.collection?.recentPages ?? []) { %>
-          <%~ stati.partials['post-card']({
+          <%~ stati.include('partials/post-card', {
             title: post.frontMatter.title ?? 'Untitled',
             description: post.frontMatter.description,
             url: post.url

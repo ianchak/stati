@@ -1,0 +1,21 @@
+<%
+  /* The page around both layouts: site/layout.eta and site/home.eta call
+     stati.layout('base'), and what they render arrives here as stati.body.
+     Props: bodyClass (a class for <body>, such as the home page's page-home). */
+%>
+<!DOCTYPE html>
+<html lang="<%= stati.site.defaultLocale || 'en' %>">
+  <%~ stati.include('partials/head') %>
+  <% if (stati.props?.bodyClass) { %>
+  <body class="<%= stati.props.bodyClass %>">
+  <% } else { %>
+  <body>
+  <% } %>
+    <a href="#main" class="skip-link">Skip to content</a>
+    <%~ stati.include('partials/header') %>
+    <%~ stati.body %>
+
+    <%~ stati.include('partials/footer') %>
+    <%~ stati.include('partials/search') %>
+  </body>
+</html>

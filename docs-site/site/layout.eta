@@ -1,73 +1,45 @@
 <%
 // Previous/next links follow the sidebar order across all docs sections
 const normalize = (p) => (p || '').replace(/\/index\.html$/, '/').replace(/\.html$/, '').replace(/(.)\/$/, '$1');
-const flatPages = stati.docsSections().flatMap((section) => stati.nav.getChildren(section.path));
+const flatPages = stati.helpers.docsSections().flatMap((section) => stati.nav.getChildren(section.path));
 const pageIndex = flatPages.findIndex((page) => normalize(page.url) === normalize(stati.page.url));
 const prevPage = pageIndex > 0 ? flatPages[pageIndex - 1] : null;
 const nextPage = pageIndex >= 0 && pageIndex < flatPages.length - 1 ? flatPages[pageIndex + 1] : null;
+
+// The page around this layout: <head>, header, footer and the search dialog
+stati.layout('base');
 %>
-<!DOCTYPE html>
-<html lang="<%= stati.site.defaultLocale || 'en-US' %>" data-theme="light">
-<head>
-    <%~ stati.partials.themeInit %>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="view-transition" content="same-origin">
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<div class="mx-auto flex max-w-[96rem]">
+    <%~ stati.include('partials/sections/sidebar') %>
 
-    <link rel="preload" href="/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="/fonts/archivo.woff2" as="font" type="font/woff2" crossorigin>
+    <main id="main-content" class="min-w-0 flex-1" tabindex="-1">
+        <div class="flex">
+            <div class="min-w-0 flex-1 px-4 pb-20 pt-10 sm:px-8 lg:px-12 lg:pt-12">
+                <article class="prose mx-auto max-w-article">
+                    <%~ stati.content %>
+                </article>
 
-    <link rel="stylesheet" href="/styles.css">
-    <link rel="stylesheet" href="/prism-stati.css">
-    <link rel="alternate" type="application/rss+xml" title="Stati Documentation Updates" href="/feed.xml">
-<% if (stati.assets?.bundlePaths && stati.assets.bundlePaths.length > 0) { _%>
-<% for (const bundlePath of stati.assets.bundlePaths) { %>
-    <link rel="modulepreload" href="<%= bundlePath %>">
-<% } _%>
-<% } _%>
-</head>
-<body>
-    <a href="#main-content" class="skip-link">Skip to main content</a>
-
-    <%~ stati.partials.header %>
-
-    <div class="mx-auto flex max-w-[96rem]">
-        <%~ stati.partials.sidebar %>
-
-        <main id="main-content" class="min-w-0 flex-1" tabindex="-1">
-            <div class="flex">
-                <div class="min-w-0 flex-1 px-4 pb-20 pt-10 sm:px-8 lg:px-12 lg:pt-12">
-                    <article class="prose mx-auto max-w-prose">
-                        <%~ stati.content %>
-                    </article>
-
-                    <% if (prevPage || nextPage) { %>
-                    <nav class="mx-auto mt-16 grid max-w-prose gap-3 border-t border-line pt-8 sm:grid-cols-2" aria-label="Previous and next pages">
-                        <% if (prevPage) { %>
-                        <a href="<%= prevPage.url %>" class="group rounded-lg border border-line p-4 transition-colors duration-150 hover:border-line-strong">
-                            <span class="block text-xs text-faint">Previous</span>
-                            <span class="mt-1 block font-medium text-ink group-hover:text-accent-ink"><%= prevPage.title %></span>
-                        </a>
-                        <% } else { %><span class="hidden sm:block"></span><% } %>
-                        <% if (nextPage) { %>
-                        <a href="<%= nextPage.url %>" class="group rounded-lg border border-line p-4 text-right transition-colors duration-150 hover:border-line-strong">
-                            <span class="block text-xs text-faint">Next</span>
-                            <span class="mt-1 block font-medium text-ink group-hover:text-accent-ink"><%= nextPage.title %></span>
-                        </a>
-                        <% } %>
-                    </nav>
+                <% if (prevPage || nextPage) { %>
+                <nav class="mx-auto mt-16 grid max-w-article gap-3 border-t border-line pt-8 sm:grid-cols-2" aria-label="Previous and next pages">
+                    <% if (prevPage) { %>
+                    <a href="<%= prevPage.url %>" class="group rounded-lg border border-line p-4 transition-colors duration-150 hover:border-line-strong">
+                        <span class="block text-xs text-faint">Previous</span>
+                        <span class="mt-1 block font-medium text-ink group-hover:text-accent-ink"><%= prevPage.title %></span>
+                    </a>
+                    <% } else { %><span class="hidden sm:block"></span><% } %>
+                    <% if (nextPage) { %>
+                    <a href="<%= nextPage.url %>" class="group rounded-lg border border-line p-4 text-right transition-colors duration-150 hover:border-line-strong">
+                        <span class="block text-xs text-faint">Next</span>
+                        <span class="mt-1 block font-medium text-ink group-hover:text-accent-ink"><%= nextPage.title %></span>
+                    </a>
                     <% } %>
-                </div>
-
-                <div class="hidden w-60 flex-none xl:block">
-                    <%~ stati.partials.toc %>
-                </div>
+                </nav>
+                <% } %>
             </div>
-        </main>
-    </div>
 
-    <%~ stati.partials.footer %>
-    <%~ stati.partials.searchTemplates %>
-</body>
-</html>
+            <div class="hidden w-60 flex-none xl:block">
+                <%~ stati.include('partials/sections/toc') %>
+            </div>
+        </div>
+    </main>
+</div>

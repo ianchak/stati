@@ -6,7 +6,7 @@ order: 3
 
 # Templates and layouts
 
-Stati uses Eta as its templating engine, providing a powerful yet familiar syntax for creating dynamic layouts and templates. Combined with Stati's layout inheritance system, you can create flexible and maintainable site designs.
+Stati uses Eta as its templating engine, providing a powerful yet familiar syntax for creating dynamic layouts and templates. Layouts are chosen by folder, share one page shell through `stati.layout()`, and reuse other templates through `stati.include()`.
 
 ## Template engine: Eta
 
@@ -97,7 +97,10 @@ In your templates, you have access to:
 
 <!-- Page front matter data -->
 <%= stati.page.layout %>    <!-- Layout name from front matter -->
-<%~ stati.partials.header %> <!-- Partial templates (HTML, so use <%~) -->
+
+<!-- Other templates and your own functions -->
+<%~ stati.include('partials/header') %> <!-- Another template's HTML (use <%~) -->
+<%= stati.helpers.formatDate(stati.page.date) %> <!-- A function from helpers in the config -->
 
 <!-- Images -->
 <%~ stati.image(stati.page.cover, { alt: stati.page.coverAlt }) %> <!-- Sized, lazy-loaded image (HTML, so use <%~) -->
@@ -123,9 +126,11 @@ site/
         └── my-post.md
 ```
 
+A section's layout replaces the root layout for the pages in its folder. The page around them, with the `<head>`, header and footer, can live in one shared template; see [Sharing a shell](#sharing-a-shell).
+
 ### Template resolution order
 
-Stati looks for templates in this order:
+Stati looks for a page's layout in this order:
 
 1. **Named template** specified in front matter (e.g., `layout: 'article'`)
 2. **Directory-specific** `layout.eta` (cascades from current to root)
@@ -146,15 +151,15 @@ title: 'My Post'
 ---
 ```
 
-The `layout` value is a path relative to `site/`, without the `.eta` extension: `layout: 'article'` uses `site/article.eta`, and `layout: 'layouts/post'` uses `site/layouts/post.eta`. If the file does not exist, Stati silently falls back to the `layout.eta` lookup, so check the name when a page renders with the wrong layout.
+The `layout` value is a template name without the `.eta` extension, looked up the same way as [`stati.include()`](#template-names): `layout: 'article'` uses the nearest `article.eta` from the page's folder up to `site/`, `layout: '/article'` uses `site/article.eta` only, and `layout: 'layouts/post'` uses the nearest `layouts/post.eta`. If no file matches, the build warns, suggests similar names, and uses the `layout.eta` lookup instead.
 
 The first match wins, providing maximum flexibility while maintaining sensible defaults.
 
-Index pages of a [collection](#collections) check for an `index.eta` in each directory before its `layout.eta`, so a listing page can have its own layout.
+Index pages of a [collection](#collections) check for an `index.eta` in each directory before its `layout.eta`, so a listing page can have its own layout. The root `index.md` is always an index page; a folder's `index.md` is one once the folder holds another page.
 
 ### Root layout example
 
-`site/layout.eta`:
+On a site with one layout, `site/layout.eta` can be the whole page:
 
 ```eta
 <!DOCTYPE html>
@@ -182,22 +187,22 @@ Index pages of a [collection](#collections) check for an `index.eta` in each dir
     <meta property="og:url" content="<%= stati.site.baseUrl + stati.page.url %>">
 </head>
 <body>
-    <%~ stati.partials.header %>
+    <%~ stati.include('partials/header') %>
 
     <main>
         <%~ stati.content %>
     </main>
 
-    <%~ stati.partials.footer %>
+    <%~ stati.include('partials/footer') %>
 </body>
 </html>
 ```
 
-### Section layout example
+### Sharing a shell
 
-Section layouts **completely replace** the root layout for pages in that directory and its subdirectories. They must be complete HTML documents (or include another complete layout via partials).
+With more than one layout, keep the document around them in one template and let each layout name it with `stati.layout()`. The shell receives the layout's output as `stati.body`:
 
-`site/blog/layout.eta`:
+`site/base.eta`:
 
 ```eta
 <!DOCTYPE html>
@@ -208,268 +213,169 @@ Section layouts **completely replace** the root layout for pages in that directo
     <title><%= stati.page.title ? `${stati.page.title} | ${stati.site.title}` : stati.site.title %></title>
     <link rel="stylesheet" href="/styles.css">
 </head>
-<body>
-    <%~ stati.partials.header %>
-
-    <div class="blog-container">
-        <aside class="blog-sidebar">
-            <%~ stati.partials.blogNav %>
-        </aside>
-
-        <article class="blog-content">
-            <% if (stati.page.title) { %>
-            <header class="post-header">
-                <h1><%= stati.page.title %></h1>
-                <% if (stati.page.date) { %>
-                <time datetime="<%= stati.page.date %>">
-                    <%= new Date(stati.page.date).toLocaleDateString() %>
-                </time>
-                <% } %>
-                <% if (stati.page.tags) { %>
-                <div class="tags">
-                    <% stati.page.tags.forEach(tag => { %>
-                    <span class="tag"><%= tag %></span>
-                    <% }); %>
-                </div>
-                <% } %>
-            </header>
-            <% } %>
-
-            <div class="prose">
-                <%~ stati.content %>
-            </div>
-        </article>
-    </div>
-
-    <%~ stati.partials.footer %>
+<body class="<%= stati.propValue('site', stati.props?.bodyClass) %>">
+    <%~ stati.include('partials/header') %>
+    <%~ stati.body %>
+    <%~ stati.include('partials/footer') %>
 </body>
 </html>
 ```
 
-> **Note:** To share common structure (header, footer, meta tags) between layouts, extract them into partials and include them in each layout.
-
-## Partial templates
-
-Partials are reusable template components stored in `_` (underscore) prefixed directories.
-
-### Partial discovery rules
-
-Stati uses a strict convention for partial auto-discovery:
-
-- **Partials MUST be placed in folders starting with `_` (underscore)**
-- Multiple underscore folders are supported: `_partials/`, `_components/`, `_includes/`
-- Partials can be nested within underscore folders: `_partials/components/button.eta`
-- Folders without underscore prefix are NOT scanned for partials
-- Files within underscore folders are automatically available as partials
-
-```text
-site/
-├── _partials/           ✅ Auto-discovered
-│   ├── header.eta
-│   └── components/      ✅ Nested partials supported
-│       └── button.eta
-├── _components/         ✅ Multiple underscore folders
-│   └── card.eta
-├── _includes/           ✅ Any underscore folder name
-│   └── analytics.eta
-└── partials/            ❌ NOT discovered (no underscore)
-    └── ignored.eta
-```
-
-### Creating partials
-
-`site/_partials/header.eta`:
+`site/layout.eta`:
 
 ```eta
-<header class="site-header">
-    <nav class="main-nav">
-        <div class="nav-brand">
-            <a href="/">
-                <img src="/logo.svg" alt="<%= stati.site.title %>">
-                <%= stati.site.title %>
-            </a>
+<% stati.layout('base') %>
+<main>
+    <%~ stati.content %>
+</main>
+```
+
+`site/blog/layout.eta`:
+
+```eta
+<% stati.layout('base', { bodyClass: 'blog' }) %>
+<div class="blog-container">
+    <aside class="blog-sidebar">
+        <%~ stati.include('partials/blog-nav') %>
+    </aside>
+
+    <article class="blog-content">
+        <header class="post-header">
+            <h1><%= stati.page.title %></h1>
+            <% if (stati.page.date) { %>
+            <time datetime="<%= stati.page.date %>">
+                <%= new Date(stati.page.date).toLocaleDateString() %>
+            </time>
+            <% } %>
+        </header>
+
+        <div class="prose">
+            <%~ stati.content %>
         </div>
-
-        <% const inSection = (path) => stati.page.url === path || stati.page.url.startsWith(`${path}/`); %>
-        <ul class="nav-links">
-            <li><a href="/" class="<%= stati.page.url === '/' ? 'active' : '' %>">Home</a></li>
-            <li><a href="/blog" class="<%= inSection('/blog') ? 'active' : '' %>">Blog</a></li>
-            <li><a href="/docs" class="<%= inSection('/docs') ? 'active' : '' %>">Docs</a></li>
-            <li><a href="/about" class="<%= stati.page.url === '/about' ? 'active' : '' %>">About</a></li>
-        </ul>
-    </nav>
-</header>
-```
-
-### Using partials
-
-Partials are automatically available in templates:
-
-```eta
-<!-- Include a partial -->
-<%~ stati.partials.header %>
-<%~ stati.partials.footer %>
-<%~ stati.partials.sidebar %>
-```
-
-### Passing data to partials
-
-Partials can accept custom data, making them reusable like components. This is perfect for cards, buttons, or any content that varies slightly each time you use it.
-
-#### Basic usage
-
-```eta
-<!-- Simple: no data needed -->
-<%~ stati.partials.header %>
-
-<!-- With custom data -->
-<%~ stati.partials.hero({
-  title: 'Welcome to Stati',
-  subtitle: 'Build modern static sites'
-}) %>
-
-<!-- In loops: render a card for each page of the collection -->
-<% (stati.collection?.pages ?? []).forEach(post => { %>
-  <%~ stati.partials.card({
-    title: post.frontMatter.title,
-    description: post.frontMatter.description,
-    url: post.url
-  }) %>
-<% }) %>
+    </article>
+</div>
 ```
 
 **How it works:**
 
-- Use partials as-is when no custom data is needed: `<%~ stati.partials.header %>`
-- Pass data by calling the partial like a function: `stati.partials.name({ ... })`
-- Access passed data inside the partial via `stati.props.propertyName`
-- All Stati data remains available: `stati.site`, `stati.page`, `stati.content`, etc.
-- The partial's name is its file name without `.eta`, wherever it sits inside the `_` folder: `_partials/components/card.eta` is `stati.partials.card`. A file named `page-header.eta` is `stati.partials['page-header']`; names are not converted to camelCase.
-
-> **Important:** before rendering a page, Stati renders every partial it can see once **without props**, so that `<%~ stati.partials.name %>` works. In that pass `stati.props` is `undefined`, so a partial that reads `stati.props.title` fails: in development the page shows a template error, and in production the partial's no-props output becomes `<!-- Error rendering partial: card -->`. Read props with optional chaining (`stati.props?.title`), or start component-only partials with `<% if (!stati.props) return; %>`. Calling a partial with an empty object (`stati.partials.card({})`) also returns the no-props output.
-
-#### Creating a reusable partial
-
-Let's create a card component that accepts custom data.
-
-**Example partial** (`_partials/card.eta`):
+- `stati.layout(name, props?)` names the template that wraps the current one. It prints nothing and can be called anywhere in the template; the wrapping happens once the template has rendered.
+- The named template receives that output as `stati.body`, printed raw with `<%~`, and the props as `stati.props`.
+- A shell can call `stati.layout()` itself, so wrappers nest: `blog/layout.eta` can name `blog/base.eta`, which names `/base` for `site/base.eta`. A plain `'base'` there would find `blog/base.eta` itself, because names are looked up from the page's folder.
+- Discovery only ever picks `layout.eta` and `index.eta`, so `base.eta` is never a page's layout by accident.
+- `stati.body` exists only in templates rendered by `stati.layout()` or `stati.include()`. In the page's own layout, the page's Markdown is `stati.content`.
+- One `stati.layout()` call per template. In development a second call is an error; in production the build warns and uses the last one. Choose the name with a condition instead, using `stati.layout.has()` for optional shells:
 
 ```eta
-<% const props = stati.props ?? {}; %>
-<article class="card">
-  <h3><%= props.title || 'Untitled' %></h3>
-  <% if (props.description) { %>
-    <p><%= props.description %></p>
-  <% } %>
-  <% if (props.url) { %>
-    <a href="<%= props.url %>">Read more →</a>
-  <% } %>
-</article>
+<% stati.layout(stati.layout.has('blog/base') ? 'blog/base' : 'base') %>
 ```
 
-**Using the card**:
+## Including templates
+
+`stati.include(name, props?, body?)` renders another template and returns its HTML. Any `.eta` file under `site/` can be included. By convention, reusable pieces live in `site/partials/`; only Markdown files become pages, so a folder of templates adds no pages. Content discovery also skips folders starting with `_`, if you prefer to mark template folders that way.
 
 ```eta
-<!-- Without data: uses defaults -->
-<%~ stati.partials.card %>
-<!-- Output: <article class="card"><h3>Untitled</h3></article> -->
+<%~ stati.include('partials/header') %>
+<%~ stati.include('partials/footer') %>
+```
 
-<!-- With custom data -->
-<%~ stati.partials.card({
-  title: 'Custom Title',
-  description: 'A great article',
-  url: '/blog/article'
-}) %>
-<!-- Output: full card with all fields -->
+### Template names
 
-<!-- Render multiple cards from a collection -->
+`stati.include()`, `stati.layout()` and front matter `layout:` all take a template path without `.eta` (a `.eta` suffix is accepted and dropped):
+
+| Name                        | Where Stati looks                                            |
+| --------------------------- | ------------------------------------------------------------ |
+| `header`, `partials/header` | From the page's folder up to `site/`; the nearest match wins |
+| `/partials/header`          | In `site/` only                                              |
+| `./icon`, `../icons/arrow`  | Relative to the template making the call                     |
+
+A name never resolves outside `site/`. Because names are looked up from the page's folder, a section can replace a template for its own pages by putting one at the same path:
+
+```text
+site/
+├── partials/
+│   └── header.eta       # Used by every page...
+└── blog/
+    ├── partials/
+    │   └── header.eta   # ...except the pages in blog/, which use this one
+    └── post.md
+```
+
+The lookup follows the **page** being rendered, not the template making the call: for `site/blog/post.md`, `stati.include('partials/header')` in the root `site/base.eta` still finds `site/blog/partials/header.eta`. To pin a template regardless of the page, start the name with `/` or `./`.
+
+### Passing props
+
+The second argument is an object of props. Inside the included template, they are `stati.props`:
+
+```eta
+<!-- In a layout: one card per page of the collection -->
 <div class="posts-grid">
-  <% stati.collection?.pages.forEach(post => { %>
-    <%~ stati.partials.card({
+  <% (stati.collection?.pages ?? []).forEach(post => { %>
+    <%~ stati.include('partials/card', {
       title: post.frontMatter.title,
       description: post.frontMatter.description,
-      url: post.url
+      url: post.url,
     }) %>
   <% }) %>
 </div>
 ```
 
-#### Accessing data inside partials
-
-Inside your partials, any data you pass is available via `stati.props`:
+`site/partials/card.eta`:
 
 ```eta
-<!-- Inside _partials/hero.eta: only meaningful with props -->
-<% if (!stati.props) return; %>
-<section class="hero">
-  <h1><%= stati.props.title %></h1>
-  <p><%= stati.props.subtitle %></p>
-
-  <!-- You still have access to site data -->
-  <small>© <%= stati.site.title %></small>
-
-  <!-- And page data -->
-  <small>Current page: <%= stati.page.title %></small>
-</section>
-```
-
-#### Mixing custom and site data
-
-You can combine data passed to the partial with Stati's global data:
-
-```eta
-<!-- _partials/pageHeader.eta -->
-<header>
-  <!-- Use custom title if provided, otherwise fall back to site title -->
-  <h1><%= stati.props?.customTitle || stati.site.title %></h1>
-
-  <!-- Always show current page -->
-  <p>You're on: <%= stati.page.title %></p>
-
-  <!-- Use custom subtitle if provided -->
-  <% if (stati.props?.subtitle) { %>
-    <p class="subtitle"><%= stati.props.subtitle %></p>
+<article class="card">
+  <h3><a href="<%= stati.props.url %>"><%= stati.props.title %></a></h3>
+  <% if (stati.props.description) { %>
+    <p><%= stati.props.description %></p>
   <% } %>
-</header>
-
-<!-- Usage -->
-<%~ stati.partials.pageHeader({
-  customTitle: 'Special Event',
-  subtitle: 'Join us for an amazing experience'
-}) %>
+</article>
 ```
 
-**Practical tips:**
+**How it works:**
 
-- Use `stati.props` for data that changes each time you use the partial
-- Use `stati.site` for global site information (title, URL, etc.)
-- Use `stati.page` for the current page's information
-- Read props with `stati.props?.name` and provide defaults with `||` or `??`, because `stati.props` is `undefined` when the partial is used without data
+- A template renders only where it is included, with the props of that call.
+- `stati.props` is `undefined` when an include passes none, so a template that works with and without props reads them as `stati.props?.name`.
+- Everything else stays available inside: `stati.page`, `stati.site`, `stati.content`, `stati.helpers` and the rest.
+- Props must be an object. Anything else is an error in development; in production the build warns and renders the template without them.
 
-### Hierarchical partials
+### Passing content
 
-Partials are discovered **upward** from the current page's directory to the root. A page can access partials from its own directory and all parent directories, but **not** from child directories.
+The third argument is HTML for the included template to wrap. It arrives as `stati.body`:
 
-```text
-site/
-├── _partials/
-│   ├── header.eta       # Available to ALL pages
-│   └── footer.eta
-└── blog/
-    ├── _partials/
-    │   ├── sidebar.eta  # Available to blog/ and blog/posts/ pages
-    │   └── tagList.eta  # NOT available to root pages
-    └── posts/
-        └── _partials/
-            └── meta.eta # Available ONLY to blog/posts/ pages
+```eta
+<%~ stati.include('partials/callout', { tone: 'warning' }, '<p>This page is a draft.</p>') %>
+
+<!-- The content can be another include -->
+<%~ stati.include('partials/callout', { tone: 'note' }, stati.include('partials/draft-notice')) %>
 ```
 
-**Key points:**
+`site/partials/callout.eta`:
 
-- Visibility follows the **page** being rendered, not the layout file: for `site/blog/posts/my-post.md`, every template (including the root `site/layout.eta`) sees `site/_partials/`, `site/blog/_partials/` and `site/blog/posts/_partials/`
-- A page at the root (`site/about.md`) sees only `site/_partials/`, even if its layout lives elsewhere
-- More specific partials (deeper in hierarchy) override less specific ones with the same name
-- Every visible partial is pre-rendered for every page, so keep partials cheap and guard prop-only partials (see above)
+```eta
+<aside class="<%= `callout callout-${stati.props.tone}` %>">
+  <%~ stati.body %>
+</aside>
+```
+
+A component can also name a frame with `stati.layout()`, the same way a layout names its shell. Each render has its own layout slot, so a component's `stati.layout()` never changes the page's layout.
+
+### Optional templates
+
+`stati.include.has(name)` tells whether a name resolves for the current page, using the same lookup as `stati.include()`:
+
+```eta
+<% if (stati.include.has('partials/banner')) { %>
+  <%~ stati.include('partials/banner') %>
+<% } %>
+```
+
+### Rendering rules
+
+- Included templates render synchronously, so they cannot use `await`. Development shows an error that names the template.
+- An include without props or content renders once per page. Including the same template again on that page reuses its HTML.
+- A template that includes itself without props, directly or through other templates, is a cycle: development shows an error naming the chain (`site/partials/a.eta → site/partials/b.eta → site/partials/a.eta`), and production logs it and skips the repeat. With props, a template can include itself, for example to render a tree, up to a depth of 100.
+- An unknown name opens the error overlay in development, with the paths of similar templates. In production the build logs the error and the include renders nothing.
+
+Eta's own `include()`, `includeAsync()`, `layout()` and `block()` are not available in Stati templates. Use `stati.include()` and `stati.layout()`, and pass content a layout should place to it as props.
 
 ## Template data and context
 
@@ -519,7 +425,7 @@ Template usage:
 
 ## Collections
 
-A folder of pages with an `index.md` is a collection. Templates read it as `stati.collection`: the pages in the folder, already sorted by date and grouped by tag. A folder's index page reads its own collection, the pages in the folder read the collection they belong to, and any page can name one with `collection: /blog` in its front matter. Blog listings, archives, tag clouds and prev/next links need no hook or filter:
+A folder of pages with an `index.md` is a collection. Templates read it as `stati.collection`: the pages in the folder, already sorted by date and grouped by tag. A folder's index page reads its own collection, the pages in the folder read the collection they belong to, and any page can name one with `collection: /blog` in its front matter. Blog listings, archives, tag clouds and prev/next links need no hook or helper:
 
 ```eta
 <% const posts = stati.collection?.recentPages ?? []; %>
@@ -532,28 +438,49 @@ A folder of pages with an `index.md` is a collection. Templates read it as `stat
 
 Each entry is a page model, not a template context: read front matter through `frontMatter`, and use `url` for links. Stati rebuilds the pages that read a collection when one of its pages is added, removed, retitled or retagged.
 
-An `index.eta` next to an index page is used for that page ahead of `layout.eta`, so the listing can have its own template while the posts keep the folder layout.
+An `index.eta` next to an index page is used for that page ahead of `layout.eta`, so the listing can have its own template while the posts keep the folder layout. A folder's `index.md` is an index page once the folder holds another page; the root `index.md` always is.
 
 [Collections and generated pages](/core-concepts/collections) covers the collection data, which collection a page reads, pagination with `paginate`, and one page per tag or author from a `[param].md` template.
 
-## Custom filters and helpers
+## Helpers
 
-### Date formatting
+Functions you call from several templates belong in `helpers` in `stati.config.ts`. Templates call them as `stati.helpers.name()`:
+
+```typescript
+import { defineConfig } from '@stati/core';
+
+export default defineConfig({
+  helpers: {
+    formatDate: (date: string | Date) =>
+      new Date(date).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      }),
+    truncate: (text: string, length = 150) =>
+      text.length <= length ? text : `${text.slice(0, length)}...`,
+  },
+});
+```
 
 ```eta
-<!-- Format dates -->
-<time><%= new Date(stati.page.date).toLocaleDateString('en-US', {
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric'
-}) %></time>
+<time><%= stati.helpers.formatDate(stati.page.date) %></time>
+<p class="excerpt"><%= stati.helpers.truncate(stati.page.description ?? '') %></p>
+```
 
-<!-- Relative time -->
+Helpers are plain functions: they take arguments and return a value. A helper written with `function` or method syntax gets the helpers object as `this`, so it can call another helper as `this.formatDate()`. Stati's own functions stay on `stati` itself: `stati.slugify()`, `stati.propValue()`, `stati.image()` and `stati.generateSEO()`.
+
+[Template configuration](/configuration/templates) covers helpers in more detail.
+
+### Inline functions
+
+A function only one template needs can live in that template:
+
+```eta
 <%
 const now = new Date();
 const postDate = new Date(stati.page.date);
-const diffTime = Math.abs(now - postDate);
-const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+const diffDays = Math.ceil(Math.abs(now - postDate) / (1000 * 60 * 60 * 24));
 %>
 <span class="relative-time">
   <% if (diffDays === 0) { %>
@@ -566,39 +493,18 @@ const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     <%= new Date(stati.page.date).toLocaleDateString() %>
   <% } %>
 </span>
-```
 
-### Text processing
-
-```eta
-<!-- Truncate text -->
-<%
-function truncate(text, length = 150) {
-  if (text.length <= length) return text;
-  return text.slice(0, length) + '...';
-}
-%>
-<p class="excerpt"><%= truncate(stati.page.description) %></p>
-
-<!-- Slugify text -->
-<%
-function slugify(text) {
-  return text.toLowerCase()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/[\s_-]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-%>
-<a href="<%= `/tags#${slugify(tag)}` %>" class="tag-link">#<%= tag %></a>
+<!-- Stati's own slugify for tag links -->
+<a href="<%= `/tags/${stati.slugify(tag)}` %>" class="tag-link">#<%= tag %></a>
 ```
 
 ## Performance considerations
 
 ### Template caching
 
-Stati automatically caches compiled templates, but you can optimize further:
+Stati compiles each template once and reuses it for every page. A page renders only its layout, the shells it names and the templates it includes, and an include without props renders once per page however often it appears. You can optimize further:
 
-1. **Keep partials small and focused**
+1. **Keep included templates small and focused**
 2. **Avoid complex logic in templates**
 3. **Use front matter for data that doesn't change**
 4. **Cache expensive computations in build process**
@@ -607,13 +513,13 @@ Stati automatically caches compiled templates, but you can optimize further:
 
 1. **Separate logic from presentation**
    - Use front matter for data
-   - Keep complex logic in build scripts
+   - Keep complex logic in helpers or build hooks
    - Use simple helpers for common tasks
 
-2. **Optimize partial usage**
+2. **Organize templates**
+   - Keep the page shell in one template, such as `site/base.eta`
    - Don't over-fragment templates
-   - Reuse partials across sections
-   - Keep partial dependencies clear
+   - Reuse partials across sections, and override them per section only where a section differs
 
 3. **Performance-friendly patterns**
    - Minimize nested loops

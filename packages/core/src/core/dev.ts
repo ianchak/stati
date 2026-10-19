@@ -9,8 +9,19 @@ import { build } from './build.js';
 import { invalidate } from './invalidate.js';
 import { loadConfig } from '../config/loader.js';
 import { clearTemplateEngineCache } from './templates.js';
+import {
+  startTemplateIndexSession,
+  endTemplateIndexSession,
+  getCachedTemplateIndex,
+  toTemplateFile,
+} from './template-index.js';
 import { clearMarkdownProcessorCache } from './markdown.js';
-import { loadCacheManifest, saveCacheManifest, DevServerLockManager } from './isg/index.js';
+import {
+  loadCacheManifest,
+  saveCacheManifest,
+  hasRecordedTemplates,
+  DevServerLockManager,
+} from './isg/index.js';
 import {
   resolveDevPaths,
   resolveCacheDir,
@@ -22,6 +33,7 @@ import {
   createErrorOverlay,
   parseErrorDetails,
   TemplateError,
+  FrontMatterError,
   createFallbackLogger,
   mergeServerOptions,
   createTypeScriptWatcher,
@@ -31,13 +43,9 @@ import {
   assertPortAvailable,
   toPortUnavailableError,
 } from './utils/index.js';
+import type { ErrorDetails } from './utils/index.js';
 import { setEnv, getEnv } from '../env.js';
-import {
-  DEFAULT_DEV_PORT,
-  DEFAULT_DEV_HOST,
-  TEMPLATE_EXTENSION,
-  DEFAULT_OUT_DIR,
-} from '../constants.js';
+import { DEFAULT_DEV_PORT, DEFAULT_DEV_HOST, DEFAULT_OUT_DIR } from '../constants.js';
 
 export interface DevServerOptions {
   port?: number;
@@ -123,6 +131,7 @@ async function performInitialBuild(
  * @param eventType - The type of change: 'add', 'change', or 'unlink'
  * @param configPath - Optional path to the stati config file
  * @param staticDir - The static assets directory path
+ * @param srcDir - The source directory path, whose `.eta` files are templates
  * @param logger - Logger instance for output
  * @param wsServer - WebSocket server for live reload notifications
  * @param isBuildingRef - Mutable reference tracking whether a build is currently in progress
@@ -131,6 +140,8 @@ async function performInitialBuild(
  *   ensuring each file is only processed once with its most recent event type.
  * @param onError - Optional callback invoked when build errors occur
  * @param onBuildEnd - Optional callback invoked after each build attempt finishes (success or failure)
+ * @param hasBuildError - Whether the last build failed, so a template change rebuilds even when
+ *   no recorded page uses the template
  * @param batchedChanges - Array of changes to process in a single batch (used for pending queue processing)
  */
 async function performIncrementalRebuild(
@@ -138,12 +149,14 @@ async function performIncrementalRebuild(
   eventType: 'add' | 'change' | 'unlink',
   configPath: string | undefined,
   staticDir: string,
+  srcDir: string,
   logger: Logger,
   wsServer: WebSocketServer | null,
   isBuildingRef: { value: boolean },
   pendingChangesRef: { changes: Map<string, 'add' | 'change' | 'unlink'> },
   onError?: (error: Error | null) => void,
   onBuildEnd?: () => Promise<void> | void,
+  hasBuildError?: () => boolean,
   batchedChanges: Array<{ path: string; eventType: 'add' | 'change' | 'unlink' }> = [],
 ): Promise<void> {
   // If a build is in progress, queue this change for processing after the current build
@@ -198,41 +211,53 @@ async function performIncrementalRebuild(
 
   // Track template change result for better output
   let templateChangeResult: TemplateChangeResult | null = null;
+  // Templates are .eta files in the source directory; other files are content or static assets
+  const isTemplate = (path: string) => toTemplateFile(srcDir, path) !== null;
+  const templateChanges = allChanges.filter((change) => isTemplate(change.path));
+  const otherChanges = allChanges.filter((change) => !isTemplate(change.path));
 
   try {
-    // Check if the changed file is a template/partial
-    if (changedPath.endsWith(TEMPLATE_EXTENSION) || changedPath.includes('_partials')) {
-      // Use progress-enabled logger for template changes (rebuilds multiple pages)
-      const devLogger = createDevLogger(true);
-      templateChangeResult = await handleTemplateChange(changedPath, configPath, devLogger);
-    } else if (changedPath.endsWith('.md')) {
-      const devLogger = createDevLogger(false);
-      await handleMarkdownChange(changedPath, configPath, devLogger);
-    } else {
-      // Static file changed - use normal rebuild
-      const devLogger = createDevLogger(false);
+    let rebuild: TemplateChangeResult['rebuild'] = 'none';
+    if (templateChanges.length > 0) {
+      templateChangeResult = await markTemplateChanges(
+        templateChanges,
+        srcDir,
+        hasBuildError?.() ?? false,
+      );
+      rebuild = templateChangeResult.rebuild;
+    }
+    // Markdown and static files: ISG decides what re-renders, such as the pages that list a
+    // changed page through a collection; the build also removes a deleted page's output
+    if (otherChanges.length > 0 && rebuild === 'none') {
+      rebuild = 'incremental';
+    }
+
+    if (rebuild !== 'none') {
       await build({
-        logger: devLogger,
-        force: false,
+        // Progress output for template changes, which can rebuild many pages
+        logger: createDevLogger(templateChanges.length > 0),
+        force: rebuild === 'full',
         clean: false,
+        // Template changes don't affect static assets
+        ...(otherChanges.length === 0 && { skipAssetCopy: true }),
         ...(configPath && { configPath }),
       });
-    }
 
-    // Clear any previous errors on successful build
-    if (onError) {
-      onError(null);
-    }
+      // Clear any previous errors on successful build
+      if (onError) {
+        onError(null);
+      }
 
-    // Notify all connected clients to reload
-    if (wsServer) {
-      wsServer.clients.forEach((client: unknown) => {
-        const ws = client as { readyState: number; send: (data: string) => void };
-        if (ws.readyState === 1) {
-          // WebSocket.OPEN
-          ws.send(JSON.stringify({ type: 'reload' }));
-        }
-      });
+      // Notify all connected clients to reload
+      if (wsServer) {
+        wsServer.clients.forEach((client: unknown) => {
+          const ws = client as { readyState: number; send: (data: string) => void };
+          if (ws.readyState === 1) {
+            // WebSocket.OPEN
+            ws.send(JSON.stringify({ type: 'reload' }));
+          }
+        });
+      }
     }
 
     const duration = Date.now() - startTime;
@@ -240,22 +265,32 @@ async function performIncrementalRebuild(
     // Log rebuild result with affected page info for template changes
     for (const change of allChanges) {
       const relativePath = getRelativePath(change.path);
+      const template = templateChanges.includes(change);
       let action: string;
       if (change.eventType === 'unlink') {
         action = 'deleted';
       } else if (isStaticAsset(change.path)) {
         action = 'copied';
+      } else if (template) {
+        action = change.eventType === 'add' ? 'added' : 'changed';
       } else {
         action = 'rebuilt';
       }
+      logger.info?.(`▸ ${relativePath} ${action}`);
 
       // For template changes, include affected page count
-      if (templateChangeResult && templateChangeResult.affectedPages > 0) {
+      if (template && templateChangeResult && rebuild !== 'none') {
         const { affectedPages, totalPages } = templateChangeResult;
-        logger.info?.(`▸ ${relativePath} ${action}`);
-        logger.info?.(`   ${affectedPages}/${totalPages} pages rebuilt in ${duration}ms`);
+        if (templateChangeResult.rebuild === 'full') {
+          logger.info?.(`   All pages rebuilt in ${duration}ms`);
+        } else if (affectedPages > 0) {
+          logger.info?.(`   ${affectedPages}/${totalPages} pages rebuilt in ${duration}ms`);
+        } else {
+          logger.info?.(`   Done in ${duration}ms`);
+        }
+      } else if (template) {
+        logger.info?.(change.eventType === 'unlink' ? '   No page used it' : '   No page uses it');
       } else {
-        logger.info?.(`▸ ${relativePath} ${action}`);
         logger.info?.(`   Done in ${duration}ms`);
       }
     }
@@ -289,8 +324,8 @@ async function performIncrementalRebuild(
       );
       pendingChangesRef.changes.clear();
 
-      // Trigger another rebuild with all batched changes
-      // The build() call will copy all static assets and rebuild all affected pages
+      // Trigger another rebuild with all batched changes: every template change in the batch
+      // updates the template index and marks its pages, then one build runs
       const [first, ...remaining] = pendingChanges;
       if (first) {
         void performIncrementalRebuild(
@@ -298,12 +333,14 @@ async function performIncrementalRebuild(
           first.eventType,
           configPath,
           staticDir,
+          srcDir,
           logger,
           wsServer,
           isBuildingRef,
           pendingChangesRef,
           onError,
           onBuildEnd,
+          hasBuildError,
           remaining, // Pass remaining changes as batched
         );
       }
@@ -312,146 +349,139 @@ async function performIncrementalRebuild(
 }
 
 /**
- * Result of handling a template change
+ * What template changes require
  */
 interface TemplateChangeResult {
-  /** Number of pages affected by this template change */
+  /** Number of pages marked for rebuilding */
   affectedPages: number;
   /** Total pages in the site */
   totalPages: number;
+  /** The build to run: none when no page uses the changed templates */
+  rebuild: 'none' | 'incremental' | 'full';
 }
 
 /**
- * Handles template/partial file changes by invalidating affected pages.
- * Uses proper path normalization to ensure reliable matching between
- * file watcher paths and cached dependency paths.
+ * Applies template changes before a rebuild. Pages record the templates they rendered and the
+ * names they looked up, so for each changed `.eta` file:
+ * - change: the pages that rendered it rebuild; when none did, no page uses it.
+ * - add: the template index learns the file, and the pages whose lookups now find it rebuild,
+ *   such as the pages a new section override applies to.
+ * - unlink: the index forgets the file, and the pages that rendered or found it rebuild.
  *
- * @returns Object with affected and total page counts
+ * Affected entries are marked stale in the saved manifest. Entries without recorded templates
+ * cannot say which pages use a file, so they get a forced full build.
+ *
+ * @param lastBuildFailed - Whether the previous build failed; then a build runs even when no
+ *   recorded page uses the file, so the error clears once the template that broke it is fixed
  */
-async function handleTemplateChange(
-  templatePath: string,
-  configPath: string | undefined,
-  logger: Logger,
+async function markTemplateChanges(
+  changes: Array<{ path: string; eventType: 'add' | 'change' | 'unlink' }>,
+  srcDir: string,
+  lastBuildFailed: boolean,
 ): Promise<TemplateChangeResult> {
-  const cacheDir = resolveCacheDir();
+  // Drop the cached Eta engine so the changed templates are recompiled on the next build.
+  // Markdown-only edits keep reusing it.
+  clearTemplateEngineCache();
+
+  // Keep the template index that dev builds reuse in step with the files
+  const index = getCachedTemplateIndex(srcDir);
+  for (const change of changes) {
+    const file = toTemplateFile(srcDir, change.path);
+    if (index && file) {
+      if (change.eventType === 'add') {
+        index.add(file);
+      } else if (change.eventType === 'unlink') {
+        index.remove(file);
+      }
+    }
+  }
 
   try {
-    // Drop the cached Eta engine so the changed template (and any compiled partials)
-    // are recompiled on the next build. This keeps rebuilds correct while still
-    // reusing the engine across the common markdown-only edit path.
-    clearTemplateEngineCache();
-
-    // Load existing cache manifest
+    const cacheDir = resolveCacheDir();
     const cacheManifest = await loadCacheManifest(cacheDir);
-
     if (!cacheManifest) {
-      // No cache exists, perform full rebuild
-      await build({
-        logger,
-        force: false,
-        clean: false,
-        ...(configPath && { configPath }),
-      });
-      return { affectedPages: 0, totalPages: 0 };
+      return { affectedPages: 0, totalPages: 0, rebuild: 'incremental' };
     }
 
-    // Normalize the changed template path to absolute POSIX format for reliable comparison
-    // This handles cases where the watcher provides relative paths, Windows paths, or different
-    // path representations than what's stored in the cache manifest
-    // NOTE: Only used for string comparison, never for file system operations
-    const normalizedTemplatePath = normalizePathForComparison(templatePath);
+    const entries = Object.entries(cacheManifest.entries);
+    const totalPages = entries.length;
+    if (entries.some(([, entry]) => !hasRecordedTemplates(entry))) {
+      return { affectedPages: totalPages, totalPages, rebuild: 'full' };
+    }
 
-    // Get total page count from manifest
-    const totalPages = Object.keys(cacheManifest.entries).length;
-
-    // Find pages that depend on this template
-    let affectedPagesCount = 0;
-
-    for (const [pagePath, entry] of Object.entries(cacheManifest.entries)) {
-      // Check if any of the page's dependencies match the changed template
-      const hasMatchingDep = entry.deps.some((dep) => {
-        // Normalize the cached dependency path to the same format for comparison only
-        const normalizedDep = normalizePathForComparison(dep);
-
-        // Direct path comparison - both paths are now in consistent format
-        return normalizedDep === normalizedTemplatePath;
-      });
-
-      if (hasMatchingDep) {
-        affectedPagesCount++;
-        // Mark entry as stale by invalidating its inputsHash
-        // This forces a rebuild while preserving deps for fast update optimization
-        cacheManifest.entries[pagePath] = {
-          ...entry,
-          inputsHash: 'STALE', // Forces rebuild in shouldRebuildPage
-        };
+    // Normalized for comparison only: watcher paths and manifest paths can differ in form
+    const changedFiles = new Set(changes.map((change) => normalizePathForComparison(change.path)));
+    const filesAddedOrRemoved = changes.some((change) => change.eventType !== 'change');
+    let affectedPages = 0;
+    for (const [pagePath, entry] of entries) {
+      const renderedChangedFile = entry.deps.some((dep) =>
+        changedFiles.has(normalizePathForComparison(dep)),
+      );
+      const lookupsChanged =
+        filesAddedOrRemoved && index !== null && index.lookupsChanged(entry.templateLookups);
+      if (renderedChangedFile || lookupsChanged) {
+        affectedPages++;
+        // Forces a rebuild in shouldRebuildPage
+        cacheManifest.entries[pagePath] = { ...entry, inputsHash: 'STALE' };
       }
     }
 
-    if (affectedPagesCount > 0) {
-      // Save updated cache manifest
+    if (affectedPages > 0) {
       await saveCacheManifest(cacheDir, cacheManifest);
-
-      // Perform incremental rebuild (only affected pages will be rebuilt)
-      // skipManifestSave: true because we already saved the manifest above
-      // skipAssetCopy: true because template changes don't affect static assets
-      await build({
-        logger,
-        force: false,
-        clean: false,
-        skipManifestSave: true,
-        skipAssetCopy: true,
-        ...(configPath && { configPath }),
-      });
-
-      return { affectedPages: affectedPagesCount, totalPages };
-    } else {
-      // If no affected pages were found but a template changed,
-      // force a full rebuild to ensure changes are reflected
-      // This can happen if dependency tracking missed something
-      await build({
-        logger,
-        force: true,
-        clean: false,
-        ...(configPath && { configPath }),
-      });
-
-      return { affectedPages: totalPages, totalPages };
+      return { affectedPages, totalPages, rebuild: 'incremental' };
     }
-  } catch (_error) {
-    try {
-      // Fallback to full rebuild
-      await build({
-        logger,
-        force: false,
-        clean: false,
-        ...(configPath && { configPath }),
-      });
-    } catch (fallbackError) {
-      throw fallbackError instanceof Error ? fallbackError : new Error(String(fallbackError));
+    // Before the session has an index, the build's own checks find the pages a new or deleted
+    // file affects
+    if ((filesAddedOrRemoved && index === null) || lastBuildFailed) {
+      return { affectedPages: 0, totalPages, rebuild: 'incremental' };
     }
-    // Return zeros on error fallback
-    return { affectedPages: 0, totalPages: 0 };
+    return { affectedPages: 0, totalPages, rebuild: 'none' };
+  } catch {
+    // Let the build's own checks decide
+    return { affectedPages: 0, totalPages: 0, rebuild: 'incremental' };
   }
 }
 
 /**
- * Handles markdown file changes (added, edited or deleted pages) with an incremental build.
- * ISG decides what re-renders: the changed page, the pages that list it through a collection,
- * and the pages that read the navigation when the change altered it. A deleted page's output
- * is removed by the build.
+ * The error overlay's details for a failed build: template errors point at the template and
+ * front matter errors at the Markdown file; other errors are classified by their message.
  */
-async function handleMarkdownChange(
-  _markdownPath: string,
-  configPath: string | undefined,
-  logger: Logger,
-): Promise<void> {
-  await build({
-    logger,
-    force: false,
-    clean: false,
-    ...(configPath && { configPath }),
-  });
+async function describeBuildError(error: Error): Promise<ErrorDetails> {
+  if (error instanceof TemplateError) {
+    return error.toErrorDetails();
+  }
+  if (error instanceof FrontMatterError) {
+    // The file and line are the Markdown file's, not a stack frame's
+    const {
+      line: _line,
+      column: _column,
+      ...details
+    } = parseErrorDetails(error, 'markdown', error.filePath);
+    return {
+      ...details,
+      ...(error.line !== undefined && { line: error.line }),
+      ...(error.column !== undefined && { column: error.column }),
+    };
+  }
+
+  const message = error.message.toLowerCase();
+  const name = error.name ? error.name.toLowerCase() : '';
+  const errorType =
+    message.includes('template') ||
+    message.includes('eta') ||
+    message.includes('layout') ||
+    name.includes('template')
+      ? 'template'
+      : message.includes('front-matter') ||
+          message.includes('yaml') ||
+          name.includes('yaml') ||
+          name.includes('yamlexception')
+        ? 'markdown'
+        : message.includes('config') || name.includes('config')
+          ? 'config'
+          : 'build';
+
+  return parseErrorDetails(error, errorType);
 }
 
 export async function createDevServer(options: DevServerOptions = {}): Promise<DevServer> {
@@ -489,6 +519,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
   const setLastBuildError = (error: Error | null) => {
     lastBuildError = error;
   };
+  const hasLastBuildError = () => lastBuildError !== null;
   let watcher: FSWatcher | null = null;
   let cssWatcher: FSWatcher | null = null;
   let tsWatchers: BuildContext[] = [];
@@ -546,34 +577,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
       errorToShow &&
       (requestPath === '/' || requestPath.endsWith('.html') || !requestPath.includes('.'))
     ) {
-      let errorDetails;
-
-      // Use enhanced error details for TemplateError instances
-      if (errorToShow instanceof TemplateError) {
-        errorDetails = await errorToShow.toErrorDetails();
-      } else {
-        // Determine error type based on error message
-        const message = errorToShow.message.toLowerCase();
-        const name = errorToShow.name ? errorToShow.name.toLowerCase() : '';
-        const errorType =
-          message.includes('template') ||
-          message.includes('eta') ||
-          message.includes('layout') ||
-          name.includes('template')
-            ? 'template'
-            : message.includes('front-matter') ||
-                message.includes('yaml') ||
-                name.includes('yaml') ||
-                name.includes('yamlexception')
-              ? 'markdown'
-              : message.includes('config') || name.includes('config')
-                ? 'config'
-                : 'build';
-
-        errorDetails = parseErrorDetails(errorToShow, errorType);
-      }
-
-      const errorHtml = createErrorOverlay(errorDetails, requestPath);
+      const errorHtml = createErrorOverlay(await describeBuildError(errorToShow), requestPath);
       return {
         content: errorHtml,
         mimeType: 'text/html',
@@ -595,47 +599,6 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
     const { filePath, found } = await resolvePrettyUrl(outDir, requestPath, requestFile);
 
     if (!found || !filePath) {
-      // If we have a build error and this is an HTML request, show error overlay instead of 404
-      const errorToShow = lastBuildError;
-
-      if (
-        errorToShow &&
-        (requestPath === '/' || requestPath.endsWith('.html') || !requestPath.includes('.'))
-      ) {
-        // Use enhanced error details for TemplateError instances
-        let errorDetails;
-        if (errorToShow instanceof TemplateError) {
-          errorDetails = await errorToShow.toErrorDetails();
-        } else {
-          // Determine error type based on error message
-          const message = errorToShow.message.toLowerCase();
-          const name = errorToShow.name ? errorToShow.name.toLowerCase() : '';
-          const errorType =
-            message.includes('template') ||
-            message.includes('eta') ||
-            message.includes('layout') ||
-            name.includes('template')
-              ? 'template'
-              : message.includes('front-matter') ||
-                  message.includes('yaml') ||
-                  name.includes('yaml') ||
-                  name.includes('yamlexception')
-                ? 'markdown'
-                : message.includes('config') || name.includes('config')
-                  ? 'config'
-                  : 'build';
-
-          errorDetails = parseErrorDetails(errorToShow, errorType);
-        }
-
-        const errorHtml = createErrorOverlay(errorDetails, requestPath);
-        return {
-          content: errorHtml,
-          mimeType: 'text/html',
-          statusCode: 500,
-        };
-      }
-
       // Serve the site's 404 page, as static hosts do, with live reload so it updates on edits
       const notFoundPage = await resolveNotFoundPage(outDir);
       if (notFoundPage) {
@@ -743,7 +706,8 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
         }
       }
 
-      // Perform initial build
+      // Rebuilds reuse one template index, which the file watcher keeps current
+      startTemplateIndexSession(srcDir);
       await performInitialBuild(configPath, logger, setLastBuildError);
 
       // Create HTTP server
@@ -869,12 +833,14 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
           'change',
           configPath,
           staticDir,
+          srcDir,
           logger,
           disableWsReload ? null : wsServer,
           isBuildingRef,
           pendingChangesRef,
           setLastBuildError,
           disableCssWatcher ? undefined : refreshCssWatcher,
+          hasLastBuildError,
         );
       });
 
@@ -884,12 +850,14 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
           'add',
           configPath,
           staticDir,
+          srcDir,
           logger,
           disableWsReload ? null : wsServer,
           isBuildingRef,
           pendingChangesRef,
           setLastBuildError,
           disableCssWatcher ? undefined : refreshCssWatcher,
+          hasLastBuildError,
         );
       });
 
@@ -899,12 +867,14 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
           'unlink',
           configPath,
           staticDir,
+          srcDir,
           logger,
           disableWsReload ? null : wsServer,
           isBuildingRef,
           pendingChangesRef,
           setLastBuildError,
           disableCssWatcher ? undefined : refreshCssWatcher,
+          hasLastBuildError,
         );
       });
 
@@ -978,6 +948,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
 
       // Release cached dev-session engines so they can be garbage collected
       clearTemplateEngineCache();
+      endTemplateIndexSession(srcDir);
       clearMarkdownProcessorCache();
 
       logger.info?.('Dev server stopped');

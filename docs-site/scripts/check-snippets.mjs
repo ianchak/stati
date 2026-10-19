@@ -15,13 +15,19 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import matter from 'gray-matter';
+import { load } from 'js-yaml';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const IMPORT = "import { defineConfig } from '@stati/core';";
 const SITE = "site: { title: 'Excerpt', baseUrl: 'https://example.com' },";
 
-const { data } = matter(await readFile(join(root, 'site/index.md'), 'utf8'));
+// The homepage's front matter: the YAML between its first two --- lines
+const homepage = await readFile(join(root, 'site/index.md'), 'utf8');
+const frontMatter = /^---\r?\n([\s\S]*?)\r?\n---/.exec(homepage);
+if (!frontMatter) {
+  throw new Error('site/index.md has no front matter');
+}
+const data = load(frontMatter[1]) ?? {};
 
 const isExcerpt = (file) => String(file).includes('(excerpt)');
 
@@ -73,6 +79,8 @@ try {
     process.execPath,
     [
       tsc,
+      // The snippets are checked with the options below, not docs-site's tsconfig.json
+      '--ignoreConfig',
       '--noEmit',
       '--strict',
       '--skipLibCheck',

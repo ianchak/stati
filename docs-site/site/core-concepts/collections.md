@@ -6,7 +6,7 @@ order: 4
 
 # Collections and generated pages
 
-A folder of pages with an `index.md` is a **collection**. Templates read it as `stati.collection`: the pages in the folder, sorted by date and grouped by tag. On top of that, Stati can split a listing into numbered pages with `paginate`, and turn one `[param].md` template into a page for every tag, author or other key. Listings stay current: when a post is added, removed, retitled or retagged, Stati rebuilds the pages that list it, and nothing else.
+A folder of pages with an `index.md` is a **collection**. Templates read it as `stati.collection`: the pages in the folder, sorted by date and grouped by tag. On top of that, Stati can split a listing into numbered pages with `paginate`, and turn one `[param].md` template into a page for every tag, author or other key. Listings stay current: when a post is added, removed, retitled or retagged, Stati rebuilds the pages that list it and, if the navigation changed, the pages that show the navigation. Other pages stay as they are.
 
 ```text
 site/
@@ -19,7 +19,7 @@ site/
 │       └── recap.md
 └── tags/
     ├── index.md         # All tags, with `collection: /blog`
-    └── [tag].md         # One page per tag: /tags/css, /tags/javascript…
+    └── [tag].md         # With `collection: /blog` too: one page per tag, /tags/css…
 ```
 
 ## Collection data
@@ -62,7 +62,7 @@ A tag list with counts comes straight from `pagesByTag`:
 <% }) %>
 ```
 
-Each template gets its own copy of the lists, so sorting or filtering them in place doesn't affect other pages.
+Each page gets its own copy of the lists, so sorting or filtering them in place doesn't affect other pages. The templates of one page share that copy.
 
 ## Which collection a page reads
 
@@ -102,7 +102,7 @@ A collection name that matches no index page is reported with a warning, and the
 
 ## What rebuilds a listing
 
-Stati notices which pages read `stati.collection` while they render. Such a page depends on a summary of the collection: every page's URL and publish date, plus its `title`, `description`, `tags` and `draft` front matter. When the summary changes, because a page in the collection was added, removed, moved or had one of those fields changed, the pages that read the collection rebuild. A change to a post's body or to other front matter rebuilds only that post. See [ISG](/core-concepts/isg#dependency-tracking).
+Stati notices which pages read `stati.collection` while they render. Such a page depends on a summary of the collection: every page's URL and publish date, plus its `title`, `description`, `tags` and `draft` front matter. When the summary changes, because a page in the collection was added, removed, moved or had one of those fields changed, the pages that read the collection rebuild. A change to a post's body or to other front matter rebuilds only that post, unless it changes the navigation, as a new `order` does: then the pages that read `stati.nav` rebuild too. See [ISG](/core-concepts/isg#dependency-tracking).
 
 When a listing shows other fields, add them to `collections.summaryFields`. The list replaces the default, and `content` stands for the Markdown body, for listings that show excerpts:
 
@@ -228,7 +228,7 @@ Generated pages render with the layout their template's folder would use, so `si
 
 ### What rebuilds a generated page
 
-A generated page depends on its template and on its own items, so a new post tagged `CSS` rebuilds `/blog/tags/css` and not the page of every other tag. A template that also reads `stati.collection`, for a tag cloud for example, depends on the whole collection. When the last post with a tag loses it, the tag's page is deleted. Each generated page's cache entry carries its key and label as tags, so `stati invalidate "tag:css"` refreshes `/blog/tags/css` along with the posts tagged `css`.
+A generated page depends on its template and on its own items, so a new post tagged `CSS` rebuilds `/blog/tags/css` and not the page of every other tag. A template that also reads `stati.collection`, for a tag cloud for example, depends on the whole collection. When the last post with a tag loses it, the tag's page is deleted. Each generated page's cache entry carries its key and label as tags, so `stati invalidate "tag:CSS"` refreshes `/blog/tags/css` along with the posts tagged `CSS`. Tags match exactly: `tag:css` refreshes only the tag page, through its key.
 
 ### Pages from data
 
@@ -257,7 +257,7 @@ export default defineConfig({
 | `key`      | No       | `stati.generated.key`; defaults to the last segment of `url`                 |
 | `label`    | No       | `stati.generated.label` and the value of `{param}`; defaults to the key      |
 | `items`    | No       | `stati.generated.items`, split up when the template sets `generate.paginate` |
-| `data`     | No       | `stati.generated.data`; any JSON value, and changing it rebuilds the page    |
+| `data`     | No       | `stati.generated.data`; a JSON object, and changing it rebuilds the page     |
 
 The function runs once per build, after content is loaded, and receives the configuration and the pages loaded from Markdown. A template used only by `collections.generate` needs no `generate.from`.
 
@@ -279,6 +279,6 @@ Hooks see them: `beforeAll`, `afterAll` and the per-page hooks receive them like
 - **Dates:** `recentPages` sorts on `post.publishedAt`, which Stati takes from the first valid front matter field among `publishedAt`, `published`, `date` and `createdAt`. Quoted (`publishedAt: '2025-03-01'`) and unquoted (`date: 2025-03-01`) values both work. An invalid value is skipped with a warning. Navigation, ISG aging and RSS read dates in the same order.
 - **The root collection is shallow:** `site/index.md` collects only top-level pages, such as `/about` and `/blog`, not the pages inside `blog/`. Other collections include every depth.
 - **Drafts:** pages with `draft: true` are left out unless you build with `--include-drafts`.
-- **Index layouts:** an `index.eta` next to an index page is used for that page, and for the later pages of its listing, ahead of `layout.eta`. The listing can have its own template while the posts keep the folder layout.
+- **Index layouts:** an `index.eta` next to an index page is used for that page, and for the later pages of its listing, ahead of `layout.eta`. The listing can have its own template while the posts keep the folder layout. A folder's `index.md` is an index page once the folder holds another page; the root `index.md` always is.
 - **Reserved front matter:** `collection`, `paginate`, `generate`, and in templates `nav` and `search`, configure these features.
 - **Template names:** `[tag].md`, `[author].md` and `[release-year].md` work; the name inside the brackets uses letters, digits, `-` and `_`. Brackets in folder names have no meaning.

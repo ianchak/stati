@@ -1,6 +1,7 @@
 <%
-  /* Layout for every post in site/posts/. Shares head, header and footer with
-     site/layout.eta through the partials in site/_partials/.
+  /* Layout for every post in site/posts/. Like site/layout.eta, it renders the main
+     content and names site/base.eta, the page with the head, header and footer, with
+     stati.layout().
 
      stati.collection holds every post in this folder, newest first. The newer, older
      and related posts come from it, so Stati rebuilds a post when its neighbours or
@@ -13,73 +14,63 @@
   const index = posts.findIndex((post) => post.url === url);
   const newer = index > 0 ? posts[index - 1] : undefined;
   const older = index >= 0 ? posts[index + 1] : undefined;
-  const related = stati.relatedPosts(posts, url, 3);
+  const related = stati.helpers.relatedPosts(posts, url, 3);
   const author = stati.site.author;
+  stati.layout('base');
 %>
-<!DOCTYPE html>
-<html lang="<%= stati.site.defaultLocale || 'en' %>">
-  <%~ stati.partials.head %>
-  <body>
-    <a href="#main" class="skip-link">Skip to content</a>
-    <%~ stati.partials.header %>
-
-    <main id="main" class="wrapper">
-      <article class="post">
-        <header class="post-header">
-          <h1 style="<%= `view-transition-name: post${url.replace(/[^a-z0-9]+/gi, '-')}` %>"><%= stati.page.title %></h1>
-          <div class="post-meta">
-            <% if (published) { %>
-              <time datetime="<%= stati.isoDate(published) %>"><%= stati.formatDate(published, 'long') %></time>
-            <% } %>
-            <% if (updated) { %>
-              <span>Updated <time datetime="<%= stati.isoDate(updated) %>"><%= stati.formatDate(updated, 'long') %></time></span>
-            <% } %>
-            <% if (stati.page.draft) { %><span class="draft-label">Draft</span><% } %>
-            <%~ stati.partials['tag-links']({ tags, label: 'Tags for this post' }) %>
-          </div>
-        </header>
-
-        <div class="prose post-body"><%~ stati.content %></div>
-
-        <footer class="post-footer">
-          <div class="end-mark" aria-hidden="true"></div>
-          <% if (author) { %>
-          <section class="author-note" aria-label="About the author">
-            <p>
-              <strong><a href="<%= author.url ?? '/about' %>"><%= author.name %></a></strong>
-              <% if (author.bio) { %><%= author.bio %><% } %>
-            </p>
-            <p class="subscribe">New posts arrive in your reader through the <a href="/feed.xml">RSS feed</a>.</p>
-          </section>
-          <% } %>
-        </footer>
-      </article>
-
-      <% if (newer || older) { %>
-      <nav class="post-pager" aria-label="Newer and older posts">
-        <% if (newer) { %>
-          <a class="pager-newer" href="<%= newer.url %>" rel="prev">
-            <span class="pager-label">Newer</span>
-            <span class="pager-title"><%= newer.frontMatter.title %></span>
-          </a>
+<main id="main" class="wrapper">
+  <article class="post">
+    <header class="post-header">
+      <h1 style="<%= `view-transition-name: post${url.replace(/[^a-z0-9]+/gi, '-')}` %>"><%= stati.page.title %></h1>
+      <div class="post-meta">
+        <% if (published) { %>
+          <time datetime="<%= stati.helpers.isoDate(published) %>"><%= stati.helpers.formatDate(published, 'long') %></time>
         <% } %>
-        <% if (older) { %>
-          <a class="pager-older" href="<%= older.url %>" rel="next">
-            <span class="pager-label">Older</span>
-            <span class="pager-title"><%= older.frontMatter.title %></span>
-          </a>
+        <% if (updated) { %>
+          <span>Updated <time datetime="<%= stati.helpers.isoDate(updated) %>"><%= stati.helpers.formatDate(updated, 'long') %></time></span>
         <% } %>
-      </nav>
-      <% } %>
+        <% if (stati.page.draft) { %><span class="draft-label">Draft</span><% } %>
+        <%~ stati.include('partials/tag-links', { tags, label: 'Tags for this post' }) %>
+      </div>
+    </header>
 
-      <% if (related.length > 0) { %>
-      <section class="listing related" aria-labelledby="related-heading">
-        <h2 id="related-heading" class="listing-heading">Related posts</h2>
-        <%~ stati.partials['post-list']({ posts: related }) %>
+    <div class="prose post-body"><%~ stati.content %></div>
+
+    <footer class="post-footer">
+      <div class="end-mark" aria-hidden="true"></div>
+      <% if (author) { %>
+      <section class="author-note" aria-label="About the author">
+        <p>
+          <strong><a href="<%= author.url ?? '/about' %>"><%= author.name %></a></strong>
+          <% if (author.bio) { %><%= author.bio %><% } %>
+        </p>
+        <p class="subscribe">New posts arrive in your reader through the <a href="/feed.xml">RSS feed</a>.</p>
       </section>
       <% } %>
-    </main>
+    </footer>
+  </article>
 
-    <%~ stati.partials.footer %>
-  </body>
-</html>
+  <% if (newer || older) { %>
+  <nav class="post-pager" aria-label="Newer and older posts">
+    <% if (newer) { %>
+      <a class="pager-newer" href="<%= newer.url %>" rel="prev">
+        <span class="pager-label">Newer</span>
+        <span class="pager-title"><%= newer.frontMatter.title %></span>
+      </a>
+    <% } %>
+    <% if (older) { %>
+      <a class="pager-older" href="<%= older.url %>" rel="next">
+        <span class="pager-label">Older</span>
+        <span class="pager-title"><%= older.frontMatter.title %></span>
+      </a>
+    <% } %>
+  </nav>
+  <% } %>
+
+  <% if (related.length > 0) { %>
+  <section class="listing related" aria-labelledby="related-heading">
+    <h2 id="related-heading" class="listing-heading">Related posts</h2>
+    <%~ stati.include('partials/post-list', { posts: related }) %>
+  </section>
+  <% } %>
+</main>

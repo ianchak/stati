@@ -32,6 +32,7 @@ Edit this file, not the tool-specific ones, when guidance changes.
 - `core/expand.ts` runs between `loadContent` and `buildNavigation`: it removes `[param].md` templates, expands them (and `collections.generate` entries) into generated pages, and adds the later pages of `paginate` listings. Generated and pagination pages are "virtual" (`isVirtualPage`): never collection members, and out of navigation, search and RSS unless they opt in.
 - `core/collections.ts` computes every collection once per page list (`getCollections`), resolves which collection a page reads (`resolveCollectionPath`: `collection` front matter, own index, then nearest), hashes collection summaries, and builds the per-render views that record whether a page read `stati.collection`.
 - The image runtime (`ImageRuntime`, created per build) registers each page's images while it renders, starts only the jobs the written HTML references, then settles them: a failed job rewrites the page to plain image markup and marks its cache entry `STALE`. `stati build` prunes generated files in `dist/_img/` that no page uses, and only files recorded in `.stati/images/manifest.json`.
+- Templates: `core/template-index.ts` lists every `.eta` file under `srcDir` once per build and resolves template names (`partials/header` looked up from the page's folder up, `/x` from `srcDir`, `./x` and `../x` from the calling template); a dev server session keeps one index and updates it on add and unlink. `core/template-render.ts` holds the per-page `RenderScope` behind `stati.include()`, `stati.layout()`, `stati.body` and `stati.props`: layout slots, the cycle stack, the include cache (keyed by file and base context) and the recording of every template rendered and name looked up, reached through `AsyncLocalStorage`. `core/eta-plugin.ts` blocks Eta's own `include`, `includeAsync`, `layout`, `block` and `blockAsync`, and anchors on Eta's `layout()` declaration (engine creation throws if it moves).
 - Rebuild decisions come from `shouldRebuildPage` plus config hooks (`beforeAll`, `beforeRender`, `afterRender`) defined via `defineConfig()`.
 - Static assets move through `copyStaticAssetsWithLogging`; preserve `logger.*` calls to keep CLI output structured.
 
@@ -39,7 +40,7 @@ Edit this file, not the tool-specific ones, when guidance changes.
 
 - Build errors during incremental rebuilds should be surfaced via `logger.error()` rather than throwing - this keeps the dev server alive and feeds the error overlay.
 - The error overlay (`core/utils/error-overlay.utils.ts`) renders build failures in-browser during dev mode; it expects structured error objects with `message`, `file`, and optional `line`/`column`.
-- Template rendering errors are caught in `renderPage` and logged with context (template path, page slug); they don't halt the entire build.
+- Template rendering errors are caught in `renderPage` and logged with context (template path, page slug); they don't halt the entire build. In production, a failing layout or shell writes the fallback HTML, and a failing include leaves an HTML comment; in development, misuse of `stati.include()`/`stati.layout()` throws `TemplateUsageError` so the overlay points at the calling template.
 - Use `logger.warning()` for recoverable issues (missing optional fields, deprecated config); use `logger.error()` for failures that skip a page.
 - Validation errors from config loading throw immediately since the build cannot proceed without valid configuration.
 
@@ -53,7 +54,7 @@ Edit this file, not the tool-specific ones, when guidance changes.
 
 ## Dev + preview servers
 
-- `createDevServer` (in `core/dev.ts`) clears cache, triggers an initial build, then watches `site/` and `public/`. Template edits flow through `handleTemplateChange` to evict affected manifest entries.
+- `createDevServer` (in `core/dev.ts`) clears cache, triggers an initial build, then watches `site/` and `public/`. Template add, change and unlink events flow through `markTemplateChanges`, which marks entries stale when their `deps` hold the file or their `templateLookups` now resolve differently, and builds only when a page is affected.
 - Build failures feed the in-browser overlay produced by `core/utils/error-overlay.utils.ts`; prefer surfacing errors via the logger instead of throwing inside incremental rebuilds.
 - `createPreviewServer` serves the built `dist/` with the same logger expectations as dev.
 
@@ -80,7 +81,7 @@ Edit this file, not the tool-specific ones, when guidance changes.
 
 ## Common file patterns
 
-- `*.eta` - Eta templates (layouts, partials, pages)
+- `*.eta` - Eta templates (layouts, shells, included templates); never pages on their own
 - `*.md` - Markdown content files with YAML frontmatter
 - `stati.config.ts` / `stati.config.js` - Site configuration using `defineConfig()`
 - `.stati/` - Build cache directory (contains `manifest.json` and `images/manifest.json`)
@@ -103,7 +104,7 @@ All config blocks live under `defineConfig()`. Key sections:
 - **markdown.plugins**: Array of `[pluginName, options]` tuples (e.g., `['external-links', { externalTarget: '_blank' }]`, `['prism', { defaultLanguage: 'javascript' }]`).
 - **markdown.configure**: Callback receiving the markdown-it instance for advanced customization.
 - **markdown.toc**: Enable TOC extraction and heading anchors (default: `true`).
-- **eta.filters**: Object of custom filter functions available in templates as `<%= stati.filterName(value) %>` (called as functions, not pipes).
+- **helpers**: Object of functions templates call as `<%= stati.helpers.name(value) %>`; validated at load (every entry must be a function). The root of `stati` holds only Stati's API.
 - **typescript**: `enabled`, `srcDir`, `outDir`, `hash`, `minify`, `bundles[]` with `entryPoint`, `bundleName`, `include`/`exclude` glob patterns for selective bundle injection.
 - **isg**: `enabled`, `ttlSeconds`, `maxAgeCapDays`, `aging[]` (array of `{ untilDays, ttlSeconds }` rules).
 - **collections**: `summaryFields[]` (front matter that rebuilds listings; default `title`, `description`, `tags`, `draft`), `generate(ctx)` returning `{ url, template, key?, label?, items?, data? }` pages rendered with a `[param].md` template.
@@ -136,9 +137,10 @@ All utilities in `packages/core/src/core/utils/` follow the `*.utils.ts` naming 
 - **slugify.utils.ts**: `slugify(text)` - URL-safe slug generation.
 - **html.utils.ts**: `findHeadClosePosition`, `injectBeforeHeadClose` - HTML manipulation for SEO/meta tag injection.
 - **navigation-helpers.utils.ts**: `createNavigationHelpers` - creates navigation helper object with `findNode`, `getChildren`, `getParent`, `getSiblings`, `getSubtree`, `getBreadcrumbs`, `getCurrentNode` methods.
-- **callable-partials.utils.ts**: Helpers for invoking partials programmatically in templates.
-- **partial-validation.utils.ts**: Validates partial paths to prevent directory traversal attacks.
-- **template-discovery.utils.ts**: Finds all `.eta` files for dependency tracking.
+- **template-discovery.utils.ts**: Page helpers for layout discovery: `isVirtualPage`, `isCollectionIndexPage`, `getCollectionPathForPage`, `getFirstPaginationPage`.
+- **context-validation.utils.ts**: `createValidatingContextProxy` - the dev-mode proxy that turns reads of unknown `stati.*` properties into "Did you mean" errors.
+- **similarity.utils.ts**: `editDistance`, `findSimilarNames` - suggestions for misspelled names.
+- **theme.utils.ts**: Design tokens and the Stati mark shared by the error overlay and the metrics HTML report.
 - **template-errors.utils.ts**: Formats template errors with source context for the error overlay.
 - **bundle-matching.utils.ts**: Matches pages to TypeScript bundles based on `include`/`exclude` patterns.
 - **glob-patterns.utils.ts**: Minimatch-based pattern matching for sitemap rules and bundle selection.
@@ -154,11 +156,10 @@ Import from the barrel: `import { slugify, normalizePathForComparison } from './
 ## ISG and cache internals
 
 - Cache manifest lives at `.stati/manifest.json`; structure defined by `CacheManifest` type.
-- Each entry tracks: `path` (output path), `inputsHash` (content+deps hash), `deps` (template dependencies), `tags`, `publishedAt`, `renderedAt` timestamp, `ttlSeconds`, `maxAgeCapDays`, plus `assetDeps` (files found while rendering, such as source images, hashed by content in `inputsHash`), `images` (generated files the page references), and `readsCollection`/`readsNav` (whether the last render read `stati.collection` or the navigation).
-- `deps` are recomputed statically on every check; render-discovered files belong in `assetDeps`, never in `deps`. Settings that change rendered HTML without a file change, such as the image settings, go into the render-inputs hash in `core/build.ts`. So do the page's collection path, its pagination slice and page count, and a generated page's items; the collection summary and the navigation hash are added only when the entry's read flags say the page read them. An entry without the flags (older versions) forces one rebuild; never treat a missing flag as `false`.
-- `shouldRebuildPage` compares current content/template hashes against manifest; cache hit skips render.
-- Template changes trigger `handleTemplateChange` which invalidates all pages listing that template in `deps`.
-- Dependency tracking happens during render: `renderPage` records each `<%~ include() %>` call.
+- Each entry tracks: `path` (output path), `inputsHash` (content+deps hash), `deps` (the template files the page rendered, layout first), `templateLookups` (each template name looked up, the folder it was looked up from and the file it found, or `null`), `templatesRecorded`, `tags`, `publishedAt`, `renderedAt` timestamp, `ttlSeconds`, `maxAgeCapDays`, plus `assetDeps` (files found while rendering, such as source images, hashed by content in `inputsHash`), `images` (generated files the page references), and `readsCollection`/`readsNav` (whether the last render read `stati.collection` or the navigation).
+- `deps` and `templateLookups` are recorded while the page renders, never parsed from templates; other render-discovered files belong in `assetDeps`. An entry without `templatesRecorded` rebuilds once. Settings that change rendered HTML without a file change, such as the image settings, go into the render-inputs hash in `core/build.ts`. So do the page's collection path, its pagination slice and page count, and a generated page's items; the collection summary and the navigation hash are added only when the entry's read flags say the page read them. An entry without the flags (older versions) forces one rebuild; never treat a missing flag as `false`.
+- `shouldRebuildPage` compares current content/template hashes against manifest, and rebuilds when the page's layout would be another file (`deps[0]`), a recorded lookup now resolves differently (checked against the template index, no file reads) or a recorded template is gone; cache hit skips render.
+- In dev, template changes go through `markTemplateChanges` (see Dev + preview servers); helpers are config code and are not recorded.
 - Aging rules (`isg.aging[]`) apply progressive TTL based on content age (e.g., content older than 7 days gets longer cache TTL).
 - `invalidate` command accepts queries like `tag:news`, `age:3months`, `path:/blog/*` to selectively clear cache entries.
 - Cache keys use POSIX-normalized paths; Windows backslashes are converted before lookup.
@@ -172,7 +173,7 @@ Import from the barrel: `import { slugify, normalizePathForComparison } from './
 ## Troubleshooting
 
 - Cache hiccups: clear `.stati/` or run `stati build --clean`; the invalidate logic lives under `core/invalidate.ts`.
-- If templates stop refreshing, inspect dependency tracking in `core/isg/manifest.ts`; `handleTemplateChange` expects POSIX-normalized paths.
+- If templates stop refreshing, inspect the page's `deps` and `templateLookups` in `.stati/manifest.json`; `markTemplateChanges` compares POSIX-normalized absolute paths.
 - For docs regressions, run `npm run build` followed by entering the directory `docs-site` and running one of the local scripts. In the `docs-site` dir `npm run build:local` to confirm build is running with local CLI. In the `docs-site` dir `npm run dev:local` to start a dev server with local CLI. In the `docs-site` dir `npm run preview:local` to preview the static build with local CLI.
 
 ## Documentation Reference
@@ -185,11 +186,12 @@ The official Stati documentation lives in `docs-site/site/`. Read these files di
 - `docs-site/site/getting-started/installation.md` - Node.js requirements and installation methods
 - `docs-site/site/getting-started/quick-start.md` - Create your first Stati site in minutes
 - `docs-site/site/getting-started/project-structure.md` - Directory layout and file conventions
+- `docs-site/site/getting-started/upgrading-to-2.md` - Moving a Stati 1 site to includes, shared layouts and helpers
 
 ### Core Concepts
 
 - `docs-site/site/core-concepts/overview.md` - Fundamental concepts and architecture
-- `docs-site/site/core-concepts/templates.md` - Eta templating, layouts, partials, and helpers
+- `docs-site/site/core-concepts/templates.md` - Eta templating, layouts, shells, includes, and helpers
 - `docs-site/site/core-concepts/markdown.md` - Frontmatter, markdown-it plugins, and content authoring
 - `docs-site/site/core-concepts/routing.md` - URL generation, slugs, and navigation trees
 - `docs-site/site/core-concepts/static-assets.md` - Public directory, asset handling, and copying
@@ -199,7 +201,7 @@ The official Stati documentation lives in `docs-site/site/`. Read these files di
 
 - `docs-site/site/configuration/file.md` - `stati.config.ts` structure and `defineConfig()`
 - `docs-site/site/configuration/site-metadata.md` - Title, baseUrl, description, locale
-- `docs-site/site/configuration/templates.md` - Eta configuration and custom filters
+- `docs-site/site/configuration/templates.md` - Template helpers and the fixed Eta settings
 - `docs-site/site/configuration/markdown.md` - Plugins, TOC, and markdown-it customization
 - `docs-site/site/configuration/typescript.md` - Client-side TS bundling with esbuild
 - `docs-site/site/configuration/isg.md` - Cache TTL, aging rules, and invalidation
@@ -220,7 +222,7 @@ The official Stati documentation lives in `docs-site/site/`. Read these files di
 - `docs-site/site/api/types.md` - TypeScript type definitions
 - `docs-site/site/api/hooks.md` - Build lifecycle hooks (`beforeAll`, `afterRender`, etc.)
 - `docs-site/site/api/navigation.md` - Navigation helpers and tree utilities
-- `docs-site/site/api/templates.md` - Template context, partials, and callable partials
+- `docs-site/site/api/templates.md` - Template context, `stati.include()`, `stati.layout()`, and helpers
 - `docs-site/site/api/seo.md` - SEO helper functions and injection
 - `docs-site/site/api/rss.md` - RSS feed API
 - `docs-site/site/api/error-handling.md` - Error patterns and overlay system

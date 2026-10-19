@@ -1,6 +1,5 @@
-import glob from 'fast-glob';
-import { readFile, resolveSrcDir, getFrontMatterDate } from './utils/index.js';
-import matter from 'gray-matter';
+import { glob } from 'tinyglobby';
+import { readFile, resolveSrcDir, getFrontMatterDate, parseFrontMatter } from './utils/index.js';
 import { relative, dirname, basename } from 'node:path';
 import type { PageModel, StatiConfig } from '../types/index.js';
 import { MARKDOWN_EXTENSION } from '../constants.js';
@@ -27,12 +26,17 @@ export async function loadContent(
 ): Promise<PageModel[]> {
   const contentDir = resolveSrcDir(config);
 
-  // Exclude folders starting with underscore from content discovery
-  const files = await glob('**/*.md', {
-    cwd: contentDir,
-    absolute: true,
-    ignore: ['**/_*/**', '_*/**'],
-  });
+  // Exclude folders starting with underscore from content discovery. Sorted, because the
+  // file system lists files in no fixed order, and pages that sort equally in listings and
+  // feeds keep the order they were found in.
+  const files = (
+    await glob('**/*.md', {
+      cwd: contentDir,
+      absolute: true,
+      ignore: ['**/_*/**', '_*/**'],
+      expandDirectories: false,
+    })
+  ).sort();
 
   const pages: PageModel[] = [];
 
@@ -42,7 +46,7 @@ export async function loadContent(
       console.warn(`Skipping file ${file}: could not read content`);
       continue;
     }
-    const { data: frontMatter, content: markdown } = matter(content);
+    const { data: frontMatter, content: markdown } = parseFrontMatter(content, file);
 
     // Skip drafts unless explicitly included
     if (frontMatter.draft && !includeDrafts) {

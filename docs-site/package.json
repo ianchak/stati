@@ -39,15 +39,20 @@
     "@stati/cli": "1.15.4",
     "@stati/core": "1.29.0",
     "@stati/images": "1.0.0",
+    "@tailwindcss/cli": "4.3.3",
     "@tailwindcss/typography": "0.5.20",
-    "autoprefixer": "10.6.1",
+    "js-yaml": "4.3.2",
     "markdown-it-attrs": "5.0.1",
     "markdown-it-external-links": "0.0.6",
-    "markdown-it-prism": "3.0.0",
-    "postcss": "8.5.29",
+    "markdown-it-prism": "4.0.0",
     "prismjs": "1.30.0",
-    "tailwindcss": "3.4.19",
-    "typescript": "5.9.3"
+    "tailwindcss": "4.3.3",
+    "typescript": "6.0.3"
+  },
+  "overrides": {
+    "@stati/cli": {
+      "tailwindcss": "$tailwindcss"
+    }
   },
   "engines": {
     "node": "^22.12.0 || >=24"

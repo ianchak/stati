@@ -1,0 +1,23 @@
+<%
+/**
+ * Command Line Component
+ *
+ * The install command as a copyable line: prompt, command, copy button.
+ *
+ * Props:
+ *   - id (required): Unique id for the command text
+ *   - command (required): The shell command
+ *   - class (optional): Extra classes
+ *
+ * Usage:
+ *   <%~ stati.include('partials/components/commandLine', { id: 'hero-command', command: 'npx create-stati' }) %>
+ */
+%>
+<div class="<%= stati.propValue('ticks flex items-center gap-3 rounded-lg border border-line-strong bg-raised py-2 pl-4 pr-2 font-mono text-[15px]', stati.props.class) %>">
+    <span class="select-none text-faint" aria-hidden="true">$</span>
+    <code id="<%= stati.props.id %>" class="flex-1 truncate text-ink"><%= stati.props.command %></code>
+    <button type="button" class="btn btn-primary px-3 py-1.5" data-copy-target="<%= stati.props.id %>" aria-label="<%= `Copy command: ${stati.props.command}` %>">
+        <%~ stati.include('./icon', { name: 'copy', size: 'sm' }) %>
+        <span data-copy-label>Copy</span>
+    </button>
+</div>

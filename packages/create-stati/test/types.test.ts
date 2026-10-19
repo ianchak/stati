@@ -6,13 +6,13 @@ describe('types', () => {
     it('should accept a valid ProcessorResult object', () => {
       const result: ProcessorResult = {
         files: new Map([['test.txt', 'content']]),
-        devDependencies: { typescript: '^5.6.0' },
+        devDependencies: { typescript: '^6.0.3' },
         scripts: { build: 'tsc' },
       };
 
       expect(result.files).toBeInstanceOf(Map);
       expect(result.files.get('test.txt')).toBe('content');
-      expect(result.devDependencies.typescript).toBe('^5.6.0');
+      expect(result.devDependencies.typescript).toBe('^6.0.3');
       expect(result.scripts.build).toBe('tsc');
     });
 

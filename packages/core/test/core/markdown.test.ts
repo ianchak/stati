@@ -6,6 +6,7 @@ import {
   clearMarkdownProcessorCache,
 } from '../../src/core/markdown.js';
 import { setEnv } from '../../src/env.js';
+import type { MarkdownIt } from '../../src/index.js';
 import type { StatiConfig } from '../../src/types/index.js';
 
 describe('markdown.ts', () => {
@@ -45,6 +46,21 @@ describe('markdown.ts', () => {
       const md = await createMarkdownProcessor(configWithMarkdown);
 
       expect(configureFn).toHaveBeenCalledWith(md);
+    });
+
+    it('should pass configure an instance of the exported MarkdownIt type', async () => {
+      let received: MarkdownIt | undefined;
+
+      const md = await createMarkdownProcessor({
+        ...baseConfig,
+        markdown: {
+          configure: (instance) => {
+            received = instance;
+          },
+        },
+      });
+
+      expect(received).toBe(md);
     });
 
     it('should work without markdown configuration', async () => {
@@ -142,6 +158,57 @@ describe('markdown.ts', () => {
       const result = renderMarkdown(content, md);
 
       expect(result.html).toContain('<a href="https://example.com">https://example.com</a>');
+    });
+
+    it('should leave domains without a scheme and file names as text', async () => {
+      const md = await createMarkdownProcessor(baseConfig);
+      const content = 'See www.example.com, README.md and config.sh for details.';
+
+      const result = renderMarkdown(content, md);
+
+      expect(result.html).not.toContain('<a');
+    });
+
+    it('should linkify domains without a scheme when configure turns fuzzy links on', async () => {
+      const md = await createMarkdownProcessor({
+        ...baseConfig,
+        markdown: {
+          configure: (md) => {
+            md.linkify.set({ fuzzyLink: true });
+          },
+        },
+      });
+
+      const result = renderMarkdown('Visit www.example.com today.', md);
+
+      expect(result.html).toContain('<a href="http://www.example.com">www.example.com</a>');
+    });
+
+    it('should link email-shaped text and stop URLs at a user name, as the docs describe', async () => {
+      const md = await createMarkdownProcessor(baseConfig);
+
+      const result = renderMarkdown('Install react@18.3.1 from https://git@github.com/o/r.git', md);
+
+      expect(result.html).toContain('<a href="mailto:react@18.3.1">react@18.3.1</a>');
+      expect(result.html).toContain('<a href="https://git">https://git</a>@github.com/o/r.git');
+    });
+
+    it('should apply the email and user name linkify options that configure sets', async () => {
+      const md = await createMarkdownProcessor({
+        ...baseConfig,
+        markdown: {
+          configure: (md) => {
+            md.linkify.set({ fuzzyEmail: false, urlAuth: true });
+          },
+        },
+      });
+
+      const result = renderMarkdown('Install react@18.3.1 from https://git@github.com/o/r.git', md);
+
+      expect(result.html).not.toContain('mailto:');
+      expect(result.html).toContain(
+        '<a href="https://git@github.com/o/r.git">https://git@github.com/o/r.git</a>',
+      );
     });
 
     it('should handle empty content', async () => {

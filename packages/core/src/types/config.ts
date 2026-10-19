@@ -1,4 +1,4 @@
-import type MarkdownIt from 'markdown-it';
+import type { MarkdownIt } from 'markdown-it';
 import type { SitemapConfig } from './sitemap.js';
 import type { AuthorConfig } from './content.js';
 import type { SearchConfig } from './search.js';
@@ -30,6 +30,21 @@ export interface SiteConfig {
   /** Default site description for meta tags (used as fallback when page has no description) */
   readonly description?: string;
 }
+
+/**
+ * Site functions that templates call as `stati.helpers.name()`.
+ *
+ * @example
+ * ```typescript
+ * const helpers: StatiHelpers = {
+ *   formatDate: (date: string | Date, locale = 'en-US') =>
+ *     new Date(date).toLocaleDateString(locale),
+ * };
+ * ```
+ */
+// Helpers take whatever arguments their templates pass, so their parameters are not typed here
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type StatiHelpers = Record<string, (...args: any[]) => unknown>;
 
 /**
  * Main configuration interface for Stati static site generator.
@@ -69,11 +84,11 @@ export interface StatiConfig {
     /** Enable TOC extraction and heading anchor generation (default: true) */
     toc?: boolean;
   };
-  /** Eta template engine configuration */
-  eta?: {
-    /** Custom template filters */
-    filters?: Record<string, (x: unknown) => unknown>;
-  };
+  /**
+   * Functions templates call as `stati.helpers.name()`, such as a date formatter. Each one is
+   * called with the arguments the template passes, and with `stati.helpers` as `this`.
+   */
+  helpers?: StatiHelpers;
   /** Incremental Static Generation configuration */
   isg?: import('./isg.js').ISGConfig;
   /** Collection listings: which fields rebuild them, and pages generated from data */

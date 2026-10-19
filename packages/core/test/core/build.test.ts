@@ -419,7 +419,7 @@ describe('build.ts', () => {
         expect.objectContaining({ bundlePaths: [] }), // assets parameter
         expect.any(Array), // toc parameter
         expect.objectContaining({ error: expect.any(Function) }), // logger parameter
-        { images: expect.anything() }, // page image state
+        { images: expect.anything(), templateIndex: expect.anything() }, // page image state, template index
       );
     });
 
@@ -1186,7 +1186,7 @@ describe('build.ts', () => {
         }),
         expect.any(Array), // toc parameter
         expect.objectContaining({ error: expect.any(Function) }), // logger parameter
-        { images: expect.anything() }, // page image state
+        { images: expect.anything(), templateIndex: expect.anything() }, // page image state, template index
       );
     });
 
@@ -1215,7 +1215,7 @@ describe('build.ts', () => {
         expect.objectContaining({ bundlePaths: [] }),
         expect.any(Array), // toc parameter
         expect.objectContaining({ error: expect.any(Function) }), // logger parameter
-        { images: expect.anything() }, // page image state
+        { images: expect.anything(), templateIndex: expect.anything() }, // page image state, template index
       );
     });
   });
@@ -1352,7 +1352,7 @@ describe('build.ts', () => {
         }),
         expect.any(Array),
         expect.any(Object),
-        { images: expect.anything() },
+        { images: expect.anything(), templateIndex: expect.anything() },
       );
     });
 

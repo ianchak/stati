@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { getConfigFilePaths, loadConfig, clearConfigCache } from '../src/config/loader.js';
+import { ConfigValidationError } from '../src/config/errors.js';
 
 // Test the actual loader functionality by creating a simpler approach
 // Focus on testing the logic rather than mocking complex dynamic imports
@@ -534,6 +535,84 @@ export default config;`;
       // Verify cleanup happened
       const compiledPath = join(testDir, 'stati.config.compiled.mjs');
       expect(existsSync(compiledPath)).toBe(false);
+    });
+  });
+
+  describe('template options', () => {
+    const writeConfig = (body: string) =>
+      writeFileSync(join(testDir, 'stati.config.js'), `export default ${body};`, 'utf-8');
+
+    it('loads helpers', async () => {
+      writeConfig(
+        `{ site: { title: 'Helpers' }, helpers: { shout: (text) => String(text).toUpperCase() } }`,
+      );
+
+      const config = await loadConfig(testDir);
+      expect(config.helpers?.shout?.('hi')).toBe('HI');
+    });
+
+    it('rejects an unknown option, listing the options there are', async () => {
+      writeConfig(`{ site: { title: 'Unknown' }, eta: { filters: {} } }`);
+
+      const error = await loadConfig(testDir).catch((caught: unknown) => caught);
+      expect(error).toBeInstanceOf(ConfigValidationError);
+      expect((error as Error).message).toContain(join(testDir, 'stati.config.js'));
+      expect((error as Error).message).toContain('Unknown option eta. Allowed options: srcDir,');
+      expect((error as Error).message).toContain('helpers');
+    });
+
+    it('suggests the option a misspelt one meant', async () => {
+      writeConfig(`{ site: { title: 'Typo' }, helper: { shout: (text) => text } }`);
+
+      await expect(loadConfig(testDir)).rejects.toThrow(
+        'Unknown option helper. Did you mean helpers?',
+      );
+    });
+
+    it.each([
+      ['an array', `[() => 1]`, 'helpers must be an object of functions'],
+      ['a string', `'formatDate'`, 'helpers must be an object of functions'],
+      [
+        'a helper that is not a function',
+        `{ siteName: 'x' }`,
+        'helpers.siteName must be a function',
+      ],
+    ])('rejects helpers that are %s', async (_, helpers, message) => {
+      writeConfig(`{ site: { title: 'Bad helpers' }, helpers: ${helpers} }`);
+
+      await expect(loadConfig(testDir)).rejects.toThrow(message);
+    });
+
+    it('treats a config that throws while it is checked like one that fails to load', async () => {
+      // The getter works when the config is merged and fails when the helpers are checked
+      writeFileSync(
+        join(testDir, 'stati.config.js'),
+        `let reads = 0;\nexport default { site: { title: 'Throws' }, get helpers() { if (reads++) throw new TypeError('helpers are broken'); return {}; } };`,
+        'utf-8',
+      );
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const config = await loadConfig(testDir);
+
+      expect(config.site.title).toBe('My Stati Site');
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Error loading config from'),
+        expect.objectContaining({ message: 'helpers are broken' }),
+      );
+      consoleErrorSpy.mockRestore();
+    });
+
+    it.each([
+      [`'x'`, "string 'x'"],
+      ['1', 'number 1'],
+      ['undefined', 'undefined'],
+      ['{}', 'an object'],
+    ])('describes a helper set to %s in the message', async (value, described) => {
+      writeConfig(`{ site: { title: 'Bad helpers' }, helpers: { siteName: ${value} } }`);
+
+      await expect(loadConfig(testDir)).rejects.toThrow(
+        `helpers.siteName must be a function that templates call as stati.helpers.siteName() (got ${described}).`,
+      );
     });
   });
 });

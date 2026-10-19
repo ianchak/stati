@@ -111,6 +111,7 @@ Configure SEO behavior in your `stati.config.ts`:
 import { defineConfig } from '@stati/core';
 
 export default defineConfig({
+  // site: { … },
   seo: {
     // Enable/disable automatic SEO injection (default: true)
     autoInject: true,
@@ -381,6 +382,7 @@ With no rules configured, this writes `User-agent: *` and `Allow: /`. The `Sitem
 import { defineConfig } from '@stati/core';
 
 export default defineConfig({
+  // site: { … },
   robots: {
     enabled: true,
 
@@ -566,6 +568,7 @@ Enable debug mode to see detailed logs:
 ```typescript
 // stati.config.ts
 export default defineConfig({
+  // site: { … },
   seo: {
     debug: true, // Enable detailed SEO logging
   },
@@ -597,14 +600,14 @@ Use **hybrid mode** - keep auto-injection enabled and add manual tags for specif
 
 ### Configuration validation errors
 
-Stati checks each page's `seo` front matter during the build and logs what it finds; none of these stop the build:
+When `seo.autoInject` is on (the default), Stati checks each page's `seo` front matter during the build and logs what it finds; none of these stop the build:
 
 - **Invalid priority** (error): `seo.priority` must be between 0.0 and 1.0
 - **Invalid canonical URL** (error): `seo.canonical` must be an absolute `http` or `https` URL
 - **Structured data too large** (warning): should be under 100KB
 - **Title or description length** (warning)
 
-Errors are always logged; warnings are only logged when `seo.debug` is `true`.
+Errors are always logged; warnings are only logged when `seo.debug` is `true`. With `autoInject` off, nothing is logged: `stati.generateSEO()` does not report these checks.
 
 ### Performance concerns
 

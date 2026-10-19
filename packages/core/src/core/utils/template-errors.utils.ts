@@ -109,6 +109,37 @@ export class TemplateError extends Error {
 }
 
 /**
+ * Thrown by Stati's template functions, such as `stati.include()` and `stati.layout()`, for a
+ * mistake at the call: an unknown template name, props that are not an object, Eta's own
+ * `include()`. Thrown inside a template, so Eta's debug mode adds the calling template and line
+ * to the message, and keeps this error as its `cause`.
+ */
+export class TemplateUsageError extends Error {
+  /** Fixes to show in the error overlay */
+  public readonly suggestions: string[];
+
+  constructor(message: string, suggestions: string[] = []) {
+    super(message);
+    this.name = 'TemplateUsageError';
+    this.suggestions = suggestions;
+  }
+}
+
+/**
+ * The errors an error wraps through `cause`, outermost first. Eta 4 sets `cause` on the errors
+ * its debug mode rethrows, once per template the error passes through.
+ */
+function causeChain(error: Error): Error[] {
+  const chain: Error[] = [];
+  let current: unknown = error;
+  while (current instanceof Error && !chain.includes(current) && chain.length < 64) {
+    chain.push(current);
+    current = (current as { cause?: unknown }).cause;
+  }
+  return chain;
+}
+
+/**
  * Header that Eta's debug mode prepends to runtime errors:
  * `<path>:<line>` (or `line <line>` without a path), a numbered excerpt of the
  * template, then a blank line and the original message.
@@ -123,14 +154,19 @@ const CONTEXT_ROOT_NAMES = new Set([
   'site',
   'page',
   'content',
+  'body',
   'nav',
-  'partials',
   'collection',
+  'pagination',
+  'generated',
   'props',
+  'helpers',
   'assets',
   'generator',
   'generateSEO',
   'propValue',
+  'slugify',
+  'image',
 ]);
 
 function getReferenceErrorSuggestions(message: string): string[] {
@@ -177,9 +213,14 @@ export function parseEtaError(error: Error, templatePath?: string): TemplateErro
 
   let suggestions: string[] = [];
   const unknownProperty = parseUnknownPropertyMessage(message);
+  const usageError = causeChain(error).find(
+    (cause): cause is TemplateUsageError => cause instanceof TemplateUsageError,
+  );
   if (unknownProperty) {
     message = unknownProperty.message;
     suggestions = unknownProperty.suggestions;
+  } else if (usageError) {
+    suggestions = [...usageError.suggestions];
   } else if (error.name === 'ReferenceError') {
     suggestions = getReferenceErrorSuggestions(message);
   }
@@ -202,7 +243,9 @@ export function parseEtaError(error: Error, templatePath?: string): TemplateErro
 }
 
 /**
- * Enhances a generic error with template-specific context.
+ * Enhances a generic error with template-specific context. An error that wraps a
+ * {@link TemplateError}, as Eta's debug mode does for an error from a nested template, returns
+ * the innermost one, which points at the template that failed.
  */
 export function createTemplateError(
   error: Error,
@@ -210,8 +253,10 @@ export function createTemplateError(
   _line?: number,
   _column?: number,
 ): TemplateError {
-  if (error instanceof TemplateError) {
-    return error;
+  const chain = causeChain(error);
+  const innermost = chain.reverse().find((cause) => cause instanceof TemplateError);
+  if (innermost) {
+    return innermost as TemplateError;
   }
 
   return parseEtaError(error, templatePath);

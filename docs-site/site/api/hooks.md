@@ -17,14 +17,16 @@ A build runs in this order:
    (collections.generate runs here), build the navigation tree
 2. Compile TypeScript bundles (when enabled)
 3. beforeAll    → once, with every page (ctx.pages)
-4. For each page:
+4. Search index written (when search is enabled), from the pages as beforeAll left them
+5. For each page:
    - cache check: an unchanged page is skipped here, with no hooks
    - beforeRender → before the page renders
    - Markdown → HTML, layout rendering, SEO/search/script injection, file write
+     (the dev server writes the files once every page has rendered)
    - afterRender  → after the page renders
-5. Removal of pages that no longer exist, search index, cache manifest, static asset copy
-6. sitemap.xml, robots.txt, RSS feeds (production builds only)
-7. afterAll     → once, at the end
+6. Removal of pages that no longer exist, cache manifest, static asset copy
+7. sitemap.xml, robots.txt, RSS feeds (production builds only)
+8. afterAll     → once, at the end
 ```
 
 > **Per-page hooks only run for pages that are rendered.** With ISG enabled (the default), unchanged pages are served from the cache and skip `beforeRender` and `afterRender`. Do work that every page needs, or that other pages depend on, in `beforeAll`. Use `stati build --force` to run the per-page hooks for every page.
@@ -35,9 +37,9 @@ A hook that throws, or returns a rejected promise, fails the build. Hooks have n
 
 ### `beforeAll`
 
-Called once, after the content has been loaded and before any page is rendered. `ctx.pages` holds every page, including [generated and paginated pages](/core-concepts/collections) (with `page.generated` or `page.pagination` set), so this is the place to build indexes or other data that templates read through [filters](/configuration/templates#custom-filters) or module-level variables. Listings of a folder's pages need no hook: templates read them from [`stati.collection`](/core-concepts/collections).
+Called once, after the content has been loaded and before any page is rendered. `ctx.pages` holds every page, including [generated and paginated pages](/core-concepts/collections) (with `page.generated` or `page.pagination` set), so this is the place to build indexes or other data that templates read through [helpers](/configuration/templates#helpers) or module-level variables. Listings of a folder's pages need no hook: templates read them from [`stati.collection`](/core-concepts/collections).
 
-`beforeAll` runs before the cache check, so values it writes into `page.frontMatter` are part of each page's cache hash. Data a filter hands to templates is not: Stati can't tell which pages use it. To make a page rebuild when such data changes, write what the page shows into its front matter here; see [Dependency tracking](/core-concepts/isg#dependency-tracking).
+`beforeAll` runs before the cache check, so values it writes into `page.frontMatter` are part of each page's cache hash. Data a helper hands to templates is not: Stati can't tell which pages use it. To make a page rebuild when such data changes, write what the page shows into its front matter here; see [Dependency tracking](/core-concepts/isg#dependency-tracking).
 
 Generated pages and pagination are worked out before `beforeAll` runs, from the content as loaded: tags a hook adds don't create tag pages.
 
@@ -189,18 +191,16 @@ interface PageContext {
 
 ### External state management
 
-Each hook receives a new context object, so values you attach to `ctx` do not carry over to later hooks. Use module-level state to share data between hooks, and expose it to templates through a filter:
+Each hook receives a new context object, so values you attach to `ctx` do not carry over to later hooks. Use module-level state to share data between hooks, and expose it to templates through a helper:
 
 ```javascript
 // Module-level state
 let sharedBuildData = { posts: [], authors: [] };
 
 export default defineConfig({
-  eta: {
-    filters: {
-      // Templates call stati.authors()
-      authors: () => sharedBuildData.authors,
-    },
+  helpers: {
+    // Templates call stati.helpers.authors()
+    authors: () => sharedBuildData.authors,
   },
   hooks: {
     beforeAll: async (ctx) => {
@@ -340,23 +340,9 @@ export default defineConfig({
 
 ### Content processing helpers
 
+Templates already get the page's headings as `stati.page.toc`, so hooks need no heading parser.
+
 ```javascript
-function extractHeadings(html) {
-  const headings = [];
-  const regex = /<h([1-6])[^>]*>([^<]+)<\/h[1-6]>/gi;
-  let match;
-
-  while ((match = regex.exec(html)) !== null) {
-    headings.push({
-      level: parseInt(match[1]),
-      text: match[2].trim(),
-      id: slugify(match[2])
-    });
-  }
-
-  return headings;
-}
-
 function calculateReadingTime(content) {
   const wordsPerMinute = 200;
   const wordCount = content.split(/\s+/).length;

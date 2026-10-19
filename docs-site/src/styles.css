@@ -1,12 +1,54 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss' source(none);
+
+/* Templates, client scripts, and the classes Stati records while rendering */
+@source '../site/**/*.{md,eta,html}';
+@source './**/*.ts';
+@source '../.stati/tailwind-classes.html';
+
+@plugin '@tailwindcss/typography';
+
+/* src/core/theme.ts toggles the .dark class on <html> */
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Colors resolve to the theme tokens below, so a single class (e.g. `text-muted`)
+ * is correct in both light and dark themes. Inline, so each element reads the tokens.
+ */
+@theme inline {
+  --color-canvas: rgb(var(--canvas));
+  --color-raised: rgb(var(--raised));
+  --color-sunken: rgb(var(--sunken));
+  --color-ink: rgb(var(--ink));
+  --color-muted: rgb(var(--muted));
+  --color-faint: rgb(var(--faint));
+  --color-line: rgb(var(--line));
+  --color-line-strong: rgb(var(--line-strong));
+  --color-accent: rgb(var(--accent));
+  --color-accent-ink: rgb(var(--accent-ink));
+  --color-on-accent: rgb(var(--on-accent));
+  --color-accent-wash: rgb(var(--accent-wash));
+}
+
+@theme {
+  --font-display: 'Archivo', 'Archivo Fallback', 'Inter', system-ui, sans-serif;
+  --font-sans:
+    'Inter', 'Inter Fallback', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    sans-serif;
+  --font-mono:
+    'Fira Code', 'Fira Code Fallback', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
+  --spacing-header: 4rem;
+  --container-page: 80rem;
+  /* max-w-prose is a fixed 65ch utility in Tailwind CSS 4, so the docs column has its own name */
+  --container-article: 72ch;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
 
 @layer base {
   /*
-   * Theme tokens. Values are space-separated RGB channels so Tailwind's
-   * `<alpha-value>` works (see tailwind.config.js). Every pairing used on the
-   * site holds WCAG AA contrast in both themes.
+   * Theme tokens. Values are space-separated RGB channels, so a rule can add
+   * an alpha: rgb(var(--accent) / 0.25). Every pairing used on the site holds
+   * WCAG AA contrast in both themes.
    */
   :root {
     --canvas: 255 255 255;
@@ -168,6 +210,17 @@
   [hidden] {
     display: none !important;
   }
+
+  /* Tailwind CSS 3's preflight rules that version 4 dropped */
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+
+  [type='search'] {
+    -webkit-appearance: textfield;
+    outline-offset: -2px;
+  }
 }
 
 @layer components {
@@ -180,7 +233,7 @@
   /* Visually hidden until focused (skip link) */
   .skip-link {
     @apply fixed left-4 top-3 z-[60] -translate-y-24 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-on-accent;
-    transition: transform 0.15s ease-out;
+    transition: translate 0.15s ease-out;
   }
 
   .skip-link:focus-visible {
@@ -224,10 +277,6 @@
     @apply flex items-center justify-between gap-3 border-b border-line px-4 py-2 font-mono text-xs text-faint;
   }
 
-  .code-panel pre[class*='language-'] {
-    @apply m-0 rounded-none border-0 bg-transparent p-4 text-[13px] leading-relaxed sm:p-5 sm:text-sm;
-  }
-
   .copy-button {
     @apply inline-flex items-center gap-1.5 rounded-md px-2 py-1 font-sans text-xs font-medium text-muted transition-colors duration-150 hover:bg-raised hover:text-ink;
   }
@@ -256,150 +305,6 @@
 
   .toc-link.is-active {
     @apply font-medium text-accent-ink;
-  }
-
-  /*
-   * Prose. Colors come from the theme tokens, so no prose-invert is needed.
-   */
-  .prose {
-    --tw-prose-body: rgb(var(--muted));
-    --tw-prose-headings: rgb(var(--ink));
-    --tw-prose-lead: rgb(var(--muted));
-    --tw-prose-links: rgb(var(--accent-ink));
-    --tw-prose-bold: rgb(var(--ink));
-    --tw-prose-counters: rgb(var(--faint));
-    --tw-prose-bullets: rgb(var(--line-strong));
-    --tw-prose-hr: rgb(var(--line));
-    --tw-prose-quotes: rgb(var(--ink));
-    --tw-prose-quote-borders: rgb(var(--line-strong));
-    --tw-prose-captions: rgb(var(--faint));
-    --tw-prose-code: rgb(var(--ink));
-    --tw-prose-pre-code: rgb(var(--ink));
-    --tw-prose-pre-bg: rgb(var(--sunken));
-    --tw-prose-th-borders: rgb(var(--line-strong));
-    --tw-prose-td-borders: rgb(var(--line));
-    @apply min-w-0 text-base leading-7;
-  }
-
-  /*
-   * Running text keeps a readable measure (about 75 characters of Inter)
-   * while code, tables, callouts and images use the full 72ch column.
-   */
-  .prose > :where(p, ul, ol, dl):not(:where(.not-prose)) {
-    max-width: 37rem;
-  }
-
-  .prose :where(h1, h2):not(:where(.not-prose *)) {
-    @apply font-display font-extrabold;
-    font-stretch: 108%;
-    letter-spacing: -0.015em;
-  }
-
-  .prose :where(h1):not(:where(.not-prose *)) {
-    @apply mb-6 text-4xl leading-[1.1] lg:text-[2.75rem];
-  }
-
-  .prose :where(h2):not(:where(.not-prose *)) {
-    @apply mb-4 mt-14 border-t border-line pt-8 text-2xl leading-tight;
-  }
-
-  .prose :where(h3):not(:where(.not-prose *)) {
-    @apply mb-3 mt-10 text-lg font-semibold;
-  }
-
-  .prose :where(h4):not(:where(.not-prose *)) {
-    @apply mb-2 mt-8 text-base font-semibold;
-  }
-
-  .prose :where(h2 + *, h1 + *):not(:where(.not-prose *)) {
-    margin-top: 0;
-  }
-
-  .prose :where(a):not(:where(.not-prose *)) {
-    @apply font-medium underline decoration-accent/40 decoration-1 underline-offset-[3px] transition-colors duration-150 hover:decoration-accent;
-  }
-
-  /* Inline code: no literal backticks, quiet chip */
-  .prose :where(code):not(:where(pre *, .not-prose *))::before,
-  .prose :where(code):not(:where(pre *, .not-prose *))::after {
-    content: none;
-  }
-
-  .prose :where(code):not(:where(pre *, .not-prose *)) {
-    @apply rounded border border-line bg-sunken px-1.5 py-0.5 font-mono text-[0.85em] font-normal text-ink;
-  }
-
-  .prose :where(h1, h2, h3, h4) code {
-    @apply border-0 bg-transparent p-0 text-[0.9em];
-  }
-
-  .prose :where(pre):not(:where(.not-prose *)) {
-    @apply relative my-6 rounded-lg border border-line bg-sunken p-4 text-[13px] leading-relaxed sm:p-5 sm:text-sm;
-  }
-
-  /* Blockquotes are used as Note/Tip callouts across the docs */
-  .prose :where(blockquote):not(:where(.not-prose *)) {
-    @apply my-6 rounded-lg border border-line bg-raised px-5 py-4 font-normal not-italic text-muted;
-    quotes: none;
-  }
-
-  .prose :where(blockquote p):not(:where(.not-prose *)) {
-    @apply my-0;
-  }
-
-  .prose :where(blockquote p + p):not(:where(.not-prose *)) {
-    @apply mt-3;
-  }
-
-  .prose :where(blockquote strong):not(:where(.not-prose *)) {
-    @apply text-ink;
-  }
-
-  /* Tables scroll horizontally instead of squeezing */
-  .prose :where(table):not(:where(.not-prose *)) {
-    @apply my-6 block w-full overflow-x-auto text-sm;
-  }
-
-  .prose :where(thead th):not(:where(.not-prose *)) {
-    @apply whitespace-nowrap px-3 py-2 text-left font-semibold text-ink;
-  }
-
-  .prose :where(tbody td):not(:where(.not-prose *)) {
-    @apply px-3 py-2 align-top;
-  }
-
-  .prose :where(li)::marker {
-    color: rgb(var(--faint));
-  }
-
-  .prose :where(img, video, iframe) {
-    @apply max-w-full rounded-lg border border-line;
-  }
-
-  /* Heading anchors land below the sticky header */
-  .prose :where(h2, h3, h4)[id] {
-    scroll-margin-top: 5.5rem;
-  }
-
-  /* Copy button injected into prose code blocks */
-  .prose pre .copy-button {
-    @apply absolute right-2 top-2 border border-line bg-canvas opacity-0 transition-opacity duration-150;
-  }
-
-  .prose pre:hover .copy-button,
-  .prose pre .copy-button:focus-visible,
-  .prose pre .copy-button[data-copied='true'] {
-    @apply opacity-100;
-  }
-
-  @media (hover: none) {
-    .prose pre .copy-button {
-      @apply opacity-100;
-    }
-  }
-
-  .toc-link.is-active {
-    @apply border-accent;
   }
 
   /*
@@ -444,11 +349,6 @@
   /* The code panel keeps its rounded clip while ticks sit outside it */
   .code-panel.ticks {
     overflow: visible;
-  }
-
-  .code-panel.ticks > pre {
-    border-bottom-left-radius: 0.5rem;
-    border-bottom-right-radius: 0.5rem;
   }
 
   /* One orchestrated entrance: hero copy and panel focus in on load */
@@ -515,8 +415,181 @@
 
   /* Search match highlight */
   mark.search-mark {
-    @apply rounded-sm bg-accent-wash px-0.5 text-accent-ink;
+    @apply rounded-xs bg-accent-wash px-0.5 text-accent-ink;
   }
+}
+
+/*
+ * The TOC template gives every link a border-transparent utility. In Tailwind CSS 4
+ * utilities outrank components whatever the specificity, so the active border is a
+ * utility too.
+ */
+@layer utilities {
+  .toc-link.is-active {
+    @apply border-accent;
+  }
+}
+
+/*
+ * Typography's .prose styles are utilities in Tailwind CSS 4, so the overrides
+ * sit in the utilities layer, after them. Font sizes name their line height
+ * (text-sm/5): a bare text-sm sets it as a ratio, which inline code inherits
+ * at its smaller size.
+ */
+@layer utilities {
+  /*
+   * Prose. Colors come from the theme tokens, so no prose-invert is needed.
+   */
+  .prose {
+    --tw-prose-body: rgb(var(--muted));
+    --tw-prose-headings: rgb(var(--ink));
+    --tw-prose-lead: rgb(var(--muted));
+    --tw-prose-links: rgb(var(--accent-ink));
+    --tw-prose-bold: rgb(var(--ink));
+    --tw-prose-counters: rgb(var(--faint));
+    --tw-prose-bullets: rgb(var(--line-strong));
+    --tw-prose-hr: rgb(var(--line));
+    --tw-prose-quotes: rgb(var(--ink));
+    --tw-prose-quote-borders: rgb(var(--line-strong));
+    --tw-prose-captions: rgb(var(--faint));
+    --tw-prose-code: rgb(var(--ink));
+    --tw-prose-pre-code: rgb(var(--ink));
+    --tw-prose-pre-bg: rgb(var(--sunken));
+    --tw-prose-th-borders: rgb(var(--line-strong));
+    --tw-prose-td-borders: rgb(var(--line));
+    @apply min-w-0 text-base leading-7;
+  }
+
+  /*
+   * Running text keeps a readable measure (about 75 characters of Inter)
+   * while code, tables, callouts and images use the full 72ch column.
+   */
+  .prose > :where(p, ul, ol, dl):not(:where(.not-prose)) {
+    max-width: 37rem;
+  }
+
+  .prose :where(h1, h2):not(:where(.not-prose *)) {
+    @apply font-display font-extrabold;
+    font-stretch: 108%;
+    letter-spacing: -0.015em;
+  }
+
+  .prose :where(h1):not(:where(.not-prose *)) {
+    @apply mb-6 text-4xl leading-[1.1] lg:text-[2.75rem];
+  }
+
+  .prose :where(h2):not(:where(.not-prose *)) {
+    @apply mb-4 mt-14 border-t border-line pt-8 text-2xl leading-tight;
+  }
+
+  .prose :where(h3):not(:where(.not-prose *)) {
+    @apply mb-3 mt-10 text-lg/7 font-semibold;
+  }
+
+  .prose :where(h4):not(:where(.not-prose *)) {
+    @apply mb-2 mt-8 text-base/6 font-semibold;
+  }
+
+  .prose :where(h2 + *, h1 + *):not(:where(.not-prose *)) {
+    margin-top: 0;
+  }
+
+  .prose :where(a):not(:where(.not-prose *)) {
+    @apply font-medium underline decoration-accent/40 decoration-1 underline-offset-[3px] transition-colors duration-150 hover:decoration-accent;
+  }
+
+  /* Inline code: no literal backticks, quiet chip */
+  .prose :where(code):not(:where(pre *, .not-prose *))::before,
+  .prose :where(code):not(:where(pre *, .not-prose *))::after {
+    content: none;
+  }
+
+  .prose :where(code):not(:where(pre *, .not-prose *)) {
+    @apply rounded border border-line bg-sunken px-1.5 py-0.5 font-mono text-[0.85em] font-normal text-ink;
+  }
+
+  .prose :where(h1, h2, h3, h4) code {
+    @apply border-0 bg-transparent p-0 text-[0.9em];
+  }
+
+  .prose :where(pre):not(:where(.not-prose *)) {
+    @apply relative my-6 rounded-lg border border-line bg-sunken p-4 text-[13px] leading-relaxed sm:p-5 sm:text-sm/5;
+  }
+
+  /* Blockquotes are used as Note/Tip callouts across the docs */
+  .prose :where(blockquote):not(:where(.not-prose *)) {
+    @apply my-6 rounded-lg border border-line bg-raised px-5 py-4 font-normal not-italic text-muted;
+    quotes: none;
+  }
+
+  .prose :where(blockquote p):not(:where(.not-prose *)) {
+    @apply my-0;
+  }
+
+  .prose :where(blockquote p + p):not(:where(.not-prose *)) {
+    @apply mt-3;
+  }
+
+  .prose :where(blockquote strong):not(:where(.not-prose *)) {
+    @apply text-ink;
+  }
+
+  /* Tables scroll horizontally instead of squeezing */
+  .prose :where(table):not(:where(.not-prose *)) {
+    @apply my-6 block w-full overflow-x-auto text-sm/5;
+  }
+
+  .prose :where(thead th):not(:where(.not-prose *)) {
+    @apply whitespace-nowrap px-3 py-2 text-left font-semibold text-ink;
+  }
+
+  .prose :where(tbody td):not(:where(.not-prose *)) {
+    @apply px-3 py-2 align-top;
+  }
+
+  .prose :where(li)::marker {
+    color: rgb(var(--faint));
+  }
+
+  .prose :where(img, video, iframe) {
+    @apply max-w-full rounded-lg border border-line;
+  }
+
+  /* Heading anchors land below the sticky header */
+  .prose :where(h2, h3, h4)[id] {
+    scroll-margin-top: 5.5rem;
+  }
+
+  /* Copy button injected into prose code blocks */
+  .prose pre .copy-button {
+    @apply absolute right-2 top-2 border border-line bg-canvas opacity-0 transition-opacity duration-150;
+  }
+
+  .prose pre:hover .copy-button,
+  .prose pre .copy-button:focus-visible,
+  .prose pre .copy-button[data-copied='true'] {
+    @apply opacity-100;
+  }
+
+  @media (hover: none) {
+    .prose pre .copy-button {
+      @apply opacity-100;
+    }
+  }
+}
+
+/*
+ * Code panel <pre>s also match the Prism theme (public/prism-stati.css), which is
+ * not in a cascade layer and would outrank any layered rule. Unlayered too, these
+ * rules win on specificity, as they did before.
+ */
+.code-panel pre[class*='language-'] {
+  @apply m-0 rounded-none border-0 bg-transparent p-4 text-[13px] leading-relaxed sm:p-5 sm:text-sm/5;
+}
+
+.code-panel.ticks > pre {
+  border-bottom-left-radius: 0.5rem;
+  border-bottom-right-radius: 0.5rem;
 }
 
 /* Cross-document view transitions */

@@ -101,12 +101,24 @@ export interface MetricsPhases {
   readonly cacheManifestLoadMs?: number;
   /** TypeScript compilation */
   readonly typescriptCompileMs?: number;
-  /** Total page rendering time (includes shouldRebuild + render + fileWrite + cacheEntry) */
+  /** Reading the names of every template in the source directory, once per build */
+  readonly templateIndexMs?: number;
+  /**
+   * Total page pipeline time; includes the beforeAll hook, the search index and the per-page
+   * totals below
+   */
   readonly pageRenderingMs?: number;
   /** Aggregate time checking if pages need rebuild (shouldRebuildPage) */
   readonly shouldRebuildTotalMs?: number;
-  /** Aggregate time rendering pages (renderPage) */
+  /** Aggregate time rendering each page's Markdown to HTML */
+  readonly markdownRenderTotalMs?: number;
+  /** Aggregate time rendering pages through their templates (renderPage) */
   readonly renderPageTotalMs?: number;
+  /**
+   * Aggregate time spent on each rendered page between its templates and the file write: SEO,
+   * search and bundle tag injection, registering its images, and hashing what it read
+   */
+  readonly postRenderTotalMs?: number;
   /** Aggregate time writing HTML files to disk */
   readonly fileWriteTotalMs?: number;
   /** Aggregate time updating cache entries */
@@ -157,7 +169,18 @@ export interface MetricsCounts {
   readonly renderedPages: number;
   readonly cachedPages: number;
   readonly assetsCopied: number;
+  /** Distinct template files each rendered page used, summed over the rendered pages */
   readonly templatesLoaded: number;
+  /**
+   * Template renders across the rendered pages: each page's layout, the parents it names, every
+   * included template and the Open Graph template. An include served from the page's cache is
+   * not a render.
+   */
+  readonly templateRenders?: number;
+  /** Includes without props or children that reused the page's earlier render of the template */
+  readonly includeCacheHits?: number;
+  /** Templates in the source directory */
+  readonly templatesIndexed?: number;
   readonly markdownFilesProcessed: number;
   /** Image files generated or copied this build */
   readonly imagesGenerated?: number;
@@ -203,8 +226,10 @@ export interface PageTiming {
   readonly durationMs: number;
   /** Whether page was served from cache */
   readonly cached: boolean;
-  /** Number of templates loaded for this page (undefined for cached pages) */
+  /** Distinct template files the page rendered (undefined for cached pages) */
   readonly templatesLoaded?: number;
+  /** Template renders for the page, repeated includes counted each time (undefined for cached pages) */
+  readonly templateRenders?: number;
 }
 
 /**
@@ -275,13 +300,15 @@ export interface MetricRecorder {
 
   /**
    * Record page timing (only when detailed mode enabled).
-   * @param templatesLoaded - Number of templates loaded (optional, typically undefined for cached pages)
+   * @param templatesLoaded - Distinct template files the page rendered (undefined for cached pages)
+   * @param templateRenders - Template renders for the page (undefined for cached pages)
    */
   recordPageTiming(
     url: string,
     durationMs: number,
     cached: boolean,
     templatesLoaded?: number,
+    templateRenders?: number,
   ): void;
 
   /**

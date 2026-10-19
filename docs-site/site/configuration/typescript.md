@@ -99,6 +99,7 @@ If you need manual control over script placement, disable auto-injection:
 import { defineConfig } from '@stati/core';
 
 export default defineConfig({
+  // site: { … },
   typescript: {
     enabled: true,
     autoInject: false, // Disable automatic script injection
@@ -171,6 +172,7 @@ If you don't specify a `bundles` array, Stati defaults to a single global bundle
 import { defineConfig } from '@stati/core';
 
 export default defineConfig({
+  // site: { … },
   typescript: {
     enabled: true
     // Defaults to: bundles: [{ entryPoint: 'main.ts', bundleName: 'main' }]
@@ -187,6 +189,7 @@ Define multiple bundles with targeted page injection:
 import { defineConfig } from '@stati/core';
 
 export default defineConfig({
+  // site: { … },
   typescript: {
     enabled: true,
     srcDir: 'src',

@@ -211,9 +211,9 @@ describe('ExampleManager', () => {
     it('should handle nested directory structure', async () => {
       // Add nested directories to mock example
       const mockExampleDir = join(tempDir, 'mock-examples', 'blank');
-      await mkdir(join(mockExampleDir, 'site', '_partials'), { recursive: true });
+      await mkdir(join(mockExampleDir, 'site', 'partials'), { recursive: true });
       await writeFile(
-        join(mockExampleDir, 'site', '_partials', 'header.eta'),
+        join(mockExampleDir, 'site', 'partials', 'header.eta'),
         '<header>Header</header>',
       );
 
@@ -222,11 +222,11 @@ describe('ExampleManager', () => {
       await exampleManager.copyExample('blank', targetDir);
 
       await expect(
-        access(join(targetDir, 'site', '_partials', 'header.eta')),
+        access(join(targetDir, 'site', 'partials', 'header.eta')),
       ).resolves.not.toThrow();
 
       const headerContent = await readFile(
-        join(targetDir, 'site', '_partials', 'header.eta'),
+        join(targetDir, 'site', 'partials', 'header.eta'),
         'utf-8',
       );
       expect(headerContent).toBe('<header>Header</header>');

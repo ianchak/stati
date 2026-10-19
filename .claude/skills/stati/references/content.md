@@ -3,8 +3,9 @@
 ## Content sources
 
 The content loader reads `**/*.md` below `srcDir` (`site` by default), excluding
-underscore-prefixed directories. Markdown in `_partials/` is not an ordinary
-page. `.eta` files are templates, not standalone routes. Markdown is not MDX and
+underscore-prefixed directories. Markdown in `_drafts/` is not an ordinary
+page. `.eta` files are templates, not standalone routes, wherever they are, so
+template folders such as `site/partials/` need no underscore. Markdown is not MDX and
 does not run Eta expressions as a second template pass.
 
 Use UTF-8 Markdown with YAML frontmatter:
@@ -99,6 +100,13 @@ production build after deleting or renaming routes.
 ## Markdown behavior
 
 Default MarkdownIt options enable raw HTML, linkification, and typography.
+Core 2.0 uses markdown-it 15 (linkify-it 6), which links differently from 1.x:
+domains without a scheme (`www.example.com`) and file names (`README.md`) stay
+text; email-shaped text links whatever its domain, so `react@18.3.1` outside
+backticks becomes a `mailto:` link; a URL with a user name
+(`https://git@github.com/o/r.git`) links only up to the `@`. In
+`markdown.configure`, `md.linkify.set()` takes `fuzzyLink: true`,
+`fuzzyEmail: false` and `urlAuth: true` to change each.
 Raw HTML is trusted author input, not sanitization of arbitrary user content.
 Plugins are explicitly configured/installed, not assumed built-ins.
 
@@ -228,7 +236,7 @@ older sites computed prev/next and related posts in `beforeAll`.
 ISG tracks reads: a page that reads `stati.collection` rebuilds when a member is
 added, removed or moved, or its `title`, `description`, `tags`, `draft` or
 publish date changes. `collections.summaryFields` replaces that field list
-(`content` means the body). Data handed over through `beforeAll` and filters is
+(`content` means the body). Data handed over through `beforeAll` and helpers is
 not tracked; prefer `stati.collection`.
 
 **Pagination:** `paginate: 10` or `paginate: { size: 10, path: 'page' }` on a page

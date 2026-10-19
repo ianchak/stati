@@ -23,7 +23,7 @@
   "devDependencies": {
     "@stati/cli": "^1.15.4",
     "@stati/core": "^1.29.0",
-    "markdown-it-prism": "^3.0.0"
+    "markdown-it-prism": "^4.0.0"
   },
   "engines": {
     "node": "^22.12.0 || >=24"

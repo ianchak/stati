@@ -6,13 +6,12 @@
 export const DEPENDENCY_VERSIONS = {
   // CSS Processors
   sass: '^1.77.0',
-  tailwindcss: '^3.4.0',
-  autoprefixer: '^10.4.0',
-  postcss: '^8.4.0',
+  tailwindcss: '^4.3.3',
+  '@tailwindcss/cli': '^4.3.3',
   // Build Tools
   concurrently: '^9.0.0',
   // TypeScript
-  typescript: '^5.6.0',
+  typescript: '^6.0.3',
   // Image tools
   '@stati/images': '^1.0.0',
 } as const;

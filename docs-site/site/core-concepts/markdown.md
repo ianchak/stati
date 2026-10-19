@@ -136,7 +136,7 @@ Renders as:
 
 ### Images
 
-Stati reads the size of each Markdown image and writes it into the HTML, with lazy loading:
+Stati reads the size of each Markdown image and writes it into the HTML. Images load lazily, except the page's first image when it sits near the top, which loads eagerly with a high fetch priority (`images.eagerFirst: false` turns that off):
 
 ```markdown
 ![Harbour at dawn](/images/harbour.jpg)
@@ -144,7 +144,7 @@ Stati reads the size of each Markdown image and writes it into the HTML, with la
 ```
 
 ```html
-<img src="/images/harbour.jpg" alt="Harbour at dawn" width="1600" height="900" loading="lazy" decoding="async">
+<img src="/images/harbour.jpg" alt="Harbour at dawn" width="1600" height="900" loading="eager" fetchpriority="high" decoding="async">
 ```
 
 A path that starts with `/` is read from `public/`. A relative path is read next to the page's Markdown file, and Stati copies that image to `/_img/`. With the optional `@stati/images` package, images can also get responsive AVIF and WebP versions. See [Images](/configuration/images) for the details and for turning this off.
@@ -155,7 +155,7 @@ Task list syntax (`- [x] Done`) is **not** supported out of the box: markdown-it
 
 ### Auto-linking
 
-URLs with a scheme (`https://stati.build`) are converted to links. Bare domains and email addresses (`example.com`, `hello@example.com`) are linked too, but only when their top-level domain is a common one such as `.com`, `.org` or `.net`; `stati.build` or `hello@stati.build` stay plain text. Write a Markdown link when in doubt:
+URLs with a scheme (`https://stati.build`) are converted to links, and so is text shaped like an email address (`hello@stati.build`), whatever its domain. Domains without a scheme, such as `stati.build` or `www.example.com`, stay plain text. Write package versions such as `react@18.3.1` in backticks, or they become `mailto:` links; [Links](/configuration/markdown#links) lists the options. Write a Markdown link when in doubt:
 
 ```markdown
 Visit https://stati.build for more information.
@@ -179,7 +179,7 @@ Ellipsis (...)
 Stati uses Markdown-It with the following default configuration:
 
 - **HTML tags** - Enabled for raw HTML in markdown
-- **Linkify** - Auto-convert URLs to clickable links
+- **Linkify** - Auto-convert URLs such as `https://example.com` to clickable links
 - **Typographer** - Smart quotes and other typography enhancements
 
 ```javascript
@@ -365,7 +365,7 @@ Access in templates:
 Stati does not currently provide built-in excerpt support. To create excerpts, you can:
 
 1. Add an `excerpt` field to your frontmatter
-2. Use custom filters to truncate content
+2. Use a template helper to truncate content
 3. Process content in build hooks
 
 **Example using frontmatter:**
@@ -419,7 +419,7 @@ Stati's ISG system provides intelligent caching for rendered pages:
 
 - **Page caching** - Rendered HTML is cached and only rebuilt when content or dependencies change
 - **Content hash tracking** - Changes trigger rebuilds automatically
-- **Template dependency tracking** - Updates to layouts or partials invalidate dependent pages
+- **Template dependency tracking** - Updates to a template invalidate the pages that rendered it
 - **TTL-based rebuilds** - Configure how long pages stay cached
 
 See the [ISG Configuration](/configuration/isg) documentation for details on cache TTL, aging rules, and invalidation strategies.

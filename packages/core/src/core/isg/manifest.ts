@@ -2,6 +2,7 @@ import { readFile, writeFile, pathExists, ensureDir } from '../utils/index.js';
 import { join } from 'node:path';
 import type { CacheManifest, CacheEntry } from '../../types/index.js';
 import { MANIFEST_FILENAME } from '../../constants.js';
+import { isTemplateLookupList } from '../template-index.js';
 
 /**
  * Type for Node.js errno exceptions
@@ -315,11 +316,18 @@ function validateCacheEntry(entry: unknown, path: string): entry is CacheEntry {
     }
   }
 
-  for (const field of ['readsCollection', 'readsNav'] as const) {
+  for (const field of ['readsCollection', 'readsNav', 'templatesRecorded'] as const) {
     if (entryObj[field] !== undefined && typeof entryObj[field] !== 'boolean') {
       console.warn(`Invalid cache entry for ${path}: "${field}" must be a boolean if present`);
       return false;
     }
+  }
+
+  if (entryObj.templateLookups !== undefined && !isTemplateLookupList(entryObj.templateLookups)) {
+    console.warn(
+      `Invalid cache entry for ${path}: "templateLookups" must be a list of { name, from?, file } objects`,
+    );
+    return false;
   }
 
   // Validate that deps and tags arrays contain strings

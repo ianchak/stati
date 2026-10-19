@@ -116,7 +116,7 @@ function lerpColor(colorA: string, colorB: string, t: number): string {
 /**
  * Strip ANSI escape codes from text
  */
-function stripAnsi(text: string): string {
+export function stripAnsi(text: string): string {
   // eslint-disable-next-line no-control-regex
   return text.replace(/\x1b\[[0-9;]*m/g, '');
 }

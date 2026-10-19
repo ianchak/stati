@@ -43,24 +43,22 @@ export default defineConfig({
       // Add custom markdown configuration here
     },
   },
-  eta: {
-    filters: {
-      // Custom filters for documentation
-      formatDate: (date: unknown) =>
-        new Date(date as string | number | Date).toLocaleDateString('en-US'),
-      slugify: (text: unknown) =>
-        String(text)
-          .toLowerCase()
-          .replace(/\s+/g, '-')
-          .replace(/[^\w-]/g, ''),
-      // Ordered docs sections shared by the sidebar and the previous/next pager
-      docsSections: () => DOCS_SECTIONS,
-      // Syntax-highlights code at build time so templates ship no highlighter
-      highlight: (code: unknown, lang: unknown) => {
-        const source = String(code).replace(/^\n+|\s+$/g, '');
-        const grammar = Prism.languages[String(lang)];
-        return grammar ? Prism.highlight(source, grammar, String(lang)) : escapeHtml(source);
-      },
+  helpers: {
+    // Template helpers for documentation, called as stati.helpers.name()
+    formatDate: (date: unknown) =>
+      new Date(date as string | number | Date).toLocaleDateString('en-US'),
+    slugify: (text: unknown) =>
+      String(text)
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^\w-]/g, ''),
+    // Ordered docs sections shared by the sidebar and the previous/next pager
+    docsSections: () => DOCS_SECTIONS,
+    // Syntax-highlights code at build time so templates ship no highlighter
+    highlight: (code: unknown, lang: unknown) => {
+      const source = String(code).replace(/^\n+|\s+$/g, '');
+      const grammar = Prism.languages[String(lang)];
+      return grammar ? Prism.highlight(source, grammar, String(lang)) : escapeHtml(source);
     },
   },
   typescript: {

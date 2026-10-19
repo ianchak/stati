@@ -14,29 +14,29 @@ import {
 
 /**
  * Resolves the absolute source directory path from configuration.
- * @param config - Stati configuration
+ * @param config - Stati configuration; `srcDir` defaults to `site`, as `loadConfig()` sets it
  * @returns Absolute path to the source directory
  */
 export function resolveSrcDir(config: StatiConfig): string {
-  return join(process.cwd(), config.srcDir!);
+  return join(process.cwd(), config.srcDir ?? DEFAULT_SRC_DIR);
 }
 
 /**
  * Resolves the absolute output directory path from configuration.
- * @param config - Stati configuration
+ * @param config - Stati configuration; `outDir` defaults to `dist`
  * @returns Absolute path to the output directory
  */
 export function resolveOutDir(config: StatiConfig): string {
-  return join(process.cwd(), config.outDir!);
+  return join(process.cwd(), config.outDir ?? DEFAULT_OUT_DIR);
 }
 
 /**
  * Resolves the absolute static directory path from configuration.
- * @param config - Stati configuration
+ * @param config - Stati configuration; `staticDir` defaults to `public`
  * @returns Absolute path to the static directory
  */
 export function resolveStaticDir(config: StatiConfig): string {
-  return join(process.cwd(), config.staticDir!);
+  return join(process.cwd(), config.staticDir ?? DEFAULT_STATIC_DIR);
 }
 
 /**

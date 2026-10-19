@@ -51,9 +51,10 @@ URL.
 
 - **Template:** the nearest `og.eta` from the page's folder up to `site/`, else the
   card built into the package (`node_modules/@stati/images/templates/og.eta`).
-  `og.eta` is not a layout or partial and never becomes a page.
+  `og.eta` is not a layout or included template and never becomes a page.
 - **Context:** the layout's `stati` object with `stati.content` empty and
-  `stati.og` = `{ width, height }`. Partials and filters work.
+  `stati.og` = `{ width, height }`. `stati.include()` and `stati.helpers` work;
+  `stati.body` is absent, and relative (`./`) names fail because the built-in card has no file.
 - **CSS:** Satori's subset. Inline `style` attributes only (no classes, `<style>`
   or Sass), flexbox only, and every element with more than one child needs
   `display:flex`. Unsupported CSS fails the dev build with the template path.
@@ -69,7 +70,7 @@ URL.
   changes when the title, description or site title change, not on body edits.
 - **Layouts with hand-written OG tags** read the image as `stati.ogImage`
   (`url` is absolute). `stati.generateSEO()` includes it automatically, even when
-  called from a partial.
+  called from an included template.
 
 Normally let auto-injection manage tags. For explicit placement:
 
@@ -367,9 +368,9 @@ npx stati invalidate "age:1week"
 - Invalidating removes manifest entries; it does not regenerate or delete output.
   Run a subsequent build.
 
-Use `--force` when validating output-affecting config/hook/filter changes instead
+Use `--force` when validating output-affecting config/hook/helper changes instead
 of assuming their effects are always captured by existing cache hashes. External
-data changes need an explicit rebuild strategy. Data a filter returns from a
+data changes need an explicit rebuild strategy. Data a helper returns from a
 `beforeAll` closure is not tracked; write what a page shows into its frontmatter
 in `beforeAll`, or read it from `stati.collection`. A before-render mutation
 cannot affect an earlier cache-hit decision.
@@ -422,8 +423,10 @@ No `metrics` block exists in `StatiConfig`; use CLI/build API options.
 
 Reports contain schemaVersion, metadata, totals, phases, counts, ISG metrics,
 optional page timings, and optional incremental measurements. Detailed mode
-adds per-page timings. Use these to identify expensive hooks, repeated partials,
-asset copying, bundling, and poor cache hit rates before optimizing.
+adds per-page timings, with each page's template loads and renders. Use these to
+identify expensive hooks, heavily repeated includes (`templateRenders` against
+`includeCacheHits`), asset copying, bundling, and poor cache hit rates before
+optimizing.
 
 Low-level APIs are indexed in the resource directory. Inspect the installed
 signatures for advanced use; normal sites should prefer configuration and CLI.

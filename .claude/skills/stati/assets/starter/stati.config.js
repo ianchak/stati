@@ -10,10 +10,8 @@ export default defineConfig({
     description: 'A small Markdown and Eta website.',
     defaultLocale: 'en',
   },
-  eta: {
-    filters: {
-      uppercase: (value) => String(value).toUpperCase(),
-    },
+  helpers: {
+    uppercase: (value) => String(value).toUpperCase(),
   },
   typescript: {
     enabled: true,

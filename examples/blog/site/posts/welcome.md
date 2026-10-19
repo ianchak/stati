@@ -34,9 +34,10 @@ None of it needs JavaScript in the browser. The pages are plain HTML and one sty
 | `site/posts/index.md`   | The archive                                                 |
 | `site/tags/`            | The tags page, and `[tag].md`, which makes a page per tag   |
 | `site/*.md`             | Home, about and the 404 page                                |
+| `site/base.eta`         | The page around both layouts: head, header and footer       |
 | `site/layout.eta`       | The layout for pages                                        |
 | `site/posts/layout.eta` | The layout for posts                                        |
-| `site/_partials/`       | Shared pieces: head, header, footer, post lists, page links |
+| `site/partials/`        | Shared pieces: head, header, footer, post lists, page links |
 | `public/styles.css`     | Every style on the site                                     |
 | `helpers/blog.js`       | Related posts and dates, used by the templates              |
 | `stati.config.js`       | Your name, the feed, the sitemap and the SEO settings       |

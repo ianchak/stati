@@ -42,7 +42,7 @@ See [/llms.txt](/llms.txt) for structured AI crawler guidance.
 The repository includes a portable
 [Stati skill bundle](https://github.com/ianchak/stati/tree/main/.claude/skills/stati)
 for agents building Stati websites. It covers Markdown, routing, Eta layouts,
-callable partials and props, configuration, assets, SEO, search, feeds, caching,
+includes, props and helpers, configuration, assets, SEO, search, feeds, caching,
 and deployment.
 
 Copy the entire `stati` skill folder into the location your agent discovers:

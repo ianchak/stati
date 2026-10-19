@@ -45,7 +45,7 @@ const html = generateSEOMetadata({
 });
 ```
 
-> **Note:** `SEOTagType` is a runtime enum. Import it from `@stati/core/types`; the `@stati/core` entry point exports it as a type only, so `SEOTagType.Title` would be `undefined` there.
+> **Note:** `SEOTagType` is a runtime enum. Import it from `@stati/core/types`; the `@stati/core` entry point exports it as a type only, so importing it as a value from `@stati/core` fails: a TypeScript error, or a `SyntaxError` when the module loads in JavaScript.
 
 **Behavior:**
 

@@ -25,7 +25,7 @@ stati dev --port 4000 --host 0.0.0.0
 stati dev --open
 ```
 
-The `--port`, `--host` and `--open` flags map directly to the options accepted by `createDevServer` in `@stati/core` and override `dev.port`, `dev.host` and `dev.open` from your config. `--config` is accepted too, but the dev server loads `stati.config.*` from the current directory, so start it from the project root (see [Config file location](/cli/commands#config-file-location)).
+The `--port`, `--host` and `--open` flags map directly to the options accepted by `createDevServer` in `@stati/core` and override `dev.port`, `dev.host` and `dev.open` from your config. `--config` is accepted too, but only the builds read the config from its directory: the server takes its port, host and folders from `stati.config.*` in the current directory, so start it from the project root (see [Config file location](/cli/commands#config-file-location)).
 
 ## What happens on startup
 
@@ -42,21 +42,23 @@ If `--open` is set, Stati attempts to launch your default browser using the `ope
 
 File watching is handled by `chokidar` with listeners for file additions, edits, and deletions. Whenever a change is detected Stati:
 
-- Starts an incremental rebuild unless another rebuild is already in progress.
+- Starts an incremental rebuild. Changes made while a rebuild runs are queued and rebuilt together when it finishes.
 - Logs which file triggered the rebuild, for example `▸ site/blog/post.md rebuilt` followed by `Done in 95ms`.
 - Broadcasts a `reload` message over the WebSocket connection so connected browsers refresh automatically.
 
 ## Template changes and cache invalidation
 
-Templates (`*.eta`) and partials get special handling:
+Each page's cache entry records the templates it rendered and the template names it looked up, so a template change rebuilds only the pages it affects:
 
-- Stati inspects the cache manifest to find pages that depend on the changed template.
-- The affected entries are marked stale so the rebuild renders them again.
-- If no dependency matches are found, Stati falls back to a full rebuild to keep output consistent.
+- **A changed template** rebuilds the pages that rendered it. A template no page renders rebuilds nothing, and the log says `No page uses it`.
+- **A new template** rebuilds the pages whose recorded template names now find it, such as the pages of a section that gains its own `partials/header.eta`, or pages whose `stati.include.has()` check now finds a file.
+- **A deleted template** rebuilds the pages that rendered it, and the pages whose template names now find a different file.
+
+Pages whose cache entries predate this record are rebuilt in full once.
 
 Markdown changes rebuild the edited page, plus the pages whose output depends on it: pages that read its [collection](/core-concepts/collections) when its title, description, tags or date changed, and pages that render the navigation when the edit changed it (a `title` or `order`, or a page added or removed). Deleting a page removes its HTML from the output directory.
 
-This logic lives in `handleTemplateChange` inside `packages/core/src/core/dev.ts`.
+Template changes are handled by `markTemplateChanges` in `packages/core/src/core/dev.ts`; the pages a Markdown change affects are found by the ISG checks in `packages/core/src/core/isg/builder.ts`.
 
 ## Static assets
 
@@ -74,14 +76,16 @@ stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css
 
 **How it works:**
 
-- Stati spawns a Tailwind CLI process in watch mode using the locally installed `tailwindcss` executable from `node_modules/.bin/`.
+- Stati spawns a Tailwind CLI process in watch mode using the locally installed `tailwindcss` executable from `node_modules/.bin/`. Tailwind CSS 4 and 3 both work.
 - By default, only errors are shown (quiet mode) to keep the console clean.
 - Use `--tailwind-verbose` to see all Tailwind output including "done in Xms" messages.
-- When you stop the dev server (`Ctrl+C`), the Tailwind watcher is automatically stopped as well.
+- The watcher runs for as long as the dev server does, including when the dev server runs in a background or CI shell without a terminal.
+- When you stop the dev server (`Ctrl+C`), the Tailwind watcher is automatically stopped as well. It also exits when the dev server process is killed, so no watcher is left running.
+- If the watcher stops on its own, for example because Tailwind CSS 4 found an error in the stylesheet at startup, the dev server says so. Fix the error and restart `stati dev`.
 
 **Requirements:**
 
-- You must have `tailwindcss` installed locally in your project (`npm install -D tailwindcss`).
+- You must have the `tailwindcss` command installed locally in your project. Tailwind CSS 4, the version the scaffolder installs, ships it in `@tailwindcss/cli`: `npm install -D tailwindcss @tailwindcss/cli`. With Tailwind CSS 3, `npm install -D tailwindcss@3` includes it.
 - Stati will check for the installation and show an error if it's not found.
 
 **Example with verbose output:**
@@ -94,7 +98,7 @@ stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css --ta
 
 - Successful rebuilds simply reload the page.
 - When a build error occurs, Stati serves an error overlay in place of the page you requested. See [Error overlay](/api/error-handling#error-overlay) for what it shows.
-- A template that reads a `stati.*` property that does not exist, such as `stati.paeg` or a misspelled filter, fails with a "Did you mean ...?" suggestion instead of rendering `undefined`. See [Unknown template properties](/api/error-handling#unknown-template-properties).
+- A template that reads a `stati.*` property that does not exist, such as `stati.paeg` or a misspelled helper, fails with a "Did you mean ...?" suggestion instead of rendering `undefined`. See [Unknown template properties](/api/error-handling#unknown-template-properties).
 - The overlay stays connected to the dev server. Fix the error and save, and the page reloads on the next successful rebuild. The header shows whether the connection is live, and **Refresh** (or `Ctrl+R` / `Cmd+R`) reloads by hand.
 
 ## Stopping the server
@@ -105,5 +109,5 @@ Press `Ctrl+C` (or send `SIGINT`/`SIGTERM`) to stop the server. Stati closes the
 
 - **Repeated failures** – Check the browser overlay for the full stack trace, then inspect the terminal output logged by the CLI.
 - **Changes not showing up** – Ensure the file is inside `site` or `public` (or your TypeScript `srcDir`, which esbuild watches). Other files, including `stati.config.*`, are not watched: restart the server after editing the config.
-- **Cache feels stale** – Run `stati build --clean` in another terminal to rebuild everything and refresh the manifest.
+- **Cache feels stale** – Restart `stati dev`: startup clears the cache and rebuilds every page. Don't run `stati build --clean` while the dev server runs, as it deletes the output and the cache the server is using.
 - **Port already in use** – Start the server on a different port with `stati dev --port 4001`.

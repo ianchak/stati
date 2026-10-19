@@ -39,10 +39,8 @@ interface StatiConfig {
     toc?: boolean;
   };
 
-  /** Eta template engine configuration */
-  eta?: {
-    filters?: Record<string, (x: unknown) => unknown>;
-  };
+  /** Functions templates call as stati.helpers.name() */
+  helpers?: Record<string, (...args: any[]) => unknown>;
 
   /** Incremental Static Generation configuration */
   isg?: ISGConfig;
@@ -374,11 +372,6 @@ interface TemplateContext {
     url: string;
     /** Rendered HTML content */
     content: string;
-    /**
-     * Table of contents extracted from headings.
-     * Always an array (empty if no headings are present).
-     */
-    toc: TocEntry[];
     /** Current page's navigation node */
     navNode?: NavNode;
     /** Frontmatter fields spread into page object */
@@ -387,6 +380,25 @@ interface TemplateContext {
 
   /** Rendered markdown content (same as page.content) */
   content: string;
+
+  /**
+   * The HTML this template wraps: the wrapped output in a template named by stati.layout(),
+   * the body argument (or undefined) in one rendered by stati.include(). Absent in the
+   * page's own layout and in the Open Graph template.
+   */
+  body?: string;
+
+  /** Props of the stati.include() or stati.layout() call that rendered this template */
+  props: Record<string, unknown> | undefined;
+
+  /** Renders another template here and returns its HTML */
+  include: TemplateIncludeFunction;
+
+  /** Wraps this template's output in another template */
+  layout: TemplateLayoutFunction;
+
+  /** The functions registered in the config's helpers */
+  helpers: StatiHelpers;
 
   /** Navigation helpers and tree */
   nav: {
@@ -410,9 +422,6 @@ interface TemplateContext {
     getCurrentNode: () => NavNode | undefined;
   };
 
-  /** Discovered partials from underscore folders in hierarchy */
-  partials: Record<string, string>;
-
   /** The page's collection: its own, the one it belongs to, or the one `collection` names */
   collection?: CollectionData;
 
@@ -422,27 +431,53 @@ interface TemplateContext {
   /** Key and items of a page created from a [param].md template */
   generated?: GeneratedPageData;
 
-  /** The URL slug Stati gives generated page keys */
-  slugify?: (text: string) => string;
-
   /** Bundle and search index paths (passed on every render) */
   assets?: StatiAssets;
+
+  /** The Stati version that rendered the page */
+  generator: { version: string };
+
+  /** The URL slug Stati gives generated page keys */
+  slugify: (text: string) => string;
+
+  /** Builds space-separated attribute values, like classnames */
+  propValue: (...args: unknown[]) => string;
+
+  /** Renders a sized, lazy-loaded image, responsive with images.responsive */
+  image: (
+    src: string,
+    options?: { alt?: string; sizes?: string; priority?: boolean; class?: string; title?: string },
+  ) => string;
+
+  /** Renders SEO tags for manual placement */
+  generateSEO: (tags?: string[]) => string;
+
+  /** The card's width and height, only while an og.eta card template renders */
+  og?: { width: number; height: number };
+
+  /** The page's generated Open Graph image, when images.og made one */
+  ogImage?: GeneratedOgImage;
 }
+
+interface TemplateIncludeFunction {
+  (name: string, props?: Record<string, unknown> | null, body?: string | null): string;
+  /** Whether name resolves to a template for this page */
+  has(name: string): boolean;
+}
+
+interface TemplateLayoutFunction {
+  /** Returns an empty string, so the call can be printed */
+  (name: string, props?: Record<string, unknown> | null): string;
+  /** The same function as stati.include.has */
+  has(name: string): boolean;
+}
+
+type StatiHelpers = Record<string, (...args: any[]) => unknown>;
 ```
 
-The declared interface is narrower than what templates receive. At render time the context also has:
+At render time, `page` also has `toc`: the table of contents extracted from the page's headings, always an array (empty when the page has none). The `TemplateContext` type leaves it out.
 
-- `generator.version`: the installed `@stati/core` version
-- `generateSEO(tags?)`: renders SEO tags for manual placement
-- `propValue(...values)`: builds space-separated attribute values
-- `props`: the props passed to a callable partial (`undefined` otherwise)
-- `image(src, options?)`: renders a sized, lazy-loaded image, responsive with `images.responsive` (see [Images in templates](/configuration/images#images-in-templates))
-- `ogImage`: the page's generated Open Graph image (`GeneratedOgImage`), when `images.og` made one
-- `og`: the card's `width` and `height`, only while an `og.eta` card template renders
-- every function from `eta.filters`, under its own name
-- `partials.<name>`: each partial's rendered HTML, which can also be called with props (`stati.partials.card({ title: 'Hi' })`)
-
-See [Template API](/api/templates) for how to use them.
+The root of the context holds only Stati's API. Your functions are under `helpers`, so they never replace a value of Stati's. See [Template API](/api/templates) for how to use the context.
 
 ## ISG types
 
@@ -733,6 +768,10 @@ import type {
   // Configuration and content
   SiteConfig,
   StatiConfig,
+  StatiHelpers,
+  TemplateContext,
+  TemplateIncludeFunction,
+  TemplateLayoutFunction,
   PageModel,
   FrontMatter,
   BuildContext,
@@ -743,6 +782,8 @@ import type {
   AgingRule,
   BuildStats,
   BundleConfig,
+  // The markdown-it instance that markdown.configure receives
+  MarkdownIt,
   // Collections, pagination and generated pages
   CollectionData,
   CollectionsConfig,
@@ -815,10 +856,10 @@ import type {
 
 `SEOTagType` is exported from `@stati/core` as a type only. To use its values (such as `SEOTagType.Title`), import it from `@stati/core/types`.
 
-**`@stati/core/types`** exports type declarations only (plus the `SEOTagType` enum), including the template and cache types that the main entry point leaves out: `TemplateContext`, `CollectionData`, `StatiAssets`, `TocEntry`, `CacheEntry`, `CacheManifest`, `RobotsTxtConfig`, `TypeScriptConfig`, `SearchConfig`, `SearchDocument`, `SearchIndex`, `SearchIndexMetadata` and `Logger`.
+**`@stati/core/types`** exports type declarations only (plus the `SEOTagType` enum), including the template and cache types that the main entry point leaves out: `StatiAssets`, `TocEntry`, `CacheEntry`, `CacheManifest`, `TemplateLookup`, `RobotsTxtConfig`, `TypeScriptConfig`, `SearchConfig`, `SearchDocument`, `SearchIndex`, `SearchIndexMetadata` and `Logger`.
 
 ```typescript
-import type { TemplateContext, CacheManifest, Logger } from '@stati/core/types';
+import type { CacheManifest, Logger, TocEntry } from '@stati/core/types';
 ```
 
 **`@stati/core/config`** exports `loadConfig`, `clearConfigCache` and `getConfigFilePaths(cwd)`, which returns the config file paths Stati looks for in a directory.
@@ -876,10 +917,13 @@ export default defineConfig({
   hooks: {
     beforeAll: async (ctx) => {
       console.log(`Starting build with ${ctx.pages.length} pages`);
+      // Change page data here: beforeAll runs before the cache check
+      for (const page of ctx.pages) {
+        page.frontMatter.description ??= ctx.config.site.description;
+      }
     },
     beforeRender: async (ctx) => {
-      // Modify page data before rendering
-      ctx.page.frontMatter.description ??= ctx.config.site.description;
+      console.log(`Rendering: ${ctx.page.url}`);
     },
     afterRender: async (ctx) => {
       console.log(`Rendered: ${ctx.page.url}`);

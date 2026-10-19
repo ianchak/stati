@@ -39,40 +39,52 @@ const SITE_CONFIG_KEYS: Record<keyof SiteConfig, true> = {
 /**
  * Context properties whose own keys form a closed set and are validated one level
  * down, with keys that may be legitimately absent at runtime.
- * `page` is left out because frontmatter keys differ from page to page, and
- * `partials` already has its own validating proxy.
+ * `page` is left out because frontmatter keys differ from page to page.
  */
 const VALIDATED_NESTED_PROPERTIES: Record<string, readonly string[]> = {
   site: Object.keys(SITE_CONFIG_KEYS),
   nav: [],
   collection: [],
   generator: [],
+  helpers: [],
 };
 
 /**
  * Context properties searched for an exact match when a key is missing from the
- * root, so that `stati.title` can suggest `stati.page.title` and `stati.header`
- * can suggest `stati.partials.header`.
+ * root, so that `stati.title` can suggest `stati.page.title` and `stati.formatDate`
+ * can suggest `stati.helpers.formatDate`.
  */
-const CROSS_LEVEL_PROPERTIES = ['page', 'site', 'nav', 'partials'];
+const CROSS_LEVEL_PROPERTIES = ['page', 'site', 'nav', 'helpers'];
+
+/**
+ * Explanations for root properties that exist only in some templates, shown instead of
+ * spelling suggestions when a template reads one where it is absent.
+ */
+const ABSENT_PROPERTY_HINTS: Record<string, string> = {
+  body: "stati.body is set only in templates rendered by stati.layout() or stati.include(); the page's Markdown is stati.content",
+};
 
 /**
  * Thrown in development when a template reads a property that does not exist
  * on the template context.
  *
- * The suggestions are encoded in the message because Eta's debug mode rethrows
- * runtime errors as a new error that only keeps the original message and name.
+ * The suggestions are encoded in the message, which Eta's debug mode copies into
+ * the error it rethrows for each template the error passes through.
  * Use {@link parseUnknownPropertyMessage} to read them back.
  */
 export class UnknownTemplatePropertyError extends Error {
   public readonly propertyPath: string;
   public readonly suggestions: string[];
 
-  constructor(propertyPath: string, suggestions: string[], availableKeys: string[]) {
-    super(formatUnknownPropertyMessage(propertyPath, suggestions, availableKeys));
+  /**
+   * @param hint - Explanation shown instead of the suggestions, for a property that only some
+   *   templates have
+   */
+  constructor(propertyPath: string, suggestions: string[], availableKeys: string[], hint?: string) {
+    super(formatUnknownPropertyMessage(propertyPath, suggestions, availableKeys, hint));
     this.name = 'UnknownTemplatePropertyError';
     this.propertyPath = propertyPath;
-    this.suggestions = suggestions;
+    this.suggestions = hint ? [hint] : suggestions;
   }
 }
 
@@ -80,8 +92,12 @@ function formatUnknownPropertyMessage(
   propertyPath: string,
   suggestions: string[],
   availableKeys: string[],
+  hint?: string,
 ): string {
   const base = `Unknown property "${propertyPath}".`;
+  if (hint) {
+    return `${base} ${hint}.`;
+  }
   if (suggestions.length > 0) {
     const quoted = suggestions.map((s) => `"${s}"`);
     const list =
@@ -105,13 +121,13 @@ export function parseUnknownPropertyMessage(
   message: string,
 ): { message: string; suggestions: string[] } | undefined {
   const match = message.match(
-    /^Unknown property "([^"]+)"\.(?: Did you mean (.+)\?| Available properties: (.*)\.)?$/,
+    /^Unknown property "([^"]+)"\.(?: Did you mean (.+)\?| Available properties: (.*)\.| (.+)\.)?$/,
   );
   if (!match) {
     return undefined;
   }
 
-  const [, propertyPath, didYouMean, available] = match;
+  const [, propertyPath, didYouMean, available, hint] = match;
   const suggestions: string[] = [];
   if (didYouMean) {
     for (const [, name] of didYouMean.matchAll(/"([^"]+)"/g)) {
@@ -120,6 +136,8 @@ export function parseUnknownPropertyMessage(
   } else if (available !== undefined) {
     const parentPath = propertyPath!.slice(0, propertyPath!.lastIndexOf('.'));
     suggestions.push(`Available properties on ${parentPath}: ${available || '(none)'}`);
+  } else if (hint) {
+    suggestions.push(hint);
   }
 
   return { message: `Unknown property "${propertyPath}"`, suggestions };
@@ -154,9 +172,9 @@ function createValidatingObjectProxy<T extends object>(
  * instead of silently rendering `undefined`. The error reaches the dev server's
  * error overlay.
  *
- * Validates the top-level `stati.*` keys (including custom filters, which are
- * spread onto the context) and one level down for `site`, `nav`, `collection`,
- * and `generator`. Frontmatter under `stati.page` is not validated.
+ * Validates the top-level `stati.*` keys and one level down for `site`, `nav`,
+ * `collection`, `generator` and `helpers`, so a misspelt helper is caught too.
+ * Frontmatter under `stati.page` is not validated.
  *
  * Only active in development; other environments get the context back unchanged.
  */
@@ -190,6 +208,13 @@ export function createValidatingContextProxy<T extends object>(context: T): T {
 
       const name = String(prop);
       const availableKeys = listKeys(obj, []);
+
+      const hint = Object.hasOwn(ABSENT_PROPERTY_HINTS, name)
+        ? ABSENT_PROPERTY_HINTS[name]
+        : undefined;
+      if (hint) {
+        throw new UnknownTemplatePropertyError(`stati.${name}`, [], availableKeys, hint);
+      }
 
       // An exact match one level down (stati.title -> stati.page.title) is a
       // stronger signal than a spelling match, so it goes first

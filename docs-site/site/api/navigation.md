@@ -34,7 +34,7 @@ interface NavNode {
   url: string;                // URL path
   path: string;               // URL path of the page or collection folder
   order?: number;             // Sort order (from front matter)
-  publishedAt?: Date;         // Publication date (quoted publishedAt front matter)
+  publishedAt?: Date;         // Publication date: the first valid publishedAt, published, date or createdAt
   children?: NavNode[];       // Pages in the collection (collection nodes only)
   isCollection?: boolean;     // True if this represents a folder
 }
@@ -183,7 +183,7 @@ getChildren(path: string): NavNode[]
 **Advanced Example - Nested Sidebar:**
 
 ```html
-<!-- _partials/sidebar.eta -->
+<!-- site/partials/sidebar.eta -->
 <aside class="sidebar">
   <% function renderSection(path, title) { %>
     <div class="sidebar-section">
@@ -446,7 +446,7 @@ Direct access to the current page's navigation node with all its properties and 
 ### Multi-level nested navigation
 
 ```html
-<!-- _partials/nested-nav.eta -->
+<!-- site/partials/nested-nav.eta -->
 <% function renderNavTree(nodes, level = 0) { %>
   <ul class="<%= stati.propValue(`nav-level-${level}`) %>">
     <% nodes.forEach(node => { %>
@@ -534,7 +534,7 @@ A subsection's pages are not under its node in `children`, so look each subsecti
 ### Smart sidebar (current section only)
 
 ```html
-<!-- _partials/smart-sidebar.eta -->
+<!-- site/partials/smart-sidebar.eta -->
 <% const parent = stati.nav.getParent() %>
 
 <aside class="sidebar">

@@ -5,7 +5,11 @@ import type { StatiConfig } from '../types/index.js';
 import { validateISGConfig, ISGConfigurationError } from '../core/isg/validation.js';
 import { validateImagesConfig } from '../images/config.js';
 import { ConfigValidationError } from './errors.js';
-import { compileStatiConfig, cleanupCompiledConfig } from '../core/utils/index.js';
+import {
+  compileStatiConfig,
+  cleanupCompiledConfig,
+  findSimilarNames,
+} from '../core/utils/index.js';
 import {
   DEFAULT_SRC_DIR,
   DEFAULT_OUT_DIR,
@@ -57,6 +61,77 @@ const DEFAULT_CONFIG: StatiConfig = {
     maxAgeCapDays: DEFAULT_MAX_AGE_CAP_DAYS,
   },
 };
+
+/**
+ * Every top-level `StatiConfig` option. Typed as a Record so a new option fails to compile
+ * until it is added.
+ */
+const CONFIG_KEYS: Record<keyof StatiConfig, true> = {
+  srcDir: true,
+  outDir: true,
+  staticDir: true,
+  site: true,
+  markdown: true,
+  helpers: true,
+  isg: true,
+  collections: true,
+  seo: true,
+  sitemap: true,
+  robots: true,
+  rss: true,
+  search: true,
+  typescript: true,
+  images: true,
+  dev: true,
+  preview: true,
+  hooks: true,
+};
+
+function describeConfigValue(value: unknown): string {
+  if (value === null || value === undefined) return String(value);
+  if (Array.isArray(value)) return 'an array';
+  if (typeof value === 'object') return 'an object';
+  return typeof value === 'string' ? `string '${value}'` : `${typeof value} ${String(value)}`;
+}
+
+/**
+ * Checks the top-level options: each must be one Stati knows, and `helpers` must map names to
+ * functions.
+ *
+ * @param userConfig - The configuration as the config file exports it
+ * @throws {ConfigValidationError} For an unknown option, naming similar ones, or `helpers` that
+ *   are not an object of functions
+ */
+export function validateConfigOptions(userConfig: Record<string, unknown>): void {
+  const known = Object.keys(CONFIG_KEYS);
+  for (const key of Object.keys(userConfig)) {
+    if (!Object.hasOwn(CONFIG_KEYS, key)) {
+      const similar = findSimilarNames(key, known);
+      throw new ConfigValidationError(
+        similar.length > 0
+          ? `Unknown option ${key}. Did you mean ${similar.join(' or ')}?`
+          : `Unknown option ${key}. Allowed options: ${known.join(', ')}.`,
+      );
+    }
+  }
+
+  const helpers = userConfig.helpers;
+  if (helpers === undefined) {
+    return;
+  }
+  if (typeof helpers !== 'object' || helpers === null || Array.isArray(helpers)) {
+    throw new ConfigValidationError(
+      `helpers must be an object of functions, such as helpers: { formatDate: (date) => ... } (got ${describeConfigValue(helpers)}).`,
+    );
+  }
+  for (const [name, helper] of Object.entries(helpers)) {
+    if (typeof helper !== 'function') {
+      throw new ConfigValidationError(
+        `helpers.${name} must be a function that templates call as stati.helpers.${name}() (got ${describeConfigValue(helper)}).`,
+      );
+    }
+  }
+}
 
 /**
  * Builds config file paths for a given directory.
@@ -182,6 +257,21 @@ export async function loadConfig(cwd: string = process.cwd()): Promise<StatiConf
         throw new ConfigValidationError(
           `Invalid images configuration in ${configPath}:\n${error.message}`,
           { cause: error },
+        );
+      }
+      throw error;
+    }
+
+    // Unknown options and helpers
+    try {
+      validateConfigOptions(userConfig);
+    } catch (error) {
+      if (error instanceof ConfigValidationError) {
+        throw new ConfigValidationError(
+          `Invalid configuration in ${configPath}:\n${error.message}`,
+          {
+            cause: error,
+          },
         );
       }
       throw error;

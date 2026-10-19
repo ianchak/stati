@@ -50,6 +50,37 @@ export interface ISGConfig {
 }
 
 /**
+ * A template name that a page's render looked up, recorded so the cache can tell when the
+ * name would resolve to a different file.
+ *
+ * @example
+ * ```typescript
+ * // stati.include('partials/header') on a page in site/blog/
+ * const lookup: TemplateLookup = { name: 'partials/header', from: 'blog', file: 'partials/header.eta' };
+ * // stati.include.has('/partials/promo') when site/partials/promo.eta does not exist
+ * const miss: TemplateLookup = { name: '/partials/promo', file: null };
+ * ```
+ */
+export interface TemplateLookup {
+  /**
+   * A name looked up from `from` towards the source directory, such as `partials/header`, or,
+   * for names with one possible file (`/`, `./` and `../` names), that file's path from the
+   * source directory with a leading `/`, such as `/partials/header`. Never ends in `.eta`.
+   */
+  readonly name: string;
+  /**
+   * The folder the name was looked up from, relative to the source directory, with `/`
+   * separators; `''` is the source directory itself. Absent for paths.
+   */
+  readonly from?: string;
+  /**
+   * The template file the name resolved to, relative to the source directory, or `null` when
+   * no file matched
+   */
+  readonly file: string | null;
+}
+
+/**
  * Cache entry for a single page in the ISG cache manifest.
  * Contains all information needed to determine if a page needs rebuilding.
  *
@@ -58,7 +89,9 @@ export interface ISGConfig {
  * const entry: CacheEntry = {
  *   path: '/blog/my-post/index.html',
  *   inputsHash: 'sha256-abc123...',
- *   deps: ['/site/_layouts/post.eta', '/site/_partials/header.eta'],
+ *   deps: ['/project/site/blog/layout.eta', '/project/site/base.eta'],
+ *   templateLookups: [{ name: 'partials/header', from: 'blog', file: 'partials/header.eta' }],
+ *   templatesRecorded: true,
  *   tags: ['blog', 'tutorial'],
  *   publishedAt: '2024-01-01T00:00:00.000Z',
  *   renderedAt: '2024-01-15T10:30:00.000Z',
@@ -72,8 +105,22 @@ export interface CacheEntry {
   readonly path: string;
   /** Hash of page content, template dependencies, and rendering asset inputs */
   readonly inputsHash: string;
-  /** Array of file paths this page depends on (templates, partials) */
+  /**
+   * Every template file the last render used (the layout, its parents, the templates it
+   * included and the Open Graph template), as absolute POSIX paths, the page's layout first
+   */
   readonly deps: readonly string[];
+  /**
+   * Template names the last render looked up and what each resolved to, including names that
+   * matched no file. The page rebuilds when one of them would now resolve differently, for
+   * example after a section adds a template at the same path.
+   */
+  templateLookups?: readonly TemplateLookup[];
+  /**
+   * Whether `deps` and `templateLookups` were recorded while the page rendered. A page whose
+   * entry lacks it rebuilds once to record them.
+   */
+  templatesRecorded?: boolean;
   /** Tags for invalidation and organization */
   readonly tags: readonly string[];
   /** ISO date when content was originally published */

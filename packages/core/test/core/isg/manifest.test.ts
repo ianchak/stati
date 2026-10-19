@@ -293,6 +293,46 @@ describe('ISG Cache Manifest', () => {
       warn.mockRestore();
     });
 
+    it('should keep recorded template lookups and drop entries with malformed ones', async () => {
+      const entry = {
+        path: '/a.html',
+        inputsHash: 'a',
+        deps: ['/project/site/layout.eta'],
+        tags: [],
+        renderedAt: '2024-03-15T10:00:00.000Z',
+        ttlSeconds: 60,
+        templatesRecorded: true,
+      };
+      const lookups = [
+        { name: 'partials/header', from: 'blog', file: 'partials/header.eta' },
+        { name: '/partials/promo', file: null },
+      ];
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      mockPathExists.mockResolvedValue(true);
+      mockReadFile.mockResolvedValue(
+        JSON.stringify({
+          entries: {
+            '/a.html': { ...entry, templateLookups: lookups },
+            '/b.html': { ...entry, path: '/b.html', templateLookups: [{ name: 'x' }] },
+            '/c.html': { ...entry, path: '/c.html', templateLookups: 'partials/header' },
+            '/d.html': { ...entry, path: '/d.html', templatesRecorded: 'yes' },
+          },
+        }),
+      );
+
+      const result = await loadCacheManifest(testCacheDir);
+
+      expect(Object.keys(result!.entries)).toEqual(['/a.html']);
+      expect(result!.entries['/a.html']?.templateLookups).toEqual(lookups);
+      expect(warn).toHaveBeenCalledWith(
+        'Invalid cache entry for /b.html: "templateLookups" must be a list of { name, from?, file } objects',
+      );
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('"templatesRecorded" must be a boolean'),
+      );
+      warn.mockRestore();
+    });
+
     it('should handle empty entries object', async () => {
       const emptyManifest: CacheManifest = { entries: {} };
 

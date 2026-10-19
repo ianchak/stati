@@ -37,9 +37,8 @@ export {
   getPageOutputFile,
 } from './paths.utils.js';
 
-// Template discovery utilities
+// Page list utilities (collection index pages, virtual pages)
 export {
-  discoverLayout,
   isCollectionIndexPage,
   isVirtualPage,
   getFirstPaginationPage,
@@ -67,8 +66,9 @@ export {
   loadPreviousInventory,
 } from './tailwind-inventory.utils.js';
 
-// Partial validation utilities
-export { createValidatingPartialsProxy } from './partial-validation.utils.js';
+// Front matter parsing
+export { parseFrontMatter, FrontMatterError } from './front-matter.utils.js';
+export type { ParsedFrontMatter } from './front-matter.utils.js';
 
 // Template context validation utilities
 export {
@@ -81,12 +81,13 @@ export {
 // String similarity utilities
 export { editDistance, findSimilarNames } from './similarity.utils.js';
 
-// Callable partial utilities
-export { makeCallablePartial, wrapPartialsAsCallable } from './callable-partials.utils.js';
-export type { CallablePartial } from './callable-partials.utils.js';
-
 // Template error utilities
-export { TemplateError, parseEtaError, createTemplateError } from './template-errors.utils.js';
+export {
+  TemplateError,
+  TemplateUsageError,
+  parseEtaError,
+  createTemplateError,
+} from './template-errors.utils.js';
 
 // Navigation helper utilities
 export { createNavigationHelpers } from './navigation-helpers.utils.js';

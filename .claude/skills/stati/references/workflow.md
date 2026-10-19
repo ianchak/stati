@@ -54,7 +54,7 @@ stati.config.js or stati.config.ts
 site/
   index.md
   layout.eta
-  _partials/
+  partials/
 public/
   styles.css
   images/
@@ -160,10 +160,10 @@ will not execute Stati to refresh expired cache entries on visitor requests.
 | Symptom                               | Investigate                                                                                  |
 | ------------------------------------- | -------------------------------------------------------------------------------------------- |
 | Wrong title/domain or output location | Config import errors/fallback, recognized filename, working directory                        |
-| Missing component                     | `_` folder discovery, exact basename, source ancestry, Windows intermediate-path caveat      |
-| Error despite supplying props         | All components pre-render without props; add safe guard/defaults                             |
-| Blank component from `{}`             | Empty object returns pre-rendered content; supply a real prop                                |
-| Escaped tags displayed as text        | Use raw output for rendered Markdown/partial results only                                    |
+| Missing component                     | Template path (no `.eta`), lookup from the page's folder, `./` vs plain names, `.has()`      |
+| Wrong component in one section        | A section template at the same path overrides the root one for that section's pages          |
+| `stati.partials` or `stati.myHelper`  | Core 2.0+: `stati.include(path)` and `stati.helpers.myHelper`                                |
+| Escaped tags displayed as text        | Use raw output for rendered Markdown, include results and `stati.body` only                  |
 | Template syntax failure               | JavaScript only; no `as string`, JSX, type declarations, or undeclared locals                |
 | `post.title` missing                  | Collection entries require `post.frontMatter.title`                                          |
 | Missing post sidebar collection       | Core < 1.29 parent URL caveat; 1.29+: no index page above the post, or wrong `collection`    |
@@ -171,7 +171,7 @@ will not execute Stati to refresh expired cache entries on visitor requests.
 | Missing Tailwind variant              | Inventory/build order, literal class map, branches actually rendered                         |
 | Bundle on wrong page                  | URL patterns (`/docs/guide`, no `.html`; `/docs/**` skips `/docs`), unique names             |
 | Missing feed/sitemap/robots in dev    | Production-only generators; run production build                                             |
-| Stale rendered content                | Cache hit, hook timing, data via filters (untracked), `summaryFields`, force vs invalidation |
+| Stale rendered content                | Cache hit, hook timing, data via helpers (untracked), `summaryFields`, force vs invalidation |
 | Missing search file                   | Search enablement, actual hash/meta URL, excluded pages, generation logs                     |
 | Old route still present               | Core 1.29+ build removes it if the manifest knows it; else clean output after rename/delete  |
 | Unexpected `/page/2` or tag pages     | `paginate` or a `[name].md` file; virtual pages also reach hooks and the sitemap             |

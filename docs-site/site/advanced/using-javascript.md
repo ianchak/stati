@@ -621,7 +621,7 @@ The most powerful way to use JavaScript in Stati is through build hooks in your 
 - **Integration with external services**: CMS, analytics, databases
 - **Build-time calculations**: Reading time, related posts, etc.
 
-Hooks cannot add pages: pages come from the Markdown files that exist when the build starts. To generate pages from a CMS or API, write the Markdown files in a separate script that runs before `stati build` (for example a `prebuild` npm script).
+Hooks cannot add pages, but [`collections.generate`](/core-concepts/collections#pages-from-data) can: it may be async, so it can fetch from a CMS or API, and the pages it returns are rendered by a `[param].md` template, with their data as `stati.generated.data`. Pages that each need their own Markdown body suit a script that writes the files before `stati build` (for example a `prebuild` npm script).
 
 ### Hook types
 
@@ -789,7 +789,7 @@ export default defineConfig({
 
 ### Example: Integration with CMS
 
-Pages come from the Markdown files that exist when a build starts, so generate CMS content in a script that runs **before** Stati, not in a hook:
+Hooks cannot add pages. For CMS entries that each need their own Markdown body, write the files in a script that runs **before** Stati; pages a template can render from data can come from [`collections.generate`](/core-concepts/collections#pages-from-data) instead:
 
 ```javascript
 // scripts/fetch-cms.mjs, run with "prebuild": "node scripts/fetch-cms.mjs"
@@ -876,7 +876,6 @@ npm runs a `prebuild` script automatically before `npm run build`.
 **Use Build Hooks when:**
 
 - Fetching data from APIs
-- Generating pages programmatically
 - Processing content at build time
 - Need access to all pages/content
 - Want to optimize performance
@@ -948,8 +947,8 @@ npm runs a `prebuild` script automatically before `npm run build`.
    export default defineConfig({
        hooks: {
            /**
-            * Fetches latest blog posts from external API
-            * and generates static pages at build time
+            * Fetches the latest blog posts from an external API
+            * and adds them to the blog index's front matter
             */
            beforeAll: async (ctx) => {
                // Implementation

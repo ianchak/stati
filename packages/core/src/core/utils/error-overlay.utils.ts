@@ -3,6 +3,8 @@
  * Provides a user-friendly interface for template rendering and build errors.
  */
 
+import { STATI_FAVICON_HREF, STATI_MARK_PATH, STATI_THEME_STYLES } from './theme.utils.js';
+
 export interface ErrorDetails {
   type: 'template' | 'build' | 'markdown' | 'config';
   message: string;
@@ -25,52 +27,7 @@ const ERROR_HEADLINES: Record<ErrorDetails['type'], string> = {
   config: 'Configuration error',
 };
 
-const BOLT_PATH = 'M13 10V3L4 14h7v7l9-11h-7z';
-
-/** Inline favicon, so the overlay never requests the site's own favicon. */
-const FAVICON_HREF = `data:image/svg+xml,${encodeURIComponent(
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${BOLT_PATH}"/></svg>`,
-)}`;
-
-const OVERLAY_STYLES = `
-    :root {
-      --canvas: 255 255 255;
-      --raised: 248 250 252;
-      --sunken: 246 248 250;
-      --ink: 11 13 18;
-      --muted: 71 85 105;
-      --faint: 91 101 119;
-      --line: 226 232 240;
-      --line-strong: 203 213 225;
-      --accent: 37 99 235;
-      --accent-ink: 29 78 216;
-      --on-accent: 255 255 255;
-      --danger: 185 28 28;
-      --danger-wash: 254 242 242;
-      --font-display: 'Archivo', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-      --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      --font-mono: 'Fira Code', ui-monospace, 'Cascadia Code', Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
-      color-scheme: light;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --canvas: 2 6 23;
-        --raised: 15 23 42;
-        --sunken: 11 18 32;
-        --ink: 241 245 249;
-        --muted: 148 163 184;
-        --faint: 131 145 167;
-        --line: 30 41 59;
-        --line-strong: 51 65 85;
-        --accent: 96 165 250;
-        --accent-ink: 147 197 253;
-        --on-accent: 2 6 23;
-        --danger: 248 113 113;
-        --danger-wash: 38 12 20;
-        color-scheme: dark;
-      }
-    }
+const OVERLAY_STYLES = `${STATI_THEME_STYLES}
 
     *,
     *::before,
@@ -747,7 +704,7 @@ export function createErrorOverlay(error: ErrorDetails, requestPath: string): st
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light dark">
-  <link rel="icon" href="${FAVICON_HREF}">
+  <link rel="icon" href="${STATI_FAVICON_HREF}">
   <title>Stati Development Error</title>
   <style>${OVERLAY_STYLES}
   </style>
@@ -756,7 +713,7 @@ export function createErrorOverlay(error: ErrorDetails, requestPath: string): st
   <header class="bar">
     <div class="shell">
       <div class="brand">
-        <svg class="brand-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${BOLT_PATH}"/></svg>
+        <svg class="brand-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${STATI_MARK_PATH}"/></svg>
         <span class="brand-name">Stati</span>
         <span class="brand-rule" aria-hidden="true"></span>
         <span class="brand-context">Development error</span>
@@ -1049,7 +1006,11 @@ function getErrorSuggestions(error: Error, type: ErrorDetails['type']): string[]
       suggestions.push('Check if the output directory has sufficient space');
     }
   } else if (type === 'markdown') {
-    if (message.includes('front-matter') || message.includes('yaml')) {
+    if (
+      message.includes('front matter') ||
+      message.includes('front-matter') ||
+      message.includes('yaml')
+    ) {
       suggestions.push('Check the YAML front-matter syntax for errors');
       suggestions.push('Ensure front-matter is properly enclosed in --- markers');
       suggestions.push(

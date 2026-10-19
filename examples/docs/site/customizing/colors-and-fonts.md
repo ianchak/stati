@@ -43,7 +43,7 @@ The site follows the reader's system setting until they press the theme toggle i
 
 ## The typeface
 
-The template ships [Inter](https://rsms.me/inter/), self-hosted from `public/fonts/` under the SIL Open Font License. To use another face, add its `.woff2` file to `public/fonts/`, update the `@font-face` rule and the preload link in `site/_partials/head.eta`, and set `--font-sans`:
+The template ships [Inter](https://rsms.me/inter/), self-hosted from `public/fonts/` under the SIL Open Font License. To use another face, add its `.woff2` file to `public/fonts/`, update the `@font-face` rule and the preload link in `site/partials/head.eta`, and set `--font-sans`:
 
 ```css
 --font-sans: 'Your Font', ui-sans-serif, system-ui, sans-serif;

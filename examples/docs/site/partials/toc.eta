@@ -1,0 +1,31 @@
+<%
+  /* "On this page", built from the page's h2 and h3 headings (stati.page.toc).
+     Props: variant 'aside' (right column on wide screens, the default) or
+     'inline' (a collapsible list above the content on narrower screens).
+     public/scripts/docs.js highlights the heading currently in view.
+     Pages with fewer than two headings get no list. */
+  const entries = (stati.page.toc ?? []).filter((entry) => entry.level <= 3);
+  const variant = stati.props?.variant ?? 'aside';
+%>
+<% if (entries.length >= 2 && variant === 'inline') { %>
+<details class="toc-inline">
+  <summary>
+    On this page
+    <%~ stati.include('partials/icon', { name: 'chevron-right', size: 16 }) %>
+  </summary>
+  <ul role="list">
+    <% for (const entry of entries) { %>
+    <li<% if (entry.level === 3) { %> class="toc-sub"<% } %>><a href="<%= `#${entry.id}` %>"><%= entry.text %></a></li>
+    <% } %>
+  </ul>
+</details>
+<% } else if (entries.length >= 2) { %>
+<nav class="toc" aria-labelledby="toc-label">
+  <p class="toc-label" id="toc-label">On this page</p>
+  <ul role="list">
+    <% for (const entry of entries) { %>
+    <li<% if (entry.level === 3) { %> class="toc-sub"<% } %>><a href="<%= `#${entry.id}` %>" data-toc-link="<%= entry.id %>"><%= entry.text %></a></li>
+    <% } %>
+  </ul>
+</nav>
+<% } %>

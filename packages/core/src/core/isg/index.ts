@@ -16,6 +16,7 @@ export {
   createCacheEntry,
   updateCacheEntry,
   hasRecordedReads,
+  hasRecordedTemplates,
 } from './builder.js';
 export type { RenderedAssets } from './builder.js';
 
@@ -26,13 +27,8 @@ export { pruneOrphanedPages } from './prune.js';
 export { BuildLockManager, withBuildLock } from './build-lock.js';
 export { DevServerLockManager } from './dev-server-lock.js';
 
-// Dependency tracking
-export {
-  CircularDependencyError,
-  trackTemplateDependencies,
-  resolveTemplatePath,
-  clearTemplatePathCache,
-} from './deps.js';
+// The layout a page renders with; every other template is recorded while it renders
+export { resolveLayoutDependency } from './deps.js';
 
 // Hash computation
 export {

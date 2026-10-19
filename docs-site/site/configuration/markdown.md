@@ -12,7 +12,7 @@ Stati uses [markdown-it](https://github.com/markdown-it/markdown-it) as its mark
 
 ## Configuration options
 
-Stati provides two options for markdown customization:
+Stati provides three options for markdown customization:
 
 ```javascript
 // stati.config.js
@@ -55,6 +55,7 @@ When enabled, Stati automatically:
 
 ```typescript
 export default defineConfig({
+  // site: { … },
   markdown: {
     toc: false, // Disable TOC extraction and anchor generation
   },
@@ -70,10 +71,34 @@ See [Table of Contents (TOC)](#table-of-contents-toc) for template usage example
 Stati creates markdown-it with these settings:
 
 - **HTML enabled**: HTML tags are allowed in markdown source
-- **Linkify enabled**: URLs are automatically converted to links
+- **Linkify enabled**: URLs and email addresses in the text become links (see [Links](#links))
 - **Typographer enabled**: Smart quotes and typography replacements
 
 To change them, call `md.set()` in `configure`, for example `md.set({ html: false })` when your Markdown comes from untrusted authors.
+
+### Links
+
+Linkify follows markdown-it 15:
+
+- URLs with a scheme, such as `https://example.com`, become links. A URL with a user name, such as `https://git@github.com/o/r.git`, is linked only up to the `@`.
+- Domains without a scheme, such as `www.example.com`, stay text, and so do file names such as `README.md`.
+- Text shaped like an email address becomes a `mailto:` link whatever its domain, package versions such as `react@18.3.1` included, so put those in backticks.
+
+Change these with `md.linkify.set()` in `configure`:
+
+```javascript
+export default defineConfig({
+  markdown: {
+    configure: (md) => {
+      md.linkify.set({
+        fuzzyLink: true, // link www.example.com, and README.md with it
+        fuzzyEmail: false, // stop linking email addresses
+        urlAuth: true, // link https://git@github.com/o/r.git in full
+      });
+    },
+  },
+});
+```
 
 ## Markdown plugins
 
@@ -301,6 +326,8 @@ export default defineConfig({
 <link rel="stylesheet" href="/prism-theme.css">
 ```
 
+markdown-it-prism 4 puts the `language-xxx` class on `<code>` only, while Prism's themes style `pre[class*="language-"]`. Add `pre:has(> code[class*="language-"])` to those selectors, or code blocks lose the theme's padding and background.
+
 **Pros:** No client-side JavaScript, no flash of unstyled code, many themes available
 **Cons:** Only the languages Prism supports; the theme CSS is up to you
 
@@ -320,7 +347,12 @@ Other server-side highlighters work through `configure` as long as they are read
 
 ## Front matter
 
-Stati automatically parses YAML front matter from markdown files using `gray-matter`. This is not configurable.
+Stati reads YAML front matter: the lines between a `---` line at the start of the file and the next line that starts with `---`. This is not configurable.
+
+- Quote a value that contains a colon followed by a space, such as `title: "Stati: a static site generator"`.
+- Unquoted dates such as `date: 2024-01-15` are read as dates, quoted ones as text. Both work wherever Stati reads a date.
+- Values follow YAML 1.2: `time: 10:30` is the text `10:30`, and `0755` is the number 755.
+- Front matter that is not valid YAML stops the build with an error that names the file and the line.
 
 **Example:**
 
@@ -349,7 +381,7 @@ All front matter fields are available in templates:
 ### Plugin selection
 
 1. **Install only what you need** - Each plugin adds processing overhead
-2. **Check compatibility** - Ensure plugins work with your markdown-it version
+2. **Check compatibility** - Stati 2 uses markdown-it 15, which some older plugins don't support
 3. **Test thoroughly** - Some plugins may conflict with each other
 
 ### Custom rendering
@@ -361,7 +393,7 @@ All front matter fields are available in templates:
 ### Performance
 
 1. **Limit plugins** - Too many plugins slow down builds
-2. **Rely on ISG** - Unchanged pages are served from the build cache and are not re-parsed (see [ISG](/core-concepts/isg))
+2. **Rely on ISG** - Unchanged pages are served from the build cache and are not re-rendered (see [ISG](/core-concepts/isg)); with search on, every page's Markdown is still parsed for the search index
 3. **Keep `configure` cheap** - It runs once per build (once per dev server session)
 
 ## Complete example

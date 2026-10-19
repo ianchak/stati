@@ -60,24 +60,26 @@ Pages served from the ISG cache skip `beforeRender` and `afterRender`. Full refe
 
 ## Template context
 
-Every Eta template and partial receives a `stati` object.
+Every Eta template Stati renders receives a `stati` object: layouts, the shells they name, included templates and the Open Graph template.
 
-| Member                     | What it holds                                                                                                                            |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `stati.site`               | Site config (`title`, `baseUrl`, `defaultLocale`, …)                                                                                     |
-| `stati.page`               | The current page: `url`, `path` and every front matter field                                                                             |
-| `stati.content`            | The rendered Markdown body                                                                                                               |
-| `stati.partials`           | Partials from `_`-prefixed folders, renderable or callable with props                                                                    |
-| `stati.nav`                | The navigation tree and helpers: `findNode`, `getChildren`, `getParent`, `getSiblings`, `getSubtree`, `getBreadcrumbs`, `getCurrentNode` |
-| `stati.collection`         | Pages of the page's collection: its own on index pages, the one it belongs to on others, or the one named by `collection`                |
-| `stati.pagination`         | This page's part of a listing with `paginate`: `pageNumber`, `totalPages`, `items`, `prevUrl`, `nextUrl`, `urls`                         |
-| `stati.generated`          | On pages from a `[param].md` template: `key`, `label`, `items`, `template`, `data`                                                       |
-| `stati.slugify(text)`      | The URL slug Stati gives a generated page's key                                                                                          |
-| `stati.assets`             | `bundlePaths` for this page (empty when no bundle matches) and `searchIndexPath` when search is enabled                                  |
-| `stati.propValue(...)`     | Builds space-separated attribute values from strings, arrays and objects                                                                 |
-| `stati.generateSEO(tags?)` | Renders SEO tags for manual placement                                                                                                    |
-| `stati.generator.version`  | The Stati version that built the page                                                                                                    |
-| `stati.<filter>(...)`      | Your custom filters from `eta.filters`                                                                                                   |
+| Member                               | What it holds                                                                                                                            |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `stati.site`                         | Site config (`title`, `baseUrl`, `defaultLocale`, …)                                                                                     |
+| `stati.page`                         | The current page: `url`, `path` and every front matter field                                                                             |
+| `stati.content`                      | The rendered Markdown body                                                                                                               |
+| `stati.include(name, props?, body?)` | Renders another template and returns its HTML; `stati.include.has(name)` tells whether `name` resolves                                   |
+| `stati.layout(name, props?)`         | Wraps this template's output in another template, which prints it as `stati.body`                                                        |
+| `stati.props`, `stati.body`          | The props and content of the `stati.include()` or `stati.layout()` call that rendered the template                                       |
+| `stati.nav`                          | The navigation tree and helpers: `findNode`, `getChildren`, `getParent`, `getSiblings`, `getSubtree`, `getBreadcrumbs`, `getCurrentNode` |
+| `stati.collection`                   | Pages of the page's collection: its own on index pages, the one it belongs to on others, or the one named by `collection`                |
+| `stati.pagination`                   | This page's part of a listing with `paginate`: `pageNumber`, `totalPages`, `items`, `prevUrl`, `nextUrl`, `urls`                         |
+| `stati.generated`                    | On pages from a `[param].md` template: `key`, `label`, `items`, `template`, `data`                                                       |
+| `stati.slugify(text)`                | The URL slug Stati gives a generated page's key                                                                                          |
+| `stati.assets`                       | `bundlePaths` for this page (empty when no bundle matches) and `searchIndexPath` when search is enabled                                  |
+| `stati.propValue(...)`               | Builds space-separated attribute values from strings, arrays and objects                                                                 |
+| `stati.generateSEO(tags?)`           | Renders SEO tags for manual placement                                                                                                    |
+| `stati.generator.version`            | The Stati version that built the page                                                                                                    |
+| `stati.helpers`                      | Your functions from `helpers` in the config, called as `stati.helpers.name()`                                                            |
 
 Full reference: [Templates](/api/templates) and [Navigation](/api/navigation).
 

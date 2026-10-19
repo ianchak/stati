@@ -1,6 +1,6 @@
 ---
 name: stati
-description: 'Build, extend, debug, and deploy websites with Stati, the TypeScript-first static site generator at stati.build. Use for Stati SSG projects, create-stati scaffolding, stati.config.ts or stati.config.js, Markdown/frontmatter, Eta .eta layouts, stati.partials components and props, collections, navigation, Tailwind/Sass, client TypeScript bundles, SEO, search, sitemap, robots, RSS, ISG caching, build hooks, and dev/preview errors. Also use when explaining, documenting, or reviewing what a Stati feature does, including Stati docs, examples, starter templates, and feature lists. Enforces Stati-specific template rules instead of assuming generic Eta, EJS, Astro, or Eleventy behavior.'
+description: 'Build, extend, debug, and deploy websites with Stati, the TypeScript-first static site generator at stati.build. Use for Stati SSG projects, create-stati scaffolding, stati.config.ts or stati.config.js, Markdown/frontmatter, Eta .eta layouts and shells, stati.include() components and props, stati.helpers, collections, navigation, Tailwind/Sass, client TypeScript bundles, SEO, search, sitemap, robots, RSS, ISG caching, build hooks, and dev/preview errors. Also use when explaining, documenting, or reviewing what a Stati feature does, including Stati docs, examples, starter templates, and feature lists. Enforces Stati-specific template rules instead of assuming generic Eta, EJS, Astro, or Eleventy behavior.'
 ---
 
 # Building websites with Stati
@@ -21,7 +21,7 @@ Read the other references that match the work; do not load everything by default
 | Installing, discovering, or invoking this skill        | [Installation and discovery](./references/installation.md) |
 | New site, commands, dev/preview, deployment, failures  | [Workflow and operations](./references/workflow.md)        |
 | Markdown, frontmatter, URLs, navigation, listings      | [Content and routing](./references/content.md)             |
-| Layouts, partials, props, filters, HTML attributes     | [Eta and components](./references/eta.md)                  |
+| Layouts, shells, includes, props, helpers, attributes  | [Eta and components](./references/eta.md)                  |
 | Configuration, CSS, static assets, client bundles      | [Configuration and assets](./references/configuration.md)  |
 | SEO, search, sitemap, robots, RSS, hooks, ISG, metrics | [Features and lifecycle](./references/features.md)         |
 | Complete starter and reusable patterns                 | [Recipes](./references/recipes.md)                         |
@@ -38,9 +38,10 @@ Read the other references that match the work; do not load everything by default
    deployment domain/path. Preserve existing choices. Ask about ambiguities that
    would substantially change the implementation; do not silently add a framework.
 3. **Choose the smallest Stati-native solution.** Markdown is the page source;
-   Eta layouts are complete documents; underscore-directory partials are reusable
-   components. Use frontmatter, config filters, and hooks for data preparation.
-   Browser interactivity is authored separately, not magically hydrated.
+   Eta layouts render pages and share one shell through `stati.layout()`;
+   templates in `site/partials/` are reusable components included with
+   `stati.include()`. Use frontmatter, config helpers, and hooks for data
+   preparation. Browser interactivity is authored separately, not magically hydrated.
 4. **Implement end to end.** Wire pages, layouts, components, navigation, CSS,
    browser code, assets, metadata, and relevant generated files. Every linked
    route needs a source: a Markdown page, `paginate` for numbered listing pages,
@@ -64,41 +65,46 @@ Read the other references that match the work; do not load everything by default
 - Write **JavaScript**, not TypeScript annotations, assertions, or JSX, inside
   `.eta` tags. TypeScript-first tooling does not transpile template JavaScript.
 - `<%= value %>` escapes text; `<%~ trustedHtml %>` emits HTML. Insert rendered
-  Markdown and partial results raw, but never untrusted strings or arbitrary
-  frontmatter as raw HTML. Escaping does not validate URL schemes.
+  Markdown, include results and `stati.body` raw, but never untrusted strings or
+  arbitrary frontmatter as raw HTML. Escaping does not validate URL schemes.
 - Make an HTML attribute's entire dynamic value one expression:
   `class="<%= stati.propValue('card', active && 'is-active') %>"`,
   ``href="<%= `#${entry.id}` %>"``. Do not splice expressions into static
   attribute fragments. This is the Stati documentation's authoring convention,
   not a general assertion about all Eta engines.
-- Only `.eta` files recursively inside immediate underscore-prefixed folders at
-  the page's source-directory ancestry are auto-discovered partials. Names are
-  exact **basenames**, not namespaces, paths, or camel-case conversions.
-- Call components with `<%~ stati.partials.card({ title: 'Hello' }) %>`.
-  Props live in `stati.props`, never as injected local variables.
-- All discovered partials are pre-rendered without props. Make component-only
-  templates safe for that pass, normally using
-  `<% if (!stati.props) { return; } %>`. An empty props object does not trigger a
-  fresh render.
-- Nested components must receive their props explicitly. Avoid circular
-  references and deep pre-render dependency chains; pre-rendering is bounded,
-  not an unlimited dependency resolver.
+- Include templates by **path** without `.eta` (core 2.0+):
+  `<%~ stati.include('partials/card', { title: 'Hello' }) %>`. A plain name is
+  looked up from the page's folder up to the source root, nearest first, so a
+  section overrides a template by having one at the same path; `/name` reads from
+  the source root only; `./name` is relative to the calling template. Any `.eta`
+  file under the source directory can be included; underscore folders are not needed.
+- Props live in `stati.props`, never as injected local variables, and nested
+  includes receive only the props they are given. The third argument is content
+  the template prints raw as `stati.body`.
+- Templates render only where they are included, synchronously: no `await` in an
+  included template. A template that includes itself without props is a cycle.
+- Share the page shell instead of repeating it: each layout calls
+  `<% stati.layout('base', props?) %>` and `base.eta` prints `<%~ stati.body %>`.
+  Eta's own `include()`, `layout()` and `block()` are blocked; pass extra regions
+  to a shell as props.
 - On a collection item (`PageModel`), use `post.frontMatter.title`, not
   `post.title`. Current-page frontmatter is flattened into `stati.page`; collection
   items are not.
 - Never assume a collection, page nav node, props, bundle, or search index exists.
-  Use actual collection membership and guarded APIs. For optional partials, use
-  `'name' in stati.partials`, not a truthiness read that can activate an error proxy.
+  Use actual collection membership and guarded APIs. For optional templates, use
+  `stati.include.has(name)`; for optional helpers, `'name' in stati.helpers`, not a
+  truthiness read that can activate an error proxy.
 - Read listings from `stati.collection` (any page can name one with
   `collection: /blog`), `stati.pagination` and `stati.generated`, not from data
-  a `beforeAll` hook hands to filters: Stati records which pages read collections
+  a `beforeAll` hook hands to helpers: Stati records which pages read collections
   and the navigation, and rebuilds them when that data changes (core 1.29+).
-- A section layout **replaces**, rather than wraps, its ancestor layout.
-  Explicit `layout` values are source-root-relative names **without `.eta`**.
-  `index.eta` is an aggregation layout, not an independent content page.
-- Filters are explicitly registered in `eta.filters` and called as
-  `stati.filterName(value)`. No pipes, arbitrary Eta config passthrough, automatic
-  built-in formatting helpers, or component imports are implied.
+- A section `layout.eta` **replaces** its ancestor `layout.eta`; both can wrap
+  themselves in the same shell. Explicit frontmatter `layout` values are template
+  names **without `.eta`**, looked up like includes (`layout: /layout` for the
+  root one). `index.eta` is an aggregation layout, not an independent content page.
+- Helpers are explicitly registered in the top-level `helpers` config object and
+  called as `stati.helpers.name(value)` (core 2.0+). No pipes, arbitrary Eta config
+  passthrough, automatic built-in formatting helpers, or component imports are implied.
 - Keep filesystem paths, source-relative template identifiers, and public URLs
   distinct. Use platform-native filesystem operations and `/` in URLs.
 - ISG is build-time caching, not request-time regeneration on a static host.
@@ -140,7 +146,9 @@ not a replacement for `create-stati`'s styling installers.
 Verified against Stati core **1.24.1**, Eta **3.5.0**, source revision
 `64df3241ad897fe479d9b8fb7723752d25fe9f07`, and live documentation on
 **2026-10-10**; collections, pagination and generated pages against core
-**1.29** on **2026-10-15**. See [resources](./references/resources.md) for authority rules and
+**1.29** on **2026-10-15**; includes, shells and helpers against core **2.0** with Eta **4.6** on
+**2026-10-18**; Markdown rendering with markdown-it **15** and markdown-it-prism **4** on
+**2026-10-19**. See [resources](./references/resources.md) for authority rules and
 known discrepancies. When upgrading, recheck the contracts and rerun
 [the bundled smoke test](./scripts/smoke-test.mjs) from an installed Stati project;
 it builds only an isolated temporary fixture and checks its generated output.

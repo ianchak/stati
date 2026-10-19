@@ -27,7 +27,7 @@ Check that body text stays easy to read on your background. The contrast between
 
 Headings, post titles and drop caps use Young Serif, which lives in `public/fonts/` with its licence. Body text uses a reading serif already installed on the reader's device, so it costs nothing to load.
 
-To use another display face, put its `.woff2` file in `public/fonts/`, point the `@font-face` rule at it, and update the preload link in `site/_partials/head.eta`. For a sans-serif blog, set `--font-text` to `var(--font-ui)`.
+To use another display face, put its `.woff2` file in `public/fonts/`, point the `@font-face` rule at it, and update the preload link in `site/partials/head.eta`. For a sans-serif blog, set `--font-text` to `var(--font-ui)`.
 
 ## The ornament
 
@@ -52,4 +52,4 @@ nav: [
 
 ## Going further
 
-The layouts are plain HTML with a little Eta templating: `site/layout.eta` for pages, `site/posts/layout.eta` for posts, and the shared pieces in `site/_partials/`. The [Stati template docs](https://stati.build/core-concepts/templates) cover the syntax.
+The layouts are plain HTML with a little Eta templating: `site/layout.eta` for pages, `site/posts/layout.eta` for posts, `site/base.eta` for the page around both, and the shared pieces in `site/partials/`. The [Stati template docs](https://stati.build/core-concepts/templates) cover the syntax.

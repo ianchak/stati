@@ -55,7 +55,7 @@ Your compiled bundles are automatically injected into pages before the closing `
 
 Stati does not include a built-in CSS preprocessor. Instead, CSS processing is configured at the project level using standard tools like Sass, PostCSS, or Tailwind CSS.
 
-The `create-stati` scaffolder can set up these tools for you. See the [Styling Solutions](/cli/scaffolder/#styling-solutions) section for available options.
+The `create-stati` scaffolder can set up these tools for you. See the [Styling Solutions](/cli/scaffolder#styling-solutions) section for available options.
 
 ### Basic CSS
 
@@ -104,43 +104,39 @@ Stati provides automatic support for dynamic Tailwind classes when using the `st
 
 ### Installation
 
+Stati works with Tailwind CSS 4 and 3. Tailwind CSS 4 ships its command line tool in a separate package:
+
 ```bash
-npm install -D tailwindcss@3 @tailwindcss/typography @tailwindcss/forms
-npx tailwindcss init
+npm install -D tailwindcss @tailwindcss/cli @tailwindcss/typography @tailwindcss/forms
 ```
 
 ### Configuration
 
-**Important**: Add `./.stati/tailwind-classes.html` to your content array to ensure dynamic classes are detected:
+Tailwind CSS 4 is configured in the stylesheet. Import Tailwind, then add an `@source` rule for `.stati/tailwind-classes.html`, where Stati lists the classes your templates build at render time:
 
-```javascript
-// tailwind.config.js
-/** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: [
-    './site/**/*.{md,eta,html}',
-    './src/**/*.{js,ts}',
-    './.stati/tailwind-classes.html', // ← Required for dynamic class support
-  ],
-  theme: {
-    extend: {
-      colors: {
-        brand: {
-          50: '#eff6ff',
-          500: '#0066cc',
-          900: '#1e3a8a',
-        },
-      },
-      fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-      },
-    },
-  },
-  plugins: [require('@tailwindcss/typography'), require('@tailwindcss/forms')],
-};
+```css
+/* src/styles.css */
+@import 'tailwindcss';
+
+/* Required for dynamic class support. The path is relative to this file. */
+@source '../.stati/tailwind-classes.html';
+
+@plugin '@tailwindcss/typography';
+@plugin '@tailwindcss/forms';
+
+@theme {
+  --color-brand-50: #eff6ff;
+  --color-brand-500: #0066cc;
+  --color-brand-900: #1e3a8a;
+  --font-sans: 'Inter', system-ui, sans-serif;
+}
 ```
 
+**Important**: Tailwind finds the templates in your project by itself, but it skips everything your `.gitignore` lists, and `.stati/` is normally listed. Without the `@source` rule, classes built with `stati.propValue()` are missing from the CSS. A template folder that is ignored, or outside the project, needs an `@source` rule of its own.
+
 > **Note**: The `.stati/tailwind-classes.html` file is automatically generated during build and dev server startup. It contains all dynamic Tailwind classes used in your templates via `stati.propValue()`.
+
+> **Tailwind CSS 3:** the command is part of the `tailwindcss` package (`npm install -D tailwindcss@3`) and the configuration lives in `tailwind.config.js`. Add `./.stati/tailwind-classes.html` to its `content` array, along with globs that cover every folder that holds templates, such as `./site/**/*.{md,eta,html}`.
 
 ### Dynamic classes with propValue
 
@@ -219,7 +215,7 @@ Stati's development server includes integrated Tailwind CSS support. Simply pass
 stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css
 ```
 
-This starts both the Stati dev server and Tailwind watcher in a single process. When you stop the dev server (`Ctrl+C`), the Tailwind watcher stops automatically.
+This starts both the Stati dev server and Tailwind watcher in a single process. The watcher runs for as long as the dev server does, also when the dev server runs in a background or CI shell. When you stop the dev server (`Ctrl+C`), the Tailwind watcher stops automatically, and it also exits when the dev server process is killed.
 
 **Quiet mode (default):**
 
@@ -233,21 +229,21 @@ This starts both the Stati dev server and Tailwind watcher in a single process. 
 
 **Requirements:**
 
-- `tailwindcss` must be installed locally in your project
+- The Tailwind command must be installed locally in your project: `@tailwindcss/cli` for Tailwind CSS 4, or `tailwindcss` for Tailwind CSS 3
 - Stati validates the installation before starting the watcher
 
 See the [Development Server](/cli/development) documentation for more details on Tailwind integration.
 
 ## Images and media
 
-Images in `public/` are copied to the output as they are. When a Markdown page shows one, Stati adds its `width`, `height` and lazy loading:
+Images in `public/` are copied to the output as they are. When a Markdown page shows one, Stati adds its `width` and `height` and loads it lazily, except the page's first image near the top, such as a hero image, which loads eagerly:
 
 ```markdown
 ![Hero image](/images/hero.jpg)
 ```
 
 ```html
-<img src="/images/hero.jpg" alt="Hero image" width="1600" height="900" loading="lazy" decoding="async">
+<img src="/images/hero.jpg" alt="Hero image" width="1600" height="900" loading="eager" fetchpriority="high" decoding="async">
 ```
 
 Images can also sit next to the pages that use them: `![Map](./map.png)` in `site/blog/post.md` reads `site/blog/map.png`, and Stati copies it to `/_img/` under a name that changes with its content. In layouts and partials, `stati.image()` does the same for images such as a post's cover:

@@ -142,7 +142,7 @@ The bundle paths are also available as `stati.assets.bundlePaths` (an array) for
 
 ## Agent Skill
 
-create-stati can copy the [Stati agent skill](https://github.com/ianchak/stati/tree/main/.claude/skills/stati) into your project so AI coding assistants follow Stati's conventions (Eta templates, partials, configuration, and more).
+create-stati can copy the [Stati agent skill](https://github.com/ianchak/stati/tree/main/.claude/skills/stati) into your project so AI coding assistants follow Stati's conventions (Eta templates, includes, configuration, and more).
 
 | Target             | Installed to            | Discovered by                          |
 | ------------------ | ----------------------- | -------------------------------------- |
@@ -232,11 +232,9 @@ my-site/
 ├── site/
 │   └── ...
 ├── src/
-│   └── styles.css        # Tailwind source file
+│   └── styles.css        # Tailwind source file and configuration
 ├── public/
-│   ├── styles.css        # Blank template only: the starter stylesheet is kept
 │   └── favicon.svg       # Site icon
-├── tailwind.config.js    # Tailwind configuration
 ├── stati.config.ts
 └── package.json          # Includes Tailwind scripts
 ```
@@ -290,7 +288,8 @@ Choose the styling approach that fits your workflow.
 - Utility-first framework
 - Rapid prototyping
 - Built-in design system
-- Automatic purging for production
+- Generates only the classes your templates use
+- Tailwind CSS 4 (`tailwindcss` and `@tailwindcss/cli`), configured in the stylesheet: there is no `tailwind.config.js`
 - Styles location: `src/styles.css` → compiles to `dist/styles.css`
 
 ---
@@ -354,7 +353,7 @@ my-site/
 ├── site/             # Your content and templates
 │   ├── *.md          # Markdown pages
 │   ├── *.eta         # Eta templates
-│   └── _partials/    # Reusable template parts (optional)
+│   └── partials/     # Reusable template parts (optional)
 ├── public/           # Static assets (CSS, images, fonts)
 ├── stati.config.ts   # Stati configuration (.js for JavaScript projects)
 ├── package.json      # Project metadata and scripts
@@ -383,7 +382,7 @@ my-site/
 
 - Modify layouts and styles to match your brand
 - Add new pages in the `site/` directory
-- Create reusable partials in `site/_partials/`
+- Create reusable templates in `site/partials/` and include them with `stati.include()`
 - Configure SEO, sitemap, and robots.txt
 
 ### Deploy
@@ -408,6 +407,8 @@ export default defineConfig({
   site: {
     title: 'my-site',
     description: 'A Stati site',
+    // Your site's public address, used for absolute URLs
+    baseUrl: 'https://example.com',
   },
   typescript: {
     enabled: true,
@@ -415,7 +416,7 @@ export default defineConfig({
 });
 ```
 
-Add `site.baseUrl` with your real address before you deploy: until you do, canonical links, the sitemap and feeds use the default `http://localhost:3000`. The blog and docs templates ship their own config with a placeholder `baseUrl` to replace.
+Set `site.baseUrl` to your real address before you deploy: canonical links, the sitemap and feeds start with it. The blog and docs templates ship their own config, with a placeholder `baseUrl` to replace as well.
 
 You can customize this file to add features like SEO, sitemap, ISG caching, and more. See the [Configuration Guide](https://stati.build/configuration/file/) for all options.
 

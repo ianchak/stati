@@ -39,4 +39,4 @@ Drafts are never indexed. For every option, see the [Stati search docs](https://
 
 ## Changing the dialog
 
-The dialog's markup is in `site/_partials/search.eta`, its styles under "Search" in `public/styles.css`, and the ranking in the `score` function of `public/scripts/docs.js`.
+The dialog's markup is in `site/partials/search.eta`, its styles under "Search" in `public/styles.css`, and the ranking in the `score` function of `public/scripts/docs.js`.

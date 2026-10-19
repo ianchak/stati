@@ -8,7 +8,7 @@ seo:
 
 # Recipes
 
-Practical recipes and patterns for building sites with Stati. Each recipe solves a common use case with code you can adapt.
+Practical recipes and patterns for building sites with Stati. Each recipe solves a common use case with code you can adapt. A recipe that starts with a `site/partials/` file name, such as `site/partials/menu.eta`, is a template to include from a layout: `<%~ stati.include('partials/menu') %>`. The others are layouts, and say which pages they lay out.
 
 ## Content management
 
@@ -17,7 +17,7 @@ Practical recipes and patterns for building sites with Stati. Each recipe solves
 Automatically generate navigation from your content structure using Stati's built-in navigation:
 
 ```html
-<!-- _partials/menu.eta -->
+<!-- site/partials/menu.eta -->
 <nav class="menu">
   <% function renderNavigation(items, level = 0) { %>
     <ul class="<%= stati.propValue('menu-level', `level-${level}`) %>">
@@ -47,7 +47,7 @@ Call a template function that writes markup with `<% %>`: it adds to the output 
 Use `stati.page.navNode` to show the current page's child pages:
 
 ```html
-<!-- _partials/section-nav.eta -->
+<!-- site/partials/section-nav.eta -->
 <% if (stati.page.navNode?.children && stati.page.navNode.children.length > 0) { %>
   <nav class="section-navigation">
     <h3><%= stati.page.navNode.title %></h3>
@@ -71,6 +71,8 @@ Use `stati.page.navNode` to show the current page's child pages:
 
 `navNode.children` is only set on collection pages (a folder's `index.md`), and the children are the pages in that folder. A subfolder appears there as a single page without its own children.
 
+The navigation tree is flat: every folder with pages is a top-level node. A nested folder's `index.md` therefore also appears, without children, among its parent folder's pages, and `stati.page.navNode` can be that entry. On such a page, look its node up among the top-level nodes instead: `stati.nav.tree.find((node) => node.url === stati.page.url)?.children ?? []`.
+
 Common navigation patterns:
 
 - **Current page's children** - Use `stati.page.navNode.children`
@@ -82,7 +84,7 @@ Common navigation patterns:
 Stati automatically extracts headings (h2-h6) and makes them available via `stati.page.toc`:
 
 ```html
-<!-- _partials/toc.eta -->
+<!-- site/partials/toc.eta -->
 <% if (stati.page.toc && stati.page.toc.length > 0) { %>
   <nav class="table-of-contents">
     <h2>On this page</h2>
@@ -106,7 +108,7 @@ Each TOC entry contains:
 For hierarchical TOC with nesting:
 
 ```html
-<!-- _partials/hierarchical-toc.eta -->
+<!-- site/partials/hierarchical-toc.eta -->
 <%
   // Build a nested tree structure from flat TOC entries
   function buildTocTree(entries) {
@@ -156,7 +158,7 @@ For hierarchical TOC with nesting:
 Here are practical examples:
 
 ```html
-<!-- _partials/docs-sidebar.eta -->
+<!-- site/partials/docs-sidebar.eta -->
 <!-- Show children of the docs section, regardless of current page -->
 <aside class="docs-sidebar">
   <h3>Documentation</h3>
@@ -176,7 +178,7 @@ Here are practical examples:
 ```
 
 ```html
-<!-- _partials/sibling-nav.eta -->
+<!-- site/partials/sibling-nav.eta -->
 <!-- Show siblings of the current page -->
 <% const siblings = stati.nav.getSiblings() %>
 
@@ -195,7 +197,7 @@ Here are practical examples:
 ```
 
 ```html
-<!-- _partials/multi-section-sidebar.eta -->
+<!-- site/partials/multi-section-sidebar.eta -->
 <!-- Show multiple sections using getChildren() -->
 <aside class="sidebar">
   <section>
@@ -230,7 +232,7 @@ Here are practical examples:
 ### Prev/Next navigation using siblings
 
 ```html
-<!-- _partials/page-nav.eta -->
+<!-- site/partials/page-nav.eta -->
 <%
   // Get siblings to create prev/next navigation
   const siblings = stati.nav.getSiblings(undefined, true);
@@ -263,7 +265,7 @@ Here are practical examples:
 Use collection data provided to index pages to list and filter content:
 
 ```html
-<!-- blog/index.eta -->
+<!-- site/blog/index.eta: layout of site/blog/index.md -->
 <% // Collection data is automatically provided to index pages %>
 <% const posts = stati.collection ? stati.collection.recentPages : [] %>
 <% const tags = stati.collection ? Object.keys(stati.collection.pagesByTag) : [] %>
@@ -322,7 +324,7 @@ Use collection data provided to index pages to list and filter content:
 A post reads the collection of its folder, so the post layout can pick related posts from `stati.collection` with no hook:
 
 ```html
-<!-- blog/layout.eta -->
+<!-- site/blog/layout.eta: layout of the posts -->
 <%
   const tags = stati.page.tags ?? [];
   const related = (stati.collection?.recentPages ?? [])
@@ -369,7 +371,7 @@ paginate: 10
 ```
 
 ```html
-<!-- blog/index.eta -->
+<!-- site/blog/index.eta: layout of site/blog/index.md -->
 <% const { items, pageNumber, totalPages, prevUrl, nextUrl, urls } = stati.pagination; %>
 <% items.forEach((post) => { %>
   <h2><a href="<%= post.url %>"><%= post.frontMatter.title %></a></h2>
@@ -406,7 +408,7 @@ generate:
 ```
 
 ```html
-<!-- blog/tags/layout.eta -->
+<!-- site/blog/tags/layout.eta: layout of the pages from site/blog/tags/[tag].md -->
 <h1><%= stati.page.title %></h1>
 <ul>
   <% stati.generated.items.forEach((post) => { %>
@@ -425,80 +427,72 @@ Link to the pages with `stati.slugify`, which gives the same key Stati used for 
 
 See [Collections and generated pages](/core-concepts/collections) for keys from other fields, pagination of tag pages and pages from data.
 
-### Custom filters in templates
+### Helpers in templates
 
-Add reusable template filters via Eta configuration:
+Add reusable functions for templates under `helpers` in the config:
 
 ```javascript
 // stati.config.js
 export default defineConfig({
-  eta: {
-    filters: {
-      // Date formatting
-      formatDate: (date) => {
-        return new Date(date).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        });
-      },
+  helpers: {
+    // Date formatting
+    formatDate: (date) => {
+      return new Date(date).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    },
 
-      // Time ago formatting
-      timeAgo: (date) => {
-        const now = new Date();
-        const then = new Date(date);
-        const diffMs = now - then;
-        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    // Time ago formatting
+    timeAgo: (date) => {
+      const now = new Date();
+      const then = new Date(date);
+      const diffMs = now - then;
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-        if (diffDays === 0) return 'Today';
-        if (diffDays === 1) return 'Yesterday';
-        if (diffDays < 7) return `${diffDays} days ago`;
-        if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-        if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
-        return `${Math.floor(diffDays / 365)} years ago`;
-      },
+      if (diffDays === 0) return 'Today';
+      if (diffDays === 1) return 'Yesterday';
+      if (diffDays < 7) return `${diffDays} days ago`;
+      if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+      if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
+      return `${Math.floor(diffDays / 365)} years ago`;
+    },
 
-      // String manipulation
-      slugify: (text) => {
-        return text
-          .toLowerCase()
-          .replace(/[^\w\s-]/g, '')
-          .replace(/[\s_-]+/g, '-')
-          .replace(/^-+|-+$/g, '');
-      },
+    // Excerpt generation
+    excerpt: (content, length = 150) => {
+      const text = content.replace(/<[^>]*>/g, '');
+      return text.length > length
+        ? text.substring(0, length).trim() + '...'
+        : text;
+    },
 
-      // Excerpt generation
-      excerpt: (content, length = 150) => {
-        const text = content.replace(/<[^>]*>/g, '');
-        return text.length > length
-          ? text.substring(0, length).trim() + '...'
-          : text;
-      },
-
-      // Reading time estimation
-      readingTime: (content) => {
-        const wordsPerMinute = 200;
-        const text = content.replace(/<[^>]*>/g, '');
-        const words = text.trim().split(/\s+/).length;
-        const minutes = Math.ceil(words / wordsPerMinute);
-        return `${minutes} min read`;
-      }
+    // Reading time estimation
+    readingTime: (content) => {
+      const wordsPerMinute = 200;
+      const text = content.replace(/<[^>]*>/g, '');
+      const words = text.trim().split(/\s+/).length;
+      const minutes = Math.ceil(words / wordsPerMinute);
+      return `${minutes} min read`;
     }
   }
 });
 ```
 
-Use filters in templates:
+Call them in templates as `stati.helpers.name()`. For slugs, Stati's own `stati.slugify()` is built in:
 
 ```html
 <!-- Post template -->
 <article class="post">
   <header>
     <h1><%= stati.page.title %></h1>
+    <% const published = stati.page.publishedAt ?? stati.page.date; %>
     <div class="meta">
-      <time><%= stati.formatDate(stati.page.publishedAt) %></time>
-      <span><%= stati.timeAgo(stati.page.publishedAt) %></span>
-      <span><%= stati.readingTime(stati.content) %></span>
+      <% if (published) { %>
+        <time><%= stati.helpers.formatDate(published) %></time>
+        <span><%= stati.helpers.timeAgo(published) %></span>
+      <% } %>
+      <span><%= stati.helpers.readingTime(stati.content) %></span>
     </div>
   </header>
   <%~ stati.content %>
@@ -510,7 +504,7 @@ Use filters in templates:
 `stati.nav.getBreadcrumbs()` returns the trail from the page's top-level navigation node, which for nested pages is the nearest folder rather than the site root, so add the Home link yourself (see [getBreadcrumbs](/api/navigation#stati-nav-getbreadcrumbs-path)):
 
 ```html
-<!-- _partials/breadcrumbs.eta -->
+<!-- site/partials/breadcrumbs.eta -->
 <nav class="breadcrumbs" aria-label="Breadcrumb">
   <ol class="breadcrumb-list">
     <li class="breadcrumb-item">

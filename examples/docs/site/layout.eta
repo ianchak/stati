@@ -1,76 +1,67 @@
 <%
   /* Layout for every docs page, section overview and the 404 page.
      The home page uses site/home.eta instead (`layout: home` in site/index.md).
+     Both render the main content and name site/base.eta, the page with the head,
+     header, footer and search dialog, with stati.layout().
      The H1 and lead paragraph come from `title` and `description` in front
      matter, so Markdown pages start with their first paragraph. */
   const here = stati.page.url;
-  const section = stati.docsSection(here);
-  const isOverview = section && stati.isCurrent(section.url, here);
-  const crumbs = stati.docsBreadcrumbs(here);
+  const section = stati.helpers.docsSection(here);
+  const isOverview = section && stati.helpers.isCurrent(section.url, here);
+  const crumbs = stati.helpers.docsBreadcrumbs(here);
+  stati.layout('base');
 %>
-<!DOCTYPE html>
-<html lang="<%= stati.site.defaultLocale || 'en' %>">
-  <%~ stati.partials.head %>
-  <body>
-    <a href="#main" class="skip-link">Skip to content</a>
-    <%~ stati.partials.header %>
+<div class="layout">
+  <%~ stati.include('partials/sidebar') %>
 
-    <div class="layout">
-      <%~ stati.partials.sidebar %>
-
-      <main id="main" class="main" tabindex="-1">
-        <div class="doc-grid">
-          <article class="doc">
-            <% if (crumbs.length > 1) { %>
-            <nav class="breadcrumbs" aria-label="Breadcrumb">
-              <ol role="list">
-                <% crumbs.forEach((crumb, index) => { %>
-                <% if (index === crumbs.length - 1) { %>
-                <li><span aria-current="page"><%= crumb.title %></span></li>
-                <% } else { %>
-                <li><a href="<%= crumb.url %>"><%= crumb.title %></a><%~ stati.partials.icon({ name: 'chevron-right', size: 14 }) %></li>
-                <% } %>
-                <% }) %>
-              </ol>
-            </nav>
+  <main id="main" class="main" tabindex="-1">
+    <div class="doc-grid">
+      <article class="doc">
+        <% if (crumbs.length > 1) { %>
+        <nav class="breadcrumbs" aria-label="Breadcrumb">
+          <ol role="list">
+            <% crumbs.forEach((crumb, index) => { %>
+            <% if (index === crumbs.length - 1) { %>
+            <li><span aria-current="page"><%= crumb.title %></span></li>
+            <% } else { %>
+            <li><a href="<%= crumb.url %>"><%= crumb.title %></a><%~ stati.include('partials/icon', { name: 'chevron-right', size: 14 }) %></li>
             <% } %>
+            <% }) %>
+          </ol>
+        </nav>
+        <% } %>
 
-            <header class="doc-header">
-              <h1><%= stati.page.title %></h1>
-              <% if (stati.page.draft) { %><span class="draft-badge">Draft</span><% } %>
-              <% if (stati.page.description) { %>
-              <p class="lead"><%= stati.page.description %></p>
-              <% } %>
-            </header>
+        <header class="doc-header">
+          <h1><%= stati.page.title %></h1>
+          <% if (stati.page.draft) { %><span class="draft-badge">Draft</span><% } %>
+          <% if (stati.page.description) { %>
+          <p class="lead"><%= stati.page.description %></p>
+          <% } %>
+        </header>
 
-            <%~ stati.partials.toc({ variant: 'inline' }) %>
+        <%~ stati.include('partials/toc', { variant: 'inline' }) %>
 
-            <div class="prose"><%~ stati.content %></div>
+        <div class="prose"><%~ stati.content %></div>
 
-            <% if (isOverview && section.pages.length > 0) { %>
-            <ul class="page-list" role="list">
-              <% for (const page of section.pages) { %>
-              <li>
-                <a href="<%= page.url %>">
-                  <span class="page-list-title"><%= page.title %><%~ stati.partials.icon({ name: 'arrow-right', size: 16 }) %></span>
-                  <% if (page.description) { %><span class="page-list-description"><%= page.description %></span><% } %>
-                </a>
-              </li>
-              <% } %>
-            </ul>
-            <% } %>
+        <% if (isOverview && section.pages.length > 0) { %>
+        <ul class="page-list" role="list">
+          <% for (const page of section.pages) { %>
+          <li>
+            <a href="<%= page.url %>">
+              <span class="page-list-title"><%= page.title %><%~ stati.include('partials/icon', { name: 'arrow-right', size: 16 }) %></span>
+              <% if (page.description) { %><span class="page-list-description"><%= page.description %></span><% } %>
+            </a>
+          </li>
+          <% } %>
+        </ul>
+        <% } %>
 
-            <%~ stati.partials.pager %>
-          </article>
+        <%~ stati.include('partials/pager') %>
+      </article>
 
-          <div class="toc-column">
-            <%~ stati.partials.toc %>
-          </div>
-        </div>
-      </main>
+      <div class="toc-column">
+        <%~ stati.include('partials/toc') %>
+      </div>
     </div>
-
-    <%~ stati.partials.footer %>
-    <%~ stati.partials.search %>
-  </body>
-</html>
+  </main>
+</div>

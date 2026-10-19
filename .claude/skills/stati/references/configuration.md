@@ -94,10 +94,8 @@ export default defineConfig({
       md.set({ typographer: false });
     },
   },
-  eta: {
-    filters: {
-      uppercase: (value: string) => value.toUpperCase(),
-    },
+  helpers: {
+    uppercase: (value: string) => value.toUpperCase(),
   },
 });
 ```
@@ -107,11 +105,29 @@ The runtime tries the site first, then core dependencies. A missing plugin can
 warn and continue; assert its expected rendered behavior instead of trusting the
 exit status. `configure` runs after plugin loading.
 
-`stati.uppercase(value)` is a registered filter; pipes are not supported.
-Avoid context-reserved filter names. Prefer synchronous, deterministic helpers
-safe for repeated component pre-rendering. Full rules are in the Eta reference.
-Data a filter returns is invisible to ISG: a page listing posts through a
-filter is not rebuilt when the posts change. Prefer `stati.collection`.
+Core 2.0 runs markdown-it 15, which removed the `markdown-it/lib/*` imports and
+`md.utils.assign`, `has` and `isString`; a plugin that uses them fails. Only a
+named plugin that fails to load is a warning: an error thrown in `configure` or
+by a plugin's rule while rendering fails the build. markdown-it ships its own
+types, so `md` in `configure` is typed without `@types/markdown-it`. Take the
+type from `import type { MarkdownIt } from '@stati/core'` (core 2.0+): a plain
+`'markdown-it'` import can resolve to an untyped markdown-it 14 that a plugin's
+peer range installed. A typed `md` can surface errors in plugin calls whose own
+types are strict, such as `md.use(prism)`; builds never type-check the config.
+markdown-it-prism 3 and 4 both work on the instance Stati passes them. From 3.0.1 they declare
+markdown-it `<15`, so npm installs a second markdown-it 14 beside Stati's,
+without a warning. Version 4 puts the `language-*` class on `<code>` only, so
+Prism theme rules for `pre[class*="language-"]` also need
+`pre:has(> code[class*="language-"])`.
+
+`stati.helpers.uppercase(value)` calls a registered helper (core 2.0+; 1.x used
+`eta.filters` and `stati.uppercase()`); pipes are not supported. `helpers` must be
+an object of functions, checked when the config loads, and an `eta` key is
+rejected as an unknown option. Helpers live under `stati.helpers`, so they never
+shadow Stati's own keys. Prefer synchronous, deterministic helpers. Full rules are
+in the Eta reference. Data a helper returns is invisible to ISG, and so is a change
+to a helper: a page listing posts through a helper is not rebuilt when the posts
+change. Prefer `stati.collection`, and rebuild with `--force` after editing a helper.
 
 ## Collections
 
@@ -198,13 +214,19 @@ Preserve scaffold-generated scripts; they orchestrate styling differently.
 | --------- | ------------------------- | ------------- | ---------------------------------------------- |
 | Plain CSS | `public/styles.css`       | `/styles.css` | Copied directly                                |
 | Sass      | `src/styles.scss`         | `/styles.css` | Generated `build:css` / `watch:css`            |
-| Tailwind  | `src/styles.css` + config | `/styles.css` | Generated CSS build plus Stati dev integration |
+| Tailwind  | `src/styles.css`          | `/styles.css` | Generated CSS build plus Stati dev integration |
 
 Scaffolding supports `--styling css`, `sass`, or `tailwind`. Do not replace Sass
 or Tailwind scripts with a plain `"build": "stati build"` shortcut.
 
-Tailwind's scaffold includes content scanning for
-`site/**/*.{md,eta,html}` and `.stati/tailwind-classes.html`.
+Tailwind's scaffold installs Tailwind CSS 4 (`tailwindcss` and
+`@tailwindcss/cli`) and configures it in `src/styles.css`, without a
+`tailwind.config.js`. Tailwind finds the templates itself but skips gitignored
+folders, so the stylesheet adds the inventory with
+`@source '../.stati/tailwind-classes.html';`. A Tailwind CSS 3 project lists
+`./site/**/*.{md,eta,html}` and `./.stati/tailwind-classes.html` in the
+`content` array of `tailwind.config.js` instead. `stati dev --tailwind-input`
+runs either version.
 `stati.propValue()` records runtime tokens for that inventory. Production
 styling must run in the proper order so classes recorded during rendering exist
 before the final CSS compilation. Retain the actual installed scaffold's build
