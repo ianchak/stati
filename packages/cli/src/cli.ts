@@ -16,7 +16,7 @@ import {
 import type { BuildOptions, DevServerOptions, PreviewServerOptions } from '@stati/core';
 import { log } from './colors.js';
 import { createLogger } from './logger.js';
-import { watchTailwindCSS } from './tailwind.js';
+import { watchTailwindCSS, stopTailwindWatcher } from './tailwind.js';
 import { parseServerAddress } from './utils/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -276,22 +276,8 @@ const cli = yargs(hideBin(process.argv))
           log.info('\nShutting down dev server...');
 
           // Stop Tailwind watcher and wait for it to fully exit
-          if (tailwindWatcher && !tailwindWatcher.killed) {
-            await new Promise<void>((resolve) => {
-              // Set a timeout in case the process doesn't exit cleanly
-              const timeout = global.setTimeout(() => {
-                log.warning('Tailwind watcher did not exit cleanly, forcing shutdown');
-                tailwindWatcher?.kill('SIGKILL');
-                resolve();
-              }, 3000);
-
-              tailwindWatcher.once('close', () => {
-                global.clearTimeout(timeout);
-                resolve();
-              });
-
-              tailwindWatcher.kill('SIGTERM');
-            });
+          if (tailwindWatcher) {
+            await stopTailwindWatcher(tailwindWatcher, coloredLogger);
           }
 
           await devServer.stop();

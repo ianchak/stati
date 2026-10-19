@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { watchTailwindCSS } from '../src/tailwind.js';
+import { watchTailwindCSS, stopTailwindWatcher } from '../src/tailwind.js';
 import { createLogger } from '../src/logger.js';
 import { spawn } from 'node:child_process';
+import type { ChildProcess } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { EventEmitter } from 'node:events';
 
@@ -12,9 +13,12 @@ vi.mock('fs');
 describe('Tailwind CSS CLI Commands', () => {
   let mockLogger: ReturnType<typeof createLogger>;
   let mockProcess: EventEmitter & {
+    stdin: EventEmitter & { end: () => void };
     stdout: EventEmitter;
     stderr: EventEmitter;
     killed: boolean;
+    exitCode: number | null;
+    signalCode: string | null;
     kill: (signal: string) => void;
   };
 
@@ -24,14 +28,17 @@ describe('Tailwind CSS CLI Commands', () => {
       info: vi.fn(),
       success: vi.fn(),
       error: vi.fn(),
-      warn: vi.fn(),
+      warning: vi.fn(),
     } as unknown as ReturnType<typeof createLogger>;
 
     // Create mock process
     mockProcess = Object.assign(new EventEmitter(), {
+      stdin: Object.assign(new EventEmitter(), { end: vi.fn() }),
       stdout: new EventEmitter(),
       stderr: new EventEmitter(),
       killed: false,
+      exitCode: null,
+      signalCode: null,
       kill: vi.fn((signal: string) => {
         mockProcess.killed = true;
         mockProcess.emit('close', signal === 'SIGKILL' ? 1 : 0);
@@ -79,6 +86,29 @@ describe('Tailwind CSS CLI Commands', () => {
 
       // Cleanup
       mockProcess.emit('close', 0);
+    });
+
+    it('should give Tailwind a stdin pipe that stays open while the watcher runs', () => {
+      watchTailwindCSS(
+        {
+          input: 'src/styles.css',
+          output: 'public/styles.css',
+        },
+        mockLogger,
+      );
+
+      // An inherited stdin can already be closed (background shell), which ends --watch
+      expect(spawn).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(Array),
+        expect.objectContaining({ stdio: ['pipe', 'pipe', 'pipe'] }),
+      );
+      expect(mockProcess.stdin.end).not.toHaveBeenCalled();
+
+      // Ending stdin after Tailwind exited fails with EPIPE, which must not crash stati
+      expect(() =>
+        mockProcess.stdin.emit('error', Object.assign(new Error('write EPIPE'), { code: 'EPIPE' })),
+      ).not.toThrow();
     });
 
     it('should start watching CSS files in verbose mode', async () => {
@@ -195,7 +225,9 @@ describe('Tailwind CSS CLI Commands', () => {
       // Emit close with non-zero code
       mockProcess.emit('close', 1);
 
-      expect(mockLogger.error).toHaveBeenCalledWith('Tailwind CSS watcher exited with code 1');
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Tailwind CSS watcher exited with code 1. CSS changes are not rebuilt until stati dev restarts.',
+      );
     });
 
     it('should validate input file exists', async () => {
@@ -238,6 +270,90 @@ describe('Tailwind CSS CLI Commands', () => {
       expect(mockLogger.error).toHaveBeenCalledWith(
         expect.stringContaining('Tailwind CSS executable not found'),
       );
+    });
+  });
+
+  describe('watcher lifetime', () => {
+    it('should warn when the watcher stops on its own', () => {
+      watchTailwindCSS({ input: 'src/styles.css', output: 'dist/styles.css' }, mockLogger);
+
+      // Tailwind exits with code 0 when its stdin closes
+      mockProcess.emit('close', 0);
+
+      expect(mockLogger.warning).toHaveBeenCalledWith(
+        'Tailwind CSS watcher stopped. CSS changes are not rebuilt until stati dev restarts.',
+      );
+      expect(mockLogger.error).not.toHaveBeenCalled();
+    });
+
+    it('should not warn when stati stops the watcher', async () => {
+      const proc = watchTailwindCSS(
+        { input: 'src/styles.css', output: 'dist/styles.css' },
+        mockLogger,
+      );
+
+      await stopTailwindWatcher(proc, mockLogger);
+
+      expect(mockLogger.warning).not.toHaveBeenCalled();
+      expect(mockLogger.error).not.toHaveBeenCalled();
+    });
+
+    it('should not report an exit code while stati stops the watcher', async () => {
+      // Tailwind's poll mode exits with 143 on SIGTERM
+      vi.mocked(mockProcess.kill).mockImplementation(() => {
+        mockProcess.emit('close', 143);
+      });
+      const proc = watchTailwindCSS(
+        { input: 'src/styles.css', output: 'dist/styles.css' },
+        mockLogger,
+      );
+
+      await stopTailwindWatcher(proc, mockLogger);
+
+      expect(mockLogger.error).not.toHaveBeenCalled();
+      expect(mockLogger.warning).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('stopTailwindWatcher', () => {
+    it('should end stdin, send SIGTERM and wait for the watcher to close', async () => {
+      const proc = mockProcess as unknown as ChildProcess;
+
+      await stopTailwindWatcher(proc, mockLogger);
+
+      expect(mockProcess.stdin.end).toHaveBeenCalledTimes(1);
+      expect(mockProcess.kill).toHaveBeenCalledWith('SIGTERM');
+      expect(mockProcess.kill).not.toHaveBeenCalledWith('SIGKILL');
+      expect(mockLogger.warning).not.toHaveBeenCalled();
+    });
+
+    it('should resolve at once when the watcher has already exited', async () => {
+      mockProcess.exitCode = 0;
+
+      await stopTailwindWatcher(mockProcess as unknown as ChildProcess, mockLogger);
+
+      expect(mockProcess.stdin.end).not.toHaveBeenCalled();
+      expect(mockProcess.kill).not.toHaveBeenCalled();
+    });
+
+    it('should resolve at once when the watcher was ended by a signal', async () => {
+      mockProcess.signalCode = 'SIGINT';
+
+      await stopTailwindWatcher(mockProcess as unknown as ChildProcess, mockLogger);
+
+      expect(mockProcess.kill).not.toHaveBeenCalled();
+    });
+
+    it('should kill a watcher that does not exit in time', async () => {
+      // A watcher that ignores SIGTERM and never closes
+      vi.mocked(mockProcess.kill).mockImplementation(() => {});
+
+      await stopTailwindWatcher(mockProcess as unknown as ChildProcess, mockLogger, 10);
+
+      expect(mockLogger.warning).toHaveBeenCalledWith(
+        'Tailwind watcher did not exit cleanly, forcing shutdown',
+      );
+      expect(mockProcess.kill).toHaveBeenCalledWith('SIGKILL');
     });
   });
 

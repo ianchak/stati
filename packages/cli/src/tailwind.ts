@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { spawn, type ChildProcess } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import type { createLogger } from './logger.js';
@@ -10,6 +10,12 @@ export interface TailwindOptions {
 }
 
 type Logger = ReturnType<typeof createLogger>;
+
+/** Watchers that stopTailwindWatcher is stopping, so their exit is expected */
+const stoppingWatchers = new WeakSet<ChildProcess>();
+
+/** stati does not restart a watcher that has exited */
+const RESTART_HINT = 'CSS changes are not rebuilt until stati dev restarts.';
 
 /**
  * Check if tailwindcss is installed locally in node_modules
@@ -74,10 +80,7 @@ function validateOptions(
  * Watch and rebuild CSS using Tailwind CSS CLI
  * In non-verbose mode, only errors are shown. Use --verbose to see all output.
  */
-export function watchTailwindCSS(
-  options: TailwindOptions,
-  logger: Logger,
-): import('child_process').ChildProcess {
+export function watchTailwindCSS(options: TailwindOptions, logger: Logger): ChildProcess {
   // Validate before running
   const validation = validateOptions(options, logger);
   if (!validation.valid) {
@@ -133,10 +136,17 @@ export function watchTailwindCSS(
     logger.info('Watching CSS with Tailwind CSS (verbose mode)...\n');
   }
 
+  // Tailwind's watcher exits when its stdin closes, so it never outlives the process
+  // that started it. Its stdin is a pipe that stays open while stati runs: an inherited
+  // stdin is already closed when stati runs in a background or CI shell, which stopped
+  // the watcher at once. However stati exits, the pipe closes and Tailwind stops too.
   const proc = spawn(tailwindCmd, args, {
-    stdio: ['inherit', 'pipe', 'pipe'],
+    stdio: ['pipe', 'pipe', 'pipe'],
     shell: true,
   });
+
+  // Nothing is written to stdin. Ending it after Tailwind has exited can fail with EPIPE.
+  proc.stdin?.on('error', () => {});
 
   proc.stdout?.on('data', (data) => {
     try {
@@ -200,9 +210,18 @@ export function watchTailwindCSS(
   });
 
   proc.on('close', (code) => {
+    // stati is stopping the watcher itself
+    if (stoppingWatchers.has(proc)) {
+      return;
+    }
+
     try {
       if (code !== 0 && code !== null) {
-        logger.error(`Tailwind CSS watcher exited with code ${code}`);
+        // Tailwind CSS 4 exits, for example, when the CSS has an error at startup
+        logger.error(`Tailwind CSS watcher exited with code ${code}. ${RESTART_HINT}`);
+      } else if (code === 0) {
+        // A watcher exits cleanly only when its stdin closes, which stati did not do
+        logger.warning(`Tailwind CSS watcher stopped. ${RESTART_HINT}`);
       }
     } catch (_err) {
       // Fallback to console if logger fails
@@ -211,4 +230,39 @@ export function watchTailwindCSS(
   });
 
   return proc;
+}
+
+/**
+ * Stop a watcher started by watchTailwindCSS and wait until it has exited.
+ * Ending stdin is the stop signal Tailwind's watcher listens for. Unlike a process
+ * signal it reaches Tailwind behind the shell that started it, which on Windows keeps
+ * running when the shell is killed. SIGTERM stops the shell itself, and a watcher
+ * still running after `timeoutMs` is killed.
+ */
+export function stopTailwindWatcher(
+  proc: ChildProcess,
+  logger: Logger,
+  timeoutMs = 3000,
+): Promise<void> {
+  if (proc.exitCode !== null || proc.signalCode !== null) {
+    return Promise.resolve();
+  }
+
+  stoppingWatchers.add(proc);
+
+  return new Promise<void>((resolve) => {
+    const timeout = global.setTimeout(() => {
+      logger.warning('Tailwind watcher did not exit cleanly, forcing shutdown');
+      proc.kill('SIGKILL');
+      resolve();
+    }, timeoutMs);
+
+    proc.once('close', () => {
+      global.clearTimeout(timeout);
+      resolve();
+    });
+
+    proc.stdin?.end();
+    proc.kill('SIGTERM');
+  });
 }
