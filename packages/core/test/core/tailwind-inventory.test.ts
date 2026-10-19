@@ -267,6 +267,14 @@ describe('Tailwind Inventory - File Writing', () => {
     expect(content).toContain('Generated:');
   });
 
+  it('should explain how Tailwind CSS 4 and 3 scan the file', async () => {
+    const inventoryPath = await writeTailwindClassInventory(tempDir);
+    const content = await readFile(inventoryPath, 'utf-8');
+
+    expect(content).toContain("@source '../.stati/tailwind-classes.html';");
+    expect(content).toContain("'./.stati/tailwind-classes.html'");
+  });
+
   it('should write empty file when no classes tracked', async () => {
     const inventoryPath = await writeTailwindClassInventory(tempDir);
     const content = await readFile(inventoryPath, 'utf-8');
@@ -530,6 +538,21 @@ describe('Tailwind Detection', () => {
     const detected = await isTailwindUsed(tempDir);
     expect(detected).toBe(true);
   });
+
+  it.each(['@tailwindcss/cli', '@tailwindcss/postcss'])(
+    'should detect Tailwind CSS 4 via %s in package.json without a config file',
+    async (packageName) => {
+      const packageJson = {
+        name: 'test-project',
+        devDependencies: {
+          [packageName]: '^4.3.3',
+        },
+      };
+      await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson, null, 2));
+      const detected = await isTailwindUsed(tempDir);
+      expect(detected).toBe(true);
+    },
+  );
 
   it('should return false when Tailwind is not detected', async () => {
     const packageJson = {
