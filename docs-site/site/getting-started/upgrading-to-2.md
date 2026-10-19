@@ -90,6 +90,12 @@ A `layout` in front matter is now looked up like any other template name: from t
 
 A `layout` value that names no template now produces a warning with similar names, instead of falling back silently.
 
+## Check your Markdown plugins
+
+Stati 2 renders Markdown with markdown-it 15. Most plugins written for markdown-it 14 keep working, but markdown-it 15 removed the `markdown-it/lib/…` imports and the `md.utils.assign()`, `md.utils.has()` and `md.utils.isString()` helpers, so a plugin that uses them breaks. A plugin that fails to load only logs "Failed to load markdown plugin" and the build continues without it, so read the build output and check a page that uses each plugin. markdown-it-prism works in version 3 and 4; version 4 moves the `language-*` class off `<pre>` (see [Syntax highlighting](/configuration/markdown#syntax-highlighting)).
+
+markdown-it now ships its own TypeScript types, and the `md` that `markdown.configure` receives is typed with them, so you can remove `@types/markdown-it`. If your own code imports the type, write `import type { MarkdownIt } from 'markdown-it'`; the default import is no longer a type.
+
 ## Optional: share one page shell
 
 If your site has several complete layouts that repeat the same `<head>`, header and footer, move that document into one template and let each layout name it with `stati.layout()`:
@@ -130,3 +136,4 @@ Templates no longer need underscore folders: any `.eta` file under `site/` can b
 - **Eta 4.** Stati now uses Eta 4. Templates need no changes for it.
 - **Front matter follows YAML 1.2.** A few unquoted values read differently: `time: 10:30` is the text `10:30` instead of the number 630, `0755` is the number 755 instead of 493, and `1_000` is text. Dates, booleans and everything else read as before. Front matter that is not valid YAML, or that names another language after `---` (such as `---js`), stops the build with an error naming the file and the line.
 - **Content files are read in path order,** so pages that sort equally, such as undated pages in the RSS feed and the sitemap, keep the same order on every build. It can differ from the order a Stati 1 build happened to use.
+- **Domains without a scheme are no longer links.** Markdown still turns `https://example.com` and email addresses into links, but not `www.example.com` or `example.com`, so file names such as `README.md` stop becoming links too. Write the scheme, or call `md.linkify.set({ fuzzyLink: true })` in `markdown.configure` to link them again, file names included.

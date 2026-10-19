@@ -71,7 +71,7 @@ See [Table of Contents (TOC)](#table-of-contents-toc) for template usage example
 Stati creates markdown-it with these settings:
 
 - **HTML enabled**: HTML tags are allowed in markdown source
-- **Linkify enabled**: URLs are automatically converted to links
+- **Linkify enabled**: URLs with a scheme, such as `https://example.com`, and email addresses become links. A domain without a scheme, such as `www.example.com`, stays text; `md.linkify.set({ fuzzyLink: true })` in `configure` links it, and file names such as `README.md` too
 - **Typographer enabled**: Smart quotes and typography replacements
 
 To change them, call `md.set()` in `configure`, for example `md.set({ html: false })` when your Markdown comes from untrusted authors.
@@ -302,6 +302,8 @@ export default defineConfig({
 <link rel="stylesheet" href="/prism-theme.css">
 ```
 
+markdown-it-prism 4 puts the `language-xxx` class on `<code>` only, while Prism's themes style `pre[class*="language-"]`. Add `pre:has(> code[class*="language-"])` to those selectors, or code blocks lose the theme's padding and background.
+
 **Pros:** No client-side JavaScript, no flash of unstyled code, many themes available
 **Cons:** Only the languages Prism supports; the theme CSS is up to you
 
@@ -355,7 +357,7 @@ All front matter fields are available in templates:
 ### Plugin selection
 
 1. **Install only what you need** - Each plugin adds processing overhead
-2. **Check compatibility** - Ensure plugins work with your markdown-it version
+2. **Check compatibility** - Stati 2 uses markdown-it 15, which some older plugins don't support
 3. **Test thoroughly** - Some plugins may conflict with each other
 
 ### Custom rendering

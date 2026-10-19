@@ -585,7 +585,7 @@ import type { TemplateContext, CacheManifest } from '@stati/core/types';
 Stati supports rich Markdown features out of the box:
 
 - **Front-matter** - YAML (default) or JSON (`---json`) metadata
-- **Plugins** - Full markdown-it ecosystem compatibility
+- **Plugins** - Any markdown-it plugin that supports markdown-it 15
 - **Syntax highlighting** - Code blocks get `language-*` classes; add a plugin such as `markdown-it-prism` to highlight them
 - **Custom rendering** - Configure parser behavior
 - **Draft mode** - Mark pages as `draft: true`

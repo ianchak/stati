@@ -179,7 +179,7 @@ Ellipsis (...)
 Stati uses Markdown-It with the following default configuration:
 
 - **HTML tags** - Enabled for raw HTML in markdown
-- **Linkify** - Auto-convert URLs to clickable links
+- **Linkify** - Auto-convert URLs such as `https://example.com` to clickable links
 - **Typographer** - Smart quotes and other typography enhancements
 
 ```javascript
