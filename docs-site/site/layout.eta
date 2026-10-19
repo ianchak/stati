@@ -15,12 +15,12 @@ stati.layout('base');
     <main id="main-content" class="min-w-0 flex-1" tabindex="-1">
         <div class="flex">
             <div class="min-w-0 flex-1 px-4 pb-20 pt-10 sm:px-8 lg:px-12 lg:pt-12">
-                <article class="prose mx-auto max-w-prose">
+                <article class="prose mx-auto max-w-article">
                     <%~ stati.content %>
                 </article>
 
                 <% if (prevPage || nextPage) { %>
-                <nav class="mx-auto mt-16 grid max-w-prose gap-3 border-t border-line pt-8 sm:grid-cols-2" aria-label="Previous and next pages">
+                <nav class="mx-auto mt-16 grid max-w-article gap-3 border-t border-line pt-8 sm:grid-cols-2" aria-label="Previous and next pages">
                     <% if (prevPage) { %>
                     <a href="<%= prevPage.url %>" class="group rounded-lg border border-line p-4 transition-colors duration-150 hover:border-line-strong">
                         <span class="block text-xs text-faint">Previous</span>

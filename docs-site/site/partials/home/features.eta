@@ -29,7 +29,7 @@ const total = inventory.groups.reduce((sum, group) => sum + group.items.length, 
                         <a href="<%= item.href %>" class="group block py-3 sm:py-3.5">
                             <span class="flex items-center justify-between gap-3 font-medium text-ink group-hover:text-accent-ink">
                                 <%= item.name %>
-                                <%~ stati.include('../components/icon', { name: 'arrow-right', size: 'xs', class: 'flex-none text-faint opacity-40 transition-[opacity,transform] duration-150 group-hover:translate-x-0.5 group-hover:text-accent-ink group-hover:opacity-100 group-focus-visible:opacity-100 [@media(hover:none)]:opacity-100' }) %>
+                                <%~ stati.include('../components/icon', { name: 'arrow-right', size: 'xs', class: 'flex-none text-faint opacity-40 transition-[opacity,translate] duration-150 group-hover:translate-x-0.5 group-hover:text-accent-ink group-hover:opacity-100 group-focus-visible:opacity-100 [@media(hover:none)]:opacity-100' }) %>
                             </span>
                             <span class="sr-only text-sm leading-6 text-muted sm:not-sr-only sm:mt-1 sm:block"><%= item.text %></span>
                         </a>
