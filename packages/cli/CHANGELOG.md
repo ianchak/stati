@@ -1,5 +1,27 @@
 # @stati/cli
 
+## 2.0.0
+
+### Major Changes
+
+- 8ba675f: The CLI runs `@stati/core` 2, in which templates compose with `stati.include()` and `stati.layout()` and the config's `eta.filters` becomes `helpers`. Upgrade `@stati/core` and `@stati/cli` together, as the [upgrade guide](https://stati.build/getting-started/upgrading-to-2) describes. Commands and flags are unchanged.
+
+### Minor Changes
+
+- 903fefa: A mistyped command, such as `stati biuld`, fails with exit code 1 and suggests the command it was probably meant to be, instead of exiting quietly with 0.
+- 612af54: `stati dev --tailwind-input` runs Tailwind CSS 4 as well as 3. The `tailwindcss` peer range is now `^3.0.0 || ^4.0.0`, so npm no longer refuses to install Tailwind CSS 4 next to the CLI, and `@tailwindcss/cli`, which provides the `tailwindcss` command in version 4, is an optional peer. Tailwind CSS 4's errors are shown in the dev server output: they arrived together with the "Done in" line and were hidden unless `--tailwind-verbose` was set. When the command is missing, the message names `@tailwindcss/cli`.
+
+### Patch Changes
+
+- fb62f32: The Tailwind watcher that `stati dev --tailwind-input` starts keeps running when the dev server has no open stdin, for example in a background or CI shell. Tailwind ends its watcher when its stdin closes, and it shared the dev server's, so it stopped at once and `dist/styles.css` went stale. It now reads a pipe that stays open while the dev server runs, so it still stops with the dev server, even when that process is killed. A watcher that exits on its own, such as Tailwind CSS 4 after an error in the stylesheet at startup, is reported with a hint to restart `stati dev`.
+- Updated dependencies [75f6f8b]
+- Updated dependencies [30ed01f]
+- Updated dependencies [704277f]
+- Updated dependencies [8ba675f]
+- Updated dependencies [3835b0a]
+- Updated dependencies [ff631ed]
+  - @stati/core@2.0.0
+
 ## 1.15.5
 
 ### Patch Changes

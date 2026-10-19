@@ -1,5 +1,0 @@
----
-'@stati/core': major
----
-
-Markdown renders with markdown-it 15, and links follow its rules. URLs with a scheme still become links, but a URL with a user name, such as `https://git@github.com/o/r.git`, is linked only up to the `@`. Domains without a scheme, such as `www.example.com`, no longer become links, so file names such as `README.md` stop turning into links too. Text shaped like an email address becomes a `mailto:` link whatever its domain, package versions such as `react@18.3.1` outside backticks included. `md.linkify.set()` in `markdown.configure` changes each of these with `fuzzyLink`, `fuzzyEmail` and `urlAuth`. Links now end at CJK punctuation and closing quotes, and image alt text keeps inline code. Plugins that import `markdown-it/lib/*` or call `md.utils.assign()`, `has()` or `isString()` need a version that supports markdown-it 15. markdown-it ships its own TypeScript types, so the `md` that `markdown.configure` receives is typed and `@types/markdown-it` is no longer needed; `@stati/core` exports the type as `MarkdownIt`.

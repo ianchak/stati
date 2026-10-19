@@ -1,6 +1,6 @@
 {
   "name": "create-stati",
-  "version": "1.17.2",
+  "version": "2.0.0",
   "type": "module",
   "bin": {
     "create-stati": "./dist/index.js"

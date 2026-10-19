@@ -1,5 +1,21 @@
 # create-stati
 
+## 2.0.0
+
+### Major Changes
+
+- 8ba675f: New sites use Stati 2: `@stati/core` and `@stati/cli` 2, and the starters' templates are written for them. Their shared pieces move from `site/_partials/` to `site/partials/` and are included with `stati.include()`; the blog and docs templates keep the page around their layouts in one `site/base.eta`, named with `stati.layout()`, and register their functions as `helpers`, called as `stati.helpers.formatDate()` and `stati.helpers.docsSections()`. The blog archive names the site layout as `layout: /layout`. The bundled agent skill documents includes, shells, helpers and the template names they take, and its starter and smoke test use them.
+
+### Minor Changes
+
+- 704277f: New docs sites use markdown-it-prism 4, which puts a code block's `language-*` class on `<code>` only. The docs template reads the language from there, so code blocks keep their highlighting, label and copy button.
+- 4d1927c: Sites created with `--styling=tailwind` use Tailwind CSS 4: `tailwindcss` and `@tailwindcss/cli` replace Tailwind CSS 3, `autoprefixer` and `postcss`. Tailwind is configured in `src/styles.css`, so there is no `tailwind.config.js`; the stylesheet imports Tailwind and adds an `@source` rule for `.stati/tailwind-classes.html`, which Tailwind would otherwise skip because `.stati/` is gitignored. The blog and docs templates keep their own stylesheet in Tailwind's `components` layer, where it overrides Tailwind's base styles and utility classes override it; both render as they did with Tailwind CSS 3.
+- cb0e35e: New TypeScript projects get TypeScript 6: their `typescript` dev dependency is `^6.0.3`.
+
+### Patch Changes
+
+- 2ff7340: New blank sites get a placeholder `site.baseUrl`, which the config type requires, so their TypeScript config type-checks as generated. Sites set up with Tailwind no longer keep `public/styles.css`: every build copied it over the compiled `dist/styles.css`, so under `stati dev` the Tailwind styles could disappear after an edit.
+
 ## 1.17.2
 
 ### Patch Changes

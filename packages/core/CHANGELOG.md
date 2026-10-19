@@ -1,5 +1,33 @@
 # @stati/core
 
+## 2.0.0
+
+### Major Changes
+
+- 30ed01f: Front matter is read with js-yaml 4 instead of gray-matter, so `npm audit` no longer reports the advisories of gray-matter's js-yaml 3 and sprintf-js. Values follow YAML 1.2: `time: 10:30` is the text `10:30` instead of the number 630, `0755` is 755 instead of 493, and `1_000` is text. Dates, booleans and other values read as before. Front matter that cannot be read stops the build with the file and the line, and suggests quotes for a value that contains a colon. Such a file no longer builds on the next try with its front matter left in the page. Front matter in another language than YAML, such as `---js`, is an error instead of running as JavaScript, and front matter that is a list or a single value is an error instead of breaking the page's render.
+- 704277f: Markdown renders with markdown-it 15, and links follow its rules. URLs with a scheme still become links, but a URL with a user name, such as `https://git@github.com/o/r.git`, is linked only up to the `@`. Domains without a scheme, such as `www.example.com`, no longer become links, so file names such as `README.md` stop turning into links too. Text shaped like an email address becomes a `mailto:` link whatever its domain, package versions such as `react@18.3.1` outside backticks included. `md.linkify.set()` in `markdown.configure` changes each of these with `fuzzyLink`, `fuzzyEmail` and `urlAuth`. Links now end at CJK punctuation and closing quotes, and image alt text keeps inline code. Plugins that import `markdown-it/lib/*` or call `md.utils.assign()`, `has()` or `isString()` need a version that supports markdown-it 15. markdown-it ships its own TypeScript types, so the `md` that `markdown.configure` receives is typed and `@types/markdown-it` is no longer needed; `@stati/core` exports the type as `MarkdownIt`.
+- 8ba675f: Templates compose with `stati.include()` and `stati.layout()`, and the functions a site registers for its templates move to a top-level `helpers` option. `stati.include(name, props?, body?)` renders any `.eta` file under the source directory by its path, with props as `stati.props` and optional content as `stati.body`; `stati.layout(name, props?)` wraps a template in another one, so layouts share one page shell instead of repeating it. `stati.include.has()` and `stati.layout.has()` check whether a name resolves. Names are looked up from the page's folder up to the source directory, so a section overrides a template by having one at the same path; `/name` reads from the source directory and `./name` is relative to the calling template. Templates call helpers as `stati.helpers.name()`, and the dev server suggests the right name for a misspelled helper or a call without `helpers.`.
+
+  Pages render only the templates they use. Stati lists the templates once per build, records the templates each page rendered and the names it looked up, and rebuilds a cached page when one of them changes, disappears or would now resolve to another file. The dev server rebuilds only the pages a template change affects, and nothing when no page uses the template. The build metrics count the distinct templates each page rendered (`templatesLoaded`) and add `templateRenders`, `includeCacheHits`, `templatesIndexed`, and the `templateIndexMs`, `markdownRenderTotalMs` and `postRenderTotalMs` phases, so the time pages spend outside their templates is no longer unaccounted for; the HTML report has a new design, nests the steps of page rendering under it, and records page times to fractions of a millisecond. Stati now uses Eta 4.
+
+  Upgrading, as described in the [upgrade guide](https://stati.build/getting-started/upgrading-to-2):
+
+  - `stati.partials` is removed: `stati.partials.header` becomes `stati.include('_partials/header')`, with the partial's path in place of its name, and `'card' in stati.partials` becomes `stati.include.has('_partials/card')`.
+  - The `eta` config option is removed: `eta: { filters }` becomes `helpers`, and `stati.formatDate()` becomes `stati.helpers.formatDate()`. A helper named after a key of `stati`, such as `slugify`, no longer replaces Stati's value.
+  - Eta's own `include()`, `includeAsync()`, `layout()`, `block()` and `blockAsync()` are blocked; use `stati.include()`, `stati.layout()` and layout props.
+  - A `layout` in front matter is looked up from the page's folder like other names, so on a page in a folder with a template of the same name, write `layout: /name` for the root one. A `layout` that names no template now logs a warning.
+  - Unused partials no longer render, so their errors and warnings go away.
+  - Included templates render synchronously, so `await` in one is an error.
+  - A missing include in a production build renders nothing and logs an error, instead of writing the page with the fallback HTML.
+  - `this` in a helper is the helpers object.
+  - The first build after upgrading re-renders every page once, because the cache records templates differently.
+
+### Patch Changes
+
+- 75f6f8b: Template tags that start with `(`, `[` or a template literal render under `stati dev` too. The line markers Eta adds in development no longer join them to the statement before, which failed with errors such as "1 is not a function".
+- 3835b0a: Tailwind CSS 4 projects are recognized by `@tailwindcss/cli` or `@tailwindcss/postcss` in `package.json` as well as by `tailwindcss`, so their class inventory is written even without a `tailwind.config.js`. The comment at the top of `.stati/tailwind-classes.html` shows the `@source` rule that Tailwind CSS 4 needs to scan it, next to the `content` entry for Tailwind CSS 3.
+- ff631ed: Stati finds content, templates and the dev server's CSS files with tinyglobby instead of fast-glob, so `npm audit` no longer reports the braces advisory that fast-glob brought in through micromatch. Content files are read in path order, so pages that sort equally, such as undated pages in the RSS feed and the sitemap, keep the same order on every build.
+
 ## 1.29.2
 
 ### Patch Changes
