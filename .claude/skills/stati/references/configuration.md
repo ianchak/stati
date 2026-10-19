@@ -214,13 +214,19 @@ Preserve scaffold-generated scripts; they orchestrate styling differently.
 | --------- | ------------------------- | ------------- | ---------------------------------------------- |
 | Plain CSS | `public/styles.css`       | `/styles.css` | Copied directly                                |
 | Sass      | `src/styles.scss`         | `/styles.css` | Generated `build:css` / `watch:css`            |
-| Tailwind  | `src/styles.css` + config | `/styles.css` | Generated CSS build plus Stati dev integration |
+| Tailwind  | `src/styles.css`          | `/styles.css` | Generated CSS build plus Stati dev integration |
 
 Scaffolding supports `--styling css`, `sass`, or `tailwind`. Do not replace Sass
 or Tailwind scripts with a plain `"build": "stati build"` shortcut.
 
-Tailwind's scaffold includes content scanning for
-`site/**/*.{md,eta,html}` and `.stati/tailwind-classes.html`.
+Tailwind's scaffold installs Tailwind CSS 4 (`tailwindcss` and
+`@tailwindcss/cli`) and configures it in `src/styles.css`, without a
+`tailwind.config.js`. Tailwind finds the templates itself but skips gitignored
+folders, so the stylesheet adds the inventory with
+`@source '../.stati/tailwind-classes.html';`. A Tailwind CSS 3 project lists
+`./site/**/*.{md,eta,html}` and `./.stati/tailwind-classes.html` in the
+`content` array of `tailwind.config.js` instead. `stati dev --tailwind-input`
+runs either version.
 `stati.propValue()` records runtime tokens for that inventory. Production
 styling must run in the proper order so classes recorded during rendering exist
 before the final CSS compilation. Retain the actual installed scaffold's build
