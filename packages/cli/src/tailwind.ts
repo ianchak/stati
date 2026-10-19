@@ -1,6 +1,7 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { resolve, join } from 'node:path';
+import { stripAnsi } from './colors.js';
 import type { createLogger } from './logger.js';
 
 export interface TailwindOptions {
@@ -11,6 +12,12 @@ export interface TailwindOptions {
 
 type Logger = ReturnType<typeof createLogger>;
 
+/** Tailwind CSS 4 ships its CLI in @tailwindcss/cli; Tailwind CSS 3 includes it */
+const INSTALL_COMMANDS =
+  '  npm install -D tailwindcss @tailwindcss/cli\n' +
+  '  or\n' +
+  '  pnpm add -D tailwindcss @tailwindcss/cli';
+
 /** Watchers that stopTailwindWatcher is stopping, so their exit is expected */
 const stoppingWatchers = new WeakSet<ChildProcess>();
 
@@ -18,7 +25,7 @@ const stoppingWatchers = new WeakSet<ChildProcess>();
 const RESTART_HINT = 'CSS changes are not rebuilt until stati dev restarts.';
 
 /**
- * Check if tailwindcss is installed locally in node_modules
+ * Check if tailwindcss (or Tailwind CSS 4's @tailwindcss/cli) is installed locally in node_modules
  */
 function checkTailwindInstalled(): boolean {
   try {
@@ -28,8 +35,11 @@ function checkTailwindInstalled(): boolean {
     const maxDepth = 10; // Prevent infinite loop
 
     for (let i = 0; i < maxDepth; i++) {
-      const tailwindPath = join(currentDir, 'node_modules', 'tailwindcss');
-      if (existsSync(tailwindPath)) {
+      const nodeModulesPath = join(currentDir, 'node_modules');
+      if (
+        existsSync(join(nodeModulesPath, 'tailwindcss')) ||
+        existsSync(join(nodeModulesPath, '@tailwindcss', 'cli'))
+      ) {
         return true;
       }
 
@@ -68,8 +78,7 @@ function validateOptions(
   if (!tailwindInstalled) {
     return {
       valid: false,
-      error:
-        'Tailwind CSS is not installed. Install it with:\n  npm install -D tailwindcss\n  or\n  pnpm add -D tailwindcss',
+      error: 'Tailwind CSS is not installed. Install it with:\n' + INSTALL_COMMANDS,
     };
   }
 
@@ -77,7 +86,30 @@ function validateOptions(
 }
 
 /**
- * Watch and rebuild CSS using Tailwind CSS CLI
+ * Split a chunk of Tailwind's stderr into its message and its "Done in" lines.
+ * Tailwind CSS 4 colors its output even when it is piped, frames an error between
+ * an `Error:` line and ┌ │ └ box lines, and can write the error and the "Done in"
+ * line after it in the same chunk. A pipe can also join Tailwind CSS 3's
+ * "Rebuilding..." line to the error that follows it.
+ */
+function parseStderr(chunk: string): { message: string; timings: string[] } {
+  const lines: string[] = [];
+  const timings: string[] = [];
+
+  for (const line of stripAnsi(chunk).split(/\r?\n/)) {
+    const text = line.trim();
+    if (/^done in\b/i.test(text)) {
+      timings.push(text);
+    } else if (!/^(rebuilding\.\.\.|error:|┌|└)$/i.test(text)) {
+      lines.push(line.replace(/^(\s*)│ ?/, '$1'));
+    }
+  }
+
+  return { message: lines.join('\n').trim(), timings };
+}
+
+/**
+ * Watch and rebuild CSS using the Tailwind CSS CLI (Tailwind CSS 3 or 4)
  * In non-verbose mode, only errors are shown. Use --verbose to see all output.
  */
 export function watchTailwindCSS(options: TailwindOptions, logger: Logger): ChildProcess {
@@ -110,10 +142,8 @@ export function watchTailwindCSS(options: TailwindOptions, logger: Logger): Chil
       // Executable not found, throw error
       const errorMsg =
         'Tailwind CSS executable not found in node_modules/.bin/\n' +
-        'Make sure tailwindcss is installed locally:\n' +
-        '  npm install -D tailwindcss\n' +
-        '  or\n' +
-        '  pnpm add -D tailwindcss';
+        'Tailwind CSS 4 runs from the @tailwindcss/cli package. Install it locally:\n' +
+        INSTALL_COMMANDS;
       logger.error(errorMsg);
       throw new Error('Tailwind CSS not found in node_modules');
     }
@@ -125,7 +155,7 @@ export function watchTailwindCSS(options: TailwindOptions, logger: Logger): Chil
     // For other errors during resolution, throw a descriptive error
     const errorMsg =
       'Failed to locate Tailwind CSS executable:\n' +
-      '  Make sure tailwindcss is installed: npm install -D tailwindcss';
+      '  Make sure Tailwind CSS is installed: npm install -D tailwindcss @tailwindcss/cli';
     logger.error(errorMsg);
     throw new Error('Failed to locate Tailwind CSS executable', { cause: err });
   }
@@ -150,7 +180,7 @@ export function watchTailwindCSS(options: TailwindOptions, logger: Logger): Chil
 
   proc.stdout?.on('data', (data) => {
     try {
-      const message = data.toString().trim();
+      const message = stripAnsi(data.toString()).trim();
       // Only show stdout in verbose mode
       if (options.verbose && message) {
         logger.info(message);
@@ -163,16 +193,10 @@ export function watchTailwindCSS(options: TailwindOptions, logger: Logger): Chil
 
   proc.stderr?.on('data', (data) => {
     try {
-      const message = data.toString().trim();
-      if (!message) return;
+      const { message, timings } = parseStderr(data.toString());
 
       // Tailwind writes some info to stderr, we need to filter actual errors
       const lowerMessage = message.toLowerCase();
-
-      // Filter out shutdown messages
-      if (lowerMessage.includes('stopping') || lowerMessage.includes('shutting down')) {
-        return;
-      }
 
       const isError =
         (lowerMessage.includes('error') ||
@@ -181,14 +205,21 @@ export function watchTailwindCSS(options: TailwindOptions, logger: Logger): Chil
           lowerMessage.includes('unexpected') ||
           lowerMessage.includes('syntax error')) &&
         !lowerMessage.includes('rebuilding') &&
-        !lowerMessage.includes('done in');
+        !lowerMessage.includes('done in') &&
+        // Filter out shutdown messages
+        !lowerMessage.includes('stopping') &&
+        !lowerMessage.includes('shutting down');
 
       if (isError) {
         // Always show errors regardless of verbose mode
         logger.error(message);
-      } else if (options.verbose && lowerMessage.includes('done in')) {
+      }
+
+      if (options.verbose) {
         // Show completion messages only in verbose mode
-        logger.info(message.replace(/^Done in/i, 'Tailwind done in'));
+        for (const timing of timings) {
+          logger.info(timing.replace(/^Done in/i, 'Tailwind done in'));
+        }
       }
       // Suppress all other Tailwind output to reduce chatter
     } catch (err) {
@@ -201,11 +232,15 @@ export function watchTailwindCSS(options: TailwindOptions, logger: Logger): Chil
   proc.on('error', (err) => {
     try {
       logger.error(`Failed to start Tailwind CSS: ${err.message}`);
-      logger.error('Make sure tailwindcss is installed: npm install -D tailwindcss');
+      logger.error(
+        'Make sure Tailwind CSS is installed: npm install -D tailwindcss @tailwindcss/cli',
+      );
     } catch (_logErr) {
       // Fallback to console if logger fails
       console.error('Failed to start Tailwind CSS:', err.message);
-      console.error('Make sure tailwindcss is installed: npm install -D tailwindcss');
+      console.error(
+        'Make sure Tailwind CSS is installed: npm install -D tailwindcss @tailwindcss/cli',
+      );
     }
   });
 

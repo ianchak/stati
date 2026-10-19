@@ -111,6 +111,56 @@ describe('Tailwind CSS CLI Commands', () => {
       ).not.toThrow();
     });
 
+    it('should accept Tailwind CSS 4 installed as @tailwindcss/cli', () => {
+      vi.mocked(existsSync).mockImplementation((path) => {
+        const pathStr = String(path).replace(/\\/g, '/');
+        if (pathStr.endsWith('node_modules/tailwindcss')) {
+          // tailwindcss itself is not hoisted, for example with pnpm
+          return false;
+        }
+        if (pathStr.includes('.bin') && pathStr.includes('tailwindcss')) {
+          return !pathStr.endsWith('.cmd');
+        }
+        return true;
+      });
+
+      watchTailwindCSS(
+        {
+          input: 'src/styles.css',
+          output: 'public/styles.css',
+        },
+        mockLogger,
+      );
+
+      expect(spawn).toHaveBeenCalled();
+      expect(mockLogger.error).not.toHaveBeenCalled();
+    });
+
+    it('should report Tailwind as not installed when neither package is found', () => {
+      vi.mocked(existsSync).mockImplementation((path) => {
+        const pathStr = String(path).replace(/\\/g, '/');
+        return !(
+          pathStr.endsWith('node_modules/tailwindcss') ||
+          pathStr.endsWith('node_modules/@tailwindcss/cli')
+        );
+      });
+
+      expect(() =>
+        watchTailwindCSS(
+          {
+            input: 'src/styles.css',
+            output: 'public/styles.css',
+          },
+          mockLogger,
+        ),
+      ).toThrow('Tailwind CSS is not installed');
+
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.stringContaining('npm install -D tailwindcss @tailwindcss/cli'),
+      );
+      expect(spawn).not.toHaveBeenCalled();
+    });
+
     it('should start watching CSS files in verbose mode', async () => {
       watchTailwindCSS(
         {
@@ -270,6 +320,103 @@ describe('Tailwind CSS CLI Commands', () => {
       expect(mockLogger.error).toHaveBeenCalledWith(
         expect.stringContaining('Tailwind CSS executable not found'),
       );
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.stringContaining('npm install -D tailwindcss @tailwindcss/cli'),
+      );
+    });
+  });
+
+  describe('Tailwind CSS 4 output', () => {
+    // What @tailwindcss/cli 4.3 writes to a pipe, colors included
+    const v4Error =
+      '\u001b[31mError:\u001b[39m\n\u001b[2m┌\u001b[22m\n' +
+      '\u001b[2m│\u001b[22m Error: Cannot apply unknown utility class `does-not-exist`\n' +
+      '\u001b[2m└\u001b[22m\nDone in \u001b[31m3s\u001b[39m\n';
+
+    it('should show an error that arrives with its "Done in" line', () => {
+      watchTailwindCSS({ input: 'src/styles.css', output: 'dist/styles.css' }, mockLogger);
+
+      mockProcess.stderr.emit('data', Buffer.from(v4Error));
+
+      expect(mockLogger.error).toHaveBeenCalledTimes(1);
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Error: Cannot apply unknown utility class `does-not-exist`',
+      );
+      expect(mockLogger.info).not.toHaveBeenCalledWith(expect.stringContaining('done in'));
+    });
+
+    it('should show the build time after the error in verbose mode', () => {
+      watchTailwindCSS(
+        { input: 'src/styles.css', output: 'dist/styles.css', verbose: true },
+        mockLogger,
+      );
+
+      mockProcess.stderr.emit('data', Buffer.from(v4Error));
+      mockProcess.stderr.emit('data', Buffer.from('Done in \u001b[32m12ms\u001b[39m\n'));
+
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Error: Cannot apply unknown utility class `does-not-exist`',
+      );
+      expect(mockLogger.info).toHaveBeenCalledWith('Tailwind done in 3s');
+      expect(mockLogger.info).toHaveBeenCalledWith('Tailwind done in 12ms');
+    });
+
+    it('should keep the causes of a nested error', () => {
+      watchTailwindCSS({ input: 'src/styles.css', output: 'dist/styles.css' }, mockLogger);
+
+      mockProcess.stderr.emit(
+        'data',
+        Buffer.from(
+          'Error:\n┌\n│ Error: Failed to load plugin\n└\n  Caused by:\n  ┌\n  │ Error: Cannot find module\n  └\n',
+        ),
+      );
+
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Error: Failed to load plugin\n  Caused by:\n  Error: Cannot find module',
+      );
+    });
+
+    it('should show a Tailwind CSS 3 error that arrives with the "Rebuilding..." line', () => {
+      watchTailwindCSS({ input: 'src/styles.css', output: 'dist/styles.css' }, mockLogger);
+
+      mockProcess.stderr.emit(
+        'data',
+        Buffer.from(
+          '\nRebuilding...\nCssSyntaxError: The `does-not-exist` class does not exist.\n',
+        ),
+      );
+
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'CssSyntaxError: The `does-not-exist` class does not exist.',
+      );
+    });
+
+    it('should not show the version banner', () => {
+      watchTailwindCSS(
+        { input: 'src/styles.css', output: 'dist/styles.css', verbose: true },
+        mockLogger,
+      );
+
+      mockProcess.stderr.emit(
+        'data',
+        Buffer.from(
+          '\u001b[3m\u001b[1m\u001b[34m≈\u001b[39m\u001b[22m\u001b[23m tailwindcss \u001b[34mv4.3.3\u001b[39m\n',
+        ),
+      );
+
+      expect(mockLogger.error).not.toHaveBeenCalled();
+      expect(mockLogger.info).not.toHaveBeenCalledWith(expect.stringContaining('tailwindcss v4'));
+    });
+
+    it('should strip color codes from stdout in verbose mode', () => {
+      watchTailwindCSS(
+        { input: 'src/styles.css', output: 'dist/styles.css', verbose: true },
+        mockLogger,
+      );
+
+      mockProcess.stdout.emit('data', Buffer.from('\u001b[34mbuilt\u001b[39m\n'));
+
+      expect(mockLogger.info).toHaveBeenCalledWith('built');
     });
   });
 
@@ -594,7 +741,7 @@ describe('Tailwind CSS CLI Commands', () => {
         'Process error',
       );
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Make sure tailwindcss is installed: npm install -D tailwindcss',
+        'Make sure Tailwind CSS is installed: npm install -D tailwindcss @tailwindcss/cli',
       );
 
       consoleErrorSpy.mockRestore();
