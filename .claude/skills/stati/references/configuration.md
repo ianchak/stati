@@ -106,11 +106,15 @@ warn and continue; assert its expected rendered behavior instead of trusting the
 exit status. `configure` runs after plugin loading.
 
 Core 2.0 runs markdown-it 15, which removed the `markdown-it/lib/*` imports and
-`md.utils.assign`, `has` and `isString`; a plugin that uses them fails, and a
-plugin that fails to load is only a warning. markdown-it ships its own types, so
-`md` in `configure` is typed without `@types/markdown-it`, and the type is the
-named export: `import type { MarkdownIt } from 'markdown-it'`. markdown-it-prism
-3 and 4 both work on the instance Stati passes them. From 3.0.1 they declare
+`md.utils.assign`, `has` and `isString`; a plugin that uses them fails. Only a
+named plugin that fails to load is a warning: an error thrown in `configure` or
+by a plugin's rule while rendering fails the build. markdown-it ships its own
+types, so `md` in `configure` is typed without `@types/markdown-it`. Take the
+type from `import type { MarkdownIt } from '@stati/core'` (core 2.0+): a plain
+`'markdown-it'` import can resolve to an untyped markdown-it 14 that a plugin's
+peer range installed. A typed `md` can surface errors in plugin calls whose own
+types are strict, such as `md.use(prism)`; builds never type-check the config.
+markdown-it-prism 3 and 4 both work on the instance Stati passes them. From 3.0.1 they declare
 markdown-it `<15`, so npm installs a second markdown-it 14 beside Stati's,
 without a warning. Version 4 puts the `language-*` class on `<code>` only, so
 Prism theme rules for `pre[class*="language-"]` also need

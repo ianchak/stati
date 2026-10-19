@@ -100,10 +100,13 @@ production build after deleting or renaming routes.
 ## Markdown behavior
 
 Default MarkdownIt options enable raw HTML, linkification, and typography.
-Core 2.0 uses markdown-it 15: linkify turns URLs with a scheme and email
-addresses into links, but not domains without a scheme (`www.example.com`) or
-file names that look like domains (`README.md`), which 1.x linked.
-`md.linkify.set({ fuzzyLink: true })` in `markdown.configure` restores that.
+Core 2.0 uses markdown-it 15 (linkify-it 6), which links differently from 1.x:
+domains without a scheme (`www.example.com`) and file names (`README.md`) stay
+text; email-shaped text links whatever its domain, so `react@18.3.1` outside
+backticks becomes a `mailto:` link; a URL with a user name
+(`https://git@github.com/o/r.git`) links only up to the `@`. In
+`markdown.configure`, `md.linkify.set()` takes `fuzzyLink: true`,
+`fuzzyEmail: false` and `urlAuth: true` to change each.
 Raw HTML is trusted author input, not sanitization of arbitrary user content.
 Plugins are explicitly configured/installed, not assumed built-ins.
 
