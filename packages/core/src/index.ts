@@ -71,6 +71,9 @@ export type {
 // RSS types
 export type { RSSConfig, RSSFeedConfig, RSSGenerationResult } from './types/index.js';
 
+// Markdown types
+export type { MarkdownIt } from './types/index.js';
+
 // Image types
 export type {
   ImagesConfig,

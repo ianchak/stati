@@ -23,6 +23,9 @@ export type {
   GeneratedPageEntry,
 } from './config.js';
 
+// Markdown types: the markdown-it instance that markdown.configure receives
+export type { MarkdownIt } from 'markdown-it';
+
 // Content types
 export type {
   FrontMatter,

@@ -6,6 +6,7 @@ import {
   clearMarkdownProcessorCache,
 } from '../../src/core/markdown.js';
 import { setEnv } from '../../src/env.js';
+import type { MarkdownIt } from '../../src/index.js';
 import type { StatiConfig } from '../../src/types/index.js';
 
 describe('markdown.ts', () => {
@@ -45,6 +46,21 @@ describe('markdown.ts', () => {
       const md = await createMarkdownProcessor(configWithMarkdown);
 
       expect(configureFn).toHaveBeenCalledWith(md);
+    });
+
+    it('should pass configure an instance of the exported MarkdownIt type', async () => {
+      let received: MarkdownIt | undefined;
+
+      const md = await createMarkdownProcessor({
+        ...baseConfig,
+        markdown: {
+          configure: (instance) => {
+            received = instance;
+          },
+        },
+      });
+
+      expect(received).toBe(md);
     });
 
     it('should work without markdown configuration', async () => {
