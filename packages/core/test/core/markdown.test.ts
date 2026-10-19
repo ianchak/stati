@@ -184,6 +184,33 @@ describe('markdown.ts', () => {
       expect(result.html).toContain('<a href="http://www.example.com">www.example.com</a>');
     });
 
+    it('should link email-shaped text and stop URLs at a user name, as the docs describe', async () => {
+      const md = await createMarkdownProcessor(baseConfig);
+
+      const result = renderMarkdown('Install react@18.3.1 from https://git@github.com/o/r.git', md);
+
+      expect(result.html).toContain('<a href="mailto:react@18.3.1">react@18.3.1</a>');
+      expect(result.html).toContain('<a href="https://git">https://git</a>@github.com/o/r.git');
+    });
+
+    it('should apply the email and user name linkify options that configure sets', async () => {
+      const md = await createMarkdownProcessor({
+        ...baseConfig,
+        markdown: {
+          configure: (md) => {
+            md.linkify.set({ fuzzyEmail: false, urlAuth: true });
+          },
+        },
+      });
+
+      const result = renderMarkdown('Install react@18.3.1 from https://git@github.com/o/r.git', md);
+
+      expect(result.html).not.toContain('mailto:');
+      expect(result.html).toContain(
+        '<a href="https://git@github.com/o/r.git">https://git@github.com/o/r.git</a>',
+      );
+    });
+
     it('should handle empty content', async () => {
       const md = await createMarkdownProcessor(baseConfig);
       const content = '';
