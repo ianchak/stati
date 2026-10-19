@@ -31,7 +31,6 @@ hero:
   lede: 'Stati is a TypeScript-first static site generator. Write Markdown and Eta templates, and get typed config, client bundles, search, feeds, SEO and incremental rebuilds without assembling a plugin stack.'
   command: 'npx create-stati'
   specs:
-    - '9 core dependencies'
     - 'No client runtime'
     - 'Node 22.12+ or 24+'
     - 'MIT'
