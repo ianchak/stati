@@ -4,11 +4,13 @@
  * Restrained multi-hue palette tuned for the site's code background
  * (--sunken). Every token holds at least 5:1 contrast in both themes.
  * The same classes are produced by markdown-it-prism (Markdown pages) and by
- * the `highlight` Eta filter in stati.config.ts (homepage code panels).
+ * the `highlight` helper in stati.config.ts (homepage code panels).
+ * markdown-it-prism puts the language class on <code> only, so the rules for
+ * <pre> select the one around a highlighted <code>.
  */
 
 code[class*='language-'],
-pre[class*='language-'] {
+pre:has(> code[class*='language-']) {
   color: #1f2937;
   background: none;
   font-family: 'Fira Code', 'Fira Code Fallback', Consolas, Monaco, monospace;
@@ -23,12 +25,12 @@ pre[class*='language-'] {
   hyphens: none;
 }
 
-pre[class*='language-'] {
+pre:has(> code[class*='language-']) {
   overflow: auto;
 }
 
 .dark code[class*='language-'],
-.dark pre[class*='language-'] {
+.dark pre:has(> code[class*='language-']) {
   color: #e2e8f0;
 }
 

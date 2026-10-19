@@ -44,7 +44,7 @@
     "js-yaml": "4.3.2",
     "markdown-it-attrs": "5.0.1",
     "markdown-it-external-links": "0.0.6",
-    "markdown-it-prism": "3.0.0",
+    "markdown-it-prism": "4.0.0",
     "postcss": "8.5.29",
     "prismjs": "1.30.0",
     "tailwindcss": "3.4.19",
