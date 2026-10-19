@@ -31,13 +31,13 @@
   ],
   "stati": {
     "engine": "stati",
-    "version": "1.28.0"
+    "version": "2.0.0"
   },
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@stati/cli": "1.15.4",
-    "@stati/core": "1.29.0",
+    "@stati/cli": "2.0.0",
+    "@stati/core": "2.0.0",
     "@stati/images": "1.0.0",
     "@tailwindcss/cli": "4.3.3",
     "@tailwindcss/typography": "0.5.20",
@@ -48,11 +48,6 @@
     "prismjs": "1.30.0",
     "tailwindcss": "4.3.3",
     "typescript": "6.0.3"
-  },
-  "overrides": {
-    "@stati/cli": {
-      "tailwindcss": "$tailwindcss"
-    }
   },
   "engines": {
     "node": "^22.12.0 || >=24"
