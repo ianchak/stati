@@ -187,7 +187,7 @@ stati build --metrics --metrics-detailed # Include per-page timings
 
 - **Totals:** Duration, peak RSS, heap usage
 - **Phases:** Config load, content discovery, rendering, asset copy, etc.
-- **Counts:** Pages rendered, cache hits/misses, assets copied
+- **Counts:** Pages rendered, cache hits/misses, assets copied, templates loaded and rendered, include cache hits
 - **ISG:** Whether ISG is enabled, cache hit rate, manifest entries, invalidated entries
 - **Per-page timing** (when `--metrics-detailed` is used)
 

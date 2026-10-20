@@ -77,6 +77,7 @@ examples/blog/
 │   ├── partials/         # Head, header, footer, post lists, page links, tag links
 │   ├── posts/            # One Markdown file per post, the archive and the post layout
 │   ├── tags/             # The tags page and [tag].md, which makes a page per tag
+│   ├── base.eta          # The page around both layouts: head, header and footer
 │   ├── layout.eta        # Layout for home, archive, tags, about and 404
 │   └── *.md              # Home, about and 404 pages
 ├── public/               # Styles, self-hosted font, ornament, sample image
@@ -113,6 +114,7 @@ examples/docs/
 ├── site/
 │   ├── partials/         # Head, header, sidebar, TOC, pager, search, footer, icons
 │   ├── getting-started/  # One folder per section, with an index.md
+│   ├── base.eta          # The page around both layouts: head, header, footer and search
 │   ├── layout.eta        # Layout for docs pages, section overviews and 404
 │   ├── home.eta          # Home page layout
 │   └── index.md          # Home page

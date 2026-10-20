@@ -510,11 +510,17 @@ interface CacheEntry {
   /** Output path of the rendered page */
   readonly path: string;
 
-  /** Hash of page content and all dependencies */
+  /** Hash of page content, template dependencies and rendering asset inputs */
   readonly inputsHash: string;
 
-  /** Array of file paths this page depends on */
+  /** Every template file the last render used: the layout, the shells it names, the templates it included and the Open Graph template, as absolute paths, the layout first */
   readonly deps: readonly string[];
+
+  /** Template names the last render looked up and the file each resolved to, including names that matched none; the page rebuilds when one would now resolve to another file */
+  templateLookups?: readonly TemplateLookup[];
+
+  /** Whether deps and templateLookups were recorded while the page rendered */
+  templatesRecorded?: boolean;
 
   /** Tags for invalidation and organization */
   readonly tags: readonly string[];
@@ -543,9 +549,20 @@ interface CacheEntry {
   /** Whether the last render read stati.nav or stati.page.navNode */
   readsNav?: boolean;
 }
+
+interface TemplateLookup {
+  /** The name as looked up, such as 'partials/header'; for /, ./ and ../ names, the file's path from the source directory with a leading / */
+  readonly name: string;
+
+  /** The folder the name was looked up from, relative to the source directory ('' for the source directory); absent for paths */
+  readonly from?: string;
+
+  /** The template file the name resolved to, relative to the source directory, or null when none matched */
+  readonly file: string | null;
+}
 ```
 
-An entry without `readsCollection` and `readsNav` was written by a version of Stati that didn't record them; its page rebuilds once.
+An entry without `templatesRecorded`, `readsCollection` or `readsNav` was written by a version of Stati that didn't record them, such as Stati 1; its page rebuilds once.
 
 ### TypeScript configuration
 
@@ -862,7 +879,7 @@ import type {
 import type { CacheManifest, Logger, TocEntry } from '@stati/core/types';
 ```
 
-**`@stati/core/config`** exports `loadConfig`, `clearConfigCache` and `getConfigFilePaths(cwd)`, which returns the config file paths Stati looks for in a directory.
+**`@stati/core/config`** exports `loadConfig`, `clearConfigCache`, `getConfigFilePaths(cwd)`, which returns the config file paths Stati looks for in a directory, and `validateConfigOptions(config)`, which throws for an option Stati does not know, such as Stati 1's `eta`, or for `helpers` that are not functions.
 
 ### CLI package
 

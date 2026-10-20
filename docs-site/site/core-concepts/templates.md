@@ -16,7 +16,7 @@ Eta is a fast, lightweight templating engine with a syntax similar to EJS but wi
 
 > **Stati convention:** write each dynamic HTML attribute value as one expression, rather than splicing expressions into the middle of static text (for example `class="bg-<%= color %>-500"`). Eta itself renders spliced values, but one expression per attribute keeps values readable, and building class names with `stati.propValue()` records them in the Tailwind class inventory.
 
-Use template literals (or the helper described below) to make the entire attribute value dynamic:
+Use template literals (or `stati.propValue()`, described below) to make the entire attribute value dynamic:
 
 ```eta
 <!-- ❌ Avoid: expression spliced into static text -->
@@ -26,7 +26,7 @@ Use template literals (or the helper described below) to make the entire attribu
 <button class="<%= `bg-${color}-500` %>">Click me</button>
 ```
 
-For more complex combinations, prefer the `stati.propValue()` helper provided by Stati. It builds attribute values by accepting strings, arrays, or objects and works best for attributes that support space-separated tokens:
+For more complex combinations, prefer Stati's own `stati.propValue()`. It builds attribute values by accepting strings, arrays, or objects and works best for attributes that support space-separated tokens:
 
 ```eta
 <a

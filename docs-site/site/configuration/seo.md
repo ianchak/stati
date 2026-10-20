@@ -63,7 +63,7 @@ export default defineConfig({
 
 ## Manual SEO generation
 
-For complete control, you can manually generate SEO tags in your templates using the `stati.generateSEO()` helper.
+For complete control, you can generate SEO tags in your templates with Stati's own `stati.generateSEO()`.
 
 ### Basic usage
 

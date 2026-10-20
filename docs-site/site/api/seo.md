@@ -57,7 +57,7 @@ const html = generateSEOMetadata({
 
 ### `generateSEO()`
 
-Template helper function for convenient SEO generation in Eta templates.
+Generates SEO tags for a page. Templates call it as `stati.generateSEO(tags?)`, with the page and configuration filled in. It is one of Stati's own functions on `stati`, not a helper under `stati.helpers`.
 
 **Signature:**
 

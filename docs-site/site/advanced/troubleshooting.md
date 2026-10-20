@@ -130,11 +130,11 @@ The development server may not be detecting file changes correctly.
 ## Markdown content not rendering
 
 **Cause:**
-Markdown file may have invalid frontmatter or syntax issues.
+The front matter may not start on the file's first line, or the Markdown may have syntax issues.
 
 **Solution:**
 
-1. Ensure frontmatter is valid YAML between `---` delimiters
+1. Start the file with the opening `---` line. With a blank line or other text before it, the front matter is read as Markdown and shows up in the page. (Front matter that is not valid YAML stops the build with the file and the line.)
 2. Check for unclosed code blocks or invalid Markdown syntax
 3. Verify the file has a `.md` extension
 4. Check the `layout` field points to an existing template
@@ -222,8 +222,7 @@ Navigation generation may have failed or pages are excluded.
 2. Check that pages don't have `draft: true` (unless using `--include-drafts`)
 3. Verify markdown files have `.md` extension
 4. Folders starting with `_` are excluded from pages and navigation (individual files starting with `_` are not)
-5. Check for front matter parsing errors in build output
-6. Remember that every folder of pages is a top-level node in `stati.nav.tree`; nested folders are not inside their parent's `children` (see [Navigation](/api/navigation#tree-shape))
+5. Remember that every folder of pages is a top-level node in `stati.nav.tree`; nested folders are not inside their parent's `children` (see [Navigation](/api/navigation#tree-shape))
 
 ---
 

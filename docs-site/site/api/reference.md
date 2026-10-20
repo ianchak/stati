@@ -93,7 +93,7 @@ Generated automatically from config. The underlying functions are exported for c
 
 ## Types
 
-The types you will reach for most: `StatiConfig`, `SiteConfig`, `BuildContext`, `PageContext`, `PageModel`, `FrontMatter`, `NavNode`, `BuildHooks`, `ISGConfig`, `AgingRule`, `BundleConfig`, `SEOConfig`, `SitemapConfig`, `RSSConfig`, `BuildOptions` and `BuildResult`. See [Types](/api/types).
+The types you will reach for most: `StatiConfig`, `SiteConfig`, `BuildContext`, `PageContext`, `PageModel`, `FrontMatter`, `NavNode`, `BuildHooks`, `ISGConfig`, `AgingRule`, `BundleConfig`, `SEOConfig`, `SitemapConfig`, `RSSConfig`, `BuildOptions`, `BuildResult`, `TemplateContext` (the `stati` object in templates), `StatiHelpers` and `MarkdownIt` (the type of the `md` that `markdown.configure` receives). See [Types](/api/types).
 
 ## Errors
 

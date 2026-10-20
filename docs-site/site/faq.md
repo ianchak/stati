@@ -27,7 +27,7 @@ seo:
         "name": "How does Stati handle SEO?"
         "acceptedAnswer":
           "@type": "Answer"
-          "text": "Stati automatically injects SEO metadata including title, description, canonical URLs, Open Graph tags, and Twitter Cards. You can also use the generateSEO() helper for manual control."
+          "text": "Stati automatically injects SEO metadata including title, description, canonical URLs, Open Graph tags, and Twitter Cards. You can also call stati.generateSEO() in a template for manual control."
       - "@type": "Question"
         "name": "Can I use TypeScript in my Stati project?"
         "acceptedAnswer":

@@ -82,7 +82,7 @@ The folder name is a convention: any `.eta` file under `site/` can be included b
 
 ### `stati.config.js` (or `stati.config.ts`)
 
-The main configuration file where you define site metadata, template settings, markdown configuration, and more. Use `.ts` for TypeScript projects with full type safety.
+The main configuration file where you define site metadata, template helpers, Markdown plugins, and more. Use `.ts` for TypeScript projects with full type safety.
 
 ```javascript
 import { defineConfig } from '@stati/core';

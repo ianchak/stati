@@ -99,7 +99,7 @@ npx create-stati my-blog --template=blog --images
 With image tools, the scaffolder:
 
 - adds `@stati/images` to the project's dev dependencies;
-- turns on `images.responsive` and `images.og` in the config, and explains `site.baseUrl` in the blank template's config, because preview images need absolute URLs;
+- turns on `images.responsive` and `images.og` in the config. Preview images need absolute URLs, so set the placeholder `site.baseUrl` to your real address before you deploy;
 - keeps the card template of the blog and docs templates, `site/og.eta`, with its fonts in `og/fonts/`. The blank template uses the card built into `@stati/images`.
 
 Without image tools, the blog and docs templates' card template and fonts are left out. You can add the package later; see [Images](/configuration/images).

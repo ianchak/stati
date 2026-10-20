@@ -8,7 +8,7 @@ seo:
 
 # Recipes
 
-Practical recipes and patterns for building sites with Stati. Each recipe solves a common use case with code you can adapt. A recipe that starts with a `site/partials/` file name, such as `site/partials/menu.eta`, is a template to include from a layout: `<%~ stati.include('partials/menu') %>`. The others are layouts, and say which pages they lay out.
+Practical recipes and patterns for building sites with Stati. Each recipe solves a common use case with code you can adapt. A recipe that starts with a `site/partials/` file name, such as `site/partials/menu.eta`, is a template to include from a layout: `<%~ stati.include('partials/menu') %>`. The others are layouts: they say which pages they lay out, and wrap themselves in the page shell `site/base.eta` with `stati.layout('base')` (see [Sharing a shell](/core-concepts/templates#sharing-a-shell)).
 
 ## Content management
 
@@ -266,6 +266,7 @@ Use collection data provided to index pages to list and filter content:
 
 ```html
 <!-- site/blog/index.eta: layout of site/blog/index.md -->
+<% stati.layout('base') %>
 <% // Collection data is automatically provided to index pages %>
 <% const posts = stati.collection ? stati.collection.recentPages : [] %>
 <% const tags = stati.collection ? Object.keys(stati.collection.pagesByTag) : [] %>
@@ -325,6 +326,7 @@ A post reads the collection of its folder, so the post layout can pick related p
 
 ```html
 <!-- site/blog/layout.eta: layout of the posts -->
+<% stati.layout('base') %>
 <%
   const tags = stati.page.tags ?? [];
   const related = (stati.collection?.recentPages ?? [])
@@ -372,6 +374,7 @@ paginate: 10
 
 ```html
 <!-- site/blog/index.eta: layout of site/blog/index.md -->
+<% stati.layout('base') %>
 <% const { items, pageNumber, totalPages, prevUrl, nextUrl, urls } = stati.pagination; %>
 <% items.forEach((post) => { %>
   <h2><a href="<%= post.url %>"><%= post.frontMatter.title %></a></h2>
@@ -409,6 +412,7 @@ generate:
 
 ```html
 <!-- site/blog/tags/layout.eta: layout of the pages from site/blog/tags/[tag].md -->
+<% stati.layout('base') %>
 <h1><%= stati.page.title %></h1>
 <ul>
   <% stati.generated.items.forEach((post) => { %>

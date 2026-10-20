@@ -250,6 +250,8 @@ sitemap:
 
 Keep auto-injection enabled but manually override specific SEO tags when needed. Stati detects existing tags and skips auto-generating them. This gives you fine-grained control where you need it while maintaining automatic fallbacks everywhere else.
 
+The examples here and in the scenarios below show a `site/layout.eta` that writes the whole page, as in the blank starter. If your layouts share a shell with `stati.layout()`, as in the blog and docs starters, the tags go in the shell's `<head>`, which those starters keep in `site/partials/head.eta`. See [Sharing a shell](/core-concepts/templates#sharing-a-shell).
+
 ### Example 1: Custom title, auto-generate rest
 
 ```html
@@ -391,7 +393,7 @@ Understanding tag groups is critical for hybrid mode:
 
 ### Overview
 
-Use the `stati.generateSEO()` helper with specific tag types to control exactly which tags Stati generates. This approach is more explicit than hybrid mode and prevents any automatic tag generation.
+Call `stati.generateSEO()` with specific tag types to control exactly which tags Stati generates. This approach is more explicit than hybrid mode and prevents any automatic tag generation.
 
 ### Configuration
 

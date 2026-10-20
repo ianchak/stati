@@ -61,7 +61,7 @@ export default {
 **Common scenarios**:
 
 - Individual content files that cannot be read
-- Invalid front matter (parsed but may cause issues downstream)
+- Front matter that is not valid YAML, such as an unquoted value that contains a colon
 - A misspelled `srcDir`, which silently produces an empty site
 
 ### Template rendering errors
@@ -283,7 +283,7 @@ class DuplicateBundleNameError extends Error {
 
 ### Template fallback
 
-When template rendering fails, Stati uses a built-in fallback that generates minimal valid HTML:
+When a page has no layout, or its layout or a shell it names fails in a production build, Stati writes the page with a built-in fallback that generates minimal valid HTML. A failing include doesn't use it: the include is replaced by an error comment, or renders nothing when its name matches no template.
 
 ```html
 <!DOCTYPE html>
@@ -490,7 +490,7 @@ Use one date field across the site. Stati reads the page's publication date (use
 
 ### Partial build success
 
-In production builds, a page whose layout fails is still written, using the fallback template, and the build continues. Search the build output for `Error rendering` before deploying: it starts every message about a layout, shell or include that failed. Hook errors, file system errors and invalid `isg` settings still stop the build.
+In production builds, a page whose layout fails is still written, using the fallback template, and the build continues. Check the build output for errors before deploying. A layout, shell or include that failed logs a message starting with `Error rendering`; an include whose name matches no template logs `stati.include('…'): no template at …`, and the page is written without it. Hook errors, file system errors and invalid `isg` settings still stop the build.
 
 ### Build interruption recovery
 

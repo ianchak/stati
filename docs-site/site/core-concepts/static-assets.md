@@ -100,7 +100,7 @@ The scaffolder creates an `src/styles.scss` file with your SCSS source and sets 
 
 ## Tailwind CSS integration
 
-Stati provides automatic support for dynamic Tailwind classes when using the `stati.propValue()` helper function. This ensures that dynamically-generated classes (like `from-${color}-50`) are properly included in your CSS build.
+Stati provides automatic support for dynamic Tailwind classes when you build classes with `stati.propValue()`. This ensures that dynamically-generated classes (like `from-${color}-50`) are properly included in your CSS build.
 
 ### Installation
 

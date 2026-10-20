@@ -219,7 +219,7 @@ Stati's build system automatically:
 
 #### 2. Manual injection with `generateSEO()`
 
-For **explicit control over tag placement**, use the `generateSEO()` helper in templates:
+For **explicit control over tag placement**, call `stati.generateSEO()` in templates:
 
 ```html
 <!DOCTYPE html>

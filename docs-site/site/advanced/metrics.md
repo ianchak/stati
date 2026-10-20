@@ -103,8 +103,8 @@ Metrics are saved to `.stati/metrics/build-<timestamp>.json`:
     "platform": "darwin",
     "arch": "arm64",
     "cpuCount": 8,
-    "cliVersion": "1.11.0",
-    "coreVersion": "1.18.0",
+    "cliVersion": "2.0.1",
+    "coreVersion": "2.0.1",
     "command": "build",
     "flags": {
       "force": false,

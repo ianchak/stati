@@ -32,7 +32,9 @@ The most straightforward way to add JavaScript is by including inline `<script>`
 
 ### Example: Scroll to top button
 
-In your `layout.eta` template:
+The examples on this page show a `layout.eta` that writes the whole page, as in the blank starter. If your layouts share a shell with `stati.layout()`, as in the blog and docs starters, the `<head>` and `<body>` are in the shell, such as `site/base.eta`, so the scripts go there. See [Sharing a shell](/core-concepts/templates#sharing-a-shell).
+
+In the template that writes the page's `<body>`:
 
 ```eta
 <!DOCTYPE html>
@@ -254,7 +256,7 @@ Create `public/js/theme-switcher.js`:
 })();
 ```
 
-Include in your `layout.eta`:
+Include it in the template that writes the page's `<body>`:
 
 ```eta
 <!DOCTYPE html>
@@ -1100,5 +1102,6 @@ For more information:
 
 - [TypeScript Configuration](/configuration/typescript)
 - [Build Hooks API](/api/hooks)
+- [Templates & Layouts](/core-concepts/templates)
 - [Template Configuration](/configuration/templates)
-- [Eta Template Documentation](https://eta.js.org/)
+- [Eta Template Documentation](https://eta.js.org/), for the tag syntax: Stati templates combine with `stati.include()` and `stati.layout()`, not Eta's `include()` and `layout()`

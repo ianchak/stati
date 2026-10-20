@@ -206,6 +206,8 @@ The `configure` option accepts a function that receives the markdown-it instance
 
 `configure` is called synchronously and its return value is ignored, so an `async` function's awaited work may finish after pages have started rendering. Prepare anything asynchronous at the top level of your config module (with top-level `await`) and use the result inside `configure`.
 
+In a TypeScript config, `md` is typed with markdown-it 15's own types, so `@types/markdown-it` isn't needed. To name the type in your own code, import it from Stati: `import type { MarkdownIt } from '@stati/core'`.
+
 ### Basic customization
 
 ```javascript
@@ -351,8 +353,8 @@ Stati reads YAML front matter: the lines between a `---` line at the start of th
 
 - Quote a value that contains a colon followed by a space, such as `title: "Stati: a static site generator"`.
 - Unquoted dates such as `date: 2024-01-15` are read as dates, quoted ones as text. Both work wherever Stati reads a date.
-- Values follow YAML 1.2: `time: 10:30` is the text `10:30`, and `0755` is the number 755.
-- Front matter that is not valid YAML stops the build with an error that names the file and the line.
+- Values follow YAML 1.2: `time: 10:30` is the text `10:30`, `0755` is the number 755, and `1_000` is text.
+- Front matter that is not valid YAML stops the build with an error that names the file and the line. So does front matter that is a list or a single value instead of `key: value` lines, or that names another language after the opening `---`, such as `---js`. `---json` is read as JSON.
 
 **Example:**
 

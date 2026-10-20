@@ -70,7 +70,7 @@ my-first-site/
 │   └── styles.css
 └── site/                 # Your content and templates
     ├── index.md          # Homepage content
-    └── layout.eta        # Base layout template
+    └── layout.eta        # Page layout template
 ```
 
 ## Step 3: Start the development server
@@ -263,7 +263,7 @@ Now that you have a working Stati site, explore these topics:
 ### Advanced configuration
 
 - [Site Metadata](/configuration/site-metadata)
-- [Template Settings](/configuration/templates)
+- [Template Helpers](/configuration/templates)
 - [Markdown Configuration](/configuration/markdown)
 
 ### Examples and learning resources
