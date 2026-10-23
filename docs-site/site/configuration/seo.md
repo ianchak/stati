@@ -203,6 +203,7 @@ A matching page whose front matter sets another `type` gets no article tags.
 Stati writes these values into each page's `seo` front matter after the `beforeAll` hook and before rendering. So:
 
 - Values a `beforeAll` hook writes into `seo` win over the defaults.
+- A `beforeRender` hook can change what a default comes from, such as `seo.author`, `tags` or the URL: Stati works the defaults out again after it runs. Values the hook sets itself are kept.
 - Templates read the same values the head prints, such as `stati.page.seo.openGraph.type`.
 - Changing `site.defaultLocale`, a handle or `seo.articles` rebuilds the cached pages it changes, like a front matter edit.
 
