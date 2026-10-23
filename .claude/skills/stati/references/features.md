@@ -38,6 +38,10 @@ Site-wide defaults (core 2.1+), each used only where front matter leaves the val
   one `article:tag` per tag and `article:author` (the author's `url`), filled
   field by field. Generated pages and every page of a paginated listing never
   match. No `seo.articles` means no derived article tags.
+- `noindex` (core 2.2+): `seo.noindex: true` on [the 404 page](#the-404-page),
+  unless its front matter sets `seo.noindex`, or a `seo.robots` value that says
+  whether to index (`index`, `noindex`, `all`, `none`, or `index:` in the
+  object). A robots value such as `nofollow` gets `noindex` added.
 - Stati writes these into `page.frontMatter.seo` after `beforeAll` (hook values
   win), so templates see them in `stati.page.seo` and changing a default rebuilds
   the cached pages it changes. After `beforeRender` it works out again the values
@@ -76,8 +80,8 @@ With `images.og` (needs `@stati/images`), each page that sets no
 `seo.openGraph.image` gets a generated card and the tags `og:image`,
 `og:image:width`, `og:image:height`, `og:image:alt` and `twitter:image`.
 `seo.openGraph.image: false` gives a page no image; `images.og.exclude` takes URL
-globs. Production builds require `site.baseUrl` to be an absolute, non-localhost
-URL.
+globs. The 404 page never gets a card (core 2.2+). Production builds require
+`site.baseUrl` to be an absolute, non-localhost URL.
 
 - **Template:** the nearest `og.eta` from the page's folder up to `site/`, else the
   card built into the package (`node_modules/@stati/images/templates/og.eta`).
@@ -134,6 +138,29 @@ Automatic head injection requires a closing `</head>`; malformed/empty layouts
 may silently receive no tags. Always verify the emitted document.
 Robots metadata is not access control; `noindex` does not make a page private.
 
+## The 404 page
+
+Core 2.2+ treats the page at URL `/404` or `/404/` (`site/404.md`, or a `/404/`
+permalink) as the site's not-found page, the file `stati dev` and `stati preview`
+serve for a missing URL. Only the root one counts: `/docs/404` is an ordinary page.
+
+| Output           | The 404 page               | Front matter to change it                       |
+| ---------------- | -------------------------- | ----------------------------------------------- |
+| Sitemap          | Left out                   | `sitemap.exclude: false` + `seo.noindex: false` |
+| Search index     | Left out                   | `search: true` (`exclude` applies)              |
+| RSS feeds        | Never an item              | None                                            |
+| `stati.nav`      | Left out; `navNode` absent | `nav: true`                                     |
+| `images.og` card | None                       | Its own `seo.openGraph.image`                   |
+| Robots meta tag  | `noindex` (an SEO default) | `seo.noindex`, or robots deciding indexing      |
+| Collections      | Unchanged (root member)    | Not applicable                                  |
+
+Before 2.2 sites excluded it by hand (`excludePatterns: ['/404']`,
+`search.exclude`, `images.og.exclude`, `**/404.md` feed patterns, front matter
+`seo.noindex`/`sitemap.exclude`); those still work and are now redundant. Don't
+add `Disallow: /404` to robots.txt: a crawler that may not fetch the page never
+reads its `noindex`, and hosts send `/404.html` with a 200 when it is requested
+directly.
+
 ## Search
 
 ```ts
@@ -160,7 +187,8 @@ no indexed-text change reuses them. `stati build` deletes older index files.
 The index is built after `beforeAll`, before rendering; `beforeRender` content
 changes do not reach it.
 Generated pages (`[param].md`) are left out unless the template sets
-`search: true`; pages 2+ of a paginated listing are always left out.
+`search: true`; pages 2+ of a paginated listing are always left out. So is the
+404 page unless it sets `search: true` (core 2.2+).
 
 The file is an **object**, not a bare document array:
 
@@ -220,9 +248,11 @@ Additional fields: `includePatterns`, `filter(page)`,
 `transformUrl(url, page, config)`, `transformEntry(entry, page)`,
 `generateIndex`.
 
-Filter sequence: `frontMatter.sitemap.exclude`, excludes, includes, custom
-filter. URL transformation precedes entry creation; entry transformation runs
-last and can return `null`.
+Filter sequence: `frontMatter.sitemap.exclude: true`; then (core 2.2+) the 404
+page and pages marked noindex (`seo.noindex`, `seo.robots.index: false`, a robots
+string with a `noindex` or `none` directive), skipped when front matter sets
+`sitemap.exclude: false`; excludes, includes, custom filter. URL transformation
+precedes entry creation; entry transformation runs last and can return `null`.
 
 ```yaml
 sitemap:
@@ -288,8 +318,9 @@ rss: {
 ```
 
 Generated pages and pages 2+ of a paginated listing are never feed items; they
-share their template's source path, so patterns could not tell them apart. They
-are in the sitemap by default (exclude them with `excludePatterns`, `filter`, or
+share their template's source path, so patterns could not tell them apart. Nor
+is the 404 page (core 2.2+). Generated and later listing pages are in the
+sitemap by default (exclude them with `excludePatterns`, `filter`, or
 `sitemap: { exclude: true }` in the template).
 
 RSS patterns match **source paths**, unlike bundle output patterns or URL-oriented
