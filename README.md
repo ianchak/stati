@@ -156,8 +156,9 @@ SEO optimization works automatically with zero configuration. Stati analyzes you
 
 **What's included by default:**
 - Meta tags (title, description, keywords)
-- Open Graph tags for Facebook/LinkedIn
-- Twitter Cards
+- Open Graph tags for Facebook/LinkedIn, with `og:locale` from `site.defaultLocale`
+- Twitter Cards, with `twitter:site` and `twitter:creator` from handles in the config
+- Article tags (`og:type`, publish date, tags) on the pages `seo.articles` matches
 - Structured data (JSON-LD) when configured in frontmatter
 
 You can also enable sitemap and robots.txt generation with a single config option.
@@ -271,8 +272,11 @@ export default defineConfig({
     defaultAuthor: {
       name: 'John Doe',
       email: 'john@example.com',
-      url: 'https://johndoe.com',
+      url: 'https://johndoe.com', // article:author on article pages
+      twitter: '@johndoe',        // twitter:creator
     },
+    twitter: { site: '@example' },          // twitter:site
+    articles: { include: ['/blog/*'] },     // og:type article + article:* tags
     debug: false,             // Enable SEO debug logging
   },
 

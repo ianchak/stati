@@ -143,6 +143,7 @@ export default defineConfig({
     title: 'My Awesome Site',
     description: 'Building amazing static sites with Stati',
     baseUrl: 'https://example.com',
+    defaultLocale: 'en-US', // Printed as og:locale en_US
   },
 
   seo: {
@@ -150,8 +151,12 @@ export default defineConfig({
     defaultAuthor: {
       name: 'Jane Doe',
       email: 'jane@example.com',
-      url: 'https://janedoe.com',
+      url: 'https://janedoe.com', // article:author on article pages
+      twitter: '@janedoe', // twitter:creator
     },
+    twitter: { site: '@mysite' }, // twitter:site
+    // Blog posts are articles: og:type, publish date, updated date and tags
+    articles: { include: ['/blog/*'] },
   },
 
   sitemap: {
@@ -169,12 +174,14 @@ export default defineConfig({
 
 ### Per-page enhancement
 
-Add SEO frontmatter to high-value pages:
+Add SEO frontmatter to high-value pages. On a page under `/blog/`, `seo.articles` already prints `og:type` as `article`, `article:published_time` from `publishedAt` and one `article:tag` per tag, so the front matter adds only what the page cannot supply:
 
 ```markdown
 ---
 title: Complete Guide to Static Sites
 description: Learn everything about static site generation with this comprehensive guide
+publishedAt: 2025-01-15
+tags: [tutorial, static-sites, jamstack]
 seo:
   keywords: [static sites, jamstack, web development]
   openGraph:
@@ -183,12 +190,8 @@ seo:
       alt: Static Site Guide Cover
       width: 1200
       height: 630
-    type: article
     article:
-      publishedTime: '2025-01-15T10:00:00Z'
-      author: Jane Doe
       section: Web Development
-      tags: [tutorial, static-sites, jamstack]
   twitter:
     card: summary_large_image
     image: https://example.com/images/twitter-guide.jpg
@@ -376,6 +379,8 @@ Understanding tag groups is critical for hybrid mode:
 | **Open Graph** | If **any** `og:*` tag exists, **all** OG tags are skipped |
 | **Twitter Cards** | If **any** `twitter:*` tag exists, **all** Twitter tags are skipped |
 | **Individual Tags** | Title, description, keywords, author, robots, canonical are independent |
+
+So a layout should not add one `og:` or `twitter:` tag just to set a value that is the same on every page, such as `og:locale` or `twitter:site`: it would turn off the whole group, the generated `og:image` included. Set those in the config instead ([site-wide defaults](/configuration/seo#site-wide-defaults)).
 
 ### When to use
 

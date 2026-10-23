@@ -374,6 +374,8 @@ const ogTags = generateOpenGraphTags({
 console.log(ogTags.join('\n'));
 ```
 
+Values the page's front matter leaves out come from the config, as during a build: `og:locale` from `site.defaultLocale` in Open Graph form, and on the pages `seo.articles` matches, `og:type` `article` and the `article:*` tags. See [site-wide defaults](/configuration/seo#site-wide-defaults).
+
 ---
 
 ### `generateTwitterCardTags()`
@@ -408,6 +410,8 @@ const twitterTags = generateTwitterCardTags({
 
 console.log(twitterTags.join('\n'));
 ```
+
+`twitter:site` falls back to `seo.twitter.site`, and `twitter:creator` to the `twitter` handle of the page's own `seo.author`, then of `seo.defaultAuthor`. An author's name is never printed as `twitter:creator`.
 
 ---
 
@@ -819,8 +823,14 @@ interface SEOConfig {
   /** Enable automatic SEO injection (default: true) */
   autoInject?: boolean;
 
-  /** Default author for all pages */
+  /** Default author for pages whose front matter names none */
   defaultAuthor?: AuthorConfig;
+
+  /** Site-wide Twitter Card values */
+  twitter?: SEOTwitterConfig;
+
+  /** Pages that get Open Graph article metadata, chosen by URL */
+  articles?: SEOArticlesConfig;
 
   /** Enable debug logging (default: false) */
   debug?: boolean;
@@ -835,11 +845,47 @@ interface SEOConfig {
   defaultAuthor: {
     name: 'John Doe',
     email: 'john@example.com',
-    url: 'https://johndoe.com'
+    url: 'https://johndoe.com',
+    twitter: '@johndoe'
   },
+  twitter: { site: '@example' },
+  articles: { include: ['/blog/*'] },
   debug: false
 }
 ```
+
+Stati checks `seo.twitter`, `seo.articles` and `seo.defaultAuthor.twitter` when it loads the config, and stops with an error when one has the wrong type, such as `include: '/blog/*'` instead of `include: ['/blog/*']`.
+
+---
+
+### `SEOTwitterConfig`
+
+Site-wide Twitter Card values. A page's `seo.twitter` front matter overrides them.
+
+```typescript
+interface SEOTwitterConfig {
+  /** The site's handle, with or without '@', printed as twitter:site */
+  site?: string;
+}
+```
+
+---
+
+### `SEOArticlesConfig`
+
+The pages that are articles. On a matching page, Stati prints `og:type` as `article` and fills in `article:published_time` (the publish date), `article:modified_time` (front matter `updated`), one `article:tag` per front matter tag and `article:author` (the author's `url`), each only when the page's `seo.openGraph` front matter leaves it out.
+
+```typescript
+interface SEOArticlesConfig {
+  /** Glob patterns matched against the whole page URL, as in bundle include */
+  include: string[];
+
+  /** Glob patterns for URLs that are never articles; win over include */
+  exclude?: string[];
+}
+```
+
+Generated pages and every page of a paginated listing never match. See [article pages](/configuration/seo#article-pages).
 
 ---
 
@@ -903,10 +949,15 @@ interface AuthorConfig {
   /** Author's email address */
   email?: string;
 
-  /** Author's website URL */
+  /** Author's website or profile URL, printed as article:author on article pages */
   url?: string;
+
+  /** Author's Twitter/X handle, with or without '@', printed as twitter:creator */
+  twitter?: string;
 }
 ```
+
+The same shape serves `seo.defaultAuthor` in the config and `seo.author` in front matter. A page that names its own author never gets the default author's `url` or `twitter`.
 
 ---
 
@@ -956,7 +1007,7 @@ interface OpenGraphConfig {
   /** OG title (defaults to SEO title or page title) */
   title?: string;
 
-  /** Content type (default: 'website') */
+  /** Content type (default: 'article' on pages seo.articles matches, 'website' elsewhere) */
   type?: string;
 
   /** OG description (defaults to SEO description) */
@@ -971,10 +1022,10 @@ interface OpenGraphConfig {
   /** Site name */
   siteName?: string;
 
-  /** Locale (e.g., 'en_US') */
+  /** Locale such as 'en_US', printed as written (default: site.defaultLocale in Open Graph form) */
   locale?: string;
 
-  /** Article-specific metadata */
+  /** Article-specific metadata, printed when type is 'article' */
   article?: OpenGraphArticle;
 }
 ```
@@ -1017,7 +1068,7 @@ interface OpenGraphArticle {
   /** Last modification date (ISO 8601) */
   modifiedTime?: string;
 
-  /** Author name */
+  /** Author profile URL (Open Graph expects a URL here) */
   author?: string;
 
   /** Article section/category */
@@ -1027,6 +1078,8 @@ interface OpenGraphArticle {
   tags?: string[];
 }
 ```
+
+On the pages [`seo.articles`](#seoarticlesconfig) matches, each field the front matter leaves out except `section` is filled in from the page: `publishedTime` from the publish date, `modifiedTime` from `updated`, `tags` from `tags` and `author` from the author's `url`. Dates are printed in ISO 8601 form, such as `2026-01-10T00:00:00.000Z`.
 
 ---
 
@@ -1039,10 +1092,10 @@ interface TwitterCardConfig {
   /** Card type (default: 'summary_large_image') */
   card?: 'summary' | 'summary_large_image' | 'app' | 'player';
 
-  /** Site's Twitter handle (e.g., '@mysite') */
+  /** Site's Twitter handle (e.g., '@mysite'); default: seo.twitter.site */
   site?: string;
 
-  /** Creator's Twitter handle (e.g., '@johndoe') */
+  /** Creator's Twitter handle (e.g., '@johndoe'); default: the author's twitter handle */
   creator?: string;
 
   /** Twitter card title */
@@ -1204,6 +1257,7 @@ export default defineConfig({
   site: {
     title: 'My Site',
     baseUrl: 'https://example.com',
+    defaultLocale: 'en-US', // og:locale en_US
   },
 
   seo: {
@@ -1212,7 +1266,10 @@ export default defineConfig({
       name: 'John Doe',
       email: 'john@example.com',
       url: 'https://johndoe.com',
+      twitter: '@johndoe',
     },
+    twitter: { site: '@example' },
+    articles: { include: ['/blog/*'] },
     debug: false,
   },
 

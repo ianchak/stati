@@ -41,8 +41,8 @@ When auto-injection is enabled (default), Stati automatically generates:
 - **Canonical URL** - `seo.canonical`, or the page URL on `site.baseUrl`
 - **Author meta tag** - From `seo.author`, or `seo.defaultAuthor` in the config
 - **Robots meta tag** - Only when the page sets `seo.robots` or `seo.noindex`
-- **Open Graph tags** - For social media sharing (og:title, og:description, og:image, etc.)
-- **Twitter Card tags** - For Twitter sharing
+- **Open Graph tags** - For social media sharing (og:title, og:description, og:image, etc.), with `og:locale` from `site.defaultLocale` and article tags on the pages `seo.articles` matches
+- **Twitter Card tags** - For Twitter sharing, with `twitter:site` and `twitter:creator` from the handles in the config
 - **Structured Data** - JSON-LD schema when configured in front matter
 
 ### Disabling auto-injection
@@ -120,7 +120,19 @@ export default defineConfig({
     defaultAuthor: {
       name: 'John Doe',
       email: 'john@example.com',
-      url: 'https://johndoe.com',
+      url: 'https://johndoe.com', // article:author on article pages
+      twitter: '@johndoe', // twitter:creator; the @ is optional
+    },
+
+    // The site's own handle, printed as twitter:site; the @ is optional
+    twitter: {
+      site: '@example',
+    },
+
+    // Pages that are articles: og:type article, plus article:* tags from the page
+    articles: {
+      include: ['/blog/*'],
+      exclude: [],
     },
 
     // Enable debug logging (default: false)
@@ -128,6 +140,73 @@ export default defineConfig({
   },
 });
 ```
+
+## Site-wide defaults
+
+A few Open Graph and Twitter values are the same on every page, or follow from the page itself. Stati fills them in from the config, so no page has to repeat them. Front matter still wins, value by value.
+
+| Tag | From |
+| --- | --- |
+| `og:locale` | `site.defaultLocale`, converted to Open Graph form |
+| `twitter:site` | `seo.twitter.site` |
+| `twitter:creator` | The `twitter` handle of the page's own `seo.author`, then of `seo.defaultAuthor` |
+| `og:type` | `article` on the pages `seo.articles` matches, `website` elsewhere |
+| `article:published_time` | The page's publish date (`publishedAt`, `published`, `date` or `createdAt`), on article pages |
+| `article:modified_time` | Front matter `updated`, on article pages |
+| `article:tag` | One per front matter `tags` entry, on article pages |
+| `article:author` | The `url` of the page's own `seo.author`, then of `seo.defaultAuthor`, on article pages |
+
+### Locale
+
+`site.defaultLocale` is a BCP 47 tag such as `en-US`, the form `<html lang>` needs. Open Graph writes locales as `language_TERRITORY`, so Stati converts it: `en-US` becomes `en_US`, `pt-br` becomes `pt_BR`, and `zh-Hant-TW` becomes `zh_TW` (the script is dropped). A tag without a region, such as `en`, has no Open Graph form: `og:locale` is left out, and Open Graph assumes `en_US`. With `seo.debug` on, Stati warns about it. A page's `seo.openGraph.locale` is printed as written.
+
+### Twitter handles
+
+`twitter:creator` takes an `@username`, so it comes only from a handle, never from an author's name: without a handle, no `twitter:creator` is printed. Write handles with or without `@`; Stati prints them with one. A page that names its own `seo.author` never gets the default author's handle or URL:
+
+```markdown
+---
+title: Guest post
+seo:
+  author:
+    name: Grace Hopper
+    url: https://grace.example.com
+    twitter: '@grace'
+---
+```
+
+A `seo.author` that is a plain name gives the page no `twitter:creator` and no `article:author`.
+
+### Article pages
+
+`seo.articles.include` and `exclude` are glob patterns matched against the page URL, with the same rules as [bundle targeting](/configuration/typescript#pattern-matching): a pattern must match the whole URL, so `/blog/*` matches `/blog/hello` but not the `/blog` index page, and `exclude` wins over `include`. Generated pages (from a `[param].md` template or `collections.generate`) and every page of a paginated listing never match. Without `seo.articles`, no page is an article unless its front matter sets `type: article`.
+
+On a matching page, Stati fills in each value the front matter leaves out. A page that sets only `section` still gets its dates and tags:
+
+```markdown
+---
+title: Grid or flexbox
+publishedAt: 2026-01-10
+updated: 2026-02-01
+tags: [css, layout]
+seo:
+  openGraph:
+    article:
+      section: CSS
+---
+```
+
+A matching page whose front matter sets another `type` gets no article tags.
+
+### How defaults reach the page
+
+Stati writes these values into each page's `seo` front matter after the `beforeAll` hook and before rendering. So:
+
+- Values a `beforeAll` hook writes into `seo` win over the defaults.
+- Templates read the same values the head prints, such as `stati.page.seo.openGraph.type`.
+- Changing `site.defaultLocale`, a handle or `seo.articles` rebuilds the cached pages it changes, like a front matter edit.
+
+To print these tags from the config, set them here rather than in a layout: one `og:` or `twitter:` tag in the layout's `<head>` turns off Stati's whole Open Graph or Twitter group for that page (see [tag type groups](#tag-type-groups)).
 
 ## Frontmatter SEO fields
 
@@ -173,7 +252,7 @@ seo:
 
 > **Quote dates.** YAML turns an unquoted date or timestamp into a date object, and an unquoted `publishedTime` or `modifiedTime` makes the build fail with "text.replace is not a function". Dates inside `structuredData` must be quoted too; unquoted ones are written as `{}`.
 
-Article tags (`article:published_time`, `article:tag` and so on) are only written when `type` is `article`. Image URLs that start with `/` are made absolute with `site.baseUrl`.
+Article tags (`article:published_time`, `article:tag` and so on) are only written when `type` is `article`. On the pages [`seo.articles`](#article-pages) matches, the type and the article values the front matter leaves out are filled in from the page. `locale` is printed as written; without it, `og:locale` comes from [`site.defaultLocale`](#locale). Image URLs that start with `/` are made absolute with `site.baseUrl`.
 
 ### Twitter card configuration
 
@@ -191,6 +270,8 @@ seo:
     imageAlt: Twitter card image description
 ---
 ```
+
+`site` and `creator` are printed as written. Without them, they come from [the handles in the config](#twitter-handles).
 
 ### Structured data (Schema.org)
 

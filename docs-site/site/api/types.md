@@ -152,14 +152,33 @@ interface SiteConfig {
 
 ```typescript
 interface SEOConfig {
-  /** Default author for all pages (can be overridden per-page) */
+  /** Default author for all pages; a page's own seo.author replaces it */
   defaultAuthor?: AuthorConfig;
+
+  /** Site-wide Twitter Card values */
+  twitter?: SEOTwitterConfig;
+
+  /** Pages that get Open Graph article metadata, chosen by URL */
+  articles?: SEOArticlesConfig;
 
   /** Automatically inject SEO tags into <head> if not present (default: true) */
   autoInject?: boolean;
 
   /** Enable debug logging for SEO generation (default: false) */
   debug?: boolean;
+}
+
+interface SEOTwitterConfig {
+  /** The site's Twitter/X handle, with or without '@', printed as twitter:site */
+  site?: string;
+}
+
+interface SEOArticlesConfig {
+  /** Glob patterns matched against the whole page URL, as in bundle include */
+  include: string[];
+
+  /** Glob patterns for page URLs that are never articles; win over include */
+  exclude?: string[];
 }
 
 interface AuthorConfig {
@@ -169,10 +188,15 @@ interface AuthorConfig {
   /** Author's email address */
   email?: string;
 
-  /** Author's website or profile URL */
+  /** Author's website or profile URL, printed as article:author on article pages */
   url?: string;
+
+  /** Author's Twitter/X handle, with or without '@', printed as twitter:creator */
+  twitter?: string;
 }
 ```
+
+See [site-wide SEO defaults](/configuration/seo#site-wide-defaults) for what these values print.
 
 ### Build hooks
 
@@ -833,6 +857,8 @@ import type {
   // SEO
   SEOMetadata,
   SEOConfig,
+  SEOTwitterConfig,
+  SEOArticlesConfig,
   SEOContext,
   SEOValidationResult,
   SEOTagType,

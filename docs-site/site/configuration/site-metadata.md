@@ -66,7 +66,7 @@ export default defineConfig({
 
 #### `defaultLocale` (optional)
 
-Default locale for internationalization support.
+The site's language, as a BCP 47 tag such as `en-US`: the form `<html lang>` needs. Stati prints it as `og:locale` on every page whose front matter sets no `seo.openGraph.locale`, converted to Open Graph's `language_TERRITORY` form (`en-US` becomes `en_US`).
 
 ```javascript
 export default defineConfig({
@@ -80,11 +80,13 @@ export default defineConfig({
 
 Common locale formats:
 
-- `'en-US'` - English (United States)
-- `'en-GB'` - English (United Kingdom)
-- `'es-ES'` - Spanish (Spain)
-- `'fr-FR'` - French (France)
-- `'de-DE'` - German (Germany)
+- `'en-US'` - English (United States), `og:locale` `en_US`
+- `'en-GB'` - English (United Kingdom), `og:locale` `en_GB`
+- `'es-ES'` - Spanish (Spain), `og:locale` `es_ES`
+- `'fr-FR'` - French (France), `og:locale` `fr_FR`
+- `'de-DE'` - German (Germany), `og:locale` `de_DE`
+
+A script subtag is dropped (`zh-Hant-TW` becomes `zh_TW`). A tag without a region, such as `'en'`, has no Open Graph form, so no `og:locale` is printed; with `seo.debug` on, Stati warns about it. See [site-wide SEO defaults](/configuration/seo#locale).
 
 #### `description` (optional)
 
@@ -127,10 +129,20 @@ export default defineConfig({
       name: 'Jane Smith',
       email: 'jane@example.com',
       url: 'https://janesmith.dev',
+      twitter: '@janesmith',
     },
   },
 });
 ```
+
+| Field | Printed as |
+| --- | --- |
+| `name` | `<meta name="author">` |
+| `url` | `article:author`, on the pages [`seo.articles`](/configuration/seo#article-pages) matches |
+| `twitter` | `twitter:creator`, with or without `@`; Stati adds it |
+| `email` | Not printed |
+
+`twitter:creator` comes only from a handle: an author without `twitter` gives no `twitter:creator`, never their name.
 
 **Per-Page Authors:** Override the default author in page frontmatter:
 
@@ -142,10 +154,13 @@ seo:
     name: 'John Doe'
     email: 'john@example.com'
     url: 'https://johndoe.com'
+    twitter: '@johndoe'
 ---
 
 # Post Content
 ```
+
+A page that names its own author never gets the default author's handle or URL, even when its author has none.
 
 ## SEO metadata
 

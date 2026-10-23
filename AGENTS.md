@@ -108,7 +108,7 @@ All config blocks live under `defineConfig()`. Key sections:
 - **typescript**: `enabled`, `srcDir`, `outDir`, `hash`, `minify`, `bundles[]` with `entryPoint`, `bundleName`, `include`/`exclude` glob patterns for selective bundle injection.
 - **isg**: `enabled`, `ttlSeconds`, `maxAgeCapDays`, `aging[]` (array of `{ untilDays, ttlSeconds }` rules).
 - **collections**: `summaryFields[]` (front matter that rebuilds listings; default `title`, `description`, `tags`, `draft`), `generate(ctx)` returning `{ url, template, key?, label?, items?, data? }` pages rendered with a `[param].md` template.
-- **seo**: `defaultAuthor`, `autoInject`, `debug` - SEO metadata configuration.
+- **seo**: `defaultAuthor` (`name`, `email`, `url`, `twitter`), `twitter.site`, `articles` (`include`/`exclude` URL globs), `autoInject`, `debug` - SEO metadata configuration. `applySEODefaults` (`seo/defaults.ts`) fills `og:locale` (from `site.defaultLocale`, converted to `en_US` form), the Twitter handles and article metadata into each page's `seo` front matter after `beforeAll`, so the front matter hash covers them; the generator resolves the same values for direct callers.
 - **search**: `enabled`, `indexName`, `hashFilename`, `maxContentLength`, `maxPreviewLength`, `headingLevels[]`, `exclude[]`, `includeHomePage`, `autoInjectMetaTag`.
 - **sitemap**: `enabled`, `defaultPriority`, `defaultChangeFreq`, `excludePatterns[]`, `includePatterns[]`, `filter()`, `transformUrl()`, `transformEntry()`, `priorityRules[]` with `pattern` and `priority`, `generateIndex`.
 - **robots**: `enabled`, `userAgents[]` with `userAgent`, `allow[]`, `disallow[]`, global `allow[]`/`disallow[]`, `crawlDelay`, `sitemap`, `customLines[]`.
