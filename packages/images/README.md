@@ -86,12 +86,12 @@ images: {
     width: 1200,
     height: 630,
     format: 'png',
-    exclude: ['/404'],
+    exclude: ['/drafts/**'],
   },
 },
 ```
 
-Each page gets `og:image`, its size and `twitter:image`, pointing to a card rendered for that page. A page that sets `seo.openGraph.image` in its front matter keeps its own image; `image: false` gives it none.
+Each page gets `og:image`, its size and `twitter:image`, pointing to a card rendered for that page. A page that sets `seo.openGraph.image` in its front matter keeps its own image; `image: false` gives it none. With `@stati/core` 2.2 or later, the site's 404 page gets no card.
 
 ### Designing the card
 
