@@ -207,4 +207,34 @@ describe('Navigation', () => {
       expect(allUrls(navigation)).not.toContain('/tags/css/page/2');
     });
   });
+
+  describe('the 404 page', () => {
+    const notFound = (url: string, frontMatter: Record<string, unknown> = {}): PageModel => ({
+      slug: url,
+      url,
+      sourcePath: `/content${url.replace(/\/$/, '/index')}.md`,
+      frontMatter: { title: 'Page not found', ...frontMatter },
+      content: '',
+    });
+    const allUrls = (nodes: ReturnType<typeof buildNavigation>): string[] =>
+      nodes.flatMap((node) => [node.url, ...allUrls(node.children ?? [])]);
+
+    const notFoundUrls = (nodes: ReturnType<typeof buildNavigation>): string[] =>
+      allUrls(nodes).filter((url) => url.startsWith('/404'));
+
+    it('leaves out the page at /404 or /404/', () => {
+      expect(notFoundUrls(buildNavigation([...mockPages, notFound('/404')]))).toEqual([]);
+      expect(notFoundUrls(buildNavigation([...mockPages, notFound('/404/')]))).toEqual([]);
+    });
+
+    it('includes it when it sets nav: true', () => {
+      const navigation = buildNavigation([...mockPages, notFound('/404', { nav: true })]);
+      expect(allUrls(navigation)).toContain('/404');
+    });
+
+    it('keeps a page named 404 in a subfolder', () => {
+      const navigation = buildNavigation([...mockPages, notFound('/blog/404')]);
+      expect(allUrls(navigation)).toContain('/blog/404');
+    });
+  });
 });

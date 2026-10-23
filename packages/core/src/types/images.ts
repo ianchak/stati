@@ -68,7 +68,7 @@ export interface OgImageFontConfig {
  * @example
  * ```typescript
  * images: {
- *   og: { exclude: ['/404'] },
+ *   og: { exclude: ['/drafts/**'] },
  * }
  * ```
  */

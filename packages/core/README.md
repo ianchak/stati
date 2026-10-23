@@ -197,6 +197,7 @@ SEO optimization works automatically with zero configuration:
 - Twitter Cards, with `twitter:site` and `twitter:creator` from handles in the config
 - Article tags (`og:type`, publish date, tags) on the pages `seo.articles` matches
 - Structured data (JSON-LD) from `seo.structuredData` in front matter
+- `noindex` on the 404 page, which also stays out of the sitemap, search index, RSS feeds, navigation and Open Graph cards
 
 Enable sitemap and robots.txt with one config option.
 

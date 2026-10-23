@@ -415,6 +415,56 @@ describe('Sitemap Generation', () => {
 
       expect(entry?.url).toBe('https://example.com/test-page');
     });
+
+    describe('404 page and noindex pages', () => {
+      const entryFor = (url: string, frontMatter: PageModel['frontMatter'] = {}) =>
+        generateSitemapEntry({ ...samplePage, url, frontMatter }, baseConfig, baseSitemapConfig);
+
+      it('leaves out the 404 page at /404 and /404/', () => {
+        expect(entryFor('/404')).toBeNull();
+        expect(entryFor('/404/')).toBeNull();
+      });
+
+      it('keeps pages that are not the root 404 page', () => {
+        expect(entryFor('/docs/404')?.url).toBe('https://example.com/docs/404');
+        expect(entryFor('/4040')?.url).toBe('https://example.com/4040');
+        expect(entryFor('/404-errors')?.url).toBe('https://example.com/404-errors');
+      });
+
+      it('keeps the 404 page when front matter sets sitemap.exclude: false', () => {
+        expect(entryFor('/404', { sitemap: { exclude: false } })?.url).toBe(
+          'https://example.com/404',
+        );
+      });
+
+      it('leaves out pages marked noindex', () => {
+        expect(entryFor('/a', { seo: { noindex: true } })).toBeNull();
+        expect(entryFor('/a', { seo: { robots: 'noindex, follow' } })).toBeNull();
+        expect(entryFor('/a', { seo: { robots: 'NOINDEX,nofollow' } })).toBeNull();
+        expect(entryFor('/a', { seo: { robots: 'none' } })).toBeNull();
+        expect(entryFor('/a', { seo: { robots: 'noindex nofollow' } })).toBeNull();
+        expect(entryFor('/a', { seo: { robots: { index: false } } })).toBeNull();
+      });
+
+      it('keeps pages whose robots directives allow indexing', () => {
+        expect(entryFor('/a', { seo: { noindex: false } })).not.toBeNull();
+        expect(entryFor('/a', { seo: { robots: 'nofollow, noarchive' } })).not.toBeNull();
+        expect(entryFor('/a', { seo: { robots: 'max-image-preview:none' } })).not.toBeNull();
+        expect(entryFor('/a', { seo: { robots: { index: true, follow: false } } })).not.toBeNull();
+        expect(entryFor('/a', { seo: 'invalid' as never })).not.toBeNull();
+      });
+
+      it('keeps a noindex page when front matter sets sitemap.exclude: false', () => {
+        expect(
+          entryFor('/a', { seo: { noindex: true }, sitemap: { exclude: false } }),
+        ).not.toBeNull();
+      });
+
+      it('still applies the exclude patterns to a page kept in with sitemap.exclude: false', () => {
+        baseSitemapConfig.excludePatterns = ['/404'];
+        expect(entryFor('/404', { sitemap: { exclude: false } })).toBeNull();
+      });
+    });
   });
 
   describe('generateSitemapXml', () => {

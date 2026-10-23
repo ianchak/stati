@@ -371,6 +371,25 @@ describe('shouldExcludePage', () => {
       ).toBe(false);
     });
   });
+
+  describe('the 404 page', () => {
+    const config: SearchConfig = { enabled: true };
+
+    it('excludes the page at /404 or /404/', () => {
+      expect(shouldExcludePage(createPage({ url: '/404' }), config)).toBe(true);
+      expect(shouldExcludePage(createPage({ url: '/404/' }), config)).toBe(true);
+    });
+
+    it('includes it when it sets search: true, unless an exclude pattern matches', () => {
+      const optedIn = createPage({ url: '/404', frontMatter: { search: true } });
+      expect(shouldExcludePage(optedIn, config)).toBe(false);
+      expect(shouldExcludePage(optedIn, { enabled: true, exclude: ['/404'] })).toBe(true);
+    });
+
+    it('includes a page named 404 in a subfolder', () => {
+      expect(shouldExcludePage(createPage({ url: '/docs/404' }), config)).toBe(false);
+    });
+  });
 });
 
 describe('generateSearchIndex', () => {

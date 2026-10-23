@@ -115,9 +115,9 @@ export interface FrontMatter {
   paginate?: number | PaginateOptions;
   /** Expansion of a `[param].md` template into one page per key */
   generate?: GenerateOptions;
-  /** Includes the pages a `[param].md` template generates in the navigation tree */
+  /** Includes a `[param].md` template's pages, or the site's 404 page, in the navigation tree */
   nav?: boolean;
-  /** Includes the pages a `[param].md` template generates in the search index */
+  /** Includes a `[param].md` template's pages, or the site's 404 page, in the search index */
   search?: boolean;
   /** Additional custom properties */
   [key: string]: unknown;
@@ -211,7 +211,7 @@ export interface SEOMetadata {
  * Controls how the page appears in the XML sitemap.
  */
 export interface SitemapMetadata {
-  /** Exclude this page from the sitemap */
+  /** Exclude this page from the sitemap; `false` keeps the 404 page or a noindex page in it */
   exclude?: boolean;
   /** Last modification date (ISO string or Date) */
   lastmod?: string | Date;

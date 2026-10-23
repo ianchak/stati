@@ -453,6 +453,33 @@ describe('RSS Feed Generation', () => {
       expect(results[0]!.xml).not.toContain('/blog/tags/tech');
       expect(results[0]!.xml).not.toContain('/blog/page/2');
     });
+
+    it('should leave out the 404 page but keep a page named 404 in a subfolder', () => {
+      baseConfig.rss = { enabled: true, feeds: [baseFeedConfig] };
+      const notFound = (url: string, sourcePath: string) =>
+        ({
+          slug: url,
+          url,
+          content: '<p>Not here</p>',
+          frontMatter: { title: 'Page not found' },
+          sourcePath,
+        }) as PageModel;
+
+      const results = generateRSSFeeds(
+        [
+          ...samplePages,
+          notFound('/404', 'site/404.md'),
+          notFound('/404/', 'site/404/index.md'),
+          notFound('/blog/404', 'site/blog/404.md'),
+        ],
+        baseConfig,
+      );
+
+      expect(results[0]!.itemCount).toBe(4);
+      expect(results[0]!.xml).not.toContain('https://example.com/404<');
+      expect(results[0]!.xml).not.toContain('https://example.com/404/<');
+      expect(results[0]!.xml).toContain('https://example.com/blog/404<');
+    });
   });
 
   describe('Edge Cases and Additional Coverage', () => {

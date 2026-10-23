@@ -540,6 +540,20 @@ describe('image pipeline in builds', () => {
       expect(ogImageOf(await read('dist/index.html'))).toBeDefined();
     });
 
+    it('skips the 404 page without an exclude pattern', async () => {
+      await write('site/404.md', '---\ntitle: Page not found\n---\nNot here.');
+      await write('site/blog/404.md', '---\ntitle: Blog errors\n---\nAbout 404s.');
+      await runBuild();
+
+      const notFound = await read('dist/404.html');
+      expect(notFound).not.toContain('og:image');
+      expect(notFound).not.toContain('twitter:image');
+      const calls = globalThis.__statiImagesCalls!.og.map((call) => call.filePath);
+      expect(calls.some((path) => /[\\/]og[\\/]404-/.test(path))).toBe(false);
+      // A page named 404 in a subfolder gets its card
+      expect(ogImageOf(await read('dist/blog/404.html'))).toMatch(/\/_img\/og\/blog-404-/);
+    });
+
     it('uses the nearest og.eta and keys the image by its rendered HTML', async () => {
       await write(
         'site/blog/og.eta',

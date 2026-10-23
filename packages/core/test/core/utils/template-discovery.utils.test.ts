@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   getFirstPaginationPage,
   isCollectionIndexPage,
+  isNotFoundPage,
   isVirtualPage,
 } from '../../../src/core/utils/template-discovery.utils.js';
 import type { PageModel } from '../../../src/types/index.js';
@@ -160,5 +161,20 @@ describe('isCollectionIndexPage', () => {
         }),
       ).toBe(false);
     });
+  });
+});
+
+describe('isNotFoundPage', () => {
+  it('matches the page written to 404.html or 404/index.html at the site root', () => {
+    // A permalink without the leading slash is written to the same file
+    for (const url of ['/404', '/404/', '/404/index', '404', '404/']) {
+      expect(isNotFoundPage(page(url)), url).toBe(true);
+    }
+  });
+
+  it('does not match other pages', () => {
+    for (const url of ['/', '/docs/404', '/docs/404/', '/4040', '/404-page', '/404.html']) {
+      expect(isNotFoundPage(page(url)), url).toBe(false);
+    }
   });
 });

@@ -122,9 +122,9 @@ export function generateSEOMetadata(ctx: SEOContext): string {
     meta.push(`<link rel="canonical" href="${escapeHtml(canonical)}">`);
   }
 
-  // Robots meta tag
+  // Robots meta tag, with the 404 page's default noindex
   if (shouldGenerate(SEOTagType.Robots)) {
-    const robotsContent = generateRobotsContent(seo);
+    const robotsContent = generateRobotsContent(resolveSEODefaults(page, config) || {});
     if (robotsContent) {
       meta.push(`<meta name="robots" content="${robotsContent}">`);
     }

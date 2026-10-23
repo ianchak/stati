@@ -3,7 +3,8 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { performance } from 'node:perf_hooks';
-import { inlineLocalImages } from '../../src/images/og.js';
+import { inlineLocalImages, isOgImageExcluded } from '../../src/images/og.js';
+import type { PageModel } from '../../src/types/index.js';
 
 describe('inlineLocalImages', () => {
   let root: string;
@@ -103,5 +104,33 @@ describe('inlineLocalImages', () => {
     const started = performance.now();
     await inlineLocalImages('<img '.repeat(50_000), dirs);
     expect(performance.now() - started).toBeLessThan(1000);
+  });
+});
+
+describe('isOgImageExcluded', () => {
+  const page = (url: string, frontMatter: PageModel['frontMatter'] = {}): PageModel => ({
+    slug: url,
+    url,
+    sourcePath: `site${url}.md`,
+    frontMatter,
+    content: '',
+  });
+
+  it('excludes the 404 page without an exclude pattern', () => {
+    expect(isOgImageExcluded(page('/404'), [])).toBe(true);
+    expect(isOgImageExcluded(page('/404/'), [])).toBe(true);
+  });
+
+  it('keeps other pages, including a page named 404 in a subfolder', () => {
+    expect(isOgImageExcluded(page('/about'), [])).toBe(false);
+    expect(isOgImageExcluded(page('/docs/404'), [])).toBe(false);
+  });
+
+  it('excludes pages with their own image or matching a pattern', () => {
+    expect(isOgImageExcluded(page('/a', { seo: { openGraph: { image: '/a.png' } } }), [])).toBe(
+      true,
+    );
+    expect(isOgImageExcluded(page('/a', { seo: { openGraph: { image: false } } }), [])).toBe(true);
+    expect(isOgImageExcluded(page('/drafts/a'), ['/drafts/**'])).toBe(true);
   });
 });

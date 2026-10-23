@@ -9,7 +9,7 @@ import type { RSSFeedConfig, RSSGenerationResult } from '../types/rss.js';
 import type { Logger } from '../types/logging.js';
 import { escapeHtml } from '../seo/utils/index.js';
 import { filterByPatterns } from './utils/index.js';
-import { getFrontMatterDate, isVirtualPage } from '../core/utils/index.js';
+import { getFrontMatterDate, isNotFoundPage, isVirtualPage } from '../core/utils/index.js';
 
 /**
  * Formats a date for RSS pubDate field (RFC 822)
@@ -58,8 +58,8 @@ function filterPages(pages: PageModel[], feedConfig: RSSFeedConfig): PageModel[]
   }
 
   // Generated and pagination pages share their template's source path, so patterns can't
-  // tell them apart from content; feeds list content only
-  const contentPages = pages.filter((page) => !isVirtualPage(page));
+  // tell them apart from content; feeds list content only, and never the 404 page
+  const contentPages = pages.filter((page) => !isVirtualPage(page) && !isNotFoundPage(page));
   let filtered = filterByPatterns(contentPages, (page) => page.sourcePath, options);
 
   // Apply custom filter function if provided
