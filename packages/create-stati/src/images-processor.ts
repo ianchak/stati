@@ -35,9 +35,6 @@ export const TEMPLATE_OG_ASSETS: Record<TemplateName, { paths: string[]; fonts: 
   },
 };
 
-/** Templates whose sites have a 404 page, which gets no card. */
-const TEMPLATES_WITH_404: readonly TemplateName[] = ['blog', 'docs'];
-
 /**
  * Builds the `images` block for a template's config, indented for `defineConfig({ ... })`.
  *
@@ -55,9 +52,6 @@ export function imagesConfigBlock(template: TemplateName): string {
       );
     }
     ogLines.push('      ],');
-  }
-  if (TEMPLATES_WITH_404.includes(template)) {
-    ogLines.push("      exclude: ['/404'],");
   }
 
   const og = ogLines.length > 0 ? ['    og: {', ...ogLines, '    },'] : ['    og: true,'];

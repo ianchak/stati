@@ -65,7 +65,6 @@ export default defineConfig({
     enabled: true,
     defaultChangeFreq: 'monthly',
     defaultPriority: 0.5,
-    excludePatterns: ['/404'],
     priorityRules: [
       { pattern: '/', priority: 1.0 },
       { pattern: '/posts/**', priority: 0.8 },

@@ -47,7 +47,6 @@ export default defineConfig({
   // injected meta tag and loads on first use.
   search: {
     enabled: true,
-    exclude: ['/404'],
   },
 
   seo: {
@@ -58,7 +57,6 @@ export default defineConfig({
     enabled: true,
     defaultChangeFreq: 'weekly',
     defaultPriority: 0.7,
-    excludePatterns: ['/404'],
     priorityRules: [
       { pattern: '/', priority: 1.0 },
       { pattern: '/getting-started/**', priority: 0.9 },

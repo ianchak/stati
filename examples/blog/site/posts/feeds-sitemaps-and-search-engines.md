@@ -27,7 +27,7 @@ The `rss` block in the config controls it. To publish a second feed, for one tag
 
 ## The sitemap and robots.txt
 
-`/sitemap.xml` lists every public page for search engines, with posts ranked above other pages. The 404 page is left out. `/robots.txt` allows every crawler and points them at the sitemap.
+`/sitemap.xml` lists every public page for search engines, with posts ranked above other pages. Stati leaves the 404 page out, and marks it `noindex` so search engines skip it if they find it. `/robots.txt` allows every crawler and points them at the sitemap.
 
 ## Link previews
 
