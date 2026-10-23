@@ -207,6 +207,25 @@ site/
 │   └── post.md         → /blog/post (uses blog layout)
 ```
 
+### The 404 page
+
+`site/404.md` is the page for addresses that don't exist. It builds to `dist/404.html`, which most static hosts serve for a missing address, and `stati dev` and `stati preview` serve it the same way. With `permalink: /404/` it builds to `dist/404/index.html` and works the same.
+
+The page is only there for readers who followed a broken link, so Stati keeps it out of the places that list your pages:
+
+| Output                                              | The 404 page | To change it, in its front matter                                       |
+| --------------------------------------------------- | ------------ | ----------------------------------------------------------------------- |
+| [Sitemap](/configuration/seo#sitemap-configuration) | Left out     | `sitemap: { exclude: false }`, with `seo.noindex: false`                |
+| [Search index](/configuration/search)               | Left out     | `search: true`                                                          |
+| [RSS feeds](/configuration/rss)                     | Left out     | Not possible                                                            |
+| [Navigation tree](/api/navigation)                  | Left out     | `nav: true`                                                             |
+| [Generated Open Graph image](/configuration/images) | None         | Set your own `seo.openGraph.image`                                      |
+| Robots meta tag                                     | `noindex`    | `seo.noindex: false`, or a `seo.robots` value with `index` or `noindex` |
+
+The `noindex` matters because a host sends the 404 status only for missing addresses. Requested by its own address, `/404` or `/404.html`, the page is an ordinary file that most hosts send with a 200, and a search engine could list it. Don't add `Disallow: /404` to `robots.txt` for the same reason: a crawler that may not fetch the page never sees its `noindex`.
+
+Only the page at the site root counts: `site/docs/404.md` is an ordinary page at `/docs/404`. Collections don't change, so the 404 page is still one of the top-level pages in the root collection. Settings that sites used to keep it out, such as `excludePatterns: ['/404']` or `seo.noindex: true` in its front matter, keep working but are no longer needed.
+
 ## Dynamic content organization
 
 ### Date-based organization

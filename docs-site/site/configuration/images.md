@@ -149,12 +149,12 @@ seo:
     image: false # no image, not even a generated one
 ```
 
-To skip whole sections, use `exclude`:
+[The 404 page](/core-concepts/routing#the-404-page) gets no card either. To skip whole sections, use `exclude`:
 
 ```typescript
 images: {
   og: {
-    exclude: ['/404', '/drafts/**'],
+    exclude: ['/drafts/**'],
   },
 },
 ```
