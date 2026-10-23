@@ -31,7 +31,7 @@ The `rss` block in the config controls it. To publish a second feed, for one tag
 
 ## Link previews
 
-Each page gets a description, a canonical link, Open Graph and Twitter tags, so a shared link shows a title, a summary and, when the page has one, an image. They come from front matter you already write, `title` and `description`, and from the author in `stati.config.js`.
+Each page gets a description, a canonical link, Open Graph and Twitter tags, so a shared link shows a title, a summary and, when the page has one, an image. They come from front matter you already write, `title` and `description`, and from the author in `stati.config.js`. Posts are shared as articles, with their publish date, `updated` date and tags; `seo.articles` in `stati.config.js` decides which pages are posts. Add your handle as the author's `twitter` there to have it shown as the post's creator.
 
 ---
 
