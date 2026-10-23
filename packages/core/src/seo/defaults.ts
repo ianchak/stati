@@ -258,11 +258,90 @@ export function applySEODefaults(pages: PageModel[], config: StatiConfig, logger
   }
 
   for (const page of pages) {
-    const seo = resolveSEODefaults(page, config);
-    if (seo !== undefined && seo !== page.frontMatter.seo) {
-      page.frontMatter.seo = seo;
+    fillDefaults(page, config);
+  }
+}
+
+/**
+ * Fills the defaults in again after the `beforeRender` hook, which can change what they come
+ * from, such as the page's author, tags or URL. Values the hook set or changed are kept; values
+ * Stati filled in and the hook left as they were are worked out again from the page as it is now.
+ *
+ * @param page - The page about to render
+ * @param config - Site configuration
+ */
+export function refreshSEODefaults(page: PageModel, config: StatiConfig): void {
+  let seo: unknown = page.frontMatter.seo;
+  for (const { path, value } of filledValues.get(page) ?? []) {
+    if (valueAt(seo, path) === value) {
+      // The value is there, so every object on its path is too
+      seo = withoutValue(seo as Record<string, unknown>, path);
     }
   }
+  if (seo !== page.frontMatter.seo) {
+    page.frontMatter.seo = seo as SEOMetadata;
+  }
+  fillDefaults(page, config);
+}
+
+/** Where in `seo` Stati fills in values */
+const DEFAULT_PATHS: ReadonlyArray<readonly string[]> = [
+  ['openGraph', 'locale'],
+  ['openGraph', 'type'],
+  ['openGraph', 'article', 'publishedTime'],
+  ['openGraph', 'article', 'modifiedTime'],
+  ['openGraph', 'article', 'tags'],
+  ['openGraph', 'article', 'author'],
+  ['twitter', 'site'],
+  ['twitter', 'creator'],
+];
+
+/** The values Stati filled into each page's front matter, for {@link refreshSEODefaults} */
+const filledValues = new WeakMap<PageModel, Array<{ path: readonly string[]; value: unknown }>>();
+
+/** Writes the resolved defaults into the page's front matter and records what they added. */
+function fillDefaults(page: PageModel, config: StatiConfig): void {
+  const own = page.frontMatter.seo;
+  const seo = resolveSEODefaults(page, config);
+  if (seo === undefined || seo === own) {
+    filledValues.delete(page);
+    return;
+  }
+  page.frontMatter.seo = seo;
+  filledValues.set(
+    page,
+    DEFAULT_PATHS.filter(
+      (path) => isMissing(valueAt(own, path)) && !isMissing(valueAt(seo, path)),
+    ).map((path) => ({ path, value: valueAt(seo, path) })),
+  );
+}
+
+function valueAt(target: unknown, path: readonly string[]): unknown {
+  let value = target;
+  for (const key of path) {
+    if (!isPlainObject(value)) return undefined;
+    value = value[key];
+  }
+  return value;
+}
+
+/**
+ * Copies `target` without the value at `path`, which must exist, copying only the objects on
+ * the way to it. An object the removal leaves empty is removed too.
+ */
+function withoutValue(
+  target: Record<string, unknown>,
+  path: readonly string[],
+): Record<string, unknown> {
+  const [key = '', ...rest] = path;
+  const child = target[key];
+  if (rest.length > 0 && isPlainObject(child)) {
+    const stripped = withoutValue(child, rest);
+    if (Object.keys(stripped).length > 0) {
+      return { ...target, [key]: stripped };
+    }
+  }
+  return Object.fromEntries(Object.entries(target).filter(([name]) => name !== key));
 }
 
 function describe(value: unknown): string {

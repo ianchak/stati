@@ -17,6 +17,7 @@ export {
 // Site-wide defaults: og:locale, Twitter handles and article metadata
 export {
   applySEODefaults,
+  refreshSEODefaults,
   resolveSEODefaults,
   isArticlePage,
   toOpenGraphLocale,

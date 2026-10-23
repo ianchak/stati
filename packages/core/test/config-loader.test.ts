@@ -326,6 +326,24 @@ describe('config loader', () => {
       expect((error as Error).message).toContain('seo.articles.include must be an array');
     });
 
+    it('should treat SEO options that throw while they are checked like a config that fails to load', async () => {
+      writeFileSync(
+        join(testDir, 'stati.config.mjs'),
+        `export default { seo: { get articles() { throw new TypeError('articles are broken'); } } };`,
+        'utf-8',
+      );
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const config = await loadConfig(testDir);
+
+      expect(config.seo).toBeUndefined();
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Error loading config from'),
+        expect.objectContaining({ message: 'articles are broken' }),
+      );
+      consoleErrorSpy.mockRestore();
+    });
+
     it('should handle named exports in addition to default export', async () => {
       // Arrange
       const configPath = join(testDir, 'stati.config.mjs');

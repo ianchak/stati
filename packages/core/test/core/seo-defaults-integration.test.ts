@@ -147,6 +147,33 @@ describe('site-wide SEO defaults', () => {
     expect(meta(await site.read('dist/about.html'), 'twitter:creator')).toEqual(['@hook']);
   });
 
+  it('fills in values from what a beforeRender hook changes', async () => {
+    vi.mocked(loadConfig).mockResolvedValue({
+      ...config(),
+      hooks: {
+        beforeRender: ({ page: entry }) => {
+          if (entry.url === '/blog/first') {
+            entry.frontMatter.seo = {
+              ...entry.frontMatter.seo,
+              author: { name: 'Guest', url: 'https://guest.dev', twitter: '@guest' },
+            };
+          }
+        },
+      },
+    });
+    await site.build();
+
+    const first = await site.read('dist/blog/first.html');
+    expect(meta(first, 'twitter:creator')).toEqual(['@guest']);
+    expect(meta(first, 'article:author')).toEqual(['https://guest.dev']);
+    expect(meta(first, 'article:tag')).toEqual(['CSS', 'HTML']);
+    expect(meta(await site.read('dist/about.html'), 'twitter:creator')).toEqual(['@ada']);
+
+    // A hook that leaves SEO alone does not stop pages from being cached
+    const { rendered } = await site.build();
+    expect(sorted(rendered)).toEqual(['/blog/first']);
+  });
+
   it('prints no twitter:creator without a handle', async () => {
     vi.mocked(loadConfig).mockResolvedValue(
       config({ defaultAuthor: { name: 'Ada', url: 'https://example.com/about' } }),

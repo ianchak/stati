@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import {
   applySEODefaults,
   isArticlePage,
+  refreshSEODefaults,
   resolveSEODefaults,
   toOpenGraphLocale,
   toTwitterHandle,
@@ -248,6 +249,91 @@ describe('resolveSEODefaults', () => {
     const page = createPage({ frontMatter: { seo: 'oops' as never } });
     expect(resolveSEODefaults(page, ARTICLE_CONFIG)).toBe('oops');
   });
+
+  it('leaves openGraph, article and twitter values that are not objects as they are', () => {
+    const seo = { openGraph: 'og', twitter: 'tw' } as unknown as SEOMetadata;
+    const page = createPage({ ...POST, frontMatter: { ...POST.frontMatter, seo } });
+    expect(resolveSEODefaults(page, ARTICLE_CONFIG)).toBe(seo);
+
+    const article = { openGraph: { article: 'a' } } as unknown as SEOMetadata;
+    const withArticle = createPage({ ...POST, frontMatter: { ...POST.frontMatter, seo: article } });
+    expect(resolveSEODefaults(withArticle, ARTICLE_CONFIG)?.openGraph).toEqual({
+      article: 'a',
+      type: 'article',
+    });
+  });
+});
+
+describe('refreshSEODefaults', () => {
+  const config = createConfig(
+    { ...ARTICLE_CONFIG.seo, twitter: { site: '@example' } },
+    {
+      defaultLocale: 'en-US',
+    },
+  );
+  const applied = () => {
+    const page = createPage({ ...POST, frontMatter: { ...POST.frontMatter } });
+    applySEODefaults([page], config, createLogger());
+    return page;
+  };
+
+  it('fills in values from what a beforeRender hook changed', () => {
+    const page = applied();
+    page.frontMatter.seo!.author = { name: 'Guest', url: 'https://guest.dev', twitter: '@guest' };
+    page.frontMatter.tags = ['guest'];
+
+    refreshSEODefaults(page, config);
+
+    expect(page.frontMatter.seo?.twitter).toEqual({ site: '@example', creator: '@guest' });
+    expect(page.frontMatter.seo?.openGraph?.article).toEqual({
+      publishedTime: '2026-01-01T00:00:00.000Z',
+      modifiedTime: '2026-02-01T00:00:00.000Z',
+      tags: ['guest'],
+      author: 'https://guest.dev',
+    });
+  });
+
+  it('keeps values a beforeRender hook set', () => {
+    const page = applied();
+    page.frontMatter.seo!.twitter!.creator = '@hook';
+    page.frontMatter.seo!.openGraph!.type = 'website';
+    page.frontMatter.seo!.author = 'Guest';
+
+    refreshSEODefaults(page, config);
+
+    expect(page.frontMatter.seo?.twitter?.creator).toBe('@hook');
+    expect(page.frontMatter.seo?.openGraph?.type).toBe('website');
+  });
+
+  it('removes values whose source a beforeRender hook removed', () => {
+    const page = applied();
+    page.frontMatter.seo!.author = 'Guest';
+    page.url = '/about';
+
+    refreshSEODefaults(page, config);
+
+    expect(page.frontMatter.seo?.twitter).toEqual({ site: '@example' });
+    expect(page.frontMatter.seo?.openGraph).toEqual({ locale: 'en_US' });
+  });
+
+  it('gives the same values when a beforeRender hook changed nothing', () => {
+    const page = applied();
+    const before: unknown = JSON.parse(JSON.stringify(page.frontMatter.seo));
+
+    refreshSEODefaults(page, config);
+
+    expect(page.frontMatter.seo).toEqual(before);
+  });
+
+  it('fills in defaults on a page that had none before the hook', () => {
+    const page = createPage({ url: '/about', frontMatter: {} });
+    applySEODefaults([page], createConfig(), createLogger());
+    page.frontMatter.seo = { author: { name: 'Guest', twitter: 'guest' } };
+
+    refreshSEODefaults(page, createConfig());
+
+    expect(page.frontMatter.seo?.twitter?.creator).toBe('@guest');
+  });
 });
 
 describe('applySEODefaults', () => {
@@ -317,5 +403,9 @@ describe('validateSEOConfig', () => {
   ])('rejects %s', (_, seo, message) => {
     expect(() => validateSEOConfig(seo)).toThrow(ConfigValidationError);
     expect(() => validateSEOConfig(seo)).toThrow(message);
+  });
+
+  it('describes a value JSON cannot represent', () => {
+    expect(() => validateSEOConfig({ twitter: { site: 10n } })).toThrow('(got 10)');
   });
 });

@@ -60,6 +60,7 @@ import {
   generateRobotsTxtFromConfig,
   autoInjectSEO,
   applySEODefaults,
+  refreshSEODefaults,
   type AutoInjectOptions,
 } from '../seo/index.js';
 import { generateRSSFeeds, validateRSSConfig } from '../rss/index.js';
@@ -711,6 +712,8 @@ async function processPagesWithCache(
     if (config.hooks?.beforeRender) {
       const hookStart = performance.now();
       await config.hooks.beforeRender({ page, config });
+      // The hook can change what the SEO defaults come from, such as the page's author
+      refreshSEODefaults(page, config);
       recorder.addToPhase('hookBeforeRenderTotalMs', performance.now() - hookStart);
     }
 
