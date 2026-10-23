@@ -40,7 +40,9 @@ Site-wide defaults (core 2.1+), each used only where front matter leaves the val
   match. No `seo.articles` means no derived article tags.
 - Stati writes these into `page.frontMatter.seo` after `beforeAll` (hook values
   win), so templates see them in `stati.page.seo` and changing a default rebuilds
-  the cached pages it changes. Prefer them over a `beforeAll` hook or layout tags:
+  the cached pages it changes. After `beforeRender` it works out again the values
+  it filled in and the hook left alone, so a hook that sets `seo.author` or `tags`
+  gets matching tags; values the hook sets are kept. Prefer them over a `beforeAll` hook or layout tags:
   one `og:`/`twitter:` tag in the layout turns off that whole generated group.
 - Config load rejects a non-array `seo.articles.include`/`exclude`, unknown keys in
   `seo.articles` or `seo.twitter`, and non-string handles.
