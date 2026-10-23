@@ -193,8 +193,9 @@ A folder with an `index.md` is a collection: templates read its pages as `stati.
 SEO optimization works automatically with zero configuration:
 
 - Meta tags (title, description, keywords from front matter)
-- Open Graph for social sharing
-- Twitter Cards
+- Open Graph for social sharing, with `og:locale` from `site.defaultLocale`
+- Twitter Cards, with `twitter:site` and `twitter:creator` from handles in the config
+- Article tags (`og:type`, publish date, tags) on the pages `seo.articles` matches
 - Structured data (JSON-LD) from `seo.structuredData` in front matter
 
 Enable sitemap and robots.txt with one config option.
@@ -280,8 +281,11 @@ export default defineConfig({
     defaultAuthor: {
       name: 'John Doe',
       email: 'john@example.com',
-      url: 'https://johndoe.com',
+      url: 'https://johndoe.com', // article:author on article pages
+      twitter: '@johndoe',        // twitter:creator
     },
+    twitter: { site: '@example' },          // twitter:site
+    articles: { include: ['/blog/*'] },     // og:type article + article:* tags
     debug: false,             // Enable SEO debug logging
   },
 

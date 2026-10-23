@@ -7,21 +7,50 @@ warnings after a production build.
 ## SEO
 
 SEO auto-injection defaults on (`seo.autoInject !== false`).
-Config fields: `defaultAuthor`, `autoInject`, `debug`.
-`defaultAuthor` is an object with required `name`, optional `email`, `url`.
+Config fields: `defaultAuthor`, `twitter`, `articles`, `autoInject`, `debug`.
+`defaultAuthor` is an object with required `name`, optional `email`, `url`,
+`twitter` (core 2.1+).
 
 ```ts
 seo: {
   autoInject: true,
   debug: true,
-  defaultAuthor: { name: 'Example author', url: 'https://example.com/about' },
+  defaultAuthor: { name: 'Example author', url: 'https://example.com/about', twitter: '@example' },
+  twitter: { site: '@example' },
+  articles: { include: ['/blog/*'] },
 }
 ```
+
+Site-wide defaults (core 2.1+), each used only where front matter leaves the value out:
+
+- `og:locale`: `site.defaultLocale` converted to Open Graph form (`en-US` ->
+  `en_US`, `zh-Hant-TW` -> `zh_TW`). A tag without a two-letter region (`en`,
+  `es-419`) prints no `og:locale`; `seo.debug` warns. Before 2.1, Stati printed
+  `defaultLocale` as written, an invalid `en-US`.
+- `twitter:site`: `seo.twitter.site`. `twitter:creator`: the `twitter` handle of
+  the page's own `seo.author`, then of `seo.defaultAuthor`. A page naming its own
+  author never gets the default's handle or URL. Handles print with one `@`.
+  Without a handle there is no `twitter:creator`; before 2.1 Stati printed the
+  author's name there.
+- `seo.articles` (`include` required, `exclude` wins; whole-URL globs as in
+  bundles): matching pages print `og:type` `article`, `article:published_time`
+  (`page.publishedAt`, ISO), `article:modified_time` (front matter `updated`),
+  one `article:tag` per tag and `article:author` (the author's `url`), filled
+  field by field. Generated pages and every page of a paginated listing never
+  match. No `seo.articles` means no derived article tags.
+- Stati writes these into `page.frontMatter.seo` after `beforeAll` (hook values
+  win), so templates see them in `stati.page.seo` and changing a default rebuilds
+  the cached pages it changes. After `beforeRender` it works out again the values
+  it filled in and the hook left alone, so a hook that sets `seo.author` or `tags`
+  gets matching tags; values the hook sets are kept. Prefer them over a `beforeAll` hook or layout tags:
+  one `og:`/`twitter:` tag in the layout turns off that whole generated group.
+- Config load rejects a non-array `seo.articles.include`/`exclude`, unknown keys in
+  `seo.articles` or `seo.twitter`, and non-string handles.
 
 Frontmatter `seo` supports:
 
 - `title`, `description`, `keywords: string[]`, `canonical`.
-- `author`: string or `{ name, email?, url? }`.
+- `author`: string or `{ name, email?, url?, twitter? }`.
 - `robots`: string or object with `index`, `follow`, `archive`, `snippet`,
   `imageindex`, `translate`, `maxSnippet`, `maxImagePreview`, `maxVideoPreview`.
 - `noindex`.
@@ -36,7 +65,8 @@ Frontmatter `seo` supports:
 
 Fallbacks: SEO title -> frontmatter title -> site title; SEO description ->
 frontmatter description -> site description; keywords -> tags; canonical ->
-absolute page URL. Open Graph defaults to website type. Relative OG images are
+absolute page URL. Open Graph defaults to website type (article on pages
+`seo.articles` matches). Relative OG images are
 made absolute using the site base URL. `twitter:card` defaults to
 `summary_large_image`.
 

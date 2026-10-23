@@ -547,8 +547,11 @@ export default defineConfig({
     defaultAuthor: {
       name: 'Your Name',
       email: 'you@example.com',
-      url: 'https://yoursite.com'
-    }
+      url: 'https://yoursite.com',
+      twitter: '@yourname'
+    },
+    twitter: { site: '@mysite' },
+    articles: { include: ['/blog/*'] }
   },
 
   sitemap: {
@@ -569,30 +572,30 @@ export default defineConfig({
 });
 ```
 
-Add SEO metadata in front matter:
+Every page now gets `og:locale` `en_US`, `twitter:site` `@mysite` and `twitter:creator` `@yourname`. Posts under `/blog/` also get `og:type` `article`, `article:published_time` from their publish date, `article:modified_time` from `updated`, one `article:tag` per tag and `article:author`.
+
+Add SEO metadata in front matter. Each value set here wins over the config:
 
 ```markdown
 ---
 title: My Blog Post
 description: A comprehensive guide to...
+publishedAt: 2024-01-15
+tags: [tech, web-dev]
 seo:
   title: Custom SEO Title | My Site
   description: Custom meta description
   keywords: [stati, ssg, jamstack]
-  author: John Doe
   openGraph:
-    type: article
     image: /images/og-image.jpg
     article:
-      publishedTime: '2024-01-15'
-      tags: [tech, web-dev]
+      section: Guides
   twitter:
     card: summary_large_image
-    site: '@mysite'
 ---
 ```
 
-Quote dates inside `seo` (`'2024-01-15'`): an unquoted YAML date becomes a `Date` object, which breaks the Open Graph tag generator.
+Quote dates inside `seo` (`'2024-01-15'`): an unquoted YAML date becomes a `Date` object, which breaks the Open Graph tag generator. Dates Stati fills in itself, such as the publish date, are always printed in ISO 8601 form.
 
 ### Custom structured data
 

@@ -16,6 +16,7 @@ import {
   resolveAbsoluteUrl,
 } from './utils/index.js';
 import { sanitizeStructuredData } from './utils/escape-and-validation.utils.js';
+import { resolveSEODefaults } from './defaults.js';
 
 /**
  * Generate complete SEO metadata for a page.
@@ -172,7 +173,7 @@ export function generateSEOMetadata(ctx: SEOContext): string {
  */
 export function generateOpenGraphTags(ctx: SEOContext): string[] {
   const { page, config, siteUrl } = ctx;
-  const seo = page.frontMatter.seo || {};
+  const seo = resolveSEODefaults(page, config) || {};
   const og = seo.openGraph || {};
   const tags: string[] = [];
 
@@ -216,12 +217,9 @@ export function generateOpenGraphTags(ctx: SEOContext): string[] {
     }
   }
 
-  // OG Locale
-  if (og.locale || config.site.defaultLocale) {
-    const locale = og.locale || config.site.defaultLocale;
-    if (locale) {
-      tags.push(`<meta property="og:locale" content="${escapeHtml(locale)}">`);
-    }
+  // OG Locale: front matter as written, otherwise site.defaultLocale in Open Graph form
+  if (og.locale) {
+    tags.push(`<meta property="og:locale" content="${escapeHtml(og.locale)}">`);
   }
 
   // OG Article metadata (only for article type)
@@ -268,7 +266,7 @@ export function generateOpenGraphTags(ctx: SEOContext): string[] {
  */
 export function generateTwitterCardTags(ctx: SEOContext): string[] {
   const { page, config, siteUrl } = ctx;
-  const seo = page.frontMatter.seo || {};
+  const seo = resolveSEODefaults(page, config) || {};
   const twitter = seo.twitter || {};
   const tags: string[] = [];
 
@@ -276,21 +274,14 @@ export function generateTwitterCardTags(ctx: SEOContext): string[] {
   const card = twitter.card || 'summary_large_image';
   tags.push(`<meta name="twitter:card" content="${card}">`);
 
-  // Twitter site (optional)
+  // Twitter site: front matter, then seo.twitter.site
   if (twitter.site) {
     tags.push(`<meta name="twitter:site" content="${escapeHtml(twitter.site)}">`);
   }
 
-  // Twitter creator with fallback chain
+  // Twitter creator: front matter, then the author's handle; never the author's name
   if (twitter.creator) {
     tags.push(`<meta name="twitter:creator" content="${escapeHtml(twitter.creator)}">`);
-  } else if (seo.author) {
-    const authorName = typeof seo.author === 'string' ? seo.author : seo.author.name;
-    tags.push(`<meta name="twitter:creator" content="${escapeHtml(authorName)}">`);
-  } else if (config.seo?.defaultAuthor) {
-    tags.push(
-      `<meta name="twitter:creator" content="${escapeHtml(config.seo.defaultAuthor.name)}">`,
-    );
   }
 
   // Title and description with fallback chains

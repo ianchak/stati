@@ -334,8 +334,10 @@ export interface AuthorConfig {
   name: string;
   /** Author's email address */
   email?: string;
-  /** Author's website or profile URL */
+  /** Author's website or profile URL, printed as `article:author` on article pages */
   url?: string;
+  /** Author's Twitter/X handle, with or without `@`, printed as `twitter:creator` */
+  twitter?: string;
 }
 
 /**

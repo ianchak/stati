@@ -313,6 +313,37 @@ describe('config loader', () => {
       await expect(loadConfig(testDir)).rejects.toThrow(/Invalid ISG configuration/);
     });
 
+    it('should validate the SEO defaults and throw on invalid config', async () => {
+      writeFileSync(
+        join(testDir, 'stati.config.mjs'),
+        `export default { seo: { articles: { include: '/blog/*' } } };`,
+        'utf-8',
+      );
+
+      const error = await loadConfig(testDir).catch((caught: unknown) => caught);
+      expect(error).toBeInstanceOf(ConfigValidationError);
+      expect((error as Error).message).toContain('Invalid seo configuration in');
+      expect((error as Error).message).toContain('seo.articles.include must be an array');
+    });
+
+    it('should treat SEO options that throw while they are checked like a config that fails to load', async () => {
+      writeFileSync(
+        join(testDir, 'stati.config.mjs'),
+        `export default { seo: { get articles() { throw new TypeError('articles are broken'); } } };`,
+        'utf-8',
+      );
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const config = await loadConfig(testDir);
+
+      expect(config.seo).toBeUndefined();
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Error loading config from'),
+        expect.objectContaining({ message: 'articles are broken' }),
+      );
+      consoleErrorSpy.mockRestore();
+    });
+
     it('should handle named exports in addition to default export', async () => {
       // Arrange
       const configPath = join(testDir, 'stati.config.mjs');

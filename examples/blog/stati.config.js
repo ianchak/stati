@@ -12,6 +12,8 @@ const site = {
     name: 'Your Name',
     url: 'https://example.com/about',
     bio: 'Writes about whatever this blog turns out to be about. Edit this bio in stati.config.js.',
+    // Your X/Twitter handle, for twitter:creator in link previews
+    // twitter: '@yourname',
   },
   // Links in the header, in order. The RSS link is added automatically.
   nav: [
@@ -33,7 +35,9 @@ export default defineConfig({
 
   seo: {
     autoInject: true,
-    defaultAuthor: { name: site.author.name, url: site.author.url },
+    defaultAuthor: { name: site.author.name, url: site.author.url, twitter: site.author.twitter },
+    // Posts are shared as articles, with their date and tags; the archive page is not a post
+    articles: { include: ['/posts/*'] },
   },
 
   rss: {

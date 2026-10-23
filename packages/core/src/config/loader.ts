@@ -4,6 +4,7 @@ import { pathToFileURL } from 'node:url';
 import type { StatiConfig } from '../types/index.js';
 import { validateISGConfig, ISGConfigurationError } from '../core/isg/validation.js';
 import { validateImagesConfig } from '../images/config.js';
+import { validateSEOConfig } from '../seo/defaults.js';
 import { ConfigValidationError } from './errors.js';
 import {
   compileStatiConfig,
@@ -256,6 +257,19 @@ export async function loadConfig(cwd: string = process.cwd()): Promise<StatiConf
       if (error instanceof ConfigValidationError) {
         throw new ConfigValidationError(
           `Invalid images configuration in ${configPath}:\n${error.message}`,
+          { cause: error },
+        );
+      }
+      throw error;
+    }
+
+    // Validate the SEO defaults
+    try {
+      validateSEOConfig(mergedConfig.seo);
+    } catch (error) {
+      if (error instanceof ConfigValidationError) {
+        throw new ConfigValidationError(
+          `Invalid seo configuration in ${configPath}:\n${error.message}`,
           { cause: error },
         );
       }

@@ -14,6 +14,17 @@ export {
   resolveGeneratedImagePlaceholders,
 } from './generator.js';
 
+// Site-wide defaults: og:locale, Twitter handles and article metadata
+export {
+  applySEODefaults,
+  refreshSEODefaults,
+  resolveSEODefaults,
+  isArticlePage,
+  toOpenGraphLocale,
+  toTwitterHandle,
+  validateSEOConfig,
+} from './defaults.js';
+
 // Sitemap generation
 export {
   generateSitemap,
