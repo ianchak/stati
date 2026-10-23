@@ -16,6 +16,8 @@ export type {
   BuildHooks,
   BuildStats,
   SEOConfig,
+  SEOTwitterConfig,
+  SEOArticlesConfig,
   RobotsTxtConfig,
   TypeScriptConfig,
   BundleConfig,

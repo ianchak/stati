@@ -50,6 +50,8 @@ export type {
 export type {
   SEOMetadata,
   SEOConfig,
+  SEOTwitterConfig,
+  SEOArticlesConfig,
   SEOContext,
   SEOValidationResult,
   SEOTagType,

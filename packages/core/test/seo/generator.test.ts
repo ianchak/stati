@@ -777,6 +777,80 @@ describe('SEO Generator - generateOpenGraphTags', () => {
     expect(tags.join('\n')).toContain('og:locale" content="fr_FR"');
   });
 
+  it.each([
+    ['en-US', 'en_US'],
+    ['pt-br', 'pt_BR'],
+    ['zh-Hant-TW', 'zh_TW'],
+  ])('should print default locale %s in Open Graph form', (defaultLocale, expected) => {
+    const config = createMockConfig({
+      site: { title: 'Test Site', baseUrl: 'https://example.com', defaultLocale },
+    });
+    const tags = generateOpenGraphTags({
+      logger: createMockLogger(),
+      page: createMockPage(),
+      config,
+      siteUrl: 'https://example.com',
+    });
+    expect(tags.join('\n')).toContain(`og:locale" content="${expected}"`);
+  });
+
+  it('should leave og:locale out for a default locale without a region', () => {
+    const config = createMockConfig({
+      site: { title: 'Test Site', baseUrl: 'https://example.com', defaultLocale: 'en' },
+    });
+    const tags = generateOpenGraphTags({
+      logger: createMockLogger(),
+      page: createMockPage(),
+      config,
+      siteUrl: 'https://example.com',
+    });
+    expect(tags.join('\n')).not.toContain('og:locale');
+  });
+
+  it('should print a front matter locale as written', () => {
+    const config = createMockConfig({
+      site: { title: 'Test Site', baseUrl: 'https://example.com', defaultLocale: 'en-US' },
+    });
+    const tags = generateOpenGraphTags({
+      logger: createMockLogger(),
+      page: createMockPage({ frontMatter: { seo: { openGraph: { locale: 'de-DE' } } } }),
+      config,
+      siteUrl: 'https://example.com',
+    });
+    expect(tags.join('\n')).toContain('og:locale" content="de-DE"');
+  });
+
+  it('should print article metadata on pages seo.articles matches', () => {
+    const config = createMockConfig({
+      seo: {
+        defaultAuthor: { name: 'Ada', url: 'https://example.com/about' },
+        articles: { include: ['/blog/*'] },
+      },
+    });
+    const tagsOf = (url: string) =>
+      generateOpenGraphTags({
+        logger: createMockLogger(),
+        page: createMockPage({
+          url,
+          publishedAt: new Date('2025-01-01T00:00:00Z'),
+          frontMatter: { title: 'Post', tags: ['css', 'html'], updated: '2025-02-01' },
+        }),
+        config,
+        siteUrl: 'https://example.com',
+      }).join('\n');
+
+    const post = tagsOf('/blog/post');
+    expect(post).toContain('og:type" content="article"');
+    expect(post).toContain('article:published_time" content="2025-01-01T00:00:00.000Z"');
+    expect(post).toContain('article:modified_time" content="2025-02-01T00:00:00.000Z"');
+    expect(post).toContain('article:author" content="https://example.com/about"');
+    expect(post.match(/article:tag/g)).toHaveLength(2);
+
+    const index = tagsOf('/blog');
+    expect(index).toContain('og:type" content="website"');
+    expect(index).not.toContain('article:');
+  });
+
   it('should generate article metadata when type is article', () => {
     const page = createMockPage({
       frontMatter: {
@@ -961,7 +1035,7 @@ describe('SEO Generator - generateTwitterCardTags', () => {
     expect(tags.join('\n')).toContain('twitter:creator" content="@johndoe"');
   });
 
-  it('should fallback to SEO author for creator', () => {
+  it("should not print an author's name as creator", () => {
     const page = createMockPage({
       frontMatter: {
         seo: {
@@ -969,7 +1043,9 @@ describe('SEO Generator - generateTwitterCardTags', () => {
         },
       },
     });
-    const config = createMockConfig();
+    const config = createMockConfig({
+      seo: { defaultAuthor: { name: 'Site Author' } },
+    });
     const ctx: SEOContext = {
       logger: createMockLogger(),
       page,
@@ -978,15 +1054,16 @@ describe('SEO Generator - generateTwitterCardTags', () => {
     };
 
     const tags = generateTwitterCardTags(ctx);
-    expect(tags.join('\n')).toContain('twitter:creator" content="John Doe"');
+    expect(tags.join('\n')).not.toContain('twitter:creator');
   });
 
-  it('should fallback to default author for creator', () => {
+  it("should use the default author's handle for creator, adding the @", () => {
     const page = createMockPage();
     const config = createMockConfig({
       seo: {
         defaultAuthor: {
           name: 'Site Author',
+          twitter: 'siteauthor',
         },
       },
     });
@@ -998,7 +1075,42 @@ describe('SEO Generator - generateTwitterCardTags', () => {
     };
 
     const tags = generateTwitterCardTags(ctx);
-    expect(tags.join('\n')).toContain('twitter:creator" content="Site Author"');
+    expect(tags.join('\n')).toContain('twitter:creator" content="@siteauthor"');
+  });
+
+  it("should use the page author's handle, never the default author's", () => {
+    const config = createMockConfig({
+      seo: { defaultAuthor: { name: 'Site Author', twitter: '@siteauthor' } },
+    });
+    const creatorOf = (author: unknown) =>
+      generateTwitterCardTags({
+        logger: createMockLogger(),
+        page: createMockPage({ frontMatter: { seo: { author } } as PageModel['frontMatter'] }),
+        config,
+        siteUrl: 'https://example.com',
+      })
+        .join('\n')
+        .match(/twitter:creator" content="([^"]*)"/)?.[1];
+
+    expect(creatorOf({ name: 'Guest', twitter: '@guest' })).toBe('@guest');
+    expect(creatorOf({ name: 'Guest' })).toBeUndefined();
+    expect(creatorOf('Guest')).toBeUndefined();
+  });
+
+  it('should take twitter:site from config, front matter first', () => {
+    const config = createMockConfig({ seo: { twitter: { site: 'example' } } });
+    const siteOf = (frontMatter: PageModel['frontMatter']) =>
+      generateTwitterCardTags({
+        logger: createMockLogger(),
+        page: createMockPage({ frontMatter }),
+        config,
+        siteUrl: 'https://example.com',
+      }).join('\n');
+
+    expect(siteOf({})).toContain('twitter:site" content="@example"');
+    expect(siteOf({ seo: { twitter: { site: '@other' } } })).toContain(
+      'twitter:site" content="@other"',
+    );
   });
 
   it('should use Twitter-specific title and description', () => {

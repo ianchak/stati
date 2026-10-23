@@ -192,12 +192,56 @@ export interface GeneratedPageEntry {
  * Controls automatic SEO metadata injection and site-wide defaults.
  */
 export interface SEOConfig {
-  /** Default author for all pages (can be overridden per-page) */
+  /**
+   * Default author for all pages. A page that names its own `seo.author` uses that author
+   * instead, including for `twitter:creator` and `article:author`.
+   */
   defaultAuthor?: AuthorConfig;
+  /** Site-wide Twitter Card values */
+  twitter?: SEOTwitterConfig;
+  /** Pages that get Open Graph article metadata, chosen by URL */
+  articles?: SEOArticlesConfig;
   /** Automatically inject SEO tags into <head> if not present (default: true) */
   autoInject?: boolean;
   /** Enable debug logging for SEO generation (default: false) */
   debug?: boolean;
+}
+
+/**
+ * Site-wide Twitter Card values. Front matter `seo.twitter` overrides them per page.
+ *
+ * @example
+ * ```typescript
+ * const twitter: SEOTwitterConfig = { site: '@example' };
+ * ```
+ */
+export interface SEOTwitterConfig {
+  /** The site's Twitter/X handle, with or without `@`, printed as `twitter:site` */
+  site?: string;
+}
+
+/**
+ * Pages that are articles. On a matching page, Stati prints `og:type` as `article` and fills
+ * `article:published_time`, `article:modified_time`, `article:tag` and `article:author` from
+ * the page, for each value its front matter leaves out. Generated pages and the pages of a
+ * paginated listing never match.
+ *
+ * @example
+ * ```typescript
+ * const articles: SEOArticlesConfig = {
+ *   include: ['/blog/*'],
+ *   exclude: ['/blog/archive'],
+ * };
+ * ```
+ */
+export interface SEOArticlesConfig {
+  /**
+   * Glob patterns matched against the page URL, as in bundle `include`. A pattern must match
+   * the whole URL: `/blog/*` matches `/blog/hello` but not the `/blog` index page.
+   */
+  include: string[];
+  /** Glob patterns for page URLs that are never articles; take precedence over `include` */
+  exclude?: string[];
 }
 
 /**

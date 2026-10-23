@@ -59,6 +59,7 @@ import {
   generateSitemap,
   generateRobotsTxtFromConfig,
   autoInjectSEO,
+  applySEODefaults,
   type AutoInjectOptions,
 } from '../seo/index.js';
 import { generateRSSFeeds, validateRSSConfig } from '../rss/index.js';
@@ -541,6 +542,10 @@ async function processPagesWithCache(
     await config.hooks.beforeAll(buildContext);
     endHookBeforeAll();
   }
+
+  // Site-wide SEO defaults go into front matter, which each page's cache hash covers, so
+  // changing one rebuilds the pages it changes. After beforeAll, whose values win.
+  applySEODefaults(pages, config, logger);
 
   // Collection summaries, hashed after beforeAll because the hook can change front matter
   const summaries = createSummaryHasher(pages, resolveSummaryFields(config));

@@ -1,0 +1,346 @@
+/**
+ * Site-wide SEO defaults: the Open Graph locale, Twitter handles and article metadata that
+ * Stati derives from configuration and from each page, for the values front matter leaves out.
+ * @module seo/defaults
+ */
+
+import type { StatiConfig } from '../types/config.js';
+import type {
+  AuthorConfig,
+  OpenGraphArticle,
+  OpenGraphConfig,
+  PageModel,
+  SEOMetadata,
+  TwitterCardConfig,
+} from '../types/content.js';
+import type { Logger } from '../types/logging.js';
+import { ConfigValidationError } from '../config/errors.js';
+import { matchesGlob } from '../core/utils/index.js';
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/** A front matter value counts as left out when it is absent, empty in YAML (`null`) or `''`. */
+function isMissing(value: unknown): boolean {
+  return value === undefined || value === null || value === '';
+}
+
+/**
+ * Converts a BCP 47 language tag, such as `site.defaultLocale`, to the `language_TERRITORY`
+ * form Open Graph uses: the language in lower case and the region in upper case.
+ *
+ * @param locale - A language tag; `_` separators are accepted too
+ * @returns The Open Graph locale, or `undefined` when the tag has no two-letter region
+ *
+ * @example
+ * ```typescript
+ * toOpenGraphLocale('en-US'); // 'en_US'
+ * toOpenGraphLocale('pt-br'); // 'pt_BR'
+ * toOpenGraphLocale('zh-Hant-TW'); // 'zh_TW' (the script is dropped)
+ * toOpenGraphLocale('en'); // undefined
+ * ```
+ */
+export function toOpenGraphLocale(locale: string): string | undefined {
+  const [language, ...subtags] = locale.trim().split(/[-_]/);
+  if (!language || !/^[a-z]{2,3}$/i.test(language)) {
+    return undefined;
+  }
+  // language-extlang-script-region: up to three extended language subtags, then a script
+  let i = 0;
+  while (i < 3 && /^[a-z]{3}$/i.test(subtags[i] ?? '')) i++;
+  if (/^[a-z]{4}$/i.test(subtags[i] ?? '')) i++;
+  const region = subtags[i] ?? '';
+  return /^[a-z]{2}$/i.test(region)
+    ? `${language.toLowerCase()}_${region.toUpperCase()}`
+    : undefined;
+}
+
+/**
+ * Normalizes a Twitter/X handle to the `@username` form.
+ *
+ * @param value - A handle with or without `@`
+ * @returns The handle with one leading `@`, or `undefined` for anything but a non-empty string
+ */
+export function toTwitterHandle(value: unknown): string | undefined {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+  const name = value.trim().replace(/^@+/, '');
+  return name ? `@${name}` : undefined;
+}
+
+/**
+ * Whether `seo.articles` makes the page an article. Generated pages and the pages of a
+ * paginated listing never are, as they are never collection members.
+ *
+ * @param page - The page
+ * @param config - Site configuration
+ */
+export function isArticlePage(page: PageModel, config: StatiConfig): boolean {
+  const articles = config.seo?.articles;
+  if (!articles || page.generated || page.pagination) {
+    return false;
+  }
+  if (articles.exclude?.some((pattern) => matchesGlob(page.url, pattern))) {
+    return false;
+  }
+  return (articles.include ?? []).some((pattern) => matchesGlob(page.url, pattern));
+}
+
+/** The page's own author when its front matter names one, otherwise the default author. */
+function resolveAuthor(seo: SEOMetadata | undefined, config: StatiConfig): unknown {
+  return isMissing(seo?.author) ? config.seo?.defaultAuthor : seo?.author;
+}
+
+/** A field of an author object, or `undefined` for a name-only author. */
+function authorField(author: unknown, field: keyof AuthorConfig): unknown {
+  return isPlainObject(author) ? author[field] : undefined;
+}
+
+/** A front matter date as ISO 8601, or `undefined` when it is not a valid date. */
+function toISODate(value: unknown): string | undefined {
+  const date =
+    value instanceof Date ? value : typeof value === 'string' ? new Date(value) : undefined;
+  return date && !isNaN(date.getTime()) ? date.toISOString() : undefined;
+}
+
+/** Copies `target` with `fill` added, or returns it as it was when there is nothing to add. */
+function withDefaults<T extends object>(target: unknown, fill: Partial<T>): T | undefined {
+  if (Object.keys(fill).length === 0) {
+    return target as T | undefined;
+  }
+  return { ...(isPlainObject(target) ? target : {}), ...fill } as T;
+}
+
+function resolveArticle(
+  page: PageModel,
+  config: StatiConfig,
+  seo: SEOMetadata | undefined,
+  article: unknown,
+): OpenGraphArticle | undefined {
+  if (!isMissing(article) && !isPlainObject(article)) {
+    return article as OpenGraphArticle;
+  }
+  const own = isPlainObject(article) ? article : {};
+  const fill: OpenGraphArticle = {};
+
+  if (isMissing(own.publishedTime)) {
+    const published = toISODate(page.publishedAt);
+    if (published) fill.publishedTime = published;
+  }
+  if (isMissing(own.modifiedTime)) {
+    const updated = toISODate(page.frontMatter.updated);
+    if (updated) fill.modifiedTime = updated;
+  }
+  if (isMissing(own.tags) && Array.isArray(page.frontMatter.tags)) {
+    const tags = page.frontMatter.tags.filter(
+      (tag): tag is string => typeof tag === 'string' && tag !== '',
+    );
+    if (tags.length > 0) fill.tags = tags;
+  }
+  if (isMissing(own.author)) {
+    const url = authorField(resolveAuthor(seo, config), 'url');
+    if (typeof url === 'string' && url !== '') fill.author = url;
+  }
+
+  return withDefaults<OpenGraphArticle>(article, fill);
+}
+
+function resolveOpenGraph(
+  page: PageModel,
+  config: StatiConfig,
+  seo: SEOMetadata | undefined,
+): OpenGraphConfig | undefined {
+  const og: unknown = seo?.openGraph;
+  if (!isMissing(og) && !isPlainObject(og)) {
+    return og as OpenGraphConfig;
+  }
+  const own = isPlainObject(og) ? og : {};
+  const fill: OpenGraphConfig = {};
+
+  const defaultLocale = config.site.defaultLocale;
+  if (isMissing(own.locale) && typeof defaultLocale === 'string') {
+    const locale = toOpenGraphLocale(defaultLocale);
+    if (locale) fill.locale = locale;
+  }
+
+  if (isArticlePage(page, config)) {
+    if (isMissing(own.type)) fill.type = 'article';
+    // A page that sets another type prints no article tags, so none are filled in
+    if ((fill.type ?? own.type) === 'article') {
+      const article = resolveArticle(page, config, seo, own.article);
+      if (article !== own.article) fill.article = article as OpenGraphArticle;
+    }
+  }
+
+  return withDefaults<OpenGraphConfig>(og, fill);
+}
+
+function resolveTwitter(
+  config: StatiConfig,
+  seo: SEOMetadata | undefined,
+): TwitterCardConfig | undefined {
+  const twitter: unknown = seo?.twitter;
+  if (!isMissing(twitter) && !isPlainObject(twitter)) {
+    return twitter as TwitterCardConfig;
+  }
+  const own = isPlainObject(twitter) ? twitter : {};
+  const fill: TwitterCardConfig = {};
+
+  if (isMissing(own.site)) {
+    const site = toTwitterHandle(config.seo?.twitter?.site);
+    if (site) fill.site = site;
+  }
+  // Never the author's name: twitter:creator takes a handle
+  if (isMissing(own.creator)) {
+    const creator = toTwitterHandle(authorField(resolveAuthor(seo, config), 'twitter'));
+    if (creator) fill.creator = creator;
+  }
+
+  return withDefaults<TwitterCardConfig>(twitter, fill);
+}
+
+/**
+ * Returns the page's front matter `seo` with the site-wide defaults filled into each value it
+ * leaves out:
+ *
+ * - `openGraph.locale` from `site.defaultLocale`, converted with {@link toOpenGraphLocale}
+ * - `twitter.site` from `seo.twitter.site`
+ * - `twitter.creator` from the page's own `seo.author.twitter`, or from
+ *   `seo.defaultAuthor.twitter` when the page names no author
+ * - on pages that `seo.articles` matches, `openGraph.type` as `article` and
+ *   `openGraph.article` from the publish date, `updated`, `tags` and the author's `url`
+ *
+ * Front matter wins value by value. Objects that change are copied, never modified, so
+ * resolving twice gives the same result and objects shared between pages stay as they were.
+ *
+ * @param page - The page
+ * @param config - Site configuration
+ * @returns The resolved `seo`, or the page's own value when there is nothing to fill in
+ */
+export function resolveSEODefaults(page: PageModel, config: StatiConfig): SEOMetadata | undefined {
+  const seo: unknown = page.frontMatter.seo;
+  if (!isMissing(seo) && !isPlainObject(seo)) {
+    return seo as SEOMetadata;
+  }
+  const own = isPlainObject(seo) ? (seo as SEOMetadata) : undefined;
+  const fill: SEOMetadata = {};
+
+  const openGraph = resolveOpenGraph(page, config, own);
+  if (openGraph !== own?.openGraph) fill.openGraph = openGraph as OpenGraphConfig;
+  const twitter = resolveTwitter(config, own);
+  if (twitter !== own?.twitter) fill.twitter = twitter as TwitterCardConfig;
+
+  return withDefaults<SEOMetadata>(seo, fill);
+}
+
+/**
+ * Fills the site-wide SEO defaults into the front matter of every page, with
+ * {@link resolveSEODefaults}. Runs after the `beforeAll` hook, so values the hook writes win,
+ * and before pages are hashed, so changing a default rebuilds the pages it changes. Templates
+ * read the same values as `stati.page.seo` that the generated tags print.
+ *
+ * @param pages - Every page of the build
+ * @param config - Site configuration
+ * @param logger - Reports, under `seo.debug`, a `site.defaultLocale` without a region
+ */
+export function applySEODefaults(pages: PageModel[], config: StatiConfig, logger: Logger): void {
+  const defaultLocale = config.site.defaultLocale;
+  if (config.seo?.debug && typeof defaultLocale === 'string' && defaultLocale !== '') {
+    if (!toOpenGraphLocale(defaultLocale)) {
+      logger.warning(
+        `[SEO] site.defaultLocale "${defaultLocale}" has no region, so og:locale is left out ` +
+          '(Open Graph then assumes en_US). Use a tag with a region, such as "en-US", or set ' +
+          'seo.openGraph.locale in front matter.',
+      );
+    }
+  }
+
+  for (const page of pages) {
+    const seo = resolveSEODefaults(page, config);
+    if (seo !== undefined && seo !== page.frontMatter.seo) {
+      page.frontMatter.seo = seo;
+    }
+  }
+}
+
+function describe(value: unknown): string {
+  try {
+    return JSON.stringify(value) ?? String(value);
+  } catch {
+    return String(value);
+  }
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === 'string');
+}
+
+function checkKeys(value: Record<string, unknown>, allowed: string[], path: string): void {
+  for (const key of Object.keys(value)) {
+    if (!allowed.includes(key)) {
+      throw new ConfigValidationError(
+        `Unknown option ${path}.${key}. Allowed options: ${allowed.join(', ')}.`,
+      );
+    }
+  }
+}
+
+/**
+ * Validates the SEO options that fill in defaults: `seo.defaultAuthor.twitter`,
+ * `seo.twitter` and `seo.articles`.
+ *
+ * @param seo - The `seo` value from the config
+ * @throws {ConfigValidationError} When one of these options has the wrong type
+ */
+export function validateSEOConfig(seo: unknown): void {
+  if (seo === undefined) {
+    return;
+  }
+  if (!isPlainObject(seo)) {
+    throw new ConfigValidationError(`seo must be an object (got ${describe(seo)}).`);
+  }
+
+  const author = seo.defaultAuthor;
+  if (isPlainObject(author) && author.twitter !== undefined && typeof author.twitter !== 'string') {
+    throw new ConfigValidationError(
+      `seo.defaultAuthor.twitter must be a handle such as '@example' (got ${describe(author.twitter)}).`,
+    );
+  }
+
+  const twitter = seo.twitter;
+  if (twitter !== undefined) {
+    if (!isPlainObject(twitter)) {
+      throw new ConfigValidationError(
+        `seo.twitter must be an object such as { site: '@example' } (got ${describe(twitter)}).`,
+      );
+    }
+    checkKeys(twitter, ['site'], 'seo.twitter');
+    if (twitter.site !== undefined && typeof twitter.site !== 'string') {
+      throw new ConfigValidationError(
+        `seo.twitter.site must be a handle such as '@example' (got ${describe(twitter.site)}).`,
+      );
+    }
+  }
+
+  const articles = seo.articles;
+  if (articles !== undefined) {
+    if (!isPlainObject(articles)) {
+      throw new ConfigValidationError(
+        `seo.articles must be an object such as { include: ['/blog/*'] } (got ${describe(articles)}).`,
+      );
+    }
+    checkKeys(articles, ['include', 'exclude'], 'seo.articles');
+    if (!isStringArray(articles.include)) {
+      throw new ConfigValidationError(
+        `seo.articles.include must be an array of URL glob patterns, such as ['/blog/*'] (got ${describe(articles.include)}).`,
+      );
+    }
+    if (articles.exclude !== undefined && !isStringArray(articles.exclude)) {
+      throw new ConfigValidationError(
+        `seo.articles.exclude must be an array of URL glob patterns (got ${describe(articles.exclude)}).`,
+      );
+    }
+  }
+}
