@@ -506,6 +506,18 @@ describe('rewriteStylesheetLinks', () => {
     );
   });
 
+  it('reads whitespace around =, and stops at a quote or doctype that never closes', () => {
+    const spaced = '<link rel = "stylesheet" href =\n\'/styles.css\'>';
+
+    expect(rewriteStylesheetLinks(spaced, targets, '/')).toBe(
+      '<link rel = "stylesheet" href =\n\'/_assets/styles-0A1B2C3D.css\'>',
+    );
+    const link = '<link rel="stylesheet" href="/styles.css">';
+    expect(linksStylesheet(`${link}<a title="${link}`, '/styles.css')).toBe(true);
+    expect(getLinkedStylesheetPaths(`<a title='unclosed ${link}`, '/')).toEqual([]);
+    expect(getLinkedStylesheetPaths(`<!doctype html ${link.replaceAll('>', '')}`, '/')).toEqual([]);
+  });
+
   it('leaves a link with an integrity digest alone', () => {
     const html = '<link rel="stylesheet" href="/styles.css" integrity="sha384-abc" crossorigin>';
 
