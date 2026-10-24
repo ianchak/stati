@@ -1,5 +1,16 @@
 # @stati/cli
 
+## 2.1.0
+
+### Minor Changes
+
+- 7c360d2: `stati build` takes `--tailwind-input` and `--tailwind-output` and writes a content-hashed stylesheet, replacing a separate `build:css` step.
+
+### Patch Changes
+
+- Updated dependencies [7c360d2]
+  - @stati/core@2.3.0
+
 ## 2.0.1
 
 ### Patch Changes
