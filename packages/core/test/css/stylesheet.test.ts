@@ -9,6 +9,7 @@ import { createHash } from 'node:crypto';
 import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { performance } from 'node:perf_hooks';
 import {
   autoInjectStylesheets,
   createStylesheetPlan,
@@ -229,6 +230,14 @@ describe('rebaseRelativeUrls', () => {
     );
   });
 
+  it('takes linear time on comments and strings that never close', () => {
+    const started = performance.now();
+    for (const open of ['/*', '"', "'", 'url("']) {
+      rebaseRelativeUrls(`${open}url(a.png)`.repeat(50_000), '/styles.css');
+    }
+    expect(performance.now() - started).toBeLessThan(1000);
+  });
+
   it('leaves url() text in strings and comments alone', () => {
     const css =
       '.label::after{content:"url(images/bg.svg)"}.note::before{content:\'@import "x.css"\'}' +
@@ -421,6 +430,29 @@ describe('rewriteStylesheetLinks', () => {
 
     expect(rewriteStylesheetLinks(html, targets, '/', 'https://example.com')).toBe(html);
     expect(rewriteStylesheetLinks(html, new Map(), '/')).toBe(html);
+  });
+
+  it('takes linear time on comments, elements and tags that never close', () => {
+    const started = performance.now();
+    // The three link functions share one scanner
+    for (const open of ['<!--', '<script>', '<title>', '<link ']) {
+      rewriteStylesheetLinks(
+        `${open}<link rel="stylesheet" href="/styles.css">`.repeat(50_000),
+        targets,
+        '/',
+      );
+    }
+    expect(performance.now() - started).toBeLessThan(1000);
+  });
+
+  it('treats a comment or element left open as running to the end of the page', () => {
+    const link = '<link rel="stylesheet" href="/styles.css">';
+    expect(linksStylesheet(`<!-- ${link}`, '/styles.css')).toBe(false);
+    expect(linksStylesheet(`<script>${link}`, '/styles.css')).toBe(false);
+    expect(linksStylesheet(`${link}<SCRIPT>x</Script >${link}`, '/styles.css')).toBe(true);
+    expect(getLinkedStylesheetPaths(`<TEMPLATE>${link}</template>${link}`, '/')).toEqual([
+      '/styles.css',
+    ]);
   });
 
   it('leaves links in comments and scripts alone, and rewrites them in noscript', () => {

@@ -79,15 +79,16 @@ const RELINK_BATCH_SIZE = 32;
  * The CSS tokens that can hold a reference, scanned left to right: a comment and a string,
  * which stay as they are, an `@import` of a string, and a `url()` with a double-quoted,
  * single-quoted or unquoted reference. Escapes are matched too, so a quoted data URI with
- * escaped quotes is one token and the scan doesn't stop at a `url()` inside it.
+ * escaped quotes is one token and the scan doesn't stop at a `url()` inside it. A comment or
+ * string left open runs to the end of the stylesheet, as in CSS, so the scan stays linear.
  */
 const CSS_TOKEN = new RegExp(
   [
-    String.raw`\/\*[\s\S]*?\*\/`,
+    String.raw`\/\*[\s\S]*?(?:\*\/|$)`,
     String.raw`(@import\s+)(?:"((?:[^"\\]|\\[\s\S])*)"|'((?:[^'\\]|\\[\s\S])*)')`,
     // An unquoted reference's hex escape can end with a space, which is part of the escape
     String.raw`url\(\s*(?:"((?:[^"\\]|\\[\s\S])*)"|'((?:[^'\\]|\\[\s\S])*)'|((?:[^\s"'()\\]|\\(?:[0-9a-f]{1,6}(?:\r\n|[ \t\r\n\f])?|[\s\S]))+))\s*\)`,
-    String.raw`"(?:[^"\\]|\\[\s\S])*"|'(?:[^'\\]|\\[\s\S])*'`,
+    String.raw`"(?:[^"\\]|\\[\s\S])*(?:"|$)|'(?:[^'\\]|\\[\s\S])*(?:'|$)`,
   ].join('|'),
   'gi',
 );
@@ -99,12 +100,11 @@ const CSS_ESCAPE = /\\(?:([0-9a-f]{1,6})(?:\r\n|[ \t\r\n\f])?|([\s\S]))/gi;
 const LOCATION_INDEPENDENT_URL = /^(?:[a-z][a-z0-9+.-]*:|\/|#)/i;
 
 /**
- * A `<link>` tag, or a stretch of HTML whose tags aren't markup: a comment, or the contents of
- * an element the browser reads as text or keeps inert (script, style, template, textarea,
- * title). The second group names that element.
+ * The start of a `<link>` tag, of a comment, or of an element the browser reads as text or
+ * keeps inert (script, style, template, textarea, title), whose contents aren't markup. The
+ * group names the element.
  */
-const HTML_LINK_SCAN =
-  /<!--[\s\S]*?-->|<(script|style|template|textarea|title)\b[^>]*>[\s\S]*?<\/\1\s*>|<link\b[^>]*>/gi;
+const HTML_TAG_START = /<(?:!--|(link|script|style|template|textarea|title)(?=[\s/>]))/gi;
 
 /** The `href` of a `<link>` tag, quoted or not */
 const LINK_HREF = /\shref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/i;
@@ -574,20 +574,53 @@ function isStylesheetLink(tag: string): boolean {
   return tokens.includes('stylesheet') && !tokens.includes('alternate');
 }
 
-/** Whether a match of HTML_LINK_SCAN is a `<link>` tag, not a comment or element contents */
-function isLinkTag(match: string, textElement: string | undefined): boolean {
-  return textElement === undefined && !match.startsWith('<!--');
+/**
+ * Where the `<link>` tags of a page that are markup start and end: not in a comment, or in a
+ * script, style, template, textarea or title. A comment or element left open runs to the end
+ * of the page, as browsers read it. One pass over the page, whatever it holds.
+ */
+function findLinkTags(html: string): Array<{ start: number; end: number }> {
+  const tags: Array<{ start: number; end: number }> = [];
+  const tagStart = new RegExp(HTML_TAG_START.source, 'gi');
+  // The closing tag of an element, found from where the scan is
+  const findClose = (element: string, from: number): number => {
+    const closeTag = new RegExp(`</${element}`, 'gi');
+    closeTag.lastIndex = from;
+    return closeTag.exec(html)?.index ?? -1;
+  };
+  for (let match = tagStart.exec(html); match !== null; match = tagStart.exec(html)) {
+    const start = match.index;
+    const element = match[1]?.toLowerCase();
+    if (element === undefined) {
+      const close = html.indexOf('-->', start + 4);
+      if (close === -1) {
+        break;
+      }
+      tagStart.lastIndex = close + 3;
+      continue;
+    }
+    const end = html.indexOf('>', tagStart.lastIndex);
+    if (end === -1) {
+      break;
+    }
+    if (element === 'link') {
+      tags.push({ start, end: end + 1 });
+      tagStart.lastIndex = end + 1;
+      continue;
+    }
+    const close = findClose(element, end + 1);
+    if (close === -1) {
+      break;
+    }
+    tagStart.lastIndex = close;
+  }
+  return tags;
 }
 
-/**
- * The `<link>` tags of a page that are markup: not in a comment, or in a script, style,
- * template, textarea or title.
- */
+/** The `<link>` tags of a page that are markup (see {@link findLinkTags}) */
 function* getLinkTags(html: string): Generator<string> {
-  for (const [match, textElement] of html.matchAll(HTML_LINK_SCAN)) {
-    if (isLinkTag(match, textElement)) {
-      yield match;
-    }
+  for (const { start, end } of findLinkTags(html)) {
+    yield html.slice(start, end);
   }
 }
 
@@ -674,8 +707,8 @@ export function rewriteStylesheetLinks(
     return html;
   }
   const origin = getSiteOrigin(siteUrl);
-  return html.replace(HTML_LINK_SCAN, (tag, textElement: string | undefined) => {
-    if (!isLinkTag(tag, textElement) || !loadsStylesheet(tag)) {
+  const rewrite = (tag: string): string => {
+    if (!loadsStylesheet(tag)) {
       return tag;
     }
     return tag.replace(
@@ -697,7 +730,15 @@ export function rewriteStylesheetLinks(
         return `${name}${quote}${parts.origin}${target}${parts.suffix}${quote}`;
       },
     );
-  });
+  };
+
+  let rewritten = '';
+  let copied = 0;
+  for (const { start, end } of findLinkTags(html)) {
+    rewritten += html.slice(copied, start) + rewrite(html.slice(start, end));
+    copied = end;
+  }
+  return rewritten + html.slice(copied);
 }
 
 /**
