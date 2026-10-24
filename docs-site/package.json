@@ -31,16 +31,17 @@
   ],
   "stati": {
     "engine": "stati",
-    "version": "2.0.0"
+    "version": "2.2.0"
   },
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@stati/cli": "2.0.0",
-    "@stati/core": "2.0.0",
-    "@stati/images": "1.0.0",
+    "@stati/cli": "2.0.1",
+    "@stati/core": "2.2.0",
+    "@stati/images": "1.0.1",
     "@tailwindcss/cli": "4.3.3",
     "@tailwindcss/typography": "0.5.20",
+    "@types/prismjs": "1.26.6",
     "js-yaml": "4.3.2",
     "markdown-it-attrs": "5.0.1",
     "markdown-it-external-links": "0.0.6",
