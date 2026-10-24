@@ -354,7 +354,7 @@ npx stati build --clean
 
 ## Requirements
 
-- **Node.js** ^22.12.0 || >=24
+- **Node.js** ^22.20.0 || >=24
 - **A package manager**: npm, pnpm, yarn or bun
 
 ---

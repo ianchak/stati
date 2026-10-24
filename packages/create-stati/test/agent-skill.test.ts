@@ -1,74 +1,71 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { existsSync } from 'node:fs';
-import { mkdtemp, rm, access } from 'node:fs/promises';
+import { describe, it, expect } from 'vitest';
 import {
   AGENT_SKILL_DIRS,
   AGENT_SKILL_TARGETS,
-  copyAgentSkill,
-  getSkillSourceDir,
+  SKILLS_AGENTS,
+  SKILL_UPDATE_COMMAND,
   isValidAgentSkillTarget,
+  skillAddCommand,
+  skillsCliError,
 } from '../src/agent-skill.js';
 
-// Wrap the real implementation so tests can simulate the published package layout
-vi.mock('node:fs', async (importOriginal) => {
-  const actual = (await importOriginal()) as typeof import('node:fs');
-  return { ...actual, existsSync: vi.fn(actual.existsSync) };
-});
-
 describe('agent skill', () => {
-  let tempDir: string;
-
-  beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'stati-skill-test-'));
-  });
-
-  afterEach(async () => {
-    await rm(tempDir, { recursive: true, force: true });
-  });
-
-  it('should resolve a source directory containing SKILL.md', async () => {
-    await expect(access(join(getSkillSourceDir(), 'SKILL.md'))).resolves.not.toThrow();
-  });
-
-  it('should prefer the published skill directory and fail clearly when it has no skill', async () => {
-    // Pretend the published dist/skills/stati exists next to the module
-    vi.mocked(existsSync).mockReturnValueOnce(true);
-    const sourceDir = getSkillSourceDir();
-    expect(sourceDir).toBe(join(__dirname, '..', 'src', 'skills', 'stati'));
-
-    // Next lookup also resolves to that (non-existent under src/) directory
-    vi.mocked(existsSync).mockReturnValueOnce(true);
-    await expect(copyAgentSkill(tempDir, 'claude')).rejects.toThrow(
-      `Stati agent skill not found at ${sourceDir}`,
-    );
-  });
-
   it('should validate agent skill targets', () => {
     expect(isValidAgentSkillTarget('claude')).toBe(true);
-    expect(isValidAgentSkillTarget('github')).toBe(true);
     expect(isValidAgentSkillTarget('agents')).toBe(true);
+    expect(isValidAgentSkillTarget('github')).toBe(true);
     expect(isValidAgentSkillTarget('cursor')).toBe(false);
     expect(isValidAgentSkillTarget('')).toBe(false);
   });
 
-  it.each(AGENT_SKILL_TARGETS)('should copy the whole bundle for target %s', async (target) => {
-    const relativeDir = await copyAgentSkill(tempDir, target);
-    expect(relativeDir).toBe(AGENT_SKILL_DIRS[target]);
+  it.each([
+    ['claude', 'claude-code', '.claude/skills/stati'],
+    ['agents', 'universal', '.agents/skills/stati'],
+    ['github', 'universal', '.agents/skills/stati'],
+  ] as const)('should map target %s to the %s agent in %s', (target, agent, dir) => {
+    expect(SKILLS_AGENTS[target]).toBe(agent);
+    expect(AGENT_SKILL_DIRS[target]).toBe(dir);
+  });
 
-    const skillDir = join(tempDir, relativeDir);
-    for (const file of [
-      'SKILL.md',
-      'LICENSE',
-      join('references', 'eta.md'),
-      join('assets', 'starter', 'stati.config.js'),
-      join('scripts', 'smoke-test.mjs'),
-    ]) {
-      await expect(access(join(skillDir, file))).resolves.not.toThrow();
-    }
+  it('should cover every target in the mappings', () => {
+    expect(Object.keys(SKILLS_AGENTS).sort()).toEqual([...AGENT_SKILL_TARGETS].sort());
+    expect(Object.keys(AGENT_SKILL_DIRS).sort()).toEqual([...AGENT_SKILL_TARGETS].sort());
+  });
 
-    // Must not be nested as stati/stati
-    await expect(access(join(skillDir, 'stati'))).rejects.toThrow();
+  it('should build the commands to add and update the skill with the pinned CLI', () => {
+    expect(skillAddCommand('claude')).toBe(
+      'npx skills@1 add ianchak/stati --skill stati -a claude-code --copy -y',
+    );
+    expect(skillAddCommand('github')).toBe(
+      'npx skills@1 add ianchak/stati --skill stati -a universal --copy -y',
+    );
+    expect(SKILL_UPDATE_COMMAND).toBe('npx skills@1 update stati -p');
+  });
+
+  describe('skillsCliError', () => {
+    it('should return the first failure in the JSON output', () => {
+      const stdout = JSON.stringify([
+        { name: 'other', status: 'installed' },
+        { status: 'failed', error: 'Failed to clone repository' },
+      ]);
+      expect(skillsCliError(stdout)).toBe('Failed to clone repository');
+    });
+
+    it('should return the reason for a skipped skill', () => {
+      const stdout = JSON.stringify([
+        { name: 'stati', status: 'skipped', reason: 'No matching skill found in source' },
+      ]);
+      expect(skillsCliError(stdout)).toBe('No matching skill found in source');
+    });
+
+    it.each([
+      ['no output', ''],
+      ['output that is not JSON', 'npm ERR! something'],
+      ['JSON that is not a list', '{"status":"failed"}'],
+      ['no failures', '[{"status":"installed"}]'],
+      ['a failure without a message', '[{"status":"failed"}, null]'],
+    ])('should return undefined for %s', (_, stdout) => {
+      expect(skillsCliError(stdout)).toBeUndefined();
+    });
   });
 });

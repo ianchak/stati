@@ -13,5 +13,5 @@ export const DEPENDENCY_VERSIONS = {
   // TypeScript
   typescript: '^6.0.3',
   // Image tools
-  '@stati/images': '^1.0.0',
+  '@stati/images': '^1.0.1',
 } as const;

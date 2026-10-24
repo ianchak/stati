@@ -120,17 +120,20 @@ Read the other references that match the work; do not load everything by default
 
 ## Portable use and maintenance
 
-Copy this **entire folder**, including references, assets, scripts, and license,
-to the directory your **agent application** discovers:
+Add or update this skill with the `skills` CLI, not by copying files:
+`npx skills add ianchak/stati --skill stati -a claude-code --copy -y` to add it,
+`npx skills update stati -p` to update it. Do not edit the installed copy or
+delete `skills-lock.json`; see [installation](./references/installation.md#add-or-update-the-skill).
 
 - **Claude Code (terminal or its VS Code extension):** `.claude/skills/stati/`.
   Claude Code does not normally discover `.github/skills/` as native project
   skills.
-- **GitHub Copilot in VS Code:** `.github/skills/stati/` or
-  `.claude/skills/stati/`. Using a Claude model in Copilot does not change the
+- **GitHub Copilot in VS Code:** `.claude/skills/stati/` or
+  `.agents/skills/stati/`. Using a Claude model in Copilot does not change the
   host application's discovery rules.
 - For both of these applications, prefer **one copy** in `.claude/skills/stati/`.
-  Other agents may use `.agents/skills/`; verify their documented locations.
+  Other agents use `.agents/skills/` (`-a universal`); verify their documented
+  locations.
 
 Keep the folder named `stati`, matching frontmatter. Discovery makes the skill
 available, but does not guarantee automatic invocation for every relevant

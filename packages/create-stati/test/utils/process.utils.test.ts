@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { spawnProcess, isCommandAvailable } from '../../src/utils/process.utils.js';
+import { EventEmitter } from 'node:events';
+import {
+  spawnProcess,
+  isCommandAvailable,
+  ProcessExitError,
+} from '../../src/utils/process.utils.js';
 import { spawn } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
 
@@ -32,7 +37,7 @@ describe('process.utils', () => {
 
       vi.mocked(spawn).mockReturnValue(mockChild);
 
-      await expect(spawnProcess('echo', ['test'])).resolves.toBeUndefined();
+      await expect(spawnProcess('echo', ['test'])).resolves.toBe('');
 
       expect(spawn).toHaveBeenCalledWith('echo', ['test'], {
         cwd: undefined,
@@ -96,6 +101,46 @@ describe('process.utils', () => {
       await expect(spawnProcess('npm', ['test'])).rejects.toThrow('npm exited with code 1');
     });
 
+    it('should capture stdout with pipe stdio, also when the process fails', async () => {
+      const mockOutput = (output: string, code: number) => {
+        const stdout = Object.assign(new EventEmitter(), { setEncoding: vi.fn() });
+        const stdin = { end: vi.fn() };
+        const stderr = { resume: vi.fn() };
+        const child = {
+          stdin,
+          stdout,
+          stderr,
+          on: vi.fn((event, callback) => {
+            if (event === 'exit') {
+              scheduleCallback(() => {
+                stdout.emit('data', output);
+                callback(code);
+              });
+            }
+          }),
+          kill: vi.fn(),
+        };
+        return child as unknown as ChildProcess;
+      };
+
+      const okChild = mockOutput('[{"status":"installed"}]', 0);
+      vi.mocked(spawn).mockReturnValueOnce(okChild);
+      await expect(spawnProcess('npx', ['skills'], { stdio: 'pipe' })).resolves.toBe(
+        '[{"status":"installed"}]',
+      );
+      expect(okChild.stdin!.end).toHaveBeenCalled();
+      expect(okChild.stderr!.resume).toHaveBeenCalled();
+
+      vi.mocked(spawn).mockReturnValueOnce(mockOutput('[{"status":"failed"}]', 1));
+      const error = await spawnProcess('npx', ['skills'], { stdio: 'pipe' }).catch((e) => e);
+      expect(error).toBeInstanceOf(ProcessExitError);
+      expect(error).toMatchObject({
+        message: 'npx exited with code 1',
+        code: 1,
+        stdout: '[{"status":"failed"}]',
+      });
+    });
+
     it('should handle timeout', async () => {
       const mockChild = {
         on: vi.fn((_event, _callback) => {
@@ -110,15 +155,112 @@ describe('process.utils', () => {
       vi.useFakeTimers();
 
       const promise = spawnProcess('long-command', [], { timeout: 1000 });
+      const rejection = expect(promise).rejects.toThrow('Process timed out after 1000ms');
 
-      // Fast-forward time
+      // Without a grace period it rejects as soon as the process is stopped
       vi.advanceTimersByTime(1000);
 
-      await expect(promise).rejects.toThrow('Process timed out after 1000ms');
+      await rejection;
 
       expect(mockChild.kill).toHaveBeenCalled();
 
       vi.useRealTimers();
+    });
+
+    it('should force-kill a timed-out process that outlives the grace period', async () => {
+      const mockChild = {
+        on: vi.fn(),
+        kill: vi.fn(),
+      } as unknown as ChildProcess;
+
+      vi.mocked(spawn).mockReturnValue(mockChild);
+      vi.useFakeTimers();
+
+      let settled = false;
+      const promise = spawnProcess('long-command', [], { timeout: 1000, killGracePeriod: 500 });
+      promise.catch(() => {}).finally(() => (settled = true));
+
+      vi.advanceTimersByTime(1000);
+      await Promise.resolve();
+      expect(mockChild.kill).toHaveBeenCalledWith();
+      expect(settled).toBe(false);
+
+      vi.advanceTimersByTime(500);
+      await expect(promise).rejects.toThrow('Process timed out after 1000ms');
+      expect(mockChild.kill).toHaveBeenLastCalledWith('SIGKILL');
+
+      vi.useRealTimers();
+    });
+
+    it('should wait for a timed-out process to exit before rejecting', async () => {
+      let exit: (code: number | null) => void = () => {};
+      const mockChild = {
+        on: vi.fn((event, callback) => {
+          if (event === 'exit') exit = callback;
+        }),
+        kill: vi.fn(),
+      } as unknown as ChildProcess;
+
+      vi.mocked(spawn).mockReturnValue(mockChild);
+      vi.useFakeTimers();
+
+      let settled = false;
+      const promise = spawnProcess('long-command', [], { timeout: 1000, killGracePeriod: 5000 });
+      promise.catch(() => {}).finally(() => (settled = true));
+
+      vi.advanceTimersByTime(1000);
+      await Promise.resolve();
+      expect(mockChild.kill).toHaveBeenCalled();
+      expect(settled).toBe(false);
+
+      // Killed processes exit with a signal or a non-zero code; it's still reported as a timeout
+      exit(null);
+      await expect(promise).rejects.toThrow('Process timed out after 1000ms');
+
+      vi.useRealTimers();
+    });
+
+    it('should kill the whole process tree with taskkill on Windows', async () => {
+      const originalPlatform = Object.getOwnPropertyDescriptor(process, 'platform')!;
+      Object.defineProperty(process, 'platform', { ...originalPlatform, value: 'win32' });
+
+      let exit: (code: number | null) => void = () => {};
+      const mockChild = {
+        pid: 4321,
+        on: vi.fn((event, callback) => {
+          if (event === 'exit') exit = callback;
+        }),
+        kill: vi.fn(),
+      } as unknown as ChildProcess;
+      let taskkillExit: (code: number | null) => void = () => {};
+      const mockTaskkill = {
+        on: vi.fn((event, callback) => {
+          if (event === 'exit') taskkillExit = callback;
+        }),
+      } as unknown as ChildProcess;
+
+      vi.mocked(spawn).mockReturnValueOnce(mockChild).mockReturnValueOnce(mockTaskkill);
+      vi.useFakeTimers();
+
+      try {
+        const promise = spawnProcess('npx', ['skills'], { timeout: 1000, killGracePeriod: 5000 });
+        vi.advanceTimersByTime(1000);
+
+        expect(spawn).toHaveBeenLastCalledWith('taskkill', ['/pid', '4321', '/T', '/F'], {
+          stdio: 'ignore',
+        });
+        expect(mockChild.kill).not.toHaveBeenCalled();
+
+        // When taskkill fails, at least the shell is stopped
+        taskkillExit(128);
+        expect(mockChild.kill).toHaveBeenCalled();
+
+        exit(1);
+        await expect(promise).rejects.toThrow('Process timed out after 1000ms');
+      } finally {
+        Object.defineProperty(process, 'platform', originalPlatform);
+        vi.useRealTimers();
+      }
     });
 
     it('should clear timeout on successful exit', async () => {

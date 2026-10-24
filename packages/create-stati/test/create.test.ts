@@ -10,13 +10,18 @@ import {
 } from '../src/create.js';
 import type { CreateOptions } from '../src/create.js';
 import { ExampleManager } from '../src/examples.js';
-import { copyAgentSkill } from '../src/agent-skill.js';
+import { ProcessExitError, spawnProcess } from '../src/utils/process.utils.js';
 
-// Wrap the real implementation so individual tests can force a failure
-vi.mock('../src/agent-skill.js', async (importOriginal) => {
-  const actual = (await importOriginal()) as typeof import('../src/agent-skill.js');
-  return { ...actual, copyAgentSkill: vi.fn(actual.copyAgentSkill) };
+// Wrap the real implementation so the agent skill tests can stub the skills CLI
+vi.mock('../src/utils/process.utils.js', async (importOriginal) => {
+  const actual = (await importOriginal()) as typeof import('../src/utils/process.utils.js');
+  return { ...actual, spawnProcess: vi.fn(actual.spawnProcess) };
 });
+
+/** Calls that ran the skills CLI through npx */
+function npxCalls() {
+  return vi.mocked(spawnProcess).mock.calls.filter(([command]) => command === 'npx');
+}
 
 describe('create-stati scaffolding', () => {
   let tempDir: string;
@@ -65,50 +70,132 @@ describe('create-stati scaffolding', () => {
       expect(packageJson.devDependencies).toHaveProperty('@stati/core');
     });
 
-    it('should install the agent skill when requested', async () => {
-      const projectDir = join(tempDir, 'test-skill');
-      const result = await createSite({
-        projectName: 'test-skill',
+    describe('agent skill', () => {
+      const skillOptions = (name: string): CreateOptions => ({
+        projectName: name,
         template: 'blank',
         styling: 'css',
         gitInit: false,
-        agentSkill: 'claude',
-        dir: projectDir,
+        dir: join(tempDir, name),
       });
 
-      expect(result.agentSkillDir).toBe('.claude/skills/stati');
-      await expect(
-        access(join(result.targetDir, '.claude', 'skills', 'stati', 'SKILL.md')),
-      ).resolves.not.toThrow();
-    });
-
-    it('should still create the site but not report the agent skill when copying fails', async () => {
-      vi.mocked(copyAgentSkill).mockRejectedValueOnce(new Error('skill missing'));
-      const projectDir = join(tempDir, 'test-skill-fail');
-      const result = await createSite({
-        projectName: 'test-skill-fail',
-        template: 'blank',
-        styling: 'css',
-        gitInit: false,
-        agentSkill: 'claude',
-        dir: projectDir,
+      beforeEach(() => {
+        vi.mocked(spawnProcess).mockClear();
       });
 
-      expect(result.agentSkillDir).toBeUndefined();
-      await expect(access(join(result.targetDir, 'package.json'))).resolves.not.toThrow();
-    });
-
-    it('should not install the agent skill by default', async () => {
-      const projectDir = join(tempDir, 'test-no-skill');
-      const result = await createSite({
-        projectName: 'test-no-skill',
-        template: 'blank',
-        styling: 'css',
-        gitInit: false,
-        dir: projectDir,
+      afterEach(() => {
+        // Restores the console spies; spawnProcess keeps wrapping the real implementation
+        vi.restoreAllMocks();
       });
 
-      await expect(access(join(result.targetDir, '.claude'))).rejects.toThrow();
+      it.each([
+        ['claude', 'claude-code', '.claude/skills/stati'],
+        ['agents', 'universal', '.agents/skills/stati'],
+        ['github', 'universal', '.agents/skills/stati'],
+      ] as const)(
+        'should run the skills CLI for target %s with the %s agent',
+        async (target, agent, dir) => {
+          vi.mocked(spawnProcess).mockResolvedValueOnce('');
+          const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+          const options = { ...skillOptions(`test-skill-${target}`), agentSkill: target };
+
+          const result = await createSite(options);
+
+          expect(logSpy).toHaveBeenCalledWith(
+            expect.stringContaining('Installing the Stati agent skill...'),
+          );
+
+          expect(npxCalls()).toEqual([
+            [
+              'npx',
+              [
+                '--yes',
+                'skills@1',
+                'add',
+                'ianchak/stati',
+                '--skill',
+                'stati',
+                '--agent',
+                agent,
+                '--copy',
+                '--yes',
+                '--json',
+              ],
+              { cwd: options.dir, stdio: 'pipe', timeout: 120_000, killGracePeriod: 5000 },
+            ],
+          ]);
+          expect(result.agentSkillDir).toBe(dir);
+        },
+      );
+
+      it.each([
+        ['exits with a non-zero code', new Error('npx exited with code 1')],
+        ['times out', new Error('Process timed out after 120000ms')],
+        ['fails to start', new Error('spawn npx ENOENT')],
+      ])('should warn and still create the site when the skills CLI %s', async (_, error) => {
+        vi.mocked(spawnProcess).mockRejectedValueOnce(error);
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+        const result = await createSite({
+          ...skillOptions('test-skill-fail'),
+          agentSkill: 'claude',
+        });
+
+        expect(result.agentSkillDir).toBeUndefined();
+        await expect(access(join(result.targetDir, 'package.json'))).resolves.not.toThrow();
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining(`Couldn't install the Stati agent skill (${error.message})`),
+        );
+        expect(logSpy).toHaveBeenCalledWith(
+          expect.stringContaining(
+            'npx skills@1 add ianchak/stati --skill stati -a claude-code --copy -y',
+          ),
+        );
+      });
+
+      it('should show the error the skills CLI reported', async () => {
+        const stdout = JSON.stringify([{ status: 'failed', error: 'Failed to clone repository' }]);
+        vi.mocked(spawnProcess).mockRejectedValueOnce(new ProcessExitError('npx', 1, stdout));
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        vi.spyOn(console, 'log').mockImplementation(() => {});
+
+        await createSite({ ...skillOptions('test-skill-cli-error'), agentSkill: 'claude' });
+
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining(
+            "Couldn't install the Stati agent skill (Failed to clone repository)",
+          ),
+        );
+      });
+
+      it('should remove what a failed install wrote', async () => {
+        vi.mocked(spawnProcess).mockImplementationOnce(async (_command, _args, options) => {
+          const skillDir = join(options!.cwd!, '.claude/skills/stati');
+          await mkdir(skillDir, { recursive: true });
+          await writeFile(join(skillDir, 'SKILL.md'), '# Stati');
+          await writeFile(join(options!.cwd!, 'skills-lock.json'), '{}');
+          throw new Error('Process timed out after 120000ms');
+        });
+        vi.spyOn(console, 'warn').mockImplementation(() => {});
+        vi.spyOn(console, 'log').mockImplementation(() => {});
+
+        const result = await createSite({
+          ...skillOptions('test-skill-partial'),
+          agentSkill: 'claude',
+        });
+
+        await expect(access(join(result.targetDir, '.claude'))).rejects.toThrow();
+        await expect(access(join(result.targetDir, 'skills-lock.json'))).rejects.toThrow();
+        await expect(access(join(result.targetDir, 'package.json'))).resolves.not.toThrow();
+      });
+
+      it('should not run the skills CLI without an agent skill target', async () => {
+        await createSite(skillOptions('test-no-skill'));
+        await createSite({ ...skillOptions('test-no-skill-false'), agentSkill: false });
+
+        expect(npxCalls()).toEqual([]);
+      });
     });
 
     it('should create a project with Sass styling', async () => {
@@ -615,7 +702,7 @@ describe('create-stati scaffolding', () => {
       const packageJson = JSON.parse(
         await readFile(join(result.targetDir, 'package.json'), 'utf-8'),
       );
-      expect(packageJson.devDependencies['@stati/images']).toBe('^1.0.0');
+      expect(packageJson.devDependencies['@stati/images']).toBe('^1.0.1');
     });
 
     it('should remove the blog card template and fonts without image tools', async () => {
@@ -788,7 +875,7 @@ describe('create-stati scaffolding', () => {
       const packageJson = JSON.parse(
         await readFile(join(result.targetDir, 'package.json'), 'utf-8'),
       );
-      expect(packageJson.devDependencies['@stati/images']).toBe('^1.0.0');
+      expect(packageJson.devDependencies['@stati/images']).toBe('^1.0.1');
     });
 
     it('should set a placeholder baseUrl and leave images out without image tools', async () => {

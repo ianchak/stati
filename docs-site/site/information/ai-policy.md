@@ -45,14 +45,30 @@ for agents building Stati websites. It covers Markdown, routing, Eta layouts,
 includes, props and helpers, configuration, assets, SEO, search, feeds, caching,
 and deployment.
 
-Copy the entire `stati` skill folder into the location your agent discovers:
+`create-stati --agent-skill` installs it in a new site. To add it to an existing
+site, or update it, use the open [`skills` CLI](https://github.com/vercel-labs/skills):
 
-- **Claude Code (terminal or its VS Code extension):** `.claude/skills/stati/`.
-- **GitHub Copilot in VS Code:** `.github/skills/stati/` or `.claude/skills/stati/`.
+```bash
+# Add the skill (asks which agents)
+npx skills add ianchak/stati --skill stati
 
-For both applications, use one copy in `.claude/skills/stati/`. Claude Code does
-not normally discover native project skills in `.github/skills/`. Keep the
-bundled references, starter assets, scripts, and license together.
+# Without prompts, for Claude Code and Copilot in VS Code
+npx skills add ianchak/stati --skill stati -a claude-code --copy -y
+# Without prompts, into .agents/skills (Copilot, Codex, Cursor and others)
+npx skills add ianchak/stati --skill stati -a universal --copy -y
+
+# Update the skill
+npx skills update stati -p
+```
+
+For Claude Code and Copilot in VS Code, use one copy in `.claude/skills/stati/`.
+Claude Code does not normally discover native project skills in
+`.agents/skills/` or `.github/skills/`. Commit `skills-lock.json`, or
+`npx skills update` finds nothing to update, and keep project rules in
+`CLAUDE.md` or `AGENTS.md`: an update replaces the whole skill folder. The
+[scaffolder docs](/cli/scaffolder#add-or-update-the-skill-in-an-existing-site)
+cover older copies, `.github/skills`, personal installs and the CLI's
+requirements and usage data.
 
 Start a fresh Claude Code session in the project and check for `/stati` in the
 command menu. Invoke `/stati` explicitly to verify it loads. Discovery makes a
