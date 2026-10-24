@@ -60,6 +60,9 @@ function hashedName(input: string, minify = true): string {
   return `styles-${createHash('sha256').update(css).digest('hex').slice(0, 8).toUpperCase()}.css`;
 }
 
+const STATIC_FILE_WARNING =
+  'public/styles.css is not copied: --tailwind-output names that path (dist/styles.css). Rename the static file or change --tailwind-output.';
+
 function stylesheetLinks(html: string): string[] {
   return [...html.matchAll(/<link rel="stylesheet" href="([^"]+)">/g)].map((match) => match[1]!);
 }
@@ -427,9 +430,17 @@ describe('stylesheet builds with Tailwind CSS', () => {
       const { warnings } = await site.build({ tailwind });
 
       expect(await site.read('dist/styles.css')).toBe('body { color: black; }');
-      expect(warnings).toEqual([
-        'public/styles.css is not copied: Tailwind CSS writes dist/styles.css. Delete one of them.',
-      ]);
+      expect(warnings).toEqual([STATIC_FILE_WARNING]);
+    });
+
+    it('does not copy a static file at the output path into a hashed build', async () => {
+      await createSite();
+      await site.write('public/styles.css', '/* source the static copy would ship */');
+
+      const { warnings } = await site.build({ tailwind });
+
+      expect(await site.exists('dist/styles.css')).toBe(false);
+      expect(warnings).toEqual([STATIC_FILE_WARNING]);
     });
 
     it('with css.autoInject false leaves the link to templates, which print the final path', async () => {

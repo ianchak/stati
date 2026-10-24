@@ -159,6 +159,18 @@ describe('rebaseRelativeUrls', () => {
 
     expect(rebaseRelativeUrls(css, '/styles.css')).toBe(css);
   });
+
+  it('leaves the url() inside a data URI with escaped quotes alone', () => {
+    const css =
+      'a{b:url("data:image/svg+xml,<svg fill=\\"url(%23g)\\"/>")}' +
+      "c{d:url('data:image/svg+xml,<svg fill=\\'url(%23g)\\'/>')}" +
+      'e{f:url(img\\(1\\).png)}';
+
+    expect(rebaseRelativeUrls(css, '/styles.css')).toBe(css);
+    expect(rebaseRelativeUrls(`${css}g{h:url(x.png)}`, '/css/site.css')).toBe(
+      `${css}g{h:url(/css/x.png)}`,
+    );
+  });
 });
 
 describe('getStylesheetFingerprint', () => {
@@ -216,6 +228,18 @@ describe('linksStylesheet', () => {
       linksStylesheet('<code>&lt;link href=&quot;/styles.css&quot;&gt;</code>', '/styles.css'),
     ).toBe(false);
   });
+
+  it('counts only links that apply the stylesheet', () => {
+    const linked = (attributes: string) =>
+      linksStylesheet(`<link ${attributes} href="/styles.css">`, '/styles.css');
+
+    expect(linked('rel="preload" as="style"')).toBe(false);
+    expect(linked('rel="alternate stylesheet" title="Dark"')).toBe(false);
+    expect(linked('data-rel="stylesheet"')).toBe(false);
+    expect(linked('')).toBe(false);
+    expect(linked('rel="STYLESHEET"')).toBe(true);
+    expect(linked("rel=' stylesheet  noopener '")).toBe(true);
+  });
 });
 
 describe('autoInjectStylesheets', () => {
@@ -237,6 +261,16 @@ describe('autoInjectStylesheets', () => {
     expect(autoInjectStylesheets(absolute, ['/styles.css'], 'https://example.com')).toBe(absolute);
     expect(autoInjectStylesheets('<p>fragment</p>', ['/styles.css'])).toBe('<p>fragment</p>');
     expect(autoInjectStylesheets(html, [])).toBe(html);
+  });
+
+  it('adds the link to a page that only preloads the path', () => {
+    const preloaded = html.replace(
+      '</head>',
+      '<link rel="preload" href="/styles.css" as="style"></head>',
+    );
+    expect(autoInjectStylesheets(preloaded, ['/styles.css'])).toBe(
+      preloaded.replace('</head>', '    <link rel="stylesheet" href="/styles.css">\n</head>'),
+    );
   });
 });
 

@@ -238,7 +238,10 @@ links `/styles.css` in its templates also works, but keeps a fixed name.
   apart is not updated. If Tailwind fails, the previous pages stay as they were.
 - Relative `url()` references in the CSS become root paths (`url(fonts/a.woff2)` from
   `/styles.css` becomes `url(/fonts/a.woff2)`), so `_assets/` loads the same files.
-- A file in `public/` at the Tailwind output's path is not copied over it.
+- A file in `public/` at the Tailwind output's path is never copied, in dev or in
+  production, hashed or not, and the build warns about it.
+- Auto-injection skips a page that already has a `<link rel="stylesheet">` to the path; a
+  preload or an alternate stylesheet doesn't count.
 - `css: { hash, minify, autoInject }`, all `true` by default; development never
   hashes or minifies. `hash: false` writes and links the output under its own name.
 - Only the Tailwind stylesheet is hashed. `public/` CSS and Sass output keep their

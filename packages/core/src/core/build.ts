@@ -1078,7 +1078,9 @@ async function copyStaticAssets(
     return 0;
   }
 
-  // The file Tailwind CSS writes under its own name wins over a static file at its path
+  // The Tailwind output's path belongs to Tailwind in every build, so a static file there is
+  // never copied: the dev server's watcher would write over it, and a hashed build would ship
+  // a copy that dev never serves
   let skipFile: string | undefined;
   if (tailwindOutput) {
     const outputPath = relative(outDir, tailwindOutput);
@@ -1086,7 +1088,7 @@ async function copyStaticAssets(
       skipFile = resolve(tailwindOutput);
       const shown = (path: string) => relative(process.cwd(), path).replace(/\\/g, '/');
       logger.warning(
-        `${shown(join(staticDir, outputPath))} is not copied: Tailwind CSS writes ${shown(tailwindOutput)}. Delete one of them.`,
+        `${shown(join(staticDir, outputPath))} is not copied: --tailwind-output names that path (${shown(tailwindOutput)}). Rename the static file or change --tailwind-output.`,
       );
     }
   }
@@ -1513,11 +1515,7 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
   const endAssetSpan = recorder.startSpan('assetCopyMs');
   let assetsCount = 0;
   if (!options.skipAssetCopy) {
-    // The dev server's watcher, and a production build with css.hash false, write the
-    // Tailwind output under its own name
-    const tailwindOutput =
-      stylesheetPlan && (isDevMode || !stylesheetPlan.hash) ? stylesheetPlan.outputFile : undefined;
-    assetsCount = await copyStaticAssets(config, outDir, logger, tailwindOutput);
+    assetsCount = await copyStaticAssets(config, outDir, logger, stylesheetPlan?.outputFile);
   }
   endAssetSpan();
   recorder.increment('assetsCopied', assetsCount);

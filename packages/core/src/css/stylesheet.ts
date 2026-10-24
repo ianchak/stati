@@ -74,14 +74,22 @@ const SAFE_PATH = /^\/[A-Za-z0-9_\-./]+$/;
 /** Pages read at once while their stylesheet link is rewritten */
 const RELINK_BATCH_SIZE = 32;
 
-/** A CSS `url()` with a double-quoted, single-quoted or unquoted reference, without escapes */
-const CSS_URL = /url\(\s*(?:"([^"\\]*)"|'([^'\\]*)'|([^\s"'()\\]+))\s*\)/gi;
+/**
+ * A CSS `url()` with a double-quoted, single-quoted or unquoted reference. Escapes are matched
+ * too, so a quoted data URI with escaped quotes is one match and the scan doesn't stop at a
+ * `url()` inside it.
+ */
+const CSS_URL =
+  /url\(\s*(?:"((?:[^"\\]|\\[\s\S])*)"|'((?:[^'\\]|\\[\s\S])*)'|((?:[^\s"'()\\]|\\[\s\S])+))\s*\)/gi;
 
 /** References that don't depend on where the stylesheet is: a scheme, the site root, a fragment */
 const LOCATION_INDEPENDENT_URL = /^(?:[a-z][a-z0-9+.-]*:|\/|#)/i;
 
 /** The `href` of a `<link>` tag, quoted or not */
 const LINK_HREF = /\shref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/i;
+
+/** The `rel` of a `<link>` tag, quoted or not */
+const LINK_REL = /\srel\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/i;
 
 function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -225,7 +233,11 @@ export function rebaseRelativeUrls(css: string, path: string): string {
     CSS_URL,
     (match, double: string | undefined, single: string | undefined, bare: string | undefined) => {
       const reference = double ?? single ?? bare ?? '';
-      if (reference === '' || LOCATION_INDEPENDENT_URL.test(reference)) {
+      if (
+        reference === '' ||
+        reference.includes('\\') ||
+        LOCATION_INDEPENDENT_URL.test(reference)
+      ) {
         return match;
       }
       const { pathname, search, hash } = new URL(reference, base);
@@ -412,8 +424,18 @@ function getHrefPath(href: string, origin: string | undefined): string {
 }
 
 /**
- * Whether the HTML has a `<link>` whose `href` is the path: quoted or not, with a query or a
- * fragment, or under the site's own origin.
+ * Whether a `<link>` tag applies a stylesheet: its `rel` holds `stylesheet` and not `alternate`,
+ * which browsers don't apply until the reader picks it. A preload only fetches the file.
+ */
+function isStylesheetLink(tag: string): boolean {
+  const match = LINK_REL.exec(tag);
+  const tokens = (match?.[1] ?? match?.[2] ?? match?.[3] ?? '').toLowerCase().split(/\s+/);
+  return tokens.includes('stylesheet') && !tokens.includes('alternate');
+}
+
+/**
+ * Whether the HTML has a `<link rel="stylesheet">` whose `href` is the path: quoted or not,
+ * with a query or a fragment, or under the site's own origin.
  *
  * @param html - The page's HTML
  * @param path - The stylesheet path
@@ -422,6 +444,9 @@ function getHrefPath(href: string, origin: string | undefined): string {
 export function linksStylesheet(html: string, path: string, siteUrl?: string): boolean {
   const origin = getSiteOrigin(siteUrl);
   for (const [tag] of html.matchAll(/<link\b[^>]*>/gi)) {
+    if (!isStylesheetLink(tag)) {
+      continue;
+    }
     const match = LINK_HREF.exec(tag);
     const href = match?.[1] ?? match?.[2] ?? match?.[3];
     if (href !== undefined && getHrefPath(href, origin) === path) {

@@ -28,7 +28,7 @@ Pass the same two flags to both commands:
 ```
 
 - `--tailwind-input` is Tailwind's input stylesheet.
-- `--tailwind-output` is the stylesheet's file in the output directory. The dev server's Tailwind watcher writes it, and pages link it under its path there, `/styles.css`. It must be a `.css` file inside the output directory, with only letters, digits, `-`, `_`, `.` and `/` in its path. A file at the same path in `public/`, such as `public/styles.css`, isn't copied over it, and the build warns about it.
+- `--tailwind-output` is the stylesheet's file in the output directory. The dev server's Tailwind watcher writes it, and pages link it under its path there, `/styles.css`. It must be a `.css` file inside the output directory, with only letters, digits, `-`, `_`, `.` and `/` in its path. A file at the same path in `public/`, such as `public/styles.css`, is never copied, in development or production, and the build warns about it.
 
 `stati build` stops with an error when it gets only one of the two. Tailwind CSS 4 needs `tailwindcss` and `@tailwindcss/cli` installed in the project, Tailwind CSS 3 needs `tailwindcss`. See [Tailwind CSS integration](/core-concepts/static-assets#tailwind-css-integration) for the stylesheet itself, including the `@source` rule for classes your templates build at render time.
 
@@ -39,7 +39,7 @@ Stati links the stylesheet on every page, so your templates don't need a `<link>
 1. Before any page renders, it checks that the input file exists and that Tailwind CSS is installed.
 2. It renders the pages. Every class a template builds with `stati.propValue()` goes into `.stati/tailwind-classes.html`.
 3. With that list complete, it runs Tailwind once, with `--minify`, and writes `dist/_assets/styles-A1B2C3D4.css`, where `A1B2C3D4` comes from the CSS. Relative `url()` references, such as `url(fonts/inter.woff2)`, become paths from the site root, `url(/fonts/inter.woff2)`, so they load the same files from `_assets/` as from `/styles.css`.
-4. It writes the pages it rendered. Every page links that file with `<link rel="stylesheet" href="/_assets/styles-A1B2C3D4.css">`, added before `</head>` unless the page links the path already.
+4. It writes the pages it rendered. Every page links that file with `<link rel="stylesheet" href="/_assets/styles-A1B2C3D4.css">`, added before `</head>` unless the page has a `<link rel="stylesheet">` to the path already. A preload of the path doesn't count.
 5. It deletes the stylesheets earlier builds left in `dist/_assets/` under other names.
 
 The file name is known only once Tailwind has run, after the pages, so the build holds the pages it renders in memory until then and writes each once, after the [`afterRender`](/api/hooks) hook has run for it. When the CSS changes, Stati also writes the new name into the pages the [ISG cache](/core-concepts/isg) kept: a CSS change doesn't render any page again. If Tailwind fails, the build stops with Tailwind's error and the previous build's pages and stylesheet stay as they were.
