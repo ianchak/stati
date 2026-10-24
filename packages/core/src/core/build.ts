@@ -88,6 +88,7 @@ import {
   rewriteStylesheetLinks,
   resolveCSSConfig,
   StaticStylesheets,
+  isHashableStylesheetPath,
   type BuiltStylesheet,
   type StylesheetPlan,
   type TailwindBuildOptions,
@@ -465,6 +466,8 @@ interface ProcessPagesResult {
   deferredPages: DeferredPage[];
   /** The output files of the pages this build rendered, written or held */
   renderedFiles: string[];
+  /** Stylesheet paths rendered pages link that the static directory has no file for */
+  unhashedLinks: string[];
 }
 
 /**
@@ -706,12 +709,23 @@ async function processPagesWithCache(
   const tailwindTargets = new Map<string, string>(
     stylesheet?.plan.hash ? [[stylesheet.plan.path, stylesheet.path]] : [],
   );
+  // The names links get, which a page that links them already needs no copy for
+  const hashedNames = new Set(tailwindTargets.values());
+  // Stylesheet paths pages link that the static directory has no file for, such as one added
+  // later; the build records them, so pages kept from now on link its copy once it exists
+  const unhashedLinks = new Set<string>();
   const linkHashedStylesheets = async (html: string, pageUrl: string): Promise<string> => {
     const targets = new Map(tailwindTargets);
     for (const path of getLinkedStylesheetPaths(html, pageUrl, config.site.baseUrl)) {
-      const copy = targets.has(path) ? undefined : await staticStylesheets?.resolve(path);
+      if (targets.has(path) || hashedNames.has(path)) {
+        continue;
+      }
+      const copy = await staticStylesheets?.resolve(path);
       if (copy !== undefined) {
         targets.set(path, copy);
+        hashedNames.add(copy);
+      } else if (isHashableStylesheetPath(path)) {
+        unhashedLinks.add(path);
       }
     }
     return rewriteStylesheetLinks(html, targets, pageUrl, config.site.baseUrl);
@@ -1076,7 +1090,14 @@ async function processPagesWithCache(
     }
   }
 
-  return { cacheHits, cacheMisses, searchIndexFilename, deferredPages, renderedFiles };
+  return {
+    cacheHits,
+    cacheMisses,
+    searchIndexFilename,
+    deferredPages,
+    renderedFiles,
+    unhashedLinks: [...unhashedLinks],
+  };
 }
 
 /**
@@ -1370,8 +1391,14 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     staticStylesheets,
   );
   endPageRenderSpan();
-  const { cacheHits, cacheMisses, searchIndexFilename, deferredPages, renderedFiles } =
-    pageProcessingResult;
+  const {
+    cacheHits,
+    cacheMisses,
+    searchIndexFilename,
+    deferredPages,
+    renderedFiles,
+    unhashedLinks,
+  } = pageProcessingResult;
 
   // Write Tailwind class inventory after all templates have been rendered (if Tailwind is used)
   const tailwindStart = performance.now();
@@ -1422,20 +1449,33 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     logger.success(`Built ${builtStylesheet.path} (${formatBytes(builtStylesheet.sizeInBytes)})`);
   }
 
-  // The hashed name of every stylesheet this build links: the Tailwind output and the static
-  // stylesheets the rendered pages link, and those only pages kept from earlier builds link.
-  // Those pages carry the names earlier builds gave; a stylesheet whose content changed has a
-  // new one, which they link from here on, and one no longer in the static directory goes back
-  // to its own path. Nothing is rendered again for it.
+  // The name every stylesheet this build links gets: the Tailwind output and the static
+  // stylesheets the rendered pages link, a hashed name each, and a path pages link that the
+  // static directory has no file for, its own. Pages kept from earlier builds carry the names
+  // those builds gave, so the stylesheets only they link are looked up again: a changed file
+  // gets a new name, a removed one its own path back, and one added since its copy. The kept
+  // pages link the new names from here on; nothing is rendered again for them.
   if (staticStylesheets) {
+    const rendered = new Set(renderedFiles);
+    const cachedPages = pages
+      .map((page) => ({ file: getPageOutput(page, outDir).outputPath, url: page.url }))
+      .filter(({ file }) => !rendered.has(file));
+
     const current = await staticStylesheets.hashed();
     if (renderStylesheet?.plan.hash && builtStylesheet) {
       current.set(renderStylesheet.plan.path, builtStylesheet.path);
     }
-    for (const path of Object.keys(previousStylesheets)) {
-      const copy = current.has(path) ? undefined : await staticStylesheets.resolve(path);
-      if (copy !== undefined) {
-        current.set(path, copy);
+    for (const path of unhashedLinks) {
+      if (!current.has(path)) {
+        current.set(path, path);
+      }
+    }
+    // Every page rendered again links only what this build found
+    if (cachedPages.length > 0) {
+      for (const path of Object.keys(previousStylesheets)) {
+        if (!current.has(path)) {
+          current.set(path, (await staticStylesheets.resolve(path)) ?? path);
+        }
       }
     }
 
@@ -1446,21 +1486,21 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
       for (const stale of await getStaleStylesheetPaths(outDir, path, recorded, target)) {
         replacements.set(stale, target);
       }
+      // Linked under its own path while the static directory had no file for it
+      if (recorded === path && target !== path) {
+        replacements.set(path, target);
+      }
     }
-    const rendered = new Set(renderedFiles);
-    const cachedFiles = pages
-      .map((page) => getPageOutput(page, outDir).outputPath)
-      .filter((file) => !rendered.has(file));
-    const relinked = await relinkStylesheets(cachedFiles, replacements);
+    const relinked = await relinkStylesheets(cachedPages, replacements, config.site.baseUrl);
     if (relinked > 0) {
       logger.info(
         `Updated the stylesheet links of ${relinked} cached page${relinked === 1 ? '' : 's'}`,
       );
     }
 
-    for (const [path, copy] of current) {
-      if (path !== renderStylesheet?.plan.path) {
-        logger.info(`Linked ${path} as ${copy}`);
+    for (const [path, name] of current) {
+      if (path !== renderStylesheet?.plan.path && name !== path) {
+        logger.info(`Linked ${path} as ${name}`);
       }
     }
     if (current.size > 0) {

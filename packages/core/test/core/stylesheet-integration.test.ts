@@ -683,7 +683,55 @@ describe('stylesheet builds with Tailwind CSS', () => {
       expect(rendered).toEqual([]);
       expect(stylesheetLinks(await site.read('dist/index.html'))).toEqual(['/styles.css']);
       expect(await assetFiles()).toEqual([]);
-      expect((await site.manifest()).stylesheets).toBeUndefined();
+      // Recorded under its own path, so the pages link a copy again once the file is back
+      expect((await site.manifest()).stylesheets).toEqual({ '/styles.css': '/styles.css' });
+
+      await site.write('public/styles.css', CSS);
+      const { rendered: again, info } = await site.build();
+
+      expect(again).toEqual([]);
+      expect(info).toContain('Updated the stylesheet links of 2 cached pages');
+      expect(stylesheetLinks(await site.read('dist/index.html'))).toEqual([
+        hashStylesheet(CSS, '/styles.css').path,
+      ]);
+    });
+
+    it('links a copy on cached pages once a stylesheet they link is added', async () => {
+      await createStaticSite();
+      await site.write(
+        'site/layout.eta',
+        LINKED.replace('</head>', '<link rel="stylesheet" href="/late.css"></head>'),
+      );
+      await site.build();
+      expect((await site.manifest()).stylesheets?.['/late.css']).toBe('/late.css');
+
+      await site.write('public/late.css', 'p { color: red; }');
+      const { rendered, info } = await site.build();
+
+      expect(rendered).toEqual([]);
+      expect(info).toContain('Updated the stylesheet links of 2 cached pages');
+      expect(stylesheetLinks(await site.read('dist/about.html'))).toEqual([
+        hashStylesheet(CSS, '/styles.css').path,
+        hashStylesheet('p { color: red; }', '/late.css').path,
+      ]);
+    });
+
+    it('leaves a link with an integrity digest on the file under its own name', async () => {
+      await createStaticSite();
+      await site.write(
+        'site/layout.eta',
+        LAYOUT.replace(
+          '</head>',
+          '<link rel="stylesheet" href="/styles.css" integrity="sha384-abc" crossorigin></head>',
+        ),
+      );
+
+      await site.build();
+
+      expect(await site.read('dist/index.html')).toContain(
+        '<link rel="stylesheet" href="/styles.css" integrity="sha384-abc" crossorigin>',
+      );
+      expect(await assetFiles()).toEqual([]);
     });
 
     it('with css.hash false links the stylesheets as they are and deletes earlier copies', async () => {

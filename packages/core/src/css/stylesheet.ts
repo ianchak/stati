@@ -76,22 +76,25 @@ const SAFE_PATH = /^\/[A-Za-z0-9_\-./]+$/;
 const RELINK_BATCH_SIZE = 32;
 
 /**
- * The CSS tokens that can hold a reference, scanned left to right: a comment and a string,
- * which stay as they are, an `@import` of a string, and a `url()` with a double-quoted,
- * single-quoted or unquoted reference. Escapes are matched too, so a quoted data URI with
+ * The CSS tokens that can hold a reference, scanned left to right: a comment, the `@import`
+ * keyword, a `url()` with a double-quoted, single-quoted or unquoted reference, and a string,
+ * whose closing quote the last group holds. Escapes are matched too, so a quoted data URI with
  * escaped quotes is one token and the scan doesn't stop at a `url()` inside it. A comment or
  * string left open runs to the end of the stylesheet, as in CSS, so the scan stays linear.
  */
 const CSS_TOKEN = new RegExp(
   [
     String.raw`\/\*[\s\S]*?(?:\*\/|$)`,
-    String.raw`(@import\s+)(?:"((?:[^"\\]|\\[\s\S])*)"|'((?:[^'\\]|\\[\s\S])*)')`,
+    String.raw`(@import)(?![\w-])`,
     // An unquoted reference's hex escape can end with a space, which is part of the escape
     String.raw`url\(\s*(?:"((?:[^"\\]|\\[\s\S])*)"|'((?:[^'\\]|\\[\s\S])*)'|((?:[^\s"'()\\]|\\(?:[0-9a-f]{1,6}(?:\r\n|[ \t\r\n\f])?|[\s\S]))+))\s*\)`,
-    String.raw`"(?:[^"\\]|\\[\s\S])*(?:"|$)|'(?:[^'\\]|\\[\s\S])*(?:'|$)`,
+    String.raw`(["'])((?:(?!\5)[^\\]|\\[\s\S])*)(\5|$)`,
   ].join('|'),
   'gi',
 );
+
+/** Whitespace as CSS reads it */
+const CSS_WHITESPACE_ONLY = /^[ \t\r\n\f]*$/;
 
 /** A CSS escape: up to six hexadecimal digits and one optional whitespace, or any character */
 const CSS_ESCAPE = /\\(?:([0-9a-f]{1,6})(?:\r\n|[ \t\r\n\f])?|([\s\S]))/gi;
@@ -99,21 +102,14 @@ const CSS_ESCAPE = /\\(?:([0-9a-f]{1,6})(?:\r\n|[ \t\r\n\f])?|([\s\S]))/gi;
 /** References that don't depend on where the stylesheet is: a scheme, the site root, a fragment */
 const LOCATION_INDEPENDENT_URL = /^(?:[a-z][a-z0-9+.-]*:|\/|#)/i;
 
-/**
- * The start of a `<link>` tag, of a comment, or of an element the browser reads as text or
- * keeps inert (script, style, template, textarea, title), whose contents aren't markup. The
- * group names the element.
- */
-const HTML_TAG_START = /<(?:!--|(link|script|style|template|textarea|title)(?=[\s/>]))/gi;
+/** A tag name after `<` or `</`: a letter, then anything up to whitespace, `/` or `>` */
+const HTML_TAG_NAME = /[A-Za-z][^\t\n\f\r />]*/y;
 
-/** The `href` of a `<link>` tag, quoted or not */
-const LINK_HREF = /\shref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/i;
+/** Whitespace as HTML reads it between attributes */
+const HTML_WHITESPACE = /[\t\n\f\r ]/;
 
-/** The `rel` of a `<link>` tag, quoted or not */
-const LINK_REL = /\srel\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/i;
-
-/** The `as` of a `<link>` tag, quoted or not */
-const LINK_AS = /\sas\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/i;
+/** Elements whose contents browsers read as text or keep inert, so tags in them aren't markup */
+const HTML_TEXT_ELEMENTS = new Set(['script', 'style', 'template', 'textarea', 'title']);
 
 /** Origin for resolving paths with `URL`, never printed */
 const URL_BASE = 'http://stati.invalid';
@@ -320,30 +316,42 @@ export function rebaseRelativeUrls(css: string, path: string): string {
     return escapeCss(`${pathname}${search}${hash}`, quote);
   };
 
+  // Where the last `@import`, and any comments after it, ended: a string that follows with only
+  // whitespace between is what it imports
+  let importEnd = -1;
   return css.replace(
     CSS_TOKEN,
     (
       token,
-      importPrefix: string | undefined,
-      importDouble: string | undefined,
-      importSingle: string | undefined,
+      keyword: string | undefined,
       urlDouble: string | undefined,
       urlSingle: string | undefined,
       urlBare: string | undefined,
+      quote: string | undefined,
+      text: string | undefined,
+      closingQuote: string | undefined,
+      offset: number,
     ) => {
-      if (importPrefix !== undefined) {
-        const quote = importDouble !== undefined ? '"' : "'";
-        const rebased = rebase(importDouble ?? importSingle ?? '', quote);
-        return rebased === undefined ? token : `${importPrefix}${quote}${rebased}${quote}`;
+      const followsImport =
+        importEnd !== -1 && CSS_WHITESPACE_ONLY.test(css.slice(importEnd, offset));
+      importEnd = -1;
+      if (keyword !== undefined || (followsImport && token.startsWith('/*'))) {
+        importEnd = offset + token.length;
+        return token;
+      }
+      if (quote !== undefined) {
+        // A string: an import's when it is closed and follows @import, else left as it is
+        const rebased = followsImport && closingQuote ? rebase(text ?? '', quote) : undefined;
+        return rebased === undefined ? token : `${quote}${rebased}${quote}`;
       }
       const reference = urlDouble ?? urlSingle ?? urlBare;
       if (reference === undefined) {
-        // A comment or a string
+        // A comment
         return token;
       }
-      const quote = urlDouble !== undefined ? '"' : urlSingle !== undefined ? "'" : '';
-      const rebased = rebase(reference, quote);
-      return rebased === undefined ? token : `url(${quote}${rebased}${quote})`;
+      const urlQuote = urlDouble !== undefined ? '"' : urlSingle !== undefined ? "'" : '';
+      const rebased = rebase(reference, urlQuote);
+      return rebased === undefined ? token : `url(${urlQuote}${rebased}${urlQuote})`;
     },
   );
 }
@@ -435,32 +443,34 @@ export async function getStaleStylesheetPaths(
 
 /**
  * Gives pages that link earlier stylesheet paths the current ones: in a hashed build, the
- * pages kept from earlier builds. Each page is read once and written only when it holds one
- * of the paths. The paths carry a content hash, which page text doesn't hold, and no
- * characters HTML escapes, so each is the same in every attribute.
+ * pages kept from earlier builds. Only their stylesheet `<link>` tags on the site change, as
+ * {@link rewriteStylesheetLinks} changes them; page text, scripts and other sites' URLs stay
+ * as they are. Each page is read once and written only when a link changed.
  *
- * @param files - The pages' output files
- * @param replacements - Each earlier path the pages can carry, and the path it becomes
+ * @param pages - The pages' output files and URLs, which relative links resolve against
+ * @param replacements - Each earlier path the pages can link, and the path it becomes
+ * @param siteUrl - The site's base URL (`site.baseUrl`), whose origin a link can carry
  * @returns How many pages were rewritten
  */
 export async function relinkStylesheets(
-  files: readonly string[],
+  pages: ReadonlyArray<{ file: string; url: string }>,
   replacements: ReadonlyMap<string, string>,
+  siteUrl?: string,
 ): Promise<number> {
-  const stale = [...replacements].filter(([from, to]) => from !== '' && from !== to);
-  if (stale.length === 0) {
+  const targets = new Map([...replacements].filter(([from, to]) => from !== '' && from !== to));
+  if (targets.size === 0) {
     return 0;
   }
 
   let rewritten = 0;
-  for (let i = 0; i < files.length; i += RELINK_BATCH_SIZE) {
+  for (let i = 0; i < pages.length; i += RELINK_BATCH_SIZE) {
     const results = await Promise.all(
-      files.slice(i, i + RELINK_BATCH_SIZE).map(async (file) => {
+      pages.slice(i, i + RELINK_BATCH_SIZE).map(async ({ file, url }) => {
         const html = await readFile(file);
         if (html === null) {
           return false;
         }
-        const relinked = stale.reduce((text, [from, to]) => text.split(from).join(to), html);
+        const relinked = rewriteStylesheetLinks(html, targets, url, siteUrl);
         if (relinked === html) {
           return false;
         }
@@ -555,85 +565,191 @@ function parseSiteHref(
   return { origin, path: pathname, suffix };
 }
 
-/** An attribute's value in a tag, quoted or not */
-function getAttribute(tag: string, pattern: RegExp): string | undefined {
-  const match = pattern.exec(tag);
-  return match?.[1] ?? match?.[2] ?? match?.[3];
+/** An attribute of a tag: its name in lowercase, its value, and where the value is in the tag */
+interface TagAttribute {
+  name: string;
+  value: string;
+  /** Where the value starts in the tag, after an opening quote */
+  start: number;
+  /** Where the value ends in the tag, before a closing quote */
+  end: number;
 }
 
-function getRelTokens(tag: string): string[] {
-  return (getAttribute(tag, LINK_REL) ?? '').toLowerCase().split(/\s+/);
+/** A `<link>` tag of a page: where it starts and ends, and its attributes */
+interface LinkTag {
+  start: number;
+  end: number;
+  attributes: TagAttribute[];
+}
+
+/**
+ * The index of the `>` that ends a tag, scanning from `from`, or -1 when the tag never closes.
+ * A `>` in a quoted attribute value doesn't end the tag.
+ */
+function findTagEnd(html: string, from: number): number {
+  let i = from;
+  while (i < html.length) {
+    const char = html.charAt(i);
+    if (char === '>') {
+      return i;
+    }
+    i++;
+    if (char === '=') {
+      while (i < html.length && HTML_WHITESPACE.test(html.charAt(i))) {
+        i++;
+      }
+      const quote = html.charAt(i);
+      if (quote === '"' || quote === "'") {
+        const close = html.indexOf(quote, i + 1);
+        if (close === -1) {
+          return -1;
+        }
+        i = close + 1;
+      }
+    }
+  }
+  return -1;
+}
+
+/** The attributes of a tag, read as browsers read them: quoted, unquoted or without a value */
+function parseAttributes(tag: string): TagAttribute[] {
+  const attributes: TagAttribute[] = [];
+  const isSpace = (at: number) => HTML_WHITESPACE.test(tag.charAt(at));
+  const isNameEnd = (at: number) => isSpace(at) || '/>='.includes(tag.charAt(at));
+  // Past '<' and the tag name
+  let i = 1;
+  while (i < tag.length && !isSpace(i) && !'/>'.includes(tag.charAt(i))) {
+    i++;
+  }
+  while (i < tag.length) {
+    while (i < tag.length && (isSpace(i) || tag.charAt(i) === '/')) {
+      i++;
+    }
+    if (i >= tag.length || tag.charAt(i) === '>') {
+      break;
+    }
+    // A name runs to whitespace, '/', '>' or '='; a '=' it starts with is part of it
+    const nameStart = i++;
+    while (i < tag.length && !isNameEnd(i)) {
+      i++;
+    }
+    const name = tag.slice(nameStart, i).toLowerCase();
+    while (i < tag.length && isSpace(i)) {
+      i++;
+    }
+    if (tag.charAt(i) !== '=') {
+      attributes.push({ name, value: '', start: i, end: i });
+      continue;
+    }
+    i++;
+    while (i < tag.length && isSpace(i)) {
+      i++;
+    }
+    const quote = tag.charAt(i);
+    if (quote === '"' || quote === "'") {
+      const close = tag.indexOf(quote, i + 1);
+      const end = close === -1 ? tag.length : close;
+      attributes.push({ name, value: tag.slice(i + 1, end), start: i + 1, end });
+      i = end + 1;
+    } else {
+      const start = i;
+      while (i < tag.length && !isSpace(i) && tag.charAt(i) !== '>') {
+        i++;
+      }
+      attributes.push({ name, value: tag.slice(start, i), start, end: i });
+    }
+  }
+  return attributes;
+}
+
+/** The first attribute with this name, as browsers use it */
+function getAttribute(attributes: readonly TagAttribute[], name: string): TagAttribute | undefined {
+  return attributes.find((attribute) => attribute.name === name);
+}
+
+function getRelTokens(attributes: readonly TagAttribute[]): string[] {
+  return (getAttribute(attributes, 'rel')?.value ?? '').toLowerCase().split(/\s+/);
 }
 
 /**
  * Whether a `<link>` tag applies a stylesheet: its `rel` holds `stylesheet` and not `alternate`,
  * which browsers don't apply until the reader picks it. A preload only fetches the file.
  */
-function isStylesheetLink(tag: string): boolean {
-  const tokens = getRelTokens(tag);
+function isStylesheetLink(attributes: readonly TagAttribute[]): boolean {
+  const tokens = getRelTokens(attributes);
   return tokens.includes('stylesheet') && !tokens.includes('alternate');
 }
 
 /**
- * Where the `<link>` tags of a page that are markup start and end: not in a comment, or in a
- * script, style, template, textarea or title. A comment or element left open runs to the end
- * of the page, as browsers read it. One pass over the page, whatever it holds.
+ * Whether production points a `<link>` tag at a hashed name: one that applies a stylesheet,
+ * offers it as an alternate, or preloads it (`rel="preload" as="style"`), without an
+ * `integrity` digest, which only the file under its own name matches.
  */
-function findLinkTags(html: string): Array<{ start: number; end: number }> {
-  const tags: Array<{ start: number; end: number }> = [];
-  const tagStart = new RegExp(HTML_TAG_START.source, 'gi');
-  // The closing tag of an element, found from where the scan is
-  const findClose = (element: string, from: number): number => {
-    const closeTag = new RegExp(`</${element}`, 'gi');
-    closeTag.lastIndex = from;
-    return closeTag.exec(html)?.index ?? -1;
-  };
-  for (let match = tagStart.exec(html); match !== null; match = tagStart.exec(html)) {
-    const start = match.index;
-    const element = match[1]?.toLowerCase();
-    if (element === undefined) {
-      const close = html.indexOf('-->', start + 4);
-      if (close === -1) {
-        break;
-      }
-      tagStart.lastIndex = close + 3;
-      continue;
-    }
-    const end = html.indexOf('>', tagStart.lastIndex);
-    if (end === -1) {
-      break;
-    }
-    if (element === 'link') {
-      tags.push({ start, end: end + 1 });
-      tagStart.lastIndex = end + 1;
-      continue;
-    }
-    const close = findClose(element, end + 1);
-    if (close === -1) {
-      break;
-    }
-    tagStart.lastIndex = close;
-  }
-  return tags;
-}
-
-/** The `<link>` tags of a page that are markup (see {@link findLinkTags}) */
-function* getLinkTags(html: string): Generator<string> {
-  for (const { start, end } of findLinkTags(html)) {
-    yield html.slice(start, end);
-  }
+function isHashableLink(attributes: readonly TagAttribute[]): boolean {
+  const tokens = getRelTokens(attributes);
+  const loadsStylesheet =
+    tokens.includes('stylesheet') ||
+    (tokens.includes('preload') && getAttribute(attributes, 'as')?.value.toLowerCase() === 'style');
+  return loadsStylesheet && getAttribute(attributes, 'integrity') === undefined;
 }
 
 /**
- * Whether a `<link>` tag loads a stylesheet: applies it, offers it as an alternate, or
- * preloads it (`rel="preload" as="style"`).
+ * The `<link>` tags of a page that are markup: every tag is read with its quoted attribute
+ * values, so a `>` or a `<link>` in one is text, and tags in a comment, or in a script, style,
+ * template, textarea or title, aren't markup. A tag, comment or element left open runs to the
+ * end of the page, as browsers read it. One pass over the page, whatever it holds.
  */
-function loadsStylesheet(tag: string): boolean {
-  const tokens = getRelTokens(tag);
-  return (
-    tokens.includes('stylesheet') ||
-    (tokens.includes('preload') && getAttribute(tag, LINK_AS)?.toLowerCase() === 'style')
-  );
+function findLinkTags(html: string): LinkTag[] {
+  const tags: LinkTag[] = [];
+  const tagName = new RegExp(HTML_TAG_NAME.source, 'y');
+  // The closing tag of an element whose contents are text, found from where the scan is
+  const findClose = (element: string, from: number): number => {
+    const closeTag = new RegExp(`</${element}(?=[\\t\\n\\f\\r />])`, 'gi');
+    closeTag.lastIndex = from;
+    return closeTag.exec(html)?.index ?? -1;
+  };
+
+  let i = html.indexOf('<');
+  while (i !== -1) {
+    let next = i + 1;
+    if (html.startsWith('<!--', i)) {
+      const close = html.indexOf('-->', i + 4);
+      if (close === -1) {
+        break;
+      }
+      next = close + 3;
+    } else if (html.charAt(i + 1) === '!' || html.charAt(i + 1) === '?') {
+      // A doctype, or markup browsers read as a comment
+      const close = html.indexOf('>', i + 2);
+      if (close === -1) {
+        break;
+      }
+      next = close + 1;
+    } else {
+      const closing = html.charAt(i + 1) === '/';
+      tagName.lastIndex = i + (closing ? 2 : 1);
+      const name = tagName.exec(html)?.[0].toLowerCase();
+      // A '<' without a tag name is text
+      if (name !== undefined) {
+        const end = findTagEnd(html, tagName.lastIndex);
+        if (end === -1) {
+          break;
+        }
+        next = end + 1;
+        if (!closing && name === 'link') {
+          tags.push({ start: i, end: next, attributes: parseAttributes(html.slice(i, next)) });
+        } else if (!closing && HTML_TEXT_ELEMENTS.has(name)) {
+          const close = findClose(name, next);
+          if (close === -1) {
+            break;
+          }
+          next = close;
+        }
+      }
+    }
+    i = html.indexOf('<', next);
+  }
+  return tags;
 }
 
 /**
@@ -652,18 +768,16 @@ export function linksStylesheet(
   pageUrl?: string,
 ): boolean {
   const origin = getSiteOrigin(siteUrl);
-  for (const tag of getLinkTags(html)) {
-    const href = isStylesheetLink(tag) ? getAttribute(tag, LINK_HREF) : undefined;
-    if (href !== undefined && parseSiteHref(href, origin, pageUrl)?.path === path) {
-      return true;
-    }
-  }
-  return false;
+  return findLinkTags(html).some(({ attributes }) => {
+    const href = isStylesheetLink(attributes) ? getAttribute(attributes, 'href') : undefined;
+    return href !== undefined && parseSiteHref(href.value, origin, pageUrl)?.path === path;
+  });
 }
 
 /**
- * The stylesheet paths a page's `<link>` tags load, from the site root: those that apply,
- * offer or preload a stylesheet on the site.
+ * The stylesheet paths of a page's `<link>` tags that production points at hashed names, from
+ * the site root: those that apply, offer or preload a stylesheet on the site, without an
+ * `integrity` digest.
  *
  * @param html - The page's HTML
  * @param pageUrl - The page's URL, which relative links resolve against
@@ -676,9 +790,9 @@ export function getLinkedStylesheetPaths(
 ): string[] {
   const origin = getSiteOrigin(siteUrl);
   const paths = new Set<string>();
-  for (const tag of getLinkTags(html)) {
-    const href = loadsStylesheet(tag) ? getAttribute(tag, LINK_HREF) : undefined;
-    const path = href !== undefined ? parseSiteHref(href, origin, pageUrl)?.path : undefined;
+  for (const { attributes } of findLinkTags(html)) {
+    const href = isHashableLink(attributes) ? getAttribute(attributes, 'href') : undefined;
+    const path = href && parseSiteHref(href.value, origin, pageUrl)?.path;
     if (path !== undefined) {
       paths.add(path);
     }
@@ -689,7 +803,8 @@ export function getLinkedStylesheetPaths(
 /**
  * Points the `<link>` tags that load a stylesheet at another path: production gives each
  * stylesheet's links its hashed name. The `href` keeps its quotes, the site's origin and its
- * query or fragment; a relative one becomes a path from the site root.
+ * query or fragment; a relative one becomes a path from the site root. A link with an
+ * `integrity` digest keeps its path, which the digest was taken from.
  *
  * @param html - The page's HTML
  * @param targets - Each stylesheet path and the path its links get
@@ -707,36 +822,16 @@ export function rewriteStylesheetLinks(
     return html;
   }
   const origin = getSiteOrigin(siteUrl);
-  const rewrite = (tag: string): string => {
-    if (!loadsStylesheet(tag)) {
-      return tag;
-    }
-    return tag.replace(
-      LINK_HREF,
-      (
-        attribute,
-        double: string | undefined,
-        single: string | undefined,
-        bare: string | undefined,
-      ) => {
-        const href = double ?? single ?? bare ?? '';
-        const parts = parseSiteHref(href, origin, pageUrl);
-        const target = parts && targets.get(parts.path);
-        if (!parts || target === undefined) {
-          return attribute;
-        }
-        const quote = double !== undefined ? '"' : single !== undefined ? "'" : '';
-        const name = attribute.slice(0, attribute.length - href.length - quote.length * 2);
-        return `${name}${quote}${parts.origin}${target}${parts.suffix}${quote}`;
-      },
-    );
-  };
-
   let rewritten = '';
   let copied = 0;
-  for (const { start, end } of findLinkTags(html)) {
-    rewritten += html.slice(copied, start) + rewrite(html.slice(start, end));
-    copied = end;
+  for (const { start, attributes } of findLinkTags(html)) {
+    const href = isHashableLink(attributes) ? getAttribute(attributes, 'href') : undefined;
+    const parts = href && parseSiteHref(href.value, origin, pageUrl);
+    const target = parts && targets.get(parts.path);
+    if (href && parts && target !== undefined) {
+      rewritten += `${html.slice(copied, start + href.start)}${parts.origin}${target}${parts.suffix}`;
+      copied = start + href.end;
+    }
   }
   return rewritten + html.slice(copied);
 }

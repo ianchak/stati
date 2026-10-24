@@ -208,6 +208,14 @@ describe('rebaseRelativeUrls', () => {
     );
   });
 
+  it('resolves an @import string with no whitespace, or a comment, before it', () => {
+    const css = '@import"base.css";@import/* theme */\'dark.css\';@import /* a */ /* b */ "c.css";';
+
+    expect(rebaseRelativeUrls(css, '/css/site.css')).toBe(
+      '@import"/css/base.css";@import/* theme */\'/css/dark.css\';@import /* a */ /* b */ "/css/c.css";',
+    );
+  });
+
   it('decodes an escaped reference, rebases it and escapes it again', () => {
     const css =
       'a{b:url(img\\(1\\).png)}c{d:url("a\\"b.png")}e{f:url(\'it\\\'s.png\')}' +
@@ -240,7 +248,7 @@ describe('rebaseRelativeUrls', () => {
 
   it('takes linear time on comments and strings that never close', () => {
     const started = performance.now();
-    for (const open of ['/*', '"', "'", 'url("']) {
+    for (const open of ['/*', '"', "'", 'url("', '@import/*', '@import ']) {
       rebaseRelativeUrls(`${open}url(a.png)`.repeat(50_000), '/styles.css');
     }
     expect(performance.now() - started).toBeLessThan(1000);
@@ -453,7 +461,7 @@ describe('rewriteStylesheetLinks', () => {
   it('takes linear time on comments, elements and tags that never close', () => {
     const started = performance.now();
     // The three link functions share one scanner
-    for (const open of ['<!--', '<script>', '<title>', '<link ']) {
+    for (const open of ['<!--', '<script>', '<title>', '<link ', '<a title="', "<a b='", '<!x']) {
       rewriteStylesheetLinks(
         `${open}<link rel="stylesheet" href="/styles.css">`.repeat(50_000),
         targets,
@@ -475,6 +483,35 @@ describe('rewriteStylesheetLinks', () => {
     expect(getLinkedStylesheetPaths(`<TEMPLATE>${link}</template>${link}`, '/')).toEqual([
       '/styles.css',
     ]);
+  });
+
+  it('reads quoted attribute values, so a > or a <link> in one is text', () => {
+    const media = '<link media="(width > 600px)" rel="stylesheet" href="/styles.css">';
+    const inAttribute = '<div title=\'<link rel="stylesheet" href="/styles.css">\'></div>';
+
+    expect(rewriteStylesheetLinks(`${inAttribute}${media}`, targets, '/')).toBe(
+      `${inAttribute}<link media="(width > 600px)" rel="stylesheet" href="/_assets/styles-0A1B2C3D.css">`,
+    );
+    expect(linksStylesheet(inAttribute, '/styles.css')).toBe(false);
+    expect(linksStylesheet(media, '/styles.css')).toBe(true);
+  });
+
+  it('reads attributes as browsers do: the first of a name, and none from inside a value', () => {
+    const html =
+      '<link title=" href=/other.css" rel=stylesheet href="/styles.css" href="/second.css">';
+
+    expect(getLinkedStylesheetPaths(html, '/')).toEqual(['/styles.css']);
+    expect(rewriteStylesheetLinks(html, targets, '/')).toBe(
+      '<link title=" href=/other.css" rel=stylesheet href="/_assets/styles-0A1B2C3D.css" href="/second.css">',
+    );
+  });
+
+  it('leaves a link with an integrity digest alone', () => {
+    const html = '<link rel="stylesheet" href="/styles.css" integrity="sha384-abc" crossorigin>';
+
+    expect(getLinkedStylesheetPaths(html, '/')).toEqual([]);
+    expect(rewriteStylesheetLinks(html, targets, '/')).toBe(html);
+    expect(linksStylesheet(html, '/styles.css')).toBe(true);
   });
 
   it('leaves links in comments and scripts alone, and rewrites them in noscript', () => {
@@ -500,9 +537,11 @@ describe('stylesheet files', () => {
   });
 
   describe('relinkStylesheets', () => {
-    it('rewrites every mention of each earlier path in the pages that have one', async () => {
+    const page = (name: string, url = '/') => ({ file: join(dir, name), url });
+
+    it('points the stylesheet links of the pages that have one at the new names', async () => {
       const from = '/_assets/styles-0A1B2C3D.css';
-      const linked = `<link rel="stylesheet" href="${from}"><link rel="preload" href="${from}">`;
+      const linked = `<link rel="stylesheet" href="${from}"><link rel="preload" as="style" href="${from}">`;
       await writeFile(join(dir, 'a.html'), linked);
       await writeFile(join(dir, 'b.html'), '<p>no stylesheet</p>');
       await writeFile(
@@ -512,7 +551,7 @@ describe('stylesheet files', () => {
 
       const to = '/_assets/styles-E77989ED.css';
       const count = await relinkStylesheets(
-        [join(dir, 'a.html'), join(dir, 'b.html'), join(dir, 'c.html'), join(dir, 'missing.html')],
+        [page('a.html'), page('b.html'), page('c.html'), page('missing.html')],
         new Map([
           [from, to],
           ['/_assets/styles-DEADBEEF.css', to],
@@ -521,62 +560,81 @@ describe('stylesheet files', () => {
 
       expect(count).toBe(2);
       expect(await readFile(join(dir, 'a.html'), 'utf-8')).toBe(
-        '<link rel="stylesheet" href="/_assets/styles-E77989ED.css"><link rel="preload" href="/_assets/styles-E77989ED.css">',
+        `<link rel="stylesheet" href="${to}"><link rel="preload" as="style" href="${to}">`,
       );
       expect(await readFile(join(dir, 'b.html'), 'utf-8')).toBe('<p>no stylesheet</p>');
       expect(await readFile(join(dir, 'c.html'), 'utf-8')).toBe(
-        '<link rel="stylesheet" href="/_assets/styles-E77989ED.css">',
+        `<link rel="stylesheet" href="${to}">`,
+      );
+    });
+
+    it("leaves page text, scripts and other sites' URLs alone", async () => {
+      const from = '/_assets/styles-0A1B2C3D.css';
+      const untouched =
+        `<link rel="stylesheet" href="https://cdn.example${from}">` +
+        `<script>const css = '${from}';</script><code>${from}</code>`;
+      await writeFile(join(dir, 'a.html'), `${untouched}<link rel="stylesheet" href="${from}">`);
+
+      await relinkStylesheets(
+        [page('a.html')],
+        new Map([[from, '/_assets/styles-E77989ED.css']]),
+        'https://example.com',
+      );
+
+      expect(await readFile(join(dir, 'a.html'), 'utf-8')).toBe(
+        `${untouched}<link rel="stylesheet" href="/_assets/styles-E77989ED.css">`,
       );
     });
 
     it('reads no page without an earlier path', async () => {
-      await writeFile(join(dir, 'a.html'), 'href="/new.css"');
+      await writeFile(join(dir, 'a.html'), '<link rel="stylesheet" href="/new.css">');
 
-      const page = [join(dir, 'a.html')];
-      expect(await relinkStylesheets(page, new Map())).toBe(0);
+      const pages = [page('a.html')];
+      expect(await relinkStylesheets(pages, new Map())).toBe(0);
       expect(
         await relinkStylesheets(
-          page,
+          pages,
           new Map([
             ['/new.css', '/new.css'],
             ['', '/new.css'],
           ]),
         ),
       ).toBe(0);
-      expect(await readFile(join(dir, 'a.html'), 'utf-8')).toBe('href="/new.css"');
+      expect(await readFile(join(dir, 'a.html'), 'utf-8')).toBe(
+        '<link rel="stylesheet" href="/new.css">',
+      );
     });
 
     it('replaces the earlier names of several stylesheets in one pass', async () => {
       await writeFile(
         join(dir, 'a.html'),
-        '<link rel="stylesheet" href="/_assets/styles-0A1B2C3D.css"><link rel="stylesheet" href="/_assets/print-DEADBEEF.css">',
+        '<link rel="stylesheet" href="/_assets/styles-0A1B2C3D.css"><link rel="stylesheet" href="../late.css">',
       );
 
       const count = await relinkStylesheets(
-        [join(dir, 'a.html')],
+        [page('a.html', '/blog/post/')],
         new Map([
           ['/_assets/styles-0A1B2C3D.css', '/_assets/styles-E77989ED.css'],
-          ['/_assets/print-DEADBEEF.css', '/print.css'],
+          ['/blog/late.css', '/_assets/blog/late-DEADBEEF.css'],
         ]),
       );
 
       expect(count).toBe(1);
       expect(await readFile(join(dir, 'a.html'), 'utf-8')).toBe(
-        '<link rel="stylesheet" href="/_assets/styles-E77989ED.css"><link rel="stylesheet" href="/print.css">',
+        '<link rel="stylesheet" href="/_assets/styles-E77989ED.css"><link rel="stylesheet" href="/_assets/blog/late-DEADBEEF.css">',
       );
     });
 
     it('handles more pages than it reads at once', async () => {
-      const files = await Promise.all(
+      const pages = await Promise.all(
         Array.from({ length: 70 }, async (_, i) => {
-          const file = join(dir, `page-${i}.html`);
-          await writeFile(file, 'href="/old.css"');
-          return file;
+          await writeFile(join(dir, `page-${i}.html`), '<link rel=stylesheet href=/old.css>');
+          return page(`page-${i}.html`);
         }),
       );
 
-      expect(await relinkStylesheets(files, new Map([['/old.css', '/new.css']]))).toBe(70);
-      expect(await readFile(files[69]!, 'utf-8')).toBe('href="/new.css"');
+      expect(await relinkStylesheets(pages, new Map([['/old.css', '/new.css']]))).toBe(70);
+      expect(await readFile(pages[69]!.file, 'utf-8')).toBe('<link rel=stylesheet href=/new.css>');
     });
   });
 
