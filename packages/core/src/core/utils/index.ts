@@ -42,6 +42,7 @@ export {
   isCollectionIndexPage,
   isVirtualPage,
   isNotFoundPage,
+  isNotFoundUrl,
   getFirstPaginationPage,
   getCollectionPathForPage,
 } from './template-discovery.utils.js';

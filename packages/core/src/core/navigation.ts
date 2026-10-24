@@ -1,6 +1,6 @@
 import { basename } from 'node:path';
 import type { PageModel, NavNode } from '../types/index.js';
-import { isNotFoundPage, isVirtualPage } from './utils/index.js';
+import { isNotFoundPage, isNotFoundUrl, isVirtualPage } from './utils/index.js';
 
 /**
  * Whether a page appears in navigation. Pages generated from a `[param].md` template and the
@@ -73,6 +73,13 @@ export function buildNavigation(allPages: PageModel[]): NavNode[] {
     if (collectionPath !== '/') {
       // Find the index page for this collection (if it exists)
       const indexPage = pages.find((p) => p.url === collectionPath);
+
+      // A folder without an index page links to the folder's URL. When that is the URL of the
+      // 404 page, which navigation leaves out, list the folder's pages at the top level instead
+      if (!indexPage && isNotFoundUrl(collectionPath)) {
+        navNodes.push(...collectionPages.map(createNavNodeFromPage));
+        continue;
+      }
 
       // Create collection node
       const collectionNode = createCollectionNode(collectionPath, collectionPages, indexPage);

@@ -32,11 +32,21 @@ export function isVirtualPage(page: PageModel): boolean {
  * @returns True for the page at `/404` or `/404/`, or a permalink written without the slash
  */
 export function isNotFoundPage(page: PageModel): boolean {
+  return isNotFoundUrl(page.url);
+}
+
+/**
+ * Whether a page at this URL would be the site's not-found page (see {@link isNotFoundPage}).
+ *
+ * @param url - A page URL
+ * @returns True for `/404` and `/404/`, or the same written without the slash
+ */
+export function isNotFoundUrl(url: string): boolean {
   // Pages passed to the SEO functions directly can lack a URL
-  if (typeof page.url !== 'string') {
+  if (typeof url !== 'string') {
     return false;
   }
-  const file = getPageOutputFile(page.url).replace(/^\//, '');
+  const file = getPageOutputFile(url).replace(/^\//, '');
   return file === '404.html' || file === '404/index.html';
 }
 

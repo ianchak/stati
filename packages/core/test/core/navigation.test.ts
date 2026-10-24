@@ -236,5 +236,25 @@ describe('Navigation', () => {
       const navigation = buildNavigation([...mockPages, notFound('/blog/404')]);
       expect(allUrls(navigation)).toContain('/blog/404');
     });
+
+    it('lists the pages of a 404 folder at the top level, with no node linking to /404', () => {
+      const help = { ...notFound('/404/help'), frontMatter: { title: 'Help' } };
+      const navigation = buildNavigation([...mockPages, notFound('/404'), help]);
+
+      expect(allUrls(navigation).filter((url) => url === '/404')).toEqual([]);
+      expect(navigation.find((node) => node.url === '/404/help')).toMatchObject({
+        title: 'Help',
+        isCollection: false,
+      });
+    });
+
+    it('keeps the 404 folder as a collection when the 404 page sets nav: true', () => {
+      const help = { ...notFound('/404/help'), frontMatter: { title: 'Help' } };
+      const navigation = buildNavigation([...mockPages, notFound('/404', { nav: true }), help]);
+
+      const folder = navigation.find((node) => node.url === '/404');
+      expect(folder).toMatchObject({ title: 'Page not found', isCollection: true });
+      expect(folder?.children?.map((child) => child.url)).toEqual(['/404/help']);
+    });
   });
 });
