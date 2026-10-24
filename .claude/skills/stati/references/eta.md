@@ -61,32 +61,32 @@ include result may be passed as another include's `body` and printed raw as
 
 ## Runtime context: know which object you have
 
-| Expression                            | Runtime meaning                                                  |
-| ------------------------------------- | ---------------------------------------------------------------- |
-| `stati.site`                          | Configured site object, including explicitly added custom fields |
-| `stati.page`                          | Current page's frontmatter merged with reserved runtime fields   |
-| `stati.page.path`, `stati.page.url`   | Public page URL, **not source filename**                         |
-| `stati.page.content`, `stati.content` | Rendered Markdown HTML                                           |
-| `stati.page.toc`                      | `{ id, text, level }[]`; empty if unavailable                    |
-| `stati.page.navNode`                  | Current node, possibly undefined                                 |
-| `stati.nav`                           | Navigation helper object, not a bare array                       |
-| `stati.collection`                    | Optional aggregation object; see below                           |
-| `stati.pagination`                    | Page of a `paginate` listing (1.29+), else undefined             |
-| `stati.generated`                     | Key, label, items of a `[param].md` page (1.29+), else undefined |
-| `stati.slugify(text)`                 | Stati's slug for generated page keys (1.29+)                     |
-| `stati.include(name, props?, body?)`  | Renders another template here and returns its HTML (2.0+)        |
-| `stati.layout(name, props?)`          | Wraps this template's output in another template; returns `''` (2.0+) |
-| `stati.include.has(name)`             | Whether a name resolves for this page; same as `stati.layout.has` |
-| `stati.body`                          | HTML this template wraps; absent in the page's layout and `og.eta` |
-| `stati.props`                         | Props of the include/layout call that rendered it, else undefined |
-| `stati.helpers`                       | Functions from the config's `helpers` (2.0+)                     |
-| `stati.generator.version`             | Core package version                                             |
+| Expression                            | Runtime meaning                                                                |
+| ------------------------------------- | ------------------------------------------------------------------------------ |
+| `stati.site`                          | Configured site object, including explicitly added custom fields               |
+| `stati.page`                          | Current page's frontmatter merged with reserved runtime fields                 |
+| `stati.page.path`, `stati.page.url`   | Public page URL, **not source filename**                                       |
+| `stati.page.content`, `stati.content` | Rendered Markdown HTML                                                         |
+| `stati.page.toc`                      | `{ id, text, level }[]`; empty if unavailable                                  |
+| `stati.page.navNode`                  | Current node, possibly undefined                                               |
+| `stati.nav`                           | Navigation helper object, not a bare array                                     |
+| `stati.collection`                    | Optional aggregation object; see below                                         |
+| `stati.pagination`                    | Page of a `paginate` listing (1.29+), else undefined                           |
+| `stati.generated`                     | Key, label, items of a `[param].md` page (1.29+), else undefined               |
+| `stati.slugify(text)`                 | Stati's slug for generated page keys (1.29+)                                   |
+| `stati.include(name, props?, body?)`  | Renders another template here and returns its HTML (2.0+)                      |
+| `stati.layout(name, props?)`          | Wraps this template's output in another template; returns `''` (2.0+)          |
+| `stati.include.has(name)`             | Whether a name resolves for this page; same as `stati.layout.has`              |
+| `stati.body`                          | HTML this template wraps; absent in the page's layout and `og.eta`             |
+| `stati.props`                         | Props of the include/layout call that rendered it, else undefined              |
+| `stati.helpers`                       | Functions from the config's `helpers` (2.0+)                                   |
+| `stati.generator.version`             | Core package version                                                           |
 | `stati.assets`                        | Optional asset object with `bundlePaths`, `searchIndexPath`, `stylesheetPaths` |
-| `stati.propValue(...)`                | Token-list attribute helper                                      |
-| `stati.generateSEO(tags?)`            | Generated SEO HTML; use raw output when needed                   |
-| `stati.image(src, options?)`          | Sized `<img>` (or `<picture>`) HTML, synchronous; print with `<%~ %>` |
-| `stati.ogImage`                       | Generated Open Graph image `{ url, path, width, height, alt }`, or undefined |
-| `stati.og`                            | `{ width, height }` inside an `og.eta` card template; undefined elsewhere |
+| `stati.propValue(...)`                | Token-list attribute helper                                                    |
+| `stati.generateSEO(tags?)`            | Generated SEO HTML; use raw output when needed                                 |
+| `stati.image(src, options?)`          | Sized `<img>` (or `<picture>`) HTML, synchronous; print with `<%~ %>`          |
+| `stati.ogImage`                       | Generated Open Graph image `{ url, path, width, height, alt }`, or undefined   |
+| `stati.og`                            | `{ width, height }` inside an `og.eta` card template; undefined elsewhere      |
 
 Frontmatter keys `path`, `url`, `content`, `navNode`, `toc` conflict with runtime
 fields: Stati warns and overwrites them. The root of `stati` holds only Stati's

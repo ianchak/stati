@@ -309,23 +309,11 @@ The stylesheet has the same URL in every deploy, such as `/styles.css`, and brow
 
 **Solution:**
 
-1. Build the Tailwind stylesheet with `stati build --tailwind-input src/styles.css --tailwind-output dist/styles.css`. Production builds name it after its content, `/_assets/styles-[hash].css`, so it gets a new URL whenever it changes
-2. Remove `<link rel="stylesheet" href="/styles.css">` from your templates: Stati links the stylesheet itself
-3. See [Moving from a `build:css` script](/configuration/css#moving-from-a-build-css-script)
+Production builds name stylesheets after their content, `/_assets/styles-[hash].css`, so each gets a new URL whenever it changes. A stylesheet still under a fixed name is one the build doesn't see or can't hash:
 
-A stylesheet in `public/`, or one Sass writes, keeps its name. Change its file name, or add a query string to its link, when it changes.
-
----
-
-## Warning: pages link `/styles.css`, which production builds do not write
-
-**Cause:**
-With `--tailwind-input` and `--tailwind-output`, a production build writes the stylesheet as `/_assets/styles-[hash].css`, not `/styles.css`, but a template still links `/styles.css`. Locally the link may still load the dev server's `dist/styles.css`, an old copy; a build on a fresh checkout, such as in CI, has none.
-
-**Solution:**
-
-1. Remove that `<link>` from your templates, usually the layout or a head partial. Stati adds the link to the hashed file on every page
-2. With `css.autoInject: false`, link `stati.assets.stylesheetPaths` instead. See [Linking it yourself](/configuration/css#linking-it-yourself)
+1. A stylesheet that a script writes to `dist/` after `stati build`, such as a `build:css` script. Build Tailwind with `stati build --tailwind-input src/styles.css --tailwind-output dist/styles.css`, and compile Sass into `public/` before `stati build`. See [Moving from a `build:css` script](/configuration/css#moving-from-a-build-css-script)
+2. `css.hash` set to `false` in `stati.config`
+3. A stylesheet loaded some other way than a page's `<link>`, such as an `@import` in another stylesheet, or a path with characters other than letters, digits, `-`, `_`, `.` and `/`. Link it from the page, or rename it. See [How pages link the hashed name](/configuration/css#how-pages-link-the-hashed-name)
 
 ---
 

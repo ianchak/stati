@@ -274,14 +274,14 @@ Choose the styling approach that fits your workflow.
 - No build step required
 - Full control over every style
 - Great for learning
-- Styles location: `public/styles.css`
+- Styles location: `public/styles.css`; production builds link a copy named after its content
 
 ### Sass/SCSS
 
 - CSS with superpowers (variables, nesting, mixins)
 - Compiles to standard CSS
 - Popular and well-supported
-- Styles location: `src/styles.scss` → compiles to `dist/styles.css`
+- Styles location: `src/styles.scss` → compiles to `public/styles.css` before each build (gitignored); production builds link a copy named after its content
 
 ### Tailwind CSS
 
@@ -290,7 +290,7 @@ Choose the styling approach that fits your workflow.
 - Built-in design system
 - Generates only the classes your templates use
 - Tailwind CSS 4 (`tailwindcss` and `@tailwindcss/cli`), configured in the stylesheet: there is no `tailwind.config.js`
-- Styles location: `src/styles.css` → `stati dev` compiles it to `dist/styles.css`, `stati build` to `dist/_assets/styles-[hash].css`, named after its content, and links it on every page
+- Styles location: `src/styles.css` → `stati dev` compiles it to `dist/styles.css`, `stati build` to `dist/_assets/styles-[hash].css`, named after its content, which the templates' link to `/styles.css` points at
 
 ---
 

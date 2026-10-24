@@ -149,7 +149,7 @@ Verified against Stati core **1.24.1**, Eta **3.5.0**, source revision
 **1.29** on **2026-10-15**; includes, shells and helpers against core **2.0** with Eta **4.6** on
 **2026-10-18**; Markdown rendering with markdown-it **15** and markdown-it-prism **4** on
 **2026-10-19**; site-wide SEO defaults against core **2.1** and the 404 page defaults
-against the core **2.2** branch on **2026-10-23**; the hashed Tailwind stylesheet against the
+against the core **2.2** branch on **2026-10-23**; hashed stylesheets against the
 source and tests on **2026-10-24**. See [resources](./references/resources.md) for authority rules and
 known discrepancies. When upgrading, recheck the contracts and rerun
 [the bundled smoke test](./scripts/smoke-test.mjs) from an installed Stati project;

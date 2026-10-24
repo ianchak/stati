@@ -116,7 +116,7 @@ stati build [options]
 
 - Generates static HTML files from your content and templates
 - Runs in production mode: minified, hashed TypeScript bundles
-- With the Tailwind flags, runs Tailwind CSS after the last page renders and links the stylesheet as `/_assets/styles-[hash].css`
+- Names stylesheets after their content, such as `/_assets/styles-[hash].css`, and points the pages' `<link>` tags at them: the stylesheets in `public/` that pages link, and, with the Tailwind flags, the stylesheet Tailwind CSS builds after the last page renders
 - Uses smart caching to skip unchanged pages (ISG)
 - Creates sitemap, robots.txt and RSS feeds (if configured)
 - Reports build statistics and performance metrics

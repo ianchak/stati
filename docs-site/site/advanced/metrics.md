@@ -187,7 +187,7 @@ The `phases` object shows how long each build phase took:
 | `sitemapGenerationMs` | Generating sitemap.xml |
 | `tailwindInitMs` | Tailwind detection and inventory initialization |
 | `tailwindInventoryMs` | Writing Tailwind inventory at end of build |
-| `tailwindBuildMs` | Running Tailwind CSS for the production stylesheet and updating pages that linked an earlier name (with `--tailwind-input`) |
+| `tailwindBuildMs` | Running Tailwind CSS for the production stylesheet and writing the pages it held until then (with `--tailwind-input`) |
 | `getDirectorySizeMs` | Calculating directory size for build stats |
 | `hookBeforeAllMs` | Time spent in `beforeAll` hook (if configured) |
 | `hookAfterAllMs` | Time spent in `afterAll` hook (if configured) |

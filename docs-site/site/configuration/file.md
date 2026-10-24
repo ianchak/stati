@@ -277,19 +277,19 @@ Set `images: false` to write Markdown images exactly as authored. Unknown or inv
 
 ### CSS configuration
 
-With `--tailwind-input` and `--tailwind-output`, `stati dev` and `stati build` run Tailwind CSS, and production builds name the stylesheet after its content. The `css` block changes the defaults:
+Production builds name stylesheets after their content and point the pages' links at those names: the stylesheets in `public/` that pages link, and the one Tailwind CSS builds when `stati dev` and `stati build` get `--tailwind-input` and `--tailwind-output`. The `css` block changes the defaults:
 
 ```javascript
 export default defineConfig({
   css: {
     hash: true, // _assets/styles-[hash].css in production
-    minify: true, // minify the production stylesheet
-    autoInject: true, // link the stylesheet on every page
+    minify: true, // minify the production Tailwind stylesheet
+    autoInject: true, // link the Tailwind stylesheet on every page
   },
 });
 ```
 
-See [CSS](/configuration/css) for how the build names and links the stylesheet.
+See [CSS](/configuration/css) for how the build names and links stylesheets.
 
 ### Development server
 
@@ -568,7 +568,7 @@ For detailed information about specific configuration options, see:
 - **[RSS Configuration](/configuration/rss)** - RSS feed generation
 - **[TypeScript](/configuration/typescript)** - Built-in TypeScript compilation with esbuild
 - **[Images](/configuration/images)** - Image sizes, responsive images and Open Graph cards
-- **[CSS](/configuration/css)** - Tailwind CSS in `stati dev` and `stati build`, and the hashed production stylesheet
+- **[CSS](/configuration/css)** - Hashed production stylesheets, and Tailwind CSS in `stati dev` and `stati build`
 - **[CLI commands](/cli/commands#config-file-location)** - How `--config` and the config file location work
 
 The configuration system is designed to grow with your needs while maintaining simplicity for basic use cases. Start with minimal configuration and add complexity as your site evolves.

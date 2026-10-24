@@ -80,6 +80,8 @@ body {
 </head>
 ```
 
+Production builds link a copy named after its content, such as `/_assets/styles-A1B2C3D4.css`, so browsers never pair new pages with an old cached stylesheet. See [CSS](/configuration/css#stylesheets-in-public).
+
 ### Sass/SCSS projects
 
 When you select Sass during project scaffolding, `create-stati` configures npm scripts to compile SCSS:
@@ -88,7 +90,7 @@ When you select Sass during project scaffolding, `create-stati` configures npm s
 # Development (watches and compiles SCSS alongside Stati dev server)
 npm run dev
 
-# Production build (compiles Stati site, then SCSS)
+# Production build (compiles SCSS into public/, then builds the site)
 npm run build
 
 # Standalone scripts (also available)
@@ -96,7 +98,7 @@ npm run watch:css   # Watch and compile SCSS only
 npm run build:css   # Compile SCSS only
 ```
 
-The scaffolder creates an `src/styles.scss` file with your SCSS source and sets up the build pipeline.
+The scaffolder creates an `src/styles.scss` file with your SCSS source and compiles it into `public/styles.css`, which the templates link. Production builds name it after its content, like any stylesheet in `public/`. See [CSS](/configuration/css#sass).
 
 ## Tailwind CSS integration
 
@@ -167,7 +169,7 @@ The `propValue()` function:
 
 ### Usage in templates
 
-Stati adds the stylesheet's `<link>` to every page, so the layout doesn't need one:
+Link the output under its path, as in development; production builds point the link at the hashed file. A page without the link gets one before `</head>`.
 
 ```eta
 <!DOCTYPE html>
@@ -176,6 +178,7 @@ Stati adds the stylesheet's `<link>` to every page, so the layout doesn't need o
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= stati.page.title %></title>
+  <link rel="stylesheet" href="/styles.css">
 </head>
 <body class="bg-gray-50 text-gray-900">
   <header class="bg-white shadow-sm border-b">
@@ -243,7 +246,7 @@ See the [Development Server](/cli/development) documentation for more details on
 stati build --tailwind-input src/styles.css --tailwind-output dist/styles.css
 ```
 
-The build runs Tailwind once, after the last page has rendered, so the CSS has every class the templates built with `stati.propValue()`. It writes the minified stylesheet as `dist/_assets/styles-[hash].css`, named after its content, and links it on every page. A deploy that changes the CSS gives it a new URL, so no browser shows new pages with a cached copy of the old stylesheet. The build also deletes the stylesheets earlier builds wrote under other names.
+The build runs Tailwind once, after the last page has rendered, so the CSS has every class the templates built with `stati.propValue()`. It writes the minified stylesheet as `dist/_assets/styles-[hash].css`, named after its content, and points every page's link to `/styles.css` at it, adding one where a page has none. A deploy that changes the CSS gives it a new URL, so no browser shows new pages with a cached copy of the old stylesheet. The build also deletes the stylesheets earlier builds wrote under other names.
 
 See [CSS](/configuration/css) for how the build links the file, the `css` options and moving from a separate `build:css` script.
 

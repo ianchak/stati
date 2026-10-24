@@ -188,17 +188,17 @@ Choose your preferred styling approach:
 ### Sass
 
 - Creates `src/styles.scss` from the template's stylesheet, with `$primary-color`, `$font-stack` and a breakpoint as Sass variables
-- SCSS support with build scripts
-- Automatic compilation during development and build
+- Compiles it into `public/styles.css`, which the templates link: `build:css` before `stati build`, and `watch:css` next to `stati dev`. Production builds name the stylesheet after its content, like any stylesheet in `public/` (see [CSS](/configuration/css#sass))
 - Scripts added: `build:css`, `watch:css`
 - Modified scripts: `build` and `dev` to include CSS compilation
+- Lists `public/styles.css` in the generated `.gitignore`
 
 ### Tailwind CSS
 
 - Installs Tailwind CSS 4: `tailwindcss` and its command line tool, `@tailwindcss/cli`
 - Creates source stylesheet at `src/styles.css`, which `stati dev` compiles to `dist/styles.css` and `stati build` to `dist/_assets/styles-<hash>.css`. It imports Tailwind and adds an `@source` rule for `.stati/tailwind-classes.html`, the classes Stati records from `stati.propValue()`. Tailwind finds the templates itself, so there is no `tailwind.config.js`
 - For the blank template the stylesheet rebuilds the starter's look with `@apply`, Tailwind's slate and blue palette and `dark:` variants. For the blog and docs templates it keeps the template's own stylesheet in the `components` layer, where it overrides Tailwind's base styles and utility classes in your templates override it
-- Removes the templates' `<link>` to `/styles.css`: Stati links the stylesheet on every page
+- The templates keep their `<link>` to `/styles.css`, which production builds point at the hashed file
 - Modified scripts, both using Stati's built-in Tailwind integration (single process):
   - `dev`: `stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css`
   - `build`: `stati build` with the same flags, which runs Tailwind after the last page renders (see [CSS](/configuration/css))

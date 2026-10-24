@@ -64,4 +64,4 @@ To use the reader's system font instead, delete the `@font-face` rule and the pr
 
 ## Sass and Tailwind
 
-If you chose Sass or Tailwind when creating the project, these styles live in `src/styles.scss` or `src/styles.css` instead. Sass compiles them to `dist/styles.css`; Tailwind does too in development, while a production build names the file after its content, such as `dist/_assets/styles-A1B2C3D4.css`. The custom properties work the same way.
+If you chose Sass or Tailwind when creating the project, these styles live in `src/styles.scss` or `src/styles.css` instead. Sass compiles them to `public/styles.css`, and Tailwind to `dist/styles.css` in development. Either way a production build links a copy named after its content, such as `/_assets/styles-A1B2C3D4.css`. The custom properties work the same way.

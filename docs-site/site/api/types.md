@@ -66,7 +66,7 @@ interface StatiConfig {
   /** TypeScript compilation settings */
   typescript?: TypeScriptConfig;
 
-  /** The stylesheet Stati builds with Tailwind CSS (--tailwind-input and --tailwind-output) */
+  /** Hashed production stylesheets, and the one Stati builds with Tailwind CSS */
   css?: CSSConfig;
 
   /** Image sizes, responsive images and Open Graph cards; false turns the built-in handling off */
@@ -625,15 +625,19 @@ interface TypeScriptConfig {
   autoInject?: boolean;
 }
 
-/** The `css` block: the stylesheet Stati builds with Tailwind CSS (see /configuration/css) */
+/** The `css` block: hashed production stylesheets and Tailwind CSS (see /configuration/css) */
 interface CSSConfig {
-  /** Name the production stylesheet after its content, _assets/styles-[hash].css (default: true) */
+  /**
+   * Name production stylesheets after their content, _assets/styles-[hash].css, and point the
+   * pages' links at them: the Tailwind output and the public/ stylesheets pages link
+   * (default: true, ignored in development)
+   */
   hash?: boolean;
 
-  /** Minify the production stylesheet (default: true, ignored in development) */
+  /** Minify the production Tailwind stylesheet (default: true, ignored in development) */
   minify?: boolean;
 
-  /** Add a <link rel="stylesheet"> before </head> on every page (default: true) */
+  /** Add a <link rel="stylesheet"> to the Tailwind stylesheet before </head> (default: true) */
   autoInject?: boolean;
 }
 

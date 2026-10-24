@@ -158,27 +158,27 @@ will not execute Stati to refresh expired cache entries on visitor requests.
 
 ## Troubleshooting by symptom
 
-| Symptom                               | Investigate                                                                                  |
-| ------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Wrong title/domain or output location | Config import errors/fallback, recognized filename, working directory                        |
-| Missing component                     | Template path (no `.eta`), lookup from the page's folder, `./` vs plain names, `.has()`      |
-| Wrong component in one section        | A section template at the same path overrides the root one for that section's pages          |
-| `stati.partials` or `stati.myHelper`  | Core 2.0+: `stati.include(path)` and `stati.helpers.myHelper`                                |
-| Escaped tags displayed as text        | Use raw output for rendered Markdown, include results and `stati.body` only                  |
-| Template syntax failure               | JavaScript only; no `as string`, JSX, type declarations, or undeclared locals                |
-| `post.title` missing                  | Collection entries require `post.frontMatter.title`                                          |
-| Missing post sidebar collection       | Core < 1.29 parent URL caveat; 1.29+: no index page above the post, or wrong `collection`    |
-| Date sort not applied                 | Check for an invalid-date warning; use a valid `publishedAt`, `published`, `date`, etc.      |
-| Missing Tailwind variant              | Inventory/build order, literal class map, branches actually rendered                         |
-| New markup unstyled after a deploy    | Cached fixed-name `/styles.css`; build Tailwind with the `stati build` flags (hashed name)   |
-| Bundle on wrong page                  | URL patterns (`/docs/guide`, no `.html`; `/docs/**` skips `/docs`), unique names             |
-| Missing feed/sitemap/robots in dev    | Production-only generators; run production build                                             |
-| Stale rendered content                | Cache hit, hook timing, data via helpers (untracked), `summaryFields`, force vs invalidation |
-| Missing search file                   | Search enablement, actual hash/meta URL, excluded pages, generation logs                     |
-| Old route still present               | Core 1.29+ build removes it if the manifest knows it; else clean output after rename/delete  |
-| Unexpected `/page/2` or tag pages     | `paginate` or a `[name].md` file; virtual pages also reach hooks and the sitemap             |
-| Preview differs from dev              | Fresh production artifacts, host pretty-URL behavior, stale CSS/bundles                      |
-| Successful build but broken page      | Read warnings/errors and inspect fallback HTML/error comments                                |
+| Symptom                               | Investigate                                                                                   |
+| ------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Wrong title/domain or output location | Config import errors/fallback, recognized filename, working directory                         |
+| Missing component                     | Template path (no `.eta`), lookup from the page's folder, `./` vs plain names, `.has()`       |
+| Wrong component in one section        | A section template at the same path overrides the root one for that section's pages           |
+| `stati.partials` or `stati.myHelper`  | Core 2.0+: `stati.include(path)` and `stati.helpers.myHelper`                                 |
+| Escaped tags displayed as text        | Use raw output for rendered Markdown, include results and `stati.body` only                   |
+| Template syntax failure               | JavaScript only; no `as string`, JSX, type declarations, or undeclared locals                 |
+| `post.title` missing                  | Collection entries require `post.frontMatter.title`                                           |
+| Missing post sidebar collection       | Core < 1.29 parent URL caveat; 1.29+: no index page above the post, or wrong `collection`     |
+| Date sort not applied                 | Check for an invalid-date warning; use a valid `publishedAt`, `published`, `date`, etc.       |
+| Missing Tailwind variant              | Inventory/build order, literal class map, branches actually rendered                          |
+| New markup unstyled after a deploy    | CSS written to `dist/` after `stati build`; Tailwind via the build flags, Sass into `public/` |
+| Bundle on wrong page                  | URL patterns (`/docs/guide`, no `.html`; `/docs/**` skips `/docs`), unique names              |
+| Missing feed/sitemap/robots in dev    | Production-only generators; run production build                                              |
+| Stale rendered content                | Cache hit, hook timing, data via helpers (untracked), `summaryFields`, force vs invalidation  |
+| Missing search file                   | Search enablement, actual hash/meta URL, excluded pages, generation logs                      |
+| Old route still present               | Core 1.29+ build removes it if the manifest knows it; else clean output after rename/delete   |
+| Unexpected `/page/2` or tag pages     | `paginate` or a `[name].md` file; virtual pages also reach hooks and the sitemap              |
+| Preview differs from dev              | Fresh production artifacts, host pretty-URL behavior, stale CSS/bundles                       |
+| Successful build but broken page      | Read warnings/errors and inspect fallback HTML/error comments                                 |
 
 ## Working in the Stati monorepo
 

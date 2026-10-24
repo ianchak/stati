@@ -292,7 +292,7 @@ jobs:
         run: rsync -av dist/ user@server:/var/www/html/
 ```
 
-Run the build through your `build` script rather than calling `stati build` directly: the script holds the flags or steps that build the CSS, such as `stati build --tailwind-input src/styles.css --tailwind-output dist/styles.css` for Tailwind or `stati build && npm run build:css` for Sass, and CI runners do not put `node_modules/.bin` on the `PATH` for plain `run:` steps.
+Run the build through your `build` script rather than calling `stati build` directly: the script holds the flags or steps that build the CSS, such as `stati build --tailwind-input src/styles.css --tailwind-output dist/styles.css` for Tailwind or `npm run build:css && stati build` for Sass, and CI runners do not put `node_modules/.bin` on the `PATH` for plain `run:` steps.
 
 **Netlify:**
 
