@@ -230,6 +230,14 @@ describe('rebaseRelativeUrls', () => {
     );
   });
 
+  it('decodes line continuations and invalid code points as CSS does', () => {
+    const css = 'a{b:url("im\\\nage.png")}c{d:url("\\0 x.png")}e{f:url("\\110000 y.png")}';
+
+    expect(rebaseRelativeUrls(css, '/css/site.css')).toBe(
+      'a{b:url("/css/image.png")}c{d:url("/css/%EF%BF%BDx.png")}e{f:url("/css/%EF%BF%BDy.png")}',
+    );
+  });
+
   it('takes linear time on comments and strings that never close', () => {
     const started = performance.now();
     for (const open of ['/*', '"', "'", 'url("']) {
@@ -320,6 +328,16 @@ describe('linksStylesheet', () => {
       expect(linksStylesheet(`${html}${link}`, '/styles.css')).toBe(true);
     }
     expect(linksStylesheet(`<noscript>${link}</noscript>`, '/styles.css')).toBe(true);
+  });
+
+  it('reads no origin from a site URL that is invalid or has none', () => {
+    const html = '<link rel="stylesheet" href="https://example.com/styles.css">';
+
+    expect(linksStylesheet(html, '/styles.css', 'not a url')).toBe(false);
+    expect(linksStylesheet(html, '/styles.css', 'file:///site/')).toBe(false);
+    expect(linksStylesheet('<link rel="stylesheet" href="/styles.css">', '/styles.css', 'x')).toBe(
+      true,
+    );
   });
 
   it('resolves a relative link against the page when it has its URL', () => {
@@ -443,6 +461,10 @@ describe('rewriteStylesheetLinks', () => {
       );
     }
     expect(performance.now() - started).toBeLessThan(1000);
+  });
+
+  it('ignores a <link> tag that never closes', () => {
+    expect(getLinkedStylesheetPaths('<link rel="stylesheet" href="/styles.css"', '/')).toEqual([]);
   });
 
   it('treats a comment or element left open as running to the end of the page', () => {

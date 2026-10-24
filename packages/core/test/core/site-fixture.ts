@@ -25,6 +25,8 @@ export interface FixtureBuild {
   info: string[];
   /** Messages logged as errors; only with `allowErrors`, which otherwise fail the build */
   errors: string[];
+  /** Files the build reported writing, as "action path" */
+  files: string[];
   result: BuildResult;
 }
 
@@ -106,6 +108,7 @@ export async function createSiteFixture(
       const warnings: string[] = [];
       const info: string[] = [];
       const errors: string[] = [];
+      const files: string[] = [];
       const logger: Logger = {
         info: (message) => info.push(message),
         success: () => {},
@@ -123,9 +126,10 @@ export async function createSiteFixture(
         updateProgress: (status, url) => {
           (status === 'cached' ? cached : rendered).push(url);
         },
+        file: (action, path) => files.push(`${action} ${path}`),
       };
       const result = await build({ logger, ...options });
-      return { rendered, cached, warnings, info, errors, result };
+      return { rendered, cached, warnings, info, errors, files, result };
     },
     async manifest() {
       const manifest = await loadCacheManifest(join(dir, '.stati'));

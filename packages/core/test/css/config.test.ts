@@ -32,6 +32,15 @@ describe('validateCSSConfig', () => {
       'css.minify must be true or false (got "yes").',
     );
   });
+
+  it('shows values JSON cannot print', () => {
+    expect(() => validateCSSConfig({ hash: 10n })).toThrow(
+      'css.hash must be true or false (got 10).',
+    );
+    expect(() => validateCSSConfig({ hash: Symbol('on') })).toThrow(
+      'css.hash must be true or false (got Symbol(on)).',
+    );
+  });
 });
 
 describe('resolveCSSConfig', () => {

@@ -80,6 +80,15 @@ describe('Tailwind CSS CLI', () => {
       );
     });
 
+    it('skips a package whose bin has no tailwindcss entry', async () => {
+      await write(
+        'node_modules/@tailwindcss/cli/package.json',
+        JSON.stringify({ bin: { tailwind: './cli.js' } }),
+      );
+
+      expect(await findTailwindCli(root)).toBeNull();
+    });
+
     it('skips a package.json it cannot read', async () => {
       await write('node_modules/@tailwindcss/cli/package.json', '{ not json');
       await write(
@@ -143,6 +152,21 @@ process.exit(1);
           'Tailwind CSS exited with code 1:\nError: Cannot apply unknown utility class `nope`',
         ),
       );
+    });
+
+    it('reports what Tailwind printed to stdout, and only the exit code without output', async () => {
+      const run = () =>
+        runTailwindCLI({ projectRoot: root, input: 'in.css', output: 'out.css', minify: false });
+
+      await installCli(`process.stdout.write('Error: printed to stdout\\n');
+process.exit(2);
+`);
+      await expect(run()).rejects.toThrow(
+        new Error('Tailwind CSS exited with code 2:\nError: printed to stdout'),
+      );
+
+      await installCli('process.exit(3);\n');
+      await expect(run()).rejects.toThrow(new Error('Tailwind CSS exited with code 3'));
     });
 
     it('explains how to install Tailwind CSS when it is missing', async () => {

@@ -34,16 +34,25 @@ vi.mock('../../src/constants.js', async (importOriginal) => {
 
 /**
  * Stands in for the Tailwind CSS CLI: copies the input to the output, marking --minify, fails
- * like Tailwind on an input holding FAIL, and records every run in tailwind-runs.log.
+ * like Tailwind on an input holding FAIL, exits without writing on one holding NOWRITE,
+ * records every run in tailwind-runs.log and the class inventory it saw in
+ * tailwind-inventory.log.
  */
 const FAKE_CLI = `const fs = require('node:fs');
 const path = require('node:path');
 const args = process.argv.slice(2);
 fs.appendFileSync(path.join(process.cwd(), 'tailwind-runs.log'), JSON.stringify(args) + '\\n');
+const inventory = path.join(process.cwd(), '.stati', 'tailwind-classes.html');
+if (fs.existsSync(inventory)) {
+  fs.writeFileSync('tailwind-inventory.log', fs.readFileSync(inventory, 'utf8'));
+}
 const input = fs.readFileSync(args[args.indexOf('-i') + 1], 'utf8');
 if (input.includes('FAIL')) {
   process.stderr.write('\\u001b[31mError: Cannot apply unknown utility class "nope"\\u001b[39m\\n');
   process.exit(1);
+}
+if (input.includes('NOWRITE')) {
+  process.exit(0);
 }
 const output = args[args.indexOf('-o') + 1];
 fs.mkdirSync(path.dirname(output), { recursive: true });
@@ -199,6 +208,44 @@ describe('stylesheet builds with Tailwind CSS', () => {
       expect(stylesheetLinks(await site.read('dist/about.html'))).toEqual([`/_assets/${name}`]);
       expect(stylesheetLinks(await site.read('dist/index.html'))).toEqual([`/_assets/${name}`]);
       expect(await assetFiles()).toEqual([name]);
+    });
+
+    it('runs Tailwind once the inventory lists the classes templates built, and reports the file', async () => {
+      await createSite();
+      await site.write(
+        'site/layout.eta',
+        LAYOUT.replace('<body>', `<body class="<%= stati.propValue('text-' + 'teal-700') %>">`),
+      );
+
+      const { files } = await site.build({ tailwind });
+
+      expect(await site.read('tailwind-inventory.log')).toContain('text-teal-700');
+      expect(files).toContain(`compiled _assets/${hashedName('body { color: black; }')}`);
+    });
+
+    it('fails when Tailwind exits without writing the stylesheet', async () => {
+      await createSite();
+      await site.write('src/styles.css', 'NOWRITE');
+
+      await expect(site.build({ tailwind })).rejects.toThrow(
+        'Tailwind CSS finished without writing',
+      );
+      expect(await site.exists('dist/index.html')).toBe(false);
+    });
+
+    it('fails when a page it held in the cache directory is gone before it is written', async () => {
+      limits.deferredPagesLength = 0;
+      await createSite({
+        hooks: {
+          afterRender: async () => {
+            await site.remove('.stati/pending-pages/0.html');
+          },
+        },
+      });
+
+      await expect(site.build({ tailwind })).rejects.toThrow(
+        'A rendered page is missing from the cache directory',
+      );
     });
 
     it('checks the input before any page renders', async () => {
