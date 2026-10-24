@@ -25,7 +25,7 @@ Site-wide SEO defaults (`og:locale`, Twitter handles, `seo.articles`) were
 verified against the core 2.1 source and tests on 2026-10-23, and the 404 page
 defaults against the core 2.2 branch on the same day. The hashed Tailwind
 stylesheet (`stati build --tailwind-input`, `css`, `stati.assets.stylesheetPaths`)
-was verified against the core 2.3 branch on 2026-10-24.
+was verified against the source and tests on 2026-10-24.
 Package versions may differ across workspaces/releases. Revalidate after upgrades.
 
 Official entry points:
@@ -137,7 +137,7 @@ source rather than unsupported deep imports.
 | Dev/preview/overlays             | `packages/core/src/core/dev.ts`, `preview.ts`, `core/utils/error-overlay.utils.ts` | Dev/preview/error-overlay integration tests                                      |
 | Browser bundles/matching         | `packages/core/src/core/utils/typescript.utils.ts`, `bundle-matching.utils.ts`     | `packages/core/test/typescript.utils.test.ts`, bundle matching tests             |
 | Tailwind inventory               | `packages/core/src/core/utils/tailwind-inventory.utils.ts`                         | `packages/core/test/core/tailwind-inventory.test.ts`                             |
-| Tailwind stylesheet (build/link) | `packages/core/src/css/`, `core/build.ts`                                           | `packages/core/test/css/`, `core/stylesheet-integration.test.ts`                 |
+| Tailwind stylesheet (build/link) | `packages/core/src/css/`, `core/build.ts`                                          | `packages/core/test/css/`, `core/stylesheet-integration.test.ts`                 |
 | SEO/sitemap/robots               | `packages/core/src/seo/`, `types/seo.ts`, `types/sitemap.ts`                       | SEO tests                                                                        |
 | Search index/injection           | `packages/core/src/search/`, `types/search.ts`                                     | Search tests                                                                     |
 | RSS/filter/mappings              | `packages/core/src/rss/`, `types/rss.ts`                                           | RSS tests                                                                        |

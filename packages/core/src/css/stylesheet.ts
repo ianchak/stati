@@ -10,7 +10,6 @@ import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'nod
 import {
   copyFile,
   ensureDir,
-  lstat,
   pathExists,
   readdir,
   readFile,
@@ -180,9 +179,10 @@ export function getStylesheetFingerprint(plan: StylesheetPlan): {
 /**
  * The stylesheet path pages render with. Development builds, and production builds with
  * `css.hash: false`, link the output under its own name. A hashed build learns the name only
- * once every page has rendered, so until then pages carry the name the previous build linked,
- * whose file is still on disk, and {@link relinkStylesheet} gives them the new one. A build
- * without a previous name renders a placeholder.
+ * once every page has rendered, so pages render with the name the previous build linked, whose
+ * file is still on disk. The build swaps in the new one as it writes the pages it held, and
+ * {@link relinkStylesheet} does for pages already on disk. A build without a previous name
+ * renders a placeholder.
  *
  * @param plan - The build's stylesheet
  * @param linked - The path the previous production build linked (`CacheManifest.stylesheets`)
@@ -249,10 +249,11 @@ export async function buildStylesheet(
 }
 
 /**
- * Gives every page that links one stylesheet path the other: in a hashed build, the pages that
- * rendered with the previous name or the placeholder, and those kept from earlier builds,
- * which carry the previous name too. Each page is read once and written only when it holds
- * the path. The path holds no characters HTML escapes, so it is the same in every attribute.
+ * Gives every page that links one stylesheet path the other: in a hashed build, the pages kept
+ * from earlier builds, which carry the previous name, and pages the build wrote before Tailwind
+ * ran because it held as many as it could. Each page is read once and written only when it
+ * holds the path. The path holds no characters HTML escapes, so it is the same in every
+ * attribute.
  *
  * @param files - The pages' output files
  * @param from - The path the pages carry
@@ -282,10 +283,10 @@ export async function relinkStylesheet(
 }
 
 /**
- * Deletes the stylesheets earlier builds wrote under other names: hashed files from builds
- * whose CSS differed and, in a hashed build, the output under its own name that the dev
- * server's Tailwind watcher writes, which production pages never link. Only files named after
- * this stylesheet are deleted, never the current one.
+ * Deletes the hashed stylesheets earlier builds wrote under other names, from builds whose CSS
+ * differed. Only files named after this stylesheet are deleted, never the current one. The
+ * output under its own name stays: the dev server's Tailwind watcher writes it, and the dev
+ * server watches it for live reload only when it exists as the server starts.
  *
  * The build calls this after every page links the current file: until then, pages from the
  * previous build still load the old one.
@@ -309,13 +310,6 @@ export async function removeStaleStylesheets(
   const stale = entries
     .filter((entry) => entry.isFile() && entry.name !== currentName && pattern.test(entry.name))
     .map((entry) => join(dir, entry.name));
-
-  if (plan.hash) {
-    const output = await lstat(plan.outputFile).catch(() => null);
-    if (output?.isFile()) {
-      stale.push(plan.outputFile);
-    }
-  }
 
   await Promise.all(stale.map((file) => remove(file)));
   return stale.map((file) => relative(outDir, file).replace(/\\/g, '/'));

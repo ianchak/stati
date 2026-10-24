@@ -39,12 +39,10 @@ Stati links the stylesheet on every page, so your templates don't need a `<link>
 1. Before any page renders, it checks that the input file exists and that Tailwind CSS is installed.
 2. It renders the pages. Every class a template builds with `stati.propValue()` goes into `.stati/tailwind-classes.html`.
 3. With that list complete, it runs Tailwind once, with `--minify`, and writes `dist/_assets/styles-A1B2C3D4.css`, where `A1B2C3D4` comes from the CSS.
-4. Every page links that file with `<link rel="stylesheet" href="/_assets/styles-A1B2C3D4.css">`, added before `</head>` unless the page links the path already.
-5. It deletes the stylesheets earlier builds left in `dist/_assets/` under other names, and `dist/styles.css`, the dev server's file, which production pages don't load.
+4. It writes the pages it rendered. Every page links that file with `<link rel="stylesheet" href="/_assets/styles-A1B2C3D4.css">`, added before `</head>` unless the page links the path already.
+5. It deletes the stylesheets earlier builds left in `dist/_assets/` under other names.
 
-The file name is known only once Tailwind has run, after the pages. Pages render with the name the previous build linked, whose file is still on disk, and when the CSS changes, Stati writes the new name into every page, also the ones the [ISG cache](/core-concepts/isg) kept: a CSS change doesn't render any page again. If Tailwind fails, the build stops with Tailwind's error, and the pages written so far still link the previous stylesheet.
-
-A template that still links `/styles.css` gets a warning in production builds, because that file isn't there.
+The file name is known only once Tailwind has run, after the pages, so the build holds the pages it renders in memory until then and writes each once. When the CSS changes, Stati also writes the new name into the pages the [ISG cache](/core-concepts/isg) kept: a CSS change doesn't render any page again. If Tailwind fails, the build stops with Tailwind's error and the previous build's pages and stylesheet stay as they were.
 
 ## Linking it yourself
 
@@ -76,11 +74,11 @@ export default defineConfig({
 });
 ```
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `hash` | `boolean` | `true` | Name the production stylesheet after its content. With `false`, production writes and links the `--tailwind-output` file under its own name. |
-| `minify` | `boolean` | `true` | Minify the production stylesheet. Development output is never minified. |
-| `autoInject` | `boolean` | `true` | Add the `<link>` before `</head>` on every page that doesn't link the stylesheet yet. |
+| Option       | Type      | Default | Description                                                                                                                                  |
+| ------------ | --------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `hash`       | `boolean` | `true`  | Name the production stylesheet after its content. With `false`, production writes and links the `--tailwind-output` file under its own name. |
+| `minify`     | `boolean` | `true`  | Minify the production stylesheet. Development output is never minified.                                                                      |
+| `autoInject` | `boolean` | `true`  | Add the `<link>` before `</head>` on every page that doesn't link the stylesheet yet.                                                        |
 
 Development always uses the output's own name, whatever `hash` says. Unknown options and values that aren't `true` or `false` stop the build with an error.
 
@@ -103,7 +101,7 @@ Stati names only the stylesheet it builds with Tailwind after its content. A sty
 
 ## Moving from a `build:css` script
 
-Projects scaffolded before this feature build their CSS in a separate script:
+A project that runs Tailwind in its own script after `stati build` keeps the stylesheet's fixed name:
 
 ```json
 {

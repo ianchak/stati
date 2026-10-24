@@ -58,12 +58,6 @@ export interface RefreshCssOutputWatcherParams {
   disableWsReload: boolean;
   cssWatcher: FSWatcher | null;
   watchedCssFiles: Set<string>;
-  /**
-   * Stylesheets to watch whether or not they exist yet, such as the output of the CLI's
-   * Tailwind watcher, which starts after the dev server and after a production build has
-   * deleted the file
-   */
-  expectedCssFiles?: readonly string[];
 }
 
 /**
@@ -77,9 +71,7 @@ export async function refreshCssOutputWatcher(
 ): Promise<FSWatcher | null> {
   const { outDir, logger, wsServer, disableWsReload, cssWatcher, watchedCssFiles } = params;
 
-  // Forward slashes, like the discovered files, so an expected file is listed once
-  const expected = (params.expectedCssFiles ?? []).map((file) => file.replace(/\\/g, '/'));
-  const cssFiles = [...new Set([...(await discoverOutputCssFiles(outDir)), ...expected])];
+  const cssFiles = await discoverOutputCssFiles(outDir);
   if (hasSameMembership(cssFiles, watchedCssFiles)) {
     return cssWatcher;
   }
@@ -101,14 +93,11 @@ export async function refreshCssOutputWatcher(
     ignoreInitial: true,
   });
 
-  const reload = (path: string) => {
+  nextCssWatcher.on('change', (path: string) => {
     const relativePath = path.replace(process.cwd(), '').replace(/\\/g, '/').replace(/^\//, '');
     logger.info?.(`▸ ${relativePath} updated`);
     broadcastReload(wsServer, disableWsReload, JSON.stringify({ type: 'reload' }));
-  };
-  nextCssWatcher.on('change', reload);
-  // An expected stylesheet that did not exist yet
-  nextCssWatcher.on('add', reload);
+  });
 
   return nextCssWatcher;
 }

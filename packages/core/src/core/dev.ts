@@ -505,11 +505,9 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
   // Pages link the Tailwind watcher's output when it is a stylesheet in the output directory.
   // Other outputs still work as before, but Stati can't link them.
   let { tailwind } = options;
-  // Watched for live reload even before the Tailwind watcher first writes it
-  const expectedCssFiles: string[] = [];
   if (tailwind) {
     try {
-      expectedCssFiles.push(createStylesheetPlan(tailwind, config.css, outDir, true).outputFile);
+      createStylesheetPlan(tailwind, config.css, outDir, true);
     } catch (error) {
       logger.warning?.(
         `${error instanceof Error ? error.message : String(error)} Stati does not link the stylesheet to pages.`,
@@ -847,7 +845,6 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
           disableWsReload,
           cssWatcher,
           watchedCssFiles,
-          expectedCssFiles,
         });
       };
 

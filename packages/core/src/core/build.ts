@@ -88,7 +88,7 @@ import {
   type TailwindBuildOptions,
 } from '../css/index.js';
 import { getEnv, isDevelopment } from '../env.js';
-import { DEFAULT_OUT_DIR } from '../constants.js';
+import { DEFAULT_OUT_DIR, MAX_DEFERRED_PAGES_LENGTH } from '../constants.js';
 import type {
   BuildContext,
   BuildStats,
@@ -448,6 +448,35 @@ interface ProcessPagesResult {
   cacheMisses: number;
   /** The search index file the pages link to (only when search is enabled) */
   searchIndexFilename: string | undefined;
+  /** Rendered pages a hashed production build writes once Tailwind has named the stylesheet */
+  deferredPages: PageWrite[];
+}
+
+/**
+ * A rendered page and the file it goes to.
+ */
+interface PageWrite {
+  outputPath: string;
+  content: string;
+}
+
+/** Pages written at once */
+const WRITE_BATCH_SIZE = 32;
+
+/**
+ * Writes pages held in memory in batches, with one stylesheet path swapped for another.
+ */
+async function writeDeferredPages(pages: PageWrite[], from: string, to: string): Promise<void> {
+  await Promise.all([...new Set(pages.map((page) => dirname(page.outputPath)))].map(ensureDir));
+  for (let i = 0; i < pages.length; i += WRITE_BATCH_SIZE) {
+    await Promise.all(
+      pages
+        .slice(i, i + WRITE_BATCH_SIZE)
+        .map(({ outputPath, content }) =>
+          writeFile(outputPath, from === to ? content : content.split(from).join(to), 'utf-8'),
+        ),
+    );
+  }
 }
 
 /**
@@ -645,6 +674,11 @@ async function processPagesWithCache(
   const stylesheetFingerprint = stylesheet ? getStylesheetFingerprint(stylesheet.plan) : undefined;
   // Pages linking the output's development path, which a hashed build does not write
   const pagesLinkingDevStylesheet: string[] = [];
+  // A hashed production build learns the stylesheet's name after rendering: it keeps the pages
+  // it renders until then, so each is written once with the final name
+  const deferWrites = !isDevMode && stylesheet?.plan.hash === true;
+  const deferredPages: PageWrite[] = [];
+  let deferredLength = 0;
 
   for (let i = 0; i < pages.length; i++) {
     const page = pages[i];
@@ -883,14 +917,20 @@ async function processPagesWithCache(
         renderInputsHash: renderedInputsHash,
         renderedAssets,
       });
+    } else if (deferWrites && deferredLength + finalHtml.length <= MAX_DEFERRED_PAGES_LENGTH) {
+      // Written after Tailwind has run, with the stylesheet's final name
+      deferredPages.push({ outputPath, content: finalHtml });
+      deferredLength += finalHtml.length;
     } else {
       // Production mode: write immediately
       const fileWriteStart = performance.now();
       await ensureDir(dirname(outputPath));
       await writeFile(outputPath, finalHtml, 'utf-8');
       totalFileWriteTime += performance.now() - fileWriteStart;
+    }
 
-      // Update cache manifest
+    // Production mode: update the cache manifest now; dev mode does it after the batched writes
+    if (!isDevMode) {
       if (!options.skipCacheUpdate) {
         const cacheEntryStart = performance.now();
         manifest.entries[cacheKey] = existingEntry
@@ -985,7 +1025,7 @@ async function processPagesWithCache(
     );
   }
 
-  return { cacheHits, cacheMisses, searchIndexFilename };
+  return { cacheHits, cacheMisses, searchIndexFilename, deferredPages };
 }
 
 /**
@@ -1246,7 +1286,71 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     renderStylesheet,
   );
   endPageRenderSpan();
-  const { cacheHits, cacheMisses, searchIndexFilename } = pageProcessingResult;
+  const { cacheHits, cacheMisses, searchIndexFilename, deferredPages } = pageProcessingResult;
+
+  // Write Tailwind class inventory after all templates have been rendered (if Tailwind is used)
+  const tailwindStart = performance.now();
+  if (hasTailwind) {
+    const inventorySize = getInventorySize();
+    if (inventorySize > 0) {
+      // In dev mode, skip write if inventory size hasn't changed
+      const skipIfUnchanged = isDevMode;
+      await writeTailwindClassInventory(cacheDir, skipIfUnchanged);
+      logger.info('');
+      logger.status(`Generated Tailwind class inventory (${inventorySize} classes tracked)`);
+    }
+
+    // Disable inventory tracking after build
+    disableInventoryTracking();
+  }
+  const tailwindInventoryTime = performance.now() - tailwindStart;
+  recorder.recordPhase('tailwindInventoryMs', tailwindInventoryTime);
+
+  // Run Tailwind now that the inventory lists every class the pages use, then write the pages
+  // this build rendered, which it held until now, with the stylesheet's name. Pages kept from
+  // earlier builds carry the name the last build linked, or a placeholder; when the CSS got
+  // another name, they link the new one from here on. Before stale pages are removed and
+  // image failures patched, which read the written pages.
+  let builtStylesheet: BuiltStylesheet | null = null;
+  if (renderStylesheet && !isDevMode) {
+    const endStylesheetSpan = recorder.startSpan('tailwindBuildMs');
+    logger.info('');
+    logger.info('Building CSS with Tailwind CSS...');
+    builtStylesheet = await buildStylesheet(renderStylesheet.plan, outDir, cacheDir);
+    if (logger.file) {
+      logger.file(
+        'compiled',
+        relative(outDir, builtStylesheet.file).replace(/\\/g, '/'),
+        builtStylesheet.sizeInBytes,
+      );
+    }
+
+    const fileWriteStart = performance.now();
+    await writeDeferredPages(deferredPages, renderStylesheet.path, builtStylesheet.path);
+    recorder.addToPhase('fileWriteTotalMs', performance.now() - fileWriteStart);
+
+    if (builtStylesheet.path !== renderStylesheet.path) {
+      const written = new Set(deferredPages.map((page) => page.outputPath));
+      const pageFiles = pages
+        .map((page) => getPageOutput(page, outDir).outputPath)
+        .filter((file) => !written.has(file));
+      const relinked = await relinkStylesheet(
+        pageFiles,
+        renderStylesheet.path,
+        builtStylesheet.path,
+      );
+      if (relinked > 0) {
+        logger.info(
+          `Linked ${relinked} page${relinked === 1 ? '' : 's'} to ${builtStylesheet.path}`,
+        );
+      }
+    }
+    manifest.stylesheets = { [renderStylesheet.plan.path]: builtStylesheet.path };
+    endStylesheetSpan();
+    logger.success(`Built ${builtStylesheet.path} (${formatBytes(builtStylesheet.sizeInBytes)})`);
+  } else if (!isDevMode) {
+    delete manifest.stylesheets;
+  }
 
   // Remove the output of pages that no longer exist, such as a deleted post or a tag no post
   // uses anymore. Runs before static assets are copied, so a file in the static directory at
@@ -1289,61 +1393,6 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
   // Record page rendering counts
   recorder.increment('renderedPages', cacheMisses);
   recorder.increment('cachedPages', cacheHits);
-
-  // Write Tailwind class inventory after all templates have been rendered (if Tailwind is used)
-  const tailwindStart = performance.now();
-  if (hasTailwind) {
-    const inventorySize = getInventorySize();
-    if (inventorySize > 0) {
-      // In dev mode, skip write if inventory size hasn't changed
-      const skipIfUnchanged = isDevMode;
-      await writeTailwindClassInventory(cacheDir, skipIfUnchanged);
-      logger.info('');
-      logger.status(`Generated Tailwind class inventory (${inventorySize} classes tracked)`);
-    }
-
-    // Disable inventory tracking after build
-    disableInventoryTracking();
-  }
-  const tailwindInventoryTime = performance.now() - tailwindStart;
-  recorder.recordPhase('tailwindInventoryMs', tailwindInventoryTime);
-
-  // Run Tailwind now that the inventory lists every class the pages use. A hashed build's
-  // pages carry the name the last build linked, or a placeholder; when the CSS got another
-  // name, every page links it from here on, including the pages the cache kept.
-  let builtStylesheet: BuiltStylesheet | null = null;
-  if (renderStylesheet && !isDevMode) {
-    const endStylesheetSpan = recorder.startSpan('tailwindBuildMs');
-    logger.info('');
-    logger.info('Building CSS with Tailwind CSS...');
-    builtStylesheet = await buildStylesheet(renderStylesheet.plan, outDir, cacheDir);
-    if (logger.file) {
-      logger.file(
-        'compiled',
-        relative(outDir, builtStylesheet.file).replace(/\\/g, '/'),
-        builtStylesheet.sizeInBytes,
-      );
-    }
-
-    if (builtStylesheet.path !== renderStylesheet.path) {
-      const pageFiles = pages.map((page) => getPageOutput(page, outDir).outputPath);
-      const relinked = await relinkStylesheet(
-        pageFiles,
-        renderStylesheet.path,
-        builtStylesheet.path,
-      );
-      if (relinked > 0) {
-        logger.info(
-          `Linked ${relinked} page${relinked === 1 ? '' : 's'} to ${builtStylesheet.path}`,
-        );
-      }
-    }
-    manifest.stylesheets = { [renderStylesheet.plan.path]: builtStylesheet.path };
-    endStylesheetSpan();
-    logger.success(`Built ${builtStylesheet.path} (${formatBytes(builtStylesheet.sizeInBytes)})`);
-  } else if (!isDevMode) {
-    delete manifest.stylesheets;
-  }
 
   // Save updated cache manifest (skip if caller already saved it, e.g., dev mode template change)
   const endManifestSaveSpan = recorder.startSpan('cacheManifestSaveMs');

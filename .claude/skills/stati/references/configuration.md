@@ -217,15 +217,15 @@ Preserve scaffold-generated scripts; they orchestrate styling differently.
 | Tailwind  | `src/styles.css`    | `/styles.css` in dev, `/_assets/styles-[hash].css` built | `--tailwind-input`/`--tailwind-output` on `dev` and `build` |
 
 Scaffolding supports `--styling css`, `sass`, or `tailwind`. Do not replace Sass
-or Tailwind scripts with a plain `"build": "stati build"` shortcut. Tailwind
-scaffolds from before core 2.3 run `stati build && npm run build:css` and link
-`/styles.css` in their templates; that works and keeps a fixed name.
+or Tailwind scripts with a plain `"build": "stati build"` shortcut.
 
-From core 2.3 (CLI 2.1), `stati build --tailwind-input src/styles.css
---tailwind-output dist/styles.css` runs Tailwind once after the last page renders,
-minified, writes `dist/_assets/styles-[hash].css`, and links it before `</head>` on
-every page that does not link it already. It deletes earlier hashed copies and the
-dev server's `dist/styles.css`. `stati dev` with the same flags links `/styles.css`.
+`stati build --tailwind-input src/styles.css --tailwind-output dist/styles.css`
+runs Tailwind once after the last page renders, minified, writes
+`dist/_assets/styles-[hash].css`, and links it before `</head>` on every page that
+does not link it already. It deletes earlier hashed copies; the dev server's
+`dist/styles.css` stays. `stati dev` with the same flags links `/styles.css`. A
+project that runs Tailwind in its own `build:css` script after `stati build` and
+links `/styles.css` in its templates also works, but keeps a fixed name.
 
 - The output must be a `.css` file inside the output directory; the build fails
   otherwise, and when the input or the Tailwind CLI is missing, before rendering.
@@ -233,8 +233,9 @@ dev server's `dist/styles.css`. `stati dev` with the same flags links `/styles.c
   keep one, because that file is not written.
 - For manual placement set `css.autoInject: false` and print
   `stati.assets.stylesheetPaths` unchanged. A hashed build learns the name after
-  rendering and replaces the path in every page, cached ones included, so a CSS
-  change re-renders nothing; a path the template encodes or prefixes is not updated.
+  rendering, writes the pages it rendered with it, and replaces the path in cached
+  pages, so a CSS change re-renders nothing; a path the template encodes or prefixes
+  is not updated. If Tailwind fails, the previous pages stay as they were.
 - `css: { hash, minify, autoInject }`, all `true` by default; development never
   hashes or minifies. `hash: false` writes and links the output under its own name.
 - Only the Tailwind stylesheet is hashed. `public/` CSS and Sass output keep their
@@ -251,7 +252,7 @@ runs either version.
 `stati.propValue()` records runtime tokens for that inventory. Production
 styling must run in the proper order so classes recorded during rendering exist
 before the final CSS compilation: `stati build` with the Tailwind flags does this
-itself, and an older `build:css` script must run after `stati build`. Retain the
+itself, and a separate `build:css` script must run after `stati build`. Retain the
 actual installed scaffold's build order and verify the emitted CSS.
 
 Literal variant maps are safer than constructing unbounded classes from user

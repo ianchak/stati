@@ -18,6 +18,18 @@ vi.mock('../../src/config/loader.js', () => ({
   loadConfig: vi.fn(),
 }));
 
+// A test can lower the HTML a hashed build holds in memory until Tailwind has run
+const limits = vi.hoisted(() => ({ deferredPagesLength: undefined as number | undefined }));
+vi.mock('../../src/constants.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../src/constants.js')>();
+  return {
+    ...actual,
+    get MAX_DEFERRED_PAGES_LENGTH() {
+      return limits.deferredPagesLength ?? actual.MAX_DEFERRED_PAGES_LENGTH;
+    },
+  };
+});
+
 /**
  * Stands in for the Tailwind CSS CLI: copies the input to the output, marking --minify, fails
  * like Tailwind on an input holding FAIL, and records every run in tailwind-runs.log.
@@ -89,6 +101,7 @@ describe('stylesheet builds with Tailwind CSS', () => {
 
   afterEach(async () => {
     setEnv('development');
+    limits.deferredPagesLength = undefined;
     await site.cleanup();
   });
 
@@ -97,9 +110,11 @@ describe('stylesheet builds with Tailwind CSS', () => {
       await createSite();
       const name = hashedName('body { color: black; }');
 
-      const { rendered, warnings } = await site.build({ tailwind });
+      const { rendered, warnings, info } = await site.build({ tailwind });
 
       expect(rendered.sort()).toEqual(['/', '/about']);
+      // Written once, after Tailwind has named the stylesheet
+      expect(info.some((message) => message.startsWith('Linked'))).toBe(false);
       expect(await assetFiles()).toEqual([name]);
       for (const file of ['dist/index.html', 'dist/about.html']) {
         const html = await site.read(file);
@@ -150,7 +165,7 @@ describe('stylesheet builds with Tailwind CSS', () => {
       expect((await site.manifest()).stylesheets).toEqual({ '/styles.css': `/_assets/${name}` });
     });
 
-    it('renders pages with the name the last build linked, so a failed Tailwind run leaves them working', async () => {
+    it('leaves the previous pages and stylesheet in place when Tailwind fails', async () => {
       await createSite();
       await site.build({ tailwind });
       const previous = hashedName('body { color: black; }');
@@ -161,15 +176,17 @@ describe('stylesheet builds with Tailwind CSS', () => {
         'Tailwind CSS exited with code 1:\nError: Cannot apply unknown utility class "nope"',
       );
 
+      // The page rendered again is not written without the stylesheet it links
       const about = await site.read('dist/about.html');
-      expect(about).toContain('About us');
+      expect(about).not.toContain('About us');
       expect(stylesheetLinks(about)).toEqual([`/_assets/${previous}`]);
       expect(await assetFiles()).toEqual([previous]);
 
-      // The next build after the fix links every page to the new file
+      // The next build after the fix writes the page and links every page to the new file
       await site.write('src/styles.css', 'body { color: teal; }');
       const name = hashedName('body { color: teal; }');
       await site.build({ tailwind });
+      expect(await site.read('dist/about.html')).toContain('About us');
       expect(stylesheetLinks(await site.read('dist/about.html'))).toEqual([`/_assets/${name}`]);
       expect(stylesheetLinks(await site.read('dist/index.html'))).toEqual([`/_assets/${name}`]);
       expect(await assetFiles()).toEqual([name]);
@@ -203,13 +220,41 @@ describe('stylesheet builds with Tailwind CSS', () => {
       );
     });
 
-    it('deletes the development output, which production pages do not link', async () => {
+    it("keeps the dev server's output, which the next dev server start watches", async () => {
       await createSite();
       await site.write('dist/styles.css', '/* written by the dev server watcher */');
 
       await site.build({ tailwind });
 
-      expect(await site.exists('dist/styles.css')).toBe(false);
+      expect(await site.read('dist/styles.css')).toBe('/* written by the dev server watcher */');
+    });
+
+    it('writes pages past the memory limit at once and gives them the final name afterwards', async () => {
+      await createSite();
+      limits.deferredPagesLength = 0;
+      const name = hashedName('body { color: black; }');
+
+      const { info } = await site.build({ tailwind });
+
+      expect(info).toContain(`Linked 2 pages to /_assets/${name}`);
+      expect(stylesheetLinks(await site.read('dist/index.html'))).toEqual([`/_assets/${name}`]);
+      expect(stylesheetLinks(await site.read('dist/about.html'))).toEqual([`/_assets/${name}`]);
+    });
+
+    it('writes the pages it renders once and relinks only cached ones when the CSS changes', async () => {
+      await createSite();
+      await site.build({ tailwind });
+      await site.write('site/about.md', page({ title: 'About' }, '# About us'));
+      await site.write('src/styles.css', 'body { color: navy; }');
+      const name = hashedName('body { color: navy; }');
+
+      const { rendered, info } = await site.build({ tailwind });
+
+      expect(rendered).toEqual(['/about']);
+      expect(info).toContain(`Linked 1 page to /_assets/${name}`);
+      expect(await site.read('dist/about.html')).toContain('About us');
+      expect(stylesheetLinks(await site.read('dist/about.html'))).toEqual([`/_assets/${name}`]);
+      expect(stylesheetLinks(await site.read('dist/index.html'))).toEqual([`/_assets/${name}`]);
     });
 
     it('warns about pages that still link the development path', async () => {

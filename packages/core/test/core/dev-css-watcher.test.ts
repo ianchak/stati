@@ -209,27 +209,6 @@ describe('Dev Server CSS watcher reconciliation', () => {
     await devServer.stop();
   });
 
-  it("watches the Tailwind watcher's output before it is written", async () => {
-    const chokidar = (await import('chokidar')).default;
-    mockFg.mockResolvedValueOnce([]);
-
-    const logger = createLogger();
-    const devServer = await createDevServer({
-      port: 3196,
-      logger,
-      tailwind: { input: 'src/styles.css', output: 'dist/styles.css' },
-    });
-    await devServer.start();
-
-    expect(createdWatchers).toHaveLength(2);
-    expect(vi.mocked(chokidar.watch)).toHaveBeenLastCalledWith(
-      [`${process.cwd()}/dist/styles.css`.replace(/\\/g, '/')],
-      expect.any(Object),
-    );
-
-    await devServer.stop();
-  });
-
   it('starts without CSS watcher when outDir does not exist after initial build', async () => {
     vi.mocked(fsUtils.pathExists).mockResolvedValue(false);
 
@@ -361,44 +340,5 @@ describe('refreshCssOutputWatcher', () => {
     expect(logger.info).toHaveBeenCalledWith('▸ C:/repo/dist/styles.css updated');
     expect(openClient.send).toHaveBeenCalledWith(JSON.stringify({ type: 'reload' }));
     expect(closedClient.send).not.toHaveBeenCalled();
-  });
-
-  it('watches an expected stylesheet before it exists, once, and reloads when it appears', async () => {
-    const chokidar = (await import('chokidar')).default;
-    const chunk = 'C:/repo/dist/chunk.css';
-    mockFg.mockResolvedValueOnce([chunk]);
-    const client = { readyState: 1, send: vi.fn() };
-    const watchedCssFiles = new Set<string>();
-
-    await refreshCssOutputWatcher({
-      outDir: 'dist',
-      logger: createLogger(),
-      wsServer: { clients: new Set([client]) } as never,
-      disableWsReload: false,
-      cssWatcher: null,
-      watchedCssFiles,
-      expectedCssFiles: ['C:\\repo\\dist\\styles.css'],
-    });
-
-    expect(vi.mocked(chokidar.watch)).toHaveBeenCalledWith(
-      [chunk, 'C:/repo/dist/styles.css'],
-      expect.any(Object),
-    );
-    createdWatchers[0]!.emit('add', 'C:/repo/dist/styles.css');
-    expect(client.send).toHaveBeenCalledWith(JSON.stringify({ type: 'reload' }));
-
-    // Once Tailwind has written it, the discovered file is the same one
-    mockFg.mockResolvedValueOnce([chunk, 'C:/repo/dist/styles.css']);
-    const watcher = await refreshCssOutputWatcher({
-      outDir: 'dist',
-      logger: createLogger(),
-      wsServer: null,
-      disableWsReload: false,
-      cssWatcher: createdWatchers[0] as never,
-      watchedCssFiles,
-      expectedCssFiles: ['C:\\repo\\dist\\styles.css'],
-    });
-    expect(watcher).toBe(createdWatchers[0]);
-    expect(createdWatchers).toHaveLength(1);
   });
 });

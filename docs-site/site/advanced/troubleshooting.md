@@ -320,7 +320,7 @@ A stylesheet in `public/`, or one Sass writes, keeps its name. Change its file n
 ## Warning: pages link `/styles.css`, which production builds do not write
 
 **Cause:**
-With `--tailwind-input` and `--tailwind-output`, a production build writes the stylesheet as `/_assets/styles-[hash].css` and deletes the dev server's `dist/styles.css`, but a template still links `/styles.css`.
+With `--tailwind-input` and `--tailwind-output`, a production build writes the stylesheet as `/_assets/styles-[hash].css`, not `/styles.css`, but a template still links `/styles.css`. Locally the link may still load the dev server's `dist/styles.css`, an old copy; a build on a fresh checkout, such as in CI, has none.
 
 **Solution:**
 

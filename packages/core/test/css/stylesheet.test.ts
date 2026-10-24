@@ -253,7 +253,7 @@ describe('stylesheet files', () => {
       };
     }
 
-    it("deletes earlier hashed copies and the dev server's output, never the current file", async () => {
+    it("deletes earlier hashed copies, never the current file or the dev server's output", async () => {
       await files(
         '_assets/styles-0A1B2C3D.css',
         '_assets/styles-DEADBEEF.css',
@@ -271,9 +271,9 @@ describe('stylesheet files', () => {
       expect(removed.sort()).toEqual([
         '_assets/styles-0A1B2C3D.css',
         '_assets/styles-DEADBEEF.css',
-        'styles.css',
       ]);
       expect(await readdir(join(dir, '_assets'))).toEqual(['styles-E77989ED.css']);
+      expect(await readdir(dir)).toContain('styles.css');
     });
 
     it('only touches files named after this stylesheet', async () => {

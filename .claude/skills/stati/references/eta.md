@@ -81,7 +81,7 @@ include result may be passed as another include's `body` and printed raw as
 | `stati.props`                         | Props of the include/layout call that rendered it, else undefined |
 | `stati.helpers`                       | Functions from the config's `helpers` (2.0+)                     |
 | `stati.generator.version`             | Core package version                                             |
-| `stati.assets`                        | Optional asset object with `bundlePaths`, `searchIndexPath`, `stylesheetPaths` (2.3+) |
+| `stati.assets`                        | Optional asset object with `bundlePaths`, `searchIndexPath`, `stylesheetPaths` |
 | `stati.propValue(...)`                | Token-list attribute helper                                      |
 | `stati.generateSEO(tags?)`            | Generated SEO HTML; use raw output when needed                   |
 | `stati.image(src, options?)`          | Sized `<img>` (or `<picture>`) HTML, synchronous; print with `<%~ %>` |
