@@ -11,7 +11,12 @@ import type {
 } from '../types/sitemap.js';
 import type { PageModel } from '../types/content.js';
 import type { StatiConfig } from '../types/config.js';
-import { escapeHtml, generateRobotsContent, resolveAbsoluteUrl } from './utils/index.js';
+import {
+  escapeHtml,
+  generateRobotsContent,
+  parseRobotsDirectives,
+  resolveAbsoluteUrl,
+} from './utils/index.js';
 import { urlMatchesAnyPattern } from '../rss/utils/index.js';
 import { isNotFoundPage } from '../core/utils/index.js';
 
@@ -95,9 +100,9 @@ function isNoindexPage(page: PageModel): boolean {
   if (!seo || typeof seo !== 'object') {
     return false;
   }
-  return generateRobotsContent(seo)
-    .split(/[\s,]+/)
-    .some((directive) => ['noindex', 'none'].includes(directive.toLowerCase()));
+  return parseRobotsDirectives(generateRobotsContent(seo)).some(
+    (directive) => directive === 'noindex' || directive === 'none',
+  );
 }
 
 /**

@@ -135,6 +135,27 @@ export function sanitizeStructuredData(
 }
 
 /**
+ * Splits robots meta tag content into its directives, in lower case. Directives are separated
+ * by commas or spaces; a value after a colon stays with its directive, with or without a space.
+ *
+ * @param content - Robots meta tag content, such as a `seo.robots` string
+ * @returns The directives
+ *
+ * @example
+ * ```typescript
+ * parseRobotsDirectives('NOINDEX, max-image-preview: none');
+ * // Returns: ['noindex', 'max-image-preview:none']
+ * ```
+ */
+export function parseRobotsDirectives(content: string): string[] {
+  return content
+    .toLowerCase()
+    .replace(/\s*:\s*/g, ':')
+    .split(/[\s,]+/)
+    .filter(Boolean);
+}
+
+/**
  * Generate robots meta tag content from SEO metadata and robots configuration.
  * Combines noindex flag and robots directives into a comma-separated string.
  *

@@ -294,7 +294,13 @@ describe('resolveSEODefaults', () => {
     });
 
     it('fills in noindex next to robots values that leave indexing open', () => {
-      for (const robots of ['nofollow', 'max-image-preview:none', { follow: false }, {}]) {
+      for (const robots of [
+        'nofollow',
+        'max-image-preview:none',
+        'max-image-preview: none',
+        { follow: false },
+        {},
+      ]) {
         expect(resolveSEODefaults(notFound('/404', { robots }), createConfig())).toEqual({
           robots,
           noindex: true,

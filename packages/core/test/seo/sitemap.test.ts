@@ -450,6 +450,7 @@ describe('Sitemap Generation', () => {
         expect(entryFor('/a', { seo: { noindex: false } })).not.toBeNull();
         expect(entryFor('/a', { seo: { robots: 'nofollow, noarchive' } })).not.toBeNull();
         expect(entryFor('/a', { seo: { robots: 'max-image-preview:none' } })).not.toBeNull();
+        expect(entryFor('/a', { seo: { robots: 'max-image-preview: none' } })).not.toBeNull();
         expect(entryFor('/a', { seo: { robots: { index: true, follow: false } } })).not.toBeNull();
         expect(entryFor('/a', { seo: 'invalid' as never })).not.toBeNull();
       });

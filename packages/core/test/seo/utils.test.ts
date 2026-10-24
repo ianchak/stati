@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import {
   escapeHtml,
   generateRobotsContent,
+  parseRobotsDirectives,
   validateSEOMetadata,
   detectExistingSEOTags,
 } from '../../src/seo/utils/index.js';
@@ -208,6 +209,18 @@ describe('SEO Utils - sanitizeStructuredData', () => {
         tags: ['&lt;tag1&gt;', '&lt;tag2&gt;'],
       },
     });
+  });
+});
+
+describe('SEO Utils - parseRobotsDirectives', () => {
+  it.each([
+    ['noindex, nofollow', ['noindex', 'nofollow']],
+    ['NOINDEX NOFOLLOW', ['noindex', 'nofollow']],
+    ['max-image-preview: none', ['max-image-preview:none']],
+    ['index , max-snippet : 50,none', ['index', 'max-snippet:50', 'none']],
+    ['', []],
+  ])('splits %j into %j', (content, expected) => {
+    expect(parseRobotsDirectives(content)).toEqual(expected);
   });
 });
 

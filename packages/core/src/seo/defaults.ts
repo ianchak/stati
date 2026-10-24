@@ -17,6 +17,7 @@ import type {
 import type { Logger } from '../types/logging.js';
 import { ConfigValidationError } from '../config/errors.js';
 import { isNotFoundPage, matchesGlob } from '../core/utils/index.js';
+import { parseRobotsDirectives } from './utils/index.js';
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -34,9 +35,9 @@ function isMissing(value: unknown): boolean {
  */
 function robotsDecidesIndexing(robots: unknown): boolean {
   if (typeof robots === 'string') {
-    return robots
-      .split(/[\s,]+/)
-      .some((directive) => ['index', 'noindex', 'all', 'none'].includes(directive.toLowerCase()));
+    return parseRobotsDirectives(robots).some((directive) =>
+      ['index', 'noindex', 'all', 'none'].includes(directive),
+    );
   }
   return isPlainObject(robots) && !isMissing(robots.index);
 }
