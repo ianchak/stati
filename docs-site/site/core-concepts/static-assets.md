@@ -8,7 +8,7 @@ order: 7
 
 ## Overview
 
-Stati handles static assets and provides built-in TypeScript compilation. CSS processing (Sass, PostCSS, Tailwind) is configured at the project level using standard tooling, with optional CLI integration for Tailwind during development.
+Stati handles static assets and provides built-in TypeScript compilation. It also runs Tailwind CSS when you give `stati dev` and `stati build` its input and output; other CSS processing, such as Sass or PostCSS, uses standard tooling at the project level.
 
 ## Static assets (`public/`)
 
@@ -53,7 +53,7 @@ Your compiled bundles are automatically injected into pages before the closing `
 
 ## CSS processing
 
-Stati does not include a built-in CSS preprocessor. Instead, CSS processing is configured at the project level using standard tools like Sass, PostCSS, or Tailwind CSS.
+Stati does not include a built-in CSS preprocessor. Tailwind CSS runs from Stati's commands when you pass them its input and output (see [Tailwind CSS integration](#tailwind-css-integration)); other tools, such as Sass or PostCSS, run from your npm scripts.
 
 The `create-stati` scaffolder can set up these tools for you. See the [Styling Solutions](/cli/scaffolder#styling-solutions) section for available options.
 
@@ -167,6 +167,8 @@ The `propValue()` function:
 
 ### Usage in templates
 
+Stati adds the stylesheet's `<link>` to every page, so the layout doesn't need one:
+
 ```eta
 <!DOCTYPE html>
 <html lang="en">
@@ -174,7 +176,6 @@ The `propValue()` function:
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= stati.page.title %></title>
-  <link rel="stylesheet" href="/styles.css">
 </head>
 <body class="bg-gray-50 text-gray-900">
   <header class="bg-white shadow-sm border-b">
@@ -215,7 +216,7 @@ Stati's development server includes integrated Tailwind CSS support. Simply pass
 stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css
 ```
 
-This starts both the Stati dev server and Tailwind watcher in a single process. The watcher runs for as long as the dev server does, also when the dev server runs in a background or CI shell. When you stop the dev server (`Ctrl+C`), the Tailwind watcher stops automatically, and it also exits when the dev server process is killed.
+This starts both the Stati dev server and Tailwind watcher in a single process. Pages link the output under its path in `dist/`, `/styles.css`. The watcher runs for as long as the dev server does, also when the dev server runs in a background or CI shell. When you stop the dev server (`Ctrl+C`), the Tailwind watcher stops automatically, and it also exits when the dev server process is killed.
 
 **Quiet mode (default):**
 
@@ -233,6 +234,18 @@ This starts both the Stati dev server and Tailwind watcher in a single process. 
 - Stati validates the installation before starting the watcher
 
 See the [Development Server](/cli/development) documentation for more details on Tailwind integration.
+
+### Production builds
+
+`stati build` takes the same flags:
+
+```bash
+stati build --tailwind-input src/styles.css --tailwind-output dist/styles.css
+```
+
+The build runs Tailwind once, after the last page has rendered, so the CSS has every class the templates built with `stati.propValue()`. It writes the minified stylesheet as `dist/_assets/styles-[hash].css`, named after its content, and links it on every page. A deploy that changes the CSS gives it a new URL, so no browser shows new pages with a cached copy of the old stylesheet. The build also deletes the stylesheets earlier builds wrote under other names.
+
+See [CSS](/configuration/css) for how the build links the file, the `css` options and moving from a separate `build:css` script.
 
 ## Images and media
 

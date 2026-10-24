@@ -182,17 +182,34 @@ describe('CSSProcessor', () => {
 
       const packageJson = JSON.parse(await readFile(join(tempDir, 'package.json'), 'utf-8'));
 
-      expect(packageJson.scripts).toHaveProperty('build:css');
-      expect(packageJson.scripts['build:css']).toBe(
-        'tailwindcss -i src/styles.css -o dist/styles.css --minify',
-      );
-
-      // Dev script should use integrated Tailwind support
+      // Both commands run Tailwind themselves
       expect(packageJson.scripts.dev).toBe(
         'stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css',
       );
-      expect(packageJson.scripts.build).toBe('stati build && npm run build:css');
+      expect(packageJson.scripts.build).toBe(
+        'stati build --tailwind-input src/styles.css --tailwind-output dist/styles.css',
+      );
+      expect(packageJson.scripts).not.toHaveProperty('build:css');
       expect(packageJson.scripts).not.toHaveProperty('copy:css');
+    });
+
+    it("should remove the templates' link to /styles.css, which Stati adds itself", async () => {
+      const head = '<head>\n  <link rel="icon" href="/favicon.svg" />\n';
+      await mkdir(join(tempDir, 'site', 'partials'), { recursive: true });
+      await writeFile(
+        join(tempDir, 'site', 'partials', 'head.eta'),
+        `${head}  <link rel="stylesheet" href="/styles.css" />\n</head>\n`,
+      );
+      await writeFile(join(tempDir, 'site', 'layout.eta'), '<%~ stati.include("partials/head") %>');
+
+      await processStyling(tempDir, 'tailwind');
+
+      expect(await readFile(join(tempDir, 'site', 'partials', 'head.eta'), 'utf-8')).toBe(
+        `${head}</head>\n`,
+      );
+      expect(await readFile(join(tempDir, 'site', 'layout.eta'), 'utf-8')).toBe(
+        '<%~ stati.include("partials/head") %>',
+      );
     });
   });
 

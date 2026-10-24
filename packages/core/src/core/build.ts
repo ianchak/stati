@@ -73,6 +73,20 @@ import {
   autoInjectSearchMeta,
   isGeneratedPageExcludedFromSearch,
 } from '../search/index.js';
+import {
+  createStylesheetPlan,
+  checkStylesheetSources,
+  getStylesheetFingerprint,
+  getRenderStylesheetPath,
+  buildStylesheet,
+  relinkStylesheet,
+  removeStaleStylesheets,
+  linksStylesheet,
+  autoInjectStylesheets,
+  type BuiltStylesheet,
+  type StylesheetPlan,
+  type TailwindBuildOptions,
+} from '../css/index.js';
 import { getEnv, isDevelopment } from '../env.js';
 import { DEFAULT_OUT_DIR } from '../constants.js';
 import type {
@@ -147,6 +161,23 @@ export interface BuildOptions {
   skipManifestSave?: boolean | undefined;
   /** Skip copying static assets (dev mode optimization for template-only changes) */
   skipAssetCopy?: boolean | undefined;
+  /**
+   * The Tailwind CSS input and output (`--tailwind-input` and `--tailwind-output`). Pages get
+   * the stylesheet's path in `stati.assets.stylesheetPaths` and, unless `css.autoInject` is
+   * false, a `<link>` to it. Production builds run Tailwind after the last page renders and
+   * write `_assets/[name]-[hash].css`; development builds link the output as it is, which the
+   * dev server's Tailwind watcher writes.
+   */
+  tailwind?: TailwindBuildOptions | undefined;
+}
+
+/**
+ * The stylesheet pages link while they render: the build's plan and the path they carry,
+ * which a hashed production build replaces once Tailwind has run.
+ */
+interface RenderStylesheet {
+  plan: StylesheetPlan;
+  path: string;
 }
 
 /**
@@ -528,6 +559,7 @@ async function processPagesWithCache(
   imageRuntime: ImageRuntime | null = null,
   navigationHash: string = computeNavigationHash(navigation),
   templateIndex?: TemplateIndex,
+  stylesheet: RenderStylesheet | null = null,
 ): Promise<ProcessPagesResult> {
   let cacheHits = 0;
   let cacheMisses = 0;
@@ -606,6 +638,14 @@ async function processPagesWithCache(
   // Image settings that change generated HTML, part of every page's render inputs
   const imageFingerprint = imageRuntime?.fingerprint();
 
+  // Every page links the same stylesheet. Its settings go into the render inputs, but not a
+  // hashed build's file name: that is known only after the pages render, and the build writes
+  // it into cached pages too.
+  const stylesheetPaths = stylesheet ? [stylesheet.path] : [];
+  const stylesheetFingerprint = stylesheet ? getStylesheetFingerprint(stylesheet.plan) : undefined;
+  // Pages linking the output's development path, which a hashed build does not write
+  const pagesLinkingDevStylesheet: string[] = [];
+
   for (let i = 0; i < pages.length; i++) {
     const page = pages[i];
     if (!page) continue; // Safety check
@@ -615,21 +655,26 @@ async function processPagesWithCache(
     const existingEntry = manifest.entries[cacheKey];
 
     const bundlePaths = getBundlePathsForPage(page.url, compiledBundles);
+    const searchIndexPath =
+      config.search?.enabled === true && searchIndexFilename
+        ? `/${searchIndexFilename}`
+        : undefined;
     const assets: StatiAssets = {
       bundlePaths,
-      ...(config.search?.enabled === true &&
-        searchIndexFilename && {
-          searchIndexPath: `/${searchIndexFilename}`,
-        }),
+      stylesheetPaths,
+      ...(searchIndexPath && { searchIndexPath }),
     };
 
     // Collection the page sees as stati.collection; a page whose collection appears,
     // disappears or changes rebuilds even when it never read it
     const collectionPath = resolveCollectionPath(page, pages);
     const staticRenderInputs = {
-      ...assets,
+      bundlePaths,
+      ...(searchIndexPath && { searchIndexPath }),
       bundleAutoInject: config.typescript?.autoInject !== false,
       searchAutoInject: config.search?.autoInjectMetaTag !== false,
+      // Omitted without a stylesheet, so the hash matches builds from before Stati linked one
+      ...(stylesheetFingerprint && { stylesheet: stylesheetFingerprint }),
       // Omitted with images: false, so the hash matches builds without the image pipeline
       ...(imageFingerprint && { images: imageFingerprint }),
       // The 404 page gets no Open Graph image and a noindex robots tag, so a copy cached
@@ -784,6 +829,14 @@ async function processPagesWithCache(
       finalHtml = autoInjectSearchMeta(finalHtml, `/${searchIndexFilename}`);
     }
 
+    // Auto-inject the stylesheet link if enabled (default: true)
+    if (stylesheet?.plan.autoInject) {
+      finalHtml = autoInjectStylesheets(finalHtml, stylesheetPaths);
+    }
+    if (stylesheet?.plan.hash && linksStylesheet(finalHtml, stylesheet.plan.path)) {
+      pagesLinkingDevStylesheet.push(page.url);
+    }
+
     // Auto-inject TypeScript bundle script tags if available and autoInject is enabled (default: true)
     if (config.typescript?.autoInject !== false && assets.bundlePaths.length > 0) {
       finalHtml = autoInjectBundles(finalHtml, assets.bundlePaths);
@@ -915,6 +968,23 @@ async function processPagesWithCache(
     }
   }
 
+  // A template that still links the development path loads nothing in production
+  if (stylesheet && pagesLinkingDevStylesheet.length > 0) {
+    const { path, autoInject } = stylesheet.plan;
+    const [first] = pagesLinkingDevStylesheet;
+    const others = pagesLinkingDevStylesheet.length - 1;
+    const pagesText =
+      others === 0 ? `Page ${first} links` : `Pages ${first} and ${others} more link`;
+    // Without a previous name, the path pages render with shows the naming pattern
+    const hashedName = getRenderStylesheetPath(stylesheet.plan, undefined);
+    logger.warning(
+      `${pagesText} ${path}, which production builds do not write: they name the stylesheet ${hashedName}. ` +
+        (autoInject
+          ? `Stati links that file itself, so remove the <link> to ${path} from your templates.`
+          : 'Link stati.assets.stylesheetPaths in your templates instead.'),
+    );
+  }
+
   return { cacheHits, cacheMisses, searchIndexFilename };
 }
 
@@ -1023,6 +1093,15 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
   const { config, outDir, cacheDir } = await loadAndValidateConfig(options);
   endConfigSpan();
 
+  // The stylesheet Stati builds with Tailwind. A production build checks the input and the
+  // Tailwind CLI now, so a missing one fails before any page renders.
+  const stylesheetPlan = options.tailwind
+    ? createStylesheetPlan(options.tailwind, config.css, outDir, isDevelopment())
+    : null;
+  if (stylesheetPlan && !isDevelopment()) {
+    await checkStylesheetSources(stylesheetPlan);
+  }
+
   // Clean output directory and cache if requested
   if (options.clean) {
     logger.status('Cleaning output directory and ISG cache...');
@@ -1041,9 +1120,9 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     development: isDevelopment(),
   });
 
-  // Enable Tailwind class inventory tracking only if Tailwind is detected
+  // Enable Tailwind class inventory tracking only if Tailwind is used
   const tailwindInitStart = performance.now();
-  const hasTailwind = await isTailwindUsed();
+  const hasTailwind = stylesheetPlan !== null || (await isTailwindUsed());
   if (hasTailwind) {
     enableInventoryTracking();
     clearInventory(); // Clear any previous inventory
@@ -1072,6 +1151,12 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
   const endManifestLoadSpan = recorder.startSpan('cacheManifestLoadMs');
   const { manifest } = await setupCacheAndManifest(cacheDir);
   endManifestLoadSpan();
+
+  // The stylesheet path pages render with: in a hashed build, the one the last build linked
+  const renderStylesheet: RenderStylesheet | null = stylesheetPlan && {
+    plan: stylesheetPlan,
+    path: getRenderStylesheetPath(stylesheetPlan, manifest.stylesheets?.[stylesheetPlan.path]),
+  };
 
   // Load content and build navigation
   if (logger.step) {
@@ -1158,6 +1243,7 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     imageRuntime,
     navigationHash,
     templateIndex,
+    renderStylesheet,
   );
   endPageRenderSpan();
   const { cacheHits, cacheMisses, searchIndexFilename } = pageProcessingResult;
@@ -1222,6 +1308,43 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
   const tailwindInventoryTime = performance.now() - tailwindStart;
   recorder.recordPhase('tailwindInventoryMs', tailwindInventoryTime);
 
+  // Run Tailwind now that the inventory lists every class the pages use. A hashed build's
+  // pages carry the name the last build linked, or a placeholder; when the CSS got another
+  // name, every page links it from here on, including the pages the cache kept.
+  let builtStylesheet: BuiltStylesheet | null = null;
+  if (renderStylesheet && !isDevMode) {
+    const endStylesheetSpan = recorder.startSpan('tailwindBuildMs');
+    logger.info('');
+    logger.info('Building CSS with Tailwind CSS...');
+    builtStylesheet = await buildStylesheet(renderStylesheet.plan, outDir, cacheDir);
+    if (logger.file) {
+      logger.file(
+        'compiled',
+        relative(outDir, builtStylesheet.file).replace(/\\/g, '/'),
+        builtStylesheet.sizeInBytes,
+      );
+    }
+
+    if (builtStylesheet.path !== renderStylesheet.path) {
+      const pageFiles = pages.map((page) => getPageOutput(page, outDir).outputPath);
+      const relinked = await relinkStylesheet(
+        pageFiles,
+        renderStylesheet.path,
+        builtStylesheet.path,
+      );
+      if (relinked > 0) {
+        logger.info(
+          `Linked ${relinked} page${relinked === 1 ? '' : 's'} to ${builtStylesheet.path}`,
+        );
+      }
+    }
+    manifest.stylesheets = { [renderStylesheet.plan.path]: builtStylesheet.path };
+    endStylesheetSpan();
+    logger.success(`Built ${builtStylesheet.path} (${formatBytes(builtStylesheet.sizeInBytes)})`);
+  } else if (!isDevMode) {
+    delete manifest.stylesheets;
+  }
+
   // Save updated cache manifest (skip if caller already saved it, e.g., dev mode template change)
   const endManifestSaveSpan = recorder.startSpan('cacheManifestSaveMs');
   if (!options.skipManifestSave) {
@@ -1239,10 +1362,13 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     );
   }
 
-  // Delete the bundles and search indexes earlier builds wrote under other names, now that
-  // every page links to this build's files. Before the static copy, so a file in the static
-  // directory with such a name is copied afterwards.
+  // Delete the bundles, stylesheets and search indexes earlier builds wrote under other names,
+  // now that every page links to this build's files. Before the static copy, so a file in the
+  // static directory with such a name is copied afterwards.
   if (!isDevMode) {
+    if (renderStylesheet && builtStylesheet) {
+      await removeStaleStylesheets(renderStylesheet.plan, outDir, builtStylesheet);
+    }
     if (config.typescript?.enabled) {
       await removeStaleBundleFiles({
         projectRoot: process.cwd(),

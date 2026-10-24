@@ -66,6 +66,9 @@ interface StatiConfig {
   /** TypeScript compilation settings */
   typescript?: TypeScriptConfig;
 
+  /** The stylesheet Stati builds with Tailwind CSS (--tailwind-input and --tailwind-output) */
+  css?: CSSConfig;
+
   /** Image sizes, responsive images and Open Graph cards; false turns the built-in handling off */
   images?: false | ImagesConfig;
 
@@ -622,6 +625,18 @@ interface TypeScriptConfig {
   autoInject?: boolean;
 }
 
+/** The `css` block: the stylesheet Stati builds with Tailwind CSS (see /configuration/css) */
+interface CSSConfig {
+  /** Name the production stylesheet after its content, _assets/styles-[hash].css (default: true) */
+  hash?: boolean;
+
+  /** Minify the production stylesheet (default: true, ignored in development) */
+  minify?: boolean;
+
+  /** Add a <link rel="stylesheet"> before </head> on every page (default: true) */
+  autoInject?: boolean;
+}
+
 interface BundleConfig {
   /** Entry point file name relative to srcDir (e.g., 'main.ts', 'features/playground.ts') */
   entryPoint: string;
@@ -716,7 +731,7 @@ interface GeneratedOgImage {
 
 ### StatiAssets interface
 
-Available in every template as `stati.assets`. Bundle script tags are injected into your HTML automatically (unless `typescript.autoInject` is `false`), so you only need these paths for custom markup.
+Available in every template as `stati.assets`. Bundle script tags and the stylesheet link are injected into your HTML automatically (unless `typescript.autoInject` or `css.autoInject` is `false`), so you only need these paths for custom markup.
 
 ```typescript
 interface StatiAssets {
@@ -726,6 +741,14 @@ interface StatiAssets {
    * Always an array, empty [] if no TypeScript enabled or no bundles match.
    */
   bundlePaths: string[];
+
+  /**
+   * Paths of the stylesheet Stati builds with Tailwind CSS (--tailwind-input, --tailwind-output):
+   * ['/styles.css'] in development, ['/_assets/styles-A1B2C3D4.css'] in production.
+   * Always an array, empty [] without the Tailwind flags. Print each path as it is: a
+   * production build writes the final name into the page after rendering.
+   */
+  stylesheetPaths: string[];
 
   /** Path to the search index (e.g., '/search-index-a1b2c3d4.json') when search is enabled */
   searchIndexPath?: string;

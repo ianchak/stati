@@ -83,7 +83,7 @@ stati dev [options]
 - `--host <string>` - Host address (default: localhost)
 - `--open` - Open browser automatically
 - `--tailwind-input <path>` - Tailwind CSS input file; starts a Tailwind watcher alongside the dev server
-- `--tailwind-output <path>` - Output file for the compiled Tailwind CSS
+- `--tailwind-output <path>` - Output file for the compiled Tailwind CSS; pages link it when it is in the output directory
 - `--tailwind-verbose` - Show all Tailwind output (default: errors only)
 - `--config <path>` - Accepted, but `dev` loads the config from the current directory
 
@@ -116,6 +116,7 @@ stati build [options]
 
 - Generates static HTML files from your content and templates
 - Runs in production mode: minified, hashed TypeScript bundles
+- With the Tailwind flags, runs Tailwind CSS after the last page renders and links the stylesheet as `/_assets/styles-[hash].css`
 - Uses smart caching to skip unchanged pages (ISG)
 - Creates sitemap, robots.txt and RSS feeds (if configured)
 - Reports build statistics and performance metrics
@@ -130,6 +131,8 @@ stati build [options]
 - `--metrics-file <name>` - Metrics file name inside `.stati/metrics/`
 - `--metrics-detailed` - Include per-page timings in the metrics
 - `--metrics-html` - Write an HTML report next to the metrics JSON
+- `--tailwind-input <path>` - Tailwind CSS input file; give it with `--tailwind-output`
+- `--tailwind-output <path>` - The stylesheet's file in the output directory, such as `dist/styles.css`; production writes `dist/_assets/styles-[hash].css` instead unless `css.hash` is `false`
 
 **Examples:**
 
@@ -145,6 +148,9 @@ stati build --force
 
 # Include draft pages
 stati build --include-drafts
+
+# Build the Tailwind CSS stylesheet with the site
+stati build --tailwind-input src/styles.css --tailwind-output dist/styles.css
 ```
 
 ---

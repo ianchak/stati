@@ -20,6 +20,7 @@ export type {
   SEOArticlesConfig,
   RobotsTxtConfig,
   TypeScriptConfig,
+  CSSConfig,
   BundleConfig,
   CollectionsConfig,
   GeneratedPageEntry,

@@ -290,7 +290,7 @@ Choose the styling approach that fits your workflow.
 - Built-in design system
 - Generates only the classes your templates use
 - Tailwind CSS 4 (`tailwindcss` and `@tailwindcss/cli`), configured in the stylesheet: there is no `tailwind.config.js`
-- Styles location: `src/styles.css` → compiles to `dist/styles.css`
+- Styles location: `src/styles.css` → `stati dev` compiles it to `dist/styles.css`, `stati build` to `dist/_assets/styles-[hash].css`, named after its content, and links it on every page
 
 ---
 

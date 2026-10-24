@@ -129,8 +129,8 @@ inventory:
           }
         - {
             name: 'Tailwind or Sass',
-            text: 'Pick one when you scaffold; Tailwind watches alongside dev.',
-            href: '/cli/development#tailwind-css-integration',
+            text: 'Pick one when you scaffold; Stati runs Tailwind for you.',
+            href: '/configuration/css',
           }
         - {
             name: 'Programmatic API',

@@ -52,6 +52,7 @@ type MutablePhases = {
   rssGenerationMs?: number;
   tailwindInitMs?: number;
   tailwindInventoryMs?: number;
+  tailwindBuildMs?: number;
   getDirectorySizeMs?: number;
   lockAcquireMs?: number;
   lockReleaseMs?: number;

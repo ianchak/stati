@@ -91,6 +91,25 @@ describe('ISG Cache Manifest', () => {
       expect(mockReadFile).toHaveBeenCalledWith(manifestPath, 'utf-8');
     });
 
+    it('should keep the stylesheet paths the last build linked', async () => {
+      const stylesheets = { '/styles.css': '/_assets/styles-0A1B2C3D.css' };
+      mockPathExists.mockResolvedValue(true);
+      mockReadFile.mockResolvedValue(JSON.stringify({ entries: {}, stylesheets }));
+
+      const result = await loadCacheManifest(testCacheDir);
+
+      expect(result).toEqual({ entries: {}, stylesheets });
+    });
+
+    it('should drop stylesheet paths that are not an object of strings', async () => {
+      mockPathExists.mockResolvedValue(true);
+      for (const stylesheets of [['/styles.css'], { '/styles.css': 1 }, 'styles']) {
+        mockReadFile.mockResolvedValue(JSON.stringify({ entries: {}, stylesheets }));
+
+        expect(await loadCacheManifest(testCacheDir)).toEqual({ entries: {} });
+      }
+    });
+
     it('should return null on read error', async () => {
       mockPathExists.mockResolvedValue(true);
       mockReadFile.mockRejectedValue(new Error('Read error'));

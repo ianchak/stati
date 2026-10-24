@@ -105,6 +105,8 @@ export interface StatiConfig {
   search?: SearchConfig;
   /** TypeScript compilation settings */
   typescript?: TypeScriptConfig;
+  /** The stylesheet Stati builds with Tailwind CSS (`--tailwind-input` and `--tailwind-output`) */
+  css?: CSSConfig;
   /**
    * Image handling. Intrinsic sizes, lazy loading and co-located images work without
    * configuration; `false` turns them off. `responsive` and `og` need `@stati/images`.
@@ -383,6 +385,46 @@ export interface TypeScriptConfig {
    *
    * When disabled, use `stati.assets.bundlePaths` in templates to access bundle paths.
    *
+   * @default true
+   */
+  autoInject?: boolean;
+}
+
+/**
+ * Settings for the stylesheet Stati builds with Tailwind CSS when `stati build` and
+ * `stati dev` get `--tailwind-input` and `--tailwind-output`.
+ *
+ * Development keeps the output's own name, such as `/styles.css`. Production builds run
+ * Tailwind after the last page renders, when the class inventory is complete, and write
+ * `_assets/styles-[hash].css`, so a deploy that changes the CSS gives it a new URL.
+ *
+ * @example
+ * ```typescript
+ * const config: StatiConfig = {
+ *   css: {
+ *     autoInject: false, // link stati.assets.stylesheetPaths in your templates instead
+ *   },
+ * };
+ * ```
+ */
+export interface CSSConfig {
+  /**
+   * Name the production stylesheet after its content, as `_assets/styles-A1B2C3D4.css`.
+   * When false, production writes the `--tailwind-output` file and links it under that name.
+   * Development always uses the output's own name.
+   * @default true
+   */
+  hash?: boolean;
+
+  /**
+   * Minify the stylesheet in production builds. Development output is never minified.
+   * @default true
+   */
+  minify?: boolean;
+
+  /**
+   * Add a `<link rel="stylesheet">` before `</head>` on every page that does not link the
+   * stylesheet already. When disabled, link `stati.assets.stylesheetPaths` in your templates.
    * @default true
    */
   autoInject?: boolean;

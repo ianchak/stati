@@ -172,4 +172,10 @@ export interface CacheManifest {
   entries: Record<string, CacheEntry>;
   /** Hash of the navigation tree structure (title, url, order, children) */
   navigationHash?: string;
+  /**
+   * The path every page of the last production build links for each stylesheet Stati
+   * builds, keyed by its development path, such as
+   * `{ '/styles.css': '/_assets/styles-A1B2C3D4.css' }`
+   */
+  stylesheets?: Record<string, string>;
 }

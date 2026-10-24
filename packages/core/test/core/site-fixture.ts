@@ -9,6 +9,7 @@ import { mkdtemp, mkdir, readFile, rm, writeFile, access } from 'node:fs/promise
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { build, type BuildResult } from '../../src/core/build.js';
+import type { TailwindBuildOptions } from '../../src/css/index.js';
 import { loadCacheManifest } from '../../src/core/isg/index.js';
 import type { loadConfig } from '../../src/config/loader.js';
 import type { CacheManifest, Logger, StatiConfig } from '../../src/types/index.js';
@@ -45,6 +46,7 @@ export interface SiteFixture {
     force?: boolean;
     includeDrafts?: boolean;
     allowErrors?: boolean;
+    tailwind?: TailwindBuildOptions;
   }): Promise<FixtureBuild>;
   /** The ISG cache manifest */
   manifest(): Promise<CacheManifest>;

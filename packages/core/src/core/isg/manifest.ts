@@ -102,6 +102,17 @@ export async function loadCacheManifest(cacheDir: string): Promise<CacheManifest
       resultManifest.navigationHash = manifestObj.navigationHash;
     }
 
+    // The stylesheet paths cached pages link, which the next build rewrites when they change
+    const stylesheets = manifestObj.stylesheets;
+    if (
+      stylesheets &&
+      typeof stylesheets === 'object' &&
+      !Array.isArray(stylesheets) &&
+      Object.values(stylesheets).every((path) => typeof path === 'string')
+    ) {
+      resultManifest.stylesheets = stylesheets as Record<string, string>;
+    }
+
     return resultManifest;
   } catch (error) {
     const nodeError = error as NodeError;

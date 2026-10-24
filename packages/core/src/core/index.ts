@@ -6,6 +6,7 @@
 // Build functionality
 export { build } from './build.js';
 export type { BuildOptions, MetricsOptions, BuildResult } from './build.js';
+export type { TailwindBuildOptions } from '../css/index.js';
 
 // Development server
 export { createDevServer } from './dev.js';

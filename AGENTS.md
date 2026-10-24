@@ -36,6 +36,7 @@ Edit this file, not the tool-specific ones, when guidance changes.
 - Templates: `core/template-index.ts` lists every `.eta` file under `srcDir` once per build and resolves template names (`partials/header` looked up from the page's folder up, `/x` from `srcDir`, `./x` and `../x` from the calling template); a dev server session keeps one index and updates it on add and unlink. `core/template-render.ts` holds the per-page `RenderScope` behind `stati.include()`, `stati.layout()`, `stati.body` and `stati.props`: layout slots, the cycle stack, the include cache (keyed by file and base context) and the recording of every template rendered and name looked up, reached through `AsyncLocalStorage`. `core/eta-plugin.ts` blocks Eta's own `include`, `includeAsync`, `layout`, `block` and `blockAsync`, and anchors on Eta's `layout()` declaration (engine creation throws if it moves).
 - Rebuild decisions come from `shouldRebuildPage` plus config hooks (`beforeAll`, `beforeRender`, `afterRender`) defined via `defineConfig()`.
 - Static assets move through `copyStaticAssetsWithLogging`; preserve `logger.*` calls to keep CLI output structured.
+- `packages/core/src/css/` is the stylesheet Stati builds with Tailwind (`BuildOptions.tailwind`, from `--tailwind-input`/`--tailwind-output` on `stati build` and `stati dev`). A production build checks the input and the Tailwind CLI before rendering, renders pages with the path the last build linked (`CacheManifest.stylesheets`, or a `[hash]` placeholder), runs Tailwind after the inventory is written, writes `_assets/<name>-<HASH>.css`, and rewrites that path in every page file, cached ones included (`relinkStylesheet`). The hash is never in the render inputs; the stylesheet settings are. Development links the output as it is and never runs Tailwind (the CLI's watcher does).
 
 ## Error handling patterns
 
@@ -70,6 +71,7 @@ Edit this file, not the tool-specific ones, when guidance changes.
 - `src/index.ts` parses flags, prompts for missing values, and hands control to `createSite` in `create.ts`.
 - Styling choices map to installers in `css-processors.ts`; updating templates requires touching both `examples/` sources and the copy routine in the package build script.
 - Generated projects expect `site/layout.eta`, `site/index.md`, and `public/styles.css`; maintain these when extending templates.
+- The Tailwind installer passes `--tailwind-input src/styles.css --tailwind-output dist/styles.css` to `stati dev` and `stati build`, deletes `public/styles.css`, and removes the exact line `<link rel="stylesheet" href="/styles.css" />` from the templates under `site/`, since Stati links the stylesheet. Keep that line in this form in the examples.
 
 ## Conventions
 
@@ -107,6 +109,7 @@ All config blocks live under `defineConfig()`. Key sections:
 - **markdown.toc**: Enable TOC extraction and heading anchors (default: `true`).
 - **helpers**: Object of functions templates call as `<%= stati.helpers.name(value) %>`; validated at load (every entry must be a function). The root of `stati` holds only Stati's API.
 - **typescript**: `enabled`, `srcDir`, `outDir`, `hash`, `minify`, `bundles[]` with `entryPoint`, `bundleName`, `include`/`exclude` glob patterns for selective bundle injection.
+- **css**: `hash`, `minify`, `autoInject` (all default `true`; development never hashes or minifies) for the stylesheet Stati builds with Tailwind. Validated in `css/config.ts`.
 - **isg**: `enabled`, `ttlSeconds`, `maxAgeCapDays`, `aging[]` (array of `{ untilDays, ttlSeconds }` rules).
 - **collections**: `summaryFields[]` (front matter that rebuilds listings; default `title`, `description`, `tags`, `draft`), `generate(ctx)` returning `{ url, template, key?, label?, items?, data? }` pages rendered with a `[param].md` template.
 - **seo**: `defaultAuthor` (`name`, `email`, `url`, `twitter`), `twitter.site`, `articles` (`include`/`exclude` URL globs), `autoInject`, `debug` - SEO metadata configuration. `applySEODefaults` (`seo/defaults.ts`) fills `og:locale` (from `site.defaultLocale`, converted to `en_US` form), the Twitter handles, article metadata and the 404 page's `noindex` into each page's `seo` front matter after `beforeAll`, so the front matter hash covers them; `refreshSEODefaults` works out again, after `beforeRender`, the values it filled in that the hook left alone; the generator resolves the same values for direct callers.
@@ -125,7 +128,7 @@ All config blocks live under `defineConfig()`. Key sections:
 - Configure with `indexName`, `maxContentLength`, `maxPreviewLength`, `headingLevels[]` to control index size.
 - Use `exclude[]` glob patterns and `includeHomePage` to control which pages are indexed.
 - Set `autoInjectMetaTag: true` (default) to inject `<meta name="stati:search-index">` into rendered HTML.
-- `core/build.ts` generates and writes the index before any page renders (`writeSearchIndexBeforeRendering`, after `beforeAll`), from each page's Markdown and `extractToc`. The index path is part of every page's render-inputs hash, so a production build hashes the index content, never something that changes per build: editing indexed text re-renders every page, an unchanged build reuses them all. Dev keeps one fixed name. Production builds delete index files and hashed bundles from earlier builds (`removeStaleSearchIndexes`, `removeStaleBundleFiles`), only after every page is written and before the static copy, so a build that fails midway leaves the old pages working.
+- `core/build.ts` generates and writes the index before any page renders (`writeSearchIndexBeforeRendering`, after `beforeAll`), from each page's Markdown and `extractToc`. The index path is part of every page's render-inputs hash, so a production build hashes the index content, never something that changes per build: editing indexed text re-renders every page, an unchanged build reuses them all. Dev keeps one fixed name. Production builds delete index files, hashed bundles and hashed stylesheets from earlier builds (`removeStaleSearchIndexes`, `removeStaleBundleFiles`, `removeStaleStylesheets`), only after every page is written and before the static copy, so a build that fails midway leaves the old pages working.
 - Client-side search (e.g., in docs-site) loads the index and performs fuzzy matching; Stati does not bundle a search UI - that's up to the site.
 - Exclusions: pages with `draft: true` in frontmatter and the 404 page (unless it sets `search: true`) are omitted from the index. Use `search.exclude[]` glob patterns for additional exclusions.
 
@@ -210,6 +213,7 @@ The official Stati documentation lives in `docs-site/site/`. Read these files di
 - `docs-site/site/configuration/search.md` - Search index generation and configuration
 - `docs-site/site/configuration/rss.md` - Feed generation and customization
 - `docs-site/site/configuration/images.md` - Image sizes, responsive images and Open Graph cards
+- `docs-site/site/configuration/css.md` - Tailwind CSS in `stati dev` and `stati build`, the hashed stylesheet and the `css` options
 
 ### CLI
 

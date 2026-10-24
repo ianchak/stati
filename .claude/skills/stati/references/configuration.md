@@ -210,14 +210,35 @@ asset files, not broken placeholders, and always write alt text.
 
 Preserve scaffold-generated scripts; they orchestrate styling differently.
 
-| Choice    | Author source             | Public output | Workflow                                       |
-| --------- | ------------------------- | ------------- | ---------------------------------------------- |
-| Plain CSS | `public/styles.css`       | `/styles.css` | Copied directly                                |
-| Sass      | `src/styles.scss`         | `/styles.css` | Generated `build:css` / `watch:css`            |
-| Tailwind  | `src/styles.css`          | `/styles.css` | Generated CSS build plus Stati dev integration |
+| Choice    | Author source       | Public output                                            | Workflow                                                    |
+| --------- | ------------------- | -------------------------------------------------------- | ----------------------------------------------------------- |
+| Plain CSS | `public/styles.css` | `/styles.css`                                            | Copied directly                                             |
+| Sass      | `src/styles.scss`   | `/styles.css`                                            | Generated `build:css` / `watch:css`                         |
+| Tailwind  | `src/styles.css`    | `/styles.css` in dev, `/_assets/styles-[hash].css` built | `--tailwind-input`/`--tailwind-output` on `dev` and `build` |
 
 Scaffolding supports `--styling css`, `sass`, or `tailwind`. Do not replace Sass
-or Tailwind scripts with a plain `"build": "stati build"` shortcut.
+or Tailwind scripts with a plain `"build": "stati build"` shortcut. Tailwind
+scaffolds from before core 2.3 run `stati build && npm run build:css` and link
+`/styles.css` in their templates; that works and keeps a fixed name.
+
+From core 2.3 (CLI 2.1), `stati build --tailwind-input src/styles.css
+--tailwind-output dist/styles.css` runs Tailwind once after the last page renders,
+minified, writes `dist/_assets/styles-[hash].css`, and links it before `</head>` on
+every page that does not link it already. It deletes earlier hashed copies and the
+dev server's `dist/styles.css`. `stati dev` with the same flags links `/styles.css`.
+
+- The output must be a `.css` file inside the output directory; the build fails
+  otherwise, and when the input or the Tailwind CLI is missing, before rendering.
+- Remove template links to `/styles.css`; production builds warn about pages that
+  keep one, because that file is not written.
+- For manual placement set `css.autoInject: false` and print
+  `stati.assets.stylesheetPaths` unchanged. A hashed build learns the name after
+  rendering and replaces the path in every page, cached ones included, so a CSS
+  change re-renders nothing; a path the template encodes or prefixes is not updated.
+- `css: { hash, minify, autoInject }`, all `true` by default; development never
+  hashes or minifies. `hash: false` writes and links the output under its own name.
+- Only the Tailwind stylesheet is hashed. `public/` CSS and Sass output keep their
+  names.
 
 Tailwind's scaffold installs Tailwind CSS 4 (`tailwindcss` and
 `@tailwindcss/cli`) and configures it in `src/styles.css`, without a
@@ -229,8 +250,9 @@ folders, so the stylesheet adds the inventory with
 runs either version.
 `stati.propValue()` records runtime tokens for that inventory. Production
 styling must run in the proper order so classes recorded during rendering exist
-before the final CSS compilation. Retain the actual installed scaffold's build
-order and verify the emitted CSS.
+before the final CSS compilation: `stati build` with the Tailwind flags does this
+itself, and an older `build:css` script must run after `stati build`. Retain the
+actual installed scaffold's build order and verify the emitted CSS.
 
 Literal variant maps are safer than constructing unbounded classes from user
 data. Inventory only includes exercised dynamic branches; it is not a guarantee
@@ -289,5 +311,5 @@ typescript: {
 
 Source authority: `packages/core/src/config/loader.ts`, `types/config.ts`,
 `core/utils/typescript.utils.ts`, `bundle-matching.utils.ts`,
-`tailwind-inventory.utils.ts`; scaffolder styling processors in
+`tailwind-inventory.utils.ts`, `css/` (the Tailwind stylesheet); scaffolder styling processors in
 `packages/create-stati/src/`. These paths belong to the Stati source checkout.

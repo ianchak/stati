@@ -326,6 +326,29 @@ describe('config loader', () => {
       expect((error as Error).message).toContain('seo.articles.include must be an array');
     });
 
+    it('should validate the css block and throw on invalid config', async () => {
+      writeFileSync(
+        join(testDir, 'stati.config.mjs'),
+        `export default { css: { hash: 'yes' } };`,
+        'utf-8',
+      );
+
+      const error = await loadConfig(testDir).catch((caught: unknown) => caught);
+      expect(error).toBeInstanceOf(ConfigValidationError);
+      expect((error as Error).message).toContain('Invalid css configuration in');
+      expect((error as Error).message).toContain('css.hash must be true or false (got "yes").');
+    });
+
+    it('should accept the css block', async () => {
+      writeFileSync(
+        join(testDir, 'stati.config.mjs'),
+        `export default { css: { hash: false, autoInject: false } };`,
+        'utf-8',
+      );
+
+      expect((await loadConfig(testDir)).css).toEqual({ hash: false, autoInject: false });
+    });
+
     it('should treat SEO options that throw while they are checked like a config that fails to load', async () => {
       writeFileSync(
         join(testDir, 'stati.config.mjs'),

@@ -75,7 +75,7 @@ Every Eta template Stati renders receives a `stati` object: layouts, the shells 
 | `stati.pagination`                   | This page's part of a listing with `paginate`: `pageNumber`, `totalPages`, `items`, `prevUrl`, `nextUrl`, `urls`                         |
 | `stati.generated`                    | On pages from a `[param].md` template: `key`, `label`, `items`, `template`, `data`                                                       |
 | `stati.slugify(text)`                | The URL slug Stati gives a generated page's key                                                                                          |
-| `stati.assets`                       | `bundlePaths` for this page (empty when no bundle matches) and `searchIndexPath` when search is enabled                                  |
+| `stati.assets`                       | `bundlePaths` for this page (empty when no bundle matches), `stylesheetPaths` (the [Tailwind stylesheet](/configuration/css)) and `searchIndexPath` when search is enabled |
 | `stati.propValue(...)`               | Builds space-separated attribute values from strings, arrays and objects                                                                 |
 | `stati.generateSEO(tags?)`           | Renders SEO tags for manual placement                                                                                                    |
 | `stati.generator.version`            | The Stati version that built the page                                                                                                    |

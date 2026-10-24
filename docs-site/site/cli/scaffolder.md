@@ -196,12 +196,12 @@ Choose your preferred styling approach:
 ### Tailwind CSS
 
 - Installs Tailwind CSS 4: `tailwindcss` and its command line tool, `@tailwindcss/cli`
-- Creates source stylesheet at `src/styles.css` compiled directly to `dist/styles.css`. It imports Tailwind and adds an `@source` rule for `.stati/tailwind-classes.html`, the classes Stati records from `stati.propValue()`. Tailwind finds the templates itself, so there is no `tailwind.config.js`
+- Creates source stylesheet at `src/styles.css`, which `stati dev` compiles to `dist/styles.css` and `stati build` to `dist/_assets/styles-<hash>.css`. It imports Tailwind and adds an `@source` rule for `.stati/tailwind-classes.html`, the classes Stati records from `stati.propValue()`. Tailwind finds the templates itself, so there is no `tailwind.config.js`
 - For the blank template the stylesheet rebuilds the starter's look with `@apply`, Tailwind's slate and blue palette and `dark:` variants. For the blog and docs templates it keeps the template's own stylesheet in the `components` layer, where it overrides Tailwind's base styles and utility classes in your templates override it
-- Scripts added: `build:css`
-- Modified scripts:
-  - `dev`: Uses Stati's built-in Tailwind integration (single process)
-  - `build`: Runs Stati build, then CSS compilation
+- Removes the templates' `<link>` to `/styles.css`: Stati links the stylesheet on every page
+- Modified scripts, both using Stati's built-in Tailwind integration (single process):
+  - `dev`: `stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css`
+  - `build`: `stati build` with the same flags, which runs Tailwind after the last page renders (see [CSS](/configuration/css))
 
 ## Post-creation setup
 
@@ -230,7 +230,7 @@ All created projects include these base scripts:
 }
 ```
 
-> **Note:** When using Sass or Tailwind CSS, the `build` and `dev` scripts are automatically modified to include CSS compilation steps. See the [Styling Solutions](#styling-solutions) section for details.
+> **Note:** When using Sass or Tailwind CSS, the `build` and `dev` scripts are automatically modified to compile the CSS: Sass adds steps around the Stati commands, Tailwind adds flags to them. See the [Styling Solutions](#styling-solutions) section for details.
 
 ## Generated project structure
 
@@ -282,7 +282,7 @@ my-site/
 └── package.json          # Includes Tailwind scripts
 ```
 
-With the blog and docs templates, `public/styles.css` is moved into `src/styles.css`, below the Tailwind import. The blank template gets Tailwind starter styles there instead. Either way `public/styles.css` is removed, because the build would copy it over the compiled `dist/styles.css`.
+With the blog and docs templates, `public/styles.css` is moved into `src/styles.css`, below the Tailwind import. The blank template gets Tailwind starter styles there instead. Either way `public/styles.css` is removed, because every build would copy it over the dev server's `dist/styles.css`.
 
 The `typecheck` script is added to `package.json` for validating your TypeScript code.
 

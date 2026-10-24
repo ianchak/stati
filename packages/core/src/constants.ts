@@ -137,6 +137,14 @@ export const DEFAULT_TS_OUT_DIR = '_assets';
  */
 export const DEFAULT_BUNDLES = [{ entryPoint: 'main.ts', bundleName: 'main' }] as const;
 
+// === CSS Constants ===
+
+/**
+ * Folder of hashed production stylesheets (relative to build output), the one hashed
+ * TypeScript bundles go to by default, which hosts are commonly set to cache as immutable
+ */
+export const CSS_OUT_DIR = '_assets';
+
 // === Image Constants ===
 
 /** Output directory for generated and copied images, relative to the build output */

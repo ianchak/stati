@@ -88,6 +88,7 @@ function getPhaseLabel(key: string): string {
     rssGenerationMs: 'RSS generation',
     tailwindInitMs: 'Tailwind init',
     tailwindInventoryMs: 'Tailwind inventory',
+    tailwindBuildMs: 'Tailwind build',
     getDirectorySizeMs: 'Directory size',
     lockAcquireMs: 'Lock acquire',
     lockReleaseMs: 'Lock release',
@@ -153,6 +154,8 @@ function getPhaseDescription(key: string): string {
       'Time spent initializing Tailwind CSS detection and setting up the class inventory system. This is a one-time cost at the start of each build.',
     tailwindInventoryMs:
       'Time spent writing the Tailwind class inventory file at the end of the build. This file tracks which classes were used for purging unused CSS.',
+    tailwindBuildMs:
+      'Time spent running Tailwind CSS for the production stylesheet (--tailwind-input and --tailwind-output), writing its hashed file, and updating the pages that linked an earlier name.',
     getDirectorySizeMs:
       'Time spent calculating the total size of the dist directory after the build completes. This is used for the build summary statistics.',
     lockAcquireMs:
@@ -199,6 +202,7 @@ const PHASE_EXECUTION_ORDER: readonly string[] = [
   'hookAfterRenderTotalMs',
   'imageSettleMs',
   'tailwindInventoryMs',
+  'tailwindBuildMs',
   'cacheManifestSaveMs',
   'assetCopyMs',
   'sitemapGenerationMs',

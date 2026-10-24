@@ -6,6 +6,9 @@ import type { BuildContext } from 'esbuild';
 import type { StatiConfig, Logger } from '../types/index.js';
 import type { FSWatcher } from 'chokidar';
 import { build } from './build.js';
+import type { BuildOptions } from './build.js';
+import { createStylesheetPlan } from '../css/index.js';
+import type { TailwindBuildOptions } from '../css/index.js';
 import { invalidate } from './invalidate.js';
 import { loadConfig } from '../config/loader.js';
 import { clearTemplateEngineCache } from './templates.js';
@@ -53,7 +56,15 @@ export interface DevServerOptions {
   open?: boolean;
   configPath?: string;
   logger?: Logger;
+  /**
+   * The Tailwind CSS input and output the CLI's watcher uses (`--tailwind-input` and
+   * `--tailwind-output`). Pages link the output under its path in the output directory.
+   */
+  tailwind?: TailwindBuildOptions;
 }
+
+/** What every dev server build gets besides its logger and rebuild flags */
+type DevBuildOptions = Pick<BuildOptions, 'configPath' | 'tailwind'>;
 
 export interface DevServer {
   start(): Promise<void>;
@@ -91,7 +102,7 @@ async function loadDevConfig(
  * Performs an initial build to ensure dist/ exists
  */
 async function performInitialBuild(
-  configPath: string | undefined,
+  buildOptions: DevBuildOptions,
   logger: Logger,
   onError?: (error: Error) => void,
 ): Promise<void> {
@@ -104,7 +115,7 @@ async function performInitialBuild(
       logger,
       force: false,
       clean: false,
-      ...(configPath && { configPath }),
+      ...buildOptions,
     });
 
     // Clear any previous errors on successful build
@@ -129,7 +140,7 @@ async function performInitialBuild(
  *
  * @param changedPath - The path of the file that changed
  * @param eventType - The type of change: 'add', 'change', or 'unlink'
- * @param configPath - Optional path to the stati config file
+ * @param buildOptions - The config file path and Tailwind files every build gets
  * @param staticDir - The static assets directory path
  * @param srcDir - The source directory path, whose `.eta` files are templates
  * @param logger - Logger instance for output
@@ -147,7 +158,7 @@ async function performInitialBuild(
 async function performIncrementalRebuild(
   changedPath: string,
   eventType: 'add' | 'change' | 'unlink',
-  configPath: string | undefined,
+  buildOptions: DevBuildOptions,
   staticDir: string,
   srcDir: string,
   logger: Logger,
@@ -240,7 +251,7 @@ async function performIncrementalRebuild(
         clean: false,
         // Template changes don't affect static assets
         ...(otherChanges.length === 0 && { skipAssetCopy: true }),
-        ...(configPath && { configPath }),
+        ...buildOptions,
       });
 
       // Clear any previous errors on successful build
@@ -331,7 +342,7 @@ async function performIncrementalRebuild(
         void performIncrementalRebuild(
           first.path,
           first.eventType,
-          configPath,
+          buildOptions,
           staticDir,
           srcDir,
           logger,
@@ -490,6 +501,26 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
 
   // Load configuration first to get defaults from config file
   const { config, outDir, srcDir, staticDir } = await loadDevConfig(configPath, logger);
+
+  // Pages link the Tailwind watcher's output when it is a stylesheet in the output directory.
+  // Other outputs still work as before, but Stati can't link them.
+  let { tailwind } = options;
+  // Watched for live reload even before the Tailwind watcher first writes it
+  const expectedCssFiles: string[] = [];
+  if (tailwind) {
+    try {
+      expectedCssFiles.push(createStylesheetPlan(tailwind, config.css, outDir, true).outputFile);
+    } catch (error) {
+      logger.warning?.(
+        `${error instanceof Error ? error.message : String(error)} Stati does not link the stylesheet to pages.`,
+      );
+      tailwind = undefined;
+    }
+  }
+  const buildOptions: DevBuildOptions = {
+    ...(configPath && { configPath }),
+    ...(tailwind && { tailwind }),
+  };
 
   // Merge config values with options (options take precedence)
   const { port, host, open } = mergeServerOptions({
@@ -708,7 +739,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
 
       // Rebuilds reuse one template index, which the file watcher keeps current
       startTemplateIndexSession(srcDir);
-      await performInitialBuild(configPath, logger, setLastBuildError);
+      await performInitialBuild(buildOptions, logger, setLastBuildError);
 
       // Create HTTP server
       httpServer = createServer(async (req, res) => {
@@ -816,6 +847,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
           disableWsReload,
           cssWatcher,
           watchedCssFiles,
+          expectedCssFiles,
         });
       };
 
@@ -831,7 +863,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
         void performIncrementalRebuild(
           path,
           'change',
-          configPath,
+          buildOptions,
           staticDir,
           srcDir,
           logger,
@@ -848,7 +880,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
         void performIncrementalRebuild(
           path,
           'add',
-          configPath,
+          buildOptions,
           staticDir,
           srcDir,
           logger,
@@ -865,7 +897,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
         void performIncrementalRebuild(
           path,
           'unlink',
-          configPath,
+          buildOptions,
           staticDir,
           srcDir,
           logger,

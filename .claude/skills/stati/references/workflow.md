@@ -64,7 +64,9 @@ dist/                   generated output
 ```
 
 Generated plain-CSS scripts usually call `stati dev`, `stati build`, and
-`stati preview`. Sass/Tailwind scripts include additional orchestration. Preserve
+`stati preview`. Sass scripts add steps around the Stati commands; Tailwind scripts
+pass `--tailwind-input`/`--tailwind-output` to `stati dev` and, from CLI 2.1, to
+`stati build` (older ones run `build:css` after it). Preserve
 them. Reproducible installed projects use the lockfile and CI's chosen install
 command; add dependencies only when needed, not to repair unrelated tooling.
 
@@ -74,7 +76,7 @@ Use `npm run <script> -- <flags>` when forwarding flags to a site script.
 
 | Command                    | Options                                                                                                                                   |
 | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `stati build`              | `--force`, `--clean`, `--config <path>`, `--include-drafts`, `--metrics`, `--metrics-file <path>`, `--metrics-detailed`, `--metrics-html` |
+| `stati build`              | `--force`, `--clean`, `--config <path>`, `--include-drafts`, `--metrics`, `--metrics-file <path>`, `--metrics-detailed`, `--metrics-html`, `--tailwind-input`, `--tailwind-output` (CLI 2.1+) |
 | `stati dev`                | `--port`, `--host`, `--open`, `--config`, `--tailwind-input`, `--tailwind-output`, `--tailwind-verbose`                                   |
 | `stati preview`            | `--port`, `--host`, `--open`, `--config`                                                                                                  |
 | `stati invalidate [query]` | Tag/path/glob/recent-render age invalidation; see features                                                                                |
@@ -169,6 +171,7 @@ will not execute Stati to refresh expired cache entries on visitor requests.
 | Missing post sidebar collection       | Core < 1.29 parent URL caveat; 1.29+: no index page above the post, or wrong `collection`    |
 | Date sort not applied                 | Check for an invalid-date warning; use a valid `publishedAt`, `published`, `date`, etc.      |
 | Missing Tailwind variant              | Inventory/build order, literal class map, branches actually rendered                         |
+| New markup unstyled after a deploy    | Cached fixed-name `/styles.css`; build Tailwind with the `stati build` flags (hashed name)  |
 | Bundle on wrong page                  | URL patterns (`/docs/guide`, no `.html`; `/docs/**` skips `/docs`), unique names             |
 | Missing feed/sitemap/robots in dev    | Production-only generators; run production build                                             |
 | Stale rendered content                | Cache hit, hook timing, data via helpers (untracked), `summaryFields`, force vs invalidation |

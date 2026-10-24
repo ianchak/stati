@@ -2,13 +2,14 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 // Shared across module resets, so a test can set what the CLI receives
 const mocks = vi.hoisted(() => ({
+  build: vi.fn(),
   createDevServer: vi.fn(),
   watchTailwindCSS: vi.fn(),
   stopTailwindWatcher: vi.fn(),
 }));
 
 vi.mock('@stati/core', () => ({
-  build: vi.fn(),
+  build: mocks.build,
   createDevServer: mocks.createDevServer,
   createPreviewServer: vi.fn(),
   invalidate: vi.fn(),
@@ -66,6 +67,44 @@ describe('stati commands', () => {
     expect(errors).toContain('Not enough non-option arguments');
   });
 
+  it('passes the Tailwind files to the build, which runs Tailwind after the pages render', async () => {
+    mocks.build.mockResolvedValue({});
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    const { exitCode } = await runCli([
+      'build',
+      '--tailwind-input',
+      'src/styles.css',
+      '--tailwind-output',
+      'dist/styles.css',
+    ]);
+
+    expect(exitCode).toBeUndefined();
+    expect(mocks.build).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tailwind: { input: 'src/styles.css', output: 'dist/styles.css' },
+      }),
+    );
+  });
+
+  it('builds without Tailwind when neither file is given', async () => {
+    mocks.build.mockResolvedValue({});
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    await runCli(['build']);
+
+    expect(mocks.build.mock.calls[0]?.[0]).not.toHaveProperty('tailwind');
+  });
+
+  it('fails a build given only one of the Tailwind files', async () => {
+    const { exitCode, errors } = await runCli(['build', '--tailwind-input', 'src/styles.css']);
+
+    expect(exitCode).toBe(1);
+    expect(errors).toContain('Missing dependent arguments');
+    expect(errors).toContain('tailwind-input -> tailwind-output');
+    expect(mocks.build).not.toHaveBeenCalled();
+  });
+
   it('stops the Tailwind watcher, then the dev server, on Ctrl+C', async () => {
     const devServer = {
       start: vi.fn().mockResolvedValue(undefined),
@@ -90,6 +129,12 @@ describe('stati commands', () => {
         'dist/styles.css',
       ]);
       await vi.waitFor(() => expect(mocks.watchTailwindCSS).toHaveBeenCalled());
+      // Pages link the watcher's output
+      expect(mocks.createDevServer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tailwind: { input: 'src/styles.css', output: 'dist/styles.css' },
+        }),
+      );
       const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
 
       process.emit('SIGINT', 'SIGINT');

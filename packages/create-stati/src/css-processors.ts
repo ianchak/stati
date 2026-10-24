@@ -4,7 +4,7 @@
  * @module create-stati/css-processors
  */
 
-import { readFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { formatErrorMessage, applyProcessorResult } from './utils/index.js';
 import { setupTailwind } from './tailwind-processor.js';
@@ -26,6 +26,25 @@ function readTemplateCSS(projectDir: string): Promise<string> {
 }
 
 /**
+ * The template's `.eta` files under site/, by path relative to the project with forward
+ * slashes.
+ */
+async function readTemplates(projectDir: string): Promise<Map<string, string>> {
+  const siteDir = join(projectDir, 'site');
+  const templates = new Map<string, string>();
+  const files = await readdir(siteDir, { recursive: true }).catch((error: unknown) => {
+    if ((error as { code?: string }).code === 'ENOENT') {
+      return [];
+    }
+    throw error;
+  });
+  for (const file of files.filter((name) => name.endsWith('.eta')).sort()) {
+    templates.set(`site/${file.replace(/\\/g, '/')}`, await readFile(join(siteDir, file), 'utf-8'));
+  }
+  return templates;
+}
+
+/**
  * Get the processor result for a given styling option.
  * For Sass, requires reading the existing CSS file first.
  *
@@ -41,9 +60,11 @@ export async function getStylingProcessor(
 ): Promise<ProcessorResult | ProcessorResultWithDeletions | null> {
   switch (styling) {
     case 'tailwind':
-      return options.keepTemplateStyles
-        ? setupTailwind(await readTemplateCSS(projectDir))
-        : setupTailwind();
+      // Stati links the stylesheet, so the templates lose their link to /styles.css
+      return setupTailwind(
+        options.keepTemplateStyles ? await readTemplateCSS(projectDir) : undefined,
+        await readTemplates(projectDir),
+      );
 
     case 'sass':
       // Convert the existing CSS to SCSS

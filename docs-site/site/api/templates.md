@@ -102,6 +102,8 @@ interface GeneratedOgImage {
 interface StatiAssets {
   /** Array of TypeScript bundle paths matched for this page */
   bundlePaths: string[];
+  /** Paths of the stylesheet Stati builds with Tailwind (empty without --tailwind-input) */
+  stylesheetPaths: string[];
   /** Path to search index file (when search enabled) */
   searchIndexPath?: string;
 }

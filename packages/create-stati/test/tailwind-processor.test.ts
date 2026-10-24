@@ -53,12 +53,26 @@ describe('tailwind-processor', () => {
     it('should include correct scripts', () => {
       const result = setupTailwind();
 
-      expect(result.scripts['build:css']).toBe(
-        'tailwindcss -i src/styles.css -o dist/styles.css --minify',
-      );
-      expect(result.scripts.build).toBe('stati build && npm run build:css');
-      expect(result.scripts.dev).toBe(
-        'stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css',
+      expect(result.scripts).toEqual({
+        build: 'stati build --tailwind-input src/styles.css --tailwind-output dist/styles.css',
+        dev: 'stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css',
+      });
+    });
+
+    it('should rewrite only the templates that link /styles.css, keeping their other lines', () => {
+      const templates = new Map([
+        [
+          'site/layout.eta',
+          '<head>\r\n    <link rel="icon" href="/favicon.svg" />\r\n    <link rel="stylesheet" href="/styles.css" />\r\n  </head>\r\n',
+        ],
+        ['site/page.eta', '<link rel="stylesheet" href="/print.css" />\n'],
+      ]);
+
+      const { files } = setupTailwind(undefined, templates);
+
+      expect([...files.keys()]).toEqual(['src/styles.css', 'site/layout.eta']);
+      expect(files.get('site/layout.eta')).toBe(
+        '<head>\r\n    <link rel="icon" href="/favicon.svg" />\r\n  </head>\r\n',
       );
     });
 

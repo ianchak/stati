@@ -302,6 +302,33 @@ Tailwind finds class names by scanning your files, so a class assembled at rende
 
 ---
 
+## New sections unstyled after a deploy
+
+**Cause:**
+The stylesheet has the same URL in every deploy, such as `/styles.css`, and browsers that visited before still use their cached copy. Some hosts and CDNs cache CSS files for hours whatever the page's own headers say, so new markup arrives with the old CSS.
+
+**Solution:**
+
+1. Build the Tailwind stylesheet with `stati build --tailwind-input src/styles.css --tailwind-output dist/styles.css`. Production builds name it after its content, `/_assets/styles-[hash].css`, so it gets a new URL whenever it changes
+2. Remove `<link rel="stylesheet" href="/styles.css">` from your templates: Stati links the stylesheet itself
+3. See [Moving from a `build:css` script](/configuration/css#moving-from-a-build-css-script)
+
+A stylesheet in `public/`, or one Sass writes, keeps its name. Change its file name, or add a query string to its link, when it changes.
+
+---
+
+## Warning: pages link `/styles.css`, which production builds do not write
+
+**Cause:**
+With `--tailwind-input` and `--tailwind-output`, a production build writes the stylesheet as `/_assets/styles-[hash].css` and deletes the dev server's `dist/styles.css`, but a template still links `/styles.css`.
+
+**Solution:**
+
+1. Remove that `<link>` from your templates, usually the layout or a head partial. Stati adds the link to the hashed file on every page
+2. With `css.autoInject: false`, link `stati.assets.stylesheetPaths` instead. See [Linking it yourself](/configuration/css#linking-it-yourself)
+
+---
+
 ## `README.md` appearing as a page
 
 **Cause:**
