@@ -11,9 +11,12 @@ import { join, resolve } from 'node:path';
 import {
   autoInjectStylesheets,
   createStylesheetPlan,
+  getHashedStylesheetPattern,
   getRenderStylesheetPath,
+  getStaleStylesheetPaths,
   getStylesheetFingerprint,
   linksStylesheet,
+  rebaseRelativeUrls,
   relinkStylesheet,
   removeStaleStylesheets,
   type StylesheetPlan,
@@ -117,26 +120,44 @@ describe('createStylesheetPlan', () => {
 
 describe('getRenderStylesheetPath', () => {
   it('is the output path when the build does not hash', () => {
-    expect(getRenderStylesheetPath(plan({ hash: false }), '/_assets/styles-0A1B2C3D.css')).toBe(
-      '/styles.css',
-    );
+    expect(getRenderStylesheetPath(plan({ hash: false }))).toBe('/styles.css');
   });
 
-  it('is the name the last build linked, while its file is still on disk', () => {
-    expect(getRenderStylesheetPath(plan(), '/_assets/styles-0A1B2C3D.css')).toBe(
-      '/_assets/styles-0A1B2C3D.css',
+  it('is a name made up for each hashed build, which no hashed file has', () => {
+    const first = getRenderStylesheetPath(plan());
+    const second = getRenderStylesheetPath(plan());
+
+    expect(first).toMatch(/^\/_assets\/styles-pending-[0-9a-f]{16}\.css$/);
+    expect(second).not.toBe(first);
+    expect(first).not.toMatch(/^\/_assets\/styles-[0-9A-F]{8}\.css$/);
+  });
+});
+
+describe('getHashedStylesheetPattern', () => {
+  it('shows how a hashed build names the stylesheet', () => {
+    expect(getHashedStylesheetPattern(plan())).toBe('/_assets/styles-[hash].css');
+  });
+});
+
+describe('rebaseRelativeUrls', () => {
+  it("resolves relative references against the stylesheet's own path", () => {
+    const css =
+      '@font-face{src:url(fonts/inter.woff2) format("woff2"),url("./fonts/inter.woff")}' +
+      ".hero{background:url('../img/bg.svg?v=2#top')}";
+
+    expect(rebaseRelativeUrls(css, '/css/site.css')).toBe(
+      '@font-face{src:url(/css/fonts/inter.woff2) format("woff2"),url("/css/fonts/inter.woff")}' +
+        ".hero{background:url('/img/bg.svg?v=2#top')}",
     );
+    expect(rebaseRelativeUrls('a{b:url(../x.png)}', '/styles.css')).toBe('a{b:url(/x.png)}');
   });
 
-  it('is a placeholder without a previous hashed name of this stylesheet', () => {
-    expect(getRenderStylesheetPath(plan(), undefined)).toBe('/_assets/styles-[hash].css');
-    expect(getRenderStylesheetPath(plan(), '/styles.css')).toBe('/_assets/styles-[hash].css');
-    expect(getRenderStylesheetPath(plan(), '/_assets/site-0A1B2C3D.css')).toBe(
-      '/_assets/styles-[hash].css',
-    );
-    expect(getRenderStylesheetPath(plan(), '/_assets/styles-0a1b2c3d.css')).toBe(
-      '/_assets/styles-[hash].css',
-    );
+  it('leaves root-relative, absolute, data, fragment, empty and escaped references alone', () => {
+    const css =
+      'a{b:url(/fonts/a.woff2);c:url(https://cdn.example/x.png);d:url(//cdn.example/y.png);' +
+      'e:url("data:image/svg+xml;utf8,<svg/>");f:url(#mask);g:url();h:url("a\\"b.png")}';
+
+    expect(rebaseRelativeUrls(css, '/styles.css')).toBe(css);
   });
 });
 
@@ -158,11 +179,39 @@ describe('linksStylesheet', () => {
     );
   });
 
+  it('finds an unquoted href, and one with a query or a fragment', () => {
+    expect(linksStylesheet('<link rel=stylesheet href=/styles.css>', '/styles.css')).toBe(true);
+    expect(linksStylesheet('<link rel="stylesheet" href="/styles.css?v=2">', '/styles.css')).toBe(
+      true,
+    );
+    expect(linksStylesheet('<link href="/styles.css#print" rel="stylesheet">', '/styles.css')).toBe(
+      true,
+    );
+  });
+
+  it("finds a link under the site's own origin, not another one", () => {
+    const site = 'https://Example.com/';
+    const linked = (href: string) =>
+      linksStylesheet(`<link rel="stylesheet" href="${href}">`, '/styles.css', site);
+
+    expect(linked('https://example.com/styles.css')).toBe(true);
+    expect(linked('//example.com/styles.css')).toBe(true);
+    expect(linked('https://cdn.example/styles.css')).toBe(false);
+    expect(linked('https://example.com.evil/styles.css')).toBe(false);
+    expect(
+      linksStylesheet(
+        '<link rel="stylesheet" href="https://example.com/styles.css">',
+        '/styles.css',
+      ),
+    ).toBe(false);
+  });
+
   it('ignores other paths, other tags and escaped markup', () => {
     expect(linksStylesheet('<link rel="stylesheet" href="/styles.css.map">', '/styles.css')).toBe(
       false,
     );
     expect(linksStylesheet('<a href="/styles.css">CSS</a>', '/styles.css')).toBe(false);
+    expect(linksStylesheet('<link data-href="/styles.css">', '/styles.css')).toBe(false);
     expect(
       linksStylesheet('<code>&lt;link href=&quot;/styles.css&quot;&gt;</code>', '/styles.css'),
     ).toBe(false);
@@ -181,6 +230,11 @@ describe('autoInjectStylesheets', () => {
   it('leaves a page that links the path already, or has no </head>', () => {
     const linked = html.replace('</head>', '<link href="/styles.css" rel="stylesheet"></head>');
     expect(autoInjectStylesheets(linked, ['/styles.css'])).toBe(linked);
+    const absolute = html.replace(
+      '</head>',
+      '<link href="https://example.com/styles.css" rel="stylesheet"></head>',
+    );
+    expect(autoInjectStylesheets(absolute, ['/styles.css'], 'https://example.com')).toBe(absolute);
     expect(autoInjectStylesheets('<p>fragment</p>', ['/styles.css'])).toBe('<p>fragment</p>');
     expect(autoInjectStylesheets(html, [])).toBe(html);
   });
@@ -198,23 +252,38 @@ describe('stylesheet files', () => {
   });
 
   describe('relinkStylesheet', () => {
-    it('rewrites every mention of the path in the pages that have it', async () => {
-      const from = '/_assets/styles-[hash].css';
+    it('rewrites every mention of each earlier path in the pages that have one', async () => {
+      const from = '/_assets/styles-0A1B2C3D.css';
       const linked = `<link rel="stylesheet" href="${from}"><link rel="preload" href="${from}">`;
       await writeFile(join(dir, 'a.html'), linked);
       await writeFile(join(dir, 'b.html'), '<p>no stylesheet</p>');
+      await writeFile(
+        join(dir, 'c.html'),
+        '<link rel="stylesheet" href="/_assets/styles-DEADBEEF.css">',
+      );
 
       const count = await relinkStylesheet(
-        [join(dir, 'a.html'), join(dir, 'b.html'), join(dir, 'missing.html')],
-        from,
-        '/_assets/styles-0A1B2C3D.css',
+        [join(dir, 'a.html'), join(dir, 'b.html'), join(dir, 'c.html'), join(dir, 'missing.html')],
+        [from, '/_assets/styles-DEADBEEF.css'],
+        '/_assets/styles-E77989ED.css',
       );
 
-      expect(count).toBe(1);
+      expect(count).toBe(2);
       expect(await readFile(join(dir, 'a.html'), 'utf-8')).toBe(
-        '<link rel="stylesheet" href="/_assets/styles-0A1B2C3D.css"><link rel="preload" href="/_assets/styles-0A1B2C3D.css">',
+        '<link rel="stylesheet" href="/_assets/styles-E77989ED.css"><link rel="preload" href="/_assets/styles-E77989ED.css">',
       );
       expect(await readFile(join(dir, 'b.html'), 'utf-8')).toBe('<p>no stylesheet</p>');
+      expect(await readFile(join(dir, 'c.html'), 'utf-8')).toBe(
+        '<link rel="stylesheet" href="/_assets/styles-E77989ED.css">',
+      );
+    });
+
+    it('reads no page without an earlier path', async () => {
+      await writeFile(join(dir, 'a.html'), 'href="/new.css"');
+
+      expect(await relinkStylesheet([join(dir, 'a.html')], [], '/new.css')).toBe(0);
+      expect(await relinkStylesheet([join(dir, 'a.html')], ['/new.css', ''], '/new.css')).toBe(0);
+      expect(await readFile(join(dir, 'a.html'), 'utf-8')).toBe('href="/new.css"');
     });
 
     it('handles more pages than it reads at once', async () => {
@@ -226,8 +295,41 @@ describe('stylesheet files', () => {
         }),
       );
 
-      expect(await relinkStylesheet(files, '/old.css', '/new.css')).toBe(70);
+      expect(await relinkStylesheet(files, ['/old.css'], '/new.css')).toBe(70);
       expect(await readFile(files[69]!, 'utf-8')).toBe('href="/new.css"');
+    });
+  });
+
+  describe('getStaleStylesheetPaths', () => {
+    const current = '/_assets/styles-E77989ED.css';
+
+    async function assets(...names: string[]): Promise<void> {
+      await mkdir(join(dir, '_assets'), { recursive: true });
+      for (const name of names) {
+        await writeFile(join(dir, '_assets', name), '');
+      }
+    }
+
+    it('lists the recorded name and every other hashed copy, never the current one', async () => {
+      await assets('styles-DEADBEEF.css', 'styles-E77989ED.css', 'site-0A1B2C3D.css');
+
+      const stale = await getStaleStylesheetPaths(
+        plan(),
+        dir,
+        '/_assets/styles-0A1B2C3D.css',
+        current,
+      );
+
+      expect(stale.sort()).toEqual([
+        '/_assets/styles-0A1B2C3D.css',
+        '/_assets/styles-DEADBEEF.css',
+      ]);
+    });
+
+    it('ignores a recorded path that is not a hashed copy of this stylesheet', async () => {
+      for (const recorded of ['', '/styles.css', '/_assets/site-0A1B2C3D.css', current]) {
+        expect(await getStaleStylesheetPaths(plan(), dir, recorded, current)).toEqual([]);
+      }
     });
   });
 
@@ -239,20 +341,6 @@ describe('stylesheet files', () => {
       }
     }
 
-    /** The stylesheet of a build whose output directory is `dir` */
-    function stalePlan(overrides: Partial<StylesheetPlan> = {}): StylesheetPlan {
-      return {
-        inputFile: join(dir, '..', 'src', 'styles.css'),
-        outputFile: join(dir, 'styles.css'),
-        path: '/styles.css',
-        name: 'styles',
-        hash: true,
-        minify: true,
-        autoInject: true,
-        ...overrides,
-      };
-    }
-
     it("deletes earlier hashed copies, never the current file or the dev server's output", async () => {
       await files(
         '_assets/styles-0A1B2C3D.css',
@@ -260,13 +348,8 @@ describe('stylesheet files', () => {
         '_assets/styles-E77989ED.css',
         'styles.css',
       );
-      const current = {
-        path: '/_assets/styles-E77989ED.css',
-        file: join(dir, '_assets', 'styles-E77989ED.css'),
-        sizeInBytes: 0,
-      };
 
-      const removed = await removeStaleStylesheets(stalePlan(), dir, current);
+      const removed = await removeStaleStylesheets(dir, 'styles', '/_assets/styles-E77989ED.css');
 
       expect(removed.sort()).toEqual([
         '_assets/styles-0A1B2C3D.css',
@@ -285,13 +368,10 @@ describe('stylesheet files', () => {
         '_assets/styles-E77989ED.css',
       );
       await mkdir(join(dir, '_assets', 'styles-ABCDEF12.css'));
-      const current = {
-        path: '/_assets/styles-E77989ED.css',
-        file: join(dir, '_assets', 'styles-E77989ED.css'),
-        sizeInBytes: 0,
-      };
 
-      expect(await removeStaleStylesheets(stalePlan(), dir, current)).toEqual([]);
+      expect(await removeStaleStylesheets(dir, 'styles', '/_assets/styles-E77989ED.css')).toEqual(
+        [],
+      );
       expect((await readdir(join(dir, '_assets'))).sort()).toEqual([
         'main-0A1B2C3D.js',
         'site-0A1B2C3D.css',
@@ -304,17 +384,24 @@ describe('stylesheet files', () => {
 
     it('keeps the output under its own name when the build does not hash', async () => {
       await files('_assets/styles-0A1B2C3D.css', 'styles.css');
-      const current = { path: '/styles.css', file: join(dir, 'styles.css'), sizeInBytes: 0 };
 
-      expect(await removeStaleStylesheets(stalePlan({ hash: false }), dir, current)).toEqual([
+      expect(await removeStaleStylesheets(dir, 'styles', '/styles.css')).toEqual([
         '_assets/styles-0A1B2C3D.css',
       ]);
       expect(await readdir(dir)).toContain('styles.css');
     });
 
+    it('deletes every hashed copy of a stylesheet the build no longer builds', async () => {
+      await files('_assets/styles-0A1B2C3D.css', '_assets/styles-DEADBEEF.css');
+
+      expect((await removeStaleStylesheets(dir, 'styles')).sort()).toEqual([
+        '_assets/styles-0A1B2C3D.css',
+        '_assets/styles-DEADBEEF.css',
+      ]);
+    });
+
     it('is fine without an _assets folder', async () => {
-      const current = { path: '/styles.css', file: join(dir, 'styles.css'), sizeInBytes: 0 };
-      expect(await removeStaleStylesheets(stalePlan({ hash: false }), dir, current)).toEqual([]);
+      expect(await removeStaleStylesheets(dir, 'styles', '/styles.css')).toEqual([]);
     });
   });
 });

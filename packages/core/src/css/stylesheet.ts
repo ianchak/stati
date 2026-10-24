@@ -5,15 +5,14 @@
  * @module css/stylesheet
  */
 
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { URL } from 'node:url';
 import {
-  copyFile,
   ensureDir,
   pathExists,
   readdir,
   readFile,
-  readFileBuffer,
   remove,
   stat,
   writeFile,
@@ -75,6 +74,15 @@ const SAFE_PATH = /^\/[A-Za-z0-9_\-./]+$/;
 /** Pages read at once while their stylesheet link is rewritten */
 const RELINK_BATCH_SIZE = 32;
 
+/** A CSS `url()` with a double-quoted, single-quoted or unquoted reference, without escapes */
+const CSS_URL = /url\(\s*(?:"([^"\\]*)"|'([^'\\]*)'|([^\s"'()\\]+))\s*\)/gi;
+
+/** References that don't depend on where the stylesheet is: a scheme, the site root, a fragment */
+const LOCATION_INDEPENDENT_URL = /^(?:[a-z][a-z0-9+.-]*:|\/|#)/i;
+
+/** The `href` of a `<link>` tag, quoted or not */
+const LINK_HREF = /\shref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/i;
+
 function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -82,6 +90,12 @@ function escapeRegExp(text: string): string {
 /** Hashed files: name-HASH.css, with 8 hexadecimal characters in uppercase like a bundle's */
 function hashedFilePattern(name: string): RegExp {
   return new RegExp(`^${escapeRegExp(name)}-[0-9A-F]{8}\\.css$`);
+}
+
+/** Whether a path on the site is a hashed copy of the stylesheet with this name */
+function isHashedStylesheetPath(path: string, name: string): boolean {
+  const folder = `/${CSS_OUT_DIR}/`;
+  return path.startsWith(folder) && hashedFilePattern(name).test(path.slice(folder.length));
 }
 
 /**
@@ -179,32 +193,53 @@ export function getStylesheetFingerprint(plan: StylesheetPlan): {
 /**
  * The stylesheet path pages render with. Development builds, and production builds with
  * `css.hash: false`, link the output under its own name. A hashed build learns the name only
- * once every page has rendered, so pages render with the name the previous build linked, whose
- * file is still on disk. The build swaps in the new one as it writes the pages it held, and
- * {@link relinkStylesheet} does for pages already on disk. A build without a previous name
- * renders a placeholder.
+ * once every page has rendered, so pages render with a name made up for this build, which no
+ * page content can hold, and the build swaps in the final name as it writes them.
  *
  * @param plan - The build's stylesheet
- * @param linked - The path the previous production build linked (`CacheManifest.stylesheets`)
  */
-export function getRenderStylesheetPath(plan: StylesheetPlan, linked: string | undefined): string {
+export function getRenderStylesheetPath(plan: StylesheetPlan): string {
   if (!plan.hash) {
     return plan.path;
   }
-  const folder = `/${CSS_OUT_DIR}/`;
-  if (
-    linked?.startsWith(folder) &&
-    hashedFilePattern(plan.name).test(linked.slice(folder.length))
-  ) {
-    return linked;
-  }
-  return `${folder}${plan.name}-[hash].css`;
+  return `/${CSS_OUT_DIR}/${plan.name}-pending-${randomBytes(8).toString('hex')}.css`;
+}
+
+/** How a hashed build names the stylesheet, for messages: '/_assets/styles-[hash].css' */
+export function getHashedStylesheetPattern(plan: StylesheetPlan): string {
+  return `/${CSS_OUT_DIR}/${plan.name}-[hash].css`;
+}
+
+/**
+ * Rewrites the relative references in the stylesheet's `url()`s to paths from the site root,
+ * resolved against the path the stylesheet has under its own name. A hashed copy served from
+ * `_assets/` then loads the same fonts and images. References with escapes stay as they are.
+ *
+ * @param css - The stylesheet
+ * @param path - Its path under its own name, such as '/styles.css'
+ * @returns The stylesheet with root-relative references
+ */
+export function rebaseRelativeUrls(css: string, path: string): string {
+  const base = new URL(path, 'http://stati.invalid');
+  return css.replace(
+    CSS_URL,
+    (match, double: string | undefined, single: string | undefined, bare: string | undefined) => {
+      const reference = double ?? single ?? bare ?? '';
+      if (reference === '' || LOCATION_INDEPENDENT_URL.test(reference)) {
+        return match;
+      }
+      const { pathname, search, hash } = new URL(reference, base);
+      const quote = double !== undefined ? '"' : single !== undefined ? "'" : '';
+      return `url(${quote}${pathname}${search}${hash}${quote})`;
+    },
+  );
 }
 
 /**
  * Runs Tailwind CSS for a production build, once the class inventory is complete. A hashed
- * build has Tailwind write a temporary file in the cache directory and copies it to
- * `_assets/name-HASH.css`, named after its content; otherwise Tailwind writes the output file.
+ * build has Tailwind write a temporary file in the cache directory, rebases its relative
+ * `url()`s and writes it as `_assets/name-HASH.css`, named after its content; otherwise
+ * Tailwind writes the output file.
  *
  * @param plan - The build's stylesheet
  * @param outDir - The output directory, absolute
@@ -232,48 +267,92 @@ export async function buildStylesheet(
   await ensureDir(cacheDir);
   try {
     await runTailwindCLI({ projectRoot, input, output: tempFile, minify });
-    const css = await readFileBuffer(tempFile);
-    if (css === null) {
+    const compiled = await readFile(tempFile);
+    if (compiled === null) {
       throw new Error(`Tailwind CSS finished without writing ${tempFile}`);
     }
 
+    const css = rebaseRelativeUrls(compiled, plan.path);
     const hash = createHash('sha256').update(css).digest('hex').slice(0, 8).toUpperCase();
     const filename = `${plan.name}-${hash}.css`;
     const file = join(outDir, CSS_OUT_DIR, filename);
     await ensureDir(dirname(file));
-    await copyFile(tempFile, file);
-    return { path: `/${CSS_OUT_DIR}/${filename}`, file, sizeInBytes: css.length };
+    await writeFile(file, css, 'utf-8');
+    return { path: `/${CSS_OUT_DIR}/${filename}`, file, sizeInBytes: Buffer.byteLength(css) };
   } finally {
     await remove(tempFile);
   }
 }
 
+/** The hashed copies of the stylesheet with this name in the output directory, as site paths */
+async function findHashedStylesheets(outDir: string, name: string): Promise<string[]> {
+  const pattern = hashedFilePattern(name);
+  // Files only: remove() deletes folders with their contents, and links are left alone
+  const entries = await readdir(join(outDir, CSS_OUT_DIR), { withFileTypes: true }).catch(() => []);
+  return entries
+    .filter((entry) => entry.isFile() && pattern.test(entry.name))
+    .map((entry) => `/${CSS_OUT_DIR}/${entry.name}`);
+}
+
 /**
- * Gives every page that links one stylesheet path the other: in a hashed build, the pages kept
- * from earlier builds, which carry the previous name, and pages the build wrote before Tailwind
- * ran because it held as many as it could. Each page is read once and written only when it
- * holds the path. The path holds no characters HTML escapes, so it is the same in every
- * attribute.
+ * The hashed names that pages kept from earlier builds can link, other than this build's:
+ * the one the last build recorded, and every other hashed copy of the stylesheet still in the
+ * output directory. A build that stops after giving pages a new name, but before it saves the
+ * cache manifest, leaves pages linking a copy the manifest doesn't record.
+ *
+ * @param plan - The build's stylesheet
+ * @param outDir - The output directory, absolute
+ * @param recorded - The path the last build recorded (`CacheManifest.stylesheets`)
+ * @param current - The path this build links
+ */
+export async function getStaleStylesheetPaths(
+  plan: StylesheetPlan,
+  outDir: string,
+  recorded: string | undefined,
+  current: string,
+): Promise<string[]> {
+  const paths = new Set(await findHashedStylesheets(outDir, plan.name));
+  if (recorded !== undefined && isHashedStylesheetPath(recorded, plan.name)) {
+    paths.add(recorded);
+  }
+  paths.delete(current);
+  return [...paths];
+}
+
+/**
+ * Gives pages that link earlier stylesheet paths the current one: in a hashed build, the
+ * pages kept from earlier builds. Each page is read once and written only when it holds one
+ * of the paths. The paths carry a content hash, which page text doesn't hold, and no
+ * characters HTML escapes, so each is the same in every attribute.
  *
  * @param files - The pages' output files
- * @param from - The path the pages carry
+ * @param from - The paths the pages can carry
  * @param to - The path they get
  * @returns How many pages were rewritten
  */
 export async function relinkStylesheet(
   files: readonly string[],
-  from: string,
+  from: readonly string[],
   to: string,
 ): Promise<number> {
+  const stale = from.filter((path) => path !== '' && path !== to);
+  if (stale.length === 0) {
+    return 0;
+  }
+
   let rewritten = 0;
   for (let i = 0; i < files.length; i += RELINK_BATCH_SIZE) {
     const results = await Promise.all(
       files.slice(i, i + RELINK_BATCH_SIZE).map(async (file) => {
         const html = await readFile(file);
-        if (html === null || !html.includes(from)) {
+        if (html === null) {
           return false;
         }
-        await writeFile(file, html.split(from).join(to), 'utf-8');
+        const relinked = stale.reduce((text, path) => text.split(path).join(to), html);
+        if (relinked === html) {
+          return false;
+        }
+        await writeFile(file, relinked, 'utf-8');
         return true;
       }),
     );
@@ -283,46 +362,73 @@ export async function relinkStylesheet(
 }
 
 /**
- * Deletes the hashed stylesheets earlier builds wrote under other names, from builds whose CSS
- * differed. Only files named after this stylesheet are deleted, never the current one. The
+ * Deletes the hashed copies of a stylesheet earlier builds wrote, never the current one: of
+ * this build's stylesheet once every page links the current file, and of one the build no
+ * longer builds, after a change of `--tailwind-output` or a build without the flags. The
  * output under its own name stays: the dev server's Tailwind watcher writes it, and the dev
  * server watches it for live reload only when it exists as the server starts.
  *
- * The build calls this after every page links the current file: until then, pages from the
- * previous build still load the old one.
- *
- * @param plan - The build's stylesheet
  * @param outDir - The output directory, absolute
- * @param current - The stylesheet this build wrote
+ * @param name - The stylesheet's name, such as 'styles' for '/styles.css'
+ * @param current - The path this build links, which stays
  * @returns The deleted files, relative to the output directory
  */
 export async function removeStaleStylesheets(
-  plan: StylesheetPlan,
   outDir: string,
-  current: BuiltStylesheet,
+  name: string,
+  current?: string,
 ): Promise<string[]> {
-  const dir = join(outDir, CSS_OUT_DIR);
-  const pattern = hashedFilePattern(plan.name);
-  const currentName = basename(current.file);
+  const stale = (await findHashedStylesheets(outDir, name)).filter((path) => path !== current);
+  await Promise.all(stale.map((path) => remove(join(outDir, ...path.split('/')))));
+  return stale.map((path) => path.slice(1));
+}
 
-  // Files only: remove() deletes folders with their contents, and links are left alone
-  const entries = await readdir(dir, { withFileTypes: true }).catch(() => []);
-  const stale = entries
-    .filter((entry) => entry.isFile() && entry.name !== currentName && pattern.test(entry.name))
-    .map((entry) => join(dir, entry.name));
+/** The site's origin, such as 'https://example.com', or undefined without a valid base URL */
+function getSiteOrigin(siteUrl: string | undefined): string | undefined {
+  if (!siteUrl) {
+    return undefined;
+  }
+  try {
+    const { origin } = new URL(siteUrl);
+    return origin === 'null' ? undefined : origin.toLowerCase();
+  } catch {
+    return undefined;
+  }
+}
 
-  await Promise.all(stale.map((file) => remove(file)));
-  return stale.map((file) => relative(outDir, file).replace(/\\/g, '/'));
+/** The path an `href` points at on the site, without the site's origin, a query or a fragment */
+function getHrefPath(href: string, origin: string | undefined): string {
+  let path = href;
+  if (origin) {
+    const lower = href.toLowerCase();
+    const host = origin.slice(origin.indexOf('//'));
+    if (lower.startsWith(origin)) {
+      path = href.slice(origin.length);
+    } else if (lower.startsWith(host)) {
+      path = href.slice(host.length);
+    }
+  }
+  return path.replace(/[?#][\s\S]*$/, '');
 }
 
 /**
- * Whether the HTML has a `<link>` whose `href` is the path.
+ * Whether the HTML has a `<link>` whose `href` is the path: quoted or not, with a query or a
+ * fragment, or under the site's own origin.
  *
  * @param html - The page's HTML
  * @param path - The stylesheet path
+ * @param siteUrl - The site's base URL (`site.baseUrl`), whose origin a link can carry
  */
-export function linksStylesheet(html: string, path: string): boolean {
-  return new RegExp(`<link\\b[^>]*\\shref=["']${escapeRegExp(path)}["'][^>]*>`, 'i').test(html);
+export function linksStylesheet(html: string, path: string, siteUrl?: string): boolean {
+  const origin = getSiteOrigin(siteUrl);
+  for (const [tag] of html.matchAll(/<link\b[^>]*>/gi)) {
+    const match = LINK_HREF.exec(tag);
+    const href = match?.[1] ?? match?.[2] ?? match?.[3];
+    if (href !== undefined && getHrefPath(href, origin) === path) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /**
@@ -331,10 +437,15 @@ export function linksStylesheet(html: string, path: string): boolean {
  *
  * @param html - The rendered page
  * @param paths - The stylesheet paths (`stati.assets.stylesheetPaths`)
+ * @param siteUrl - The site's base URL (`site.baseUrl`), whose origin a link can carry
  * @returns The page with the links
  */
-export function autoInjectStylesheets(html: string, paths: readonly string[]): string {
-  const missing = paths.filter((path) => !linksStylesheet(html, path));
+export function autoInjectStylesheets(
+  html: string,
+  paths: readonly string[],
+  siteUrl?: string,
+): string {
+  const missing = paths.filter((path) => !linksStylesheet(html, path, siteUrl));
   if (missing.length === 0) {
     return html;
   }

@@ -229,16 +229,131 @@ describe('stylesheet builds with Tailwind CSS', () => {
       expect(await site.read('dist/styles.css')).toBe('/* written by the dev server watcher */');
     });
 
-    it('writes pages past the memory limit at once and gives them the final name afterwards', async () => {
+    it('keeps pages past the memory limit in the cache directory until Tailwind has run', async () => {
       await createSite();
       limits.deferredPagesLength = 0;
       const name = hashedName('body { color: black; }');
 
       const { info } = await site.build({ tailwind });
 
+      expect(info.some((message) => message.startsWith('Linked'))).toBe(false);
+      expect(stylesheetLinks(await site.read('dist/index.html'))).toEqual([`/_assets/${name}`]);
+      expect(stylesheetLinks(await site.read('dist/about.html'))).toEqual([`/_assets/${name}`]);
+      expect(await site.exists('.stati/pending-pages')).toBe(false);
+    });
+
+    it('leaves the previous pages past the memory limit in place when Tailwind fails', async () => {
+      await createSite();
+      await site.build({ tailwind });
+      const previous = hashedName('body { color: black; }');
+      limits.deferredPagesLength = 0;
+      await site.write('site/about.md', page({ title: 'About' }, '# About us'));
+      await site.write('src/styles.css', 'FAIL');
+
+      await expect(site.build({ tailwind })).rejects.toThrow('Tailwind CSS exited with code 1');
+
+      const about = await site.read('dist/about.html');
+      expect(about).not.toContain('About us');
+      expect(stylesheetLinks(about)).toEqual([`/_assets/${previous}`]);
+      expect(await site.exists('.stati/pending-pages')).toBe(false);
+    });
+
+    it("leaves the stylesheet's name in page text alone", async () => {
+      await createSite();
+      await site.write(
+        'site/index.md',
+        page(
+          { title: 'Home' },
+          'The build writes `/_assets/styles-[hash].css`, such as `/_assets/styles-A1B2C3D4.css`.',
+        ),
+      );
+      await site.build({ tailwind });
+      await site.write('src/styles.css', 'body { color: navy; }');
+
+      // The second build relinks the cached page
+      await site.build({ tailwind });
+
+      const html = await site.read('dist/index.html');
+      expect(html).toContain('<code>/_assets/styles-[hash].css</code>');
+      expect(html).toContain('<code>/_assets/styles-A1B2C3D4.css</code>');
+      expect(stylesheetLinks(html)).toEqual([`/_assets/${hashedName('body { color: navy; }')}`]);
+    });
+
+    it('relinks cached pages after a build that stopped before saving the cache manifest', async () => {
+      await createSite();
+      await site.build({ tailwind });
+      const manifestAfterFirst = await site.manifest();
+      await site.write('src/styles.css', 'body { color: navy; }');
+      await site.build({ tailwind });
+      // The second build gave the pages its name, then stopped before saving the manifest
+      await site.saveManifest(manifestAfterFirst);
+
+      // Back to the first build's CSS, the name the manifest records
+      await site.write('src/styles.css', 'body { color: black; }');
+      const name = hashedName('body { color: black; }');
+      const { rendered, info } = await site.build({ tailwind });
+
+      expect(rendered).toEqual([]);
       expect(info).toContain(`Linked 2 pages to /_assets/${name}`);
       expect(stylesheetLinks(await site.read('dist/index.html'))).toEqual([`/_assets/${name}`]);
       expect(stylesheetLinks(await site.read('dist/about.html'))).toEqual([`/_assets/${name}`]);
+      expect(await assetFiles()).toEqual([name]);
+    });
+
+    it('rebases relative url() references for the stylesheet in _assets/', async () => {
+      await createSite({ css: { minify: false } });
+      await site.write(
+        'src/styles.css',
+        '@font-face { src: url(fonts/inter.woff2); } .hero { background: url("/img/bg.svg"); }',
+      );
+
+      await site.build({ tailwind });
+
+      const [file] = await assetFiles();
+      expect(await site.read(`dist/_assets/${file}`)).toBe(
+        '@font-face { src: url(/fonts/inter.woff2); } .hero { background: url("/img/bg.svg"); }',
+      );
+    });
+
+    it('gives each page its own stylesheetPaths', async () => {
+      await createSite();
+      await site.write('site/about.md', page({ title: 'About', layout: 'print' }, '# About'));
+      await site.write(
+        'site/print.eta',
+        "<% stati.assets.stylesheetPaths.push('/print.css') %>" + LAYOUT,
+      );
+      const name = hashedName('body { color: black; }');
+
+      await site.build({ tailwind });
+
+      expect(stylesheetLinks(await site.read('dist/about.html'))).toEqual([
+        `/_assets/${name}`,
+        '/print.css',
+      ]);
+      expect(stylesheetLinks(await site.read('dist/index.html'))).toEqual([`/_assets/${name}`]);
+    });
+
+    it('deletes the hashed stylesheet once a build no longer builds it', async () => {
+      await createSite();
+      await site.build({ tailwind });
+      expect(await assetFiles()).toHaveLength(1);
+
+      const { rendered } = await site.build();
+
+      expect(rendered.sort()).toEqual(['/', '/about']);
+      expect(stylesheetLinks(await site.read('dist/index.html'))).toEqual([]);
+      expect(await assetFiles()).toEqual([]);
+    });
+
+    it('deletes the hashed copies of the previous output name', async () => {
+      await createSite();
+      await site.build({ tailwind });
+
+      await site.build({ tailwind: { input: 'src/styles.css', output: 'dist/main.css' } });
+
+      const files = await assetFiles();
+      expect(files).toHaveLength(1);
+      expect(files[0]).toMatch(/^main-[0-9A-F]{8}\.css$/);
     });
 
     it('writes the pages it renders once and relinks only cached ones when the CSS changes', async () => {
@@ -272,6 +387,27 @@ describe('stylesheet builds with Tailwind CSS', () => {
       );
     });
 
+    it('warns about a development link that is unquoted or under the site URL', async () => {
+      await createSite();
+      await site.write(
+        'site/layout.eta',
+        LAYOUT.replace('</head>', '<link rel=stylesheet href=/styles.css></head>'),
+      );
+      await site.write(
+        'site/plain.eta',
+        LAYOUT.replace(
+          '</head>',
+          '<link rel="stylesheet" href="https://example.com/styles.css?v=2"></head>',
+        ),
+      );
+      await site.write('site/about.md', page({ title: 'About', layout: 'plain' }, '# About'));
+
+      const { warnings } = await site.build({ tailwind });
+
+      expect(warnings).toHaveLength(1);
+      expect(warnings[0]).toMatch(/^Pages \/(about)? and 1 more link \/styles\.css/);
+    });
+
     it('with css.hash false writes and links the output under its own name', async () => {
       await createSite({ css: { hash: false, minify: false } });
       await site.write('dist/_assets/styles-0A1B2C3D.css', '/* an earlier hashed build */');
@@ -282,6 +418,18 @@ describe('stylesheet builds with Tailwind CSS', () => {
       expect(stylesheetLinks(await site.read('dist/index.html'))).toEqual(['/styles.css']);
       expect(await assetFiles()).toEqual([]);
       expect((await tailwindRuns())[0]).not.toContain('--minify');
+    });
+
+    it('with css.hash false keeps the Tailwind output over a static file at its path', async () => {
+      await createSite({ css: { hash: false, minify: false } });
+      await site.write('public/styles.css', '/* source the static copy would ship */');
+
+      const { warnings } = await site.build({ tailwind });
+
+      expect(await site.read('dist/styles.css')).toBe('body { color: black; }');
+      expect(warnings).toEqual([
+        'public/styles.css is not copied: Tailwind CSS writes dist/styles.css. Delete one of them.',
+      ]);
     });
 
     it('with css.autoInject false leaves the link to templates, which print the final path', async () => {

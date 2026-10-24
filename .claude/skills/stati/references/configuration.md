@@ -234,8 +234,11 @@ links `/styles.css` in its templates also works, but keeps a fixed name.
 - For manual placement set `css.autoInject: false` and print
   `stati.assets.stylesheetPaths` unchanged. A hashed build learns the name after
   rendering, writes the pages it rendered with it, and replaces the path in cached
-  pages, so a CSS change re-renders nothing; a path the template encodes or prefixes
-  is not updated. If Tailwind fails, the previous pages stay as they were.
+  pages, so a CSS change re-renders nothing; a path the template encodes or takes
+  apart is not updated. If Tailwind fails, the previous pages stay as they were.
+- Relative `url()` references in the CSS become root paths (`url(fonts/a.woff2)` from
+  `/styles.css` becomes `url(/fonts/a.woff2)`), so `_assets/` loads the same files.
+- A file in `public/` at the Tailwind output's path is not copied over it.
 - `css: { hash, minify, autoInject }`, all `true` by default; development never
   hashes or minifies. `hash: false` writes and links the output under its own name.
 - Only the Tailwind stylesheet is hashed. `public/` CSS and Sass output keep their

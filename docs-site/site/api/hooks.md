@@ -22,8 +22,9 @@ A build runs in this order:
    - cache check: an unchanged page is skipped here, with no hooks
    - beforeRender → before the page renders
    - Markdown → HTML, layout rendering, SEO/search/script injection, file write
-     (the dev server writes the files once every page has rendered)
-   - afterRender  → after the page renders
+     (the dev server writes the files once every page has rendered, and a production
+     build with --tailwind-input/--tailwind-output once Tailwind CSS has run)
+   - afterRender  → after the page renders, which can be before its file is written
 6. Removal of pages that no longer exist, cache manifest, static asset copy
 7. sitemap.xml, robots.txt, RSS feeds (production builds only)
 8. afterAll     → once, at the end
