@@ -702,7 +702,7 @@ describe('create-stati scaffolding', () => {
       const packageJson = JSON.parse(
         await readFile(join(result.targetDir, 'package.json'), 'utf-8'),
       );
-      expect(packageJson.devDependencies['@stati/images']).toBe('^1.0.0');
+      expect(packageJson.devDependencies['@stati/images']).toBe('^1.0.1');
     });
 
     it('should remove the blog card template and fonts without image tools', async () => {
@@ -875,7 +875,7 @@ describe('create-stati scaffolding', () => {
       const packageJson = JSON.parse(
         await readFile(join(result.targetDir, 'package.json'), 'utf-8'),
       );
-      expect(packageJson.devDependencies['@stati/images']).toBe('^1.0.0');
+      expect(packageJson.devDependencies['@stati/images']).toBe('^1.0.1');
     });
 
     it('should set a placeholder baseUrl and leave images out without image tools', async () => {
