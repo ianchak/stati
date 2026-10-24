@@ -424,6 +424,23 @@ describe('stylesheet builds with Tailwind CSS', () => {
       ]);
     });
 
+    it('with css.hash false leaves the previous pages in place when Tailwind fails', async () => {
+      await createSite({ css: { hash: false } });
+      await site.build({ tailwind });
+      await site.write('site/about.md', page({ title: 'About' }, '# About us'));
+      await site.write('src/styles.css', 'FAIL');
+
+      await expect(site.build({ tailwind })).rejects.toThrow('Tailwind CSS exited with code 1');
+
+      expect(await site.read('dist/about.html')).not.toContain('About us');
+      expect(await site.read('dist/styles.css')).toBe('/*min*/body { color: black; }');
+
+      await site.write('src/styles.css', 'body { color: teal; }');
+      await site.build({ tailwind });
+      expect(await site.read('dist/about.html')).toContain('About us');
+      expect(stylesheetLinks(await site.read('dist/about.html'))).toEqual(['/styles.css']);
+    });
+
     it('with css.hash false writes and links the output under its own name', async () => {
       await createSite({ css: { hash: false, minify: false } });
       await site.write('dist/_assets/styles-0A1B2C3D.css', '/* an earlier hashed build */');

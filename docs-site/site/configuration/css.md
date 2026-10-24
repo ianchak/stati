@@ -29,9 +29,9 @@ A production build writes the page with the hashed name:
 ```
 
 - Every `<link>` that applies, offers or preloads a stylesheet is rewritten: `rel="stylesheet"`, `rel="alternate stylesheet"` and `rel="preload" as="style"`. The `href` keeps its quotes, a query or fragment such as `?v=2`, and the site's own origin when it carries one, such as `https://example.com/styles.css`. A relative `href` resolves against the page's URL and becomes a path from the site root.
-- Links to other sites, links in page text and code samples, and references in scripts stay as they are.
+- Links to other sites, links in page text and code samples, and links in comments, scripts and `<template>` elements stay as they are.
 - `A1B2C3D4` is the start of the SHA-256 of the CSS. A stylesheet in a folder keeps its folder: `/css/site.css` becomes `/_assets/css/site-A1B2C3D4.css`.
-- Relative `url()` references and `@import` strings in the CSS, such as `url(fonts/inter.woff2)`, become paths from the site root, `url(/fonts/inter.woff2)`, so they load the same files from `_assets/` as from the stylesheet's own path.
+- Relative `url()` references and `@import` strings in the CSS, such as `url(fonts/inter.woff2)`, become paths from the site root, `url(/fonts/inter.woff2)`, so they load the same files from `_assets/` as from the stylesheet's own path. References with CSS escapes are rebased too; comments and other strings, such as a `content` value, are left alone.
 - When the CSS changes, Stati writes the new name into the pages the [ISG cache](/core-concepts/isg) kept: a CSS change doesn't render any page again. When a stylesheet is gone from `public/`, those pages link its own path again.
 - Hashed files earlier builds left in `dist/_assets/` under other names are deleted.
 
@@ -83,7 +83,7 @@ Pass the same two flags to both commands:
 
 `stati build` stops with an error when it gets only one of the two. Tailwind CSS 4 needs `tailwindcss` and `@tailwindcss/cli` installed in the project, Tailwind CSS 3 needs `tailwindcss`. See [Tailwind CSS integration](/core-concepts/static-assets#tailwind-css-integration) for the stylesheet itself, including the `@source` rule for classes your templates build at render time.
 
-A template can link `/styles.css` or leave the link out: Stati adds `<link rel="stylesheet">` before `</head>` on every page that doesn't have one to the path. A preload of the path doesn't count.
+A template can link `/styles.css` or leave the link out: Stati adds `<link rel="stylesheet">` before `</head>` on every page that doesn't have one to the path. A preload of the path, and a link in a comment or script, don't count.
 
 ### What a production build does
 
@@ -92,7 +92,7 @@ A template can link `/styles.css` or leave the link out: Stati adds `<link rel="
 3. With that list complete, it runs Tailwind once, with `--minify`, and writes `dist/_assets/styles-A1B2C3D4.css`.
 4. It writes the pages it rendered, with their links to `/styles.css` pointed at that file.
 
-The file name is known only once Tailwind has run, after the pages, so the build holds the pages it renders in memory until then and writes each once, after the [`afterRender`](/api/hooks) hook has run for it. If Tailwind fails, the build stops with Tailwind's error and the previous build's pages and stylesheet stay as they were.
+Tailwind runs after the pages, so the build holds the pages it renders in memory until then, with `css.hash: false` too, and writes each once, with the final file name, after the [`afterRender`](/api/hooks) hook has run for it. If Tailwind fails, the build stops with Tailwind's error and the previous build's pages and stylesheet stay as they were.
 
 ### Linking it yourself
 

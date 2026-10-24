@@ -188,10 +188,10 @@ describe('rebaseRelativeUrls', () => {
     expect(rebaseRelativeUrls('a{b:url(../x.png)}', '/styles.css')).toBe('a{b:url(/x.png)}');
   });
 
-  it('leaves root-relative, absolute, data, fragment, empty and escaped references alone', () => {
+  it('leaves root-relative, absolute, data, fragment and empty references alone', () => {
     const css =
       'a{b:url(/fonts/a.woff2);c:url(https://cdn.example/x.png);d:url(//cdn.example/y.png);' +
-      'e:url("data:image/svg+xml;utf8,<svg/>");f:url(#mask);g:url();h:url("a\\"b.png")}';
+      'e:url("data:image/svg+xml;utf8,<svg/>");f:url(#mask);g:url();h:url("");i:url(\\2f x.png)}';
 
     expect(rebaseRelativeUrls(css, '/styles.css')).toBe(css);
   });
@@ -199,23 +199,44 @@ describe('rebaseRelativeUrls', () => {
   it('resolves the relative @import strings plain CSS uses', () => {
     const css =
       '@import "base.css";@import \'../theme/dark.css\' screen;@import url(print.css) print;' +
-      '@import "/root.css";@import "https://cdn.example/x.css";@import "a\\"b.css";';
+      '@import "/root.css";@import "https://cdn.example/x.css";';
 
     expect(rebaseRelativeUrls(css, '/css/site.css')).toBe(
       '@import "/css/base.css";@import \'/theme/dark.css\' screen;@import url(/css/print.css) print;' +
-        '@import "/root.css";@import "https://cdn.example/x.css";@import "a\\"b.css";',
+        '@import "/root.css";@import "https://cdn.example/x.css";',
+    );
+  });
+
+  it('decodes an escaped reference, rebases it and escapes it again', () => {
+    const css =
+      'a{b:url(img\\(1\\).png)}c{d:url("a\\"b.png")}e{f:url(\'it\\\'s.png\')}' +
+      'g{h:url(\\66 onts/a.woff2)}@import "th\\"eme.css";';
+
+    expect(rebaseRelativeUrls(css, '/css/site.css')).toBe(
+      "a{b:url(/css/img\\(1\\).png)}c{d:url(\"/css/a%22b.png\")}e{f:url('/css/it\\'s.png')}" +
+        'g{h:url(/css/fonts/a.woff2)}@import "/css/th%22eme.css";',
     );
   });
 
   it('leaves the url() inside a data URI with escaped quotes alone', () => {
     const css =
       'a{b:url("data:image/svg+xml,<svg fill=\\"url(%23g)\\"/>")}' +
-      "c{d:url('data:image/svg+xml,<svg fill=\\'url(%23g)\\'/>')}" +
-      'e{f:url(img\\(1\\).png)}';
+      "c{d:url('data:image/svg+xml,<svg fill=\\'url(%23g)\\'/>')}";
 
     expect(rebaseRelativeUrls(css, '/styles.css')).toBe(css);
     expect(rebaseRelativeUrls(`${css}g{h:url(x.png)}`, '/css/site.css')).toBe(
       `${css}g{h:url(/css/x.png)}`,
+    );
+  });
+
+  it('leaves url() text in strings and comments alone', () => {
+    const css =
+      '.label::after{content:"url(images/bg.svg)"}.note::before{content:\'@import "x.css"\'}' +
+      '/* background: url(old.png); */.hero{background:url(images/bg.svg)}';
+
+    expect(rebaseRelativeUrls(css, '/css/site.css')).toBe(
+      '.label::after{content:"url(images/bg.svg)"}.note::before{content:\'@import "x.css"\'}' +
+        '/* background: url(old.png); */.hero{background:url(/css/images/bg.svg)}',
     );
   });
 });
@@ -274,6 +295,22 @@ describe('linksStylesheet', () => {
     expect(
       linksStylesheet('<code>&lt;link href=&quot;/styles.css&quot;&gt;</code>', '/styles.css'),
     ).toBe(false);
+  });
+
+  it('ignores links in comments and in elements read as text or kept inert', () => {
+    const link = '<link rel="stylesheet" href="/styles.css">';
+    for (const html of [
+      `<!-- ${link} -->`,
+      `<script>document.head.insertAdjacentHTML('beforeend', '${link}')</script>`,
+      `<template>${link}</template>`,
+      `<style>/* ${link} */</style>`,
+      `<textarea>${link}</textarea>`,
+      `<title>${link}</title>`,
+    ]) {
+      expect(linksStylesheet(html, '/styles.css')).toBe(false);
+      expect(linksStylesheet(`${html}${link}`, '/styles.css')).toBe(true);
+    }
+    expect(linksStylesheet(`<noscript>${link}</noscript>`, '/styles.css')).toBe(true);
   });
 
   it('resolves a relative link against the page when it has its URL', () => {
@@ -384,6 +421,16 @@ describe('rewriteStylesheetLinks', () => {
 
     expect(rewriteStylesheetLinks(html, targets, '/', 'https://example.com')).toBe(html);
     expect(rewriteStylesheetLinks(html, new Map(), '/')).toBe(html);
+  });
+
+  it('leaves links in comments and scripts alone, and rewrites them in noscript', () => {
+    const link = '<link rel="stylesheet" href="/styles.css">';
+    const inert = `<!-- ${link} --><script>const tag = '${link}';</script><template>${link}</template>`;
+
+    expect(rewriteStylesheetLinks(`${inert}<noscript>${link}</noscript>`, targets, '/')).toBe(
+      `${inert}<noscript><link rel="stylesheet" href="/_assets/styles-0A1B2C3D.css"></noscript>`,
+    );
+    expect(getLinkedStylesheetPaths(inert, '/')).toEqual([]);
   });
 });
 

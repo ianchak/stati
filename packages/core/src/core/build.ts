@@ -183,11 +183,11 @@ export interface BuildOptions {
 interface RenderStylesheet {
   plan: StylesheetPlan;
   path: string;
-  /** Where a hashed build keeps the rendered pages it can't hold in memory until then */
+  /** Where a production build keeps the rendered pages it can't hold in memory until then */
   stagingDir: string;
 }
 
-/** The folder in the cache directory for pages a hashed build holds past its memory limit */
+/** The folder in the cache directory for pages a production build holds past its memory limit */
 const STAGED_PAGES_DIR = 'pending-pages';
 
 /**
@@ -461,7 +461,7 @@ interface ProcessPagesResult {
   cacheMisses: number;
   /** The search index file the pages link to (only when search is enabled) */
   searchIndexFilename: string | undefined;
-  /** Rendered pages a hashed production build writes once Tailwind has named the stylesheet */
+  /** Rendered pages a production build writes once Tailwind has built the stylesheet */
   deferredPages: DeferredPage[];
   /** The output files of the pages this build rendered, written or held */
   renderedFiles: string[];
@@ -717,10 +717,10 @@ async function processPagesWithCache(
     return rewriteStylesheetLinks(html, targets, pageUrl, config.site.baseUrl);
   };
   const renderedFiles: string[] = [];
-  // A hashed production build learns the stylesheet's name after rendering: it keeps the pages
-  // it renders until then, so each is written once with the final name, and a Tailwind error
-  // leaves the previous build's pages in place
-  const deferWrites = !isDevMode && stylesheet?.plan.hash === true;
+  // A production build runs Tailwind after rendering: it keeps the pages it renders until then,
+  // so a Tailwind error leaves the previous build's pages in place, hashed or not, and a hashed
+  // build writes each page once with the stylesheet's final name
+  const deferWrites = !isDevMode && stylesheet !== null;
   const deferredPages: DeferredPage[] = [];
   let deferredLength = 0;
 
@@ -1276,7 +1276,7 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     path: getRenderStylesheetPath(stylesheetPlan),
     stagingDir: join(cacheDir, STAGED_PAGES_DIR),
   };
-  if (renderStylesheet?.plan.hash) {
+  if (renderStylesheet && !isDevelopment()) {
     // Pages a build that stopped before writing them left behind
     await remove(renderStylesheet.stagingDir);
   }

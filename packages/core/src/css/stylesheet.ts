@@ -76,21 +76,35 @@ const SAFE_PATH = /^\/[A-Za-z0-9_\-./]+$/;
 const RELINK_BATCH_SIZE = 32;
 
 /**
- * A CSS `url()` with a double-quoted, single-quoted or unquoted reference. Escapes are matched
- * too, so a quoted data URI with escaped quotes is one match and the scan doesn't stop at a
- * `url()` inside it.
+ * The CSS tokens that can hold a reference, scanned left to right: a comment and a string,
+ * which stay as they are, an `@import` of a string, and a `url()` with a double-quoted,
+ * single-quoted or unquoted reference. Escapes are matched too, so a quoted data URI with
+ * escaped quotes is one token and the scan doesn't stop at a `url()` inside it.
  */
-const CSS_URL =
-  /url\(\s*(?:"((?:[^"\\]|\\[\s\S])*)"|'((?:[^'\\]|\\[\s\S])*)'|((?:[^\s"'()\\]|\\[\s\S])+))\s*\)/gi;
+const CSS_TOKEN = new RegExp(
+  [
+    String.raw`\/\*[\s\S]*?\*\/`,
+    String.raw`(@import\s+)(?:"((?:[^"\\]|\\[\s\S])*)"|'((?:[^'\\]|\\[\s\S])*)')`,
+    // An unquoted reference's hex escape can end with a space, which is part of the escape
+    String.raw`url\(\s*(?:"((?:[^"\\]|\\[\s\S])*)"|'((?:[^'\\]|\\[\s\S])*)'|((?:[^\s"'()\\]|\\(?:[0-9a-f]{1,6}(?:\r\n|[ \t\r\n\f])?|[\s\S]))+))\s*\)`,
+    String.raw`"(?:[^"\\]|\\[\s\S])*"|'(?:[^'\\]|\\[\s\S])*'`,
+  ].join('|'),
+  'gi',
+);
 
-/** A CSS `@import` of a double-quoted or single-quoted string, which `url()` doesn't cover */
-const CSS_IMPORT_STRING = /@import\s+(?:"((?:[^"\\]|\\[\s\S])*)"|'((?:[^'\\]|\\[\s\S])*)')/gi;
+/** A CSS escape: up to six hexadecimal digits and one optional whitespace, or any character */
+const CSS_ESCAPE = /\\(?:([0-9a-f]{1,6})(?:\r\n|[ \t\r\n\f])?|([\s\S]))/gi;
 
 /** References that don't depend on where the stylesheet is: a scheme, the site root, a fragment */
 const LOCATION_INDEPENDENT_URL = /^(?:[a-z][a-z0-9+.-]*:|\/|#)/i;
 
-/** A `<link>` tag */
-const LINK_TAG = /<link\b[^>]*>/gi;
+/**
+ * A `<link>` tag, or a stretch of HTML whose tags aren't markup: a comment, or the contents of
+ * an element the browser reads as text or keeps inert (script, style, template, textarea,
+ * title). The second group names that element.
+ */
+const HTML_LINK_SCAN =
+  /<!--[\s\S]*?-->|<(script|style|template|textarea|title)\b[^>]*>[\s\S]*?<\/\1\s*>|<link\b[^>]*>/gi;
 
 /** The `href` of a `<link>` tag, quoted or not */
 const LINK_HREF = /\shref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/i;
@@ -265,11 +279,30 @@ export function getRenderStylesheetPath(plan: StylesheetPlan): string {
   return `/${CSS_OUT_DIR}/${plan.name}-pending-${randomBytes(8).toString('hex')}.css`;
 }
 
+/** The text a CSS string or unquoted `url()` holds, with its escapes decoded */
+function unescapeCss(text: string): string {
+  return text.replace(CSS_ESCAPE, (_escape, hex: string | undefined, char: string | undefined) => {
+    if (hex === undefined) {
+      // An escaped line break continues a string
+      return /[\r\n\f]/.test(char ?? '') ? '' : (char ?? '');
+    }
+    const code = parseInt(hex, 16);
+    const valid = code > 0 && code <= 0x10ffff && (code < 0xd800 || code > 0xdfff);
+    return valid ? String.fromCodePoint(code) : '�';
+  });
+}
+
+/** Escapes a URL for a CSS string in these quotes, or for an unquoted `url()` without them */
+function escapeCss(url: string, quote: string): string {
+  return url.replace(quote === '' ? /[\\()'"]/g : quote === '"' ? /[\\"]/g : /[\\']/g, '\\$&');
+}
+
 /**
  * Rewrites the relative references in the stylesheet's `url()`s and `@import` strings to paths
  * from the site root, resolved against the path the stylesheet has under its own name. A
  * hashed copy served from `_assets/` then loads the same fonts, images and imported
- * stylesheets. References with escapes stay as they are.
+ * stylesheets. A reference with escapes is decoded, rebased and escaped again; comments and
+ * other strings, such as a `content` value, stay as they are.
  *
  * @param css - The stylesheet
  * @param path - Its path under its own name, such as '/styles.css'
@@ -277,29 +310,42 @@ export function getRenderStylesheetPath(plan: StylesheetPlan): string {
  */
 export function rebaseRelativeUrls(css: string, path: string): string {
   const base = new URL(path, URL_BASE);
-  // The reference from the site root, or undefined to leave it as it is
-  const rebase = (reference: string): string | undefined => {
-    if (reference === '' || reference.includes('\\') || LOCATION_INDEPENDENT_URL.test(reference)) {
+  // The reference from the site root, escaped for its quotes, or undefined to leave it as it is
+  const rebase = (reference: string, quote: string): string | undefined => {
+    const url = unescapeCss(reference);
+    if (url === '' || LOCATION_INDEPENDENT_URL.test(url)) {
       return undefined;
     }
-    const { pathname, search, hash } = new URL(reference, base);
-    return `${pathname}${search}${hash}`;
+    const { pathname, search, hash } = new URL(url, base);
+    return escapeCss(`${pathname}${search}${hash}`, quote);
   };
 
-  return css
-    .replace(
-      CSS_URL,
-      (match, double: string | undefined, single: string | undefined, bare: string | undefined) => {
-        const rebased = rebase(double ?? single ?? bare ?? '');
-        const quote = double !== undefined ? '"' : single !== undefined ? "'" : '';
-        return rebased === undefined ? match : `url(${quote}${rebased}${quote})`;
-      },
-    )
-    .replace(CSS_IMPORT_STRING, (match, double: string | undefined, single: string | undefined) => {
-      const rebased = rebase(double ?? single ?? '');
-      const quote = double !== undefined ? '"' : "'";
-      return rebased === undefined ? match : `@import ${quote}${rebased}${quote}`;
-    });
+  return css.replace(
+    CSS_TOKEN,
+    (
+      token,
+      importPrefix: string | undefined,
+      importDouble: string | undefined,
+      importSingle: string | undefined,
+      urlDouble: string | undefined,
+      urlSingle: string | undefined,
+      urlBare: string | undefined,
+    ) => {
+      if (importPrefix !== undefined) {
+        const quote = importDouble !== undefined ? '"' : "'";
+        const rebased = rebase(importDouble ?? importSingle ?? '', quote);
+        return rebased === undefined ? token : `${importPrefix}${quote}${rebased}${quote}`;
+      }
+      const reference = urlDouble ?? urlSingle ?? urlBare;
+      if (reference === undefined) {
+        // A comment or a string
+        return token;
+      }
+      const quote = urlDouble !== undefined ? '"' : urlSingle !== undefined ? "'" : '';
+      const rebased = rebase(reference, quote);
+      return rebased === undefined ? token : `url(${quote}${rebased}${quote})`;
+    },
+  );
 }
 
 /**
@@ -528,6 +574,23 @@ function isStylesheetLink(tag: string): boolean {
   return tokens.includes('stylesheet') && !tokens.includes('alternate');
 }
 
+/** Whether a match of HTML_LINK_SCAN is a `<link>` tag, not a comment or element contents */
+function isLinkTag(match: string, textElement: string | undefined): boolean {
+  return textElement === undefined && !match.startsWith('<!--');
+}
+
+/**
+ * The `<link>` tags of a page that are markup: not in a comment, or in a script, style,
+ * template, textarea or title.
+ */
+function* getLinkTags(html: string): Generator<string> {
+  for (const [match, textElement] of html.matchAll(HTML_LINK_SCAN)) {
+    if (isLinkTag(match, textElement)) {
+      yield match;
+    }
+  }
+}
+
 /**
  * Whether a `<link>` tag loads a stylesheet: applies it, offers it as an alternate, or
  * preloads it (`rel="preload" as="style"`).
@@ -556,7 +619,7 @@ export function linksStylesheet(
   pageUrl?: string,
 ): boolean {
   const origin = getSiteOrigin(siteUrl);
-  for (const [tag] of html.matchAll(LINK_TAG)) {
+  for (const tag of getLinkTags(html)) {
     const href = isStylesheetLink(tag) ? getAttribute(tag, LINK_HREF) : undefined;
     if (href !== undefined && parseSiteHref(href, origin, pageUrl)?.path === path) {
       return true;
@@ -580,7 +643,7 @@ export function getLinkedStylesheetPaths(
 ): string[] {
   const origin = getSiteOrigin(siteUrl);
   const paths = new Set<string>();
-  for (const [tag] of html.matchAll(LINK_TAG)) {
+  for (const tag of getLinkTags(html)) {
     const href = loadsStylesheet(tag) ? getAttribute(tag, LINK_HREF) : undefined;
     const path = href !== undefined ? parseSiteHref(href, origin, pageUrl)?.path : undefined;
     if (path !== undefined) {
@@ -611,8 +674,8 @@ export function rewriteStylesheetLinks(
     return html;
   }
   const origin = getSiteOrigin(siteUrl);
-  return html.replace(LINK_TAG, (tag) => {
-    if (!loadsStylesheet(tag)) {
+  return html.replace(HTML_LINK_SCAN, (tag, textElement: string | undefined) => {
+    if (!isLinkTag(tag, textElement) || !loadsStylesheet(tag)) {
       return tag;
     }
     return tag.replace(
