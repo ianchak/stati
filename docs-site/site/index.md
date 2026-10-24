@@ -334,10 +334,10 @@ dogfood:
     },
     images: {
       responsive: { sizes: '(min-width: 768px) 725px, 100vw' },
-      og: { exclude: ['/404'] },
+      og: true,
     },
     isg: { enabled: true, ttlSeconds: 86400, maxAgeCapDays: 30 },
-    search: { enabled: true, exclude: ['/404'] },
+    search: { enabled: true },
     sitemap: {
       enabled: true,
       defaultPriority: 0.7,

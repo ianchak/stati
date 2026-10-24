@@ -88,9 +88,7 @@ export default defineConfig({
       sizes: '(min-width: 768px) 725px, 100vw',
     },
     // A link preview card for every page, drawn from the built-in template
-    og: {
-      exclude: ['/404'],
-    },
+    og: true,
   },
   isg: {
     enabled: true,
@@ -99,13 +97,11 @@ export default defineConfig({
   },
   search: {
     enabled: true,
-    exclude: ['/404'],
   },
   sitemap: {
     enabled: true,
     defaultPriority: 0.7,
     defaultChangeFreq: 'weekly',
-    excludePatterns: ['/404'],
     priorityRules: [
       { pattern: '/', priority: 1.0 },
       { pattern: '/getting-started/**', priority: 0.9 },
@@ -133,7 +129,6 @@ export default defineConfig({
         language: 'en-US',
         category: 'Documentation',
         maxItems: 30,
-        excludePatterns: ['**/404.md'],
       },
     ],
   },
