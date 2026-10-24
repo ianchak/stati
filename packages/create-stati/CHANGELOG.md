@@ -1,5 +1,11 @@
 # create-stati
 
+## 2.3.1
+
+### Patch Changes
+
+- 0efb2c8: New sites start on `@stati/cli` ^2.1.0 and `@stati/core` ^2.3.0, and the image tools option adds `@stati/images` ^1.0.1.
+
 ## 2.3.0
 
 ### Minor Changes
