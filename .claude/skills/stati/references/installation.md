@@ -37,8 +37,7 @@ npx skills add ianchak/stati --skill stati -a claude-code --copy -y
 # Without prompts, into .agents/skills (Copilot, Codex, Cursor and others)
 npx skills add ianchak/stati --skill stati -a universal --copy -y
 
-# Check for an update, then update
-npx skills check
+# Update the skill
 npx skills update stati -p
 ```
 
@@ -48,7 +47,7 @@ The skill is read from the `main` branch of `ianchak/stati`. `create-stati
 - Commit `skills-lock.json` and do not delete it. Without it,
   `npx skills update` finds nothing to update.
 - Do not edit the installed copy. An update replaces the whole folder: edits
-  and added files are removed without warning, and `npx skills check` does not
+  and added files are removed without warning, and `npx skills update` does not
   notice local edits. Put project rules in `CLAUDE.md` or `AGENTS.md`.
 - A copy made by hand, or by an older create-stati that copied the skill from
   its package, has no `skills-lock.json` entry, so `npx skills update` skips it

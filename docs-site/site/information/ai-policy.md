@@ -57,8 +57,7 @@ npx skills add ianchak/stati --skill stati -a claude-code --copy -y
 # Without prompts, into .agents/skills (Copilot, Codex, Cursor and others)
 npx skills add ianchak/stati --skill stati -a universal --copy -y
 
-# Check for an update, then update
-npx skills check
+# Update the skill
 npx skills update stati -p
 ```
 

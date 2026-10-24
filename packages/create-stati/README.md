@@ -153,7 +153,7 @@ In interactive mode you're asked where to install it. In non-interactive mode it
 create-stati installs the skill with the open [`skills` CLI](https://github.com/vercel-labs/skills), from the `main` branch of this repository:
 
 ```bash
-npx --yes skills@1 add ianchak/stati --skill stati --agent claude-code --copy --yes
+npx --yes skills@1 add ianchak/stati --skill stati --agent claude-code --copy --yes --json
 ```
 
 It copies plain files (no symlinks) and writes `skills-lock.json` in the project root, which records where the skill came from. This needs `git` on your `PATH` and network access, even with `--no-git`. If the install fails, the site is still created and create-stati prints the command to add the skill later.
@@ -169,13 +169,12 @@ npx skills add ianchak/stati --skill stati -a claude-code --copy -y
 # Without prompts, into .agents/skills (Copilot, Codex, Cursor and others)
 npx skills add ianchak/stati --skill stati -a universal --copy -y
 
-# Check for an update, then update
-npx skills check
+# Update the skill
 npx skills update stati -p
 ```
 
 - Commit `skills-lock.json`. Without it, `npx skills update` finds nothing to update.
-- An update replaces the whole folder: edits to the skill's files and files added to it are removed without warning, and `npx skills check` doesn't notice local edits. Put project rules in `CLAUDE.md` or `AGENTS.md`, not in the skill.
+- An update replaces the whole folder: edits to the skill's files and files added to it are removed without warning, and `npx skills update` doesn't notice local edits. Put project rules in `CLAUDE.md` or `AGENTS.md`, not in the skill.
 - Copies made by hand or by older create-stati releases, which copied the skill from the package, have no `skills-lock.json` entry, so `npx skills update` skips them (with `-y` it even falls back to personal skills and reports none). Run `npx skills add` once: it replaces the copy and tracks it from then on.
 - The CLI doesn't manage `.github/skills/stati`. Add the skill to `.claude/skills` or `.agents/skills`, then delete the old folder so Copilot doesn't see two skills named `stati`.
 - For a personal install, add `-g`. With `-a claude-code` it goes to `~/.claude/skills/stati`.

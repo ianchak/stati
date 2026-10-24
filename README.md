@@ -398,8 +398,7 @@ site, or update it, use the open [`skills` CLI](https://github.com/vercel-labs/s
 # Add the skill (asks which agents; -a claude-code --copy -y skips the prompts)
 npx skills add ianchak/stati --skill stati
 
-# Check for an update, then update
-npx skills check
+# Update the skill
 npx skills update stati -p
 ```
 
