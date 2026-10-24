@@ -1,4 +1,4 @@
-import { spawnProcess } from './utils/index.js';
+import { ProcessExitError, spawnProcess } from './utils/index.js';
 
 /**
  * Values accepted by `--agent-skill`.
@@ -22,6 +22,9 @@ export const SKILL_NAME = 'stati';
 /** How long the `skills` CLI may take to clone the repository and copy the skill */
 export const SKILL_INSTALL_TIMEOUT = 2 * 60 * 1000;
 
+/** How long the `skills` CLI may take to exit after a timeout stops it, before it is force-killed */
+export const SKILL_INSTALL_KILL_GRACE_PERIOD = 5000;
+
 /** The `skills` CLI agent each target installs for */
 export const SKILLS_AGENTS: Record<AgentSkillTarget, string> = {
   claude: 'claude-code',
@@ -37,7 +40,7 @@ export const AGENT_SKILL_DIRS: Record<AgentSkillTarget, string> = {
 };
 
 /** Command that updates an installed skill */
-export const SKILL_UPDATE_COMMAND = `npx skills update ${SKILL_NAME} -p`;
+export const SKILL_UPDATE_COMMAND = `npx ${SKILLS_CLI_PACKAGE} update ${SKILL_NAME} -p`;
 
 /**
  * Validate that a string is a valid agent skill target
@@ -47,10 +50,32 @@ export function isValidAgentSkillTarget(value: string): value is AgentSkillTarge
 }
 
 /**
- * The command to add the skill later, shown when create-stati couldn't install it
+ * The command to add the skill later, shown when create-stati couldn't install it. It
+ * installs the same way create-stati does.
  */
 export function skillAddCommand(target: AgentSkillTarget): string {
-  return `npx skills add ${SKILL_SOURCE} --skill ${SKILL_NAME} -a ${SKILLS_AGENTS[target]}`;
+  return `npx ${SKILLS_CLI_PACKAGE} add ${SKILL_SOURCE} --skill ${SKILL_NAME} -a ${SKILLS_AGENTS[target]} --copy -y`;
+}
+
+/**
+ * The first failure the `skills` CLI reported in its `--json` output, such as a clone
+ * that failed or a skill missing from the source
+ */
+export function skillsCliError(stdout: string): string | undefined {
+  let results: unknown;
+  try {
+    results = JSON.parse(stdout);
+  } catch {
+    return undefined;
+  }
+  if (!Array.isArray(results)) return undefined;
+
+  for (const result of results) {
+    if (result?.status !== 'failed' && result?.status !== 'skipped') continue;
+    const message = result.error ?? result.reason;
+    if (typeof message === 'string') return message;
+  }
+  return undefined;
 }
 
 /**
@@ -61,27 +86,38 @@ export function skillAddCommand(target: AgentSkillTarget): string {
  * @param targetDir - The project root directory
  * @param target - Where to install the skill
  * @returns The project-relative directory the skill was installed to
- * @throws Error if the CLI fails to start, exits with a non-zero code or times out
+ * @throws Error if the CLI fails to start, exits with a non-zero code or times out. When
+ *   the CLI reports why it failed, that is the message.
  */
 export async function addAgentSkill(targetDir: string, target: AgentSkillTarget): Promise<string> {
-  await spawnProcess(
-    'npx',
-    [
-      '--yes',
-      SKILLS_CLI_PACKAGE,
-      'add',
-      SKILL_SOURCE,
-      '--skill',
-      SKILL_NAME,
-      '--agent',
-      SKILLS_AGENTS[target],
-      '--copy',
-      '--yes',
-      // Exits non-zero when copying to the agent fails; plain output exits 0 after logging it
-      '--json',
-    ],
-    { cwd: targetDir, stdio: 'ignore', timeout: SKILL_INSTALL_TIMEOUT },
-  );
+  try {
+    await spawnProcess(
+      'npx',
+      [
+        '--yes',
+        SKILLS_CLI_PACKAGE,
+        'add',
+        SKILL_SOURCE,
+        '--skill',
+        SKILL_NAME,
+        '--agent',
+        SKILLS_AGENTS[target],
+        '--copy',
+        '--yes',
+        // Exits non-zero when copying to the agent fails; plain output exits 0 after logging it
+        '--json',
+      ],
+      {
+        cwd: targetDir,
+        stdio: 'pipe',
+        timeout: SKILL_INSTALL_TIMEOUT,
+        killGracePeriod: SKILL_INSTALL_KILL_GRACE_PERIOD,
+      },
+    );
+  } catch (error) {
+    const reason = error instanceof ProcessExitError ? skillsCliError(error.stdout) : undefined;
+    throw reason ? new Error(reason, { cause: error }) : error;
+  }
 
   return AGENT_SKILL_DIRS[target];
 }

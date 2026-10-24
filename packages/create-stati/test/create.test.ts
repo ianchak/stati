@@ -10,7 +10,7 @@ import {
 } from '../src/create.js';
 import type { CreateOptions } from '../src/create.js';
 import { ExampleManager } from '../src/examples.js';
-import { spawnProcess } from '../src/utils/process.utils.js';
+import { ProcessExitError, spawnProcess } from '../src/utils/process.utils.js';
 
 // Wrap the real implementation so the agent skill tests can stub the skills CLI
 vi.mock('../src/utils/process.utils.js', async (importOriginal) => {
@@ -83,6 +83,11 @@ describe('create-stati scaffolding', () => {
         vi.mocked(spawnProcess).mockClear();
       });
 
+      afterEach(() => {
+        // Restores the console spies; spawnProcess keeps wrapping the real implementation
+        vi.restoreAllMocks();
+      });
+
       it.each([
         ['claude', 'claude-code', '.claude/skills/stati'],
         ['agents', 'universal', '.agents/skills/stati'],
@@ -90,10 +95,15 @@ describe('create-stati scaffolding', () => {
       ] as const)(
         'should run the skills CLI for target %s with the %s agent',
         async (target, agent, dir) => {
-          vi.mocked(spawnProcess).mockResolvedValueOnce();
+          vi.mocked(spawnProcess).mockResolvedValueOnce('');
+          const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
           const options = { ...skillOptions(`test-skill-${target}`), agentSkill: target };
 
           const result = await createSite(options);
+
+          expect(logSpy).toHaveBeenCalledWith(
+            expect.stringContaining('Installing the Stati agent skill...'),
+          );
 
           expect(npxCalls()).toEqual([
             [
@@ -111,7 +121,7 @@ describe('create-stati scaffolding', () => {
                 '--yes',
                 '--json',
               ],
-              { cwd: options.dir, stdio: 'ignore', timeout: 120_000 },
+              { cwd: options.dir, stdio: 'pipe', timeout: 120_000, killGracePeriod: 5000 },
             ],
           ]);
           expect(result.agentSkillDir).toBe(dir);
@@ -138,8 +148,46 @@ describe('create-stati scaffolding', () => {
           expect.stringContaining(`Couldn't install the Stati agent skill (${error.message})`),
         );
         expect(logSpy).toHaveBeenCalledWith(
-          expect.stringContaining('npx skills add ianchak/stati --skill stati -a claude-code'),
+          expect.stringContaining(
+            'npx skills@1 add ianchak/stati --skill stati -a claude-code --copy -y',
+          ),
         );
+      });
+
+      it('should show the error the skills CLI reported', async () => {
+        const stdout = JSON.stringify([{ status: 'failed', error: 'Failed to clone repository' }]);
+        vi.mocked(spawnProcess).mockRejectedValueOnce(new ProcessExitError('npx', 1, stdout));
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        vi.spyOn(console, 'log').mockImplementation(() => {});
+
+        await createSite({ ...skillOptions('test-skill-cli-error'), agentSkill: 'claude' });
+
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining(
+            "Couldn't install the Stati agent skill (Failed to clone repository)",
+          ),
+        );
+      });
+
+      it('should remove what a failed install wrote', async () => {
+        vi.mocked(spawnProcess).mockImplementationOnce(async (_command, _args, options) => {
+          const skillDir = join(options!.cwd!, '.claude/skills/stati');
+          await mkdir(skillDir, { recursive: true });
+          await writeFile(join(skillDir, 'SKILL.md'), '# Stati');
+          await writeFile(join(options!.cwd!, 'skills-lock.json'), '{}');
+          throw new Error('Process timed out after 120000ms');
+        });
+        vi.spyOn(console, 'warn').mockImplementation(() => {});
+        vi.spyOn(console, 'log').mockImplementation(() => {});
+
+        const result = await createSite({
+          ...skillOptions('test-skill-partial'),
+          agentSkill: 'claude',
+        });
+
+        await expect(access(join(result.targetDir, '.claude'))).rejects.toThrow();
+        await expect(access(join(result.targetDir, 'skills-lock.json'))).rejects.toThrow();
+        await expect(access(join(result.targetDir, 'package.json'))).resolves.not.toThrow();
       });
 
       it('should not run the skills CLI without an agent skill target', async () => {

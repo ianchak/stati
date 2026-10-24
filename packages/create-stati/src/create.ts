@@ -1,5 +1,5 @@
-import { mkdir, rm, access, stat, writeFile, readFile } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { mkdir, rm, rmdir, access, stat, writeFile, readFile } from 'node:fs/promises';
+import { dirname, join, resolve } from 'node:path';
 import { ExampleManager, TEMPLATES } from './examples.js';
 import type { TemplateName } from './examples.js';
 import { PackageJsonModifier } from './package-json.js';
@@ -10,7 +10,7 @@ import type { StylingOption } from './css-processors.js';
 import { setupTypeScript } from './typescript-processor.js';
 import { setupImages, imagesConfigBlock } from './images-processor.js';
 import { isCommandAvailable, spawnProcess, log } from './utils/index.js';
-import { addAgentSkill, skillAddCommand } from './agent-skill.js';
+import { AGENT_SKILL_DIRS, addAgentSkill, skillAddCommand } from './agent-skill.js';
 import type { AgentSkillTarget } from './agent-skill.js';
 
 /**
@@ -434,14 +434,45 @@ export class ProjectScaffolder {
     targetDir: string,
     target: AgentSkillTarget,
   ): Promise<string | undefined> {
+    log.info('Installing the Stati agent skill...');
     try {
       return await addAgentSkill(targetDir, target);
     } catch (error) {
       // The agent skill is optional, so we just warn instead of failing
+      await this.removePartialAgentSkill(targetDir, target);
       const reason = error instanceof Error ? error.message : 'Unknown error';
       log.warning(`Couldn't install the Stati agent skill (${reason}). Add it later with:`);
       log.step(skillAddCommand(target));
       return undefined;
+    }
+  }
+
+  /**
+   * Remove what a failed skill install wrote, so agents don't load a half-copied skill.
+   * The project is new, so the skill folder and `skills-lock.json` are the install's own.
+   */
+  private async removePartialAgentSkill(
+    targetDir: string,
+    target: AgentSkillTarget,
+  ): Promise<void> {
+    const skillDir = join(targetDir, AGENT_SKILL_DIRS[target]);
+    try {
+      await rm(skillDir, { recursive: true, force: true });
+      await rm(join(targetDir, 'skills-lock.json'), { force: true });
+    } catch (error) {
+      log.warning(
+        `Couldn't remove the partly installed skill in ${AGENT_SKILL_DIRS[target]}: ${error}`,
+      );
+      return;
+    }
+
+    // Remove `.claude/skills` and `.claude` (or `.agents/...`) when the install created them
+    for (const dir of [dirname(skillDir), dirname(dirname(skillDir))]) {
+      try {
+        await rmdir(dir);
+      } catch {
+        // Not empty, or not there
+      }
     }
   }
 

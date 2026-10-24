@@ -5,10 +5,28 @@ export interface SpawnOptions {
   cwd?: string;
   stdio?: 'ignore' | 'inherit' | 'pipe';
   timeout?: number;
+  /**
+   * How long a timed-out process may take to exit after it is stopped. The call rejects
+   * when it exits, or when the grace period runs out, after force-killing it. Without
+   * it, the call rejects as soon as the process is stopped.
+   */
+  killGracePeriod?: number;
 }
 
-/** How long a timed-out process may take to exit after it is killed */
-export const KILL_GRACE_PERIOD = 5000;
+/**
+ * A process that exited with a non-zero code. `stdout` holds what it printed when it
+ * was spawned with `stdio: 'pipe'`.
+ */
+export class ProcessExitError extends Error {
+  constructor(
+    command: string,
+    readonly code: number | null,
+    readonly stdout: string,
+  ) {
+    super(`${command} exited with code ${code}`);
+    this.name = 'ProcessExitError';
+  }
+}
 
 /**
  * Stop a child process and the processes it started. On Windows the child is the
@@ -22,6 +40,9 @@ function killProcessTree(child: ChildProcess): void {
       stdio: 'ignore',
     });
     taskkill.on('error', () => child.kill());
+    taskkill.on('exit', (code) => {
+      if (code !== 0) child.kill();
+    });
     return;
   }
   child.kill();
@@ -34,22 +55,33 @@ function killProcessTree(child: ChildProcess): void {
  * @param command - The command to execute
  * @param args - Array of arguments to pass to the command
  * @param options - Spawn options
- * @returns Promise that resolves when process exits successfully
- * @throws Error if process fails or times out
+ * @returns Promise that resolves with what the process printed to stdout when `stdio` is
+ *   `'pipe'`, and with an empty string otherwise
+ * @throws ProcessExitError if the process exits with a non-zero code
+ * @throws Error if the process fails to start or times out
  */
 export async function spawnProcess(
   command: string,
   args: string[] = [],
   options: SpawnOptions = {},
-): Promise<void> {
-  const { cwd, stdio = 'ignore', timeout } = options;
+): Promise<string> {
+  const { cwd, stdio = 'ignore', timeout, killGracePeriod } = options;
 
-  return new Promise<void>((resolve, reject) => {
+  return new Promise<string>((resolve, reject) => {
     const child = spawn(command, args, {
       cwd,
       stdio,
       shell: process.platform === 'win32',
     });
+
+    let stdout = '';
+    if (stdio === 'pipe') {
+      // Nothing is written to the process, and stderr is drained so it can't fill up and block it
+      child.stdin?.end();
+      child.stdout?.setEncoding('utf8');
+      child.stdout?.on('data', (chunk: string) => (stdout += chunk));
+      child.stderr?.resume();
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let timeoutHandle: any;
@@ -66,9 +98,16 @@ export async function spawnProcess(
       timeoutHandle = global.setTimeout(() => {
         timedOut = true;
         killProcessTree(child);
+        if (!killGracePeriod) {
+          reject(timeoutError());
+          return;
+        }
         // Reject once the process has exited, so nothing it started is still writing
-        // files, but don't hang if it never reports its exit
-        graceHandle = global.setTimeout(() => reject(timeoutError()), KILL_GRACE_PERIOD);
+        // files. If it ignores the kill, force it, so it can't keep writing after we go on
+        graceHandle = global.setTimeout(() => {
+          child.kill('SIGKILL');
+          reject(timeoutError());
+        }, killGracePeriod);
       }, timeout);
     }
 
@@ -82,9 +121,9 @@ export async function spawnProcess(
       if (timedOut) {
         reject(timeoutError());
       } else if (code === 0) {
-        resolve();
+        resolve(stdout);
       } else {
-        reject(new Error(`${command} exited with code ${code}`));
+        reject(new ProcessExitError(command, code, stdout));
       }
     });
   });

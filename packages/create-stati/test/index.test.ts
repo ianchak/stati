@@ -664,7 +664,7 @@ describe('create-stati CLI', () => {
       await runCLI(options);
       expect(loggedSkillMessage()).toBe(true);
       expect(consoleLog).toHaveBeenCalledWith(
-        expect.stringContaining('Update it with: npx skills update stati -p'),
+        expect.stringContaining('Update it with: npx skills@1 update stati -p'),
       );
     });
 
