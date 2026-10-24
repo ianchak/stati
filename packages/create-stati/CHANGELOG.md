@@ -1,5 +1,11 @@
 # create-stati
 
+## 2.1.2
+
+### Patch Changes
+
+- 222d81e: require @stati/core 2.2 in the starter templates
+
 ## 2.1.1
 
 ### Patch Changes
