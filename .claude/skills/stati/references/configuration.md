@@ -231,6 +231,11 @@ keeps the own names.
   `_`, `.` and `/`, keeps its name. Links keep quotes, a query or fragment and
   the site's own origin; relative links resolve against the page. Links with an
   `integrity` digest, and links in comments, scripts and templates, stay as they are.
+- The Tailwind output is written only under its hashed name, never as
+  `dist/styles.css` (one the dev watcher left there is stale). So a hashed build
+  stops when a page links it with `integrity`, or when a `public/` stylesheet a
+  page links `@import`s or `url()`s it; a script or another site that loads
+  `/styles.css` gets nothing. `css.hash: false` writes it under its own name.
 - Relative `url()` references and `@import` strings in the CSS become root paths
   (`url(fonts/a.woff2)` from `/styles.css` becomes `url(/fonts/a.woff2)`), so
   `_assets/` loads the same files.
@@ -243,7 +248,7 @@ keeps the own names.
 
 `stati build --tailwind-input src/styles.css --tailwind-output dist/styles.css`
 runs Tailwind once after the last page renders, minified, and writes
-`dist/_assets/styles-[hash].css`; the dev server's `dist/styles.css` stays.
+`dist/_assets/styles-[hash].css`; a `dist/styles.css` the dev server wrote stays.
 `stati dev` with the same flags links `/styles.css`.
 
 - The output must be a `.css` file inside the output directory; the build fails

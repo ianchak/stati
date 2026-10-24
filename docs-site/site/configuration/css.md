@@ -29,7 +29,7 @@ A production build writes the page with the hashed name:
 ```
 
 - Every `<link>` that applies, offers or preloads a stylesheet is rewritten: `rel="stylesheet"`, `rel="alternate stylesheet"` and `rel="preload" as="style"`. The `href` keeps its quotes, a query or fragment such as `?v=2`, and the site's own origin when it carries one, such as `https://example.com/styles.css`. A relative `href` resolves against the page's URL and becomes a path from the site root.
-- Links to other sites, links in page text and code samples, and links in comments, scripts and `<template>` elements stay as they are. So does a link with an `integrity` digest: the digest was taken from the file under its own name, which is still copied.
+- Links to other sites, links in page text and code samples, and links in comments, scripts and `<template>` elements stay as they are. So does a link to a stylesheet in `public/` with an `integrity` digest: the digest was taken from the file under its own name, which is still copied. The Tailwind stylesheet has no file under its own name, so such a link to it stops the build: see [What a production build does](#what-a-production-build-does).
 - `A1B2C3D4` is the start of the SHA-256 of the CSS. A stylesheet in a folder keeps its folder: `/css/site.css` becomes `/_assets/css/site-A1B2C3D4.css`.
 - Relative `url()` references and `@import` strings in the CSS, such as `url(fonts/inter.woff2)`, become paths from the site root, `url(/fonts/inter.woff2)`, so they load the same files from `_assets/` as from the stylesheet's own path. References with CSS escapes are rebased too; comments and other strings, such as a `content` value, are left alone.
 - When the CSS changes, Stati writes the new name into the pages the [ISG cache](/core-concepts/isg) kept: a CSS change doesn't render any page again. When a stylesheet is gone from `public/`, those pages link its own path again, and once a stylesheet they link is added to `public/`, they link its copy. Only their stylesheet links change.
@@ -42,6 +42,7 @@ Development keeps every stylesheet's own name. The first production build that h
 A `.css` file in `public/` that a page links gets a hashed copy in `dist/_assets/`. Nothing needs to be set up.
 
 - The file is still copied under its own name, so a stylesheet that `@import`s it, or a script that loads it, keeps working. A file only another stylesheet imports keeps its fixed name.
+- A stylesheet a page links can't `@import` or `url()` the Tailwind stylesheet, such as `@import "/styles.css"`: a hashed build writes that one under its hashed name only, so the build stops. Import it in the Tailwind input instead, or link both stylesheets from the page.
 - A stylesheet no page links gets no copy.
 - Stati copies the CSS as it is: it doesn't minify it.
 - A path holding characters other than letters, digits, `-`, `_`, `.` and `/` keeps its name.
@@ -93,6 +94,14 @@ A template can link `/styles.css` or leave the link out: Stati adds `<link rel="
 4. It writes the pages it rendered, with their links to `/styles.css` pointed at that file.
 
 Tailwind runs after the pages, so the build holds the pages it renders in memory until then, with `css.hash: false` too, and writes each once, with the final file name, after the [`afterRender`](/api/hooks) hook has run for it. If Tailwind fails, the build stops with Tailwind's error and the previous build's pages and stylesheet stay as they were.
+
+Unlike a stylesheet in `public/`, the Tailwind stylesheet isn't written under its own name, so a deploy carries no copy that no page links. A `dist/styles.css` the dev server's watcher wrote stays there out of date; `stati build --clean` starts from an empty `dist/`. A reference to `/styles.css` that the build doesn't rewrite therefore loads nothing:
+
+- A `<link>` to it with an `integrity` attribute stops the build, because the link keeps its path.
+- A stylesheet in `public/` that a page links and that references it stops the build. See [Stylesheets in `public/`](#stylesheets-in-public).
+- A script, a `<template>` or another site that loads `/styles.css` gets nothing.
+
+To keep the file under its own name, set `css.hash` to `false`.
 
 ### Linking it yourself
 

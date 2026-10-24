@@ -471,6 +471,35 @@ describe('stylesheet builds with Tailwind CSS', () => {
       ]);
     });
 
+    it('stops when a page links the output with an integrity digest', async () => {
+      await createSite();
+      await site.write(
+        'site/layout.eta',
+        LAYOUT.replace(
+          '</head>',
+          '<link rel="preload" as="style" href="/styles.css" integrity="sha384-abc"></head>',
+        ),
+      );
+
+      await expect(site.build({ tailwind })).rejects.toThrow(
+        /^The page \/(about)? links \/styles\.css with an integrity attribute\. A hashed build writes the Tailwind stylesheet only as \/_assets\/styles-\[hash\]\.css/,
+      );
+      expect(await site.exists('dist/index.html')).toBe(false);
+      expect(await assetFiles()).toEqual([]);
+    });
+
+    it('with css.hash false keeps a link to the output with an integrity digest', async () => {
+      await createSite({ css: { hash: false } });
+      const link = '<link rel="stylesheet" href="/styles.css" integrity="sha384-abc">';
+      await site.write('site/layout.eta', LAYOUT.replace('</head>', `${link}</head>`));
+
+      await site.build({ tailwind });
+
+      const html = await site.read('dist/index.html');
+      expect(html).toContain(link);
+      expect(stylesheetLinks(html)).toEqual([]);
+    });
+
     it('with css.hash false leaves the previous pages in place when Tailwind fails', async () => {
       await createSite({ css: { hash: false } });
       await site.build({ tailwind });
@@ -732,6 +761,34 @@ describe('stylesheet builds with Tailwind CSS', () => {
         '<link rel="stylesheet" href="/styles.css" integrity="sha384-abc" crossorigin>',
       );
       expect(await assetFiles()).toEqual([]);
+    });
+
+    it('stops when a stylesheet a page links imports the Tailwind output', async () => {
+      await createSite();
+      await site.write(
+        'site/layout.eta',
+        LAYOUT.replace('</head>', '<link rel="stylesheet" href="/css/print.css"></head>'),
+      );
+      await site.write('public/css/print.css', '@import "../styles.css" print;');
+
+      await expect(site.build({ tailwind })).rejects.toThrow(
+        '/css/print.css in the static directory references /styles.css, the Tailwind CSS output.',
+      );
+      expect(await tailwindRuns()).toEqual([]);
+    });
+
+    it('with css.hash false lets a static stylesheet import the Tailwind output', async () => {
+      await createSite({ css: { hash: false } });
+      await site.write(
+        'site/layout.eta',
+        LAYOUT.replace('</head>', '<link rel="stylesheet" href="/print.css"></head>'),
+      );
+      await site.write('public/print.css', '@import "/styles.css" print;');
+
+      await site.build({ tailwind });
+
+      expect(await site.read('dist/print.css')).toBe('@import "/styles.css" print;');
+      expect(await site.exists('dist/styles.css')).toBe(true);
     });
 
     it('with css.hash false links the stylesheets as they are and deletes earlier copies', async () => {

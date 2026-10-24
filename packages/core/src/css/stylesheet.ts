@@ -294,26 +294,18 @@ function escapeCss(url: string, quote: string): string {
 }
 
 /**
- * Rewrites the relative references in the stylesheet's `url()`s and `@import` strings to paths
- * from the site root, resolved against the path the stylesheet has under its own name. A
- * hashed copy served from `_assets/` then loads the same fonts, images and imported
- * stylesheets. A reference with escapes is decoded, rebased and escaped again; comments and
- * other strings, such as a `content` value, stay as they are.
+ * Passes each reference in the stylesheet's `url()`s and `@import` strings, with its escapes
+ * decoded, to `replace`, and writes what it returns in its place, escaped for the reference's
+ * quotes. Comments and other strings, such as a `content` value, aren't references.
  *
  * @param css - The stylesheet
- * @param path - Its path under its own name, such as '/styles.css'
- * @returns The stylesheet with root-relative references
+ * @param replace - Gives a reference's new URL, or undefined to leave it as it is
+ * @returns The stylesheet with the references replaced
  */
-export function rebaseRelativeUrls(css: string, path: string): string {
-  const base = new URL(path, URL_BASE);
-  // The reference from the site root, escaped for its quotes, or undefined to leave it as it is
+function replaceCssReferences(css: string, replace: (url: string) => string | undefined): string {
   const rebase = (reference: string, quote: string): string | undefined => {
-    const url = unescapeCss(reference);
-    if (url === '' || LOCATION_INDEPENDENT_URL.test(url)) {
-      return undefined;
-    }
-    const { pathname, search, hash } = new URL(url, base);
-    return escapeCss(`${pathname}${search}${hash}`, quote);
+    const url = replace(unescapeCss(reference));
+    return url === undefined ? undefined : escapeCss(url, quote);
   };
 
   // Where the last `@import`, and any comments after it, ended: a string that follows with only
@@ -354,6 +346,48 @@ export function rebaseRelativeUrls(css: string, path: string): string {
       return rebased === undefined ? token : `url(${urlQuote}${rebased}${urlQuote})`;
     },
   );
+}
+
+/**
+ * Rewrites the relative references in the stylesheet's `url()`s and `@import` strings to paths
+ * from the site root, resolved against the path the stylesheet has under its own name. A
+ * hashed copy served from `_assets/` then loads the same fonts, images and imported
+ * stylesheets. A reference with escapes is decoded, rebased and escaped again; comments and
+ * other strings, such as a `content` value, stay as they are.
+ *
+ * @param css - The stylesheet
+ * @param path - Its path under its own name, such as '/styles.css'
+ * @returns The stylesheet with root-relative references
+ */
+export function rebaseRelativeUrls(css: string, path: string): string {
+  const base = new URL(path, URL_BASE);
+  return replaceCssReferences(css, (url) => {
+    if (url === '' || LOCATION_INDEPENDENT_URL.test(url)) {
+      return undefined;
+    }
+    const { pathname, search, hash } = new URL(url, base);
+    return `${pathname}${search}${hash}`;
+  });
+}
+
+/**
+ * The paths on the site that the stylesheet's `url()`s and `@import` strings reference, from
+ * the site root, resolved against its own path, without a query or fragment. References with
+ * a scheme, to another host, or to a fragment only are left out.
+ *
+ * @param css - The stylesheet
+ * @param path - Its path under its own name, such as '/css/site.css'
+ */
+export function getStylesheetReferences(css: string, path: string): string[] {
+  const base = new URL(path, URL_BASE);
+  const paths = new Set<string>();
+  replaceCssReferences(css, (url) => {
+    if (url !== '' && !/^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/i.test(url)) {
+      paths.add(new URL(url, base).pathname);
+    }
+    return undefined;
+  });
+  return [...paths];
 }
 
 /**
@@ -681,16 +715,23 @@ function isStylesheetLink(attributes: readonly TagAttribute[]): boolean {
 }
 
 /**
- * Whether production points a `<link>` tag at a hashed name: one that applies a stylesheet,
- * offers it as an alternate, or preloads it (`rel="preload" as="style"`), without an
- * `integrity` digest, which only the file under its own name matches.
+ * Whether a `<link>` tag loads a stylesheet: it applies it, offers it as an alternate, or
+ * preloads it (`rel="preload" as="style"`).
+ */
+function loadsStylesheet(attributes: readonly TagAttribute[]): boolean {
+  const tokens = getRelTokens(attributes);
+  return (
+    tokens.includes('stylesheet') ||
+    (tokens.includes('preload') && getAttribute(attributes, 'as')?.value.toLowerCase() === 'style')
+  );
+}
+
+/**
+ * Whether production points a `<link>` tag at a hashed name: one that loads a stylesheet,
+ * without an `integrity` digest, which only the file under its own name matches.
  */
 function isHashableLink(attributes: readonly TagAttribute[]): boolean {
-  const tokens = getRelTokens(attributes);
-  const loadsStylesheet =
-    tokens.includes('stylesheet') ||
-    (tokens.includes('preload') && getAttribute(attributes, 'as')?.value.toLowerCase() === 'style');
-  return loadsStylesheet && getAttribute(attributes, 'integrity') === undefined;
+  return loadsStylesheet(attributes) && getAttribute(attributes, 'integrity') === undefined;
 }
 
 /**
@@ -798,6 +839,37 @@ export function getLinkedStylesheetPaths(
     }
   }
   return [...paths];
+}
+
+/**
+ * Whether a page's `<link>` tag that loads the stylesheet at this path, on the site, has an
+ * `integrity` digest: production keeps such a link's path.
+ *
+ * @param html - The page's HTML
+ * @param path - The stylesheet path, such as '/styles.css'
+ * @param pageUrl - The page's URL, which relative links resolve against
+ * @param siteUrl - The site's base URL (`site.baseUrl`), whose origin a link can carry
+ */
+export function linksStylesheetWithIntegrity(
+  html: string,
+  path: string,
+  pageUrl: string,
+  siteUrl?: string,
+): boolean {
+  // Most pages have no digest, and need no scan
+  if (!/integrity/i.test(html)) {
+    return false;
+  }
+  const origin = getSiteOrigin(siteUrl);
+  return findLinkTags(html).some(({ attributes }) => {
+    const href = getAttribute(attributes, 'href');
+    return (
+      href !== undefined &&
+      loadsStylesheet(attributes) &&
+      getAttribute(attributes, 'integrity') !== undefined &&
+      parseSiteHref(href.value, origin, pageUrl)?.path === path
+    );
+  });
 }
 
 /**

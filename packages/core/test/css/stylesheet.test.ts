@@ -17,9 +17,11 @@ import {
   getRenderStylesheetPath,
   getStaleStylesheetPaths,
   getStylesheetFingerprint,
+  getStylesheetReferences,
   hashStylesheet,
   isHashableStylesheetPath,
   linksStylesheet,
+  linksStylesheetWithIntegrity,
   rebaseRelativeUrls,
   relinkStylesheets,
   removeStaleStylesheets,
@@ -266,6 +268,29 @@ describe('rebaseRelativeUrls', () => {
   });
 });
 
+describe('getStylesheetReferences', () => {
+  it('lists the site paths of url() and @import references, once each', () => {
+    const css =
+      '@import "../styles.css" print;@import url(\'/base.css?v=2\');' +
+      '.a{background:url(img/a.png#x)}.b{background:url("img/a.png")}' +
+      '.c{background:url(https://cdn.example/x.png)}.d{background:url(//cdn.example/y.png)}' +
+      '.e{background:url(data:image/png;base64,AA==)}.f{filter:url(#blur)}.g{background:url("")}' +
+      '.h::after{content:"url(other.png)"}/* url(old.png) */';
+
+    expect(getStylesheetReferences(css, '/css/site.css')).toEqual([
+      '/styles.css',
+      '/base.css',
+      '/css/img/a.png',
+    ]);
+  });
+
+  it('decodes escaped references', () => {
+    expect(getStylesheetReferences('@import "st\\79 les.css";', '/print.css')).toEqual([
+      '/styles.css',
+    ]);
+  });
+});
+
 describe('getStylesheetFingerprint', () => {
   it('holds the settings, not the file name', () => {
     expect(getStylesheetFingerprint(plan())).toEqual({
@@ -424,6 +449,34 @@ describe('getLinkedStylesheetPaths', () => {
       '/site.css',
       '/b.css',
     ]);
+  });
+});
+
+describe('linksStylesheetWithIntegrity', () => {
+  it('finds a link that loads the path with an integrity digest', () => {
+    for (const link of [
+      '<link rel="stylesheet" href="/styles.css" integrity="sha384-abc">',
+      '<link rel="preload" as="style" href="/styles.css?v=2" INTEGRITY>',
+      '<link rel="alternate stylesheet" href="https://example.com/styles.css" integrity="x">',
+      '<link rel="stylesheet" href="../styles.css" integrity="x">',
+    ]) {
+      expect(
+        linksStylesheetWithIntegrity(link, '/styles.css', '/blog/', 'https://example.com'),
+      ).toBe(true);
+    }
+  });
+
+  it('ignores links without a digest, to other paths, that load no stylesheet, or are not markup', () => {
+    for (const html of [
+      '<link rel="stylesheet" href="/styles.css">',
+      '<link rel="stylesheet" href="/other.css" integrity="x">',
+      '<link rel="preload" as="font" href="/styles.css" integrity="x">',
+      '<link rel="stylesheet" integrity="x">',
+      '<!-- <link rel="stylesheet" href="/styles.css" integrity="x"> -->',
+      '<script>"<link rel=stylesheet href=/styles.css integrity=x>"</script>',
+    ]) {
+      expect(linksStylesheetWithIntegrity(html, '/styles.css', '/')).toBe(false);
+    }
   });
 });
 

@@ -4,7 +4,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { StaticStylesheets } from '../../src/css/static.js';
@@ -63,5 +63,16 @@ describe('StaticStylesheets', () => {
       expect(await stylesheets.resolve(path)).toBeUndefined();
     }
     expect((await stylesheets.hashed()).size).toBe(0);
+  });
+
+  it('rejects a stylesheet that references the path it skips, and writes no copy', async () => {
+    await write(join(staticDir, 'css', 'print.css'), '@import url(../styles.css) print;');
+    const stylesheets = new StaticStylesheets(staticDir, outDir, '/styles.css');
+
+    await expect(stylesheets.resolve('/css/print.css')).rejects.toThrow(
+      '/css/print.css in the static directory references /styles.css, the Tailwind CSS output.',
+    );
+    await expect(stylesheets.resolve('/css/print.css')).rejects.toThrow();
+    expect(await readdir(outDir).catch(() => [])).toEqual([]);
   });
 });

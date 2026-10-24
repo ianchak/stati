@@ -5,7 +5,7 @@
 
 import { dirname, join } from 'node:path';
 import { ensureDir, readFile, stat, writeFile } from '../core/utils/fs.utils.js';
-import { hashStylesheet, isHashableStylesheetPath } from './stylesheet.js';
+import { getStylesheetReferences, hashStylesheet, isHashableStylesheetPath } from './stylesheet.js';
 
 /**
  * The stylesheets from the static directory a production build links under hashed names.
@@ -20,7 +20,8 @@ export class StaticStylesheets {
    * @param staticDir - The static directory, absolute
    * @param outDir - The output directory, absolute
    * @param skipPath - A path the static directory doesn't serve: the Tailwind output's, whose
-   *   static file the build doesn't copy
+   *   static file the build doesn't copy, and which a hashed build doesn't write, so a
+   *   stylesheet that references it stops the build
    */
   constructor(
     private readonly staticDir: string,
@@ -34,6 +35,7 @@ export class StaticStylesheets {
    * @param path - A path from the site root, such as '/styles.css'
    * @returns The copy's path, such as '/_assets/styles-A1B2C3D4.css', or undefined when the
    *   static directory has no such .css file or its path can't be linked as it is
+   * @throws {Error} When the stylesheet references the Tailwind output
    */
   resolve(path: string): Promise<string | undefined> {
     let copy = this.copies.get(path);
@@ -63,6 +65,11 @@ export class StaticStylesheets {
     const css = info?.isFile() ? await readFile(source) : null;
     if (css === null) {
       return undefined;
+    }
+    if (this.skipPath && getStylesheetReferences(css, path).includes(this.skipPath)) {
+      throw new Error(
+        `${path} in the static directory references ${this.skipPath}, the Tailwind CSS output. A hashed build writes that stylesheet only under a hashed name, so the reference would load nothing. Import the stylesheet in the Tailwind input instead, link both stylesheets from the page, or set css.hash to false.`,
+      );
     }
 
     const hashed = hashStylesheet(css, path);

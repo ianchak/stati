@@ -85,6 +85,7 @@ import {
   removeStaleStylesheets,
   autoInjectStylesheets,
   getLinkedStylesheetPaths,
+  linksStylesheetWithIntegrity,
   rewriteStylesheetLinks,
   resolveCSSConfig,
   StaticStylesheets,
@@ -94,7 +95,7 @@ import {
   type TailwindBuildOptions,
 } from '../css/index.js';
 import { getEnv, isDevelopment } from '../env.js';
-import { DEFAULT_OUT_DIR, MAX_DEFERRED_PAGES_LENGTH } from '../constants.js';
+import { CSS_OUT_DIR, DEFAULT_OUT_DIR, MAX_DEFERRED_PAGES_LENGTH } from '../constants.js';
 import type {
   BuildContext,
   BuildStats,
@@ -922,6 +923,17 @@ async function processPagesWithCache(
       config.search?.autoInjectMetaTag !== false
     ) {
       finalHtml = autoInjectSearchMeta(finalHtml, `/${searchIndexFilename}`);
+    }
+
+    // A hashed build writes the Tailwind stylesheet under its hashed name only, so a link that
+    // keeps the stylesheet's own path for its integrity digest would load nothing
+    if (
+      stylesheet?.plan.hash &&
+      linksStylesheetWithIntegrity(finalHtml, stylesheet.plan.path, page.url, config.site.baseUrl)
+    ) {
+      throw new Error(
+        `The page ${page.url} links ${stylesheet.plan.path} with an integrity attribute. A hashed build writes the Tailwind stylesheet only as /${CSS_OUT_DIR}/${stylesheet.plan.name}-[hash].css, which the link can't load. Remove the integrity attribute, or set css.hash to false.`,
+      );
     }
 
     // Link the hashed stylesheets, then add the Tailwind stylesheet's link if enabled (default:

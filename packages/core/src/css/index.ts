@@ -18,6 +18,7 @@ export {
   getStylesheetFingerprint,
   getRenderStylesheetPath,
   rebaseRelativeUrls,
+  getStylesheetReferences,
   hashStylesheet,
   isHashableStylesheetPath,
   buildStylesheet,
@@ -27,6 +28,7 @@ export {
   linksStylesheet,
   autoInjectStylesheets,
   getLinkedStylesheetPaths,
+  linksStylesheetWithIntegrity,
   rewriteStylesheetLinks,
 } from './stylesheet.js';
 export type { TailwindBuildOptions, StylesheetPlan, BuiltStylesheet } from './stylesheet.js';
