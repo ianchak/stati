@@ -386,6 +386,37 @@ describe('Development Server', () => {
     await devServer.stop();
   });
 
+  it('should pass the Tailwind files to its builds, so pages link the stylesheet', async () => {
+    const mockLogger = createMockLogger();
+    const tailwind = { input: 'src/styles.css', output: 'dist/styles.css' };
+
+    const devServer = await createDevServer({ port: 8087, logger: mockLogger, tailwind });
+    await devServer.start();
+
+    expect(mockBuild).toHaveBeenCalledWith(expect.objectContaining({ tailwind }));
+    expect(mockLogger.warning).not.toHaveBeenCalled();
+
+    await devServer.stop();
+  });
+
+  it('should warn and build without the Tailwind files when pages cannot link the output', async () => {
+    const mockLogger = createMockLogger();
+
+    const devServer = await createDevServer({
+      port: 8088,
+      logger: mockLogger,
+      tailwind: { input: 'src/styles.css', output: 'public/styles.css' },
+    });
+    await devServer.start();
+
+    expect(mockLogger.warning).toHaveBeenCalledWith(
+      '--tailwind-output must be a file in the output directory, such as dist/styles.css (got public/styles.css). Stati does not link the stylesheet to pages.',
+    );
+    expect(mockBuild.mock.calls[0]?.[0]).not.toHaveProperty('tailwind');
+
+    await devServer.stop();
+  });
+
   it('should open browser when open option is true', async () => {
     const mockLogger = createMockLogger();
 

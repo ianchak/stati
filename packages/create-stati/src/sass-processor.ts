@@ -7,6 +7,10 @@
 import { DEPENDENCY_VERSIONS } from './constants.js';
 import type { ProcessorResultWithDeletions } from './types.js';
 
+/** Sass's input and its output in the static directory, the file the templates link */
+export const SASS_OUTPUT = 'public/styles.css';
+const SASS_FILES = `src/styles.scss ${SASS_OUTPUT}`;
+
 /** Font stack used by the blank template's stylesheet */
 const FONT_STACK =
   "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
@@ -16,6 +20,11 @@ const FONT_STACK =
  * Returns all files and configuration needed for Sass support.
  *
  * This processor requires the existing CSS content to convert to SCSS with variables.
+ *
+ * Sass compiles into `public/styles.css` before `stati build`, and `sass --watch` keeps it
+ * current next to `stati dev`. The templates link `/styles.css` as they are; production
+ * builds point that link at a copy named after its content, as with any stylesheet in
+ * `public/`. The compiled file is a build output, which the generated .gitignore lists.
  *
  * @param existingCSS - The existing CSS content to enhance with Sass features
  * @returns Processor result with files, dependencies, scripts, and files to delete
@@ -38,9 +47,9 @@ export function setupSass(existingCSS: string): ProcessorResultWithDeletions {
       concurrently: DEPENDENCY_VERSIONS.concurrently,
     },
     scripts: {
-      'build:css': 'sass src/styles.scss dist/styles.css --style=compressed',
-      'watch:css': 'sass src/styles.scss dist/styles.css --watch',
-      build: 'stati build && npm run build:css',
+      'build:css': `sass ${SASS_FILES} --style=compressed --no-source-map`,
+      'watch:css': `sass --watch ${SASS_FILES} --no-source-map`,
+      build: 'npm run build:css && stati build',
       dev: 'concurrently --prefix none "npm run watch:css" "stati dev"',
     },
     filesToDelete: ['public/styles.css'],

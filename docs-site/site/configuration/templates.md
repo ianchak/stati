@@ -359,6 +359,10 @@ The `bundlePaths` array contains paths to all bundles matched for the current pa
 
 Use `<%~` here: `<%=` would HTML-escape the quotes in the JSON and break the script.
 
+## Stylesheet access
+
+With `--tailwind-input` and `--tailwind-output`, `stati.assets.stylesheetPaths` holds the path of the stylesheet Stati builds with Tailwind, and Stati links it on every page. See [Linking it yourself](/configuration/css#linking-it-yourself) for placing the link with `css.autoInject: false`.
+
 For more details on configuring multiple bundles, see [TypeScript Support](/configuration/typescript).
 
 ## Best practices

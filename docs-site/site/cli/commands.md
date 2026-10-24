@@ -92,7 +92,7 @@ stati dev [options]
 | `--open` | boolean | false | Open browser after starting server |
 | `--config` | string | - | Builds pages with the config in this path's directory; the server's own settings still come from the current directory (see [Config file location](#config-file-location)) |
 | `--tailwind-input` | string | - | Input file path for Tailwind CSS watcher |
-| `--tailwind-output` | string | - | Output file path for compiled Tailwind CSS |
+| `--tailwind-output` | string | - | Output file path for compiled Tailwind CSS; pages link it when it is a `.css` file in the output directory (see [CSS](/configuration/css)) |
 | `--tailwind-verbose` | boolean | false | Show all Tailwind CSS output (default shows errors only) |
 
 **Examples:**
@@ -166,6 +166,8 @@ stati build [options]
 | `--metrics-file` | string | - | Metrics JSON file name, resolved inside `.stati/metrics/`; paths outside that folder are rejected (default: `.stati/metrics/build-<timestamp>.json`) |
 | `--metrics-detailed` | boolean | false | Include per-page timing in metrics |
 | `--metrics-html` | boolean | false | Generate HTML report alongside JSON metrics |
+| `--tailwind-input` | string | - | Input file for Tailwind CSS, which runs after the last page renders; needs `--tailwind-output` |
+| `--tailwind-output` | string | - | The stylesheet's file in the output directory, such as `dist/styles.css`; unless `css.hash` is `false`, production writes `dist/_assets/<name>-<hash>.css` instead, such as `styles-A1B2C3D4.css` (see [CSS](/configuration/css)) |
 
 **Examples:**
 
@@ -187,11 +189,14 @@ stati build --metrics
 
 # Collect detailed build metrics with HTML report
 stati build --metrics --metrics-detailed --metrics-html
+
+# Build the Tailwind CSS stylesheet as well
+stati build --tailwind-input src/styles.css --tailwind-output dist/styles.css
 ```
 
 **Removed pages:** `stati build` deletes the HTML of pages that no longer exist, such as a deleted post, a tag no post uses or the last page of a listing that got shorter, along with folders left empty. It only deletes files it recorded in `.stati/manifest.json`, so files from `public/` or other tools stay. See [ISG](/core-concepts/isg#removing-pages-that-no-longer-exist).
 
-**Bundles and search index:** a production build writes TypeScript bundles and the search index under hashed names, and deletes the copies earlier builds wrote under other names: `dist/_assets/<bundleName>-<hash>.js` files and the `<bundleName>.js` and source map `stati dev` writes, for the bundles in your config, and `dist/<indexName>-<hash>.json`. Files with other names, such as your own files in `public/_assets/`, stay. Files of a bundle you removed from the config stay until you run `stati build --clean`.
+**Bundles, stylesheet and search index:** a production build writes TypeScript bundles, the Tailwind stylesheet and the search index under hashed names, and deletes the copies earlier builds wrote under other names: `dist/_assets/<bundleName>-<hash>.js` files and the `<bundleName>.js` and source map `stati dev` writes, for the bundles in your config, `dist/_assets/<name>-<hash>.css` files (the `--tailwind-output` file `stati dev` writes stays), and `dist/<indexName>-<hash>.json`. Files with other names, such as your own files in `public/_assets/`, stay. Files of a bundle you removed from the config stay until you run `stati build --clean`.
 
 **Images:** `stati build` reuses generated images from earlier builds and deletes the ones in `dist/_img/` that no page uses any more. It only deletes files it generated, never files from `public/`. The dev server doesn't delete them. `--clean` removes the image cache with the rest of `.stati/`, so the next build encodes every image again. See [Images](/configuration/images#caching-and-cleanup).
 
@@ -287,7 +292,7 @@ jobs:
         run: rsync -av dist/ user@server:/var/www/html/
 ```
 
-Run the build through your `build` script rather than calling `stati build` directly: the script is how projects scaffolded with Sass or Tailwind compile their CSS (`stati build && npm run build:css`), and CI runners do not put `node_modules/.bin` on the `PATH` for plain `run:` steps.
+Run the build through your `build` script rather than calling `stati build` directly: the script holds the flags or steps that build the CSS, such as `stati build --tailwind-input src/styles.css --tailwind-output dist/styles.css` for Tailwind or `npm run build:css && stati build` for Sass, and CI runners do not put `node_modules/.bin` on the `PATH` for plain `run:` steps.
 
 **Netlify:**
 

@@ -16,15 +16,22 @@ const TAILWIND_IMPORT = `@import 'tailwindcss';
 /* Classes that templates build at render time, such as \`text-\${color}-600\`, listed by Stati */
 @source '../.stati/tailwind-classes.html';`;
 
+/** Stati's Tailwind flags: the input, and the output the dev server's watcher writes */
+const TAILWIND_FLAGS = '--tailwind-input src/styles.css --tailwind-output dist/styles.css';
+
 /**
  * Generate Tailwind CSS setup files and dependencies.
  * Returns all files and configuration needed for Tailwind support. Tailwind CSS 4 is
  * configured in the stylesheet itself, so there is no tailwind.config.js.
  *
+ * `stati dev` and `stati build` run Tailwind themselves. The build runs it after the last page
+ * renders and names the stylesheet after its content, `_assets/styles-[hash].css`. The
+ * templates keep their link to /styles.css, which production builds point at that file.
+ *
  * @param templateCSS - The template's own stylesheet. When given, it is carried over
  *   below the Tailwind import instead of replacing the template's design with
- *   Tailwind starter styles. Either way public/styles.css is removed: every build copies the
- *   static files, which would write it over Tailwind's dist/styles.css.
+ *   Tailwind starter styles. Either way public/styles.css is removed: it is at the path of
+ *   Tailwind's output, so no build copies it.
  * @returns Processor result with files, dependencies, and scripts
  *
  * @example
@@ -32,7 +39,7 @@ const TAILWIND_IMPORT = `@import 'tailwindcss';
  * const tailwindSetup = setupTailwind();
  * // tailwindSetup.files contains: src/styles.css
  * // tailwindSetup.devDependencies contains: { tailwindcss: '^4.3.3', '@tailwindcss/cli': '^4.3.3' }
- * // tailwindSetup.scripts contains: { 'build:css': '...', dev: '...', build: '...' }
+ * // tailwindSetup.scripts contains: { dev: 'stati dev --tailwind-input ...', build: 'stati build --tailwind-input ...' }
  * ```
  */
 export function setupTailwind(templateCSS?: string): ProcessorResultWithDeletions {
@@ -48,9 +55,8 @@ export function setupTailwind(templateCSS?: string): ProcessorResultWithDeletion
       '@tailwindcss/cli': DEPENDENCY_VERSIONS['@tailwindcss/cli'],
     },
     scripts: {
-      'build:css': 'tailwindcss -i src/styles.css -o dist/styles.css --minify',
-      build: 'stati build && npm run build:css',
-      dev: 'stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css',
+      build: `stati build ${TAILWIND_FLAGS}`,
+      dev: `stati dev ${TAILWIND_FLAGS}`,
     },
     filesToDelete: ['public/styles.css'],
   };

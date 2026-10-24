@@ -25,6 +25,15 @@ export interface StatiAssets {
   bundlePaths: string[];
 
   /**
+   * Paths of the stylesheets Stati builds, such as ['/_assets/styles-A1B2C3D4.css'] in
+   * production and ['/styles.css'] in development. Always an array, empty [] when
+   * `--tailwind-input` and `--tailwind-output` are not given. A production build learns the
+   * hash after every page has rendered and writes it into each page then, so print the path
+   * as it is rather than changing it.
+   */
+  stylesheetPaths: string[];
+
+  /**
    * Path to the search index file (e.g., '/search-index-a1b2c3d4.json').
    * Available when search index generation is enabled.
    * Use this path in client-side JavaScript to fetch the search index.

@@ -53,13 +53,10 @@ describe('tailwind-processor', () => {
     it('should include correct scripts', () => {
       const result = setupTailwind();
 
-      expect(result.scripts['build:css']).toBe(
-        'tailwindcss -i src/styles.css -o dist/styles.css --minify',
-      );
-      expect(result.scripts.build).toBe('stati build && npm run build:css');
-      expect(result.scripts.dev).toBe(
-        'stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css',
-      );
+      expect(result.scripts).toEqual({
+        build: 'stati build --tailwind-input src/styles.css --tailwind-output dist/styles.css',
+        dev: 'stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css',
+      });
     });
 
     it('should not include watch:css or copy:css script (uses Stati built-in Tailwind support)', () => {

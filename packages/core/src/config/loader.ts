@@ -5,6 +5,7 @@ import type { StatiConfig } from '../types/index.js';
 import { validateISGConfig, ISGConfigurationError } from '../core/isg/validation.js';
 import { validateImagesConfig } from '../images/config.js';
 import { validateSEOConfig } from '../seo/defaults.js';
+import { validateCSSConfig } from '../css/config.js';
 import { ConfigValidationError } from './errors.js';
 import {
   compileStatiConfig,
@@ -82,6 +83,7 @@ const CONFIG_KEYS: Record<keyof StatiConfig, true> = {
   rss: true,
   search: true,
   typescript: true,
+  css: true,
   images: true,
   dev: true,
   preview: true,
@@ -270,6 +272,19 @@ export async function loadConfig(cwd: string = process.cwd()): Promise<StatiConf
       if (error instanceof ConfigValidationError) {
         throw new ConfigValidationError(
           `Invalid seo configuration in ${configPath}:\n${error.message}`,
+          { cause: error },
+        );
+      }
+      throw error;
+    }
+
+    // The stylesheet settings
+    try {
+      validateCSSConfig(mergedConfig.css);
+    } catch (error) {
+      if (error instanceof ConfigValidationError) {
+        throw new ConfigValidationError(
+          `Invalid css configuration in ${configPath}:\n${error.message}`,
           { cause: error },
         );
       }

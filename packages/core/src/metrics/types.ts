@@ -139,6 +139,8 @@ export interface MetricsPhases {
   readonly tailwindInitMs?: number;
   /** Tailwind inventory write at end of build */
   readonly tailwindInventoryMs?: number;
+  /** Tailwind CSS run that writes the production stylesheet, and the pages held until then */
+  readonly tailwindBuildMs?: number;
   /** Directory size calculation for build stats */
   readonly getDirectorySizeMs?: number;
   /** Build lock acquisition */

@@ -93,8 +93,9 @@ describe('HTML Output Snapshots', () => {
     mockRemove.mockResolvedValue(undefined);
     // @ts-expect-error - Mock type issue
     mockReaddir.mockResolvedValue([]);
+    // No file the static directory could hash, so linked stylesheets keep their paths
     // @ts-expect-error - Mock type issue
-    mockStat.mockResolvedValue({ size: 1024 });
+    mockStat.mockResolvedValue({ size: 1024, isFile: () => false });
     // @ts-expect-error - Mock type issue
     mockPathExists.mockResolvedValue(true);
     mockCreateTemplateEngine.mockReturnValue(mockEta as unknown as Eta);

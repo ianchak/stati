@@ -62,10 +62,12 @@ describe('sass-processor', () => {
       const result = setupSass(sampleCSS);
 
       expect(result.scripts['build:css']).toBe(
-        'sass src/styles.scss dist/styles.css --style=compressed',
+        'sass src/styles.scss public/styles.css --style=compressed --no-source-map',
       );
-      expect(result.scripts['watch:css']).toBe('sass src/styles.scss dist/styles.css --watch');
-      expect(result.scripts.build).toBe('stati build && npm run build:css');
+      expect(result.scripts['watch:css']).toBe(
+        'sass --watch src/styles.scss public/styles.css --no-source-map',
+      );
+      expect(result.scripts.build).toBe('npm run build:css && stati build');
       expect(result.scripts.dev).toBe('concurrently --prefix none "npm run watch:css" "stati dev"');
     });
 

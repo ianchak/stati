@@ -77,6 +77,7 @@ stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css
 **How it works:**
 
 - Stati spawns a Tailwind CLI process in watch mode using the locally installed `tailwindcss` executable from `node_modules/.bin/`. Tailwind CSS 4 and 3 both work.
+- Pages link the output under its path in `dist/`, here `/styles.css`: Stati adds `<link rel="stylesheet" href="/styles.css">` before `</head>` unless the page links it already. An output outside `dist/` is still written, but Stati can't link it, and the dev server says so when it starts.
 - By default, only errors are shown (quiet mode) to keep the console clean.
 - Use `--tailwind-verbose` to see all Tailwind output including "done in Xms" messages.
 - The watcher runs for as long as the dev server does, including when the dev server runs in a background or CI shell without a terminal.
@@ -87,6 +88,8 @@ stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css
 
 - You must have the `tailwindcss` command installed locally in your project. Tailwind CSS 4, the version the scaffolder installs, ships it in `@tailwindcss/cli`: `npm install -D tailwindcss @tailwindcss/cli`. With Tailwind CSS 3, `npm install -D tailwindcss@3` includes it.
 - Stati will check for the installation and show an error if it's not found.
+
+`stati build` takes the same two flags and runs Tailwind once after the last page renders, writing a stylesheet named after its content. See [CSS](/configuration/css).
 
 **Example with verbose output:**
 

@@ -9,6 +9,7 @@ import { mkdtemp, mkdir, readFile, rm, writeFile, access } from 'node:fs/promise
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { build, type BuildResult } from '../../src/core/build.js';
+import type { TailwindBuildOptions } from '../../src/css/index.js';
 import { loadCacheManifest } from '../../src/core/isg/index.js';
 import type { loadConfig } from '../../src/config/loader.js';
 import type { CacheManifest, Logger, StatiConfig } from '../../src/types/index.js';
@@ -24,6 +25,8 @@ export interface FixtureBuild {
   info: string[];
   /** Messages logged as errors; only with `allowErrors`, which otherwise fail the build */
   errors: string[];
+  /** Files the build reported writing, as "action path" */
+  files: string[];
   result: BuildResult;
 }
 
@@ -45,6 +48,7 @@ export interface SiteFixture {
     force?: boolean;
     includeDrafts?: boolean;
     allowErrors?: boolean;
+    tailwind?: TailwindBuildOptions;
   }): Promise<FixtureBuild>;
   /** The ISG cache manifest */
   manifest(): Promise<CacheManifest>;
@@ -104,6 +108,7 @@ export async function createSiteFixture(
       const warnings: string[] = [];
       const info: string[] = [];
       const errors: string[] = [];
+      const files: string[] = [];
       const logger: Logger = {
         info: (message) => info.push(message),
         success: () => {},
@@ -121,9 +126,10 @@ export async function createSiteFixture(
         updateProgress: (status, url) => {
           (status === 'cached' ? cached : rendered).push(url);
         },
+        file: (action, path) => files.push(`${action} ${path}`),
       };
       const result = await build({ logger, ...options });
-      return { rendered, cached, warnings, info, errors, result };
+      return { rendered, cached, warnings, info, errors, files, result };
     },
     async manifest() {
       const manifest = await loadCacheManifest(join(dir, '.stati'));

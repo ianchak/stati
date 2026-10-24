@@ -1,5 +1,6 @@
 import {
   ensureDir,
+  readFile,
   writeFile,
   remove,
   pathExists,
@@ -28,7 +29,7 @@ import {
   resolveSrcDir,
 } from './utils/index.js';
 import type { CompiledBundleInfo } from './utils/index.js';
-import { join, dirname, relative, posix } from 'node:path';
+import { join, dirname, relative, resolve, posix } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { loadConfig } from '../config/loader.js';
 import { loadContent } from './content.js';
@@ -73,8 +74,28 @@ import {
   autoInjectSearchMeta,
   isGeneratedPageExcludedFromSearch,
 } from '../search/index.js';
+import {
+  createStylesheetPlan,
+  checkStylesheetSources,
+  getStylesheetFingerprint,
+  getRenderStylesheetPath,
+  buildStylesheet,
+  getStaleStylesheetPaths,
+  relinkStylesheets,
+  removeStaleStylesheets,
+  autoInjectStylesheets,
+  getLinkedStylesheetPaths,
+  linksStylesheetWithIntegrity,
+  rewriteStylesheetLinks,
+  resolveCSSConfig,
+  StaticStylesheets,
+  isHashableStylesheetPath,
+  type BuiltStylesheet,
+  type StylesheetPlan,
+  type TailwindBuildOptions,
+} from '../css/index.js';
 import { getEnv, isDevelopment } from '../env.js';
-import { DEFAULT_OUT_DIR } from '../constants.js';
+import { CSS_OUT_DIR, DEFAULT_OUT_DIR, MAX_DEFERRED_PAGES_LENGTH } from '../constants.js';
 import type {
   BuildContext,
   BuildStats,
@@ -147,7 +168,29 @@ export interface BuildOptions {
   skipManifestSave?: boolean | undefined;
   /** Skip copying static assets (dev mode optimization for template-only changes) */
   skipAssetCopy?: boolean | undefined;
+  /**
+   * The Tailwind CSS input and output (`--tailwind-input` and `--tailwind-output`). Pages get
+   * the stylesheet's path in `stati.assets.stylesheetPaths` and, unless `css.autoInject` is
+   * false, a `<link>` to it. Production builds run Tailwind after the last page renders and
+   * write `_assets/[name]-[hash].css`; development builds link the output as it is, which the
+   * dev server's Tailwind watcher writes.
+   */
+  tailwind?: TailwindBuildOptions | undefined;
 }
+
+/**
+ * The stylesheet pages link while they render: the build's plan and the path they carry,
+ * which a hashed production build replaces once Tailwind has run.
+ */
+interface RenderStylesheet {
+  plan: StylesheetPlan;
+  path: string;
+  /** Where a production build keeps the rendered pages it can't hold in memory until then */
+  stagingDir: string;
+}
+
+/** The folder in the cache directory for pages a production build holds past its memory limit */
+const STAGED_PAGES_DIR = 'pending-pages';
 
 /**
  * Extended build result including optional metrics.
@@ -200,6 +243,7 @@ async function copyStaticAssetsWithLogging(
   destDir: string,
   logger: Logger,
   basePath = '',
+  skipFile?: string,
 ): Promise<{ count: number; totalBytes: number }> {
   let filesCopied = 0;
   let totalBytes = 0;
@@ -218,9 +262,11 @@ async function copyStaticAssetsWithLogging(
     if (item.isDirectory()) {
       // Recursively copy directories
       await ensureDir(destPath);
-      const result = await copyStaticAssetsWithLogging(sourcePath, destPath, logger);
+      const result = await copyStaticAssetsWithLogging(sourcePath, destPath, logger, '', skipFile);
       filesCopied += result.count;
       totalBytes += result.totalBytes;
+    } else if (skipFile !== undefined && resolve(destPath) === skipFile) {
+      continue;
     } else {
       // Copy individual files
       await ensureDir(dirname(destPath));
@@ -417,6 +463,51 @@ interface ProcessPagesResult {
   cacheMisses: number;
   /** The search index file the pages link to (only when search is enabled) */
   searchIndexFilename: string | undefined;
+  /** Rendered pages a production build writes once Tailwind has built the stylesheet */
+  deferredPages: DeferredPage[];
+  /** The output files of the pages this build rendered, written or held */
+  renderedFiles: string[];
+  /** Stylesheet paths rendered pages link that the static directory has no file for */
+  unhashedLinks: string[];
+}
+
+/**
+ * A rendered page and the file it goes to. Its HTML is in memory, or past the memory limit in
+ * a staged file in the cache directory, so the output directory keeps the previous build's
+ * page until the stylesheet is built.
+ */
+type DeferredPage =
+  { outputPath: string; content: string } | { outputPath: string; stagedFile: string };
+
+/** Pages written at once */
+const WRITE_BATCH_SIZE = 32;
+
+/**
+ * Writes held pages in batches, with one stylesheet path swapped for another.
+ */
+async function writeDeferredPages(
+  pages: readonly DeferredPage[],
+  from: string,
+  to: string,
+): Promise<void> {
+  await Promise.all([...new Set(pages.map((page) => dirname(page.outputPath)))].map(ensureDir));
+  for (let i = 0; i < pages.length; i += WRITE_BATCH_SIZE) {
+    await Promise.all(
+      pages.slice(i, i + WRITE_BATCH_SIZE).map(async (page) => {
+        const content = 'content' in page ? page.content : await readFile(page.stagedFile);
+        if (content === null) {
+          throw new Error(
+            `A rendered page is missing from the cache directory: ${page.outputPath}`,
+          );
+        }
+        await writeFile(
+          page.outputPath,
+          from === to ? content : content.split(from).join(to),
+          'utf-8',
+        );
+      }),
+    );
+  }
 }
 
 /**
@@ -528,6 +619,8 @@ async function processPagesWithCache(
   imageRuntime: ImageRuntime | null = null,
   navigationHash: string = computeNavigationHash(navigation),
   templateIndex?: TemplateIndex,
+  stylesheet: RenderStylesheet | null = null,
+  staticStylesheets: StaticStylesheets | null = null,
 ): Promise<ProcessPagesResult> {
   let cacheHits = 0;
   let cacheMisses = 0;
@@ -606,6 +699,46 @@ async function processPagesWithCache(
   // Image settings that change generated HTML, part of every page's render inputs
   const imageFingerprint = imageRuntime?.fingerprint();
 
+  // Every page links the same stylesheet. Its settings go into the render inputs, but not a
+  // hashed build's file name: that is known only after the pages render, and the build writes
+  // it into cached pages too.
+  const stylesheetPaths = stylesheet ? [stylesheet.path] : [];
+  const stylesheetFingerprint = stylesheet ? getStylesheetFingerprint(stylesheet.plan) : undefined;
+  // A hashed production build points every link to a stylesheet it hashes at the hashed name:
+  // a link to the Tailwind output's path at the name this build gives it, and a link to a
+  // stylesheet in the static directory at its hashed copy
+  const tailwindTargets = new Map<string, string>(
+    stylesheet?.plan.hash ? [[stylesheet.plan.path, stylesheet.path]] : [],
+  );
+  // The names links get, which a page that links them already needs no copy for
+  const hashedNames = new Set(tailwindTargets.values());
+  // Stylesheet paths pages link that the static directory has no file for, such as one added
+  // later; the build records them, so pages kept from now on link its copy once it exists
+  const unhashedLinks = new Set<string>();
+  const linkHashedStylesheets = async (html: string, pageUrl: string): Promise<string> => {
+    const targets = new Map(tailwindTargets);
+    for (const path of getLinkedStylesheetPaths(html, pageUrl, config.site.baseUrl)) {
+      if (targets.has(path) || hashedNames.has(path)) {
+        continue;
+      }
+      const copy = await staticStylesheets?.resolve(path);
+      if (copy !== undefined) {
+        targets.set(path, copy);
+        hashedNames.add(copy);
+      } else if (isHashableStylesheetPath(path)) {
+        unhashedLinks.add(path);
+      }
+    }
+    return rewriteStylesheetLinks(html, targets, pageUrl, config.site.baseUrl);
+  };
+  const renderedFiles: string[] = [];
+  // A production build runs Tailwind after rendering: it keeps the pages it renders until then,
+  // so a Tailwind error leaves the previous build's pages in place, hashed or not, and a hashed
+  // build writes each page once with the stylesheet's final name
+  const deferWrites = !isDevMode && stylesheet !== null;
+  const deferredPages: DeferredPage[] = [];
+  let deferredLength = 0;
+
   for (let i = 0; i < pages.length; i++) {
     const page = pages[i];
     if (!page) continue; // Safety check
@@ -615,21 +748,29 @@ async function processPagesWithCache(
     const existingEntry = manifest.entries[cacheKey];
 
     const bundlePaths = getBundlePathsForPage(page.url, compiledBundles);
+    const searchIndexPath =
+      config.search?.enabled === true && searchIndexFilename
+        ? `/${searchIndexFilename}`
+        : undefined;
     const assets: StatiAssets = {
       bundlePaths,
-      ...(config.search?.enabled === true &&
-        searchIndexFilename && {
-          searchIndexPath: `/${searchIndexFilename}`,
-        }),
+      // A copy per page, like bundlePaths, so a template that changes it changes only its page
+      stylesheetPaths: [...stylesheetPaths],
+      ...(searchIndexPath && { searchIndexPath }),
     };
 
     // Collection the page sees as stati.collection; a page whose collection appears,
     // disappears or changes rebuilds even when it never read it
     const collectionPath = resolveCollectionPath(page, pages);
     const staticRenderInputs = {
-      ...assets,
+      bundlePaths,
+      ...(searchIndexPath && { searchIndexPath }),
       bundleAutoInject: config.typescript?.autoInject !== false,
       searchAutoInject: config.search?.autoInjectMetaTag !== false,
+      // Omitted without a stylesheet, so the hash matches builds from before Stati linked one
+      ...(stylesheetFingerprint && { stylesheet: stylesheetFingerprint }),
+      // Production links hashed stylesheets, which development doesn't
+      ...(staticStylesheets && { hashedStylesheets: true }),
       // Omitted with images: false, so the hash matches builds without the image pipeline
       ...(imageFingerprint && { images: imageFingerprint }),
       // The 404 page gets no Open Graph image and a noindex robots tag, so a copy cached
@@ -784,6 +925,36 @@ async function processPagesWithCache(
       finalHtml = autoInjectSearchMeta(finalHtml, `/${searchIndexFilename}`);
     }
 
+    // A hashed build writes the Tailwind stylesheet under its hashed name only, so a link that
+    // keeps the stylesheet's own path for its integrity digest would load nothing
+    if (
+      stylesheet?.plan.hash &&
+      linksStylesheetWithIntegrity(finalHtml, stylesheet.plan.path, page.url, config.site.baseUrl)
+    ) {
+      throw new Error(
+        `The page ${page.url} links ${stylesheet.plan.path} with an integrity attribute. A hashed build writes the Tailwind stylesheet only as /${CSS_OUT_DIR}/${stylesheet.plan.name}-[hash].css, which the link can't load. Remove the integrity attribute, or set css.hash to false.`,
+      );
+    }
+
+    // Link the hashed stylesheets, then add the Tailwind stylesheet's link if enabled (default:
+    // true) where the page doesn't have one. A path a template added to stylesheetPaths can be
+    // a stylesheet from the static directory, so an added link is pointed at its copy too.
+    if (staticStylesheets) {
+      finalHtml = await linkHashedStylesheets(finalHtml, page.url);
+    }
+    if (stylesheet?.plan.autoInject) {
+      const linked = autoInjectStylesheets(
+        finalHtml,
+        assets.stylesheetPaths,
+        config.site.baseUrl,
+        page.url,
+      );
+      finalHtml =
+        staticStylesheets && linked !== finalHtml
+          ? await linkHashedStylesheets(linked, page.url)
+          : linked;
+    }
+
     // Auto-inject TypeScript bundle script tags if available and autoInject is enabled (default: true)
     if (config.typescript?.autoInject !== false && assets.bundlePaths.length > 0) {
       finalHtml = autoInjectBundles(finalHtml, assets.bundlePaths);
@@ -819,6 +990,7 @@ async function processPagesWithCache(
     if (logger.updateProgress) {
       logger.updateProgress('rendered', page.url, Math.round(renderTime));
     }
+    renderedFiles.push(outputPath);
 
     // In dev mode, batch writes for parallel execution to avoid Windows filesystem slowdown
     if (isDevMode) {
@@ -830,14 +1002,29 @@ async function processPagesWithCache(
         renderInputsHash: renderedInputsHash,
         renderedAssets,
       });
+    } else if (deferWrites && stylesheet) {
+      // Written after Tailwind has run, with the stylesheet's final name
+      if (deferredLength + finalHtml.length <= MAX_DEFERRED_PAGES_LENGTH) {
+        deferredPages.push({ outputPath, content: finalHtml });
+        deferredLength += finalHtml.length;
+      } else {
+        const fileWriteStart = performance.now();
+        const stagedFile = join(stylesheet.stagingDir, `${deferredPages.length}.html`);
+        await ensureDir(stylesheet.stagingDir);
+        await writeFile(stagedFile, finalHtml, 'utf-8');
+        deferredPages.push({ outputPath, stagedFile });
+        totalFileWriteTime += performance.now() - fileWriteStart;
+      }
     } else {
       // Production mode: write immediately
       const fileWriteStart = performance.now();
       await ensureDir(dirname(outputPath));
       await writeFile(outputPath, finalHtml, 'utf-8');
       totalFileWriteTime += performance.now() - fileWriteStart;
+    }
 
-      // Update cache manifest
+    // Production mode: update the cache manifest now; dev mode does it after the batched writes
+    if (!isDevMode) {
       if (!options.skipCacheUpdate) {
         const cacheEntryStart = performance.now();
         manifest.entries[cacheKey] = existingEntry
@@ -915,7 +1102,14 @@ async function processPagesWithCache(
     }
   }
 
-  return { cacheHits, cacheMisses, searchIndexFilename };
+  return {
+    cacheHits,
+    cacheMisses,
+    searchIndexFilename,
+    deferredPages,
+    renderedFiles,
+    unhashedLinks: [...unhashedLinks],
+  };
 }
 
 /**
@@ -925,10 +1119,26 @@ async function copyStaticAssets(
   config: StatiConfig,
   outDir: string,
   logger: Logger,
+  tailwindOutput?: string,
 ): Promise<number> {
   const staticDir = resolveStaticDir(config);
   if (!(await pathExists(staticDir))) {
     return 0;
+  }
+
+  // The Tailwind output's path belongs to Tailwind in every build, so a static file there is
+  // never copied: the dev server's watcher would write over it, and a hashed build would ship
+  // a copy that dev never serves
+  let skipFile: string | undefined;
+  if (tailwindOutput) {
+    const outputPath = relative(outDir, tailwindOutput);
+    if (await pathExists(join(staticDir, outputPath))) {
+      skipFile = resolve(tailwindOutput);
+      const shown = (path: string) => relative(process.cwd(), path).replace(/\\/g, '/');
+      logger.warning(
+        `${shown(join(staticDir, outputPath))} is not copied: --tailwind-output names that path (${shown(tailwindOutput)}). Rename the static file or change --tailwind-output.`,
+      );
+    }
   }
 
   if (logger.step) {
@@ -940,6 +1150,8 @@ async function copyStaticAssets(
     staticDir,
     outDir,
     logger,
+    '',
+    skipFile,
   );
   if (assetsCount > 0) {
     const totalSizeStr = formatBytes(totalBytes);
@@ -1023,6 +1235,15 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
   const { config, outDir, cacheDir } = await loadAndValidateConfig(options);
   endConfigSpan();
 
+  // The stylesheet Stati builds with Tailwind. A production build checks the input and the
+  // Tailwind CLI now, so a missing one fails before any page renders.
+  const stylesheetPlan = options.tailwind
+    ? createStylesheetPlan(options.tailwind, config.css, outDir, isDevelopment())
+    : null;
+  if (stylesheetPlan && !isDevelopment()) {
+    await checkStylesheetSources(stylesheetPlan);
+  }
+
   // Clean output directory and cache if requested
   if (options.clean) {
     logger.status('Cleaning output directory and ISG cache...');
@@ -1031,6 +1252,12 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
   }
 
   await ensureDir(outDir);
+
+  // Production links the static directory's stylesheets under hashed names, unless css.hash
+  // is false. The Tailwind output's path is Tailwind's, so a static file there isn't one.
+  const staticStylesheets = resolveCSSConfig(config.css, isDevelopment()).hash
+    ? new StaticStylesheets(resolveStaticDir(config), outDir, stylesheetPlan?.path)
+    : null;
 
   // Image pipeline; null with images: false. Fails here, before any page renders, when a
   // feature needs @stati/images and it is missing or incompatible.
@@ -1041,9 +1268,9 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     development: isDevelopment(),
   });
 
-  // Enable Tailwind class inventory tracking only if Tailwind is detected
+  // Enable Tailwind class inventory tracking only if Tailwind is used
   const tailwindInitStart = performance.now();
-  const hasTailwind = await isTailwindUsed();
+  const hasTailwind = stylesheetPlan !== null || (await isTailwindUsed());
   if (hasTailwind) {
     enableInventoryTracking();
     clearInventory(); // Clear any previous inventory
@@ -1072,6 +1299,20 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
   const endManifestLoadSpan = recorder.startSpan('cacheManifestLoadMs');
   const { manifest } = await setupCacheAndManifest(cacheDir);
   endManifestLoadSpan();
+
+  // The stylesheet paths the last production build linked, which pages kept from it carry
+  const previousStylesheets = manifest.stylesheets ?? {};
+
+  // The stylesheet path pages render with: in a hashed build, a name made up for this build
+  const renderStylesheet: RenderStylesheet | null = stylesheetPlan && {
+    plan: stylesheetPlan,
+    path: getRenderStylesheetPath(stylesheetPlan),
+    stagingDir: join(cacheDir, STAGED_PAGES_DIR),
+  };
+  if (renderStylesheet && !isDevelopment()) {
+    // Pages a build that stopped before writing them left behind
+    await remove(renderStylesheet.stagingDir);
+  }
 
   // Load content and build navigation
   if (logger.step) {
@@ -1158,9 +1399,130 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     imageRuntime,
     navigationHash,
     templateIndex,
+    renderStylesheet,
+    staticStylesheets,
   );
   endPageRenderSpan();
-  const { cacheHits, cacheMisses, searchIndexFilename } = pageProcessingResult;
+  const {
+    cacheHits,
+    cacheMisses,
+    searchIndexFilename,
+    deferredPages,
+    renderedFiles,
+    unhashedLinks,
+  } = pageProcessingResult;
+
+  // Write Tailwind class inventory after all templates have been rendered (if Tailwind is used)
+  const tailwindStart = performance.now();
+  if (hasTailwind) {
+    const inventorySize = getInventorySize();
+    if (inventorySize > 0) {
+      // In dev mode, skip write if inventory size hasn't changed
+      const skipIfUnchanged = isDevMode;
+      await writeTailwindClassInventory(cacheDir, skipIfUnchanged);
+      logger.info('');
+      logger.status(`Generated Tailwind class inventory (${inventorySize} classes tracked)`);
+    }
+
+    // Disable inventory tracking after build
+    disableInventoryTracking();
+  }
+  const tailwindInventoryTime = performance.now() - tailwindStart;
+  recorder.recordPhase('tailwindInventoryMs', tailwindInventoryTime);
+
+  // Run Tailwind now that the inventory lists every class the pages use, then write the pages
+  // this build rendered, which it held until now, with the stylesheet's name. Before stale
+  // pages are removed and image failures patched, which read the written pages.
+  let builtStylesheet: BuiltStylesheet | null = null;
+  if (renderStylesheet && !isDevMode) {
+    const { plan, stagingDir } = renderStylesheet;
+    const endStylesheetSpan = recorder.startSpan('tailwindBuildMs');
+    logger.info('');
+    logger.info('Building CSS with Tailwind CSS...');
+    try {
+      builtStylesheet = await buildStylesheet(plan, outDir, cacheDir);
+      if (logger.file) {
+        logger.file(
+          'compiled',
+          relative(outDir, builtStylesheet.file).replace(/\\/g, '/'),
+          builtStylesheet.sizeInBytes,
+        );
+      }
+
+      const fileWriteStart = performance.now();
+      await writeDeferredPages(deferredPages, renderStylesheet.path, builtStylesheet.path);
+      recorder.addToPhase('fileWriteTotalMs', performance.now() - fileWriteStart);
+    } finally {
+      await remove(stagingDir);
+    }
+    // Let go of the held HTML
+    deferredPages.length = 0;
+    endStylesheetSpan();
+    logger.success(`Built ${builtStylesheet.path} (${formatBytes(builtStylesheet.sizeInBytes)})`);
+  }
+
+  // The name every stylesheet this build links gets: the Tailwind output and the static
+  // stylesheets the rendered pages link, a hashed name each, and a path pages link that the
+  // static directory has no file for, its own. Pages kept from earlier builds carry the names
+  // those builds gave, so the stylesheets only they link are looked up again: a changed file
+  // gets a new name, a removed one its own path back, and one added since its copy. The kept
+  // pages link the new names from here on; nothing is rendered again for them.
+  if (staticStylesheets) {
+    const rendered = new Set(renderedFiles);
+    const cachedPages = pages
+      .map((page) => ({ file: getPageOutput(page, outDir).outputPath, url: page.url }))
+      .filter(({ file }) => !rendered.has(file));
+
+    const current = await staticStylesheets.hashed();
+    if (renderStylesheet?.plan.hash && builtStylesheet) {
+      current.set(renderStylesheet.plan.path, builtStylesheet.path);
+    }
+    for (const path of unhashedLinks) {
+      if (!current.has(path)) {
+        current.set(path, path);
+      }
+    }
+    // Every page rendered again links only what this build found
+    if (cachedPages.length > 0) {
+      for (const path of Object.keys(previousStylesheets)) {
+        if (!current.has(path)) {
+          current.set(path, (await staticStylesheets.resolve(path)) ?? path);
+        }
+      }
+    }
+
+    const replacements = new Map<string, string>();
+    for (const path of new Set([...Object.keys(previousStylesheets), ...current.keys()])) {
+      const target = current.get(path) ?? path;
+      const recorded = previousStylesheets[path];
+      for (const stale of await getStaleStylesheetPaths(outDir, path, recorded, target)) {
+        replacements.set(stale, target);
+      }
+      // Linked under its own path while the static directory had no file for it
+      if (recorded === path && target !== path) {
+        replacements.set(path, target);
+      }
+    }
+    const relinked = await relinkStylesheets(cachedPages, replacements, config.site.baseUrl);
+    if (relinked > 0) {
+      logger.info(
+        `Updated the stylesheet links of ${relinked} cached page${relinked === 1 ? '' : 's'}`,
+      );
+    }
+
+    for (const [path, name] of current) {
+      if (path !== renderStylesheet?.plan.path && name !== path) {
+        logger.info(`Linked ${path} as ${name}`);
+      }
+    }
+    if (current.size > 0) {
+      manifest.stylesheets = Object.fromEntries(current);
+    } else {
+      delete manifest.stylesheets;
+    }
+  } else if (!isDevMode) {
+    delete manifest.stylesheets;
+  }
 
   // Remove the output of pages that no longer exist, such as a deleted post or a tag no post
   // uses anymore. Runs before static assets are copied, so a file in the static directory at
@@ -1204,24 +1566,6 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
   recorder.increment('renderedPages', cacheMisses);
   recorder.increment('cachedPages', cacheHits);
 
-  // Write Tailwind class inventory after all templates have been rendered (if Tailwind is used)
-  const tailwindStart = performance.now();
-  if (hasTailwind) {
-    const inventorySize = getInventorySize();
-    if (inventorySize > 0) {
-      // In dev mode, skip write if inventory size hasn't changed
-      const skipIfUnchanged = isDevMode;
-      await writeTailwindClassInventory(cacheDir, skipIfUnchanged);
-      logger.info('');
-      logger.status(`Generated Tailwind class inventory (${inventorySize} classes tracked)`);
-    }
-
-    // Disable inventory tracking after build
-    disableInventoryTracking();
-  }
-  const tailwindInventoryTime = performance.now() - tailwindStart;
-  recorder.recordPhase('tailwindInventoryMs', tailwindInventoryTime);
-
   // Save updated cache manifest (skip if caller already saved it, e.g., dev mode template change)
   const endManifestSaveSpan = recorder.startSpan('cacheManifestSaveMs');
   if (!options.skipManifestSave) {
@@ -1239,10 +1583,22 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     );
   }
 
-  // Delete the bundles and search indexes earlier builds wrote under other names, now that
-  // every page links to this build's files. Before the static copy, so a file in the static
-  // directory with such a name is copied afterwards.
+  // Delete the bundles, stylesheets and search indexes earlier builds wrote under other names,
+  // now that every page links to this build's files. Before the static copy, so a file in the
+  // static directory with such a name is copied afterwards.
   if (!isDevMode) {
+    // Hashed copies other than the ones this build links. A stylesheet this build doesn't
+    // hash, after a change of --tailwind-output, without the flags or with css.hash false,
+    // loses every copy: its pages linked the new name above or were rendered again.
+    const currentStylesheets = manifest.stylesheets ?? {};
+    const stylesheetPaths = new Set([
+      ...Object.keys(previousStylesheets),
+      ...Object.keys(currentStylesheets),
+      ...(renderStylesheet ? [renderStylesheet.plan.path] : []),
+    ]);
+    for (const path of stylesheetPaths) {
+      await removeStaleStylesheets(outDir, path, currentStylesheets[path]);
+    }
     if (config.typescript?.enabled) {
       await removeStaleBundleFiles({
         projectRoot: process.cwd(),
@@ -1260,7 +1616,7 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
   const endAssetSpan = recorder.startSpan('assetCopyMs');
   let assetsCount = 0;
   if (!options.skipAssetCopy) {
-    assetsCount = await copyStaticAssets(config, outDir, logger);
+    assetsCount = await copyStaticAssets(config, outDir, logger, stylesheetPlan?.outputFile);
   }
   endAssetSpan();
   recorder.increment('assetsCopied', assetsCount);

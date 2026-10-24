@@ -71,7 +71,18 @@ const cli = yargs(hideBin(process.argv))
         .option('metrics-html', {
           type: 'boolean',
           description: 'Generate HTML report alongside JSON metrics',
-        }),
+        })
+        .option('tailwind-input', {
+          type: 'string',
+          description: 'Input file for Tailwind CSS, which runs after the last page renders.',
+        })
+        .option('tailwind-output', {
+          type: 'string',
+          description:
+            'Stylesheet path in the output directory, such as dist/styles.css. Unless css.hash is false, production writes _assets/[name]-[hash].css.',
+        })
+        .implies('tailwind-input', 'tailwind-output')
+        .implies('tailwind-output', 'tailwind-input'),
     async (argv) => {
       // Check for metrics enabled via environment or flag
       const metricsEnabled =
@@ -93,6 +104,12 @@ const cli = yargs(hideBin(process.argv))
 
       if (argv.config) {
         buildOptions.configPath = argv.config as string;
+      }
+
+      const tailwindInput = argv['tailwind-input'];
+      const tailwindOutput = argv['tailwind-output'];
+      if (tailwindInput && tailwindOutput) {
+        buildOptions.tailwind = { input: tailwindInput, output: tailwindOutput };
       }
 
       try {
@@ -117,6 +134,11 @@ const cli = yargs(hideBin(process.argv))
             isDefault: !buildOptions.configPath,
           },
           { name: 'Metrics', value: metricsEnabled, isDefault: !metricsEnabled },
+          {
+            name: 'Tailwind',
+            value: !!buildOptions.tailwind,
+            isDefault: !buildOptions.tailwind,
+          },
         ]);
 
         setEnv('production');
@@ -221,6 +243,11 @@ const cli = yargs(hideBin(process.argv))
         ...(argv.host !== undefined && { host: argv.host }),
         ...(argv.open !== undefined && { open: argv.open }),
         ...(argv.config && { configPath: argv.config as string }),
+        // Pages link the watcher's output
+        ...(argv['tailwind-input'] &&
+          argv['tailwind-output'] && {
+            tailwind: { input: argv['tailwind-input'], output: argv['tailwind-output'] },
+          }),
       };
 
       try {

@@ -106,6 +106,11 @@ export interface StatiConfig {
   /** TypeScript compilation settings */
   typescript?: TypeScriptConfig;
   /**
+   * Hashed stylesheets in production, and the stylesheet Stati builds with Tailwind CSS
+   * (`--tailwind-input` and `--tailwind-output`)
+   */
+  css?: CSSConfig;
+  /**
    * Image handling. Intrinsic sizes, lazy loading and co-located images work without
    * configuration; `false` turns them off. `responsive` and `og` need `@stati/images`.
    */
@@ -383,6 +388,49 @@ export interface TypeScriptConfig {
    *
    * When disabled, use `stati.assets.bundlePaths` in templates to access bundle paths.
    *
+   * @default true
+   */
+  autoInject?: boolean;
+}
+
+/**
+ * Stylesheet settings. Production builds name stylesheets after their content, so a deploy
+ * that changes the CSS gives it a new URL: the stylesheet Stati builds with Tailwind CSS when
+ * `stati build` gets `--tailwind-input` and `--tailwind-output`, and every stylesheet in the
+ * static directory a page links. Pages' `<link>` tags to `/styles.css` then point at
+ * `/_assets/styles-[hash].css`. Development keeps every stylesheet's own name.
+ *
+ * @example
+ * ```typescript
+ * const config: StatiConfig = {
+ *   css: {
+ *     autoInject: false, // link stati.assets.stylesheetPaths in your templates instead
+ *   },
+ * };
+ * ```
+ */
+export interface CSSConfig {
+  /**
+   * Name production stylesheets after their content, as `_assets/styles-A1B2C3D4.css`, and
+   * point the pages' links at those names: the Tailwind output, and the static directory's
+   * stylesheets that pages link (a copy; the file under its own name is still copied). When
+   * false, production links every stylesheet under its own name, and writes the
+   * `--tailwind-output` file. Development always uses the own names.
+   * @default true
+   */
+  hash?: boolean;
+
+  /**
+   * Minify the Tailwind stylesheet in production builds. Development output, and stylesheets
+   * in the static directory, are never minified.
+   * @default true
+   */
+  minify?: boolean;
+
+  /**
+   * Add a `<link rel="stylesheet">` to the Tailwind stylesheet before `</head>` on every page
+   * that does not link it already. When disabled, link it in your templates, under its own
+   * path or from `stati.assets.stylesheetPaths`.
    * @default true
    */
   autoInject?: boolean;

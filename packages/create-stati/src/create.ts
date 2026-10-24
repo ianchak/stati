@@ -4,6 +4,7 @@ import { ExampleManager, TEMPLATES } from './examples.js';
 import type { TemplateName } from './examples.js';
 import { PackageJsonModifier } from './package-json.js';
 import { processStyling } from './css-processors.js';
+import { SASS_OUTPUT } from './sass-processor.js';
 import { writeProcessorFiles, applyProcessorResult } from './utils/index.js';
 import type { StylingOption } from './css-processors.js';
 import { setupTypeScript } from './typescript-processor.js';
@@ -461,7 +462,7 @@ yarn.lock
 # Build outputs
 dist/
 .stati/
-
+${this.options.styling === 'sass' ? `\n# Compiled from src/styles.scss before each build\n${SASS_OUTPUT}\n` : ''}
 # Environment files
 .env
 .env.local

@@ -105,16 +105,19 @@ describe('CSSProcessor', () => {
 
       expect(packageJson.scripts).toHaveProperty('build:css');
       expect(packageJson.scripts).toHaveProperty('watch:css');
-      expect(packageJson.scripts['build:css']).toContain('sass src/styles.scss dist/styles.css');
-      expect(packageJson.scripts['watch:css']).toContain(
-        'sass src/styles.scss dist/styles.css --watch',
+      // Sass compiles into public/, so the build copies and hashes it like any stylesheet
+      expect(packageJson.scripts['build:css']).toBe(
+        'sass src/styles.scss public/styles.css --style=compressed --no-source-map',
+      );
+      expect(packageJson.scripts['watch:css']).toBe(
+        'sass --watch src/styles.scss public/styles.css --no-source-map',
       );
 
       // Scripts should be modified to integrate CSS processing
       expect(packageJson.scripts.dev).toBe(
         'concurrently --prefix none "npm run watch:css" "stati dev"',
       );
-      expect(packageJson.scripts.build).toBe('stati build && npm run build:css');
+      expect(packageJson.scripts.build).toBe('npm run build:css && stati build');
     });
 
     it('should remove original CSS file after creating SCSS', async () => {
@@ -182,16 +185,14 @@ describe('CSSProcessor', () => {
 
       const packageJson = JSON.parse(await readFile(join(tempDir, 'package.json'), 'utf-8'));
 
-      expect(packageJson.scripts).toHaveProperty('build:css');
-      expect(packageJson.scripts['build:css']).toBe(
-        'tailwindcss -i src/styles.css -o dist/styles.css --minify',
-      );
-
-      // Dev script should use integrated Tailwind support
+      // Both commands run Tailwind themselves
       expect(packageJson.scripts.dev).toBe(
         'stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css',
       );
-      expect(packageJson.scripts.build).toBe('stati build && npm run build:css');
+      expect(packageJson.scripts.build).toBe(
+        'stati build --tailwind-input src/styles.css --tailwind-output dist/styles.css',
+      );
+      expect(packageJson.scripts).not.toHaveProperty('build:css');
       expect(packageJson.scripts).not.toHaveProperty('copy:css');
     });
   });

@@ -76,7 +76,7 @@ Stati compiles your TypeScript files from `src/` using esbuild. Run `npm run typ
 
 For a JavaScript project instead, pass `--no-typescript` (you get `stati.config.js` and no `src/` entry point).
 
-> **Tip:** If you choose Tailwind CSS, the scaffolder sets up Stati's built-in Tailwind integration in the dev script. This runs both the dev server and Tailwind watcher in a single process - no need for separate build scripts or process managers!
+> **Tip:** If you choose Tailwind CSS, the scaffolder sets up Stati's built-in Tailwind integration in the dev and build scripts. `stati dev` runs the dev server and Tailwind watcher in a single process, and `stati build` runs Tailwind after the pages and names the stylesheet after its content, so you need no separate CSS scripts or process managers.
 
 ## Manual installation
 

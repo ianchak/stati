@@ -293,7 +293,7 @@ This means most edits during development result in significantly faster rebuilds
 ```text
 .stati/
 ├── manifest.json            # Cache entries and navigation hash
-├── tailwind-classes.html    # Tailwind class inventory (only when Tailwind is detected)
+├── tailwind-classes.html    # Tailwind class inventory (only when the project uses Tailwind)
 ├── metrics/                 # Build metrics (only with --metrics)
 ├── .build-lock              # Present while `stati build` runs
 └── .dev-server-lock         # Present while `stati dev` runs

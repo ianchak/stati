@@ -137,6 +137,21 @@ export const DEFAULT_TS_OUT_DIR = '_assets';
  */
 export const DEFAULT_BUNDLES = [{ entryPoint: 'main.ts', bundleName: 'main' }] as const;
 
+// === CSS Constants ===
+
+/**
+ * Folder of hashed production stylesheets (relative to build output), the one hashed
+ * TypeScript bundles go to by default, which hosts are commonly set to cache as immutable
+ */
+export const CSS_OUT_DIR = '_assets';
+
+/**
+ * Characters of rendered HTML a hashed production build holds in memory until Tailwind has
+ * named the stylesheet, so each page is written once. Pages past it are written at once and
+ * rewritten afterwards.
+ */
+export const MAX_DEFERRED_PAGES_LENGTH = 64 * 1024 * 1024;
+
 // === Image Constants ===
 
 /** Output directory for generated and copied images, relative to the build output */

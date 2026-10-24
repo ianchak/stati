@@ -302,6 +302,21 @@ Tailwind finds class names by scanning your files, so a class assembled at rende
 
 ---
 
+## New sections unstyled after a deploy
+
+**Cause:**
+The stylesheet has the same URL in every deploy, such as `/styles.css`, and browsers that visited before still use their cached copy. Some hosts and CDNs cache CSS files for hours whatever the page's own headers say, so new markup arrives with the old CSS.
+
+**Solution:**
+
+Production builds name stylesheets after their content, `/_assets/styles-[hash].css`, so each gets a new URL whenever it changes. A stylesheet still under a fixed name is one the build doesn't see or can't hash:
+
+1. A stylesheet that a script writes to `dist/` after `stati build`, such as a `build:css` script. Build Tailwind with `stati build --tailwind-input src/styles.css --tailwind-output dist/styles.css`, and compile Sass into `public/` before `stati build`. See [Moving from a `build:css` script](/configuration/css#moving-from-a-build-css-script)
+2. `css.hash` set to `false` in `stati.config`
+3. A stylesheet loaded some other way than a page's `<link>`, such as an `@import` in another stylesheet, or a path with characters other than letters, digits, `-`, `_`, `.` and `/`. Link it from the page, or rename it. See [How pages link the hashed name](/configuration/css#how-pages-link-the-hashed-name)
+
+---
+
 ## `README.md` appearing as a page
 
 **Cause:**

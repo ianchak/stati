@@ -210,14 +210,59 @@ asset files, not broken placeholders, and always write alt text.
 
 Preserve scaffold-generated scripts; they orchestrate styling differently.
 
-| Choice    | Author source             | Public output | Workflow                                       |
-| --------- | ------------------------- | ------------- | ---------------------------------------------- |
-| Plain CSS | `public/styles.css`       | `/styles.css` | Copied directly                                |
-| Sass      | `src/styles.scss`         | `/styles.css` | Generated `build:css` / `watch:css`            |
-| Tailwind  | `src/styles.css`          | `/styles.css` | Generated CSS build plus Stati dev integration |
+| Choice    | Author source       | Public output                                            | Workflow                                                     |
+| --------- | ------------------- | -------------------------------------------------------- | ------------------------------------------------------------ |
+| Plain CSS | `public/styles.css` | `/styles.css` in dev, `/_assets/styles-[hash].css` built | Copied, and hashed when a page links it                      |
+| Sass      | `src/styles.scss`   | `/styles.css` in dev, `/_assets/styles-[hash].css` built | `build:css` into `public/` before `stati build`, `watch:css` |
+| Tailwind  | `src/styles.css`    | `/styles.css` in dev, `/_assets/styles-[hash].css` built | `--tailwind-input`/`--tailwind-output` on `dev` and `build`  |
 
 Scaffolding supports `--styling css`, `sass`, or `tailwind`. Do not replace Sass
 or Tailwind scripts with a plain `"build": "stati build"` shortcut.
+
+Templates link `/styles.css` in every setup. Production builds (`css.hash`, on by
+default) point each `<link>` that applies, offers or preloads a stylesheet
+(`rel="stylesheet"`, `rel="alternate stylesheet"`, `rel="preload" as="style"`) at
+a copy named after its content, `_assets/[folder/]name-[hash].css`; development
+keeps the own names.
+
+- Covered: a `.css` file in `public/` a page links, and the Tailwind output. The
+  `public/` file is still copied under its own name; a file only another
+  stylesheet `@import`s, or one with characters other than letters, digits, `-`,
+  `_`, `.` and `/`, keeps its name. Links keep quotes, a query or fragment and
+  the site's own origin; relative links resolve against the page. Links with an
+  `integrity` digest, and links in comments, scripts and templates, stay as they are.
+- The Tailwind output is written only under its hashed name, never as
+  `dist/styles.css` (one the dev watcher left there is stale). So a hashed build
+  stops when a page links it with `integrity`, or when a `public/` stylesheet a
+  page links `@import`s or `url()`s it; a script or another site that loads
+  `/styles.css` gets nothing. `css.hash: false` writes it under its own name.
+- Relative `url()` references and `@import` strings in the CSS become root paths
+  (`url(fonts/a.woff2)` from `/styles.css` becomes `url(/fonts/a.woff2)`), so
+  `_assets/` loads the same files.
+- Cached ISG pages get the new name written in when the CSS changes, so a CSS
+  change re-renders nothing; a stylesheet removed from `public/` goes back to its
+  own path, and one added later gets linked. Only their stylesheet links change. Earlier hashed copies are deleted. The first hashing build re-renders
+  every page.
+- Sass compiles into `public/styles.css` (gitignored) before `stati build`. A
+  script that writes CSS to `dist/` after `stati build` keeps a fixed name.
+
+`stati build --tailwind-input src/styles.css --tailwind-output dist/styles.css`
+runs Tailwind once after the last page renders, minified, and writes
+`dist/_assets/styles-[hash].css`; a `dist/styles.css` the dev server wrote stays.
+`stati dev` with the same flags links `/styles.css`.
+
+- The output must be a `.css` file inside the output directory; the build fails
+  otherwise, and when the input or the Tailwind CLI is missing, before rendering.
+- Pages without a `<link rel="stylesheet">` to the output get one before
+  `</head>` (a preload or an alternate stylesheet doesn't count); turn that off
+  with `css.autoInject: false`. `stati.assets.stylesheetPaths` holds the path;
+  print it unchanged, because a hashed build writes the final name into the page
+  after rendering. If Tailwind fails, the previous pages stay as they were.
+- A file in `public/` at the Tailwind output's path is never copied, in dev or in
+  production, hashed or not, and the build warns about it.
+- `css: { hash, minify, autoInject }`, all `true` by default; development never
+  hashes or minifies. `minify` and `autoInject` apply to the Tailwind stylesheet
+  only. `hash: false` links every stylesheet under its own name.
 
 Tailwind's scaffold installs Tailwind CSS 4 (`tailwindcss` and
 `@tailwindcss/cli`) and configures it in `src/styles.css`, without a
@@ -229,8 +274,9 @@ folders, so the stylesheet adds the inventory with
 runs either version.
 `stati.propValue()` records runtime tokens for that inventory. Production
 styling must run in the proper order so classes recorded during rendering exist
-before the final CSS compilation. Retain the actual installed scaffold's build
-order and verify the emitted CSS.
+before the final CSS compilation: `stati build` with the Tailwind flags does this
+itself, and a separate Tailwind `build:css` script must run after `stati build`. Retain the
+actual installed scaffold's build order and verify the emitted CSS.
 
 Literal variant maps are safer than constructing unbounded classes from user
 data. Inventory only includes exercised dynamic branches; it is not a guarantee
@@ -289,5 +335,5 @@ typescript: {
 
 Source authority: `packages/core/src/config/loader.ts`, `types/config.ts`,
 `core/utils/typescript.utils.ts`, `bundle-matching.utils.ts`,
-`tailwind-inventory.utils.ts`; scaffolder styling processors in
+`tailwind-inventory.utils.ts`, `css/` (the Tailwind stylesheet); scaffolder styling processors in
 `packages/create-stati/src/`. These paths belong to the Stati source checkout.
