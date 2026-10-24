@@ -1,24 +1,28 @@
 /**
- * Tests for the stylesheet a build links: its paths, the links in pages, and the files earlier
- * builds left behind.
+ * Tests for the stylesheets a build links: their paths and hashed names, the links in pages,
+ * and the files earlier builds left behind.
  * @module css/stylesheet.test
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { createHash } from 'node:crypto';
 import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import {
   autoInjectStylesheets,
   createStylesheetPlan,
-  getHashedStylesheetPattern,
+  getLinkedStylesheetPaths,
   getRenderStylesheetPath,
   getStaleStylesheetPaths,
   getStylesheetFingerprint,
+  hashStylesheet,
+  isHashableStylesheetPath,
   linksStylesheet,
   rebaseRelativeUrls,
-  relinkStylesheet,
+  relinkStylesheets,
   removeStaleStylesheets,
+  rewriteStylesheetLinks,
   type StylesheetPlan,
 } from '../../src/css/stylesheet.js';
 
@@ -133,9 +137,41 @@ describe('getRenderStylesheetPath', () => {
   });
 });
 
-describe('getHashedStylesheetPattern', () => {
-  it('shows how a hashed build names the stylesheet', () => {
-    expect(getHashedStylesheetPattern(plan())).toBe('/_assets/styles-[hash].css');
+describe('hashStylesheet', () => {
+  it('names the rebased CSS after its content, in its own folder inside _assets/', () => {
+    const css = 'body{background:url(img/bg.png)}';
+    const rebased = 'body{background:url(/css/img/bg.png)}';
+    const hash = createHash('sha256').update(rebased).digest('hex').slice(0, 8).toUpperCase();
+
+    expect(hashStylesheet(css, '/css/site.css')).toEqual({
+      css: rebased,
+      path: `/_assets/css/site-${hash}.css`,
+    });
+    expect(hashStylesheet('a{}', '/styles.css').path).toMatch(
+      /^\/_assets\/styles-[0-9A-F]{8}\.css$/,
+    );
+  });
+
+  it('gives the same CSS at two paths two names', () => {
+    expect(hashStylesheet('a{}', '/styles.css').path).not.toBe(
+      hashStylesheet('a{}', '/vendor/styles.css').path,
+    );
+  });
+});
+
+describe('isHashableStylesheetPath', () => {
+  it('takes .css paths an attribute holds as they are', () => {
+    expect(isHashableStylesheetPath('/styles.css')).toBe(true);
+    expect(isHashableStylesheetPath('/css/site.min.css')).toBe(true);
+    for (const path of [
+      '/styles.scss',
+      'styles.css',
+      '/my%20styles.css',
+      '/a/../b.css',
+      '//x.css',
+    ]) {
+      expect(isHashableStylesheetPath(path)).toBe(false);
+    }
   });
 });
 
@@ -158,6 +194,17 @@ describe('rebaseRelativeUrls', () => {
       'e:url("data:image/svg+xml;utf8,<svg/>");f:url(#mask);g:url();h:url("a\\"b.png")}';
 
     expect(rebaseRelativeUrls(css, '/styles.css')).toBe(css);
+  });
+
+  it('resolves the relative @import strings plain CSS uses', () => {
+    const css =
+      '@import "base.css";@import \'../theme/dark.css\' screen;@import url(print.css) print;' +
+      '@import "/root.css";@import "https://cdn.example/x.css";@import "a\\"b.css";';
+
+    expect(rebaseRelativeUrls(css, '/css/site.css')).toBe(
+      '@import "/css/base.css";@import \'/theme/dark.css\' screen;@import url(/css/print.css) print;' +
+        '@import "/root.css";@import "https://cdn.example/x.css";@import "a\\"b.css";',
+    );
   });
 
   it('leaves the url() inside a data URI with escaped quotes alone', () => {
@@ -229,6 +276,14 @@ describe('linksStylesheet', () => {
     ).toBe(false);
   });
 
+  it('resolves a relative link against the page when it has its URL', () => {
+    const html = '<link rel="stylesheet" href="styles.css">';
+
+    expect(linksStylesheet(html, '/styles.css')).toBe(false);
+    expect(linksStylesheet(html, '/styles.css', undefined, '/about')).toBe(true);
+    expect(linksStylesheet(html, '/styles.css', undefined, '/blog/')).toBe(false);
+  });
+
   it('counts only links that apply the stylesheet', () => {
     const linked = (attributes: string) =>
       linksStylesheet(`<link ${attributes} href="/styles.css">`, '/styles.css');
@@ -274,6 +329,64 @@ describe('autoInjectStylesheets', () => {
   });
 });
 
+describe('getLinkedStylesheetPaths', () => {
+  it('lists the paths of links that apply, offer or preload a stylesheet, once each', () => {
+    const html =
+      '<link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/styles.css?v=2">' +
+      '<link rel="alternate stylesheet" href="/dark.css" title="Dark">' +
+      '<link rel="preload" as="style" href="/print.css">' +
+      '<link rel="preload" as="font" href="/fonts/a.woff2"><link rel="icon" href="/favicon.css">' +
+      '<link rel="stylesheet" href="https://cdn.example/x.css"><link rel="stylesheet" href="data:text/css,a{}">';
+
+    expect(getLinkedStylesheetPaths(html, '/')).toEqual(['/styles.css', '/dark.css', '/print.css']);
+  });
+
+  it("resolves relative links against the page and drops the site's origin", () => {
+    const html =
+      '<link rel="stylesheet" href="local.css"><link rel="stylesheet" href="../up.css">' +
+      '<link rel="stylesheet" href="https://example.com/site.css"><link rel=stylesheet href=/a/../b.css>';
+
+    expect(getLinkedStylesheetPaths(html, '/blog/post/', 'https://example.com')).toEqual([
+      '/blog/post/local.css',
+      '/blog/up.css',
+      '/site.css',
+      '/b.css',
+    ]);
+  });
+});
+
+describe('rewriteStylesheetLinks', () => {
+  const targets = new Map([
+    ['/styles.css', '/_assets/styles-0A1B2C3D.css'],
+    ['/blog/local.css', '/_assets/blog/local-DEADBEEF.css'],
+  ]);
+
+  it("points each link at its target, keeping quotes, the site's origin and the query", () => {
+    const html =
+      '<link rel="stylesheet" href="/styles.css"><link href=\'/styles.css#print\' rel=\'stylesheet\'>' +
+      '<link rel=stylesheet href=https://example.com/styles.css?v=2>' +
+      '<link rel="preload" as="style" href="/styles.css"><link rel="stylesheet" href="local.css">';
+
+    expect(rewriteStylesheetLinks(html, targets, '/blog/post', 'https://example.com')).toBe(
+      '<link rel="stylesheet" href="/_assets/styles-0A1B2C3D.css">' +
+        "<link href='/_assets/styles-0A1B2C3D.css#print' rel='stylesheet'>" +
+        '<link rel=stylesheet href=https://example.com/_assets/styles-0A1B2C3D.css?v=2>' +
+        '<link rel="preload" as="style" href="/_assets/styles-0A1B2C3D.css">' +
+        '<link rel="stylesheet" href="/_assets/blog/local-DEADBEEF.css">',
+    );
+  });
+
+  it('leaves other links, other tags and page text alone', () => {
+    const html =
+      '<link rel="canonical" href="/styles.css"><link rel="preload" as="font" href="/styles.css">' +
+      '<a href="/styles.css">/styles.css</a><code>&lt;link rel="stylesheet" href="/styles.css"&gt;</code>' +
+      '<link rel="stylesheet" href="https://cdn.example/styles.css"><link rel="stylesheet" href="/other.css">';
+
+    expect(rewriteStylesheetLinks(html, targets, '/', 'https://example.com')).toBe(html);
+    expect(rewriteStylesheetLinks(html, new Map(), '/')).toBe(html);
+  });
+});
+
 describe('stylesheet files', () => {
   let dir: string;
 
@@ -285,7 +398,7 @@ describe('stylesheet files', () => {
     await rm(dir, { recursive: true, force: true });
   });
 
-  describe('relinkStylesheet', () => {
+  describe('relinkStylesheets', () => {
     it('rewrites every mention of each earlier path in the pages that have one', async () => {
       const from = '/_assets/styles-0A1B2C3D.css';
       const linked = `<link rel="stylesheet" href="${from}"><link rel="preload" href="${from}">`;
@@ -296,10 +409,13 @@ describe('stylesheet files', () => {
         '<link rel="stylesheet" href="/_assets/styles-DEADBEEF.css">',
       );
 
-      const count = await relinkStylesheet(
+      const to = '/_assets/styles-E77989ED.css';
+      const count = await relinkStylesheets(
         [join(dir, 'a.html'), join(dir, 'b.html'), join(dir, 'c.html'), join(dir, 'missing.html')],
-        [from, '/_assets/styles-DEADBEEF.css'],
-        '/_assets/styles-E77989ED.css',
+        new Map([
+          [from, to],
+          ['/_assets/styles-DEADBEEF.css', to],
+        ]),
       );
 
       expect(count).toBe(2);
@@ -315,9 +431,38 @@ describe('stylesheet files', () => {
     it('reads no page without an earlier path', async () => {
       await writeFile(join(dir, 'a.html'), 'href="/new.css"');
 
-      expect(await relinkStylesheet([join(dir, 'a.html')], [], '/new.css')).toBe(0);
-      expect(await relinkStylesheet([join(dir, 'a.html')], ['/new.css', ''], '/new.css')).toBe(0);
+      const page = [join(dir, 'a.html')];
+      expect(await relinkStylesheets(page, new Map())).toBe(0);
+      expect(
+        await relinkStylesheets(
+          page,
+          new Map([
+            ['/new.css', '/new.css'],
+            ['', '/new.css'],
+          ]),
+        ),
+      ).toBe(0);
       expect(await readFile(join(dir, 'a.html'), 'utf-8')).toBe('href="/new.css"');
+    });
+
+    it('replaces the earlier names of several stylesheets in one pass', async () => {
+      await writeFile(
+        join(dir, 'a.html'),
+        '<link rel="stylesheet" href="/_assets/styles-0A1B2C3D.css"><link rel="stylesheet" href="/_assets/print-DEADBEEF.css">',
+      );
+
+      const count = await relinkStylesheets(
+        [join(dir, 'a.html')],
+        new Map([
+          ['/_assets/styles-0A1B2C3D.css', '/_assets/styles-E77989ED.css'],
+          ['/_assets/print-DEADBEEF.css', '/print.css'],
+        ]),
+      );
+
+      expect(count).toBe(1);
+      expect(await readFile(join(dir, 'a.html'), 'utf-8')).toBe(
+        '<link rel="stylesheet" href="/_assets/styles-E77989ED.css"><link rel="stylesheet" href="/print.css">',
+      );
     });
 
     it('handles more pages than it reads at once', async () => {
@@ -329,7 +474,7 @@ describe('stylesheet files', () => {
         }),
       );
 
-      expect(await relinkStylesheet(files, ['/old.css'], '/new.css')).toBe(70);
+      expect(await relinkStylesheets(files, new Map([['/old.css', '/new.css']]))).toBe(70);
       expect(await readFile(files[69]!, 'utf-8')).toBe('href="/new.css"');
     });
   });
@@ -348,8 +493,8 @@ describe('stylesheet files', () => {
       await assets('styles-DEADBEEF.css', 'styles-E77989ED.css', 'site-0A1B2C3D.css');
 
       const stale = await getStaleStylesheetPaths(
-        plan(),
         dir,
+        '/styles.css',
         '/_assets/styles-0A1B2C3D.css',
         current,
       );
@@ -361,9 +506,26 @@ describe('stylesheet files', () => {
     });
 
     it('ignores a recorded path that is not a hashed copy of this stylesheet', async () => {
-      for (const recorded of ['', '/styles.css', '/_assets/site-0A1B2C3D.css', current]) {
-        expect(await getStaleStylesheetPaths(plan(), dir, recorded, current)).toEqual([]);
+      const recordedPaths = [
+        '',
+        '/styles.css',
+        '/_assets/site-0A1B2C3D.css',
+        '/_assets/css/styles-0A1B2C3D.css',
+        current,
+      ];
+      for (const recorded of recordedPaths) {
+        expect(await getStaleStylesheetPaths(dir, '/styles.css', recorded, current)).toEqual([]);
       }
+    });
+
+    it("looks in the stylesheet's own folder inside _assets/", async () => {
+      await assets('styles-DEADBEEF.css');
+      await mkdir(join(dir, '_assets', 'css'));
+      await writeFile(join(dir, '_assets', 'css', 'styles-0A1B2C3D.css'), '');
+
+      expect(
+        await getStaleStylesheetPaths(dir, '/css/styles.css', undefined, '/_assets/css/x.css'),
+      ).toEqual(['/_assets/css/styles-0A1B2C3D.css']);
     });
   });
 
@@ -383,7 +545,11 @@ describe('stylesheet files', () => {
         'styles.css',
       );
 
-      const removed = await removeStaleStylesheets(dir, 'styles', '/_assets/styles-E77989ED.css');
+      const removed = await removeStaleStylesheets(
+        dir,
+        '/styles.css',
+        '/_assets/styles-E77989ED.css',
+      );
 
       expect(removed.sort()).toEqual([
         '_assets/styles-0A1B2C3D.css',
@@ -403,9 +569,9 @@ describe('stylesheet files', () => {
       );
       await mkdir(join(dir, '_assets', 'styles-ABCDEF12.css'));
 
-      expect(await removeStaleStylesheets(dir, 'styles', '/_assets/styles-E77989ED.css')).toEqual(
-        [],
-      );
+      expect(
+        await removeStaleStylesheets(dir, '/styles.css', '/_assets/styles-E77989ED.css'),
+      ).toEqual([]);
       expect((await readdir(join(dir, '_assets'))).sort()).toEqual([
         'main-0A1B2C3D.js',
         'site-0A1B2C3D.css',
@@ -419,7 +585,7 @@ describe('stylesheet files', () => {
     it('keeps the output under its own name when the build does not hash', async () => {
       await files('_assets/styles-0A1B2C3D.css', 'styles.css');
 
-      expect(await removeStaleStylesheets(dir, 'styles', '/styles.css')).toEqual([
+      expect(await removeStaleStylesheets(dir, '/styles.css', '/styles.css')).toEqual([
         '_assets/styles-0A1B2C3D.css',
       ]);
       expect(await readdir(dir)).toContain('styles.css');
@@ -428,14 +594,23 @@ describe('stylesheet files', () => {
     it('deletes every hashed copy of a stylesheet the build no longer builds', async () => {
       await files('_assets/styles-0A1B2C3D.css', '_assets/styles-DEADBEEF.css');
 
-      expect((await removeStaleStylesheets(dir, 'styles')).sort()).toEqual([
+      expect((await removeStaleStylesheets(dir, '/styles.css')).sort()).toEqual([
         '_assets/styles-0A1B2C3D.css',
         '_assets/styles-DEADBEEF.css',
       ]);
     });
 
+    it('deletes the copies of a stylesheet in a folder, not those of one at the root', async () => {
+      await files('_assets/styles-0A1B2C3D.css', '_assets/css/styles-DEADBEEF.css');
+
+      expect(await removeStaleStylesheets(dir, '/css/styles.css')).toEqual([
+        '_assets/css/styles-DEADBEEF.css',
+      ]);
+      expect(await readdir(join(dir, '_assets'))).toContain('styles-0A1B2C3D.css');
+    });
+
     it('is fine without an _assets folder', async () => {
-      expect(await removeStaleStylesheets(dir, 'styles', '/styles.css')).toEqual([]);
+      expect(await removeStaleStylesheets(dir, '/styles.css', '/styles.css')).toEqual([]);
     });
   });
 });

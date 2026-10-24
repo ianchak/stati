@@ -1,7 +1,8 @@
 /**
- * Builds that run Tailwind CSS for the stylesheet (`--tailwind-input`, `--tailwind-output`):
- * the hashed production file, the link on every page, cached pages relinked when the CSS
- * changes, and the files earlier builds left behind. A stand-in CLI replaces Tailwind.
+ * Builds that hash stylesheets: the one Tailwind CSS builds (`--tailwind-input`,
+ * `--tailwind-output`) and the static directory's stylesheets pages link. The hashed production
+ * files, the links pages get, cached pages relinked when the CSS changes, and the files earlier
+ * builds left behind. A stand-in CLI replaces Tailwind.
  * @module core/stylesheet-integration.test
  */
 
@@ -11,6 +12,7 @@ import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { loadConfig } from '../../src/config/loader.js';
 import { setEnv } from '../../src/env.js';
+import { hashStylesheet } from '../../src/css/stylesheet.js';
 import type { StatiConfig } from '../../src/types/index.js';
 import { createSiteFixture, page, type SiteFixture } from './site-fixture.js';
 
@@ -117,7 +119,9 @@ describe('stylesheet builds with Tailwind CSS', () => {
 
       expect(rendered.sort()).toEqual(['/', '/about']);
       // Written once, after Tailwind has named the stylesheet
-      expect(info.some((message) => message.startsWith('Linked'))).toBe(false);
+      expect(info.some((message) => message.startsWith('Updated the stylesheet links'))).toBe(
+        false,
+      );
       expect(await assetFiles()).toEqual([name]);
       for (const file of ['dist/index.html', 'dist/about.html']) {
         const html = await site.read(file);
@@ -148,7 +152,9 @@ describe('stylesheet builds with Tailwind CSS', () => {
       expect(rendered).toEqual([]);
       expect(cached.sort()).toEqual(['/', '/about']);
       expect(await site.read('dist/about.html')).toBe(html);
-      expect(info.some((message) => message.startsWith('Linked'))).toBe(false);
+      expect(info.some((message) => message.startsWith('Updated the stylesheet links'))).toBe(
+        false,
+      );
       expect(await assetFiles()).toEqual([hashedName('body { color: black; }')]);
     });
 
@@ -161,7 +167,7 @@ describe('stylesheet builds with Tailwind CSS', () => {
       const { rendered, info } = await site.build({ tailwind });
 
       expect(rendered).toEqual([]);
-      expect(info).toContain(`Linked 2 pages to /_assets/${name}`);
+      expect(info).toContain('Updated the stylesheet links of 2 cached pages');
       expect(stylesheetLinks(await site.read('dist/index.html'))).toEqual([`/_assets/${name}`]);
       expect(stylesheetLinks(await site.read('dist/about.html'))).toEqual([`/_assets/${name}`]);
       expect(await assetFiles()).toEqual([name]);
@@ -239,7 +245,9 @@ describe('stylesheet builds with Tailwind CSS', () => {
 
       const { info } = await site.build({ tailwind });
 
-      expect(info.some((message) => message.startsWith('Linked'))).toBe(false);
+      expect(info.some((message) => message.startsWith('Updated the stylesheet links'))).toBe(
+        false,
+      );
       expect(stylesheetLinks(await site.read('dist/index.html'))).toEqual([`/_assets/${name}`]);
       expect(stylesheetLinks(await site.read('dist/about.html'))).toEqual([`/_assets/${name}`]);
       expect(await site.exists('.stati/pending-pages')).toBe(false);
@@ -297,7 +305,7 @@ describe('stylesheet builds with Tailwind CSS', () => {
       const { rendered, info } = await site.build({ tailwind });
 
       expect(rendered).toEqual([]);
-      expect(info).toContain(`Linked 2 pages to /_assets/${name}`);
+      expect(info).toContain('Updated the stylesheet links of 2 cached pages');
       expect(stylesheetLinks(await site.read('dist/index.html'))).toEqual([`/_assets/${name}`]);
       expect(stylesheetLinks(await site.read('dist/about.html'))).toEqual([`/_assets/${name}`]);
       expect(await assetFiles()).toEqual([name]);
@@ -369,28 +377,28 @@ describe('stylesheet builds with Tailwind CSS', () => {
       const { rendered, info } = await site.build({ tailwind });
 
       expect(rendered).toEqual(['/about']);
-      expect(info).toContain(`Linked 1 page to /_assets/${name}`);
+      expect(info).toContain('Updated the stylesheet links of 1 cached page');
       expect(await site.read('dist/about.html')).toContain('About us');
       expect(stylesheetLinks(await site.read('dist/about.html'))).toEqual([`/_assets/${name}`]);
       expect(stylesheetLinks(await site.read('dist/index.html'))).toEqual([`/_assets/${name}`]);
     });
 
-    it('warns about pages that still link the development path', async () => {
+    it("points a template's link to the output's path at the hashed file", async () => {
       await createSite();
       await site.write(
         'site/layout.eta',
         LAYOUT.replace('</head>', '<link rel="stylesheet" href="/styles.css"></head>'),
       );
+      const name = hashedName('body { color: black; }');
 
       const { warnings } = await site.build({ tailwind });
 
-      expect(warnings).toHaveLength(1);
-      expect(warnings[0]).toMatch(
-        /^Pages \/(about)? and 1 more link \/styles\.css, which production builds do not write: they name the stylesheet \/_assets\/styles-\[hash\]\.css\. Stati links that file itself/,
-      );
+      expect(stylesheetLinks(await site.read('dist/index.html'))).toEqual([`/_assets/${name}`]);
+      expect(stylesheetLinks(await site.read('dist/about.html'))).toEqual([`/_assets/${name}`]);
+      expect(warnings).toEqual([]);
     });
 
-    it('warns about a development link that is unquoted or under the site URL', async () => {
+    it('points an unquoted link, or one under the site URL, at the hashed file', async () => {
       await createSite();
       await site.write(
         'site/layout.eta',
@@ -404,11 +412,16 @@ describe('stylesheet builds with Tailwind CSS', () => {
         ),
       );
       await site.write('site/about.md', page({ title: 'About', layout: 'plain' }, '# About'));
+      const name = hashedName('body { color: black; }');
 
-      const { warnings } = await site.build({ tailwind });
+      await site.build({ tailwind });
 
-      expect(warnings).toHaveLength(1);
-      expect(warnings[0]).toMatch(/^Pages \/(about)? and 1 more link \/styles\.css/);
+      const index = await site.read('dist/index.html');
+      expect(index).toContain(`<link rel=stylesheet href=/_assets/${name}>`);
+      expect(index).not.toContain('<link rel="stylesheet"');
+      expect(stylesheetLinks(await site.read('dist/about.html'))).toEqual([
+        `https://example.com/_assets/${name}?v=2`,
+      ]);
     });
 
     it('with css.hash false writes and links the output under its own name', async () => {
@@ -472,6 +485,24 @@ describe('stylesheet builds with Tailwind CSS', () => {
       expect(stylesheetLinks(await site.read('dist/index.html'))).toHaveLength(1);
     });
 
+    it('points a static stylesheet a template adds to stylesheetPaths at its hashed copy', async () => {
+      await createSite();
+      await site.write('public/print.css', '@media print { body { color: black; } }');
+      await site.write('site/about.md', page({ title: 'About', layout: 'print' }, '# About'));
+      await site.write(
+        'site/print.eta',
+        "<% stati.assets.stylesheetPaths.push('/print.css') %>" + LAYOUT,
+      );
+      const print = hashStylesheet('@media print { body { color: black; } }', '/print.css').path;
+
+      await site.build({ tailwind });
+
+      expect(stylesheetLinks(await site.read('dist/about.html'))).toEqual([
+        `/_assets/${hashedName('body { color: black; }')}`,
+        print,
+      ]);
+    });
+
     it('gives templates an empty stylesheetPaths without Tailwind', async () => {
       await createSite();
       await site.write(
@@ -487,6 +518,145 @@ describe('stylesheet builds with Tailwind CSS', () => {
       expect(await site.read('dist/index.html')).toContain('<p id="paths">[]</p>');
       expect(await tailwindRuns()).toEqual([]);
       expect((await site.manifest()).stylesheets).toBeUndefined();
+    });
+  });
+
+  describe('stylesheets from the static directory', () => {
+    const LINKED = LAYOUT.replace('</head>', '<link rel="stylesheet" href="/styles.css"></head>');
+    const CSS = '@font-face { src: url(fonts/a.woff2); } body { color: black; }';
+
+    async function createStaticSite(config: Partial<StatiConfig> = {}): Promise<void> {
+      await createSite(config);
+      await site.write('site/layout.eta', LINKED);
+      await site.write('public/styles.css', CSS);
+      await site.write('public/unused.css', 'p { margin: 0; }');
+    }
+
+    /** Changes the config the next build loads */
+    async function setConfig(overrides: Partial<StatiConfig>): Promise<void> {
+      const config = await vi.mocked(loadConfig)();
+      vi.mocked(loadConfig).mockImplementation(async () => ({ ...config, ...overrides }));
+    }
+
+    it('links the stylesheets pages link under hashed names and still copies them', async () => {
+      await createStaticSite();
+      const copy = hashStylesheet(CSS, '/styles.css').path;
+
+      const { warnings } = await site.build();
+
+      expect(copy).toMatch(/^\/_assets\/styles-[0-9A-F]{8}\.css$/);
+      for (const file of ['dist/index.html', 'dist/about.html']) {
+        expect(stylesheetLinks(await site.read(file))).toEqual([copy]);
+      }
+      expect(await site.read(`dist${copy}`)).toBe(
+        '@font-face { src: url(/fonts/a.woff2); } body { color: black; }',
+      );
+      expect(await site.read('dist/styles.css')).toBe(CSS);
+      expect(await assetFiles()).toEqual([copy.slice('/_assets/'.length)]);
+      expect((await site.manifest()).stylesheets).toEqual({ '/styles.css': copy });
+      expect(await tailwindRuns()).toEqual([]);
+      expect(warnings).toEqual([]);
+    });
+
+    it('keeps the folder of a stylesheet and resolves relative and preload links', async () => {
+      await createStaticSite();
+      await site.write('public/css/site.css', 'a { color: red; }');
+      await site.write(
+        'site/layout.eta',
+        LAYOUT.replace(
+          '</head>',
+          '<link rel="preload" as="style" href="css/site.css"><link rel="stylesheet" href="css/site.css"></head>',
+        ),
+      );
+      const copy = hashStylesheet('a { color: red; }', '/css/site.css').path;
+
+      await site.build();
+
+      expect(copy).toMatch(/^\/_assets\/css\/site-[0-9A-F]{8}\.css$/);
+      expect(await site.read('dist/about.html')).toContain(
+        `<link rel="preload" as="style" href="${copy}"><link rel="stylesheet" href="${copy}">`,
+      );
+    });
+
+    it('links the new name on cached pages when the CSS changes and deletes the old copy', async () => {
+      await createStaticSite();
+      await site.build();
+      await site.write('public/styles.css', 'body { color: navy; }');
+      const copy = hashStylesheet('body { color: navy; }', '/styles.css').path;
+
+      const { rendered, info } = await site.build();
+
+      expect(rendered).toEqual([]);
+      expect(info).toContain('Updated the stylesheet links of 2 cached pages');
+      expect(stylesheetLinks(await site.read('dist/index.html'))).toEqual([copy]);
+      expect(stylesheetLinks(await site.read('dist/about.html'))).toEqual([copy]);
+      expect(await assetFiles()).toEqual([copy.slice('/_assets/'.length)]);
+      expect((await site.manifest()).stylesheets).toEqual({ '/styles.css': copy });
+    });
+
+    it('relinks only the cached pages when one page renders again', async () => {
+      await createStaticSite();
+      await site.build();
+      await site.write('site/about.md', page({ title: 'About' }, '# About us'));
+      await site.write('public/styles.css', 'body { color: teal; }');
+      const copy = hashStylesheet('body { color: teal; }', '/styles.css').path;
+
+      const { rendered, info } = await site.build();
+
+      expect(rendered).toEqual(['/about']);
+      expect(info).toContain('Updated the stylesheet links of 1 cached page');
+      expect(stylesheetLinks(await site.read('dist/about.html'))).toEqual([copy]);
+      expect(stylesheetLinks(await site.read('dist/index.html'))).toEqual([copy]);
+    });
+
+    it('links its own path again on cached pages once the stylesheet is gone', async () => {
+      await createStaticSite();
+      await site.build();
+      await site.remove('public/styles.css');
+
+      const { rendered } = await site.build();
+
+      expect(rendered).toEqual([]);
+      expect(stylesheetLinks(await site.read('dist/index.html'))).toEqual(['/styles.css']);
+      expect(await assetFiles()).toEqual([]);
+      expect((await site.manifest()).stylesheets).toBeUndefined();
+    });
+
+    it('with css.hash false links the stylesheets as they are and deletes earlier copies', async () => {
+      await createStaticSite();
+      await site.build();
+      expect(await assetFiles()).toHaveLength(1);
+      await setConfig({ css: { hash: false } });
+
+      const { rendered } = await site.build();
+
+      expect(rendered.sort()).toEqual(['/', '/about']);
+      expect(stylesheetLinks(await site.read('dist/index.html'))).toEqual(['/styles.css']);
+      expect(await assetFiles()).toEqual([]);
+      expect((await site.manifest()).stylesheets).toBeUndefined();
+    });
+
+    it('renders cached pages again on the first build that hashes', async () => {
+      await createStaticSite({ css: { hash: false } });
+      await site.build();
+      await setConfig({ css: { hash: true } });
+
+      const { rendered } = await site.build();
+
+      expect(rendered.sort()).toEqual(['/', '/about']);
+      expect(stylesheetLinks(await site.read('dist/index.html'))).toEqual([
+        hashStylesheet(CSS, '/styles.css').path,
+      ]);
+    });
+
+    it('leaves the links alone in development', async () => {
+      await createStaticSite();
+      setEnv('development');
+
+      await site.build();
+
+      expect(stylesheetLinks(await site.read('dist/index.html'))).toEqual(['/styles.css']);
+      expect(await assetFiles()).toEqual([]);
     });
   });
 

@@ -155,7 +155,7 @@ function getPhaseDescription(key: string): string {
     tailwindInventoryMs:
       'Time spent writing the Tailwind class inventory file at the end of the build. This file tracks which classes were used for purging unused CSS.',
     tailwindBuildMs:
-      'Time spent running Tailwind CSS for the production stylesheet (--tailwind-input and --tailwind-output), writing its hashed file, and updating the pages that linked an earlier name.',
+      'Time spent running Tailwind CSS for the production stylesheet (--tailwind-input and --tailwind-output), writing its hashed file, and writing the pages the build held until it was named.',
     getDirectorySizeMs:
       'Time spent calculating the total size of the dist directory after the build completes. This is used for the build summary statistics.',
     lockAcquireMs:

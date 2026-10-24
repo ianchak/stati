@@ -79,13 +79,15 @@ import {
   checkStylesheetSources,
   getStylesheetFingerprint,
   getRenderStylesheetPath,
-  getHashedStylesheetPattern,
   buildStylesheet,
   getStaleStylesheetPaths,
-  relinkStylesheet,
+  relinkStylesheets,
   removeStaleStylesheets,
-  linksStylesheet,
   autoInjectStylesheets,
+  getLinkedStylesheetPaths,
+  rewriteStylesheetLinks,
+  resolveCSSConfig,
+  StaticStylesheets,
   type BuiltStylesheet,
   type StylesheetPlan,
   type TailwindBuildOptions,
@@ -461,6 +463,8 @@ interface ProcessPagesResult {
   searchIndexFilename: string | undefined;
   /** Rendered pages a hashed production build writes once Tailwind has named the stylesheet */
   deferredPages: DeferredPage[];
+  /** The output files of the pages this build rendered, written or held */
+  renderedFiles: string[];
 }
 
 /**
@@ -612,6 +616,7 @@ async function processPagesWithCache(
   navigationHash: string = computeNavigationHash(navigation),
   templateIndex?: TemplateIndex,
   stylesheet: RenderStylesheet | null = null,
+  staticStylesheets: StaticStylesheets | null = null,
 ): Promise<ProcessPagesResult> {
   let cacheHits = 0;
   let cacheMisses = 0;
@@ -695,8 +700,23 @@ async function processPagesWithCache(
   // it into cached pages too.
   const stylesheetPaths = stylesheet ? [stylesheet.path] : [];
   const stylesheetFingerprint = stylesheet ? getStylesheetFingerprint(stylesheet.plan) : undefined;
-  // Pages linking the output's development path, which a hashed build does not write
-  const pagesLinkingDevStylesheet: string[] = [];
+  // A hashed production build points every link to a stylesheet it hashes at the hashed name:
+  // a link to the Tailwind output's path at the name this build gives it, and a link to a
+  // stylesheet in the static directory at its hashed copy
+  const tailwindTargets = new Map<string, string>(
+    stylesheet?.plan.hash ? [[stylesheet.plan.path, stylesheet.path]] : [],
+  );
+  const linkHashedStylesheets = async (html: string, pageUrl: string): Promise<string> => {
+    const targets = new Map(tailwindTargets);
+    for (const path of getLinkedStylesheetPaths(html, pageUrl, config.site.baseUrl)) {
+      const copy = targets.has(path) ? undefined : await staticStylesheets?.resolve(path);
+      if (copy !== undefined) {
+        targets.set(path, copy);
+      }
+    }
+    return rewriteStylesheetLinks(html, targets, pageUrl, config.site.baseUrl);
+  };
+  const renderedFiles: string[] = [];
   // A hashed production build learns the stylesheet's name after rendering: it keeps the pages
   // it renders until then, so each is written once with the final name, and a Tailwind error
   // leaves the previous build's pages in place
@@ -734,6 +754,8 @@ async function processPagesWithCache(
       searchAutoInject: config.search?.autoInjectMetaTag !== false,
       // Omitted without a stylesheet, so the hash matches builds from before Stati linked one
       ...(stylesheetFingerprint && { stylesheet: stylesheetFingerprint }),
+      // Production links hashed stylesheets, which development doesn't
+      ...(staticStylesheets && { hashedStylesheets: true }),
       // Omitted with images: false, so the hash matches builds without the image pipeline
       ...(imageFingerprint && { images: imageFingerprint }),
       // The 404 page gets no Open Graph image and a noindex robots tag, so a copy cached
@@ -888,15 +910,23 @@ async function processPagesWithCache(
       finalHtml = autoInjectSearchMeta(finalHtml, `/${searchIndexFilename}`);
     }
 
-    // Auto-inject the stylesheet link if enabled (default: true)
-    if (stylesheet?.plan.autoInject) {
-      finalHtml = autoInjectStylesheets(finalHtml, assets.stylesheetPaths, config.site.baseUrl);
+    // Link the hashed stylesheets, then add the Tailwind stylesheet's link if enabled (default:
+    // true) where the page doesn't have one. A path a template added to stylesheetPaths can be
+    // a stylesheet from the static directory, so an added link is pointed at its copy too.
+    if (staticStylesheets) {
+      finalHtml = await linkHashedStylesheets(finalHtml, page.url);
     }
-    if (
-      stylesheet?.plan.hash &&
-      linksStylesheet(finalHtml, stylesheet.plan.path, config.site.baseUrl)
-    ) {
-      pagesLinkingDevStylesheet.push(page.url);
+    if (stylesheet?.plan.autoInject) {
+      const linked = autoInjectStylesheets(
+        finalHtml,
+        assets.stylesheetPaths,
+        config.site.baseUrl,
+        page.url,
+      );
+      finalHtml =
+        staticStylesheets && linked !== finalHtml
+          ? await linkHashedStylesheets(linked, page.url)
+          : linked;
     }
 
     // Auto-inject TypeScript bundle script tags if available and autoInject is enabled (default: true)
@@ -934,6 +964,7 @@ async function processPagesWithCache(
     if (logger.updateProgress) {
       logger.updateProgress('rendered', page.url, Math.round(renderTime));
     }
+    renderedFiles.push(outputPath);
 
     // In dev mode, batch writes for parallel execution to avoid Windows filesystem slowdown
     if (isDevMode) {
@@ -1045,23 +1076,7 @@ async function processPagesWithCache(
     }
   }
 
-  // A template that still links the development path loads nothing in production
-  if (stylesheet && pagesLinkingDevStylesheet.length > 0) {
-    const { path, autoInject } = stylesheet.plan;
-    const [first] = pagesLinkingDevStylesheet;
-    const others = pagesLinkingDevStylesheet.length - 1;
-    const pagesText =
-      others === 0 ? `Page ${first} links` : `Pages ${first} and ${others} more link`;
-    const hashedName = getHashedStylesheetPattern(stylesheet.plan);
-    logger.warning(
-      `${pagesText} ${path}, which production builds do not write: they name the stylesheet ${hashedName}. ` +
-        (autoInject
-          ? `Stati links that file itself, so remove the <link> to ${path} from your templates.`
-          : 'Link stati.assets.stylesheetPaths in your templates instead.'),
-    );
-  }
-
-  return { cacheHits, cacheMisses, searchIndexFilename, deferredPages };
+  return { cacheHits, cacheMisses, searchIndexFilename, deferredPages, renderedFiles };
 }
 
 /**
@@ -1205,6 +1220,12 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
 
   await ensureDir(outDir);
 
+  // Production links the static directory's stylesheets under hashed names, unless css.hash
+  // is false. The Tailwind output's path is Tailwind's, so a static file there isn't one.
+  const staticStylesheets = resolveCSSConfig(config.css, isDevelopment()).hash
+    ? new StaticStylesheets(resolveStaticDir(config), outDir, stylesheetPlan?.path)
+    : null;
+
   // Image pipeline; null with images: false. Fails here, before any page renders, when a
   // feature needs @stati/images and it is missing or incompatible.
   const imageRuntime = await ImageRuntime.create(config, {
@@ -1346,9 +1367,11 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     navigationHash,
     templateIndex,
     renderStylesheet,
+    staticStylesheets,
   );
   endPageRenderSpan();
-  const { cacheHits, cacheMisses, searchIndexFilename, deferredPages } = pageProcessingResult;
+  const { cacheHits, cacheMisses, searchIndexFilename, deferredPages, renderedFiles } =
+    pageProcessingResult;
 
   // Write Tailwind class inventory after all templates have been rendered (if Tailwind is used)
   const tailwindStart = performance.now();
@@ -1369,10 +1392,8 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
   recorder.recordPhase('tailwindInventoryMs', tailwindInventoryTime);
 
   // Run Tailwind now that the inventory lists every class the pages use, then write the pages
-  // this build rendered, which it held until now, with the stylesheet's name. Pages kept from
-  // earlier builds carry an earlier name; when the CSS got another one, they link the new one
-  // from here on. Before stale pages are removed and image failures patched, which read the
-  // written pages.
+  // this build rendered, which it held until now, with the stylesheet's name. Before stale
+  // pages are removed and image failures patched, which read the written pages.
   let builtStylesheet: BuiltStylesheet | null = null;
   if (renderStylesheet && !isDevMode) {
     const { plan, stagingDir } = renderStylesheet;
@@ -1395,30 +1416,58 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     } finally {
       await remove(stagingDir);
     }
-    const written = new Set(deferredPages.map((page) => page.outputPath));
     // Let go of the held HTML
     deferredPages.length = 0;
-
-    if (plan.hash) {
-      const stale = await getStaleStylesheetPaths(
-        plan,
-        outDir,
-        previousStylesheets[plan.path],
-        builtStylesheet.path,
-      );
-      const pageFiles = pages
-        .map((page) => getPageOutput(page, outDir).outputPath)
-        .filter((file) => !written.has(file));
-      const relinked = await relinkStylesheet(pageFiles, stale, builtStylesheet.path);
-      if (relinked > 0) {
-        logger.info(
-          `Linked ${relinked} page${relinked === 1 ? '' : 's'} to ${builtStylesheet.path}`,
-        );
-      }
-    }
-    manifest.stylesheets = { [plan.path]: builtStylesheet.path };
     endStylesheetSpan();
     logger.success(`Built ${builtStylesheet.path} (${formatBytes(builtStylesheet.sizeInBytes)})`);
+  }
+
+  // The hashed name of every stylesheet this build links: the Tailwind output and the static
+  // stylesheets the rendered pages link, and those only pages kept from earlier builds link.
+  // Those pages carry the names earlier builds gave; a stylesheet whose content changed has a
+  // new one, which they link from here on, and one no longer in the static directory goes back
+  // to its own path. Nothing is rendered again for it.
+  if (staticStylesheets) {
+    const current = await staticStylesheets.hashed();
+    if (renderStylesheet?.plan.hash && builtStylesheet) {
+      current.set(renderStylesheet.plan.path, builtStylesheet.path);
+    }
+    for (const path of Object.keys(previousStylesheets)) {
+      const copy = current.has(path) ? undefined : await staticStylesheets.resolve(path);
+      if (copy !== undefined) {
+        current.set(path, copy);
+      }
+    }
+
+    const replacements = new Map<string, string>();
+    for (const path of new Set([...Object.keys(previousStylesheets), ...current.keys()])) {
+      const target = current.get(path) ?? path;
+      const recorded = previousStylesheets[path];
+      for (const stale of await getStaleStylesheetPaths(outDir, path, recorded, target)) {
+        replacements.set(stale, target);
+      }
+    }
+    const rendered = new Set(renderedFiles);
+    const cachedFiles = pages
+      .map((page) => getPageOutput(page, outDir).outputPath)
+      .filter((file) => !rendered.has(file));
+    const relinked = await relinkStylesheets(cachedFiles, replacements);
+    if (relinked > 0) {
+      logger.info(
+        `Updated the stylesheet links of ${relinked} cached page${relinked === 1 ? '' : 's'}`,
+      );
+    }
+
+    for (const [path, copy] of current) {
+      if (path !== renderStylesheet?.plan.path) {
+        logger.info(`Linked ${path} as ${copy}`);
+      }
+    }
+    if (current.size > 0) {
+      manifest.stylesheets = Object.fromEntries(current);
+    } else {
+      delete manifest.stylesheets;
+    }
   } else if (!isDevMode) {
     delete manifest.stylesheets;
   }
@@ -1486,17 +1535,17 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
   // now that every page links to this build's files. Before the static copy, so a file in the
   // static directory with such a name is copied afterwards.
   if (!isDevMode) {
-    // Stylesheets of names this build doesn't build, after a change of --tailwind-output or
-    // without the flags: every page rendered again, as the stylesheet settings changed
-    const currentName = renderStylesheet?.plan.name;
-    for (const previousPath of Object.keys(previousStylesheets)) {
-      const previousName = posix.basename(previousPath, '.css');
-      if (previousName && previousName !== currentName) {
-        await removeStaleStylesheets(outDir, previousName);
-      }
-    }
-    if (renderStylesheet && builtStylesheet) {
-      await removeStaleStylesheets(outDir, renderStylesheet.plan.name, builtStylesheet.path);
+    // Hashed copies other than the ones this build links. A stylesheet this build doesn't
+    // hash, after a change of --tailwind-output, without the flags or with css.hash false,
+    // loses every copy: its pages linked the new name above or were rendered again.
+    const currentStylesheets = manifest.stylesheets ?? {};
+    const stylesheetPaths = new Set([
+      ...Object.keys(previousStylesheets),
+      ...Object.keys(currentStylesheets),
+      ...(renderStylesheet ? [renderStylesheet.plan.path] : []),
+    ]);
+    for (const path of stylesheetPaths) {
+      await removeStaleStylesheets(outDir, path, currentStylesheets[path]);
     }
     if (config.typescript?.enabled) {
       await removeStaleBundleFiles({

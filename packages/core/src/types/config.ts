@@ -105,7 +105,10 @@ export interface StatiConfig {
   search?: SearchConfig;
   /** TypeScript compilation settings */
   typescript?: TypeScriptConfig;
-  /** The stylesheet Stati builds with Tailwind CSS (`--tailwind-input` and `--tailwind-output`) */
+  /**
+   * Hashed stylesheets in production, and the stylesheet Stati builds with Tailwind CSS
+   * (`--tailwind-input` and `--tailwind-output`)
+   */
   css?: CSSConfig;
   /**
    * Image handling. Intrinsic sizes, lazy loading and co-located images work without
@@ -391,12 +394,11 @@ export interface TypeScriptConfig {
 }
 
 /**
- * Settings for the stylesheet Stati builds with Tailwind CSS when `stati build` and
- * `stati dev` get `--tailwind-input` and `--tailwind-output`.
- *
- * Development keeps the output's own name, such as `/styles.css`. Production builds run
- * Tailwind after the last page renders, when the class inventory is complete, and write
- * `_assets/styles-[hash].css`, so a deploy that changes the CSS gives it a new URL.
+ * Stylesheet settings. Production builds name stylesheets after their content, so a deploy
+ * that changes the CSS gives it a new URL: the stylesheet Stati builds with Tailwind CSS when
+ * `stati build` gets `--tailwind-input` and `--tailwind-output`, and every stylesheet in the
+ * static directory a page links. Pages' `<link>` tags to `/styles.css` then point at
+ * `/_assets/styles-[hash].css`. Development keeps every stylesheet's own name.
  *
  * @example
  * ```typescript
@@ -409,22 +411,26 @@ export interface TypeScriptConfig {
  */
 export interface CSSConfig {
   /**
-   * Name the production stylesheet after its content, as `_assets/styles-A1B2C3D4.css`.
-   * When false, production writes the `--tailwind-output` file and links it under that name.
-   * Development always uses the output's own name.
+   * Name production stylesheets after their content, as `_assets/styles-A1B2C3D4.css`, and
+   * point the pages' links at those names: the Tailwind output, and the static directory's
+   * stylesheets that pages link (a copy; the file under its own name is still copied). When
+   * false, production links every stylesheet under its own name, and writes the
+   * `--tailwind-output` file. Development always uses the own names.
    * @default true
    */
   hash?: boolean;
 
   /**
-   * Minify the stylesheet in production builds. Development output is never minified.
+   * Minify the Tailwind stylesheet in production builds. Development output, and stylesheets
+   * in the static directory, are never minified.
    * @default true
    */
   minify?: boolean;
 
   /**
-   * Add a `<link rel="stylesheet">` before `</head>` on every page that does not link the
-   * stylesheet already. When disabled, link `stati.assets.stylesheetPaths` in your templates.
+   * Add a `<link rel="stylesheet">` to the Tailwind stylesheet before `</head>` on every page
+   * that does not link it already. When disabled, link it in your templates, under its own
+   * path or from `stati.assets.stylesheetPaths`.
    * @default true
    */
   autoInject?: boolean;

@@ -1,12 +1,13 @@
 /**
- * The stylesheet Stati builds with Tailwind CSS: the path pages link in each mode, the hashed
- * production file, the rewrite of pages that link an earlier name, and the files earlier
- * builds left in the output directory.
+ * Hashed stylesheets: the one Stati builds with Tailwind CSS and the static directory's
+ * stylesheets pages link. The path pages link in each mode, the hashed production files, the
+ * links production pages get to them, the rewrite of pages that link an earlier name, and the
+ * files earlier builds left in the output directory.
  * @module css/stylesheet
  */
 
 import { createHash, randomBytes } from 'node:crypto';
-import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { basename, dirname, isAbsolute, join, posix, relative, resolve, sep } from 'node:path';
 import { URL } from 'node:url';
 import {
   ensureDir,
@@ -82,14 +83,26 @@ const RELINK_BATCH_SIZE = 32;
 const CSS_URL =
   /url\(\s*(?:"((?:[^"\\]|\\[\s\S])*)"|'((?:[^'\\]|\\[\s\S])*)'|((?:[^\s"'()\\]|\\[\s\S])+))\s*\)/gi;
 
+/** A CSS `@import` of a double-quoted or single-quoted string, which `url()` doesn't cover */
+const CSS_IMPORT_STRING = /@import\s+(?:"((?:[^"\\]|\\[\s\S])*)"|'((?:[^'\\]|\\[\s\S])*)')/gi;
+
 /** References that don't depend on where the stylesheet is: a scheme, the site root, a fragment */
 const LOCATION_INDEPENDENT_URL = /^(?:[a-z][a-z0-9+.-]*:|\/|#)/i;
+
+/** A `<link>` tag */
+const LINK_TAG = /<link\b[^>]*>/gi;
 
 /** The `href` of a `<link>` tag, quoted or not */
 const LINK_HREF = /\shref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/i;
 
 /** The `rel` of a `<link>` tag, quoted or not */
 const LINK_REL = /\srel\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/i;
+
+/** The `as` of a `<link>` tag, quoted or not */
+const LINK_AS = /\sas\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/i;
+
+/** Origin for resolving paths with `URL`, never printed */
+const URL_BASE = 'http://stati.invalid';
 
 function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -100,10 +113,49 @@ function hashedFilePattern(name: string): RegExp {
   return new RegExp(`^${escapeRegExp(name)}-[0-9A-F]{8}\\.css$`);
 }
 
-/** Whether a path on the site is a hashed copy of the stylesheet with this name */
-function isHashedStylesheetPath(path: string, name: string): boolean {
-  const folder = `/${CSS_OUT_DIR}/`;
-  return path.startsWith(folder) && hashedFilePattern(name).test(path.slice(folder.length));
+/**
+ * The folder hashed copies of a stylesheet go to, as a site path: `_assets/` with the
+ * stylesheet's own folder inside it, so '/css/site.css' and '/site.css' never share a name.
+ */
+function hashedFolder(path: string): string {
+  const folder = posix.dirname(path);
+  return `/${CSS_OUT_DIR}${folder === '/' ? '' : folder}/`;
+}
+
+/** Whether a site path is a hashed copy of the stylesheet at this path */
+function isHashedStylesheetPath(hashed: string, path: string): boolean {
+  const folder = hashedFolder(path);
+  return (
+    hashed.startsWith(folder) &&
+    hashedFilePattern(posix.basename(path, '.css')).test(hashed.slice(folder.length))
+  );
+}
+
+/**
+ * Whether a stylesheet path can be hashed and linked as it is: a .css path from the site root
+ * whose characters HTML carries in an attribute unchanged.
+ */
+export function isHashableStylesheetPath(path: string): boolean {
+  return (
+    path.endsWith('.css') && SAFE_PATH.test(path) && !path.includes('..') && !path.includes('//')
+  );
+}
+
+/**
+ * Names a stylesheet after its content: rebases its relative references for `_assets/`, then
+ * takes 8 characters of the result's SHA-256.
+ *
+ * @param css - The stylesheet
+ * @param path - Its path under its own name, such as '/css/site.css'
+ * @returns The CSS to write and its hashed path, such as '/_assets/css/site-A1B2C3D4.css'
+ */
+export function hashStylesheet(css: string, path: string): { css: string; path: string } {
+  const rebased = rebaseRelativeUrls(css, path);
+  const hash = createHash('sha256').update(rebased).digest('hex').slice(0, 8).toUpperCase();
+  return {
+    css: rebased,
+    path: `${hashedFolder(path)}${posix.basename(path, '.css')}-${hash}.css`,
+  };
 }
 
 /**
@@ -143,7 +195,7 @@ export function createStylesheetPlan(
   if (!path.endsWith('.css')) {
     throw new Error(`--tailwind-output must be a .css file (got ${tailwind.output}).`);
   }
-  if (!SAFE_PATH.test(path) || path.includes('..') || path.includes('//')) {
+  if (!isHashableStylesheetPath(path)) {
     throw new Error(
       `--tailwind-output can hold only letters, digits, -, _, . and / in its path (got ${tailwind.output}).`,
     );
@@ -188,7 +240,7 @@ export async function checkStylesheetSources(
 /**
  * The settings that decide a page's stylesheet link, for its cache hash. A hashed build's
  * file name is not among them: it is known only after the pages render, and
- * {@link relinkStylesheet} writes it into cached pages as well.
+ * {@link relinkStylesheets} writes it into cached pages as well.
  */
 export function getStylesheetFingerprint(plan: StylesheetPlan): {
   path: string;
@@ -213,38 +265,41 @@ export function getRenderStylesheetPath(plan: StylesheetPlan): string {
   return `/${CSS_OUT_DIR}/${plan.name}-pending-${randomBytes(8).toString('hex')}.css`;
 }
 
-/** How a hashed build names the stylesheet, for messages: '/_assets/styles-[hash].css' */
-export function getHashedStylesheetPattern(plan: StylesheetPlan): string {
-  return `/${CSS_OUT_DIR}/${plan.name}-[hash].css`;
-}
-
 /**
- * Rewrites the relative references in the stylesheet's `url()`s to paths from the site root,
- * resolved against the path the stylesheet has under its own name. A hashed copy served from
- * `_assets/` then loads the same fonts and images. References with escapes stay as they are.
+ * Rewrites the relative references in the stylesheet's `url()`s and `@import` strings to paths
+ * from the site root, resolved against the path the stylesheet has under its own name. A
+ * hashed copy served from `_assets/` then loads the same fonts, images and imported
+ * stylesheets. References with escapes stay as they are.
  *
  * @param css - The stylesheet
  * @param path - Its path under its own name, such as '/styles.css'
  * @returns The stylesheet with root-relative references
  */
 export function rebaseRelativeUrls(css: string, path: string): string {
-  const base = new URL(path, 'http://stati.invalid');
-  return css.replace(
-    CSS_URL,
-    (match, double: string | undefined, single: string | undefined, bare: string | undefined) => {
-      const reference = double ?? single ?? bare ?? '';
-      if (
-        reference === '' ||
-        reference.includes('\\') ||
-        LOCATION_INDEPENDENT_URL.test(reference)
-      ) {
-        return match;
-      }
-      const { pathname, search, hash } = new URL(reference, base);
-      const quote = double !== undefined ? '"' : single !== undefined ? "'" : '';
-      return `url(${quote}${pathname}${search}${hash}${quote})`;
-    },
-  );
+  const base = new URL(path, URL_BASE);
+  // The reference from the site root, or undefined to leave it as it is
+  const rebase = (reference: string): string | undefined => {
+    if (reference === '' || reference.includes('\\') || LOCATION_INDEPENDENT_URL.test(reference)) {
+      return undefined;
+    }
+    const { pathname, search, hash } = new URL(reference, base);
+    return `${pathname}${search}${hash}`;
+  };
+
+  return css
+    .replace(
+      CSS_URL,
+      (match, double: string | undefined, single: string | undefined, bare: string | undefined) => {
+        const rebased = rebase(double ?? single ?? bare ?? '');
+        const quote = double !== undefined ? '"' : single !== undefined ? "'" : '';
+        return rebased === undefined ? match : `url(${quote}${rebased}${quote})`;
+      },
+    )
+    .replace(CSS_IMPORT_STRING, (match, double: string | undefined, single: string | undefined) => {
+      const rebased = rebase(double ?? single ?? '');
+      const quote = double !== undefined ? '"' : "'";
+      return rebased === undefined ? match : `@import ${quote}${rebased}${quote}`;
+    });
 }
 
 /**
@@ -284,47 +339,48 @@ export async function buildStylesheet(
       throw new Error(`Tailwind CSS finished without writing ${tempFile}`);
     }
 
-    const css = rebaseRelativeUrls(compiled, plan.path);
-    const hash = createHash('sha256').update(css).digest('hex').slice(0, 8).toUpperCase();
-    const filename = `${plan.name}-${hash}.css`;
-    const file = join(outDir, CSS_OUT_DIR, filename);
+    const { css, path } = hashStylesheet(compiled, plan.path);
+    const file = join(outDir, ...path.split('/'));
     await ensureDir(dirname(file));
     await writeFile(file, css, 'utf-8');
-    return { path: `/${CSS_OUT_DIR}/${filename}`, file, sizeInBytes: Buffer.byteLength(css) };
+    return { path, file, sizeInBytes: Buffer.byteLength(css) };
   } finally {
     await remove(tempFile);
   }
 }
 
-/** The hashed copies of the stylesheet with this name in the output directory, as site paths */
-async function findHashedStylesheets(outDir: string, name: string): Promise<string[]> {
-  const pattern = hashedFilePattern(name);
+/** The hashed copies of the stylesheet at this path in the output directory, as site paths */
+async function findHashedStylesheets(outDir: string, path: string): Promise<string[]> {
+  const folder = hashedFolder(path);
+  const pattern = hashedFilePattern(posix.basename(path, '.css'));
   // Files only: remove() deletes folders with their contents, and links are left alone
-  const entries = await readdir(join(outDir, CSS_OUT_DIR), { withFileTypes: true }).catch(() => []);
+  const entries = await readdir(join(outDir, ...folder.split('/')), { withFileTypes: true }).catch(
+    () => [],
+  );
   return entries
     .filter((entry) => entry.isFile() && pattern.test(entry.name))
-    .map((entry) => `/${CSS_OUT_DIR}/${entry.name}`);
+    .map((entry) => `${folder}${entry.name}`);
 }
 
 /**
- * The hashed names that pages kept from earlier builds can link, other than this build's:
- * the one the last build recorded, and every other hashed copy of the stylesheet still in the
- * output directory. A build that stops after giving pages a new name, but before it saves the
- * cache manifest, leaves pages linking a copy the manifest doesn't record.
+ * The hashed names of a stylesheet that pages kept from earlier builds can link, other than
+ * the one this build links: the one the last build recorded, and every other hashed copy
+ * still in the output directory. A build that stops after giving pages a new name, but before
+ * it saves the cache manifest, leaves pages linking a copy the manifest doesn't record.
  *
- * @param plan - The build's stylesheet
  * @param outDir - The output directory, absolute
+ * @param path - The stylesheet's path under its own name, such as '/styles.css'
  * @param recorded - The path the last build recorded (`CacheManifest.stylesheets`)
  * @param current - The path this build links
  */
 export async function getStaleStylesheetPaths(
-  plan: StylesheetPlan,
   outDir: string,
+  path: string,
   recorded: string | undefined,
   current: string,
 ): Promise<string[]> {
-  const paths = new Set(await findHashedStylesheets(outDir, plan.name));
-  if (recorded !== undefined && isHashedStylesheetPath(recorded, plan.name)) {
+  const paths = new Set(await findHashedStylesheets(outDir, path));
+  if (recorded !== undefined && isHashedStylesheetPath(recorded, path)) {
     paths.add(recorded);
   }
   paths.delete(current);
@@ -332,22 +388,20 @@ export async function getStaleStylesheetPaths(
 }
 
 /**
- * Gives pages that link earlier stylesheet paths the current one: in a hashed build, the
+ * Gives pages that link earlier stylesheet paths the current ones: in a hashed build, the
  * pages kept from earlier builds. Each page is read once and written only when it holds one
  * of the paths. The paths carry a content hash, which page text doesn't hold, and no
  * characters HTML escapes, so each is the same in every attribute.
  *
  * @param files - The pages' output files
- * @param from - The paths the pages can carry
- * @param to - The path they get
+ * @param replacements - Each earlier path the pages can carry, and the path it becomes
  * @returns How many pages were rewritten
  */
-export async function relinkStylesheet(
+export async function relinkStylesheets(
   files: readonly string[],
-  from: readonly string[],
-  to: string,
+  replacements: ReadonlyMap<string, string>,
 ): Promise<number> {
-  const stale = from.filter((path) => path !== '' && path !== to);
+  const stale = [...replacements].filter(([from, to]) => from !== '' && from !== to);
   if (stale.length === 0) {
     return 0;
   }
@@ -360,7 +414,7 @@ export async function relinkStylesheet(
         if (html === null) {
           return false;
         }
-        const relinked = stale.reduce((text, path) => text.split(path).join(to), html);
+        const relinked = stale.reduce((text, [from, to]) => text.split(from).join(to), html);
         if (relinked === html) {
           return false;
         }
@@ -374,25 +428,26 @@ export async function relinkStylesheet(
 }
 
 /**
- * Deletes the hashed copies of a stylesheet earlier builds wrote, never the current one: of
- * this build's stylesheet once every page links the current file, and of one the build no
- * longer builds, after a change of `--tailwind-output` or a build without the flags. The
- * output under its own name stays: the dev server's Tailwind watcher writes it, and the dev
- * server watches it for live reload only when it exists as the server starts.
+ * Deletes the hashed copies of a stylesheet earlier builds wrote, never the current one: once
+ * every page links the current file, or every copy when the build no longer hashes the
+ * stylesheet, such as after a change of `--tailwind-output` or the static file's removal. The
+ * stylesheet under its own name stays: the dev server's Tailwind watcher writes it, the dev
+ * server watches it for live reload only when it exists as the server starts, and the static
+ * copy writes a stylesheet from the static directory.
  *
  * @param outDir - The output directory, absolute
- * @param name - The stylesheet's name, such as 'styles' for '/styles.css'
+ * @param path - The stylesheet's path under its own name, such as '/styles.css'
  * @param current - The path this build links, which stays
  * @returns The deleted files, relative to the output directory
  */
 export async function removeStaleStylesheets(
   outDir: string,
-  name: string,
+  path: string,
   current?: string,
 ): Promise<string[]> {
-  const stale = (await findHashedStylesheets(outDir, name)).filter((path) => path !== current);
-  await Promise.all(stale.map((path) => remove(join(outDir, ...path.split('/')))));
-  return stale.map((path) => path.slice(1));
+  const stale = (await findHashedStylesheets(outDir, path)).filter((file) => file !== current);
+  await Promise.all(stale.map((file) => remove(join(outDir, ...file.split('/')))));
+  return stale.map((file) => file.slice(1));
 }
 
 /** The site's origin, such as 'https://example.com', or undefined without a valid base URL */
@@ -408,19 +463,60 @@ function getSiteOrigin(siteUrl: string | undefined): string | undefined {
   }
 }
 
-/** The path an `href` points at on the site, without the site's origin, a query or a fragment */
-function getHrefPath(href: string, origin: string | undefined): string {
-  let path = href;
-  if (origin) {
-    const lower = href.toLowerCase();
-    const host = origin.slice(origin.indexOf('//'));
-    if (lower.startsWith(origin)) {
-      path = href.slice(origin.length);
-    } else if (lower.startsWith(host)) {
-      path = href.slice(host.length);
+/** An `href` on the site: the site's origin it carries, its path, and its query or fragment */
+interface SiteHref {
+  /** The site's origin as the `href` spells it, such as 'https://example.com', or '' */
+  origin: string;
+  /** The path from the site root, such as '/css/site.css' */
+  path: string;
+  /** The query and fragment, such as '?v=2', or '' */
+  suffix: string;
+}
+
+/**
+ * Splits an `href` into the site's origin, the path and the query or fragment. A relative
+ * `href` resolves against the page's URL. Another origin, a scheme such as `data:`, and a
+ * relative `href` without the page's URL give undefined.
+ */
+function parseSiteHref(
+  href: string,
+  siteOrigin: string | undefined,
+  pageUrl: string | undefined,
+): SiteHref | undefined {
+  const suffixStart = href.search(/[?#]/);
+  const suffix = suffixStart === -1 ? '' : href.slice(suffixStart);
+  let path = suffixStart === -1 ? href : href.slice(0, suffixStart);
+  let origin = '';
+  if (siteOrigin) {
+    const lower = path.toLowerCase();
+    const host = siteOrigin.slice(siteOrigin.indexOf('//'));
+    for (const prefix of [siteOrigin, host]) {
+      if (lower.startsWith(`${prefix}/`)) {
+        origin = path.slice(0, prefix.length);
+        path = path.slice(prefix.length);
+        break;
+      }
     }
   }
-  return path.replace(/[?#][\s\S]*$/, '');
+  if (path === '' || path.startsWith('//') || /^[a-z][a-z0-9+.-]*:/i.test(path)) {
+    return undefined;
+  }
+  if (!path.startsWith('/') && pageUrl === undefined) {
+    return undefined;
+  }
+  // Resolves a relative path and dot segments as a browser does
+  const { pathname } = new URL(path, new URL(pageUrl ?? '/', URL_BASE));
+  return { origin, path: pathname, suffix };
+}
+
+/** An attribute's value in a tag, quoted or not */
+function getAttribute(tag: string, pattern: RegExp): string | undefined {
+  const match = pattern.exec(tag);
+  return match?.[1] ?? match?.[2] ?? match?.[3];
+}
+
+function getRelTokens(tag: string): string[] {
+  return (getAttribute(tag, LINK_REL) ?? '').toLowerCase().split(/\s+/);
 }
 
 /**
@@ -428,32 +524,117 @@ function getHrefPath(href: string, origin: string | undefined): string {
  * which browsers don't apply until the reader picks it. A preload only fetches the file.
  */
 function isStylesheetLink(tag: string): boolean {
-  const match = LINK_REL.exec(tag);
-  const tokens = (match?.[1] ?? match?.[2] ?? match?.[3] ?? '').toLowerCase().split(/\s+/);
+  const tokens = getRelTokens(tag);
   return tokens.includes('stylesheet') && !tokens.includes('alternate');
 }
 
 /**
+ * Whether a `<link>` tag loads a stylesheet: applies it, offers it as an alternate, or
+ * preloads it (`rel="preload" as="style"`).
+ */
+function loadsStylesheet(tag: string): boolean {
+  const tokens = getRelTokens(tag);
+  return (
+    tokens.includes('stylesheet') ||
+    (tokens.includes('preload') && getAttribute(tag, LINK_AS)?.toLowerCase() === 'style')
+  );
+}
+
+/**
  * Whether the HTML has a `<link rel="stylesheet">` whose `href` is the path: quoted or not,
- * with a query or a fragment, or under the site's own origin.
+ * with a query or a fragment, under the site's own origin, or relative to the page.
  *
  * @param html - The page's HTML
  * @param path - The stylesheet path
  * @param siteUrl - The site's base URL (`site.baseUrl`), whose origin a link can carry
+ * @param pageUrl - The page's URL, which relative links resolve against
  */
-export function linksStylesheet(html: string, path: string, siteUrl?: string): boolean {
+export function linksStylesheet(
+  html: string,
+  path: string,
+  siteUrl?: string,
+  pageUrl?: string,
+): boolean {
   const origin = getSiteOrigin(siteUrl);
-  for (const [tag] of html.matchAll(/<link\b[^>]*>/gi)) {
-    if (!isStylesheetLink(tag)) {
-      continue;
-    }
-    const match = LINK_HREF.exec(tag);
-    const href = match?.[1] ?? match?.[2] ?? match?.[3];
-    if (href !== undefined && getHrefPath(href, origin) === path) {
+  for (const [tag] of html.matchAll(LINK_TAG)) {
+    const href = isStylesheetLink(tag) ? getAttribute(tag, LINK_HREF) : undefined;
+    if (href !== undefined && parseSiteHref(href, origin, pageUrl)?.path === path) {
       return true;
     }
   }
   return false;
+}
+
+/**
+ * The stylesheet paths a page's `<link>` tags load, from the site root: those that apply,
+ * offer or preload a stylesheet on the site.
+ *
+ * @param html - The page's HTML
+ * @param pageUrl - The page's URL, which relative links resolve against
+ * @param siteUrl - The site's base URL (`site.baseUrl`), whose origin a link can carry
+ */
+export function getLinkedStylesheetPaths(
+  html: string,
+  pageUrl: string,
+  siteUrl?: string,
+): string[] {
+  const origin = getSiteOrigin(siteUrl);
+  const paths = new Set<string>();
+  for (const [tag] of html.matchAll(LINK_TAG)) {
+    const href = loadsStylesheet(tag) ? getAttribute(tag, LINK_HREF) : undefined;
+    const path = href !== undefined ? parseSiteHref(href, origin, pageUrl)?.path : undefined;
+    if (path !== undefined) {
+      paths.add(path);
+    }
+  }
+  return [...paths];
+}
+
+/**
+ * Points the `<link>` tags that load a stylesheet at another path: production gives each
+ * stylesheet's links its hashed name. The `href` keeps its quotes, the site's origin and its
+ * query or fragment; a relative one becomes a path from the site root.
+ *
+ * @param html - The page's HTML
+ * @param targets - Each stylesheet path and the path its links get
+ * @param pageUrl - The page's URL, which relative links resolve against
+ * @param siteUrl - The site's base URL (`site.baseUrl`), whose origin a link can carry
+ * @returns The page with the links rewritten
+ */
+export function rewriteStylesheetLinks(
+  html: string,
+  targets: ReadonlyMap<string, string>,
+  pageUrl: string,
+  siteUrl?: string,
+): string {
+  if (targets.size === 0) {
+    return html;
+  }
+  const origin = getSiteOrigin(siteUrl);
+  return html.replace(LINK_TAG, (tag) => {
+    if (!loadsStylesheet(tag)) {
+      return tag;
+    }
+    return tag.replace(
+      LINK_HREF,
+      (
+        attribute,
+        double: string | undefined,
+        single: string | undefined,
+        bare: string | undefined,
+      ) => {
+        const href = double ?? single ?? bare ?? '';
+        const parts = parseSiteHref(href, origin, pageUrl);
+        const target = parts && targets.get(parts.path);
+        if (!parts || target === undefined) {
+          return attribute;
+        }
+        const quote = double !== undefined ? '"' : single !== undefined ? "'" : '';
+        const name = attribute.slice(0, attribute.length - href.length - quote.length * 2);
+        return `${name}${quote}${parts.origin}${target}${parts.suffix}${quote}`;
+      },
+    );
+  });
 }
 
 /**
@@ -463,14 +644,16 @@ export function linksStylesheet(html: string, path: string, siteUrl?: string): b
  * @param html - The rendered page
  * @param paths - The stylesheet paths (`stati.assets.stylesheetPaths`)
  * @param siteUrl - The site's base URL (`site.baseUrl`), whose origin a link can carry
+ * @param pageUrl - The page's URL, which relative links resolve against
  * @returns The page with the links
  */
 export function autoInjectStylesheets(
   html: string,
   paths: readonly string[],
   siteUrl?: string,
+  pageUrl?: string,
 ): string {
-  const missing = paths.filter((path) => !linksStylesheet(html, path, siteUrl));
+  const missing = paths.filter((path) => !linksStylesheet(html, path, siteUrl, pageUrl));
   if (missing.length === 0) {
     return html;
   }
