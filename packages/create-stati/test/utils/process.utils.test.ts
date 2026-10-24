@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { spawnProcess, isCommandAvailable } from '../../src/utils/process.utils.js';
+import {
+  spawnProcess,
+  isCommandAvailable,
+  KILL_GRACE_PERIOD,
+} from '../../src/utils/process.utils.js';
 import { spawn } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
 
@@ -110,15 +114,78 @@ describe('process.utils', () => {
       vi.useFakeTimers();
 
       const promise = spawnProcess('long-command', [], { timeout: 1000 });
+      const rejection = expect(promise).rejects.toThrow('Process timed out after 1000ms');
 
-      // Fast-forward time
-      vi.advanceTimersByTime(1000);
+      // Fast-forward past the timeout and the grace period for the killed process to exit
+      vi.advanceTimersByTime(1000 + KILL_GRACE_PERIOD);
 
-      await expect(promise).rejects.toThrow('Process timed out after 1000ms');
+      await rejection;
 
       expect(mockChild.kill).toHaveBeenCalled();
 
       vi.useRealTimers();
+    });
+
+    it('should wait for a timed-out process to exit before rejecting', async () => {
+      let exit: (code: number | null) => void = () => {};
+      const mockChild = {
+        on: vi.fn((event, callback) => {
+          if (event === 'exit') exit = callback;
+        }),
+        kill: vi.fn(),
+      } as unknown as ChildProcess;
+
+      vi.mocked(spawn).mockReturnValue(mockChild);
+      vi.useFakeTimers();
+
+      let settled = false;
+      const promise = spawnProcess('long-command', [], { timeout: 1000 });
+      promise.catch(() => {}).finally(() => (settled = true));
+
+      vi.advanceTimersByTime(1000);
+      await Promise.resolve();
+      expect(mockChild.kill).toHaveBeenCalled();
+      expect(settled).toBe(false);
+
+      // Killed processes exit with a signal or a non-zero code; it's still reported as a timeout
+      exit(null);
+      await expect(promise).rejects.toThrow('Process timed out after 1000ms');
+
+      vi.useRealTimers();
+    });
+
+    it('should kill the whole process tree with taskkill on Windows', async () => {
+      const originalPlatform = Object.getOwnPropertyDescriptor(process, 'platform')!;
+      Object.defineProperty(process, 'platform', { ...originalPlatform, value: 'win32' });
+
+      let exit: (code: number | null) => void = () => {};
+      const mockChild = {
+        pid: 4321,
+        on: vi.fn((event, callback) => {
+          if (event === 'exit') exit = callback;
+        }),
+        kill: vi.fn(),
+      } as unknown as ChildProcess;
+      const mockTaskkill = { on: vi.fn() } as unknown as ChildProcess;
+
+      vi.mocked(spawn).mockReturnValueOnce(mockChild).mockReturnValueOnce(mockTaskkill);
+      vi.useFakeTimers();
+
+      try {
+        const promise = spawnProcess('npx', ['skills'], { timeout: 1000 });
+        vi.advanceTimersByTime(1000);
+
+        expect(spawn).toHaveBeenLastCalledWith('taskkill', ['/pid', '4321', '/T', '/F'], {
+          stdio: 'ignore',
+        });
+        expect(mockChild.kill).not.toHaveBeenCalled();
+
+        exit(1);
+        await expect(promise).rejects.toThrow('Process timed out after 1000ms');
+      } finally {
+        Object.defineProperty(process, 'platform', originalPlatform);
+        vi.useRealTimers();
+      }
     });
 
     it('should clear timeout on successful exit', async () => {
@@ -265,7 +332,7 @@ describe('process.utils', () => {
 
       const promise = isCommandAvailable('slow-command', 1000);
 
-      vi.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000 + KILL_GRACE_PERIOD);
 
       const result = await promise;
       expect(result).toBe(false);

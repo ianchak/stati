@@ -1,9 +1,30 @@
 import { spawn } from 'node:child_process';
+import type { ChildProcess } from 'node:child_process';
 
 export interface SpawnOptions {
   cwd?: string;
   stdio?: 'ignore' | 'inherit' | 'pipe';
   timeout?: number;
+}
+
+/** How long a timed-out process may take to exit after it is killed */
+export const KILL_GRACE_PERIOD = 5000;
+
+/**
+ * Stop a child process and the processes it started. On Windows the child is the
+ * shell (`shell: true`), and killing only the shell would leave the command it runs,
+ * such as npx, running. Elsewhere the signal reaches the command itself, and npm
+ * forwards it to the processes it starts.
+ */
+function killProcessTree(child: ChildProcess): void {
+  if (process.platform === 'win32' && child.pid !== undefined) {
+    const taskkill = spawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], {
+      stdio: 'ignore',
+    });
+    taskkill.on('error', () => child.kill());
+    return;
+  }
+  child.kill();
 }
 
 /**
@@ -32,22 +53,35 @@ export async function spawnProcess(
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let timeoutHandle: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let graceHandle: any;
+    let timedOut = false;
+    const timeoutError = () => new Error(`Process timed out after ${timeout}ms`);
+    const clearTimers = () => {
+      if (timeoutHandle) global.clearTimeout(timeoutHandle);
+      if (graceHandle) global.clearTimeout(graceHandle);
+    };
 
     if (timeout) {
       timeoutHandle = global.setTimeout(() => {
-        child.kill();
-        reject(new Error(`Process timed out after ${timeout}ms`));
+        timedOut = true;
+        killProcessTree(child);
+        // Reject once the process has exited, so nothing it started is still writing
+        // files, but don't hang if it never reports its exit
+        graceHandle = global.setTimeout(() => reject(timeoutError()), KILL_GRACE_PERIOD);
       }, timeout);
     }
 
     child.on('error', (error) => {
-      if (timeoutHandle) global.clearTimeout(timeoutHandle);
+      clearTimers();
       reject(error);
     });
 
     child.on('exit', (code) => {
-      if (timeoutHandle) global.clearTimeout(timeoutHandle);
-      if (code === 0) {
+      clearTimers();
+      if (timedOut) {
+        reject(timeoutError());
+      } else if (code === 0) {
         resolve();
       } else {
         reject(new Error(`${command} exited with code ${code}`));
