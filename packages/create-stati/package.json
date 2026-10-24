@@ -21,14 +21,13 @@
   "homepage": "https://stati.build",
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
-    "build": "npm run clean && tsc -p tsconfig.json && npm run copy-templates && npm run copy-skill",
+    "build": "npm run clean && tsc -p tsconfig.json && npm run copy-templates",
     "copy-templates": "node -e \"const fs=require('fs-extra');fs.copySync('../../examples','dist/templates',{filter:(src)=>!src.includes('node_modules')&&!src.includes('.stati')&&!src.includes('dist')});\"",
-    "copy-skill": "node -e \"require('fs-extra').copySync('../../.claude/skills/stati','dist/skills/stati');\"",
     "dev": "tsc -p tsconfig.json --watch",
     "test": "vitest run"
   },
   "engines": {
-    "node": "^22.12.0 || >=24"
+    "node": "^22.20.0 || >=24"
   },
   "dependencies": {
     "inquirer": "^9.2.0"

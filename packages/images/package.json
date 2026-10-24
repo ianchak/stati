@@ -45,7 +45,7 @@
     "test": "vitest run"
   },
   "engines": {
-    "node": "^22.12.0 || >=24"
+    "node": "^22.20.0 || >=24"
   },
   "dependencies": {
     "satori": "^0.33.5",

@@ -59,7 +59,7 @@
     "examples/*"
   ],
   "engines": {
-    "node": "^22.13.0 || >=24",
+    "node": "^22.20.0 || >=24",
     "npm": ">=11.5.1"
   },
   "devDependencies": {

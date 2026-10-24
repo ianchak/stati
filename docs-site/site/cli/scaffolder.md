@@ -83,7 +83,7 @@ Options:
   --no-git                 Skip git initialization (default: initializes Git)
   --no-install             Skip dependency installation (default: installs dependencies)
   --package-manager <pm>   Package manager to use (npm|yarn|pnpm|bun)
-  --agent-skill [target]   Install the Stati agent skill (claude|github|agents, default: claude)
+  --agent-skill [target]   Install the Stati agent skill (claude|agents, default: claude)
   --no-agent-skill         Skip agent skill installation
   --help, -h               Show help message
 ```
@@ -108,20 +108,49 @@ The package includes a native image encoder, so the prompt defaults to no.
 
 ## Agent skill
 
-The scaffolder can copy the Stati agent skill into your project. The skill teaches AI coding assistants Stati's conventions for content, Eta templates, includes and helpers, configuration, and deployment.
+The scaffolder can add the Stati agent skill to your project. The skill teaches AI coding assistants Stati's conventions for content, Eta templates, includes and helpers, configuration, and deployment.
 
-| Target             | Installed to            | Discovered by                          |
-| ------------------ | ----------------------- | -------------------------------------- |
-| `claude` (default) | `.claude/skills/stati/` | Claude Code, GitHub Copilot in VS Code |
-| `github`           | `.github/skills/stati/` | GitHub Copilot                         |
-| `agents`           | `.agents/skills/stati/` | Tools using the `.agents` convention   |
+| Target             | `skills` agent | Installed to            | Discovered by                            |
+| ------------------ | -------------- | ----------------------- | ---------------------------------------- |
+| `claude` (default) | `claude-code`  | `.claude/skills/stati/` | Claude Code, GitHub Copilot in VS Code   |
+| `agents`           | `universal`    | `.agents/skills/stati/` | GitHub Copilot, Codex, Cursor and others |
 
-In interactive mode you choose a target (or skip) when prompted. In non-interactive mode the skill is only installed when `--agent-skill` is passed. In Claude Code, invoke it with `/stati`.
+In interactive mode you choose a target (or skip) when prompted. In non-interactive mode the skill is only installed when `--agent-skill` is passed. In Claude Code, invoke it with `/stati`. `--agent-skill=github` still works and installs to `.agents/skills/stati/`, which Copilot reads.
 
 ```bash
 npx create-stati my-site --agent-skill
-npx create-stati my-site --agent-skill=github
+npx create-stati my-site --agent-skill=agents
 ```
+
+The scaffolder installs the skill with the open [`skills` CLI](https://github.com/vercel-labs/skills), from the `main` branch of the Stati repository:
+
+```bash
+npx --yes skills@1 add ianchak/stati --skill stati --agent claude-code --copy --yes --json
+```
+
+It copies plain files (no symlinks) and writes `skills-lock.json` in the project root, which records where the skill came from. This needs `git` on your `PATH` and network access, even with `--no-git`. If the install fails, the site is still created and the scaffolder prints the command to add the skill later.
+
+### Add or update the skill in an existing site
+
+```bash
+# Add the skill to an existing Stati site (asks which agents)
+npx skills add ianchak/stati --skill stati
+
+# Without prompts, for Claude Code and Copilot in VS Code
+npx skills add ianchak/stati --skill stati -a claude-code --copy -y
+# Without prompts, into .agents/skills (Copilot, Codex, Cursor and others)
+npx skills add ianchak/stati --skill stati -a universal --copy -y
+
+# Update the skill
+npx skills update stati -p
+```
+
+- Commit `skills-lock.json`. Without it, `npx skills update` finds nothing to update.
+- An update replaces the whole folder: edits to the skill's files and files added to it are removed without warning, and `npx skills update` doesn't notice local edits. Put project rules in `CLAUDE.md` or `AGENTS.md`, not in the skill.
+- Copies made by hand or by older create-stati releases, which copied the skill from the package, have no `skills-lock.json` entry, so `npx skills update` skips them (with `-y` it even falls back to personal skills and reports none). Run `npx skills add` once: it replaces the copy and tracks it from then on.
+- The CLI doesn't manage `.github/skills/stati`. Add the skill to `.claude/skills` or `.agents/skills`, then delete the old folder so Copilot doesn't see two skills named `stati`.
+- For a personal install, add `-g`. With `-a claude-code` it goes to `~/.claude/skills/stati`.
+- The CLI sends anonymous usage data unless `DISABLE_TELEMETRY=1` or `DO_NOT_TRACK=1` is set.
 
 ## Project templates
 
@@ -300,7 +329,7 @@ my-site/
 
 ### With the agent skill
 
-When using `--agent-skill` (default target `claude`), the full skill bundle is copied:
+With `--agent-skill` (default target `claude`), the skill is installed in `.claude/skills/stati/` and recorded in `skills-lock.json`:
 
 ```text
 my-site/
@@ -311,12 +340,13 @@ my-site/
 │           ├── references/   # Task-specific guidance
 │           ├── assets/       # Starter files and examples
 │           └── scripts/      # Helper scripts
+├── skills-lock.json          # Where the skill came from, for updates
 └── ...
 ```
 
 ## Requirements
 
-- Node.js 22.12+ or 24+
+- Node.js 22.20+ or 24+
 - npm, yarn, pnpm, or bun
 
 ## Next steps

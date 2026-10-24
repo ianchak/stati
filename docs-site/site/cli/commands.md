@@ -12,7 +12,7 @@ Stati provides a simple and powerful command-line interface for building, develo
 
 ## Requirements
 
-- Node.js 22.12 or higher, or 24 and later
+- Node.js 22.20 or higher, or 24 and later
 - npm, pnpm, yarn or bun
 
 ## Running Stati commands
