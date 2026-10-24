@@ -29,10 +29,10 @@ A production build writes the page with the hashed name:
 ```
 
 - Every `<link>` that applies, offers or preloads a stylesheet is rewritten: `rel="stylesheet"`, `rel="alternate stylesheet"` and `rel="preload" as="style"`. The `href` keeps its quotes, a query or fragment such as `?v=2`, and the site's own origin when it carries one, such as `https://example.com/styles.css`. A relative `href` resolves against the page's URL and becomes a path from the site root.
-- Links to other sites, links in page text and code samples, and links in comments, scripts and `<template>` elements stay as they are.
+- Links to other sites, links in page text and code samples, and links in comments, scripts and `<template>` elements stay as they are. So does a link with an `integrity` digest: the digest was taken from the file under its own name, which is still copied.
 - `A1B2C3D4` is the start of the SHA-256 of the CSS. A stylesheet in a folder keeps its folder: `/css/site.css` becomes `/_assets/css/site-A1B2C3D4.css`.
 - Relative `url()` references and `@import` strings in the CSS, such as `url(fonts/inter.woff2)`, become paths from the site root, `url(/fonts/inter.woff2)`, so they load the same files from `_assets/` as from the stylesheet's own path. References with CSS escapes are rebased too; comments and other strings, such as a `content` value, are left alone.
-- When the CSS changes, Stati writes the new name into the pages the [ISG cache](/core-concepts/isg) kept: a CSS change doesn't render any page again. When a stylesheet is gone from `public/`, those pages link its own path again.
+- When the CSS changes, Stati writes the new name into the pages the [ISG cache](/core-concepts/isg) kept: a CSS change doesn't render any page again. When a stylesheet is gone from `public/`, those pages link its own path again, and once a stylesheet they link is added to `public/`, they link its copy. Only their stylesheet links change.
 - Hashed files earlier builds left in `dist/_assets/` under other names are deleted.
 
 Development keeps every stylesheet's own name. The first production build that hashes renders every page again.

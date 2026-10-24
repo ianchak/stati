@@ -229,13 +229,14 @@ keeps the own names.
   `public/` file is still copied under its own name; a file only another
   stylesheet `@import`s, or one with characters other than letters, digits, `-`,
   `_`, `.` and `/`, keeps its name. Links keep quotes, a query or fragment and
-  the site's own origin; relative links resolve against the page.
+  the site's own origin; relative links resolve against the page. Links with an
+  `integrity` digest, and links in comments, scripts and templates, stay as they are.
 - Relative `url()` references and `@import` strings in the CSS become root paths
   (`url(fonts/a.woff2)` from `/styles.css` becomes `url(/fonts/a.woff2)`), so
   `_assets/` loads the same files.
 - Cached ISG pages get the new name written in when the CSS changes, so a CSS
   change re-renders nothing; a stylesheet removed from `public/` goes back to its
-  own path. Earlier hashed copies are deleted. The first hashing build re-renders
+  own path, and one added later gets linked. Only their stylesheet links change. Earlier hashed copies are deleted. The first hashing build re-renders
   every page.
 - Sass compiles into `public/styles.css` (gitignored) before `stati build`. A
   script that writes CSS to `dist/` after `stati build` keeps a fixed name.
