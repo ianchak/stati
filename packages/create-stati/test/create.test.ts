@@ -120,6 +120,7 @@ describe('create-stati scaffolding', () => {
       it.each([
         ['exits with a non-zero code', new Error('npx exited with code 1')],
         ['times out', new Error('Process timed out after 120000ms')],
+        ['fails to start', new Error('spawn npx ENOENT')],
       ])('should warn and still create the site when the skills CLI %s', async (_, error) => {
         vi.mocked(spawnProcess).mockRejectedValueOnce(error);
         const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -138,27 +139,6 @@ describe('create-stati scaffolding', () => {
         expect(logSpy).toHaveBeenCalledWith(
           expect.stringContaining('npx skills add ianchak/stati --skill stati -a claude-code'),
         );
-      });
-
-      it('should skip the skills CLI on Node.js older than 22.20', async () => {
-        const original = Object.getOwnPropertyDescriptor(process.versions, 'node')!;
-        Object.defineProperty(process.versions, 'node', { ...original, value: '22.12.0' });
-        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-        vi.spyOn(console, 'log').mockImplementation(() => {});
-
-        try {
-          const result = await createSite({
-            ...skillOptions('test-skill-old-node'),
-            agentSkill: 'agents',
-          });
-
-          expect(npxCalls()).toEqual([]);
-          expect(result.agentSkillDir).toBeUndefined();
-          await expect(access(join(result.targetDir, 'package.json'))).resolves.not.toThrow();
-          expect(warn).toHaveBeenCalledWith(expect.stringContaining('Node.js 22.20.0 or later'));
-        } finally {
-          Object.defineProperty(process.versions, 'node', original);
-        }
       });
 
       it('should not run the skills CLI without an agent skill target', async () => {

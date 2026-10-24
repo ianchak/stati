@@ -5,7 +5,6 @@ import {
   SKILLS_AGENTS,
   isValidAgentSkillTarget,
   skillAddCommand,
-  supportsSkillsCli,
 } from '../src/agent-skill.js';
 
 describe('agent skill', () => {
@@ -38,14 +37,5 @@ describe('agent skill', () => {
     expect(skillAddCommand('github')).toBe(
       'npx skills add ianchak/stati --skill stati -a universal',
     );
-  });
-
-  it('should require Node.js 22.20 or later for the skills CLI', () => {
-    expect(supportsSkillsCli('22.12.0')).toBe(false);
-    expect(supportsSkillsCli('22.19.9')).toBe(false);
-    expect(supportsSkillsCli('22.20.0')).toBe(true);
-    expect(supportsSkillsCli('22.21.1')).toBe(true);
-    expect(supportsSkillsCli('24.0.0')).toBe(true);
-    expect(supportsSkillsCli('20.30.0')).toBe(false);
   });
 });

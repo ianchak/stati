@@ -19,9 +19,6 @@ export const SKILLS_CLI_PACKAGE = 'skills@1';
 export const SKILL_SOURCE = 'ianchak/stati';
 export const SKILL_NAME = 'stati';
 
-/** Oldest Node.js version the `skills` CLI runs on */
-export const SKILLS_CLI_MIN_NODE = '22.20.0';
-
 /** How long the `skills` CLI may take to clone the repository and copy the skill */
 export const SKILL_INSTALL_TIMEOUT = 2 * 60 * 1000;
 
@@ -54,15 +51,6 @@ export function isValidAgentSkillTarget(value: string): value is AgentSkillTarge
  */
 export function skillAddCommand(target: AgentSkillTarget): string {
   return `npx skills add ${SKILL_SOURCE} --skill ${SKILL_NAME} -a ${SKILLS_AGENTS[target]}`;
-}
-
-/**
- * Whether a Node.js version (such as `process.versions.node`) can run the `skills` CLI
- */
-export function supportsSkillsCli(nodeVersion: string): boolean {
-  const [major = 0, minor = 0] = nodeVersion.split('.').map(Number);
-  const [minMajor = 0, minMinor = 0] = SKILLS_CLI_MIN_NODE.split('.').map(Number);
-  return major > minMajor || (major === minMajor && minor >= minMinor);
 }
 
 /**
