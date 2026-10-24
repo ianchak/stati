@@ -192,11 +192,6 @@ function determineAffectedPackages(commit) {
         packages.add('create-stati');
       }
 
-      // The Stati agent skill is bundled into create-stati
-      if (file.startsWith('.claude/skills/stati/')) {
-        packages.add('create-stati');
-      }
-
       // Check for workspace root changes that affect all packages
       if (WORKSPACE_ROOT_FILES.some((rootFile) => file === rootFile)) {
         console.log(`  Workspace root file changed: ${file}`);
