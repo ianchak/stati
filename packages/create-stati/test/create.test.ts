@@ -109,6 +109,7 @@ describe('create-stati scaffolding', () => {
                 agent,
                 '--copy',
                 '--yes',
+                '--json',
               ],
               { cwd: options.dir, stdio: 'ignore', timeout: 120_000 },
             ],

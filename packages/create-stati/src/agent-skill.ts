@@ -77,6 +77,8 @@ export async function addAgentSkill(targetDir: string, target: AgentSkillTarget)
       SKILLS_AGENTS[target],
       '--copy',
       '--yes',
+      // Exits non-zero when copying to the agent fails; plain output exits 0 after logging it
+      '--json',
     ],
     { cwd: targetDir, stdio: 'ignore', timeout: SKILL_INSTALL_TIMEOUT },
   );
