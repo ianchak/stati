@@ -278,6 +278,26 @@ describe('create-stati scaffolding', () => {
       expect(gitignoreContent).toContain('node_modules/');
       expect(gitignoreContent).toContain('dist/');
       expect(gitignoreContent).toContain('.stati/');
+      expect(gitignoreContent).not.toContain('public/styles.css');
+
+      consoleSpy.mockRestore();
+    });
+
+    it('should ignore the stylesheet Sass compiles into public/', async () => {
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const result = await createSite({
+        projectName: 'test-git-sass',
+        template: 'blank',
+        styling: 'sass',
+        gitInit: true,
+        dir: join(tempDir, 'test-git-sass'),
+      });
+
+      const gitignoreContent = await readFile(join(result.targetDir, '.gitignore'), 'utf-8');
+      expect(gitignoreContent).toContain(
+        '# Compiled from src/styles.scss before each build\npublic/styles.css\n',
+      );
 
       consoleSpy.mockRestore();
     });

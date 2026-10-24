@@ -19,24 +19,19 @@ const TAILWIND_IMPORT = `@import 'tailwindcss';
 /** Stati's Tailwind flags: the input, and the output the dev server's watcher writes */
 const TAILWIND_FLAGS = '--tailwind-input src/styles.css --tailwind-output dist/styles.css';
 
-/** The starter templates' link to public/styles.css, with its line */
-const STYLESHEET_LINK_LINE = /^[ \t]*<link rel="stylesheet" href="\/styles\.css" \/>[ \t]*\r?\n/m;
-
 /**
  * Generate Tailwind CSS setup files and dependencies.
  * Returns all files and configuration needed for Tailwind support. Tailwind CSS 4 is
  * configured in the stylesheet itself, so there is no tailwind.config.js.
  *
  * `stati dev` and `stati build` run Tailwind themselves. The build runs it after the last page
- * renders and names the stylesheet after its content, `_assets/styles-[hash].css`, and both
- * link it on every page, so the templates drop their link to /styles.css.
+ * renders and names the stylesheet after its content, `_assets/styles-[hash].css`. The
+ * templates keep their link to /styles.css, which production builds point at that file.
  *
  * @param templateCSS - The template's own stylesheet. When given, it is carried over
  *   below the Tailwind import instead of replacing the template's design with
- *   Tailwind starter styles. Either way public/styles.css is removed: every build copies the
- *   static files, which would write it over the dev server's dist/styles.css.
- * @param templates - The template's `.eta` files by path; those that link /styles.css are
- *   rewritten without the link
+ *   Tailwind starter styles. Either way public/styles.css is removed: it is at the path of
+ *   Tailwind's output, so no build copies it.
  * @returns Processor result with files, dependencies, and scripts
  *
  * @example
@@ -47,17 +42,13 @@ const STYLESHEET_LINK_LINE = /^[ \t]*<link rel="stylesheet" href="\/styles\.css"
  * // tailwindSetup.scripts contains: { dev: 'stati dev --tailwind-input ...', build: 'stati build --tailwind-input ...' }
  * ```
  */
-export function setupTailwind(
-  templateCSS?: string,
-  templates: ReadonlyMap<string, string> = new Map(),
-): ProcessorResultWithDeletions {
+export function setupTailwind(templateCSS?: string): ProcessorResultWithDeletions {
   return {
     files: new Map([
       [
         'src/styles.css',
         templateCSS === undefined ? generateTailwindCSS() : wrapTemplateCSS(templateCSS),
       ],
-      ...removeStylesheetLinks(templates),
     ]),
     devDependencies: {
       tailwindcss: DEPENDENCY_VERSIONS.tailwindcss,
@@ -69,24 +60,6 @@ export function setupTailwind(
     },
     filesToDelete: ['public/styles.css'],
   };
-}
-
-/**
- * The templates that link /styles.css, without that link. Stati links the Tailwind stylesheet
- * itself, under a name production builds only know after rendering.
- *
- * @param templates - Template paths and contents
- * @returns The changed templates by path
- */
-export function removeStylesheetLinks(templates: ReadonlyMap<string, string>): Map<string, string> {
-  const changed = new Map<string, string>();
-  for (const [path, content] of templates) {
-    const updated = content.replace(STYLESHEET_LINK_LINE, '');
-    if (updated !== content) {
-      changed.set(path, updated);
-    }
-  }
-  return changed;
 }
 
 /**

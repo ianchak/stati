@@ -59,23 +59,6 @@ describe('tailwind-processor', () => {
       });
     });
 
-    it('should rewrite only the templates that link /styles.css, keeping their other lines', () => {
-      const templates = new Map([
-        [
-          'site/layout.eta',
-          '<head>\r\n    <link rel="icon" href="/favicon.svg" />\r\n    <link rel="stylesheet" href="/styles.css" />\r\n  </head>\r\n',
-        ],
-        ['site/page.eta', '<link rel="stylesheet" href="/print.css" />\n'],
-      ]);
-
-      const { files } = setupTailwind(undefined, templates);
-
-      expect([...files.keys()]).toEqual(['src/styles.css', 'site/layout.eta']);
-      expect(files.get('site/layout.eta')).toBe(
-        '<head>\r\n    <link rel="icon" href="/favicon.svg" />\r\n  </head>\r\n',
-      );
-    });
-
     it('should not include watch:css or copy:css script (uses Stati built-in Tailwind support)', () => {
       const result = setupTailwind();
 

@@ -105,16 +105,19 @@ describe('CSSProcessor', () => {
 
       expect(packageJson.scripts).toHaveProperty('build:css');
       expect(packageJson.scripts).toHaveProperty('watch:css');
-      expect(packageJson.scripts['build:css']).toContain('sass src/styles.scss dist/styles.css');
-      expect(packageJson.scripts['watch:css']).toContain(
-        'sass src/styles.scss dist/styles.css --watch',
+      // Sass compiles into public/, so the build copies and hashes it like any stylesheet
+      expect(packageJson.scripts['build:css']).toBe(
+        'sass src/styles.scss public/styles.css --style=compressed --no-source-map',
+      );
+      expect(packageJson.scripts['watch:css']).toBe(
+        'sass --watch src/styles.scss public/styles.css --no-source-map',
       );
 
       // Scripts should be modified to integrate CSS processing
       expect(packageJson.scripts.dev).toBe(
         'concurrently --prefix none "npm run watch:css" "stati dev"',
       );
-      expect(packageJson.scripts.build).toBe('stati build && npm run build:css');
+      expect(packageJson.scripts.build).toBe('npm run build:css && stati build');
     });
 
     it('should remove original CSS file after creating SCSS', async () => {
@@ -191,25 +194,6 @@ describe('CSSProcessor', () => {
       );
       expect(packageJson.scripts).not.toHaveProperty('build:css');
       expect(packageJson.scripts).not.toHaveProperty('copy:css');
-    });
-
-    it("should remove the templates' link to /styles.css, which Stati adds itself", async () => {
-      const head = '<head>\n  <link rel="icon" href="/favicon.svg" />\n';
-      await mkdir(join(tempDir, 'site', 'partials'), { recursive: true });
-      await writeFile(
-        join(tempDir, 'site', 'partials', 'head.eta'),
-        `${head}  <link rel="stylesheet" href="/styles.css" />\n</head>\n`,
-      );
-      await writeFile(join(tempDir, 'site', 'layout.eta'), '<%~ stati.include("partials/head") %>');
-
-      await processStyling(tempDir, 'tailwind');
-
-      expect(await readFile(join(tempDir, 'site', 'partials', 'head.eta'), 'utf-8')).toBe(
-        `${head}</head>\n`,
-      );
-      expect(await readFile(join(tempDir, 'site', 'layout.eta'), 'utf-8')).toBe(
-        '<%~ stati.include("partials/head") %>',
-      );
     });
   });
 
