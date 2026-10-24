@@ -1648,7 +1648,7 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     logger.info('Generating sitemap...');
 
     const endSitemapSpan = recorder.startSpan('sitemapGenerationMs');
-    const sitemapResult = generateSitemap(pages, config, config.sitemap);
+    const sitemapResult = generateSitemap(pages, config, config.sitemap, logger);
     await writeFile(join(outDir, 'sitemap.xml'), sitemapResult.xml);
     endSitemapSpan();
 

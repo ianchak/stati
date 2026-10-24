@@ -1,5 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
-import { getFrontMatterDate, PUBLISHED_DATE_FIELDS } from '../../../src/core/utils/date.utils.js';
+import {
+  getFrontMatterDate,
+  PUBLISHED_DATE_FIELDS,
+  parseDateValue,
+} from '../../../src/core/utils/date.utils.js';
 
 describe('date.utils', () => {
   describe('PUBLISHED_DATE_FIELDS', () => {
@@ -73,6 +77,35 @@ describe('date.utils', () => {
     it('returns a copy, not the front matter Date itself', () => {
       const original = new Date('2026-01-01');
       const result = getFrontMatterDate({ publishedAt: original });
+
+      expect(result).not.toBe(original);
+      result!.setFullYear(2000);
+      expect(original.getFullYear()).toBe(2026);
+    });
+  });
+
+  describe('parseDateValue', () => {
+    it('parses a quoted (string) date', () => {
+      expect(parseDateValue('2026-01-01')).toEqual(new Date('2026-01-01'));
+    });
+
+    it('accepts a Date object (unquoted YAML date)', () => {
+      expect(parseDateValue(new Date('2026-06-01'))).toEqual(new Date('2026-06-01'));
+    });
+
+    it('returns undefined for a value that is not a date', () => {
+      expect(parseDateValue('soon')).toBeUndefined();
+      expect(parseDateValue('next week')).toBeUndefined();
+      expect(parseDateValue(1700000000)).toBeUndefined();
+      expect(parseDateValue(true)).toBeUndefined();
+      expect(parseDateValue({ toString: () => '2026-01-01' })).toBeUndefined();
+      expect(parseDateValue(null)).toBeUndefined();
+      expect(parseDateValue(undefined)).toBeUndefined();
+    });
+
+    it('returns a copy, not the input Date itself', () => {
+      const original = new Date('2026-01-01');
+      const result = parseDateValue(original);
 
       expect(result).not.toBe(original);
       result!.setFullYear(2000);

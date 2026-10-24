@@ -203,7 +203,7 @@ export function generateOpenGraphTags(ctx: SEOContext): string[] {
   }
   if (og.image) {
     const image = typeof og.image === 'string' ? { url: og.image } : og.image;
-    const imageUrl = image.url.startsWith('/') ? `${siteUrl}${image.url}` : image.url;
+    const imageUrl = image.url.startsWith('/') ? resolveAbsoluteUrl(image.url, siteUrl) : image.url;
 
     tags.push(`<meta property="og:image" content="${escapeHtml(imageUrl)}">`);
     if (image.alt) {
@@ -307,7 +307,9 @@ export function generateTwitterCardTags(ctx: SEOContext): string[] {
       : undefined);
 
   if (imageUrl) {
-    const fullImageUrl = imageUrl.startsWith('/') ? `${siteUrl}${imageUrl}` : imageUrl;
+    const fullImageUrl = imageUrl.startsWith('/')
+      ? resolveAbsoluteUrl(imageUrl, siteUrl)
+      : imageUrl;
     tags.push(`<meta name="twitter:image" content="${escapeHtml(fullImageUrl)}">`);
 
     if (twitter.imageAlt) {

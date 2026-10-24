@@ -725,6 +725,30 @@ describe('SEO Generator - generateOpenGraphTags', () => {
     expect(tags.join('\n')).toContain('og:image" content="https://example.com/images/og.jpg"');
   });
 
+  it('should not double the slash when siteUrl ends with a trailing slash', () => {
+    const page = createMockPage({
+      frontMatter: {
+        seo: {
+          openGraph: {
+            image: '/img.png',
+          },
+        },
+      },
+    });
+    const config = createMockConfig();
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com/',
+    };
+
+    const tags = generateOpenGraphTags(ctx);
+    const joined = tags.join('\n');
+    expect(joined).toContain('og:image" content="https://example.com/img.png"');
+    expect(joined).not.toContain('https://example.com//');
+  });
+
   it('should generate OG image with dimensions and alt', () => {
     const page = createMockPage({
       frontMatter: {
@@ -1204,6 +1228,30 @@ describe('SEO Generator - generateTwitterCardTags', () => {
     expect(tags.join('\n')).toContain(
       'twitter:image" content="https://example.com/images/twitter.jpg"',
     );
+  });
+
+  it('should not double the slash in Twitter image when siteUrl ends with a trailing slash', () => {
+    const page = createMockPage({
+      frontMatter: {
+        seo: {
+          twitter: {
+            image: '/img.png',
+          },
+        },
+      },
+    });
+    const config = createMockConfig();
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com/',
+    };
+
+    const tags = generateTwitterCardTags(ctx);
+    const joined = tags.join('\n');
+    expect(joined).toContain('twitter:image" content="https://example.com/img.png"');
+    expect(joined).not.toContain('https://example.com//');
   });
 
   it('should fallback to OG image for Twitter image', () => {
