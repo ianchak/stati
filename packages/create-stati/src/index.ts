@@ -3,8 +3,16 @@ import inquirer from 'inquirer';
 import { createSite, detectAvailablePackageManagers, ALLOWED_PACKAGE_MANAGERS } from './create.js';
 import type { CreateOptions, PackageManager } from './create.js';
 import { log } from './utils/index.js';
-import { AGENT_SKILL_TARGETS, isValidAgentSkillTarget } from './agent-skill.js';
+import {
+  AGENT_SKILL_DIRS,
+  AGENT_SKILL_TARGETS,
+  SKILL_UPDATE_COMMAND,
+  isValidAgentSkillTarget,
+} from './agent-skill.js';
 import { TEMPLATE_NAMES, isValidTemplate } from './examples.js';
+
+/** Agent skill targets listed in --help and errors; `github` still works for old scripts */
+const DOCUMENTED_TARGETS = AGENT_SKILL_TARGETS.filter((target) => target !== 'github');
 
 /**
  * Validate that a string is a valid package manager
@@ -34,7 +42,7 @@ Options:
   --no-git                 Skip git initialization (default: initializes Git)
   --no-install             Skip dependency installation (default: installs dependencies)
   --package-manager <pm>   Package manager to use (npm|yarn|pnpm|bun)
-  --agent-skill [target]   Install the Stati agent skill (claude|github|agents, default: claude)
+  --agent-skill [target]   Install the Stati agent skill (claude|agents, default: claude)
   --no-agent-skill         Skip agent skill installation
   --help, -h               Show this help message
 
@@ -47,7 +55,7 @@ Examples:
   create-stati my-blog --template=blog --images
   create-stati my-app --template=blank --styling=tailwind --package-manager=pnpm
   create-stati my-app --no-install --no-git
-  create-stati my-app --agent-skill=github
+  create-stati my-app --agent-skill=agents
 `);
     return null;
   }
@@ -114,9 +122,12 @@ Examples:
           }
           if (isValidAgentSkillTarget(target)) {
             options.agentSkill = target;
+            if (target === 'github') {
+              log.muted(`--agent-skill=github now installs to ${AGENT_SKILL_DIRS.github}`);
+            }
           } else {
             log.error(
-              `Invalid agent skill target: '${target}'. Allowed values: ${AGENT_SKILL_TARGETS.join(', ')}`,
+              `Invalid agent skill target: '${target}'. Allowed values: ${DOCUMENTED_TARGETS.join(', ')}`,
             );
             process.exit(1);
           }
@@ -262,8 +273,7 @@ export async function runCLI(cliOptions?: Partial<CreateOptions> | null): Promis
       message: 'Install the Stati agent skill for AI coding assistants?',
       choices: [
         { name: '.claude/skills (Claude Code, Copilot in VS Code)', value: 'claude' },
-        { name: '.github/skills (GitHub Copilot)', value: 'github' },
-        { name: '.agents/skills', value: 'agents' },
+        { name: '.agents/skills (Copilot, Codex, Cursor and other agents)', value: 'agents' },
         { name: 'No', value: false },
       ],
       default: 'claude',
@@ -367,6 +377,7 @@ export async function runCLI(cliOptions?: Partial<CreateOptions> | null): Promis
     log.step(devCommand);
     if (result.agentSkillDir) {
       log.muted(`\nStati agent skill installed in ${result.agentSkillDir} (invoke with /stati)`);
+      log.muted(`Update it with: ${SKILL_UPDATE_COMMAND}`);
     }
     log.newline();
     log.status('Happy building with Stati!');

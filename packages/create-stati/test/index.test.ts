@@ -199,11 +199,36 @@ describe('create-stati CLI', () => {
     });
 
     it('should parse --agent-skill with = and space separators', async () => {
-      const result1 = await parseArgs(['test-project', '--agent-skill=github']);
-      const result2 = await parseArgs(['test-project', '--agent-skill', 'agents']);
+      const result1 = await parseArgs(['test-project', '--agent-skill=agents']);
+      const result2 = await parseArgs(['test-project', '--agent-skill', 'claude']);
 
-      expect(result1).toEqual({ projectName: 'test-project', agentSkill: 'github' });
-      expect(result2).toEqual({ projectName: 'test-project', agentSkill: 'agents' });
+      expect(result1).toEqual({ projectName: 'test-project', agentSkill: 'agents' });
+      expect(result2).toEqual({ projectName: 'test-project', agentSkill: 'claude' });
+    });
+
+    it('should still accept --agent-skill=github and note its new location', async () => {
+      // Local spy: restoreMocks undoes the file-level console.log spy between tests
+      const consoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      const result = await parseArgs(['test-project', '--agent-skill=github']);
+
+      expect(result).toEqual({ projectName: 'test-project', agentSkill: 'github' });
+      expect(consoleLog).toHaveBeenCalledWith(
+        expect.stringContaining('--agent-skill=github now installs to .agents/skills/stati'),
+      );
+    });
+
+    it('should list only claude and agents as agent skill targets in --help', async () => {
+      const consoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      await parseArgs(['--help']);
+
+      const help = String(consoleLog.mock.calls[0]?.[0]);
+      expect(help).toContain(
+        '--agent-skill [target]   Install the Stati agent skill (claude|agents',
+      );
+      expect(help).toContain('create-stati my-app --agent-skill=agents');
+      expect(help).not.toContain('github');
     });
 
     it('should not consume a project name following bare --agent-skill', async () => {
@@ -502,7 +527,13 @@ describe('create-stati CLI', () => {
       await runCLI({ projectName: 'test-project', template: 'blank' });
 
       const prompts = mockInquirer.prompt.mock.calls[0]?.[0];
-      expect(prompts?.some((p: { name: string }) => p.name === 'agentSkill')).toBe(true);
+      const skillPrompt = prompts?.find((p: { name: string }) => p.name === 'agentSkill');
+      expect(skillPrompt.choices).toEqual([
+        { name: '.claude/skills (Claude Code, Copilot in VS Code)', value: 'claude' },
+        { name: '.agents/skills (Copilot, Codex, Cursor and other agents)', value: 'agents' },
+        { name: 'No', value: false },
+      ]);
+      expect(skillPrompt.default).toBe('claude');
       expect(mockCreateSite).toHaveBeenCalledWith(
         expect.objectContaining({ agentSkill: 'claude' }),
       );
@@ -632,6 +663,9 @@ describe('create-stati CLI', () => {
       });
       await runCLI(options);
       expect(loggedSkillMessage()).toBe(true);
+      expect(consoleLog).toHaveBeenCalledWith(
+        expect.stringContaining('Update it with: npx skills update stati -p'),
+      );
     });
 
     it('should validate project name in prompts', async () => {

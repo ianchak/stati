@@ -1,28 +1,46 @@
-import { cp, stat } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
-import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import { spawnProcess } from './utils/index.js';
 
 /**
- * Locations where the Stati agent skill can be installed in a new project.
- * - claude: discovered by Claude Code and GitHub Copilot in VS Code
- * - github: discovered by GitHub Copilot
- * - agents: generic Agent Skills location
+ * Values accepted by `--agent-skill`.
+ * - claude: `.claude/skills`, discovered by Claude Code and GitHub Copilot in VS Code
+ * - agents: `.agents/skills`, discovered by Copilot, Codex, Cursor and other agents
+ * - github: kept so existing scripts don't break; installs like `agents`
  */
-export const AGENT_SKILL_TARGETS = ['claude', 'github', 'agents'] as const;
+export const AGENT_SKILL_TARGETS = ['claude', 'agents', 'github'] as const;
 export type AgentSkillTarget = (typeof AGENT_SKILL_TARGETS)[number];
 
 /**
- * Project-relative installation directory for each target.
+ * The `skills` CLI version used to install the skill. Pinned to a major version so a
+ * release with different flags can't break scaffolding.
  */
+export const SKILLS_CLI_PACKAGE = 'skills@1';
+
+/** Repository the skill is installed from. No ref, so `npx skills update` can update it. */
+export const SKILL_SOURCE = 'ianchak/stati';
+export const SKILL_NAME = 'stati';
+
+/** Oldest Node.js version the `skills` CLI runs on */
+export const SKILLS_CLI_MIN_NODE = '22.20.0';
+
+/** How long the `skills` CLI may take to clone the repository and copy the skill */
+export const SKILL_INSTALL_TIMEOUT = 2 * 60 * 1000;
+
+/** The `skills` CLI agent each target installs for */
+export const SKILLS_AGENTS: Record<AgentSkillTarget, string> = {
+  claude: 'claude-code',
+  agents: 'universal',
+  github: 'universal',
+};
+
+/** Project-relative directory the `skills` CLI installs to for each target */
 export const AGENT_SKILL_DIRS: Record<AgentSkillTarget, string> = {
   claude: '.claude/skills/stati',
-  github: '.github/skills/stati',
   agents: '.agents/skills/stati',
+  github: '.agents/skills/stati',
 };
+
+/** Command that updates an installed skill */
+export const SKILL_UPDATE_COMMAND = `npx skills update ${SKILL_NAME} -p`;
 
 /**
  * Validate that a string is a valid agent skill target
@@ -32,36 +50,48 @@ export function isValidAgentSkillTarget(value: string): value is AgentSkillTarge
 }
 
 /**
- * Resolve the directory containing the bundled Stati skill.
- * In published package: the skill is copied to dist/skills/stati during build.
- * In development: fall back to the monorepo's .claude/skills/stati.
+ * The command to add the skill later, shown when create-stati couldn't install it
  */
-export function getSkillSourceDir(): string {
-  const publishedSkillDir = join(__dirname, 'skills', 'stati');
-  if (existsSync(publishedSkillDir)) {
-    return publishedSkillDir;
-  }
-  return join(__dirname, '..', '..', '..', '.claude', 'skills', 'stati');
+export function skillAddCommand(target: AgentSkillTarget): string {
+  return `npx skills add ${SKILL_SOURCE} --skill ${SKILL_NAME} -a ${SKILLS_AGENTS[target]}`;
 }
 
 /**
- * Copy the whole Stati skill bundle into the project.
+ * Whether a Node.js version (such as `process.versions.node`) can run the `skills` CLI
+ */
+export function supportsSkillsCli(nodeVersion: string): boolean {
+  const [major = 0, minor = 0] = nodeVersion.split('.').map(Number);
+  const [minMajor = 0, minMinor = 0] = SKILLS_CLI_MIN_NODE.split('.').map(Number);
+  return major > minMajor || (major === minMajor && minor >= minMinor);
+}
+
+/**
+ * Install the Stati skill into the project with the `skills` CLI. It copies plain files
+ * (no symlinks) and records the source in `skills-lock.json`, so `npx skills update` can
+ * update the skill later.
  *
  * @param targetDir - The project root directory
  * @param target - Where to install the skill
  * @returns The project-relative directory the skill was installed to
+ * @throws Error if the CLI fails to start, exits with a non-zero code or times out
  */
-export async function copyAgentSkill(targetDir: string, target: AgentSkillTarget): Promise<string> {
-  const sourceDir = getSkillSourceDir();
+export async function addAgentSkill(targetDir: string, target: AgentSkillTarget): Promise<string> {
+  await spawnProcess(
+    'npx',
+    [
+      '--yes',
+      SKILLS_CLI_PACKAGE,
+      'add',
+      SKILL_SOURCE,
+      '--skill',
+      SKILL_NAME,
+      '--agent',
+      SKILLS_AGENTS[target],
+      '--copy',
+      '--yes',
+    ],
+    { cwd: targetDir, stdio: 'ignore', timeout: SKILL_INSTALL_TIMEOUT },
+  );
 
-  try {
-    await stat(join(sourceDir, 'SKILL.md'));
-  } catch {
-    throw new Error(`Stati agent skill not found at ${sourceDir}`);
-  }
-
-  const relativeDir = AGENT_SKILL_DIRS[target];
-  await cp(sourceDir, join(targetDir, relativeDir), { recursive: true });
-
-  return relativeDir;
+  return AGENT_SKILL_DIRS[target];
 }

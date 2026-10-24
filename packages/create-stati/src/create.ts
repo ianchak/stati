@@ -10,7 +10,12 @@ import type { StylingOption } from './css-processors.js';
 import { setupTypeScript } from './typescript-processor.js';
 import { setupImages, imagesConfigBlock } from './images-processor.js';
 import { isCommandAvailable, spawnProcess, log } from './utils/index.js';
-import { copyAgentSkill } from './agent-skill.js';
+import {
+  addAgentSkill,
+  skillAddCommand,
+  supportsSkillsCli,
+  SKILLS_CLI_MIN_NODE,
+} from './agent-skill.js';
 import type { AgentSkillTarget } from './agent-skill.js';
 
 /**
@@ -434,14 +439,21 @@ export class ProjectScaffolder {
     targetDir: string,
     target: AgentSkillTarget,
   ): Promise<string | undefined> {
-    try {
-      return await copyAgentSkill(targetDir, target);
-    } catch (error) {
+    const warnAddLater = (reason: string) => {
       // The agent skill is optional, so we just warn instead of failing
-      log.warning(
-        'Failed to install Stati agent skill: ' +
-          (error instanceof Error ? error.message : 'Unknown error'),
-      );
+      log.warning(`Couldn't install the Stati agent skill (${reason}). Add it later with:`);
+      log.step(skillAddCommand(target));
+    };
+
+    if (!supportsSkillsCli(process.versions.node)) {
+      warnAddLater(`the skills CLI needs Node.js ${SKILLS_CLI_MIN_NODE} or later`);
+      return undefined;
+    }
+
+    try {
+      return await addAgentSkill(targetDir, target);
+    } catch (error) {
+      warnAddLater(error instanceof Error ? error.message : 'Unknown error');
       return undefined;
     }
   }

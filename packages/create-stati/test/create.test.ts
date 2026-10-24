@@ -10,13 +10,18 @@ import {
 } from '../src/create.js';
 import type { CreateOptions } from '../src/create.js';
 import { ExampleManager } from '../src/examples.js';
-import { copyAgentSkill } from '../src/agent-skill.js';
+import { spawnProcess } from '../src/utils/process.utils.js';
 
-// Wrap the real implementation so individual tests can force a failure
-vi.mock('../src/agent-skill.js', async (importOriginal) => {
-  const actual = (await importOriginal()) as typeof import('../src/agent-skill.js');
-  return { ...actual, copyAgentSkill: vi.fn(actual.copyAgentSkill) };
+// Wrap the real implementation so the agent skill tests can stub the skills CLI
+vi.mock('../src/utils/process.utils.js', async (importOriginal) => {
+  const actual = (await importOriginal()) as typeof import('../src/utils/process.utils.js');
+  return { ...actual, spawnProcess: vi.fn(actual.spawnProcess) };
 });
+
+/** Calls that ran the skills CLI through npx */
+function npxCalls() {
+  return vi.mocked(spawnProcess).mock.calls.filter(([command]) => command === 'npx');
+}
 
 describe('create-stati scaffolding', () => {
   let tempDir: string;
@@ -65,50 +70,103 @@ describe('create-stati scaffolding', () => {
       expect(packageJson.devDependencies).toHaveProperty('@stati/core');
     });
 
-    it('should install the agent skill when requested', async () => {
-      const projectDir = join(tempDir, 'test-skill');
-      const result = await createSite({
-        projectName: 'test-skill',
+    describe('agent skill', () => {
+      const skillOptions = (name: string): CreateOptions => ({
+        projectName: name,
         template: 'blank',
         styling: 'css',
         gitInit: false,
-        agentSkill: 'claude',
-        dir: projectDir,
+        dir: join(tempDir, name),
       });
 
-      expect(result.agentSkillDir).toBe('.claude/skills/stati');
-      await expect(
-        access(join(result.targetDir, '.claude', 'skills', 'stati', 'SKILL.md')),
-      ).resolves.not.toThrow();
-    });
-
-    it('should still create the site but not report the agent skill when copying fails', async () => {
-      vi.mocked(copyAgentSkill).mockRejectedValueOnce(new Error('skill missing'));
-      const projectDir = join(tempDir, 'test-skill-fail');
-      const result = await createSite({
-        projectName: 'test-skill-fail',
-        template: 'blank',
-        styling: 'css',
-        gitInit: false,
-        agentSkill: 'claude',
-        dir: projectDir,
+      beforeEach(() => {
+        vi.mocked(spawnProcess).mockClear();
       });
 
-      expect(result.agentSkillDir).toBeUndefined();
-      await expect(access(join(result.targetDir, 'package.json'))).resolves.not.toThrow();
-    });
+      it.each([
+        ['claude', 'claude-code', '.claude/skills/stati'],
+        ['agents', 'universal', '.agents/skills/stati'],
+        ['github', 'universal', '.agents/skills/stati'],
+      ] as const)(
+        'should run the skills CLI for target %s with the %s agent',
+        async (target, agent, dir) => {
+          vi.mocked(spawnProcess).mockResolvedValueOnce();
+          const options = { ...skillOptions(`test-skill-${target}`), agentSkill: target };
 
-    it('should not install the agent skill by default', async () => {
-      const projectDir = join(tempDir, 'test-no-skill');
-      const result = await createSite({
-        projectName: 'test-no-skill',
-        template: 'blank',
-        styling: 'css',
-        gitInit: false,
-        dir: projectDir,
+          const result = await createSite(options);
+
+          expect(npxCalls()).toEqual([
+            [
+              'npx',
+              [
+                '--yes',
+                'skills@1',
+                'add',
+                'ianchak/stati',
+                '--skill',
+                'stati',
+                '--agent',
+                agent,
+                '--copy',
+                '--yes',
+              ],
+              { cwd: options.dir, stdio: 'ignore', timeout: 120_000 },
+            ],
+          ]);
+          expect(result.agentSkillDir).toBe(dir);
+        },
+      );
+
+      it.each([
+        ['exits with a non-zero code', new Error('npx exited with code 1')],
+        ['times out', new Error('Process timed out after 120000ms')],
+      ])('should warn and still create the site when the skills CLI %s', async (_, error) => {
+        vi.mocked(spawnProcess).mockRejectedValueOnce(error);
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+        const result = await createSite({
+          ...skillOptions('test-skill-fail'),
+          agentSkill: 'claude',
+        });
+
+        expect(result.agentSkillDir).toBeUndefined();
+        await expect(access(join(result.targetDir, 'package.json'))).resolves.not.toThrow();
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining(`Couldn't install the Stati agent skill (${error.message})`),
+        );
+        expect(logSpy).toHaveBeenCalledWith(
+          expect.stringContaining('npx skills add ianchak/stati --skill stati -a claude-code'),
+        );
       });
 
-      await expect(access(join(result.targetDir, '.claude'))).rejects.toThrow();
+      it('should skip the skills CLI on Node.js older than 22.20', async () => {
+        const original = Object.getOwnPropertyDescriptor(process.versions, 'node')!;
+        Object.defineProperty(process.versions, 'node', { ...original, value: '22.12.0' });
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        vi.spyOn(console, 'log').mockImplementation(() => {});
+
+        try {
+          const result = await createSite({
+            ...skillOptions('test-skill-old-node'),
+            agentSkill: 'agents',
+          });
+
+          expect(npxCalls()).toEqual([]);
+          expect(result.agentSkillDir).toBeUndefined();
+          await expect(access(join(result.targetDir, 'package.json'))).resolves.not.toThrow();
+          expect(warn).toHaveBeenCalledWith(expect.stringContaining('Node.js 22.20.0 or later'));
+        } finally {
+          Object.defineProperty(process.versions, 'node', original);
+        }
+      });
+
+      it('should not run the skills CLI without an agent skill target', async () => {
+        await createSite(skillOptions('test-no-skill'));
+        await createSite({ ...skillOptions('test-no-skill-false'), agentSkill: false });
+
+        expect(npxCalls()).toEqual([]);
+      });
     });
 
     it('should create a project with Sass styling', async () => {
