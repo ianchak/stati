@@ -128,7 +128,7 @@ The scaffolder installs the skill with the open [`skills` CLI](https://github.co
 npx --yes skills@1 add ianchak/stati --skill stati --agent claude-code --copy --yes
 ```
 
-It copies plain files (no symlinks) and writes `skills-lock.json` in the project root, which records where the skill came from. This needs Node.js 22.20 or later, `git` on your `PATH` and network access, even with `--no-git`. If the install fails, the site is still created and the scaffolder prints the command to add the skill later.
+It copies plain files (no symlinks) and writes `skills-lock.json` in the project root, which records where the skill came from. This needs `git` on your `PATH` and network access, even with `--no-git`. If the install fails, the site is still created and the scaffolder prints the command to add the skill later.
 
 ### Add or update the skill in an existing site
 
@@ -347,7 +347,7 @@ my-site/
 
 ## Requirements
 
-- Node.js 22.12+ or 24+
+- Node.js 22.20+ or 24+
 - npm, yarn, pnpm, or bun
 
 ## Next steps

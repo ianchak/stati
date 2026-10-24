@@ -3,8 +3,8 @@
 ## Start a site
 
 Check installed requirements rather than blindly upgrading runtimes. The checked
-monorepo requires Node 22.13+ or 24+ and npm 11.5.1+ (the npm constraint supports publishing
-OIDC). Stati packages themselves need Node 22.12+ or 24+.
+monorepo requires Node 22.20+ or 24+ and npm 11.5.1+ (the npm constraint supports publishing
+OIDC). Stati packages themselves need Node 22.20+ or 24+.
 Consumer projects should also honor the installed package's engines and
 lockfile.
 

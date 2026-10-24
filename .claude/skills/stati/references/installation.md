@@ -59,8 +59,8 @@ The skill is read from the `main` branch of `ianchak/stati`. `create-stati
   does not see two skills named `stati`.
 - For a personal install, add `-g`. With `-a claude-code` it goes to
   `~/.claude/skills/stati/`.
-- The CLI needs Node.js 22.20 or later, `git` and network access. It sends
-  anonymous usage data unless `DISABLE_TELEMETRY=1` or `DO_NOT_TRACK=1` is set.
+- The CLI needs `git` and network access. It sends anonymous usage data
+  unless `DISABLE_TELEMETRY=1` or `DO_NOT_TRACK=1` is set.
 
 If the CLI cannot run, report that rather than copying files. The installed
 layout keeps the folder named `stati` with `SKILL.md`, `LICENSE`,

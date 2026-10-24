@@ -21,7 +21,7 @@ Edit this file, not the tool-specific ones, when guidance changes.
 
 ## Build + test workflow
 
-- Node 22.13+ or 24+ and npm 11.5.1+ required (ESLint 10 does not support Node 22.0–22.12 or 23; the npm version is needed for OIDC publishing). Run `npm install`, then `npm run build` (workspaces chain the packages in dependency order).
+- Node 22.20+ or 24+ and npm 11.5.1+ required (the npm version is needed for OIDC publishing). Run `npm install`, then `npm run build` (workspaces chain the packages in dependency order).
 - `npm run test` executes Vitest across workspaces; `npm run test:blank:full` cleans, rebuilds, and verifies the blank starter end-to-end.
 - `npm run test:create-stati:images` scaffolds the blog starter with `--images` into `examples/test-images` and builds it with the local CLI and `@stati/images`; clean up with `npm run test:create-stati:images:cleanup`.
 - CLI and scaffolder checks assume fresh dist artifacts - run `npm run build` before touching example scripts or `test:create-stati`.

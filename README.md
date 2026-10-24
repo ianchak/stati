@@ -408,7 +408,7 @@ to update. An update replaces the whole folder, so keep project rules in
 `CLAUDE.md` or `AGENTS.md`, not in the skill. `.claude/skills/stati/` serves
 both Claude Code and Copilot in VS Code; `-a universal` installs to
 `.agents/skills/stati/` for Copilot, Codex, Cursor and other agents. The CLI
-needs Node.js 22.20 or later, `git` and network access, and sends anonymous
+needs `git` and network access, and sends anonymous
 usage data unless `DISABLE_TELEMETRY=1` or `DO_NOT_TRACK=1` is set. See the
 [scaffolder docs](https://stati.build/cli/scaffolder/#agent-skill) for details
 and [installation and discovery](./.claude/skills/stati/references/installation.md)
@@ -437,10 +437,10 @@ Each package can be used independently or together for the complete Stati experi
 
 ## Requirements
 
-- **Node.js** 22.12.0 or higher on the 22.x line, or 24 and later
+- **Node.js** 22.20.0 or higher on the 22.x line, or 24 and later
 - **A package manager**: npm, pnpm, yarn or bun
 
-Contributing to this repository needs Node.js 22.13.0+ or 24+ and npm 11.5.1+ (see [Contributing](#contributing)).
+Contributing to this repository needs Node.js 22.20.0+ or 24+ and npm 11.5.1+ (see [Contributing](#contributing)).
 
 ---
 

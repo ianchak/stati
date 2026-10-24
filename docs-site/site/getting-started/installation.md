@@ -8,7 +8,7 @@ order: 2
 
 ## Prerequisites
 
-- **Node.js** 22.12.0 or higher on the 22.x line, or 24 and later
+- **Node.js** 22.20.0 or higher on the 22.x line, or 24 and later
 - **A package manager**: npm, pnpm, yarn or bun
 
 ## Interactive scaffolder

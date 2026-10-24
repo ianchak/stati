@@ -42,7 +42,7 @@ export default defineConfig({
 
 Turning on `images.responsive` or `images.og` without this package installed stops the build with a message that tells you to install it.
 
-Requires `@stati/core` 1.28 or later and Node.js 22.12 or later.
+Requires `@stati/core` 1.28 or later and Node.js 22.20 or later.
 
 ---
 

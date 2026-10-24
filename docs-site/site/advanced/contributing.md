@@ -23,7 +23,7 @@ Stati is an open-source project and we welcome contributions from the community!
 
 ### Prerequisites
 
-- **Node.js** 22.13.0 or higher on the 22.x line, or 24 and later (ESLint 10 does not support Node 22.0–22.12 or 23)
+- **Node.js** 22.20.0 or higher on the 22.x line, or 24 and later
 - **npm** 11.5.1 or higher
 - **Git** for version control
 

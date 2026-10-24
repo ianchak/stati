@@ -156,7 +156,7 @@ create-stati installs the skill with the open [`skills` CLI](https://github.com/
 npx --yes skills@1 add ianchak/stati --skill stati --agent claude-code --copy --yes
 ```
 
-It copies plain files (no symlinks) and writes `skills-lock.json` in the project root, which records where the skill came from. This needs Node.js 22.20 or later, `git` on your `PATH` and network access, even with `--no-git`. If the install fails, the site is still created and create-stati prints the command to add the skill later.
+It copies plain files (no symlinks) and writes `skills-lock.json` in the project root, which records where the skill came from. This needs `git` on your `PATH` and network access, even with `--no-git`. If the install fails, the site is still created and create-stati prints the command to add the skill later.
 
 ### Add or update the skill in an existing site
 
@@ -453,7 +453,7 @@ You can customize this file to add features like SEO, sitemap, ISG caching, and 
 
 ## Requirements
 
-- **Node.js** ^22.12.0 || >=24
+- **Node.js** ^22.20.0 || >=24
 - **A package manager**: npm, pnpm, yarn or bun
 
 ---
