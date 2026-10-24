@@ -148,11 +148,24 @@ export function sanitizeStructuredData(
  * ```
  */
 export function parseRobotsDirectives(content: string): string[] {
-  return content
-    .toLowerCase()
-    .replace(/\s*:\s*/g, ':')
-    .split(/[\s,]+/)
-    .filter(Boolean);
+  // Split first and join afterwards, in linear time: a regex that eats the spaces around
+  // colons is quadratic on long runs of whitespace, and so is reading the end of a string
+  // that keeps growing
+  const directives: string[][] = [];
+  for (const group of content.toLowerCase().split(',')) {
+    // Whether the part before ends with a colon; undefined at the start of a group
+    let afterColon: boolean | undefined;
+    for (const part of group.split(/\s+/)) {
+      if (!part) continue;
+      if (afterColon !== undefined && (afterColon || part.startsWith(':'))) {
+        directives[directives.length - 1]!.push(part);
+      } else {
+        directives.push([part]);
+      }
+      afterColon = part.endsWith(':');
+    }
+  }
+  return directives.map((parts) => parts.join(''));
 }
 
 /**
