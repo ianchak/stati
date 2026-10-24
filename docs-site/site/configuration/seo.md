@@ -40,7 +40,7 @@ When auto-injection is enabled (default), Stati automatically generates:
 - **Meta keywords** - From `seo.keywords`, or the page `tags`
 - **Canonical URL** - `seo.canonical`, or the page URL on `site.baseUrl`
 - **Author meta tag** - From `seo.author`, or `seo.defaultAuthor` in the config
-- **Robots meta tag** - Only when the page sets `seo.robots` or `seo.noindex`
+- **Robots meta tag** - Only when the page sets `seo.robots` or `seo.noindex`, and `noindex` on [the 404 page](/core-concepts/routing#the-404-page)
 - **Open Graph tags** - For social media sharing (og:title, og:description, og:image, etc.), with `og:locale` from `site.defaultLocale` and article tags on the pages `seo.articles` matches
 - **Twitter Card tags** - For Twitter sharing, with `twitter:site` and `twitter:creator` from the handles in the config
 - **Structured Data** - JSON-LD schema when configured in front matter
@@ -143,7 +143,7 @@ export default defineConfig({
 
 ## Site-wide defaults
 
-A few Open Graph and Twitter values are the same on every page, or follow from the page itself. Stati fills them in from the config, so no page has to repeat them. Front matter still wins, value by value.
+A few Open Graph, Twitter and robots values are the same on every page, or follow from the page itself. Stati fills them in from the config and the page, so no page has to repeat them. Front matter still wins, value by value.
 
 | Tag | From |
 | --- | --- |
@@ -155,6 +155,7 @@ A few Open Graph and Twitter values are the same on every page, or follow from t
 | `article:modified_time` | Front matter `updated`, on article pages |
 | `article:tag` | One per front matter `tags` entry, on article pages |
 | `article:author` | The `url` of the page's own `seo.author`, then of `seo.defaultAuthor`, on article pages |
+| `robots` | `noindex` (`seo.noindex: true`) on [the 404 page](/core-concepts/routing#the-404-page), unless it sets `seo.noindex`, or a `seo.robots` value that says whether to index it (`index`, `noindex`, `all`, `none`, or `index:` in the object form) |
 
 ### Locale
 
@@ -314,6 +315,8 @@ seo:
 ---
 ```
 
+A page that sets `index: false` here, `seo.noindex: true`, or a `seo.robots` string with a `noindex` or `none` directive is left out of the [sitemap](#advanced-sitemap-options).
+
 ## Sitemap configuration
 
 Stati can automatically generate XML sitemaps for your site.
@@ -404,6 +407,8 @@ export default defineConfig({
 
 Pages with `draft: true` are never in the sitemap (they are not built), so `filter: (page) => !page.frontMatter.draft` is only needed for builds with `--include-drafts`.
 
+Two more kinds of page are left out without a pattern: [the 404 page](/core-concepts/routing#the-404-page), and pages whose robots meta tag says `noindex` (`seo.noindex: true`, `seo.robots: { index: false }`, or a `seo.robots` string with a `noindex` or `none` directive). Search engines report a sitemap URL marked `noindex` as an error. A page that sets `sitemap: { exclude: false }` in front matter stays in despite both (the 404 page also needs `seo.noindex: false`, or it is listed as noindex); `excludePatterns`, `includePatterns` and `filter` still apply to it.
+
 Pages created from a `[param].md` template and the later pages of a paginated listing (`/blog/page/2`) are in the sitemap like any other page. Leave them out with a pattern such as `excludePatterns: ['/blog/page/**']`, `sitemap: { exclude: true }` in the template's front matter, or a `filter` that checks `page.generated` and `page.pagination`.
 
 **Output.** `lastmod` comes from the page's `sitemap.lastmod`, then `updated`, then `date` front matter (not `publishedAt`). Priorities are written with one decimal place, so `0.85` becomes `0.8`. Above 50,000 URLs the sitemap is split into `sitemap-1.xml`, `sitemap-2.xml`, … with `sitemap.xml` as the index; this happens automatically (the `generateIndex` option is not used).
@@ -416,14 +421,14 @@ Control sitemap behavior for individual pages using frontmatter:
 ---
 title: My Page
 sitemap:
-  exclude: false        # Exclude from sitemap (default: false)
+  exclude: false        # true leaves the page out; false keeps a noindex or 404 page in
   priority: 0.8         # Priority (0.0 to 1.0), overrides priorityRules
   changefreq: weekly    # Change frequency
   lastmod: '2025-01-20' # Last modification date
 ---
 ```
 
-The sitemap reads only this `sitemap` block; `seo.priority` and `seo.changeFreq` are not used for it.
+The sitemap reads only this `sitemap` block; `seo.priority` and `seo.changeFreq` are not used for it. On a page that is neither the 404 page nor marked `noindex`, `exclude: false` is the same as leaving `exclude` out.
 
 ### Change frequency values
 

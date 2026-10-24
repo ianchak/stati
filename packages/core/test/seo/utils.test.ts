@@ -1,7 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
+import { performance } from 'node:perf_hooks';
 import {
   escapeHtml,
   generateRobotsContent,
+  parseRobotsDirectives,
   validateSEOMetadata,
   detectExistingSEOTags,
 } from '../../src/seo/utils/index.js';
@@ -208,6 +210,26 @@ describe('SEO Utils - sanitizeStructuredData', () => {
         tags: ['&lt;tag1&gt;', '&lt;tag2&gt;'],
       },
     });
+  });
+});
+
+describe('SEO Utils - parseRobotsDirectives', () => {
+  it.each([
+    ['noindex, nofollow', ['noindex', 'nofollow']],
+    ['NOINDEX NOFOLLOW', ['noindex', 'nofollow']],
+    ['max-image-preview: none', ['max-image-preview:none']],
+    ['index , max-snippet : 50,none', ['index', 'max-snippet:50', 'none']],
+    ['max-snippet:, none', ['max-snippet:', 'none']],
+    ['', []],
+  ])('splits %j into %j', (content, expected) => {
+    expect(parseRobotsDirectives(content)).toEqual(expected);
+  });
+
+  it('takes linear time on long runs of whitespace and colons', () => {
+    const started = performance.now();
+    const directives = parseRobotsDirectives(`${'\t'.repeat(400_000)}x${' :'.repeat(400_000)}`);
+    expect(performance.now() - started).toBeLessThan(1000);
+    expect(directives).toEqual([`x${':'.repeat(400_000)}`]);
   });
 });
 

@@ -262,6 +262,61 @@ describe('resolveSEODefaults', () => {
       type: 'article',
     });
   });
+
+  describe('the 404 page', () => {
+    const notFound = (url: string, seo?: SEOMetadata) =>
+      createPage({ url, frontMatter: seo ? { seo } : {} });
+
+    it('fills in noindex on the page at /404 or /404/', () => {
+      expect(resolveSEODefaults(notFound('/404'), createConfig())).toEqual({ noindex: true });
+      expect(resolveSEODefaults(notFound('/404/'), createConfig())).toEqual({ noindex: true });
+      expect(resolveSEODefaults(notFound('/404', { title: 'Lost' }), createConfig())).toEqual({
+        title: 'Lost',
+        noindex: true,
+      });
+    });
+
+    it('keeps a noindex value, or a robots value that says whether to index', () => {
+      for (const seo of [
+        { noindex: false },
+        { noindex: true },
+        { robots: 'index, follow' },
+        { robots: 'NOINDEX' },
+        { robots: 'all' },
+        { robots: 'noarchive none' },
+        { robots: { index: true } },
+        { robots: { index: false, follow: false } },
+      ] as SEOMetadata[]) {
+        expect(resolveSEODefaults(notFound('/404', seo), createConfig()), JSON.stringify(seo)).toBe(
+          seo,
+        );
+      }
+    });
+
+    it('fills in noindex next to robots values that leave indexing open', () => {
+      for (const robots of [
+        'nofollow',
+        'max-image-preview:none',
+        'max-image-preview: none',
+        { follow: false },
+        {},
+      ]) {
+        expect(resolveSEODefaults(notFound('/404', { robots }), createConfig())).toEqual({
+          robots,
+          noindex: true,
+        });
+      }
+    });
+
+    it('fills in nothing on a page named 404 in a subfolder', () => {
+      expect(resolveSEODefaults(notFound('/docs/404'), createConfig())).toBeUndefined();
+    });
+
+    it('gives the same result when resolving again', () => {
+      const resolved = resolveSEODefaults(notFound('/404'), createConfig());
+      expect(resolveSEODefaults(notFound('/404', resolved), createConfig())).toBe(resolved);
+    });
+  });
 });
 
 describe('refreshSEODefaults', () => {
@@ -333,6 +388,43 @@ describe('refreshSEODefaults', () => {
     refreshSEODefaults(page, createConfig());
 
     expect(page.frontMatter.seo?.twitter?.creator).toBe('@guest');
+  });
+
+  it("removes the 404 page's noindex when a beforeRender hook moves the page", () => {
+    const page = createPage({ url: '/404', frontMatter: {} });
+    applySEODefaults([page], createConfig(), createLogger());
+    expect(page.frontMatter.seo).toEqual({ noindex: true });
+    page.url = '/not-found';
+
+    refreshSEODefaults(page, createConfig());
+
+    expect(page.frontMatter.seo).toEqual({});
+  });
+
+  it("keeps the 404 page's robots values a beforeRender hook set", () => {
+    const pages = [0, 1, 2, 3].map(() => createPage({ url: '/404', frontMatter: {} }));
+    applySEODefaults(pages, createConfig(), createLogger());
+    const [indexed, robotsIndex, nofollow, both] = pages as [
+      PageModel,
+      PageModel,
+      PageModel,
+      PageModel,
+    ];
+    indexed.frontMatter.seo!.noindex = false;
+    robotsIndex.frontMatter.seo!.robots = 'index, follow';
+    nofollow.frontMatter.seo!.robots = 'nofollow';
+    both.frontMatter.seo!.noindex = true;
+    both.frontMatter.seo!.robots = 'nofollow';
+
+    for (const page of pages) {
+      refreshSEODefaults(page, createConfig());
+    }
+
+    expect(indexed.frontMatter.seo).toEqual({ noindex: false });
+    expect(robotsIndex.frontMatter.seo).toEqual({ robots: 'index, follow' });
+    // nofollow says nothing about indexing, so the page stays noindex
+    expect(nofollow.frontMatter.seo).toEqual({ noindex: true, robots: 'nofollow' });
+    expect(both.frontMatter.seo).toEqual({ noindex: true, robots: 'nofollow' });
   });
 });
 

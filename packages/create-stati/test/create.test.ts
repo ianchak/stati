@@ -584,7 +584,8 @@ describe('create-stati scaffolding', () => {
       expect(config).toContain(
         "        { name: 'Young Serif', path: './og/fonts/young-serif-regular.woff', weight: 400 },",
       );
-      expect(config).toContain("      exclude: ['/404'],");
+      // Stati leaves the 404 page out of Open Graph cards on its own
+      expect(config).not.toContain("'/404'");
       expect(config).toMatch(/\n {2}\},\n\}\);\n$/);
       await expect(access(join(result.targetDir, 'site', 'og.eta'))).resolves.not.toThrow();
       await expect(

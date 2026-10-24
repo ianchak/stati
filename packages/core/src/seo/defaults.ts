@@ -1,6 +1,7 @@
 /**
- * Site-wide SEO defaults: the Open Graph locale, Twitter handles and article metadata that
- * Stati derives from configuration and from each page, for the values front matter leaves out.
+ * Site-wide SEO defaults: the Open Graph locale, Twitter handles, article metadata and the 404
+ * page's noindex that Stati derives from configuration and from each page, for the values front
+ * matter leaves out.
  * @module seo/defaults
  */
 
@@ -15,7 +16,8 @@ import type {
 } from '../types/content.js';
 import type { Logger } from '../types/logging.js';
 import { ConfigValidationError } from '../config/errors.js';
-import { matchesGlob } from '../core/utils/index.js';
+import { isNotFoundPage, matchesGlob } from '../core/utils/index.js';
+import { parseRobotsDirectives } from './utils/index.js';
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -24,6 +26,20 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 /** A front matter value counts as left out when it is absent, empty in YAML (`null`) or `''`. */
 function isMissing(value: unknown): boolean {
   return value === undefined || value === null || value === '';
+}
+
+/**
+ * Whether a `seo.robots` value says whether the page may be indexed: a string with an `index`,
+ * `noindex`, `all` or `none` directive, or an object that sets `index`. Values such as
+ * `nofollow` leave that open.
+ */
+function robotsDecidesIndexing(robots: unknown): boolean {
+  if (typeof robots === 'string') {
+    return parseRobotsDirectives(robots).some((directive) =>
+      ['index', 'noindex', 'all', 'none'].includes(directive),
+    );
+  }
+  return isPlainObject(robots) && !isMissing(robots.index);
 }
 
 /**
@@ -211,6 +227,9 @@ function resolveTwitter(
  *   `seo.defaultAuthor.twitter` when the page names no author
  * - on pages that `seo.articles` matches, `openGraph.type` as `article` and
  *   `openGraph.article` from the publish date, `updated`, `tags` and the author's `url`
+ * - on the site's 404 page, `noindex` unless the page sets `noindex`, or `robots` that says
+ *   whether to index it: requested by its own URL, the page is an ordinary file, which most
+ *   hosts send with a 200
  *
  * Front matter wins value by value. Objects that change are copied, never modified, so
  * resolving twice gives the same result and objects shared between pages stay as they were.
@@ -231,6 +250,9 @@ export function resolveSEODefaults(page: PageModel, config: StatiConfig): SEOMet
   if (openGraph !== own?.openGraph) fill.openGraph = openGraph as OpenGraphConfig;
   const twitter = resolveTwitter(config, own);
   if (twitter !== own?.twitter) fill.twitter = twitter as TwitterCardConfig;
+  if (isNotFoundPage(page) && isMissing(own?.noindex) && !robotsDecidesIndexing(own?.robots)) {
+    fill.noindex = true;
+  }
 
   return withDefaults<SEOMetadata>(seo, fill);
 }
@@ -294,6 +316,7 @@ const DEFAULT_PATHS: ReadonlyArray<readonly string[]> = [
   ['openGraph', 'article', 'author'],
   ['twitter', 'site'],
   ['twitter', 'creator'],
+  ['noindex'],
 ];
 
 /** The values Stati filled into each page's front matter, for {@link refreshSEODefaults} */

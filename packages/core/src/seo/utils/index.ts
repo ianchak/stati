@@ -7,6 +7,7 @@
 export {
   escapeHtml,
   generateRobotsContent,
+  parseRobotsDirectives,
   validateSEOMetadata,
   detectExistingSEOTags,
 } from './escape-and-validation.utils.js';

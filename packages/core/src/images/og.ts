@@ -5,15 +5,19 @@
  */
 
 import { extname, join, relative, resolve } from 'node:path';
-import { isPathWithinDirectory, readFileBuffer } from '../core/utils/index.js';
+import { isNotFoundPage, isPathWithinDirectory, readFileBuffer } from '../core/utils/index.js';
 import { matchesGlob } from '../core/utils/glob-patterns.utils.js';
 import type { PageModel } from '../types/index.js';
 
 /**
- * Whether a page gets no generated Open Graph image: it sets its own image in front matter
- * (`seo.openGraph.image`, or `false` to have none) or matches an `exclude` pattern.
+ * Whether a page gets no generated Open Graph image: it is the site's 404 page, sets its own
+ * image in front matter (`seo.openGraph.image`, or `false` to have none) or matches an
+ * `exclude` pattern.
  */
 export function isOgImageExcluded(page: PageModel, exclude: readonly string[]): boolean {
+  if (isNotFoundPage(page)) {
+    return true;
+  }
   const seo = page.frontMatter.seo as { openGraph?: { image?: unknown } } | undefined;
   const image = seo?.openGraph?.image;
   if (image !== undefined && image !== null && image !== '') {

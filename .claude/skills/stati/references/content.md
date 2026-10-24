@@ -266,6 +266,10 @@ navigation (`nav: true` in the template opts generated pages in), search
 after content loads and before `beforeAll`, so hook-added tags make no pages.
 Their output is deleted when a key or page disappears.
 
+The root 404 page (core 2.2+) is the reverse: it stays a collection member but
+is out of navigation, search, RSS and the sitemap. See
+[the 404 page](./features.md#the-404-page).
+
 Author archives by field, tag pages and numbered listings need no build
 script. Language variants, CMS-driven pages and date archives still need
 authored Markdown, `collections.generate`, or source files generated **before**

@@ -11,8 +11,14 @@ import type {
 } from '../types/sitemap.js';
 import type { PageModel } from '../types/content.js';
 import type { StatiConfig } from '../types/config.js';
-import { escapeHtml, resolveAbsoluteUrl } from './utils/index.js';
+import {
+  escapeHtml,
+  generateRobotsContent,
+  parseRobotsDirectives,
+  resolveAbsoluteUrl,
+} from './utils/index.js';
 import { urlMatchesAnyPattern } from '../rss/utils/index.js';
+import { isNotFoundPage } from '../core/utils/index.js';
 
 /**
  * Maximum entries per sitemap file (per sitemap.org spec)
@@ -84,6 +90,22 @@ function matchesIncludePattern(page: PageModel, patterns?: string[]): boolean {
 }
 
 /**
+ * Whether the page's robots meta tag tells search engines not to index it: `seo.noindex`,
+ * `seo.robots.index: false`, or a `seo.robots` string with a `noindex` or `none` directive.
+ * @param page - Page to check
+ * @returns true if the page is marked noindex
+ */
+function isNoindexPage(page: PageModel): boolean {
+  const seo = page.frontMatter.seo;
+  if (!seo || typeof seo !== 'object') {
+    return false;
+  }
+  return parseRobotsDirectives(generateRobotsContent(seo)).some(
+    (directive) => directive === 'noindex' || directive === 'none',
+  );
+}
+
+/**
  * Determines priority for a page based on priority rules
  * @param page - Page to evaluate
  * @param rules - Priority rules from config
@@ -111,7 +133,12 @@ function determinePriority(
 }
 
 /**
- * Generates a sitemap entry from a page model
+ * Generates a sitemap entry from a page model.
+ *
+ * The site's 404 page and pages marked noindex are left out, as search engines report a
+ * sitemap URL marked noindex as an error. A page that sets `sitemap.exclude: false` in front
+ * matter stays in despite both; the exclude and include patterns and `filter` still apply.
+ *
  * @param page - Page to generate entry for
  * @param config - Stati configuration
  * @param sitemapConfig - Sitemap configuration
@@ -123,7 +150,13 @@ export function generateSitemapEntry(
   sitemapConfig: SitemapConfig,
 ): SitemapEntry | null {
   // Check frontmatter exclude flag
-  if (page.frontMatter.sitemap?.exclude === true) {
+  const frontMatterExclude = page.frontMatter.sitemap?.exclude;
+  if (frontMatterExclude === true) {
+    return null;
+  }
+
+  // Leave out the 404 page and noindex pages unless front matter keeps them in
+  if (frontMatterExclude !== false && (isNotFoundPage(page) || isNoindexPage(page))) {
     return null;
   }
 

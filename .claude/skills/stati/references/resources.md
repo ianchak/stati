@@ -22,7 +22,8 @@ pruning were verified against the core 1.29 source and tests on 2026-10-15.
 markdown-it 15 linkify, plugin loading and markdown-it-prism 3 and 4 output
 were compared with markdown-it 14 on the core 2.0 branch on 2026-10-19.
 Site-wide SEO defaults (`og:locale`, Twitter handles, `seo.articles`) were
-verified against the core 2.1 source and tests on 2026-10-23.
+verified against the core 2.1 source and tests on 2026-10-23, and the 404 page
+defaults against the core 2.2 branch on the same day.
 Package versions may differ across workspaces/releases. Revalidate after upgrades.
 
 Official entry points:
@@ -206,6 +207,8 @@ These are checked-version cautions, not instructions to modify Stati:
 | Hooks               | `beforeAll` after discovery; per-page hooks miss-only; `afterRender` has no HTML field        |
 | Robots sitemap      | Set `robots.sitemap` explicitly                                                               |
 | SEO defaults (2.1+) | `og:locale` in `en_US` form; `twitter:creator` only from a handle; 2.0 printed `en-US`/a name |
+| 404 page (2.2+)     | Out of sitemap, search, RSS, nav, OG cards; `noindex`; 2.1 and earlier need manual excludes   |
+| Sitemap noindex     | 2.2+ leaves out `noindex` pages unless `sitemap.exclude: false`; earlier versions list them   |
 | Sitemap index       | `generateIndex` not consulted by checked splitting logic                                      |
 | Search filename     | Hashed by default; read metadata rather than guessing                                         |
 

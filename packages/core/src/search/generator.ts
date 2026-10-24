@@ -7,7 +7,7 @@ import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { writeFile, ensureDir, readdir, remove } from '../core/utils/fs.utils.js';
 import { matchesGlob } from '../core/utils/glob-patterns.utils.js';
-import { isVirtualPage } from '../core/utils/template-discovery.utils.js';
+import { isNotFoundPage, isVirtualPage } from '../core/utils/template-discovery.utils.js';
 import { SEARCH_INDEX_VERSION, SEARCH_DEFAULTS } from './constants.js';
 import type { PageModel, TocEntry } from '../types/content.js';
 import type {
@@ -291,6 +291,11 @@ export function shouldExcludePage(page: PageModel, config: SearchConfig): boolea
 
   // Exclude generated and pagination pages unless their template opts in
   if (isGeneratedPageExcludedFromSearch(page)) {
+    return true;
+  }
+
+  // Exclude the 404 page unless it opts in
+  if (isNotFoundPage(page) && page.frontMatter.search !== true) {
     return true;
   }
 

@@ -1,12 +1,16 @@
 import { basename } from 'node:path';
 import type { PageModel, NavNode } from '../types/index.js';
-import { isVirtualPage } from './utils/index.js';
+import { isNotFoundPage, isNotFoundUrl, isVirtualPage } from './utils/index.js';
 
 /**
- * Whether a page appears in navigation. Pages generated from a `[param].md` template appear
- * only when the template sets `nav: true`; later pages of a paginated listing never do.
+ * Whether a page appears in navigation. Pages generated from a `[param].md` template and the
+ * site's 404 page appear only when they set `nav: true`; later pages of a paginated listing
+ * never do.
  */
 function isInNavigation(page: PageModel): boolean {
+  if (isNotFoundPage(page)) {
+    return page.frontMatter.nav === true;
+  }
   if (!isVirtualPage(page)) {
     return true;
   }
@@ -17,8 +21,8 @@ function isInNavigation(page: PageModel): boolean {
 /**
  * Builds a hierarchical navigation structure from pages.
  * Groups pages by directory structure and sorts them appropriately.
- * Generated pages are left out unless their template sets `nav: true`, and so are the
- * later pages of paginated listings.
+ * Generated pages and the site's 404 page are left out unless they set `nav: true`, and the
+ * later pages of paginated listings are always left out.
  *
  * @param allPages - Array of page models to build navigation from
  * @returns Array of top-level navigation nodes
@@ -69,6 +73,13 @@ export function buildNavigation(allPages: PageModel[]): NavNode[] {
     if (collectionPath !== '/') {
       // Find the index page for this collection (if it exists)
       const indexPage = pages.find((p) => p.url === collectionPath);
+
+      // A folder without an index page links to the folder's URL. When that is the URL of the
+      // 404 page, which navigation leaves out, list the folder's pages at the top level instead
+      if (!indexPage && isNotFoundUrl(collectionPath)) {
+        navNodes.push(...collectionPages.map(createNavNodeFromPage));
+        continue;
+      }
 
       // Create collection node
       const collectionNode = createCollectionNode(collectionPath, collectionPages, indexPage);

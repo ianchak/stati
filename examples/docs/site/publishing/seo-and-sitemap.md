@@ -40,11 +40,11 @@ seo:
 ---
 ```
 
-Use `seo.noindex: true` to ask search engines not to list a page.
+Use `seo.noindex: true` to ask search engines not to list a page. The 404 page gets it without asking.
 
 ## Sitemap and robots.txt
 
-The build writes `sitemap.xml` and `robots.txt` to `dist/`. The sitemap lists every page except the ones matching `excludePatterns`, and `robots.txt` points crawlers at it. Both use `baseUrl`, so set it to your real address before you deploy.
+The build writes `sitemap.xml` and `robots.txt` to `dist/`. The sitemap lists every page except the 404 page and pages marked `noindex`, and `robots.txt` points crawlers at it. Both use `baseUrl`, so set it to your real address before you deploy.
 
 To keep one page out of the sitemap:
 

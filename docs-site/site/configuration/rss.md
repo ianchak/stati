@@ -67,7 +67,7 @@ rss: {
 }
 ```
 
-> **How patterns match:** `contentPatterns` and `excludePatterns` are tested against each page's **source file path**, which is an absolute path such as `/home/me/my-site/site/blog/post.md`. Start folder patterns with `**/` (`'**/blog/**'`). A pattern like `'blog/**'` or `'site/blog/**'` matches nothing and produces an empty feed. Patterns without `*` or `?` must equal the path or be a prefix of it, so prefer glob patterns. `**/blog/**` also matches `blog/index.md`; add `excludePatterns: ['**/index.md']` to leave the listing page out. Pages created from a `[param].md` template and the later pages of a paginated listing are never in a feed, whatever the patterns.
+> **How patterns match:** `contentPatterns` and `excludePatterns` are tested against each page's **source file path**, which is an absolute path such as `/home/me/my-site/site/blog/post.md`. Start folder patterns with `**/` (`'**/blog/**'`). A pattern like `'blog/**'` or `'site/blog/**'` matches nothing and produces an empty feed. Patterns without `*` or `?` must equal the path or be a prefix of it, so prefer glob patterns. `**/blog/**` also matches `blog/index.md`; add `excludePatterns: ['**/index.md']` to leave the listing page out. Pages created from a `[param].md` template, the later pages of a paginated listing and [the 404 page](/core-concepts/routing#the-404-page) are never in a feed, whatever the patterns.
 
 ### Exclude patterns
 

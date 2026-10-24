@@ -222,6 +222,27 @@ describe('SEO Generator - generateSEOMetadata', () => {
     expect(result).toContain('<meta name="robots" content="noindex">');
   });
 
+  it('should generate noindex for the 404 page unless it says whether to index', () => {
+    const robotsFor = (url: string, seo?: Record<string, unknown>) => {
+      const page = createMockPage({ url, frontMatter: seo ? { seo } : {} });
+      const ctx: SEOContext = {
+        logger: createMockLogger(),
+        page,
+        config: createMockConfig(),
+        siteUrl: 'https://example.com',
+      };
+      return generateSEOMetadata(ctx).match(/<meta name="robots" content="([^"]*)">/)?.[1];
+    };
+
+    expect(robotsFor('/404')).toBe('noindex');
+    expect(robotsFor('/404/')).toBe('noindex');
+    expect(robotsFor('/404', { noindex: false })).toBeUndefined();
+    expect(robotsFor('/404', { robots: 'index, follow' })).toBe('index, follow');
+    expect(robotsFor('/404', { robots: 'noarchive' })).toBe('noindex, noarchive');
+    expect(robotsFor('/404', { robots: { follow: false } })).toBe('noindex, nofollow');
+    expect(robotsFor('/docs/404')).toBeUndefined();
+  });
+
   it('should generate author meta tag from string', () => {
     const page = createMockPage({
       frontMatter: {

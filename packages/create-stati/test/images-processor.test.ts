@@ -53,7 +53,6 @@ describe('images processor', () => {
         '      fonts: [',
         "        { name: 'Young Serif', path: './og/fonts/young-serif-regular.woff', weight: 400 },",
         '      ],',
-        "      exclude: ['/404'],",
         '    },',
         '  }',
       ].join('\n'),

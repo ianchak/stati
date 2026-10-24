@@ -1,4 +1,5 @@
 import type { PageModel } from '../../types/index.js';
+import { getPageOutputFile } from './paths.utils.js';
 
 /**
  * Page list utilities shared by rendering and the ISG cache: collection index pages, virtual
@@ -17,6 +18,36 @@ import type { PageModel } from '../../types/index.js';
  */
 export function isVirtualPage(page: PageModel): boolean {
   return page.generated !== undefined || (page.pagination?.pageNumber ?? 1) > 1;
+}
+
+/**
+ * Whether a page is the site's not-found page: the one written to `404.html` or
+ * `404/index.html` at the site root, which `stati dev` and `stati preview` serve for a missing
+ * URL as static hosts do. A page named `404` in a subfolder is not.
+ *
+ * The not-found page is left out of the sitemap, the search index, RSS feeds, generated Open
+ * Graph images and navigation, and its robots meta tag gets `noindex`.
+ *
+ * @param page - The page to check
+ * @returns True for the page at `/404` or `/404/`, or a permalink written without the slash
+ */
+export function isNotFoundPage(page: PageModel): boolean {
+  return isNotFoundUrl(page.url);
+}
+
+/**
+ * Whether a page at this URL would be the site's not-found page (see {@link isNotFoundPage}).
+ *
+ * @param url - A page URL
+ * @returns True for `/404` and `/404/`, or the same written without the slash
+ */
+export function isNotFoundUrl(url: string): boolean {
+  // Pages passed to the SEO functions directly can lack a URL
+  if (typeof url !== 'string') {
+    return false;
+  }
+  const file = getPageOutputFile(url).replace(/^\//, '');
+  return file === '404.html' || file === '404/index.html';
 }
 
 /**

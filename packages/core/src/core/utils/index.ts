@@ -37,10 +37,12 @@ export {
   getPageOutputFile,
 } from './paths.utils.js';
 
-// Page list utilities (collection index pages, virtual pages)
+// Page list utilities (collection index pages, virtual pages, the not-found page)
 export {
   isCollectionIndexPage,
   isVirtualPage,
+  isNotFoundPage,
+  isNotFoundUrl,
   getFirstPaginationPage,
   getCollectionPathForPage,
 } from './template-discovery.utils.js';

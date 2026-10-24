@@ -23,7 +23,6 @@ Search is set up in `stati.config.js`:
 ```js
 search: {
   enabled: true,
-  exclude: ['/404'],
 },
 ```
 
@@ -35,7 +34,7 @@ search: {
 | `includeHomePage`  | `false`           | Whether the home page is indexed                                         |
 | `hashFilename`     | `true`            | Adds a content hash to the file name, so browsers never use an old index |
 
-Drafts are never indexed. For every option, see the [Stati search docs](https://stati.build/configuration/search).
+Drafts and the 404 page are never indexed. For every option, see the [Stati search docs](https://stati.build/configuration/search).
 
 ## Changing the dialog
 

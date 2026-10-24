@@ -98,6 +98,10 @@ Patterns are globs matched against the whole page URL (`/private/docs`, `/` for 
 
 Pages created from a `[param].md` template, such as one page per tag, are left out of the index. To index them, set `search: true` in the template's front matter. The later pages of a listing with `paginate` (`/blog/page/2` and on) are always left out, since they repeat the first page's text. See [Collections and generated pages](/core-concepts/collections#where-generated-and-paginated-pages-appear).
 
+### The 404 page
+
+[The 404 page](/core-concepts/routing#the-404-page) is left out of the index without an `exclude` pattern. To index it, set `search: true` in its front matter; `exclude` patterns still apply.
+
 ### Include home page
 
 By default, the home page is excluded from the search index. To include it:
@@ -298,7 +302,7 @@ search: {
   exclude: [
     '/changelog/**',
     '/license',
-    '/404',
+    '/archive/**',
   ],
 }
 ```

@@ -23,6 +23,7 @@ import {
   getBundlePathsForPage,
   formatBytes,
   isVirtualPage,
+  isNotFoundPage,
   getPageOutputFile,
   resolveSrcDir,
 } from './utils/index.js';
@@ -631,6 +632,9 @@ async function processPagesWithCache(
       searchAutoInject: config.search?.autoInjectMetaTag !== false,
       // Omitted with images: false, so the hash matches builds without the image pipeline
       ...(imageFingerprint && { images: imageFingerprint }),
+      // The 404 page gets no Open Graph image and a noindex robots tag, so a copy cached
+      // before Stati treated it that way is rebuilt
+      ...(isNotFoundPage(page) && { notFoundPage: true }),
       collection: collectionPath ?? null,
       // A listing page depends on its own slice and on the page count, which every page
       // shows in its numbered links

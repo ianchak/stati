@@ -160,6 +160,7 @@ SEO optimization works automatically with zero configuration. Stati analyzes you
 - Twitter Cards, with `twitter:site` and `twitter:creator` from handles in the config
 - Article tags (`og:type`, publish date, tags) on the pages `seo.articles` matches
 - Structured data (JSON-LD) when configured in frontmatter
+- `noindex` on the 404 page, which also stays out of the sitemap, search index, RSS feeds, navigation and Open Graph cards
 
 You can also enable sitemap and robots.txt generation with a single config option.
 

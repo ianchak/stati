@@ -52,6 +52,7 @@ const html = generateSEOMetadata({
 - Validation errors are logged as warnings rather than throwing to allow builds to continue with degraded SEO
 - This prevents a single SEO issue from blocking the entire build
 - Validation warnings are logged when `config.seo.debug` is enabled
+- The robots meta tag gets `noindex` on the 404 page (`/404` or `/404/`) unless the page sets `seo.noindex`, or a `seo.robots` value that says whether to index it (`index`, `noindex`, `all`, `none` or `index:`)
 
 ---
 
@@ -170,6 +171,7 @@ console.log(result.sitemaps); // Array of sitemap files (if split)
 - Automatically splits into multiple sitemaps if entries exceed 50,000
 - Returns sitemap index XML if multiple sitemaps are generated
 - Uses `config.site.baseUrl` for absolute URLs
+- Leaves out the 404 page and pages marked `noindex`, as [`generateSitemapEntry()`](#generatesitemapentry) does
 
 ---
 
@@ -438,6 +440,8 @@ function generateSitemapEntry(
 **Returns:**
 
 - `SitemapEntry | null`: Generated entry or null if page should be excluded
+
+Returns `null` for the 404 page (`/404` or `/404/`) and for pages marked `noindex` by `seo.noindex`, `seo.robots.index: false` or a `seo.robots` string with a `noindex` or `none` directive, unless the page sets `sitemap: { exclude: false }`. See [Sitemap configuration](/configuration/seo#advanced-sitemap-options).
 
 **Example:**
 

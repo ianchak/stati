@@ -349,10 +349,10 @@ interface FrontMatter {
   /** In a [param].md template: { from: 'tags', paginate?: number | { size, path } } */
   generate?: { from?: string; paginate?: number | { size: number; path?: string } };
 
-  /** In a [param].md template: include its pages in navigation */
+  /** In a [param].md template or the 404 page: include the page(s) in navigation */
   nav?: boolean;
 
-  /** In a [param].md template: include its pages in the search index */
+  /** In a [param].md template or the 404 page: include the page(s) in the search index */
   search?: boolean;
 
   /** Additional custom properties */

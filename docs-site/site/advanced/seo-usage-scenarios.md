@@ -226,6 +226,8 @@ sitemap:
 ---
 ```
 
+Pages marked `noindex` and the 404 page are left out without it.
+
 ```markdown
 ---
 title: Archive Page
