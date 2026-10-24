@@ -21,28 +21,51 @@ copy in `.claude/skills/stati/`**. Do not assume Claude Code scans
 Claude Desktop/claude.ai has a separate skill installation mechanism; copying
 a local repository folder is not the same as installing an account skill.
 
-Copy the whole bundle, preserving:
+## Add or update the skill
 
-```text
-.claude/
-  skills/
-    stati/
-      SKILL.md
-      LICENSE
-      references/
-      assets/
-      scripts/
+Install and update the skill with the open
+[`skills` CLI](https://github.com/vercel-labs/skills), run in the project root.
+Do not copy the skill's files by hand: the CLI records the source in
+`skills-lock.json`, which is what makes later updates work.
+
+```bash
+# Add the skill (asks which agents)
+npx skills add ianchak/stati --skill stati
+
+# Without prompts, for Claude Code and Copilot in VS Code
+npx skills add ianchak/stati --skill stati -a claude-code --copy -y
+# Without prompts, into .agents/skills (Copilot, Codex, Cursor and others)
+npx skills add ianchak/stati --skill stati -a universal --copy -y
+
+# Check for an update, then update
+npx skills check
+npx skills update stati -p
 ```
 
-Do not nest it as `stati/stati/SKILL.md`, copy only `SKILL.md`, rename that file,
-or omit references. The skill name is `stati`; do not rename its folder.
-Copy into a new destination without overwriting an existing installation.
-Merge updates intentionally, and avoid duplicate independent copies that drift.
+The skill is read from the `main` branch of `ianchak/stati`. `create-stati
+--agent-skill` runs the same CLI for a new site.
 
-If already installed in `.github/skills/stati/`, moving the **entire bundle** to
-`.claude/skills/stati/` makes it available to both Claude Code and Copilot in
-VS Code. Moving is optional: a copy also works for Claude Code, but Copilot can
-then see duplicate names. Verify before deleting any original files.
+- Commit `skills-lock.json` and do not delete it. Without it,
+  `npx skills update` finds nothing to update.
+- Do not edit the installed copy. An update replaces the whole folder: edits
+  and added files are removed without warning, and `npx skills check` does not
+  notice local edits. Put project rules in `CLAUDE.md` or `AGENTS.md`.
+- A copy made by hand, or by an older create-stati that copied the skill from
+  its package, has no `skills-lock.json` entry, so `npx skills update` skips it
+  (with `-y` it even falls back to personal skills and reports none). Run
+  `npx skills add` once: it replaces the copy and tracks it from then on.
+- The CLI does not manage `.github/skills/stati/`. Add the skill to
+  `.claude/skills/` or `.agents/skills/`, then delete the old folder so Copilot
+  does not see two skills named `stati`.
+- For a personal install, add `-g`. With `-a claude-code` it goes to
+  `~/.claude/skills/stati/`.
+- The CLI needs Node.js 22.20 or later, `git` and network access. It sends
+  anonymous usage data unless `DISABLE_TELEMETRY=1` or `DO_NOT_TRACK=1` is set.
+
+If the CLI cannot run, report that rather than copying files. The installed
+layout keeps the folder named `stati` with `SKILL.md`, `LICENSE`,
+`references/`, `assets/` and `scripts/` inside; it is never nested as
+`stati/stati/SKILL.md`.
 
 ## Verify Claude Code discovery separately from automatic invocation
 

@@ -55,7 +55,7 @@ Here are the available options:
 | `--template` | Specifies a project template to use (`blank`, `blog` or `docs`). |
 | `--images` | Adds image tools: responsive images and link preview cards with `@stati/images`. |
 | `--no-images` | Skips image tools (the default). |
-| `--agent-skill [target]` | Installs the Stati agent skill (`claude`, `github` or `agents`; default `claude`). |
+| `--agent-skill [target]` | Installs the Stati agent skill with the [`skills` CLI](/cli/scaffolder#agent-skill) (`claude` or `agents`; default `claude`). |
 | `--no-agent-skill` | Skips agent skill installation. |
 
 ### TypeScript by default

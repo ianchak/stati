@@ -16,7 +16,7 @@ Edit this file, not the tool-specific ones, when guidance changes.
 - `packages/cli/src/cli.ts` wires yargs commands to core while `packages/cli/src/logger.ts` creates the colored logger contract used across builds.
 - `packages/create-stati/src/create.ts` scaffolds from `examples/`; its build step copies templates into `dist/templates`.
 - `examples/*` double as integration fixtures and `docs-site/` hosts the real documentation built with Stati.
-- `.claude/skills/stati/` is the Stati agent skill for people building sites with Stati. It is read by Claude Code and Copilot, and `create-stati --agent-skill` bundles and installs it, so changes to it ship with `create-stati`.
+- `.claude/skills/stati/` is the Stati agent skill for people building sites with Stati. It is read by Claude Code and Copilot. Users install and update it from `main` with the `skills` CLI (`npx skills add ianchak/stati --skill stati`, `npx skills update stati -p`), which `create-stati --agent-skill` also runs, so a skill change reaches users when it merges, not when a package is released. A skill change that describes new behavior goes in the same PR as the code, which is released when it merges.
 - Load that skill in this repo too, before writing or reviewing anything that describes how Stati behaves: `docs-site/` pages, the homepage feature list, `examples/`, recipes and starter templates. Its references record behavior verified against source and tests, including known gaps between the docs and the code. When the docs and the skill disagree, check the source, then fix whichever is wrong.
 
 ## Build + test workflow
@@ -263,7 +263,7 @@ Full details live in `.github/publishing-and-changesets.md`. The essentials for 
 - Versioning is handled by Changesets. Never hand-edit package `version` fields or `CHANGELOG.md` files; CI does that on `main` via `npx changeset version`.
 - Changesets in `.changeset/*.md` are generated from conventional commits (`npm run changeset:generate`, or the changeset bot on PRs). Create one manually with `npm run changeset` when needed.
 - Package detection is path-based: `packages/core/` → `@stati/core`, `packages/cli/` → `@stati/cli`, `packages/images/` → `@stati/images`, `packages/create-stati/` → `create-stati`. Root `package.json`, `package-lock.json`, `tsconfig.base.json`, `vitest.config.ts`, and `eslint.config.mjs` affect all packages.
-- `examples/` and `.claude/skills/stati/` are bundled into `create-stati`, so changes there release it. Changes under `.github/`, the rest of `.claude/`, `docs-site/`, `scripts/`, and root docs do not trigger a release. PRs that need no release get the `skip-changeset` label.
+- `examples/` is bundled into `create-stati`, so changes there release it. Changes under `.github/`, `.claude/` (including the agent skill, which users install from `main`), `docs-site/`, `scripts/`, and root docs do not trigger a release. PRs that need no release get the `skip-changeset` label.
 - Check pending releases with `npm run changeset:status` or `npm run changeset:dry-run`.
 - Publishing runs from `.github/workflows/publish.yml` after CI passes on `main`, using npm OIDC trusted publishing (npm 11.5.1+). Don't add npm tokens or secrets. A brand-new package can't make its first publish through OIDC: a maintainer publishes it once by hand and attaches the trusted publisher on npmjs.com first.
 - `@stati/images` declares no `peerDependencies` on `@stati/core`: Changesets would give it a major bump on every core minor. Compatibility is checked at runtime through `ImageProvider.apiVersion`.

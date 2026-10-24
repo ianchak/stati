@@ -391,12 +391,27 @@ site-building workflow, Stati-specific Eta/component rules, configuration, and
 generated features. It includes detailed references, a working starter, and a
 smoke test against an installed core package.
 
-Copy the entire `.claude/skills/stati/` bundle, including its references, assets,
-scripts, and license, or let `create-stati --agent-skill` install it for you.
-**For Claude Code, install it in `.claude/skills/stati/`, not
-`.github/skills/stati/`.** Copilot in VS Code supports both locations; use a
-single `.claude/skills/stati/` copy when sharing the skill between them.
-See [installation and discovery](./.claude/skills/stati/references/installation.md)
+`create-stati --agent-skill` installs it in a new site. To add it to an existing
+site, or update it, use the open [`skills` CLI](https://github.com/vercel-labs/skills):
+
+```bash
+# Add the skill (asks which agents; -a claude-code --copy -y skips the prompts)
+npx skills add ianchak/stati --skill stati
+
+# Check for an update, then update
+npx skills check
+npx skills update stati -p
+```
+
+Commit the `skills-lock.json` it writes, or `npx skills update` finds nothing
+to update. An update replaces the whole folder, so keep project rules in
+`CLAUDE.md` or `AGENTS.md`, not in the skill. `.claude/skills/stati/` serves
+both Claude Code and Copilot in VS Code; `-a universal` installs to
+`.agents/skills/stati/` for Copilot, Codex, Cursor and other agents. The CLI
+needs Node.js 22.20 or later, `git` and network access, and sends anonymous
+usage data unless `DISABLE_TELEMETRY=1` or `DO_NOT_TRACK=1` is set. See the
+[scaffolder docs](https://stati.build/cli/scaffolder/#agent-skill) for details
+and [installation and discovery](./.claude/skills/stati/references/installation.md)
 for verification and explicit `/stati` invocation. Automatic discovery does not
 guarantee automatic use on every request. See the
 [resource directory](./.claude/skills/stati/references/resources.md) for official
