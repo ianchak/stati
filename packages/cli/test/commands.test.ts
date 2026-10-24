@@ -100,7 +100,8 @@ describe('stati commands', () => {
     const { exitCode, errors } = await runCli(['build', '--tailwind-input', 'src/styles.css']);
 
     expect(exitCode).toBe(1);
-    expect(errors).toContain('Missing dependent arguments');
+    // The heading is yargs' translation, "Missing dependent arguments:" in English and the
+    // untranslated "Implications failed:" where the locale has none, such as CI's
     expect(errors).toContain('tailwind-input -> tailwind-output');
     expect(mocks.build).not.toHaveBeenCalled();
   });
