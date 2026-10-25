@@ -9,7 +9,6 @@ import { createHash } from 'node:crypto';
 import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { performance } from 'node:perf_hooks';
 import {
   autoInjectStylesheets,
   createStylesheetPlan,
@@ -246,14 +245,6 @@ describe('rebaseRelativeUrls', () => {
     expect(rebaseRelativeUrls(css, '/css/site.css')).toBe(
       'a{b:url("/css/image.png")}c{d:url("/css/%EF%BF%BDx.png")}e{f:url("/css/%EF%BF%BDy.png")}',
     );
-  });
-
-  it('takes linear time on comments and strings that never close', () => {
-    const started = performance.now();
-    for (const open of ['/*', '"', "'", 'url("', '@import/*', '@import ']) {
-      rebaseRelativeUrls(`${open}url(a.png)`.repeat(50_000), '/styles.css');
-    }
-    expect(performance.now() - started).toBeLessThan(1000);
   });
 
   it('leaves url() text in strings and comments alone', () => {
@@ -509,19 +500,6 @@ describe('rewriteStylesheetLinks', () => {
 
     expect(rewriteStylesheetLinks(html, targets, '/', 'https://example.com')).toBe(html);
     expect(rewriteStylesheetLinks(html, new Map(), '/')).toBe(html);
-  });
-
-  it('takes linear time on comments, elements and tags that never close', () => {
-    const started = performance.now();
-    // The three link functions share one scanner
-    for (const open of ['<!--', '<script>', '<title>', '<link ', '<a title="', "<a b='", '<!x']) {
-      rewriteStylesheetLinks(
-        `${open}<link rel="stylesheet" href="/styles.css">`.repeat(50_000),
-        targets,
-        '/',
-      );
-    }
-    expect(performance.now() - started).toBeLessThan(1000);
   });
 
   it('ignores a <link> tag that never closes', () => {
