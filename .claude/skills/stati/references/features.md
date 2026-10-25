@@ -63,7 +63,7 @@ Frontmatter `seo` supports:
   Article fields: `publishedTime`, `modifiedTime`, `author`, `section`, `tags`.
 - `twitter`: `card`, `site`, `creator`, `title`, `description`, `image`, `imageAlt`.
   Card values: `summary`, `summary_large_image`, `app`, `player`.
-- `structuredData`: a JSON-LD object.
+- `structuredData`: a JSON-LD object, printed as it is written. Stati does not HTML-escape the values (entities would corrupt the JSON), and writes every `<` in a key or value as `\u003c` so nothing can close the `<script>` tag.
 - `priority`, `changeFreq` exist in SEO types, but use the separate `sitemap`
   metadata contract for sitemap controls rather than assuming they are equivalent.
 

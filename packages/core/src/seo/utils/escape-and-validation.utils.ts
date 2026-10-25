@@ -63,26 +63,30 @@ export function escapeHtml(text: string): string {
 }
 
 /**
- * Sanitize structured data to prevent XSS attacks and ensure safe JSON-LD output.
- * Recursively processes objects and arrays, escaping string values and enforcing depth limits.
+ * Copy structured data for JSON-LD output, enforcing a nesting depth limit.
+ * Recursively processes objects and arrays.
  *
- * Security: Objects exceeding max depth are completely removed rather than replaced with
- * a string placeholder to prevent potential XSS vectors.
+ * Strings are kept as written: content inside a `<script>` element is raw text, so HTML
+ * entities would show up in the JSON as literal `&amp;`. Use {@link serializeStructuredData} to
+ * turn the result into text that is safe inside the script element.
  *
- * @param data - The data to sanitize
+ * Objects exceeding max depth are completely removed rather than replaced with a string
+ * placeholder.
+ *
+ * @param data - The data to copy
  * @param logger - Logger instance for warnings
  * @param depth - Current recursion depth (internal use)
  * @param maxDepth - Maximum allowed recursion depth (default: 50)
- * @returns Sanitized data safe for JSON-LD output, or undefined if max depth exceeded
+ * @returns The data without anything beyond the depth limit, or undefined if max depth exceeded
  *
  * @example
  * ```typescript
  * const data = {
- *   name: '<script>alert("xss")</script>',
+ *   name: 'Fish & Chips',
  *   nested: { value: 'test' }
  * };
  * sanitizeStructuredData(data, logger);
- * // Returns: { name: '&lt;script&gt;...', nested: { value: 'test' } }
+ * // Returns: { name: 'Fish & Chips', nested: { value: 'test' } }
  * ```
  */
 export function sanitizeStructuredData(
@@ -100,9 +104,6 @@ export function sanitizeStructuredData(
   }
 
   // Handle primitives
-  if (typeof data === 'string') {
-    return escapeHtml(data);
-  }
   if (typeof data !== 'object' || data === null) {
     return data;
   }
@@ -132,6 +133,39 @@ export function sanitizeStructuredData(
     }
   }
   return sanitizedObject;
+}
+
+/**
+ * Serialize structured data as JSON that is safe inside a `<script type="application/ld+json">`
+ * element.
+ *
+ * The data is serialized once, so keys and values get the same treatment. `<` becomes
+ * `\u003c`, which keeps a `</script>` or `<!--` in a key or value from ending or changing
+ * the script element, and U+2028 and U+2029 are escaped as well. All of these stay valid JSON
+ * that parses back to the original data. `&`, quotes and apostrophes are left alone: the text
+ * inside a script element is not HTML, so entities would corrupt it.
+ *
+ * @param data - The structured data
+ * @param logger - Logger instance for warnings
+ * @param maxDepth - Maximum allowed nesting depth (default: 50)
+ * @returns JSON text for the script element
+ *
+ * @example
+ * ```typescript
+ * serializeStructuredData({ name: 'Fish & Chips', '</script>': 1 }, logger);
+ * // Returns: '{"name":"Fish & Chips","\u003c/script>":1}'
+ * ```
+ */
+export function serializeStructuredData(
+  data: unknown,
+  logger: Logger,
+  maxDepth: number = 50,
+): string {
+  const json = JSON.stringify(sanitizeStructuredData(data, logger, 0, maxDepth));
+  return json
+    .replace(/</g, '\\u003c')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
 }
 
 /**

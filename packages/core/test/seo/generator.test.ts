@@ -55,6 +55,13 @@ function createMockLogger(overrides: Partial<Logger> = {}): Logger {
   };
 }
 
+// Parses the text of the page's JSON-LD script tag, which must be the only one in the output
+function getJsonLd(html: string): unknown {
+  const matches = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)];
+  expect(matches).toHaveLength(1);
+  return JSON.parse(matches[0]![1]!);
+}
+
 describe('SEO Generator - generateSEOMetadata', () => {
   it('should generate basic title tag', () => {
     const page = createMockPage();
@@ -331,27 +338,45 @@ describe('SEO Generator - generateSEOMetadata', () => {
     expect(result).toContain('"headline":"Test Article"');
   });
 
-  it('should escape HTML in structured data', () => {
-    const page = createMockPage({
-      frontMatter: {
-        seo: {
-          structuredData: {
-            name: '<script>alert("xss")</script>',
-          },
-        },
-      },
-    });
-    const config = createMockConfig();
+  it('should keep markup in structured data from closing the script tag', () => {
+    const structuredData = {
+      '@type': 'Article',
+      name: '<script>alert("xss")</script>',
+      '</script><script>alert(2)</script>': 1,
+    };
+    const page = createMockPage({ frontMatter: { seo: { structuredData } } });
     const ctx: SEOContext = {
       logger: createMockLogger(),
       page,
-      config,
+      config: createMockConfig(),
       siteUrl: 'https://example.com',
     };
 
     const result = generateSEOMetadata(ctx);
-    expect(result).toContain('&lt;script&gt;');
     expect(result).not.toContain('<script>alert');
+    expect(result).not.toContain('</script><script>');
+    expect(getJsonLd(result)).toEqual(structuredData);
+  });
+
+  it('should not HTML-escape structured data values', () => {
+    const structuredData = {
+      '@type': 'Article',
+      name: 'Fish & Chips',
+      author: "Ann's",
+      url: 'https://example.com/?a=1&b=2',
+    };
+    const page = createMockPage({ frontMatter: { seo: { structuredData } } });
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config: createMockConfig(),
+      siteUrl: 'https://example.com',
+    };
+
+    const result = generateSEOMetadata(ctx);
+    expect(result).not.toContain('&amp;');
+    expect(result).not.toContain('&#39;');
+    expect(getJsonLd(result)).toEqual(structuredData);
   });
 
   it('should log validation errors as warnings instead of throwing', () => {

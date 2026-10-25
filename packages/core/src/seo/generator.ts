@@ -15,7 +15,7 @@ import {
   generateRobotsContent,
   resolveAbsoluteUrl,
 } from './utils/index.js';
-import { sanitizeStructuredData } from './utils/escape-and-validation.utils.js';
+import { serializeStructuredData } from './utils/escape-and-validation.utils.js';
 import { resolveSEODefaults } from './defaults.js';
 
 /**
@@ -151,8 +151,8 @@ export function generateSEOMetadata(ctx: SEOContext): string {
 
   // JSON-LD Structured Data
   if (shouldGenerate(SEOTagType.StructuredData) && seo.structuredData) {
-    const sanitized = sanitizeStructuredData(seo.structuredData, logger);
-    meta.push(`<script type="application/ld+json">${JSON.stringify(sanitized)}</script>`);
+    const json = serializeStructuredData(seo.structuredData, logger);
+    meta.push(`<script type="application/ld+json">${json}</script>`);
   }
 
   return meta.join('\n    ');

@@ -297,6 +297,8 @@ seo:
 ---
 ```
 
+Stati writes the object as JSON-LD exactly as you wrote it. `&`, quotes and apostrophes are not turned into HTML entities, because the text inside a `<script>` element is not HTML. Every `<` in a key or a value is written as `\u003c`, so a value such as `</script>` stays inside the JSON and parses back unchanged.
+
 ### Robots configuration
 
 ```markdown
