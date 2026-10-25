@@ -373,6 +373,49 @@ describe('config loader', () => {
       expect((await loadConfig(testDir)).css).toEqual({ hash: false, autoInject: false });
     });
 
+    it('should validate the readingTime block and throw on invalid config', async () => {
+      writeFileSync(
+        join(testDir, 'stati.config.mjs'),
+        `export default { readingTime: { wordsPerMinute: 0 } };`,
+        'utf-8',
+      );
+
+      const error = await loadConfig(testDir).catch((caught: unknown) => caught);
+      expect(error).toBeInstanceOf(ConfigValidationError);
+      expect((error as Error).message).toContain('Invalid readingTime configuration in');
+      expect((error as Error).message).toContain(
+        'readingTime.wordsPerMinute must be a number above 0 (got 0).',
+      );
+    });
+
+    it('should accept the readingTime block', async () => {
+      writeFileSync(
+        join(testDir, 'stati.config.mjs'),
+        `export default { readingTime: { wordsPerMinute: 180 } };`,
+        'utf-8',
+      );
+
+      expect((await loadConfig(testDir)).readingTime).toEqual({ wordsPerMinute: 180 });
+    });
+
+    it('should treat readingTime options that throw while they are checked like a config that fails to load', async () => {
+      writeFileSync(
+        join(testDir, 'stati.config.mjs'),
+        `export default { readingTime: { get wordsPerMinute() { throw new TypeError('speed is broken'); } } };`,
+        'utf-8',
+      );
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const config = await loadConfig(testDir);
+
+      expect(config.readingTime).toBeUndefined();
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Error loading config from'),
+        expect.objectContaining({ message: 'speed is broken' }),
+      );
+      consoleErrorSpy.mockRestore();
+    });
+
     it('should treat SEO options that throw while they are checked like a config that fails to load', async () => {
       writeFileSync(
         join(testDir, 'stati.config.mjs'),

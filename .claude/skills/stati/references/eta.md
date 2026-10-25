@@ -69,6 +69,7 @@ include result may be passed as another include's `body` and printed raw as
 | `stati.page.content`, `stati.content` | Rendered Markdown HTML                                                         |
 | `stati.page.toc`                      | `{ id, text, level }[]`; empty if unavailable                                  |
 | `stati.page.navNode`                  | Current node, possibly undefined                                               |
+| `stati.page.readingTime`              | Whole minutes to read, at least 1; `stati.page.wordCount` is the word count    |
 | `stati.nav`                           | Navigation helper object, not a bare array                                     |
 | `stati.collection`                    | Optional aggregation object; see below                                         |
 | `stati.pagination`                    | Page of a `paginate` listing (1.29+), else undefined                           |

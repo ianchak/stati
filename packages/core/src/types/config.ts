@@ -93,6 +93,8 @@ export interface StatiConfig {
   isg?: import('./isg.js').ISGConfig;
   /** Collection listings: which fields rebuild them, and pages generated from data */
   collections?: CollectionsConfig;
+  /** Reading speed for `page.readingTime` */
+  readingTime?: ReadingTimeConfig;
   /** SEO configuration */
   seo?: SEOConfig;
   /** Sitemap generation configuration */
@@ -138,6 +140,25 @@ export interface StatiConfig {
 }
 
 /**
+ * Reading time settings. Every page gets `wordCount` and `readingTime`, which templates read as
+ * `stati.page.readingTime` and collection items carry as `post.readingTime`.
+ *
+ * @example
+ * ```typescript
+ * const readingTime: ReadingTimeConfig = { wordsPerMinute: 200 };
+ * ```
+ */
+export interface ReadingTimeConfig {
+  /**
+   * Reading speed. `readingTime` is the word count divided by this number, rounded to whole
+   * minutes, and never less than 1.
+   *
+   * @default 230
+   */
+  wordsPerMinute?: number;
+}
+
+/**
  * Collection settings.
  *
  * @example
@@ -163,6 +184,9 @@ export interface CollectionsConfig {
    * `stati.collection` rebuilds when one of these fields changes on a page in the collection,
    * and so do paginated and generated pages that list it. Each page's URL and publish date
    * always count. `content` stands for the Markdown body, for listings that show excerpts.
+   * `wordCount` and `readingTime` stand for the values Stati computes for each page, so a
+   * listing that shows the reading time rebuilds when the minutes change, and not when an edit
+   * leaves them as they were.
    *
    * @default ['title', 'description', 'tags', 'draft']
    */

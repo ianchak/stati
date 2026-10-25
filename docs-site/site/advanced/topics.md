@@ -160,7 +160,7 @@ Every template receives the `stati` object with page and site data:
 
 These members are objects, so read their properties rather than printing them:
 
-- `stati.page`: the current page, with every front matter field, `url`, `toc` and `navNode`
+- `stati.page`: the current page, with every front matter field, `url`, `toc`, `navNode`, `wordCount` and `readingTime`
 - `stati.nav`: the navigation tree and helpers such as `getChildren()` and `getBreadcrumbs()`
 - `stati.collection`: the pages of the page's collection (a folder's `index.md` and the pages in that folder, or the one named by `collection` in front matter)
 

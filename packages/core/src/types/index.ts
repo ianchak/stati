@@ -23,6 +23,7 @@ export type {
   CSSConfig,
   BundleConfig,
   CollectionsConfig,
+  ReadingTimeConfig,
   GeneratedPageEntry,
 } from './config.js';
 

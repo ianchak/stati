@@ -8,6 +8,7 @@ import {
 } from './utils/index.js';
 import { relative, dirname, basename } from 'node:path';
 import type { PageModel, StatiConfig } from '../types/index.js';
+import { computeTextStats, resolveWordsPerMinute } from './reading-time.js';
 import { MARKDOWN_EXTENSION } from '../constants.js';
 
 /**
@@ -45,6 +46,7 @@ export async function loadContent(
   ).sort();
 
   const pages: PageModel[] = [];
+  const wordsPerMinute = resolveWordsPerMinute(config);
 
   for (const file of files) {
     const content = await readFile(file, 'utf-8');
@@ -72,6 +74,7 @@ export async function loadContent(
       sourcePath: file,
       frontMatter,
       content: markdown,
+      ...computeTextStats(markdown, wordsPerMinute),
     };
 
     const publishedAt = getFrontMatterDate(frontMatter, (field, value) => {

@@ -245,10 +245,26 @@ export default defineConfig({
 
 **Available Options:**
 
-- `summaryFields` (string[]) - Front matter fields of collection pages whose changes rebuild the pages that list them (default: `['title', 'description', 'tags', 'draft']`; URLs and publish dates always count, and `content` stands for the Markdown body)
+- `summaryFields` (string[]) - Front matter fields of collection pages whose changes rebuild the pages that list them (default: `['title', 'description', 'tags', 'draft']`; URLs and publish dates always count, `content` stands for the Markdown body, and `wordCount` and `readingTime` for the counts Stati computes)
 - `generate` (function) - Returns pages to create, each with a `url` and a `[param].md` `template`, plus optional `key`, `label`, `items` and `data`
 
 See [Collections and generated pages](/core-concepts/collections).
+
+### Reading time configuration
+
+Every page has a [word count and reading time](/core-concepts/markdown#word-count-and-reading-time). The `readingTime` block sets the reading speed:
+
+```javascript
+export default defineConfig({
+  readingTime: {
+    wordsPerMinute: 200,
+  },
+});
+```
+
+**Available Options:**
+
+- `wordsPerMinute` (number) - Words read in a minute; any number above 0 (default: `230`). The reading time is the word count divided by it, rounded to whole minutes, and never less than 1
 
 ### Image configuration
 
@@ -350,8 +366,7 @@ export default defineConfig({
       console.log('Starting build...');
       console.log(`Building ${context.pages.length} pages`);
       for (const page of context.pages) {
-        page.frontMatter.readingTime = calculateReadingTime(page.content);
-        page.frontMatter.wordCount = countWords(page.content);
+        page.frontMatter.section = page.url.split('/')[1] || 'home';
       }
     },
 

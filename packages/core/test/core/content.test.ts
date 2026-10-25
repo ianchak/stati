@@ -68,6 +68,8 @@ describe('content.ts', () => {
           sourcePath: '/test/project/src/about.md',
           frontMatter: { title: 'About' },
           content: '# About us',
+          wordCount: 2,
+          readingTime: 1,
         },
         {
           slug: '/',
@@ -75,8 +77,69 @@ describe('content.ts', () => {
           sourcePath: '/test/project/src/index.md',
           frontMatter: { title: 'Home' },
           content: '# Welcome',
+          wordCount: 1,
+          readingTime: 1,
         },
       ]);
+    });
+
+    describe('word count and reading time', () => {
+      const words = (count: number) => Array.from({ length: count }, (_, i) => `w${i}`).join(' ');
+
+      it('counts the words of the body, without the front matter', async () => {
+        mockContentFiles({
+          '/test/project/src/post.md': `---\ntitle: A title of five words\ntags: [one, two]\n---\n${words(7)}`,
+        });
+
+        const [page] = await loadContent(mockConfig);
+
+        expect(page!.wordCount).toBe(7);
+      });
+
+      it('leaves out code blocks and HTML tags', async () => {
+        mockContentFiles({
+          '/test/project/src/post.md':
+            '---\ntitle: Post\n---\nSome <em>text</em> here\n\n```js\nconst a = 1;\n```\n\nand more',
+        });
+
+        const [page] = await loadContent(mockConfig);
+
+        expect(page!.wordCount).toBe(5);
+      });
+
+      it('rounds the reading time to whole minutes, at least 1, at 230 words a minute', async () => {
+        mockContentFiles({
+          '/test/project/src/short.md': `---\ntitle: S\n---\n${words(3)}`,
+          '/test/project/src/long.md': `---\ntitle: L\n---\n${words(1150)}`,
+        });
+
+        const pages = await loadContent(mockConfig);
+
+        expect(pages.map((page) => [page.url, page.readingTime])).toEqual([
+          ['/long', 5],
+          ['/short', 1],
+        ]);
+      });
+
+      it('reads the speed from readingTime.wordsPerMinute', async () => {
+        mockContentFiles({
+          '/test/project/src/long.md': `---\ntitle: L\n---\n${words(1000)}`,
+        });
+
+        const [page] = await loadContent({ ...mockConfig, readingTime: { wordsPerMinute: 100 } });
+
+        expect(page!.wordCount).toBe(1000);
+        expect(page!.readingTime).toBe(10);
+      });
+
+      it('gives a page with no body one minute', async () => {
+        mockContentFiles({ '/test/project/src/empty.md': '---\ntitle: Empty\n---\n' });
+
+        const [page] = await loadContent(mockConfig);
+
+        expect(page!.wordCount).toBe(0);
+        expect(page!.readingTime).toBe(1);
+      });
     });
 
     it('should skip draft posts by default', async () => {

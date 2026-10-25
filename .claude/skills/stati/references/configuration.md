@@ -156,8 +156,9 @@ the optional block:
 ```ts
 collections: {
   // Frontmatter that listings show; default ['title', 'description', 'tags', 'draft'].
-  // URL and publish date always count; 'content' means the Markdown body.
-  summaryFields: ['title', 'description', 'tags', 'draft', 'image'],
+  // URL and publish date always count; 'content' means the Markdown body, and
+  // 'wordCount' and 'readingTime' mean the counts Stati computes for each page.
+  summaryFields: ['title', 'description', 'tags', 'draft', 'image', 'readingTime'],
   // Pages from data, rendered by a [param].md template (path relative to srcDir)
   generate: async ({ config, pages }) => [
     { url: '/authors/ada', template: 'authors/[author].md', label: 'Ada', items: [], data: {} },
@@ -170,6 +171,19 @@ collections: {
 throw fails the build. Entries need `url` (starting with `/`) and an existing
 template, else they are skipped with a warning. `data` must be JSON-serializable;
 it is hashed, so changing it rebuilds the page. See the content reference.
+
+## Reading time
+
+Every page has `wordCount` and `readingTime` (see the content reference). The only
+option is the reading speed:
+
+```ts
+readingTime: { wordsPerMinute: 230 }, // default; any number above 0, checked when the config loads
+```
+
+A listing that shows `post.readingTime` and names `readingTime` in
+`collections.summaryFields` rebuilds only when the minutes change, not on every edit.
+Changing the speed rebuilds the pages whose minutes change.
 
 ## Static assets
 

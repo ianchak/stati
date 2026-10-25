@@ -83,6 +83,17 @@ export function buildBreadcrumb(url: string, pageTitle: string): string {
   return crumbs.join(' > ');
 }
 
+/**
+ * Fenced code blocks, one expression for backtick fences and one for tilde fences. A fence opens
+ * at the start of a line, after any blockquote or list marker, and runs to a matching fence or,
+ * as in CommonMark, to the end of the text. The info string of a backtick fence holds no
+ * backtick, so an inline span written with three backticks at the start of a line is not a fence.
+ */
+const FENCED_CODE_BLOCKS = [
+  /^[ \t>]*(?:(?:[-*+]|\d{1,9}[.)])[ \t]+)?(`{3,})[^`\n]*\n[\s\S]*?(?:^[ \t>]*\1[`~]*[ \t]*$|(?![\s\S]))/gm,
+  /^[ \t>]*(?:(?:[-*+]|\d{1,9}[.)])[ \t]+)?(~{3,})[^\n]*\n[\s\S]*?(?:^[ \t>]*\1[`~]*[ \t]*$|(?![\s\S]))/gm,
+];
+
 /** Private-use character that brackets inline code placeholders in stripMarkdown. */
 const CODE_MARK = '';
 
@@ -98,7 +109,9 @@ export function stripMarkdown(markdown: string): string {
 
   // Remove fenced code blocks. Fences sit at the start of a line, so inline
   // spans written with three or more backticks are left for the step below.
-  text = text.replace(/^[ \t>]*(`{3,}|~{3,})[^\n]*\n[\s\S]*?^[ \t>]*\1[`~]*[ \t]*$/gm, ' ');
+  for (const fenced of FENCED_CODE_BLOCKS) {
+    text = text.replace(fenced, ' ');
+  }
 
   // Keep inline code text (identifiers are what people search for), shielded
   // from the emphasis and HTML stripping below and restored at the end.

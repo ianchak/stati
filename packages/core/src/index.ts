@@ -40,6 +40,7 @@ export type {
   CSSConfig,
   CollectionData,
   CollectionsConfig,
+  ReadingTimeConfig,
   GeneratedPageEntry,
   PaginationData,
   GeneratedPageData,

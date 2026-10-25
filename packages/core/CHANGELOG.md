@@ -1,5 +1,16 @@
 # @stati/core
 
+## 2.8.0
+
+### Minor Changes
+
+- 6b4d646: add word count and reading time to pages
+
+### Patch Changes
+
+- 6b4d646: skip unclosed and list-item code fences in word counts
+- 6b4d646: hash front matter reading time in listing summaries
+
 ## 2.7.2
 
 ### Patch Changes

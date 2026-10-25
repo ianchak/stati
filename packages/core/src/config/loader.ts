@@ -7,6 +7,7 @@ import { validateImagesConfig } from '../images/config.js';
 import { validateSEOConfig } from '../seo/defaults.js';
 import { validateSitemapConfig } from '../seo/news-sitemap.js';
 import { validateCSSConfig } from '../css/config.js';
+import { validateReadingTimeConfig } from '../core/reading-time.js';
 import { validateDirectoryLayout } from './directories.js';
 import { ConfigValidationError } from './errors.js';
 import {
@@ -79,6 +80,7 @@ const CONFIG_KEYS: Record<keyof StatiConfig, true> = {
   helpers: true,
   isg: true,
   collections: true,
+  readingTime: true,
   seo: true,
   sitemap: true,
   robots: true,
@@ -261,6 +263,19 @@ export async function loadConfig(cwd: string = process.cwd()): Promise<StatiConf
       if (error instanceof ConfigValidationError) {
         throw new ConfigValidationError(
           `Invalid images configuration in ${configPath}:\n${error.message}`,
+          { cause: error },
+        );
+      }
+      throw error;
+    }
+
+    // The reading speed
+    try {
+      validateReadingTimeConfig(mergedConfig.readingTime);
+    } catch (error) {
+      if (error instanceof ConfigValidationError) {
+        throw new ConfigValidationError(
+          `Invalid readingTime configuration in ${configPath}:\n${error.message}`,
           { cause: error },
         );
       }

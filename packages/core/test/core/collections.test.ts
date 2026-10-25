@@ -297,6 +297,41 @@ describe('collection summaries', () => {
     ).not.toBe(hash(post, ['mood']));
   });
 
+  it('includes the word count and the reading time when they are listed', () => {
+    const counted = { ...post, wordCount: 300, readingTime: 1 };
+    const fields = [...DEFAULT_SUMMARY_FIELDS, 'readingTime'];
+
+    // Without the field, neither value changes the summary
+    expect(hash({ ...counted, wordCount: 900, readingTime: 4 })).toBe(hash(counted));
+    expect(hash({ ...counted, readingTime: 2 }, fields)).not.toBe(hash(counted, fields));
+    expect(hash({ ...counted, wordCount: 305 }, fields)).toBe(hash(counted, fields));
+    expect(hash({ ...counted, wordCount: 305 }, ['wordCount'])).not.toBe(
+      hash(counted, ['wordCount']),
+    );
+  });
+
+  it('also hashes front matter of the same name, for listings that show it', () => {
+    const counted = { ...post, wordCount: 300, readingTime: 1 };
+    const written = (readingTime: number) => ({
+      ...counted,
+      frontMatter: { ...counted.frontMatter, readingTime, wordCount: readingTime * 100 },
+    });
+
+    expect(hash(written(5), ['readingTime'])).not.toBe(hash(counted, ['readingTime']));
+    expect(hash(written(5), ['readingTime'])).not.toBe(hash(written(6), ['readingTime']));
+    expect(hash(written(5), ['wordCount'])).not.toBe(hash(written(6), ['wordCount']));
+    // Without the field in the summary, front matter of that name changes nothing
+    expect(hash(written(5))).toBe(hash(counted));
+  });
+
+  it('hashes a page without counts as having none', () => {
+    expect(hash(post, ['readingTime'])).toBe(hash({ ...post }, ['readingTime']));
+    expect(hash(post, ['readingTime'])).not.toBe(
+      hash({ ...post, readingTime: 1 }, ['readingTime']),
+    );
+    expect(hash(post, ['wordCount'])).not.toBe(hash({ ...post, wordCount: 0 }, ['wordCount']));
+  });
+
   it('changes with the order of the pages', () => {
     const other = makePage('/blog/other');
     expect(computePagesSummaryHash([post, other], DEFAULT_SUMMARY_FIELDS)).not.toBe(

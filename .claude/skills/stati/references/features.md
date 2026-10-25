@@ -430,7 +430,8 @@ hashes and time constraints. Do not manually edit manifest entries as an author.
 
 What a page read while rendering is part of its hash (core 1.29+): reading
 `stati.collection` adds the collection summary (members' URL, publish date,
-`title`, `description`, `tags`, `draft`, or `collections.summaryFields`);
+`title`, `description`, `tags`, `draft`, or `collections.summaryFields`, where
+`wordCount` and `readingTime` name Stati's computed counts);
 reading `stati.nav`/`stati.page.navNode` adds the navigation hash. So a body
 edit rebuilds only that page, while a retitled/added/deleted post also rebuilds
 the pages that list it, in `stati build` and dev alike. Paginated pages depend

@@ -48,6 +48,9 @@ interface StatiConfig {
   /** Collection listings: which fields rebuild them, and pages generated from data */
   collections?: CollectionsConfig;
 
+  /** Reading speed for each page's readingTime */
+  readingTime?: ReadingTimeConfig;
+
   /** SEO configuration */
   seo?: SEOConfig;
 
@@ -91,13 +94,25 @@ interface StatiConfig {
 }
 ```
 
+### Reading time configuration
+
+```typescript
+interface ReadingTimeConfig {
+  /** Words read in a minute; any number above 0. Default: 230 */
+  wordsPerMinute?: number;
+}
+```
+
+See [Word count and reading time](/core-concepts/markdown#word-count-and-reading-time).
+
 ### Collections configuration
 
 ```typescript
 interface CollectionsConfig {
   /**
    * Front matter fields of collection pages that listings show; changing one rebuilds the pages
-   * that list the page. URLs and publish dates always count; 'content' stands for the body.
+   * that list the page. URLs and publish dates always count; 'content' stands for the body, and
+   * 'wordCount' and 'readingTime' for the counts Stati computes for each page.
    * Default: ['title', 'description', 'tags', 'draft']
    */
   summaryFields?: string[];
@@ -285,6 +300,12 @@ interface PageModel {
   /** Publication date, from the first valid of `publishedAt`, `published`, `date`, `createdAt` */
   publishedAt?: Date;
 
+  /** Words in the Markdown body, without code blocks, HTML tags and Markdown syntax */
+  wordCount?: number;
+
+  /** Whole minutes to read the page, at least 1: wordCount / readingTime.wordsPerMinute */
+  readingTime?: number;
+
   /** Position in a paginated listing; set on every page of a listing with `paginate` */
   pagination?: PaginationData;
 
@@ -401,6 +422,10 @@ interface TemplateContext {
     content: string;
     /** Current page's navigation node */
     navNode?: NavNode;
+    /** Words in the Markdown body */
+    wordCount?: number;
+    /** Whole minutes to read the page, at least 1 */
+    readingTime?: number;
     /** Frontmatter fields spread into page object */
     [key: string]: unknown;
   };

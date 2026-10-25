@@ -67,7 +67,7 @@ export default defineConfig({
 
   helpers: news.helpers,
 
-  // Reading time and NewsArticle metadata on every article
+  // NewsArticle metadata on every article
   hooks: news.hooks,
 
   collections: {
