@@ -1,0 +1,44 @@
+<%
+  /* One story in a listing, in the shape the place it sits in asks for.
+     Props:
+       story    an article: a page from stati.collection, stati.pagination or stati.generated
+                (required). Its front matter is under story.frontMatter.
+       variant  'top'   headline, standfirst and byline, for the front page's top stories
+                'sky'   headline, section and time, for the strip under the nameplate
+                'block' image, headline and standfirst, for the first story of a section
+                'row'   headline, standfirst, byline and a thumbnail, for listings (default)
+                'link'  headline, section and time, for short lists
+       section  false leaves the section out (on the section's own page)
+       heading  the heading level of the headline, default 3
+       priority true loads the image first, for the story at the top of a page
+     The section follows the headline, in the line under it, linked to the section's page. */
+  const story = stati.props.story;
+  const fm = story.frontMatter;
+  const variant = stati.props.variant ?? 'row';
+  const level = stati.props.heading ?? 3;
+  const section = stati.props.section === false ? undefined : stati.helpers.sectionOf(story.url);
+  const showImage = (variant === 'block' || variant === 'row') && fm.image;
+  const sizes = variant === 'block' ? '(min-width: 64rem) 30vw, 100vw' : '(min-width: 48rem) 13rem, 33vw';
+  const short = variant === 'sky' || variant === 'link';
+%>
+<article class="<%= stati.propValue('story', `story-${variant}`, showImage && 'has-image') %>">
+  <% if (showImage) { %>
+  <a class="story-image" href="<%= stati.url(story.url) %>" tabindex="-1" aria-hidden="true">
+    <%~ stati.image(fm.image, { alt: '', sizes, priority: stati.props.priority === true }) %>
+  </a>
+  <% } %>
+  <div class="story-text">
+    <%~ `<h${level} class="story-headline">` %><a href="<%= stati.url(story.url) %>"><%= fm.title %></a><%~ `</h${level}>` %>
+    <% if (fm.description && !short) { %>
+    <p class="story-standfirst"><%= fm.description %></p>
+    <% } %>
+    <% if (short) { %>
+    <p class="story-meta">
+      <% if (section) { %><a href="<%= stati.url(section.url) %>"><%= section.title %></a><% } %>
+      <time datetime="<%= stati.helpers.isoDate(story.publishedAt) %>"><%= stati.helpers.formatDate(story.publishedAt, 'time') %></time>
+    </p>
+    <% } else { %>
+    <%~ stati.include('partials/byline', { story, section, compact: true }) %>
+    <% } %>
+  </div>
+</article>

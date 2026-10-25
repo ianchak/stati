@@ -73,7 +73,7 @@ With `--no-install` nothing is installed, so run your package manager's install 
 npx create-stati <project-name> [options]
 
 Options:
-  --template <name>        Template to use (blank|blog|docs)
+  --template <name>        Template to use (blank|blog|docs|news)
   --styling <type>         CSS solution (css|sass|tailwind)
   --typescript, --ts       Use TypeScript (default)
   --no-typescript, --no-ts Use JavaScript instead of TypeScript
@@ -100,9 +100,9 @@ With image tools, the scaffolder:
 
 - adds `@stati/images` to the project's dev dependencies;
 - turns on `images.responsive` and `images.og` in the config. Preview images need absolute URLs, so set the placeholder `site.baseUrl` to your real address before you deploy;
-- keeps the card template of the blog and docs templates, `site/og.eta`, with its fonts in `og/fonts/`. The blank template uses the card built into `@stati/images`.
+- keeps the card template of the blog, docs and news templates, `site/og.eta`, with its fonts in `og/fonts/`. The blank template uses the card built into `@stati/images`.
 
-Without image tools, the blog and docs templates' card template and fonts are left out. You can add the package later; see [Images](/configuration/images).
+Without image tools, the blog, docs and news templates' card template and fonts are left out. You can add the package later; see [Images](/configuration/images).
 
 The package includes a native image encoder, so the prompt defaults to no.
 
@@ -154,11 +154,12 @@ npx skills update stati -p
 
 ## Project templates
 
-Stati provides three templates:
+Stati provides four templates:
 
 - **blank** - Minimal starter with basic structure and example content
 - **blog** - A complete blog with posts, tags, an archive, an RSS feed and SEO metadata
 - **docs** - A complete documentation site with a sidebar, search, an on-page table of contents and SEO metadata
+- **news** - A complete news site with sections, a ranked front page, author pages, feeds, search and SEO metadata
 
 ### Blank template
 
@@ -205,6 +206,25 @@ A documentation site that works on first run. Its sample pages explain how each 
 
 Like the blog, the docs template ships its own `stati.config.js`, which becomes `stati.config.ts` with TypeScript, and its stylesheet is carried over into `src/` with Sass or Tailwind.
 
+### News template
+
+A news site that works on first run. Its sample articles explain how each part of it works, so you can read them, then replace them with your own.
+
+**What's included:**
+
+- Sections as folders in `site/news/`, listed once in `site.sections` in the config; each gets a tab, a page at `/news/<section>` and an RSS feed
+- A front page ranked by front matter: a lead story (`lead: true`), top stories (`featured: true`), a strip of the latest stories and a column per section, each story shown once
+- Articles with a standfirst, bylines linking to author pages, published and updated dates, a lead image with caption and credit, reading time, more from the section and related stories
+- Authors listed once in `site.authors`, with an index and a page for each; topic pages from tags; a latest-stories stream grouped by day; pagination on every listing
+- Search over Stati's search index, opened with <kbd>/</kbd>, <kbd>Ctrl</kbd> <kbd>K</kbd> or <kbd>⌘</kbd> <kbd>K</kbd>
+- An RSS feed for the whole site and one per section, a sitemap, a Google News sitemap (`news-sitemap.xml`) and `robots.txt`
+- `NewsArticle` structured data and Open Graph article tags with the section and author on every article
+- Light and dark themes following the system setting, with self-hosted Libre Franklin and Source Serif 4; drafts and a 404 page
+- `helpers/news.js`, which ranks the front page, builds bylines and dates for templates, returns one page per section and author from `collections.generate`, fills in each article's reading time and metadata in the `beforeAll` hook, and writes the Google News sitemap in `afterAll`
+- `public/scripts/news.js`, a dependency-free search dialog; pages work without it
+
+Like the blog and docs templates, it ships its own `stati.config.js`, which becomes `stati.config.ts` with TypeScript, and its stylesheet is carried over into `src/` with Sass or Tailwind.
+
 ## Styling solutions
 
 Choose your preferred styling approach:
@@ -226,7 +246,7 @@ Choose your preferred styling approach:
 
 - Installs Tailwind CSS 4: `tailwindcss` and its command line tool, `@tailwindcss/cli`
 - Creates source stylesheet at `src/styles.css`, which `stati dev` compiles to `dist/styles.css` and `stati build` to `dist/_assets/styles-<hash>.css`. It imports Tailwind and adds an `@source` rule for `.stati/tailwind-classes.html`, the classes Stati records from `stati.propValue()`. Tailwind finds the templates itself, so there is no `tailwind.config.js`
-- For the blank template the stylesheet rebuilds the starter's look with `@apply`, Tailwind's slate and blue palette and `dark:` variants. For the blog and docs templates it keeps the template's own stylesheet in the `components` layer, where it overrides Tailwind's base styles and utility classes in your templates override it
+- For the blank template the stylesheet rebuilds the starter's look with `@apply`, Tailwind's slate and blue palette and `dark:` variants. For the blog, docs and news templates it keeps the template's own stylesheet in the `components` layer, where it overrides Tailwind's base styles and utility classes in your templates override it
 - The templates keep their `<link>` to `/styles.css`, which production builds point at the hashed file
 - Modified scripts, both using Stati's built-in Tailwind integration (single process):
   - `dev`: `stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css`
@@ -281,7 +301,7 @@ my-site/
 └── README.md            # Getting started guide
 ```
 
-For the blank template, the scaffolder writes a fresh `stati.config.ts` that sets `site.title` (your project name), `site.description` and a placeholder `site.baseUrl` of `https://example.com`, and turns on `typescript`. (The blog and docs templates keep their own config, which also contains a placeholder `baseUrl`.) Set `site.baseUrl` to your real address before you deploy: canonical links, the sitemap and feeds start with it.
+For the blank template, the scaffolder writes a fresh `stati.config.ts` that sets `site.title` (your project name), `site.description` and a placeholder `site.baseUrl` of `https://example.com`, and turns on `typescript`. (The blog, docs and news templates keep their own config, which also contains a placeholder `baseUrl`.) Set `site.baseUrl` to your real address before you deploy: canonical links, the sitemap and feeds start with it.
 
 ### With Sass
 
@@ -311,7 +331,7 @@ my-site/
 └── package.json          # Includes Tailwind scripts
 ```
 
-With the blog and docs templates, `public/styles.css` is moved into `src/styles.css`, below the Tailwind import. The blank template gets Tailwind starter styles there instead. Either way `public/styles.css` is removed, because every build would copy it over the dev server's `dist/styles.css`.
+With the blog, docs and news templates, `public/styles.css` is moved into `src/styles.css`, below the Tailwind import. The blank template gets Tailwind starter styles there instead. Either way `public/styles.css` is removed, because every build would copy it over the dev server's `dist/styles.css`.
 
 The `typecheck` script is added to `package.json` for validating your TypeScript code.
 

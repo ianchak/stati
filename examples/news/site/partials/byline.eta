@@ -1,0 +1,30 @@
+<%
+  /* The byline: the section, the authors linked to their pages, the date and the reading time.
+     Props:
+       story    the article, as a page model (required)
+       section  the section to name first, `{ title, url }`; leave it out where the page says it
+       compact  true for listings: short date, no "Updated" line
+     Authors come from the article's `author` front matter and site.authors in stati.config.js. */
+  const story = stati.props.story;
+  const fm = story.frontMatter;
+  const authors = stati.helpers.byline(story);
+  const compact = stati.props.compact === true;
+  const section = stati.props.section;
+  const updated = compact ? undefined : fm.updated;
+  const reading = stati.helpers.readingTime(story);
+%>
+<p class="<%= stati.propValue('byline', compact && 'byline-compact') %>">
+  <% if (section) { %><a class="byline-section" href="<%= stati.url(section.url) %>"><%= section.title %></a><% } %>
+  <% if (fm.draft) { %><span class="draft-label">Draft</span><% } %>
+  <% if (authors.length > 0) { %>
+  <span class="byline-names">By
+    <% authors.forEach((author, i) => { %><% if (i > 0) { %><%= i === authors.length - 1 ? ' and ' : ', ' %><% } %><% if (author.url) { %><a href="<%= stati.url(author.url) %>"><%= author.name %></a><% } else { %><%= author.name %><% } %><% }) %>
+  </span>
+  <% } %>
+  <% if (story.publishedAt || reading) { %>
+  <span class="byline-when"><% if (story.publishedAt) { %><time datetime="<%= stati.helpers.isoDate(story.publishedAt) %>"><%= stati.helpers.formatDate(story.publishedAt, compact ? 'short' : 'long') %></time><% } %><% if (reading) { %><span class="byline-reading"><%= reading %></span><% } %></span>
+  <% } %>
+  <% if (updated) { %>
+  <span class="byline-updated">Updated <time datetime="<%= stati.helpers.isoDate(updated) %>"><%= stati.helpers.formatDate(updated, 'long') %></time></span>
+  <% } %>
+</p>

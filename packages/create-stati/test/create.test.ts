@@ -855,6 +855,140 @@ describe('create-stati scaffolding', () => {
     });
   });
 
+  describe('news template', () => {
+    it('should keep the news config, helpers, scripts and styles in a JavaScript project', async () => {
+      const projectDir = join(tempDir, 'test-news-js');
+      const result = await createSite({
+        projectName: 'test-news-js',
+        template: 'news',
+        styling: 'css',
+        typescript: false,
+        gitInit: false,
+        dir: projectDir,
+      });
+
+      const config = await readFile(join(result.targetDir, 'stati.config.js'), 'utf-8');
+      expect(config).toContain("import { createNews } from './helpers/news.js';");
+      expect(config).toContain('generate: news.generate,');
+      expect(config).toContain('feeds: news.feeds(),');
+      expect(config).not.toContain('typescript:');
+      await expect(access(join(result.targetDir, 'stati.config.ts'))).rejects.toThrow();
+      await expect(access(join(result.targetDir, 'helpers', 'news.js'))).resolves.not.toThrow();
+      await expect(access(join(result.targetDir, 'site', 'front.eta'))).resolves.not.toThrow();
+      await expect(
+        access(join(result.targetDir, 'site', 'news', '[section].md')),
+      ).resolves.not.toThrow();
+      await expect(
+        access(join(result.targetDir, 'site', 'authors', '[author].md')),
+      ).resolves.not.toThrow();
+      await expect(
+        access(join(result.targetDir, 'public', 'scripts', 'news.js')),
+      ).resolves.not.toThrow();
+      await expect(
+        access(join(result.targetDir, 'public', 'images', 'news', 'welcome.png')),
+      ).resolves.not.toThrow();
+      await expect(
+        access(join(result.targetDir, 'public', 'fonts', 'libre-franklin.woff2')),
+      ).resolves.not.toThrow();
+      // Without image tools, the card template and its fonts are removed
+      await expect(access(join(result.targetDir, 'site', 'og.eta'))).rejects.toThrow();
+      await expect(access(join(result.targetDir, 'og'))).rejects.toThrow();
+
+      const styles = await readFile(join(result.targetDir, 'public', 'styles.css'), 'utf-8');
+      expect(styles).toContain("font-family: 'Libre Franklin'");
+
+      const packageJson = JSON.parse(
+        await readFile(join(result.targetDir, 'package.json'), 'utf-8'),
+      );
+      expect(packageJson.name).toBe('test-news-js');
+      expect(packageJson.scripts).toHaveProperty('build:drafts');
+    });
+
+    it('should convert the news config to TypeScript and enable bundling', async () => {
+      const projectDir = join(tempDir, 'test-news-ts');
+      const result = await createSite({
+        projectName: 'test-news-ts',
+        template: 'news',
+        styling: 'css',
+        typescript: true,
+        gitInit: false,
+        dir: projectDir,
+      });
+
+      await expect(access(join(result.targetDir, 'stati.config.js'))).rejects.toThrow();
+      const config = await readFile(join(result.targetDir, 'stati.config.ts'), 'utf-8');
+      expect(config).toContain("import { createNews } from './helpers/news.js';");
+      expect(config).toMatch(/ {2}typescript: \{\n {4}enabled: true,\n {2}\},\n\}\);\n$/);
+      await expect(access(join(result.targetDir, 'tsconfig.json'))).resolves.not.toThrow();
+    });
+
+    it('should keep the news design when Tailwind is chosen', async () => {
+      const projectDir = join(tempDir, 'test-news-tailwind');
+      const result = await createSite({
+        projectName: 'test-news-tailwind',
+        template: 'news',
+        styling: 'tailwind',
+        typescript: false,
+        gitInit: false,
+        dir: projectDir,
+      });
+
+      const css = await readFile(join(result.targetDir, 'src', 'styles.css'), 'utf-8');
+      expect(css).toContain("@import 'tailwindcss';");
+      expect(css).toContain('@layer components {\n');
+      expect(css).toContain("font-family: 'Libre Franklin'");
+      await expect(access(join(result.targetDir, 'public', 'styles.css'))).rejects.toThrow();
+      await expect(
+        access(join(result.targetDir, 'public', 'scripts', 'news.js')),
+      ).resolves.not.toThrow();
+    });
+
+    it('should keep the news design when Sass is chosen', async () => {
+      const projectDir = join(tempDir, 'test-news-sass');
+      const result = await createSite({
+        projectName: 'test-news-sass',
+        template: 'news',
+        styling: 'sass',
+        typescript: false,
+        gitInit: false,
+        dir: projectDir,
+      });
+
+      const scss = await readFile(join(result.targetDir, 'src', 'styles.scss'), 'utf-8');
+      expect(scss).toContain("font-family: 'Libre Franklin'");
+      expect(scss).toContain('--flag: #0b6b4f;');
+      await expect(access(join(result.targetDir, 'public', 'styles.css'))).rejects.toThrow();
+    });
+
+    it('should add image tools with the Libre Franklin card fonts', async () => {
+      const projectDir = join(tempDir, 'test-news-images');
+      const result = await createSite({
+        projectName: 'test-news-images',
+        template: 'news',
+        styling: 'css',
+        typescript: true,
+        images: true,
+        gitInit: false,
+        dir: projectDir,
+      });
+
+      const config = await readFile(join(result.targetDir, 'stati.config.ts'), 'utf-8');
+      expect(config).toMatch(
+        /typescript: \{\n {4}enabled: true,\n {2}\},\n\n[^]*images: \{\n {4}responsive: true,/,
+      );
+      expect(config).toContain(
+        "{ name: 'Libre Franklin', path: './og/fonts/libre-franklin-semibold.woff', weight: 600 }",
+      );
+      expect(config).toContain(
+        "{ name: 'Libre Franklin', path: './og/fonts/libre-franklin-black.woff', weight: 900 }",
+      );
+      await expect(access(join(result.targetDir, 'site', 'og.eta'))).resolves.not.toThrow();
+      await expect(
+        access(join(result.targetDir, 'og', 'fonts', 'libre-franklin-black.woff')),
+      ).resolves.not.toThrow();
+    });
+  });
+
   describe('blank template with image tools', () => {
     it('should use the built-in card and set baseUrl', async () => {
       const projectDir = join(tempDir, 'test-blank-images');

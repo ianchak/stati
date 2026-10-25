@@ -1,0 +1,42 @@
+<%
+  /* The footer on every page: the sections, the site's other pages and its feeds. */
+  const sections = stati.helpers.sections();
+  const year = new Date().getFullYear();
+%>
+<footer class="site-footer">
+  <div class="wrapper footer-inner">
+    <div class="footer-name">
+      <a class="nameplate" href="<%= stati.url('/') %>"><%= stati.site.title %></a>
+      <% if (stati.site.description) { %><p><%= stati.site.description %></p><% } %>
+    </div>
+    <nav class="footer-nav" aria-label="Sections">
+      <h2>Sections</h2>
+      <ul role="list">
+        <% for (const section of sections) { %>
+        <li><a href="<%= stati.url(section.url) %>"><%= section.title %></a></li>
+        <% } %>
+      </ul>
+    </nav>
+    <nav class="footer-nav" aria-label="About this site">
+      <h2>The newsroom</h2>
+      <ul role="list">
+        <li><a href="<%= stati.url('/news') %>">Latest news</a></li>
+        <li><a href="<%= stati.url('/authors') %>">Authors</a></li>
+        <li><a href="<%= stati.url('/tags') %>">Topics</a></li>
+        <li><a href="<%= stati.url('/about') %>">About</a></li>
+      </ul>
+    </nav>
+    <nav class="footer-nav" aria-label="RSS feeds">
+      <h2>Feeds</h2>
+      <ul role="list">
+        <li><a href="<%= stati.url('/feed.xml') %>"><%~ stati.include('partials/icon', { name: 'rss', size: 14 }) %> Every story</a></li>
+        <% for (const section of sections) { %>
+        <li><a href="<%= stati.url(`/feed-${section.key}.xml`) %>"><%~ stati.include('partials/icon', { name: 'rss', size: 14 }) %> <%= section.title %></a></li>
+        <% } %>
+      </ul>
+    </nav>
+  </div>
+  <div class="wrapper footer-base">
+    <p>© <%= year %> <%= stati.site.title %>. Built with <a href="https://stati.build">Stati</a>.</p>
+  </div>
+</footer>

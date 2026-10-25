@@ -33,6 +33,13 @@ export const TEMPLATE_OG_ASSETS: Record<TemplateName, { paths: string[]; fonts: 
       { name: 'Inter', path: './og/fonts/inter-extrabold.woff', weight: 800 },
     ],
   },
+  news: {
+    paths: ['site/og.eta', 'og'],
+    fonts: [
+      { name: 'Libre Franklin', path: './og/fonts/libre-franklin-semibold.woff', weight: 600 },
+      { name: 'Libre Franklin', path: './og/fonts/libre-franklin-black.woff', weight: 900 },
+    ],
+  },
 };
 
 /**

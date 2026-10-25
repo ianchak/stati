@@ -1,0 +1,17 @@
+<%
+  /* Small SVG icons, drawn on a 24-pixel grid with one stroke weight.
+     Props:
+       name  'search', 'rss', 'arrow-right', 'arrow-up', 'arrow-down', 'article' or 'close'
+       size  in pixels, default 18 */
+  const paths = {
+    search: '<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/>',
+    rss: '<path d="M5 5a14 14 0 0 1 14 14M5 11a8 8 0 0 1 8 8"/><circle cx="6" cy="18" r="1.25" fill="currentColor" stroke="none"/>',
+    'arrow-right': '<path d="M5 12h14M13 6l6 6-6 6"/>',
+    'arrow-up': '<path d="M12 19V5M6 11l6-6 6 6"/>',
+    'arrow-down': '<path d="M12 5v14M6 13l6 6 6-6"/>',
+    article: '<path d="M5 4h14v16H5zM8.5 8h7M8.5 12h7M8.5 16h4"/>',
+    close: '<path d="M6 6l12 12M18 6 6 18"/>',
+  };
+  const size = stati.props.size ?? 18;
+%>
+<svg class="icon" width="<%= size %>" height="<%= size %>" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true" focusable="false"><%~ paths[stati.props.name] ?? '' %></svg>

@@ -39,7 +39,7 @@ describe('ExampleManager', () => {
     it('should list the blog template with its own config and styles', async () => {
       const examples = await exampleManager.getAvailableExamples();
 
-      expect(examples.map((example) => example.name)).toEqual(['blank', 'blog', 'docs']);
+      expect(examples.map((example) => example.name)).toEqual(['blank', 'blog', 'docs', 'news']);
       expect(examples[1]).toEqual(
         expect.objectContaining({ name: 'blog', ownConfig: true, ownStyles: true }),
       );
@@ -50,6 +50,14 @@ describe('ExampleManager', () => {
 
       expect(examples[2]).toEqual(
         expect.objectContaining({ name: 'docs', ownConfig: true, ownStyles: true }),
+      );
+    });
+
+    it('should list the news template with its own config and styles', async () => {
+      const examples = await exampleManager.getAvailableExamples();
+
+      expect(examples[3]).toEqual(
+        expect.objectContaining({ name: 'news', ownConfig: true, ownStyles: true }),
       );
     });
 
@@ -70,6 +78,7 @@ describe('ExampleManager', () => {
       expect(isValidTemplate('blank')).toBe(true);
       expect(isValidTemplate('blog')).toBe(true);
       expect(isValidTemplate('docs')).toBe(true);
+      expect(isValidTemplate('news')).toBe(true);
       expect(isValidTemplate('portfolio')).toBe(false);
       expect(isValidTemplate('toString')).toBe(false);
       expect(isValidTemplate(undefined)).toBe(false);

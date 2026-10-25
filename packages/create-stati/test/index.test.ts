@@ -255,6 +255,12 @@ describe('create-stati CLI', () => {
       expect(result).toEqual({ projectName: 'my-docs', template: 'docs' });
     });
 
+    it('should parse --template=news', async () => {
+      const result = await parseArgs(['my-news', '--template=news']);
+
+      expect(result).toEqual({ projectName: 'my-news', template: 'news' });
+    });
+
     it('should parse a space-separated template name', async () => {
       const result = await parseArgs(['my-blog', '--template', 'blog']);
 

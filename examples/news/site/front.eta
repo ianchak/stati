@@ -1,0 +1,127 @@
+<%
+  /* The front page, site/index.md (`layout: front`). It reads every article through
+     `collection: /news` and ranks them with stati.helpers.frontPage():
+
+       lead    the newest article with `lead: true` in its front matter, or the newest article
+       top     articles with `featured: true`, topped up with the newest others
+       latest  the next newest, in the strip under the nameplate
+       more    up to two stories related to the lead, under it
+
+     Then each section in site.sections gets a column with its newest stories that are not
+     already on the page, and a last column lists the topics. Each story appears once. On
+     phones the strip under the nameplate moves below the top stories. Stati rebuilds this page
+     when an article is added, moved, retitled, or gets or loses `lead` or `featured`. */
+  const articles = stati.helpers.articles(stati.collection?.recentPages ?? []);
+  const { lead, top, latest, more, shown } = stati.helpers.frontPage(articles);
+  const edition = lead
+    ? {
+        label: stati.helpers.formatDate(articles[0].publishedAt, 'edition'),
+        iso: stati.helpers.isoDate(articles[0].publishedAt),
+      }
+    : undefined;
+  stati.layout('base', { front: true, edition });
+
+  const leadFm = lead?.frontMatter ?? {};
+  const leadSection = lead ? stati.helpers.sectionOf(lead.url) : undefined;
+%>
+<main id="main" class="front">
+  <% if (!lead) { %>
+  <div class="wrapper front-empty">
+    <h2>No stories yet</h2>
+    <p>Add a Markdown file to a section folder such as <code>site/news/world/</code> and it appears here.</p>
+  </div>
+  <% } else { %>
+
+  <% if (latest.length > 0) { %>
+  <section class="skybox" aria-labelledby="skybox-heading">
+    <h2 id="skybox-heading" class="sr-only">Also in the news</h2>
+    <div class="wrapper skybox-inner">
+      <% for (const story of latest) { %>
+      <%~ stati.include('partials/story', { story, variant: 'sky' }) %>
+      <% } %>
+    </div>
+  </section>
+  <% } %>
+
+  <div class="wrapper front-top">
+    <article class="lead-story">
+      <h2 class="lead-headline"><a href="<%= stati.url(lead.url) %>"><%= leadFm.title %></a></h2>
+      <div class="<%= stati.propValue('lead-body', leadFm.image && 'has-image') %>">
+        <% if (leadFm.image) { %>
+        <figure class="lead-figure">
+          <a href="<%= stati.url(lead.url) %>" tabindex="-1" aria-hidden="true">
+            <%~ stati.image(leadFm.image, { alt: '', priority: true, sizes: '(min-width: 64rem) 36rem, 100vw' }) %>
+          </a>
+          <% if (leadFm.credit) { %><figcaption class="credit"><%= leadFm.credit %></figcaption><% } %>
+        </figure>
+        <% } %>
+        <div class="lead-text">
+          <% if (leadFm.description) { %><p class="lead-standfirst"><%= leadFm.description %></p><% } %>
+          <%~ stati.include('partials/byline', { story: lead, section: leadSection, compact: true }) %>
+          <% if (more.length > 0) { %>
+          <ul class="lead-more" role="list" aria-label="More on this story">
+            <% for (const story of more) { %>
+            <li><a href="<%= stati.url(story.url) %>"><%= story.frontMatter.title %></a></li>
+            <% } %>
+          </ul>
+          <% } %>
+        </div>
+      </div>
+    </article>
+
+    <% if (top.length > 0) { %>
+    <section class="top-stories" aria-labelledby="top-heading">
+      <h2 id="top-heading" class="sr-only">Top stories</h2>
+      <% for (const story of top) { %>
+      <%~ stati.include('partials/story', { story, variant: 'top' }) %>
+      <% } %>
+    </section>
+    <% } %>
+  </div>
+
+  <%
+    /* A column per section, with its stories that are not already on the page */
+    const blocks = stati.helpers
+      .sections()
+      .map((section) => ({ section, stories: stati.helpers.inSection(articles, section.key, 4, shown) }))
+      .filter((block) => block.stories.length > 0);
+  %>
+  <% if (blocks.length > 0) { %>
+  <div class="wrapper section-grid">
+    <% for (const { section, stories } of blocks) { %>
+    <section class="section-block" aria-labelledby="<%= `section-${section.key}` %>">
+      <header class="section-block-header">
+        <h2 id="<%= `section-${section.key}` %>"><a href="<%= stati.url(section.url) %>"><%= section.title %></a></h2>
+        <a class="more-link" href="<%= stati.url(section.url) %>">More <span class="sr-only"><%= section.title %></span><%~ stati.include('partials/icon', { name: 'arrow-right', size: 14 }) %></a>
+      </header>
+      <%~ stati.include('partials/story', { story: stories[0], variant: 'block', section: false }) %>
+      <% for (const story of stories.slice(1)) { %>
+      <%~ stati.include('partials/story', { story, variant: 'link', section: false }) %>
+      <% } %>
+    </section>
+    <% } %>
+    <%
+      /* The last column: the most used topics, each linked to its page */
+      const topics = stati.helpers.topTopics(stati.collection?.pagesByTag, 8);
+    %>
+    <% if (topics.length > 0) { %>
+    <section class="section-block topics-block" aria-labelledby="topics-heading">
+      <header class="section-block-header">
+        <h2 id="topics-heading"><a href="<%= stati.url('/tags') %>">Topics</a></h2>
+        <a class="more-link" href="<%= stati.url('/tags') %>">All <span class="sr-only">topics</span><%~ stati.include('partials/icon', { name: 'arrow-right', size: 14 }) %></a>
+      </header>
+      <ul class="topics-block-list" role="list">
+        <% for (const { tag, count } of topics) { %>
+        <li><a href="<%= stati.url(`/tags/${stati.slugify(tag)}`) %>"><%= tag %></a><span class="count"><%= count %></span></li>
+        <% } %>
+      </ul>
+    </section>
+    <% } %>
+  </div>
+  <% } %>
+
+  <section class="wrapper front-close" aria-label="Every story">
+    <a class="more-link" href="<%= stati.url('/news') %>">Every story, newest first <%~ stati.include('partials/icon', { name: 'arrow-right', size: 14 }) %></a>
+  </section>
+  <% } %>
+</main>

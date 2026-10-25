@@ -1,0 +1,111 @@
+<%
+  /* The paginated story listings. Each page names this layout with `layout: /listing` and
+     says what it lists with `listing`:
+
+       latest   every article, grouped by day: site/news/index.md, /news
+       section  one section: site/news/[section].md, one page per section, /news/world
+       author   one author's articles: site/authors/[author].md, /authors/your-name
+       tag      one topic: site/tags/[tag].md, one page per tag, /tags/guides
+
+     The stories come from stati.pagination when the page paginates (its `paginate` or
+     `generate.paginate`), and from stati.generated or stati.collection otherwise. Stati
+     rebuilds a page when the stories it shows change. */
+  stati.layout('base');
+  const listing = stati.page.listing;
+  const pageNumber = stati.pagination?.pageNumber ?? 1;
+  const first = pageNumber === 1;
+  const stories = stati.pagination
+    ? stati.pagination.items
+    : stati.generated
+      ? stati.generated.items
+      : stati.helpers.articles(stati.collection?.recentPages ?? []);
+  const total = stati.generated ? stati.generated.items.length : undefined;
+  const data = stati.generated?.data ?? {};
+  const section = listing === 'section' ? stati.helpers.sectionAt(stati.page.url) : undefined;
+  const count = (n) => (n === 1 ? '1 story' : `${n} stories`);
+  const heading = stati.page.heading ?? stati.page.title;
+%>
+<main id="main">
+  <header class="<%= stati.propValue('listing-header', `listing-header-${listing}`) %>">
+    <div class="wrapper listing-header-inner">
+      <% if (listing === 'author') { %>
+      <span class="monogram monogram-large" aria-hidden="true"><%= stati.helpers.initials(stati.generated.label) %></span>
+      <% } %>
+      <div class="listing-header-text">
+        <h1><%= heading %><% if (!first) { %> <span class="listing-page">Page <%= pageNumber %></span><% } %></h1>
+        <% if (listing === 'author' && data.role) { %><p class="listing-role"><%= data.role %></p><% } %>
+        <% if (listing === 'section' && data.description) { %>
+        <p class="listing-description"><%= data.description %></p>
+        <% } else if (listing === 'author' && data.bio) { %>
+        <p class="listing-description"><%= data.bio %></p>
+        <% } else if (listing === 'latest' && first && stati.content.trim()) { %>
+        <div class="listing-description"><%~ stati.content %></div>
+        <% } %>
+        <p class="listing-meta">
+          <% if (total !== undefined) { %><span><%= count(total) %></span><% } %>
+          <% if (listing === 'author' && data.email) { %><a href="<%= `mailto:${data.email}` %>"><%= data.email %></a><% } %>
+          <% if (listing === 'author' && data.website) { %><a href="<%= data.website %>">Website</a><% } %>
+          <% if (section) { %>
+          <a href="<%= stati.url(`/feed-${section.key}.xml`) %>"><%~ stati.include('partials/icon', { name: 'rss', size: 14 }) %> <%= section.title %> feed</a>
+          <% } else if (listing === 'latest') { %>
+          <a href="<%= stati.url('/feed.xml') %>"><%~ stati.include('partials/icon', { name: 'rss', size: 14 }) %> RSS feed</a>
+          <% } %>
+        </p>
+      </div>
+    </div>
+  </header>
+
+  <div class="wrapper listing-body">
+    <% if (stories.length === 0) { %>
+    <p class="empty">
+      <% if (listing === 'section') { %>No stories in this section yet. Add a Markdown file to <code><%= `site/news/${section?.key ?? stati.generated?.key}/` %></code>.<% } %>
+      <% if (listing === 'author') { %>No stories yet. Articles appear here once their front matter names this author: <code><%= `author: ${stati.generated.key}` %></code>.<% } %>
+      <% if (listing === 'latest' || listing === 'tag') { %>No stories yet.<% } %>
+    </p>
+    <% } else if (listing === 'latest') { %>
+      <% for (const day of stati.helpers.byDay(stories)) { %>
+      <section class="day" aria-labelledby="<%= `day-${day.iso.slice(0, 10) || 'undated'}` %>">
+        <h2 class="day-heading" id="<%= `day-${day.iso.slice(0, 10) || 'undated'}` %>"><%= day.day %></h2>
+        <div class="story-list">
+          <% for (const story of day.stories) { %>
+          <%~ stati.include('partials/story', { story, variant: 'row' }) %>
+          <% } %>
+        </div>
+      </section>
+      <% } %>
+    <% } else if (listing === 'section' && first) { %>
+      <div class="section-front">
+        <%~ stati.include('partials/story', { story: stories[0], variant: 'block', section: false, heading: 2, priority: true }) %>
+        <% if (stories.length > 1) { %>
+        <div class="section-front-side">
+          <% for (const story of stories.slice(1, 3)) { %>
+          <%~ stati.include('partials/story', { story, variant: 'top', section: false, heading: 2 }) %>
+          <% } %>
+        </div>
+        <% } %>
+      </div>
+      <% if (stories.length > 3) { %>
+      <h2 class="list-heading">More <%= heading %></h2>
+      <div class="story-list">
+        <% for (const story of stories.slice(3)) { %>
+        <%~ stati.include('partials/story', { story, variant: 'row', section: false }) %>
+        <% } %>
+      </div>
+      <% } %>
+    <% } else { %>
+      <div class="story-list">
+        <% for (const story of stories) { %>
+        <%~ stati.include('partials/story', { story, variant: 'row', section: listing !== 'section', heading: 2 }) %>
+        <% } %>
+      </div>
+    <% } %>
+
+    <%~ stati.include('partials/page-nav', { pagination: stati.pagination }) %>
+
+    <% if (listing === 'tag') { %>
+    <p class="more-row"><a class="more-link" href="<%= stati.url('/tags') %>">Every topic <%~ stati.include('partials/icon', { name: 'arrow-right', size: 14 }) %></a></p>
+    <% } else if (listing === 'author') { %>
+    <p class="more-row"><a class="more-link" href="<%= stati.url('/authors') %>">Every author <%~ stati.include('partials/icon', { name: 'arrow-right', size: 14 }) %></a></p>
+    <% } %>
+  </div>
+</main>

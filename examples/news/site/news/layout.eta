@@ -1,0 +1,113 @@
+<%
+  /* Layout for every article in site/news/<section>/. It renders the main content and names
+     site/base.eta, the page with the nameplate and footer, with stati.layout().
+
+     The article's front matter:
+       title        the headline
+       description  the standfirst, under the headline (and the summary in listings and feeds)
+       date         when it was published; `updated` adds an "Updated" line
+       author       a key from site.authors, or a list of keys
+       image        the lead image, from public/, with imageAlt, caption and credit
+       tags         topics, each with its own page under /tags
+       lead         true makes it the front page's lead story
+       featured     true puts it in the front page's top stories
+
+     stati.collection holds every article, so "More in this section" and the related stories
+     come from it, and Stati rebuilds the article when they change. */
+  const url = stati.page.url;
+  const fm = stati.page;
+  const story = { url, frontMatter: fm, publishedAt: stati.page.publishedAt ?? fm.date };
+  const section = stati.helpers.sectionOf(url);
+  const authors = stati.helpers.byline(story).filter((author) => author.url);
+  const tags = Array.isArray(fm.tags) ? fm.tags : [];
+  const articles = stati.helpers.articles(stati.collection?.recentPages ?? []);
+  const moreInSection = stati.helpers
+    .inSection(articles, section.key, 5)
+    .filter((other) => other.url !== url)
+    .slice(0, 4);
+  const related = stati.helpers
+    .related(articles, url, 6)
+    .filter((other) => !moreInSection.includes(other))
+    .slice(0, 3);
+  const latest = articles
+    .filter((other) => other.url !== url && !moreInSection.includes(other) && !related.includes(other))
+    .slice(0, 5);
+  stati.layout('base');
+%>
+<main id="main" class="wrapper article-page">
+  <article class="article">
+    <header class="article-header">
+      <h1 class="article-headline"><%= fm.title %></h1>
+      <% if (fm.description) { %><p class="article-standfirst"><%= fm.description %></p><% } %>
+      <%~ stati.include('partials/byline', { story, section }) %>
+    </header>
+
+    <% if (fm.image) { %>
+    <figure class="article-figure">
+      <%~ stati.image(fm.image, { alt: fm.imageAlt ?? '', priority: true, sizes: '(min-width: 72rem) 46rem, 100vw' }) %>
+      <% if (fm.caption || fm.credit) { %>
+      <figcaption>
+        <% if (fm.caption) { %><span class="caption"><%= fm.caption %></span><% } %>
+        <% if (fm.credit) { %><span class="credit"><%= fm.credit %></span><% } %>
+      </figcaption>
+      <% } %>
+    </figure>
+    <% } %>
+
+    <div class="prose article-body"><%~ stati.content %></div>
+
+    <footer class="article-footer">
+      <% if (tags.length > 0) { %>
+      <nav class="article-tags" aria-label="Topics">
+        <h2>Topics</h2>
+        <ul role="list">
+          <% for (const tag of tags) { %>
+          <li><a href="<%= stati.url(`/tags/${stati.slugify(tag)}`) %>"><%= tag %></a></li>
+          <% } %>
+        </ul>
+      </nav>
+      <% } %>
+
+      <% for (const author of authors) { %>
+      <section class="author-note" aria-label="<%= `About ${author.name}` %>">
+        <span class="monogram" aria-hidden="true"><%= stati.helpers.initials(author.name) %></span>
+        <div>
+          <p class="author-note-name"><a href="<%= stati.url(author.url) %>"><%= author.name %></a><% if (author.role) { %> <span><%= author.role %></span><% } %></p>
+          <% if (author.bio) { %><p class="author-note-bio"><%= author.bio %></p><% } %>
+        </div>
+      </section>
+      <% } %>
+    </footer>
+  </article>
+
+  <aside class="article-rail" aria-labelledby="rail-heading">
+    <h2 id="rail-heading" class="rail-heading">More in <a href="<%= stati.url(section.url) %>"><%= section.title %></a></h2>
+    <% if (moreInSection.length > 0) { %>
+    <% for (const other of moreInSection) { %>
+    <%~ stati.include('partials/story', { story: other, variant: 'link', section: false }) %>
+    <% } %>
+    <% } else { %>
+    <p class="rail-empty">Nothing else in <%= section.title %> yet.</p>
+    <% } %>
+    <% if (stati.helpers.sectionAt(url)) { %>
+    <p class="rail-feed"><a href="<%= stati.url(`/feed-${section.key}.xml`) %>"><%~ stati.include('partials/icon', { name: 'rss', size: 14 }) %> Follow <%= section.title %> by RSS</a></p>
+    <% } %>
+    <% if (latest.length > 0) { %>
+    <h2 class="rail-heading rail-heading-next"><a href="<%= stati.url('/news') %>">Latest</a></h2>
+    <% for (const other of latest) { %>
+    <%~ stati.include('partials/story', { story: other, variant: 'link' }) %>
+    <% } %>
+    <% } %>
+  </aside>
+
+  <% if (related.length > 0) { %>
+  <section class="related" aria-labelledby="related-heading">
+    <h2 id="related-heading" class="list-heading">Related stories</h2>
+    <div class="related-grid">
+      <% for (const other of related) { %>
+      <%~ stati.include('partials/story', { story: other, variant: 'block' }) %>
+      <% } %>
+    </div>
+  </section>
+  <% } %>
+</main>
