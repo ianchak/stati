@@ -220,7 +220,7 @@ A news site that works on first run. Its sample articles explain how each part o
 - An RSS feed for the whole site and one per section, a sitemap, a Google News sitemap (`news-sitemap.xml`) and `robots.txt`
 - `NewsArticle` structured data and Open Graph article tags with the section and author on every article
 - Light and dark themes following the system setting, with self-hosted Libre Franklin and Source Serif 4; drafts and a 404 page
-- `helpers/news.js`, which ranks the front page, builds bylines and dates for templates, returns one page per section and author from `collections.generate`, fills in each article's reading time and metadata in the `beforeAll` hook, and writes the Google News sitemap in `afterAll`
+- `helpers/news.js`, which ranks the front page, builds bylines and dates for templates, returns one page per section and author from `collections.generate`, fills in each article's metadata in the `beforeAll` hook, and writes the Google News sitemap in `afterAll`
 - `public/scripts/news.js`, a dependency-free search dialog; pages work without it
 
 Like the blog and docs templates, it ships its own `stati.config.js`, which becomes `stati.config.ts` with TypeScript, and its stylesheet is carried over into `src/` with Sass or Tailwind.

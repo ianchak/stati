@@ -104,12 +104,12 @@ A collection name that matches no index page is reported with a warning, and the
 
 Stati notices which pages read `stati.collection` while they render. Such a page depends on a summary of the collection: every page's URL and publish date, plus its `title`, `description`, `tags` and `draft` front matter. When the summary changes, because a page in the collection was added, removed, moved or had one of those fields changed, the pages that read the collection rebuild. A change to a post's body or to other front matter rebuilds only that post, unless it changes the navigation, as a new `order` does: then the pages that read `stati.nav` rebuild too. See [ISG](/core-concepts/isg#dependency-tracking).
 
-When a listing shows other fields, add them to `collections.summaryFields`. The list replaces the default, and `content` stands for the Markdown body, for listings that show excerpts:
+When a listing shows other fields, add them to `collections.summaryFields`. The list replaces the default. `content` stands for the Markdown body, for listings that show excerpts, and `wordCount` and `readingTime` for the [counts Stati computes](/core-concepts/markdown#word-count-and-reading-time). A listing that shows the reading time rebuilds when the minutes change, and not when an edit leaves them as they were:
 
 ```javascript
 export default defineConfig({
   collections: {
-    summaryFields: ['title', 'description', 'tags', 'draft', 'image', 'author'],
+    summaryFields: ['title', 'description', 'tags', 'draft', 'image', 'author', 'readingTime'],
   },
 });
 ```

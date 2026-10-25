@@ -689,23 +689,13 @@ Access the data in your templates:
 </div>
 ```
 
-### Example: Calculate reading time
+### Example: Show the reading time
+
+Stati counts the words of every page and sets `wordCount` and `readingTime`, so no hook is needed. Set the reading speed in the config if the default of 230 words a minute does not suit your readers:
 
 ```javascript
 export default defineConfig({
-    hooks: {
-        beforeRender: async (ctx) => {
-            // Calculate reading time for blog posts
-            if (ctx.page.url.startsWith('/blog/')) {
-                const wordCount = ctx.page.content.split(/\s+/).length;
-                const readingTime = Math.ceil(wordCount / 200); // 200 words per minute
-
-                // Add to page front matter
-                ctx.page.frontMatter.readingTime = readingTime;
-                ctx.page.frontMatter.wordCount = wordCount;
-            }
-        }
-    }
+    readingTime: { wordsPerMinute: 200 },
 });
 ```
 
@@ -1028,10 +1018,6 @@ export default defineConfig({
         beforeRender: async (ctx) => {
             // Add shared data to page frontmatter
             ctx.page.frontMatter.blogPosts = blogPosts;
-
-            // Calculate reading time
-            ctx.page.frontMatter.readingTime =
-                calculateReadingTime(ctx.page.content);
         }
     }
 });

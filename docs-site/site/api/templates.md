@@ -23,6 +23,8 @@ interface TemplateContext {
     content: string;
     toc: TocEntry[]; // Table of contents entries (added at runtime)
     navNode?: NavNode; // Current page's navigation node
+    wordCount: number; // Words in the Markdown body
+    readingTime: number; // Whole minutes to read, at least 1
     title?: string;
     description?: string;
     [key: string]: unknown; // Front matter fields
@@ -138,6 +140,8 @@ During `stati dev`, reading a `stati.*` property that does not exist (for exampl
 The `nav` object provides helper methods for working with navigation. See [Navigation API](/api/navigation) for details on `getTree()`, `findNode()`, `getBreadcrumbs()`, and other navigation helpers.
 
 `page.toc` is added at render time from the page's headings, so the `TemplateContext` type in `@stati/core` does not declare it.
+
+`page.wordCount` and `page.readingTime` come from Stati. They are not front matter, so a front matter key of the same name is replaced, with a warning. The pages in `stati.collection`, `stati.pagination.items` and `stati.generated.items` carry the same two properties, as `post.wordCount` and `post.readingTime`. See [Word count and reading time](/core-concepts/markdown#word-count-and-reading-time).
 
 ## Includes and layouts
 

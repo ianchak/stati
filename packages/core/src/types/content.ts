@@ -384,6 +384,18 @@ export interface PageModel {
   /** Publication date, from the first valid of `publishedAt`, `published`, `date`, `createdAt` */
   publishedAt?: Date;
   /**
+   * Number of words in the Markdown body, counted when the page is loaded. Fenced code blocks,
+   * HTML tags and Markdown syntax do not count. Chinese and Japanese text counts one word per
+   * character, so the count is approximate for those languages. Every page of a build has it,
+   * including pages a `beforeAll` hook adds. A hook that changes `content` leaves it as it was.
+   */
+  wordCount?: number;
+  /**
+   * Minutes to read the page: `wordCount` divided by `readingTime.wordsPerMinute`, as a whole
+   * number of at least 1.
+   */
+  readingTime?: number;
+  /**
    * Position of the page in a paginated listing. Set on every page of a listing with
    * `paginate`, including the first one. Templates read it as `stati.pagination`.
    */

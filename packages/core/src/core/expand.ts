@@ -486,6 +486,8 @@ export async function expandPages(
         sourcePath: template.sourcePath,
         frontMatter,
         content: template.content,
+        ...(template.wordCount !== undefined && { wordCount: template.wordCount }),
+        ...(template.readingTime !== undefined && { readingTime: template.readingTime }),
         ...(template.publishedAt && { publishedAt: template.publishedAt }),
         generated,
       };

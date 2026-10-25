@@ -16,7 +16,12 @@
      come from it, and Stati rebuilds the article when they change. */
   const url = stati.page.url;
   const fm = stati.page;
-  const story = { url, frontMatter: fm, publishedAt: stati.page.publishedAt ?? fm.date };
+  const story = {
+    url,
+    frontMatter: fm,
+    publishedAt: stati.page.publishedAt ?? fm.date,
+    readingTime: stati.page.readingTime,
+  };
   const section = stati.helpers.sectionOf(url);
   const authors = stati.helpers.byline(story).filter((author) => author.url);
   const tags = Array.isArray(fm.tags) ? fm.tags : [];

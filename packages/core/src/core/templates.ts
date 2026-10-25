@@ -266,6 +266,8 @@ async function renderPageInScope(
     content: body,
     navNode: currentNavNode, // Add current page's navigation node
     toc: toc || [], // Table of contents entries extracted from markdown headings
+    ...(page.wordCount !== undefined && { wordCount: page.wordCount }),
+    ...(page.readingTime !== undefined && { readingTime: page.readingTime }),
   };
 
   // Check for frontmatter keys that conflict with reserved page properties

@@ -114,19 +114,15 @@ Called before rendering each page that is rendered in this build (not for pages 
 **Use cases:**
 
 - Add dynamic data to pages
-- Calculate reading time or word count
+- Derive values from the page, such as a section name from its URL
 - Modify page content before Markdown rendering
 
-Values you add to `ctx.page.frontMatter` appear in templates as `stati.page.<name>`, and `ctx.page.content` is the Markdown body.
+Values you add to `ctx.page.frontMatter` appear in templates as `stati.page.<name>`, and `ctx.page.content` is the Markdown body. Word count and reading time need no hook: every page has `wordCount` and `readingTime`, which hooks can read on `ctx.page` (see [Word count and reading time](/core-concepts/markdown#word-count-and-reading-time)).
 
 ```javascript
 export default defineConfig({
   hooks: {
     beforeRender: async (ctx) => {
-      // Calculate reading time
-      const wordCount = ctx.page.content.split(/\s+/).length;
-      ctx.page.frontMatter.readingTime = Math.ceil(wordCount / 200);
-
       // Add custom metadata based on URL
       if (ctx.page.url.startsWith('/blog/')) {
         ctx.page.frontMatter.section = 'blog';
