@@ -1,5 +1,11 @@
 # @stati/core
 
+## 2.4.2
+
+### Patch Changes
+
+- 73e19ab: reject an outDir that holds or sits inside the site folders
+
 ## 2.4.1
 
 ### Patch Changes
