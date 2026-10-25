@@ -1,5 +1,11 @@
 # @stati/core
 
+## 2.4.5
+
+### Patch Changes
+
+- add context7.json to index Stati docs with Context7
+
 ## 2.4.4
 
 ### Patch Changes
