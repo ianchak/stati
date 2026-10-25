@@ -8,7 +8,7 @@ import type {
   PaginationData,
   StatiConfig,
 } from '../types/index.js';
-import { getPageOutputFile, resolveSrcDir, slugify } from './utils/index.js';
+import { getPageOutputFile, isPageUrlInsideOutput, resolveSrcDir, slugify } from './utils/index.js';
 import { findCollectionPath, getCollections, resolveCollectionPath } from './collections.js';
 
 /**
@@ -306,6 +306,12 @@ export async function expandPages(
   const templates: Array<{ page: PageModel; param: string; path: string }> = [];
   const pages: PageModel[] = [];
   for (const page of loaded) {
+    if (!isPageUrlInsideOutput(page.url)) {
+      warnOnce(
+        `${label(page)}: the URL ${page.url} has a ".." segment, which leads out of the output directory; the file is skipped`,
+      );
+      continue;
+    }
     const param = getTemplateParam(page);
     if (param === undefined) {
       pages.push(page);
@@ -370,6 +376,10 @@ export async function expandPages(
     if (typeof entry.url !== 'string' || !entry.url.startsWith('/')) {
       warnOnce(
         `collections.generate: entry with url ${JSON.stringify(entry.url)} needs a URL starting with "/"; it is skipped`,
+      );
+    } else if (!isPageUrlInsideOutput(entry.url)) {
+      warnOnce(
+        `collections.generate: the URL ${entry.url} has a ".." segment, which leads out of the output directory; it is skipped`,
       );
     } else if (!known) {
       warnOnce(

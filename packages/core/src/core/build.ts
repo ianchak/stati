@@ -26,6 +26,7 @@ import {
   isVirtualPage,
   isNotFoundPage,
   getPageOutputFile,
+  isPathWithinDirectory,
   resolveSrcDir,
 } from './utils/index.js';
 import type { CompiledBundleInfo } from './utils/index.js';
@@ -578,9 +579,18 @@ async function writeSearchIndexBeforeRendering(
 
 /**
  * Output file and ISG cache key of a page.
+ *
+ * @throws Error when the page's file would not be inside the output directory
  */
 function getPageOutput(page: PageModel, outDir: string): { outputPath: string; cacheKey: string } {
   const outputPath = join(outDir, getPageOutputFile(page.url));
+
+  // Loading and expanding skip such pages; this catches a hook that changed a page's URL
+  if (!isPathWithinDirectory(outDir, outputPath)) {
+    throw new Error(
+      `The page ${page.url} (${page.sourcePath}) would be written outside the output directory: ${outputPath}. Remove the ".." segments from its URL.`,
+    );
+  }
 
   // Cache key is the output path relative to outDir
   const relativePath = relative(outDir, outputPath).replace(/\\/g, '/');
