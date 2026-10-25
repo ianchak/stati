@@ -7,7 +7,10 @@ import {
   validateSEOMetadata,
   detectExistingSEOTags,
 } from '../../src/seo/utils/index.js';
-import { sanitizeStructuredData } from '../../src/seo/utils/escape-and-validation.utils.js';
+import {
+  sanitizeStructuredData,
+  serializeStructuredData,
+} from '../../src/seo/utils/escape-and-validation.utils.js';
 import { SEOTagType } from '../../src/types/seo.js';
 import type { SEOMetadata } from '../../src/types/content.js';
 import type { Logger } from '../../src/types/logging.js';
@@ -117,12 +120,10 @@ describe('SEO Utils - resolveAbsoluteUrl', () => {
 });
 
 describe('SEO Utils - sanitizeStructuredData', () => {
-  it('should escape string values', () => {
-    const data = { name: '<script>alert("xss")</script>' };
+  it('should keep string values as written', () => {
+    const data = { name: '<script>alert("xss")</script>', title: "Fish & Chips, Ann's" };
     const result = sanitizeStructuredData(data, mockLogger);
-    expect(result).toEqual({
-      name: '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;',
-    });
+    expect(result).toEqual(data);
   });
 
   it('should handle nested objects', () => {
@@ -136,21 +137,13 @@ describe('SEO Utils - sanitizeStructuredData', () => {
       },
     };
     const result = sanitizeStructuredData(data, mockLogger);
-    expect(result).toEqual({
-      name: 'Test',
-      nested: {
-        value: '&lt;script&gt;',
-        deep: {
-          value: 'alert(&quot;xss&quot;)',
-        },
-      },
-    });
+    expect(result).toEqual(data);
   });
 
   it('should handle arrays', () => {
     const data = ['<script>', 'safe', { value: 'test<' }];
     const result = sanitizeStructuredData(data, mockLogger);
-    expect(result).toEqual(['&lt;script&gt;', 'safe', { value: 'test&lt;' }]);
+    expect(result).toEqual(data);
   });
 
   it('should preserve numbers', () => {
@@ -220,12 +213,6 @@ describe('SEO Utils - sanitizeStructuredData', () => {
     loggerWarnSpy.mockRestore();
   });
 
-  it('should not escape safe values', () => {
-    const data = { safeString: 'This is safe' };
-    const result = sanitizeStructuredData(data, mockLogger);
-    expect(result).toEqual(data);
-  });
-
   it('should handle mixed nested structures', () => {
     const data = {
       items: [
@@ -238,15 +225,59 @@ describe('SEO Utils - sanitizeStructuredData', () => {
     };
 
     const result = sanitizeStructuredData(data, mockLogger);
-    expect(result).toEqual({
-      items: [
-        { name: '&lt;script&gt;', id: 1 },
-        { name: 'safe', id: 2 },
-      ],
-      meta: {
-        tags: ['&lt;tag1&gt;', '&lt;tag2&gt;'],
-      },
-    });
+    expect(result).toEqual(data);
+  });
+});
+
+describe('SEO Utils - serializeStructuredData', () => {
+  const parse = (json: string) => JSON.parse(json) as unknown;
+
+  it('should round-trip ampersands, quotes and apostrophes unchanged', () => {
+    const data = {
+      '@type': 'Article',
+      name: 'Fish & Chips',
+      author: "Ann's",
+      url: 'https://example.com/?a=1&b=2',
+      quote: 'She said "hi"',
+    };
+    expect(parse(serializeStructuredData(data, mockLogger))).toEqual(data);
+  });
+
+  it('should keep a closing script tag in a key inside the JSON', () => {
+    const data = { '</script><script>alert(2)</script>': 1 };
+    const json = serializeStructuredData(data, mockLogger);
+    expect(json).not.toContain('<');
+    expect(json).not.toContain('</script>');
+    expect(parse(json)).toEqual(data);
+  });
+
+  it('should keep a closing script tag in a value inside the JSON', () => {
+    const data = { name: '</script><script>alert(1)</script>', list: ['</SCRIPT>', '<!--'] };
+    const json = serializeStructuredData(data, mockLogger);
+    expect(json).not.toContain('<');
+    expect(parse(json)).toEqual(data);
+  });
+
+  it('should escape line and paragraph separators', () => {
+    const data = { name: 'a\u2028b\u2029c' };
+    const json = serializeStructuredData(data, mockLogger);
+    expect(json).not.toContain('\u2028');
+    expect(json).not.toContain('\u2029');
+    expect(json).toContain('\\u2028');
+    expect(json).toContain('\\u2029');
+    expect(parse(json)).toEqual(data);
+  });
+
+  it('should drop values beyond the nesting depth and warn', () => {
+    const warning = vi.fn();
+    const logger = { ...mockLogger, warning };
+    const json = serializeStructuredData({ a: { b: { c: 'deep' } } }, logger, 2);
+    expect(warning).toHaveBeenCalledWith(expect.stringContaining('exceeds maximum nesting depth'));
+    expect(parse(json)).toEqual({ a: { b: {} } });
+  });
+
+  it('should serialize a non-object value', () => {
+    expect(serializeStructuredData('x</script>', mockLogger)).toBe('"x\\u003c/script>"');
   });
 });
 
