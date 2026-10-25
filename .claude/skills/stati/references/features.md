@@ -300,7 +300,7 @@ warning names them). The sitemap's `excludePatterns`, `includePatterns`,
 `filter`, `transformUrl` and `transformEntry` do not apply. No recent article
 still writes a valid empty `urlset`. The file is not written when
 `sitemap.enabled` is off. Invalid options (`include` not an array of strings,
-`language` not an ISO 639 code like `en`, `maxAgeDays` not above 0, a `filename` that is not a plain `.xml` name or is
+`language` not an ISO 639 code like `en`, `maxAgeDays` not above 0, a `filename` that is not an `.xml` name of letters, digits, `.`, `_` and `-`, or is
 `sitemap.xml`/`sitemap-<n>.xml`) fail config loading.
 
 Freshness is decided at build time: a site built once and served for weeks

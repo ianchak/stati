@@ -118,9 +118,9 @@ export function validateSitemapConfig(sitemap: unknown): void {
 
   const filename = news.filename;
   if (filename !== undefined) {
-    if (typeof filename !== 'string' || !/^[^/\\]+\.xml$/i.test(filename)) {
+    if (typeof filename !== 'string' || !/^[\w.-]+\.xml$/i.test(filename)) {
       throw new ConfigValidationError(
-        `sitemap.news.filename must be an XML file name without a folder, such as 'news-sitemap.xml' (got ${describe(filename)}).`,
+        `sitemap.news.filename must be an XML file name of letters, digits, '.', '_' and '-', without a folder, such as 'news-sitemap.xml' (got ${describe(filename)}).`,
       );
     }
     if (MAIN_SITEMAP_FILENAME.test(filename)) {

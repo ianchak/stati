@@ -617,7 +617,18 @@ describe('validateSitemapConfig', () => {
   });
 
   it('rejects a filename that is not a plain XML file name', () => {
-    for (const filename of ['news.txt', 'news', 'sub/news.xml', 'sub\\news.xml', '.xml', 5]) {
+    for (const filename of [
+      'news.txt',
+      'news',
+      'sub/news.xml',
+      'sub\\news.xml',
+      '.xml',
+      5,
+      'news#latest.xml',
+      'news?latest.xml',
+      'my news.xml',
+      'news%20.xml',
+    ]) {
       invalid(
         { news: { include: [], filename } },
         'sitemap.news.filename must be an XML file name',
