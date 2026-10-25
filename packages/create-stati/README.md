@@ -17,7 +17,7 @@ npx create-stati
 The interactive wizard will guide you through:
 
 1. **Project name** - What to call your site
-2. **Template** - Starting point: blank, a complete blog, or a complete docs site
+2. **Template** - Starting point: blank, a complete blog, a complete docs site, or a complete news site
 3. **CSS solution** - Plain CSS, Sass, or Tailwind
 4. **TypeScript** - On by default; answer no for a JavaScript project
 5. **Agent skill** - Optional Stati skill for AI coding assistants
@@ -41,7 +41,7 @@ When the project name, `--template` and `--styling` are all given, the TypeScrip
 
 **Available flags:**
 
-- `--template <name>` - Template to use (`blank` | `blog` | `docs`)
+- `--template <name>` - Template to use (`blank` | `blog` | `docs` | `news`)
 - `--styling <type>` - CSS solution (`css` | `sass` | `tailwind`)
 - `--typescript`, `--ts` - Use TypeScript (default)
 - `--no-typescript`, `--no-ts` - Use JavaScript instead of TypeScript
@@ -203,6 +203,18 @@ npx create-stati my-docs --template=docs
 ```
 
 Like the blog, it ships its own `stati.config.js`; with TypeScript it becomes `stati.config.ts`, and with Sass or Tailwind its stylesheet moves into `src/` so the design stays intact.
+
+---
+
+## The News Template
+
+A complete news site that works on first run: sections as folders, each with its own page and RSS feed; a front page that puts a lead story, top stories and a column per section in the order your front matter says; articles with a standfirst, bylines that link to author pages, a lead image with caption and credit, an "Updated" line, reading time and related stories; author and topic pages with pagination; search over the built-in index; `NewsArticle` structured data, Open Graph article tags, a sitemap, a Google News sitemap and `robots.txt`; light and dark themes; drafts and a 404 page. The sample articles explain how each part works.
+
+```bash
+npx create-stati my-news --template=news
+```
+
+Like the blog and docs templates, it ships its own `stati.config.js`; with TypeScript it becomes `stati.config.ts`, and with Sass or Tailwind its stylesheet moves into `src/` so the design stays intact.
 
 ---
 
@@ -444,7 +456,7 @@ export default defineConfig({
 });
 ```
 
-Set `site.baseUrl` to your real address before you deploy: canonical links, the sitemap and feeds start with it. The blog and docs templates ship their own config, with a placeholder `baseUrl` to replace as well.
+Set `site.baseUrl` to your real address before you deploy: canonical links, the sitemap and feeds start with it. The blog, docs and news templates ship their own config, with a placeholder `baseUrl` to replace as well.
 
 You can customize this file to add features like SEO, sitemap, ISG caching, and more. See the [Configuration Guide](https://stati.build/configuration/file/) for all options.
 

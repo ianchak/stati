@@ -71,6 +71,23 @@ export const TEMPLATES = {
     ownConfig: true,
     ownStyles: true,
   },
+  news: {
+    name: 'news',
+    title: 'News Template',
+    description:
+      'A complete news site with sections, a ranked front page, author pages, feeds, search and SEO metadata',
+    features: [
+      'Sections as folders, each with its own page and RSS feed',
+      'A front page ranked by front matter: a lead story, top stories and a column per section',
+      'Articles with standfirst, bylines, lead images, captions, reading time and related stories',
+      'Author and topic pages with pagination, and search over the built-in index',
+      'NewsArticle structured data, Open Graph tags, a sitemap and a Google News sitemap',
+    ],
+    difficulty: 'beginner',
+    estimatedSetupTime: '5 minutes',
+    ownConfig: true,
+    ownStyles: true,
+  },
 } satisfies Record<string, ExampleMetadata>;
 
 export type TemplateName = keyof typeof TEMPLATES;

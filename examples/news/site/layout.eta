@@ -1,0 +1,79 @@
+<%
+  /* Layout for the pages that are not stories or story listings: About, the 404 page, and
+     the indexes of authors and topics. Articles use site/news/layout.eta, the front page
+     site/front.eta, and the story listings site/listing.eta.
+
+     A page adds a list under its Markdown with `listing` in its front matter:
+
+       authors  everyone in site.authors with their number of stories: site/authors/index.md
+       tags     every topic with its number of stories: site/tags/index.md
+       latest   the newest `listingLimit` stories: the 404 page
+
+     They read the articles through `collection: /news`. */
+  stati.layout('base');
+  const listing = stati.page.listing;
+  const articles = listing ? stati.helpers.articles(stati.collection?.recentPages ?? []) : [];
+  const count = (n) => (n === 1 ? '1 story' : `${n} stories`);
+%>
+<main id="main" class="wrapper page">
+  <header class="page-header">
+    <h1><%= stati.page.heading ?? stati.page.title %></h1>
+  </header>
+
+  <% if (stati.content.trim()) { %>
+  <div class="prose"><%~ stati.content %></div>
+  <% } %>
+
+  <% if (listing === 'authors') { %>
+  <%
+    const authors = stati.helpers.authors().map((author) => ({
+      author,
+      stories: articles.filter((story) => stati.helpers.byline(story).some((a) => a.key === author.key)).length,
+    }));
+  %>
+  <ul class="author-list" role="list">
+    <% for (const { author, stories } of authors) { %>
+    <li class="author-row">
+      <span class="monogram" aria-hidden="true"><%= stati.helpers.initials(author.name) %></span>
+      <div>
+        <h2><a href="<%= stati.url(author.url) %>"><%= author.name %></a></h2>
+        <p class="author-row-meta"><% if (author.role) { %><span><%= author.role %></span><% } %><span><%= count(stories) %></span></p>
+        <% if (author.bio) { %><p class="author-row-bio"><%= author.bio %></p><% } %>
+      </div>
+    </li>
+    <% } %>
+  </ul>
+  <% } %>
+
+  <% if (listing === 'tags') { %>
+  <%
+    /* Every tag, most used first. Each one's page comes from site/tags/[tag].md, at the
+       address stati.slugify gives the tag. */
+    const byTag = stati.collection?.pagesByTag ?? {};
+    const tags = Object.keys(byTag).sort((a, b) => byTag[b].length - byTag[a].length || a.localeCompare(b));
+  %>
+  <% if (tags.length === 0) { %>
+  <p class="empty">No topics yet. Add <code>tags: [Example]</code> to an article's front matter.</p>
+  <% } else { %>
+  <ul class="topic-list" role="list">
+    <% for (const tag of tags) { %>
+    <li>
+      <a href="<%= stati.url(`/tags/${stati.slugify(tag)}`) %>"><%= tag %></a>
+      <span class="count"><%= count(byTag[tag].length) %></span>
+    </li>
+    <% } %>
+  </ul>
+  <% } %>
+  <% } %>
+
+  <% if (listing === 'latest') { %>
+  <section class="page-latest" aria-labelledby="latest-heading">
+    <h2 id="latest-heading" class="list-heading">Latest stories</h2>
+    <div class="story-list">
+      <% for (const story of articles.slice(0, stati.page.listingLimit ?? 5)) { %>
+      <%~ stati.include('partials/story', { story, variant: 'row' }) %>
+      <% } %>
+    </div>
+  </section>
+  <% } %>
+</main>

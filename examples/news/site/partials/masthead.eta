@@ -1,0 +1,50 @@
+<%
+  /* The nameplate and the section tabs, on every page. The front page shows the full
+     nameplate with the edition date; every other page shows a slimmer one.
+     Props:
+       front    true on the front page
+       edition  the date line on the front page, from its newest article
+     The tabs come from site.sections in stati.config.js. A section's tab is marked on its
+     page and on each of its articles. */
+  const front = stati.props.front;
+  const url = stati.page.url;
+  const current = stati.helpers.sectionAt(url);
+%>
+<header class="<%= stati.propValue('masthead', front && 'masthead-front') %>">
+  <div class="wrapper masthead-inner">
+    <div class="nameplate-row">
+      <% if (front) { %>
+      <h1 class="nameplate"><a href="<%= stati.url('/') %>"><%= stati.site.title %></a></h1>
+      <% } else { %>
+      <a class="nameplate" href="<%= stati.url('/') %>"><%= stati.site.title %></a>
+      <% } %>
+      <% if (front) { %>
+      <p class="dateline">
+        <% if (stati.props.edition) { %><time datetime="<%= stati.props.edition.iso %>"><%= stati.props.edition.label %></time><% } %>
+        <% if (stati.site.tagline) { %><span><%= stati.site.tagline %></span><% } %>
+      </p>
+      <% } %>
+    </div>
+
+    <nav class="section-tabs" aria-label="Sections">
+      <ul role="list">
+        <li><a href="<%= stati.url('/') %>"<% if (url === '/') { %> aria-current="page"<% } %>>Front page</a></li>
+        <% for (const section of stati.helpers.sections()) { %>
+        <li>
+          <a
+            href="<%= stati.url(section.url) %>"
+            class="<%= stati.propValue(current?.key === section.key && 'is-current') %>"
+            <% if (url === section.url) { %>aria-current="page"<% } %>
+          ><%= section.title %></a>
+        </li>
+        <% } %>
+        <li><a href="<%= stati.url('/news') %>" class="<%= stati.propValue(url === '/news' && 'is-current') %>"<% if (url === '/news') { %> aria-current="page"<% } %>>Latest</a></li>
+      </ul>
+      <button type="button" class="search-button" data-search-open hidden>
+        <%~ stati.include('partials/icon', { name: 'search', size: 18 }) %>
+        <span class="search-button-label">Search</span>
+        <kbd class="search-button-keys" data-search-keys>/</kbd>
+      </button>
+    </nav>
+  </div>
+</header>

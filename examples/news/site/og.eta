@@ -1,0 +1,45 @@
+<%
+  /*
+   * The link preview card for each page. Stati uses it when images.og is on in
+   * stati.config.js, which needs @stati/images, and turns it into a 1200 by 630 image.
+   * Articles with a lead image are shared with that image instead (see helpers/news.js).
+   *
+   * Cards use inline styles in the CSS subset Satori supports: flexbox layout, no grid,
+   * no classes. Every element with more than one child needs display:flex. The fonts
+   * come from images.og.fonts in stati.config.js; Inter is always available.
+   */
+  const clamp = (value, max) => {
+    const text = String(value || '').replace(/\s+/g, ' ').trim();
+    return text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
+  };
+
+  const isFront = stati.page.url === '/';
+  const section = stati.helpers.sectionAt(stati.page.url);
+  const label = section && section.url !== stati.page.url ? section.title : '';
+  const title = clamp(isFront ? stati.site.tagline || stati.site.description : stati.page.title || stati.site.title, 90);
+  const description = clamp(isFront ? stati.site.description : stati.page.description, 120);
+  const titleSize = title.length > 64 ? 56 : title.length > 36 ? 66 : 80;
+
+  let host = '';
+  try {
+    host = new URL(stati.site.baseUrl).host;
+  } catch (error) {
+    host = '';
+  }
+%>
+<div style="display:flex;flex-direction:column;width:100%;height:100%;background-color:#ffffff;color:#141414;font-family:'Libre Franklin'">
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;padding:44px 72px 36px;background-color:#0b6b4f;color:#ffffff">
+    <div style="display:flex;font-size:64px;font-weight:900;letter-spacing:-2.5px;line-height:1"><%= clamp(stati.site.title, 28) %></div>
+    <div style="display:flex;font-size:24px;font-weight:600;color:#cfe3da"><%= host %></div>
+  </div>
+  <div style="display:flex;width:100%;height:6px;background-color:#141414"></div>
+  <div style="display:flex;flex-direction:column;flex-grow:1;padding:48px 72px 56px">
+<% if (label) { %>
+    <div style="display:flex;font-size:24px;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:#0b6b4f"><%= label %></div>
+<% } %>
+    <div style="<%= `display:flex;margin-top:${label ? 16 : 0}px;font-size:${titleSize}px;font-weight:900;line-height:1.04;letter-spacing:${(titleSize * -0.03).toFixed(1)}px` %>"><%= title %></div>
+<% if (description) { %>
+    <div style="display:flex;margin-top:24px;font-size:30px;font-weight:600;line-height:1.35;color:#3a433e"><%= description %></div>
+<% } %>
+  </div>
+</div>

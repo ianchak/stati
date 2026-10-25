@@ -8,7 +8,7 @@ seo:
 
 # Example sites
 
-Learn Stati by exploring examples and real-world implementations. Stati provides three starter templates: a minimal one for any kind of site, a complete blog, and a complete documentation site.
+Learn Stati by exploring examples and real-world implementations. Stati provides four starter templates: a minimal one for any kind of site, a complete blog, a complete documentation site, and a complete news site.
 
 ## Available examples
 
@@ -126,6 +126,48 @@ examples/docs/
 
 ```bash
 npx create-stati my-docs --template=docs
+```
+
+### News template
+
+A complete news site, ready to publish in:
+
+- **Location:** [`examples/news/`](https://github.com/ianchak/stati/tree/main/examples/news)
+- **Features:** Sections as folders, each with its own page and RSS feed; a front page ranked by front matter, with a lead story, top stories and a column per section; articles with a standfirst, bylines that link to author pages, published and updated dates, a lead image with caption and credit, reading time and related stories; author and topic pages; a latest-stories stream grouped by day; pagination on every listing; search with <kbd>/</kbd> or <kbd>Ctrl</kbd> <kbd>K</kbd>; `NewsArticle` structured data, Open Graph article tags, a sitemap, a Google News sitemap and `robots.txt`; light and dark themes and drafts. The sample articles explain how each part works.
+- **Best for:** Running a newsroom or magazine with many sections and writers, and seeing `collections.generate`, generated pages, several RSS feeds and build hooks work together
+
+<figure>
+
+![The news starter's front page: a green nameplate with Stati News and the date, section tabs, a strip of three latest stories, a large lead headline beside its illustration and standfirst, and a column of top stories divided by rules.](/images/news-template-light.webp){.dark:hidden}
+![The news starter's front page in its dark theme: the green nameplate and section tabs above a near-black page with the latest strip, the lead story and the column of top stories.](/images/news-template-dark.webp){.hidden .dark:block}
+
+<figcaption>The news starter front page, in the theme that matches your system setting.</figcaption>
+</figure>
+
+**Key Files:**
+
+```text
+examples/news/
+├── helpers/news.js       # Front page ranking, bylines, dates, section and author pages,
+│                         # NewsArticle metadata, feeds and the Google News sitemap
+├── site/
+│   ├── news/             # One folder of articles per section, the article layout,
+│   │                     # the latest stream and [section].md, a page per section
+│   ├── authors/          # The authors index and [author].md, a page per author
+│   ├── tags/             # The topics index and [tag].md, a page per topic
+│   ├── partials/         # Nameplate, footer, byline, story teasers, page links, search
+│   ├── base.eta          # The page around every layout
+│   ├── front.eta         # The front page
+│   ├── listing.eta       # Section, author, topic and latest pages
+│   └── layout.eta        # About, 404 and the indexes
+├── public/               # Styles, search script, self-hosted fonts, lead images
+└── stati.config.js       # Name, sections, authors, feeds, search, sitemap, SEO
+```
+
+**Start from it:**
+
+```bash
+npx create-stati my-news --template=news
 ```
 
 ## Learning resources

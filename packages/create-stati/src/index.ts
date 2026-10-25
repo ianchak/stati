@@ -32,7 +32,7 @@ Usage:
   create-stati [project-name] [options]
 
 Options:
-  --template <name>        Template to use (blank|blog|docs)
+  --template <name>        Template to use (blank|blog|docs|news)
   --styling <type>         CSS solution (css|sass|tailwind)
   --typescript, --ts       Use TypeScript (default)
   --no-typescript, --no-ts Use JavaScript instead of TypeScript
@@ -50,6 +50,7 @@ Examples:
   create-stati my-site
   create-stati my-blog --template=blog
   create-stati my-docs --template=docs
+  create-stati my-news --template=news
   create-stati my-site --styling=sass
   create-stati my-app --no-typescript
   create-stati my-blog --template=blog --images
@@ -218,6 +219,11 @@ export async function runCLI(cliOptions?: Partial<CreateOptions> | null): Promis
           name: 'Docs - Sidebar, search, table of contents and SEO, ready to document',
           value: 'docs',
           short: 'Docs',
+        },
+        {
+          name: 'News - Sections, front page, authors, feeds and search, ready to publish',
+          value: 'news',
+          short: 'News',
         },
       ],
       default: 'blank',

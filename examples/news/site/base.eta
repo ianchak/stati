@@ -1,0 +1,20 @@
+<%
+  /* The page around every layout. site/front.eta, site/listing.eta, site/layout.eta and
+     site/news/layout.eta call stati.layout('base', props), and what they render arrives here
+     as stati.body. Props:
+       front    true on the front page: the full nameplate with the edition date
+       edition  the front page's date line, from its newest article */
+%>
+<!DOCTYPE html>
+<html lang="<%= stati.site.defaultLocale || 'en' %>">
+  <%~ stati.include('partials/head') %>
+  <body>
+    <a href="#main" class="skip-link">Skip to content</a>
+    <%~ stati.include('partials/masthead', { front: stati.props?.front === true, edition: stati.props?.edition }) %>
+
+    <%~ stati.body %>
+
+    <%~ stati.include('partials/footer') %>
+    <%~ stati.include('partials/search') %>
+  </body>
+</html>

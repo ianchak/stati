@@ -32,7 +32,7 @@ The most straightforward way to add JavaScript is by including inline `<script>`
 
 ### Example: Scroll to top button
 
-The examples on this page show a `layout.eta` that writes the whole page, as in the blank starter. If your layouts share a shell with `stati.layout()`, as in the blog and docs starters, the `<head>` and `<body>` are in the shell, such as `site/base.eta`, so the scripts go there. See [Sharing a shell](/core-concepts/templates#sharing-a-shell).
+The examples on this page show a `layout.eta` that writes the whole page, as in the blank starter. If your layouts share a shell with `stati.layout()`, as in the blog, docs and news starters, the `<head>` and `<body>` are in the shell, such as `site/base.eta`, so the scripts go there. See [Sharing a shell](/core-concepts/templates#sharing-a-shell).
 
 In the template that writes the page's `<body>`:
 

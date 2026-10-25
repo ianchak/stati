@@ -1,0 +1,27 @@
+<%
+  /* Shared <head>. Stati's SEO auto-injection adds the description, canonical URL, Open Graph
+     and Twitter tags and, on articles, the NewsArticle structured data that helpers/news.js
+     prepares. Links go through stati.url(), which adds the base path of a site served from
+     a folder; production builds point the /styles.css link at the hashed stylesheet. */
+  const pageNumber = stati.pagination?.pageNumber ?? 1;
+  const isFront = stati.page.url === '/';
+  const baseTitle = isFront || !stati.page.title ? stati.site.title : `${stati.page.title} · ${stati.site.title}`;
+  const pageTitle = pageNumber > 1 ? `Page ${pageNumber} · ${baseTitle}` : baseTitle;
+  /* Section pages and articles also offer their section's feed */
+  const section = stati.helpers.sectionAt(stati.page.url);
+%>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= pageTitle %></title>
+  <meta name="theme-color" content="#0b6b4f" />
+  <link rel="icon" href="<%= stati.url('/favicon.svg') %>" type="image/svg+xml" />
+  <link rel="preload" href="<%= stati.url('/fonts/libre-franklin.woff2') %>" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="<%= stati.url('/fonts/source-serif-4.woff2') %>" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="<%= stati.url('/styles.css') %>" />
+  <link rel="alternate" type="application/rss+xml" title="<%= `${stati.site.title} (RSS)` %>" href="<%= stati.url('/feed.xml') %>" />
+  <% if (section) { %>
+  <link rel="alternate" type="application/rss+xml" title="<%= `${section.title} · ${stati.site.title} (RSS)` %>" href="<%= stati.url(`/feed-${section.key}.xml`) %>" />
+  <% } %>
+  <script type="module" src="<%= stati.url('/scripts/news.js') %>"></script>
+</head>
