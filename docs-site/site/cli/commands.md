@@ -157,7 +157,7 @@ stati build [options]
 | Flag | Type | Default | Description |
 |------|------|---------|-------------|
 | `--force` | boolean | false | Re-render every page, ignoring the ISG cache (the cache is kept and updated) |
-| `--clean` | boolean | false | Delete the output directory and the `.stati/` cache before building |
+| `--clean` | boolean | false | Delete the output directory and the `.stati/` cache before building. A config whose `outDir` is, contains or sits inside the source, static or cache folders is rejected before anything is deleted |
 | `--include-drafts` | boolean | false | Include draft pages in the build |
 | `--metrics` | boolean | false | Enable build metrics collection (also enabled by `STATI_METRICS=1` or `true`) |
 | `--metrics-file` | string | - | Metrics JSON file name, resolved inside `.stati/metrics/`; paths outside that folder are rejected (default: `.stati/metrics/build-<timestamp>.json`) |

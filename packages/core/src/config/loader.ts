@@ -6,6 +6,7 @@ import { validateISGConfig, ISGConfigurationError } from '../core/isg/validation
 import { validateImagesConfig } from '../images/config.js';
 import { validateSEOConfig } from '../seo/defaults.js';
 import { validateCSSConfig } from '../css/config.js';
+import { validateDirectoryLayout } from './directories.js';
 import { ConfigValidationError } from './errors.js';
 import {
   compileStatiConfig,
@@ -285,6 +286,19 @@ export async function loadConfig(cwd: string = process.cwd()): Promise<StatiConf
       if (error instanceof ConfigValidationError) {
         throw new ConfigValidationError(
           `Invalid css configuration in ${configPath}:\n${error.message}`,
+          { cause: error },
+        );
+      }
+      throw error;
+    }
+
+    // The output folder must not be, hold or sit inside the site's own folders
+    try {
+      validateDirectoryLayout(mergedConfig);
+    } catch (error) {
+      if (error instanceof ConfigValidationError) {
+        throw new ConfigValidationError(
+          `Invalid configuration in ${configPath}:\n${error.message}`,
           { cause: error },
         );
       }

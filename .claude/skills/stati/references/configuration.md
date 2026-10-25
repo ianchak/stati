@@ -38,6 +38,11 @@ Loader defaults:
 | `isg.ttlSeconds`    | `21600` (six hours)     |
 | `isg.maxAgeCapDays` | `365`                   |
 
+`outDir` must not be, contain or sit inside `srcDir`, `staticDir`, `typescript.srcDir` (when
+TypeScript is enabled) or `.stati/`, and must not be the project folder or a parent of it: `loadConfig`
+throws a `ConfigValidationError` naming both paths, because every build writes pages into `outDir`
+and `stati build --clean` deletes it.
+
 Only `site` and `isg` are explicitly nested-merged with loader defaults. Other
 feature blocks apply their own defaults at use time; do not assume `loadConfig`
 returns a fully expanded configuration object.
