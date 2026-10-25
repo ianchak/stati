@@ -388,25 +388,6 @@ describe('CLI', () => {
     });
   });
 
-  describe('build command with configPath', () => {
-    it('should pass configPath option correctly', async () => {
-      const { build } = await import('@stati/core');
-
-      await vi.mocked(build)({
-        force: false,
-        clean: false,
-        includeDrafts: false,
-        configPath: './custom-config.js',
-      });
-
-      expect(build).toHaveBeenCalledWith(
-        expect.objectContaining({
-          configPath: './custom-config.js',
-        }),
-      );
-    });
-  });
-
   describe('writeMetrics integration', () => {
     it('should have writeMetrics function available from @stati/core', async () => {
       const { writeMetrics } = await import('@stati/core');

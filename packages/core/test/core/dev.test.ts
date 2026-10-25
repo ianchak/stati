@@ -360,30 +360,9 @@ describe('Development Server', () => {
     const options: DevServerOptions = {
       port: 8083,
       logger: mockLogger,
-      configPath: './custom.config.js',
     };
 
     await expect(createDevServer(options)).rejects.toThrow('Config file not found');
-  });
-
-  it('should handle custom config path', async () => {
-    const mockLogger = createMockLogger();
-
-    const customConfigPath = './custom-stati.config.js';
-
-    const options: DevServerOptions = {
-      port: 8084,
-      logger: mockLogger,
-      configPath: customConfigPath,
-    };
-
-    const devServer = await createDevServer(options);
-
-    expect(mockLogger.info).toHaveBeenCalledWith(
-      expect.stringContaining(`Loading config from: ${customConfigPath}`),
-    );
-
-    await devServer.stop();
   });
 
   it('should pass the Tailwind files to its builds, so pages link the stylesheet', async () => {

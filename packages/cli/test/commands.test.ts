@@ -96,6 +96,15 @@ describe('stati commands', () => {
     expect(mocks.build.mock.calls[0]?.[0]).not.toHaveProperty('tailwind');
   });
 
+  it('builds with the config in the current directory, ignoring --config', async () => {
+    mocks.build.mockResolvedValue({});
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    await runCli(['build', '--config', 'other/stati.config.js']);
+
+    expect(mocks.build.mock.calls[0]?.[0]).not.toHaveProperty('configPath');
+  });
+
   it('fails a build given only one of the Tailwind files', async () => {
     const { exitCode, errors } = await runCli(['build', '--tailwind-input', 'src/styles.css']);
 

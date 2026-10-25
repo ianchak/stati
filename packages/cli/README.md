@@ -85,7 +85,6 @@ stati dev [options]
 - `--tailwind-input <path>` - Tailwind CSS input file; starts a Tailwind watcher alongside the dev server
 - `--tailwind-output <path>` - Output file for the compiled Tailwind CSS; pages link it when it is in the output directory
 - `--tailwind-verbose` - Show all Tailwind output (default: errors only)
-- `--config <path>` - Accepted, but `dev` loads the config from the current directory
 
 **Examples:**
 
@@ -125,7 +124,6 @@ stati build [options]
 
 - `--force` - Re-render every page, ignoring the ISG cache (the cache is kept and updated)
 - `--clean` - Delete the output directory and the `.stati/` cache before building
-- `--config <path>` - Path to a config file; only its directory is used to find `stati.config.*`
 - `--include-drafts` - Include draft pages in the build
 - `--metrics` - Collect build metrics (also enabled by `STATI_METRICS=1`)
 - `--metrics-file <name>` - Metrics file name inside `.stati/metrics/`
@@ -177,7 +175,6 @@ stati preview [options]
 - `--port <number>` - Server port (default: 4000)
 - `--host <string>` - Host address (default: localhost)
 - `--open` - Open browser automatically
-- `--config <path>` - Accepted, but `preview` loads the config from the current directory
 
 **Examples:**
 

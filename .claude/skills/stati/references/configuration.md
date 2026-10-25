@@ -48,7 +48,7 @@ default title/domain/output or configuration errors as failed validation.
 Config caching uses path and mtime; `clearConfigCache()` is a public programmatic
 escape hatch, not an author requirement for every build.
 
-**`--config` caveat:** `build({ configPath })` loads standard config filenames
+**`configPath` caveat:** `build({ configPath })` loads standard config filenames
 from the path's **directory**. It does not reliably select arbitrary names such
 as `stati.production.js`. Run from the site root with a recognized filename.
 Relative content/static/output paths are also tied to the working directory;

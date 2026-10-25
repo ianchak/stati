@@ -73,12 +73,12 @@ command; add dependencies only when needed, not to repair unrelated tooling.
 
 Use `npm run <script> -- <flags>` when forwarding flags to a site script.
 
-| Command                    | Options                                                                                                                                                                            |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `stati build`              | `--force`, `--clean`, `--config <path>`, `--include-drafts`, `--metrics`, `--metrics-file <path>`, `--metrics-detailed`, `--metrics-html`, `--tailwind-input`, `--tailwind-output` |
-| `stati dev`                | `--port`, `--host`, `--open`, `--config`, `--tailwind-input`, `--tailwind-output`, `--tailwind-verbose`                                                                            |
-| `stati preview`            | `--port`, `--host`, `--open`, `--config`                                                                                                                                           |
-| `stati invalidate [query]` | Tag/path/glob/recent-render age invalidation; see features                                                                                                                         |
+| Command                    | Options                                                                                                                                                         |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `stati build`              | `--force`, `--clean`, `--include-drafts`, `--metrics`, `--metrics-file <path>`, `--metrics-detailed`, `--metrics-html`, `--tailwind-input`, `--tailwind-output` |
+| `stati dev`                | `--port`, `--host`, `--open`, `--tailwind-input`, `--tailwind-output`, `--tailwind-verbose`                                                                     |
+| `stati preview`            | `--port`, `--host`, `--open`                                                                                                                                    |
+| `stati invalidate [query]` | Tag/path/glob/recent-render age invalidation; see features                                                                                                      |
 
 Default dev address: `http://localhost:3000`; preview: `http://localhost:4000`.
 Check config and CLI precedence for an existing site; use explicit flags for a
@@ -97,8 +97,6 @@ do it only intentionally.
   Never point output to a source, workspace root, home, or shared unrelated tree.
 - `--include-drafts` can produce publishable draft HTML: keep preview artifacts
   out of production deployments.
-- `--config` has standard-filename/directory-loading limitations in this version;
-  see configuration reference.
 
 ## Programmatic surface
 
