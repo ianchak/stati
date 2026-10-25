@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "stati dev",
     "build": "stati build",
-    "build:drafts": "stati build --include-drafts",
+    "build:drafts": "npm run build -- --include-drafts",
     "preview": "stati preview",
     "clean:dist": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "clean:cache": "node -e \"require('node:fs').rmSync('.stati',{recursive:true,force:true})\"",

@@ -11,7 +11,7 @@
 
 @font-face {
   font-family: 'Libre Franklin';
-  src: url('/fonts/libre-franklin.woff2') format('woff2');
+  src: url('fonts/libre-franklin.woff2') format('woff2');
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -19,7 +19,7 @@
 
 @font-face {
   font-family: 'Source Serif 4';
-  src: url('/fonts/source-serif-4.woff2') format('woff2');
+  src: url('fonts/source-serif-4.woff2') format('woff2');
   font-weight: 200 900;
   font-style: normal;
   font-display: swap;
@@ -27,7 +27,7 @@
 
 @font-face {
   font-family: 'Source Serif 4';
-  src: url('/fonts/source-serif-4-italic.woff2') format('woff2');
+  src: url('fonts/source-serif-4-italic.woff2') format('woff2');
   font-weight: 200 900;
   font-style: italic;
   font-display: swap;
@@ -329,9 +329,18 @@ pre {
 }
 
 @media (max-width: 40rem) {
-  .search-button-label,
   .search-button-keys {
     display: none;
+  }
+
+  /* Hidden from sight but still the button's name for screen readers */
+  .search-button-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 
   /* The search button moves up beside the name, so the tabs have the full width */

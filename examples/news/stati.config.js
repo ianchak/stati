@@ -86,6 +86,7 @@ export default defineConfig({
       'lead',
       'featured',
       'readingTime',
+      'credit',
     ],
   },
 

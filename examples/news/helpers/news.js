@@ -544,7 +544,7 @@ export function createNews(options) {
         description: site.description ?? site.title,
         link: absolute('/'),
         language,
-        filter: isArticle,
+        filter: (page) => isArticle(page) && !page.frontMatter.draft,
         maxItems: 30,
         sortBy: 'date-desc',
         itemMapping,
@@ -555,7 +555,8 @@ export function createNews(options) {
         description: section.description ?? `${section.title} from ${site.title}`,
         link: absolute(section.url),
         language,
-        filter: (page) => isArticle(page) && sectionOf(page.url)?.key === section.key,
+        filter: (page) =>
+          isArticle(page) && !page.frontMatter.draft && sectionOf(page.url)?.key === section.key,
         maxItems: 20,
         sortBy: /** @type {const} */ ('date-desc'),
         itemMapping,
