@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 import {
   DEFAULT_WORDS_PER_MINUTE,
   computeReadingTime,
@@ -9,7 +9,7 @@ import {
   validateReadingTimeConfig,
 } from '../../src/core/reading-time.js';
 import { ConfigValidationError } from '../../src/config/errors.js';
-import type { PageModel, StatiConfig } from '../../src/types/index.js';
+import type { PageModel, StatiConfig, TemplateContext } from '../../src/types/index.js';
 
 const config: StatiConfig = { site: { title: 'Test', baseUrl: 'https://example.com' } };
 
@@ -51,6 +51,14 @@ describe('countWords', () => {
     expect(countWords(markdown)).toBe(6);
   });
 
+  it('leaves out code blocks in list items and blocks that are never closed', () => {
+    const code = Array.from({ length: 460 }, (_, i) => `code${i}`).join(' ');
+
+    expect(countWords(`Two words\n\n- \`\`\`\n  ${code}\n  \`\`\``)).toBe(2);
+    expect(countWords(`Two words\n\n\`\`\`js\n${code}\n`)).toBe(2);
+    expect(computeTextStats(`Two words\n\n- \`\`\`\n  ${code}`, 230).readingTime).toBe(1);
+  });
+
   it('leaves out HTML tags but keeps the words between them', () => {
     expect(
       countWords('<div class="wide other"><p>Hello <strong>big</strong> world</p></div>'),
@@ -87,6 +95,13 @@ describe('countWords', () => {
 
   it('splits Korean on spaces like other alphabets', () => {
     expect(countWords('안녕하세요 세계')).toBe(2);
+  });
+});
+
+describe('template context types', () => {
+  it('declares the counts on stati.page as optional numbers', () => {
+    expectTypeOf<TemplateContext['page']['wordCount']>().toEqualTypeOf<number | undefined>();
+    expectTypeOf<TemplateContext['page']['readingTime']>().toEqualTypeOf<number | undefined>();
   });
 });
 

@@ -423,9 +423,9 @@ interface TemplateContext {
     /** Current page's navigation node */
     navNode?: NavNode;
     /** Words in the Markdown body */
-    wordCount: number;
+    wordCount?: number;
     /** Whole minutes to read the page, at least 1 */
-    readingTime: number;
+    readingTime?: number;
     /** Frontmatter fields spread into page object */
     [key: string]: unknown;
   };

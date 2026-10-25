@@ -23,8 +23,8 @@ interface TemplateContext {
     content: string;
     toc: TocEntry[]; // Table of contents entries (added at runtime)
     navNode?: NavNode; // Current page's navigation node
-    wordCount: number; // Words in the Markdown body
-    readingTime: number; // Whole minutes to read, at least 1
+    wordCount?: number; // Words in the Markdown body
+    readingTime?: number; // Whole minutes to read, at least 1
     title?: string;
     description?: string;
     [key: string]: unknown; // Front matter fields

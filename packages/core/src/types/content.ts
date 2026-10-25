@@ -551,6 +551,8 @@ export interface TemplateContext {
     url: string;
     content: string;
     navNode?: import('./navigation.js').NavNode; // Current page's navigation node
+    wordCount?: number; // Words in the Markdown body
+    readingTime?: number; // Whole minutes to read, at least 1
     [key: string]: unknown; // Frontmatter fields
   };
   /** The page's rendered Markdown */

@@ -37,6 +37,26 @@ describe('stripMarkdown', () => {
     expect(stripMarkdown(markdown)).toBe('Before After');
   });
 
+  it('removes code blocks that open after a list marker or in a quote', () => {
+    expect(stripMarkdown('- item\n- ```js\n  const x = 1;\n  ```\n- after')).toBe('item after');
+    expect(stripMarkdown('1. ~~~\n   code\n   ~~~\n2. after')).toBe('after');
+    expect(stripMarkdown('> ```\n> quoted code\n> ```\n\nAfter')).toBe('After');
+  });
+
+  it('removes a code block that is never closed, to the end of the text', () => {
+    expect(stripMarkdown('Before\n```js\nconst x = 1;\nmore code')).toBe('Before');
+    expect(stripMarkdown('Before\n~~~\ncode\n')).toBe('Before');
+    expect(stripMarkdown('- ```\n  code')).toBe('');
+  });
+
+  it('keeps the text after the block when a fence closes', () => {
+    expect(stripMarkdown('```\ncode\n```\nAfter\n```\nmore\n```\nEnd')).toBe('After End');
+  });
+
+  it('does not take three backticks around text for a fence', () => {
+    expect(stripMarkdown('```inline``` span\nand more text')).toBe('inline span and more text');
+  });
+
   it('keeps inline code text without backticks', () => {
     const markdown = 'Use `const` to declare constants';
     expect(stripMarkdown(markdown)).toBe('Use const to declare constants');
