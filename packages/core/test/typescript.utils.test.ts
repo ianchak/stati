@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { join } from 'node:path';
 import { mkdirSync, writeFileSync, rmSync, existsSync, readFileSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { execFileSync } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
 import { setTimeout } from 'node:timers/promises';
 import {
   compileTypeScript,
@@ -421,6 +423,63 @@ export const broken = {
       expect(content).toContain('Typed Config');
       // Type annotations should be stripped
       expect(content).not.toContain('interface');
+    });
+  });
+
+  describe('compileStatiConfig dependencies', () => {
+    it('leaves package imports to Node instead of bundling them', async () => {
+      // A CommonJS package that calls require('fs'), as fs-extra does. Bundled into ESM output it
+      // throws 'Dynamic require of "fs" is not supported' once Node runs the file.
+      const packageDir = join(testDir, 'node_modules', 'cjs-fs-helper');
+      mkdirSync(packageDir, { recursive: true });
+      writeFileSync(
+        join(packageDir, 'package.json'),
+        JSON.stringify({ name: 'cjs-fs-helper', version: '1.0.0', main: 'index.js' }),
+      );
+      writeFileSync(
+        join(packageDir, 'index.js'),
+        `const fs = require('fs');
+exports.outDir = typeof fs.readFileSync === 'function' ? 'out' : 'broken';
+`,
+      );
+      const configPath = join(testDir, 'stati.config.ts');
+      writeFileSync(
+        configPath,
+        `import helper, { outDir } from 'cjs-fs-helper';
+export default { site: { title: 'CJS' }, outDir: outDir as string, other: helper.outDir as string };`,
+      );
+
+      const compiledPath = await compileStatiConfig(configPath);
+
+      const content = readFileSync(compiledPath, 'utf-8');
+      expect(content).toMatch(/from\s*["']cjs-fs-helper["']/);
+      expect(content).not.toContain('Dynamic require');
+      // Run it in a plain Node process: the test runner's own require would hide the failure
+      const output = execFileSync(
+        process.execPath,
+        [
+          '--input-type=module',
+          '-e',
+          `const m = await import(${JSON.stringify(pathToFileURL(compiledPath).href)}); console.log(m.default.outDir, m.default.other);`,
+        ],
+        { encoding: 'utf-8' },
+      );
+      expect(output.trim()).toBe('out out');
+    });
+
+    it('bundles relative imports into the compiled file', async () => {
+      writeFileSync(join(testDir, 'shared.ts'), `export const label: string = 'Bundled Label';`);
+      const configPath = join(testDir, 'stati.config.ts');
+      writeFileSync(
+        configPath,
+        `import { label } from './shared';\nexport default { site: { title: label } };`,
+      );
+
+      const compiledPath = await compileStatiConfig(configPath);
+
+      const content = readFileSync(compiledPath, 'utf-8');
+      expect(content).toContain('Bundled Label');
+      expect(content).not.toMatch(/from\s*["']\.\/shared["']/);
     });
   });
 
