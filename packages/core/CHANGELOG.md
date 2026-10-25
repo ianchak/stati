@@ -1,5 +1,11 @@
 # @stati/core
 
+## 2.6.0
+
+### Minor Changes
+
+- 0f5e34e: add news starter template
+
 ## 2.5.1
 
 ### Patch Changes

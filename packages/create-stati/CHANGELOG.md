@@ -1,5 +1,11 @@
 # create-stati
 
+## 2.4.0
+
+### Minor Changes
+
+- 0f5e34e: add news starter template
+
 ## 2.3.4
 
 ### Patch Changes

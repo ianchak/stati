@@ -1,5 +1,16 @@
 # @stati/cli
 
+## 2.4.0
+
+### Minor Changes
+
+- 0f5e34e: add news starter template
+
+### Patch Changes
+
+- Updated dependencies [0f5e34e]
+  - @stati/core@2.6.0
+
 ## 2.3.0
 
 ### Minor Changes
