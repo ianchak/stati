@@ -810,6 +810,8 @@ import {
   generateSitemapEntry,
   generateSitemapXml,
   generateSitemapIndexXml,
+  generateNewsSitemap,
+  generateNewsSitemapXml,
   generateRobotsTxt,
   generateRobotsTxtFromConfig,
   generateRobotsContent,
@@ -901,6 +903,8 @@ import type {
   AutoInjectOptions,
   // Sitemap and RSS
   SitemapConfig,
+  NewsSitemapConfig,
+  NewsSitemapGenerationResult,
   SitemapEntry,
   SitemapGenerationResult,
   ChangeFrequency,

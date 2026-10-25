@@ -67,7 +67,7 @@ export default defineConfig({
 
   helpers: news.helpers,
 
-  // Reading time and NewsArticle metadata on every article; news-sitemap.xml after the build
+  // Reading time and NewsArticle metadata on every article
   hooks: news.hooks,
 
   collections: {
@@ -117,13 +117,17 @@ export default defineConfig({
       { pattern: '/news/*', priority: 0.8 },
       { pattern: '/news/**', priority: 0.7 },
     ],
+    // news-sitemap.xml, the Google News sitemap: articles from the last two days, newest first.
+    // It names the site and its language itself, from `site.title` and `site.defaultLocale`.
+    news: {
+      include: ['/news/*/*'],
+    },
   },
 
   robots: {
     enabled: true,
     userAgents: [{ userAgent: '*', allow: ['/'] }],
+    // Lists sitemap.xml and news-sitemap.xml
     sitemap: true,
-    // The Google News sitemap, written by the afterAll hook in helpers/news.js
-    customLines: [`Sitemap: ${site.baseUrl.replace(/\/+$/, '')}/news-sitemap.xml`],
   },
 });

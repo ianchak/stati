@@ -66,6 +66,8 @@ export type {
 
 export type {
   SitemapConfig,
+  NewsSitemapConfig,
+  NewsSitemapGenerationResult,
   SitemapEntry,
   SitemapGenerationResult,
   ChangeFrequency,
@@ -137,6 +139,8 @@ export {
   generateSitemapEntry,
   generateSitemapXml,
   generateSitemapIndexXml,
+  generateNewsSitemap,
+  generateNewsSitemapXml,
   generateRobotsTxt,
   generateRobotsTxtFromConfig,
   escapeHtml,

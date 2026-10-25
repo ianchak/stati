@@ -145,6 +145,20 @@ function isNoindexPage(page: PageModel): boolean {
 }
 
 /**
+ * Whether the page's own state keeps it out of every sitemap: `sitemap.exclude: true` in front
+ * matter, or the 404 page or a noindex page unless `sitemap.exclude: false` keeps it in.
+ * @param page - Page to check
+ * @returns true if the page is left out
+ */
+export function isLeftOutBySitemapRules(page: PageModel): boolean {
+  const frontMatterExclude = page.frontMatter.sitemap?.exclude;
+  if (frontMatterExclude === true) {
+    return true;
+  }
+  return frontMatterExclude !== false && (isNotFoundPage(page) || isNoindexPage(page));
+}
+
+/**
  * Determines priority for a page based on priority rules
  * @param page - Page to evaluate
  * @param rules - Priority rules from config
@@ -190,14 +204,7 @@ export function generateSitemapEntry(
   sitemapConfig: SitemapConfig,
   logger?: Logger,
 ): SitemapEntry | null {
-  // Check frontmatter exclude flag
-  const frontMatterExclude = page.frontMatter.sitemap?.exclude;
-  if (frontMatterExclude === true) {
-    return null;
-  }
-
-  // Leave out the 404 page and noindex pages unless front matter keeps them in
-  if (frontMatterExclude !== false && (isNotFoundPage(page) || isNoindexPage(page))) {
+  if (isLeftOutBySitemapRules(page)) {
     return null;
   }
 

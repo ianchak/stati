@@ -33,6 +33,14 @@ export {
   generateSitemapIndexXml,
 } from './sitemap.js';
 
+// Google News sitemap
+export {
+  generateNewsSitemap,
+  generateNewsSitemapXml,
+  resolveNewsSitemapFilename,
+  validateSitemapConfig,
+} from './news-sitemap.js';
+
 // Robots.txt generation
 export { generateRobotsTxt, generateRobotsTxtFromConfig } from './robots.js';
 
