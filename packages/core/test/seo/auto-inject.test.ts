@@ -579,7 +579,9 @@ describe('SEO Auto-Injection', () => {
       // Should detect existing description
       expect(result).toContain('Multi-line description');
       // Should not inject another meta description
-      const descMatches = result.match(/<meta[^>]*name="description"/g);
+      const descMatches = (result.match(/<meta\b[^<>]*>/g) ?? []).filter((tag) =>
+        tag.includes('name="description"'),
+      );
       expect(descMatches).toHaveLength(1);
     });
 
@@ -607,7 +609,9 @@ describe('SEO Auto-Injection', () => {
       // Should detect existing OG tag
       expect(result).toContain('Existing OG Title');
       // Should not inject any additional OG tags (group behavior)
-      const ogMatches = result.match(/<meta[^>]*property="og:/g);
+      const ogMatches = (result.match(/<meta\b[^<>]*>/g) ?? []).filter((tag) =>
+        tag.includes('property="og:'),
+      );
       expect(ogMatches).toHaveLength(1); // Only the existing one
     });
   });
