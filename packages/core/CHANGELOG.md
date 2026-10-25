@@ -1,5 +1,11 @@
 # @stati/core
 
+## 2.7.0
+
+### Minor Changes
+
+- f1a4ea5: add Google News sitemap
+
 ## 2.6.0
 
 ### Minor Changes
