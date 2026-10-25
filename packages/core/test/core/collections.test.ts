@@ -9,6 +9,7 @@ import {
   getCollections,
   resolveCollectionPath,
   resolveSummaryFields,
+  sortPagesByDate,
   type PageReads,
 } from '../../src/core/collections.js';
 import type { PageModel, PaginationData } from '../../src/types/index.js';
@@ -325,5 +326,18 @@ describe('collection summaries', () => {
     expect(hasher.collection('/blog')).toBe(first);
     expect(hasher.collection('/missing')).toBe('none');
     expect(hasher.pages([post])).not.toBe(computePagesSummaryHash([], DEFAULT_SUMMARY_FIELDS));
+  });
+});
+
+describe('sortPagesByDate', () => {
+  it('sorts undated pages by title, whatever type the title has', () => {
+    const pages = [
+      makePage('/b', { title: 'Beta' }),
+      makePage('/n', { title: 42 }),
+      makePage('/a', { title: 'Alpha' }),
+      makePage('/y', { title: 1984 }),
+    ];
+
+    expect(urls(sortPagesByDate(pages))).toEqual(['/y', '/n', '/a', '/b']);
   });
 });

@@ -134,8 +134,9 @@ function sortPagesInCollection(pages: PageModel[]): PageModel[] {
     if (!a.publishedAt && b.publishedAt) return 1;
 
     // Tertiary sort by title
-    const titleA = a.frontMatter.title || basename(a.url);
-    const titleB = b.frontMatter.title || basename(b.url);
+    // String(): pages that hooks add may carry a title that is not text
+    const titleA = String(a.frontMatter.title || basename(a.url));
+    const titleB = String(b.frontMatter.title || basename(b.url));
     return titleA.localeCompare(titleB);
   });
 }
@@ -154,7 +155,7 @@ function sortNavigationNodes(nodes: NavNode[]): NavNode[] {
     }
 
     // Secondary sort by title
-    return a.title.localeCompare(b.title);
+    return String(a.title).localeCompare(String(b.title));
   });
 }
 

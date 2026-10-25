@@ -1,5 +1,11 @@
 # @stati/core
 
+## 2.5.1
+
+### Patch Changes
+
+- a522376: read numeric, boolean and date front matter titles, descriptions and tags as text instead of crashing the build
+
 ## 2.5.0
 
 ### Minor Changes

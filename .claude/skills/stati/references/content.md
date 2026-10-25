@@ -34,7 +34,12 @@ file. For a caption, put the Markdown image between blank lines inside
 
 Quote dates intended as strings. Use a numeric `order`, booleans for `draft`,
 and arrays of strings for `tags`. Do not assume YAML fields are schema-validated
-or that malformed values will be safely coerced by every feature.
+or that malformed values will be safely coerced by every feature. The fields Stati
+reads as text (`title`, `description`, `tags`, `seo.title`, `seo.description`,
+`seo.keywords`) are the exception: when YAML reads one as a number, boolean or date
+(`title: 1984`, `tags: [2024]`, `title: 2024-01-01`), Stati uses the text that was
+written (a date as `2024-01-01`), and drops `null` tag entries with a warning that
+names the file.
 
 Built-in/respected metadata:
 

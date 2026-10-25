@@ -450,7 +450,8 @@ function createFallbackHtml(page: PageModel, body: string): string {
 </html>`;
 }
 
-function escapeHtml(text: string): string {
+function escapeHtml(value: unknown): string {
+  const text = String(value);
   const map: Record<string, string> = {
     '&': '&amp;',
     '<': '&lt;',
