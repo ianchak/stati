@@ -32,6 +32,7 @@ import type { CompiledBundleInfo } from './utils/index.js';
 import { join, dirname, relative, resolve, posix } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { loadConfig } from '../config/loader.js';
+import { validateDirectoryLayout } from '../config/directories.js';
 import { loadContent } from './content.js';
 import { expandPages } from './expand.js';
 import {
@@ -1247,6 +1248,8 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
   // Clean output directory and cache if requested
   if (options.clean) {
     logger.status('Cleaning output directory and ISG cache...');
+    // Programmatic callers can hand build() a config that skipped loadConfig's checks
+    validateDirectoryLayout(config);
     await remove(outDir);
     await remove(cacheDir);
   }

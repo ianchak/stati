@@ -333,6 +333,21 @@ describe('build.ts', () => {
       );
     });
 
+    it.each([
+      ['equals srcDir', 'src'],
+      ['equals staticDir', 'static'],
+      ['is the project folder', '.'],
+      ['is a parent of the project folder', '..'],
+      ['is inside srcDir', 'src/dist'],
+    ])('should not remove anything when clean is set and outDir %s', async (_, outDir) => {
+      mockLoadConfig.mockResolvedValue({ ...mockConfig, outDir });
+
+      await expect(build({ clean: true })).rejects.toThrow(/outDir/);
+
+      expect(mockRemove).not.toHaveBeenCalled();
+      expect(mockWriteFile).not.toHaveBeenCalled();
+    });
+
     it('should render all pages with correct output paths', async () => {
       await build();
 

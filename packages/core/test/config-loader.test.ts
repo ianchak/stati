@@ -637,6 +637,27 @@ export default config;`;
       await expect(loadConfig(testDir)).rejects.toThrow(message);
     });
 
+    it.each([
+      [`'site'`, 'is or contains srcDir'],
+      [`'./site/'`, 'is or contains srcDir'],
+      [`'public'`, 'is or contains staticDir'],
+      [`'site/dist'`, 'is inside srcDir'],
+      [`'.'`, 'project folder or one of its parents'],
+      [`'..'`, 'project folder or one of its parents'],
+    ])('rejects outDir %s, which would collide with the site folders', async (outDir, message) => {
+      writeConfig(`{ site: { title: 'Bad outDir' }, outDir: ${outDir} }`);
+
+      await expect(loadConfig(testDir)).rejects.toThrow(ConfigValidationError);
+      await expect(loadConfig(testDir)).rejects.toThrow(message);
+    });
+
+    it('names the config file and both paths when it rejects outDir', async () => {
+      writeConfig(`{ site: { title: 'Bad outDir' }, srcDir: 'pages', outDir: 'pages' }`);
+
+      await expect(loadConfig(testDir)).rejects.toThrow(/Invalid configuration in .*stati\.config/);
+      await expect(loadConfig(testDir)).rejects.toThrow(/outDir 'pages'.*srcDir/);
+    });
+
     it('treats a config that throws while it is checked like one that fails to load', async () => {
       // The getter works when the config is merged and fails when the helpers are checked
       writeFileSync(
