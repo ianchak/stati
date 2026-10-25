@@ -22,6 +22,12 @@ describe('countWords', () => {
     expect(countWords('one two\tthree\nfour\r\n\r\nfive')).toBe(5);
   });
 
+  it('counts the same with Windows line endings', () => {
+    const markdown = ['one two', '', '```', 'not counted', '```', '', 'three'].join('\r\n');
+
+    expect(countWords(markdown)).toBe(3);
+  });
+
   it('counts nothing for an empty or blank body', () => {
     expect(countWords('')).toBe(0);
     expect(countWords(' \n\t ')).toBe(0);
@@ -115,6 +121,12 @@ describe('resolveWordsPerMinute', () => {
     expect(DEFAULT_WORDS_PER_MINUTE).toBe(230);
     expect(resolveWordsPerMinute(config)).toBe(230);
     expect(resolveWordsPerMinute({ ...config, readingTime: {} })).toBe(230);
+  });
+
+  it('falls back to the default for a speed that config validation would reject', () => {
+    for (const wordsPerMinute of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(resolveWordsPerMinute({ ...config, readingTime: { wordsPerMinute } })).toBe(230);
+    }
   });
 
   it('reads the configured speed', () => {

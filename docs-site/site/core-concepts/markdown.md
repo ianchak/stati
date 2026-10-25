@@ -381,11 +381,11 @@ Both are set when the content is loaded, so `beforeAll` hooks can read them on `
 <% } %>
 ```
 
-The count covers the text a reader sees. Front matter, fenced code blocks, HTML tags, images and Markdown syntax do not count; link text and inline code do. Words are the runs of text between whitespace. Chinese and Japanese text has no spaces between words, so each Han, Hiragana and Katakana character counts as one word, and the count is approximate for those languages. Korean is split on spaces, like other alphabets.
+The count covers the text a reader sees. Front matter, fenced code blocks, HTML tags, images and Markdown syntax do not count; link text and inline code do. Words are the runs of text between whitespace. Chinese and Japanese text has no spaces between words, so each Han, Hiragana and Katakana character counts as one word, and the count is approximate for those languages. Other scripts written without spaces, such as Thai, are not split and count low. Indented code blocks and the contents of `<script>` and `<style>` tags count as text. Korean is split on spaces, like other alphabets.
 
 The reading time is the word count divided by `readingTime.wordsPerMinute` (230 unless you [set it](/configuration/file#reading-time-configuration)), rounded to the nearest minute. `wordCount` and `readingTime` are properties of Stati's page, so front matter keys of those names are replaced, with a warning.
 
-To show the reading time in a listing that rebuilds when the minutes change, and only then, add `readingTime` to [`collections.summaryFields`](/core-concepts/collections#what-rebuilds-a-listing). A `beforeAll` hook that changes `page.content` does not change the counts, which are taken when the page is loaded. Pages a hook adds get theirs after the hook runs.
+A listing that reads `post.readingTime` or `post.wordCount` is rebuilt only for the fields in [`collections.summaryFields`](/core-concepts/collections#what-rebuilds-a-listing), like any other field, so it can go stale if you leave them out. To show the reading time in a listing that rebuilds when the minutes change, and only then, add `readingTime` to [`collections.summaryFields`](/core-concepts/collections#what-rebuilds-a-listing). A `beforeAll` hook that changes `page.content` does not change the counts, which are taken when the page is loaded. Pages a hook adds get theirs after the hook runs.
 
 ### Content excerpts
 

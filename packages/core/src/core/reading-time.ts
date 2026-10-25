@@ -66,7 +66,11 @@ export function validateReadingTimeConfig(readingTime: unknown): void {
  */
 export function resolveWordsPerMinute(config: Pick<StatiConfig, 'readingTime'>): number {
   const configured: ReadingTimeConfig | undefined = config.readingTime;
-  return configured?.wordsPerMinute ?? DEFAULT_WORDS_PER_MINUTE;
+  const speed = configured?.wordsPerMinute;
+  // A config that did not go through loadConfig() is not validated; never divide by 0
+  return typeof speed === 'number' && Number.isFinite(speed) && speed > 0
+    ? speed
+    : DEFAULT_WORDS_PER_MINUTE;
 }
 
 /**

@@ -310,16 +310,18 @@ describe('collection summaries', () => {
     );
   });
 
-  it('reads word count and reading time from the page, not from front matter', () => {
+  it('also hashes front matter of the same name, for listings that show it', () => {
     const counted = { ...post, wordCount: 300, readingTime: 1 };
-    const written = {
+    const written = (readingTime: number) => ({
       ...counted,
-      frontMatter: { ...counted.frontMatter, readingTime: 99, wordCount: 5000 },
-    };
+      frontMatter: { ...counted.frontMatter, readingTime, wordCount: readingTime * 100 },
+    });
 
-    expect(hash(written, ['readingTime', 'wordCount'])).toBe(
-      hash(counted, ['readingTime', 'wordCount']),
-    );
+    expect(hash(written(5), ['readingTime'])).not.toBe(hash(counted, ['readingTime']));
+    expect(hash(written(5), ['readingTime'])).not.toBe(hash(written(6), ['readingTime']));
+    expect(hash(written(5), ['wordCount'])).not.toBe(hash(written(6), ['wordCount']));
+    // Without the field in the summary, front matter of that name changes nothing
+    expect(hash(written(5))).toBe(hash(counted));
   });
 
   it('hashes a page without counts as having none', () => {
