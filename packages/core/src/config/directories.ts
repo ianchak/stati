@@ -1,4 +1,4 @@
-import { join } from 'node:path';
+import { join, posix } from 'node:path';
 import type { StatiConfig } from '../types/index.js';
 import { ConfigValidationError } from './errors.js';
 import {
@@ -6,16 +6,33 @@ import {
   resolveOutDir,
   resolveStaticDir,
   resolveCacheDir,
-  normalizePathForComparison,
 } from '../core/utils/paths.utils.js';
 import { DEFAULT_OUT_DIR, DEFAULT_TS_SRC_DIR } from '../constants.js';
 
 /** File systems on these platforms treat `Site` and `site` as one folder by default. */
 const CASE_INSENSITIVE_PLATFORMS = new Set(['win32', 'darwin']);
 
+/**
+ * Puts an absolute path in a form two paths can be compared in: forward slashes, no `.` or
+ * `..` segments, no trailing slash, and lower case where the file system ignores case.
+ * A backslash is a separator only on Windows. On POSIX it is part of a folder name, so
+ * `dist/..\site` is a folder called `..\site` inside `dist`, not a way back out of it.
+ *
+ * @param path - An absolute path, as the `resolve*Dir` helpers return it
+ * @param platform - The platform whose rules apply (defaults to the current one)
+ * @returns The comparable form
+ */
+export function toComparablePath(path: string, platform: string = process.platform): string {
+  const slashed = platform === 'win32' ? path.replace(/\\/g, '/') : path;
+  let normalized = posix.normalize(slashed);
+  if (normalized.length > 1 && normalized.endsWith('/')) {
+    normalized = normalized.slice(0, -1);
+  }
+  return CASE_INSENSITIVE_PLATFORMS.has(platform) ? normalized.toLowerCase() : normalized;
+}
+
 function comparable(path: string): string {
-  const normalized = normalizePathForComparison(path);
-  return CASE_INSENSITIVE_PLATFORMS.has(process.platform) ? normalized.toLowerCase() : normalized;
+  return toComparablePath(path);
 }
 
 /** Whether `inner` is `outer` or a folder below it. */
