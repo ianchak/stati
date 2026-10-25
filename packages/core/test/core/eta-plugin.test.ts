@@ -91,20 +91,71 @@ describe('Stati Eta plugin', () => {
     expect(compiled).toContain('const a = 1\n;(a)\nconst b = 2\nb + 1\n// note\n;[a]');
   });
 
-  it('keeps the tag that is the body of a statement without braces', () => {
-    const template =
-      '<% if (stati.show) %><% (stati.out = []).push("shown") %>' +
-      '<% else %><% [stati.out = ["hidden"]] %><%= stati.out %>';
-    expect(engine(false).renderString(template, { show: true })).toBe('shown');
-    expect(engine(false).renderString(template, { show: false })).toBe('hidden');
+  it.each([
+    ['an if', '<% if (stati.show) %><% (stati.out).push(1) %>', '0', '1'],
+    [
+      'an else',
+      '<% if (stati.show) %><% (stati.out).push(1) %><% else %><% (stati.out).push(1, 2) %>',
+      '2',
+      '1',
+    ],
+    [
+      'a trailing line comment',
+      '<% if (stati.show) // guard %><% (stati.out).push(1) %>',
+      '0',
+      '1',
+    ],
+    [
+      'a tag with only a comment',
+      '<% if (stati.show) %><% /* note */ %><% (stati.out).push(1) %>',
+      '0',
+      '1',
+    ],
+    [
+      'brackets and quotes in the condition',
+      `<% if ((stati.show) && ("(" + ')\\'' + \`)\`)) %><% (stati.out).push(1) %>`,
+      '0',
+      '1',
+    ],
+  ])('keeps the tag that is the body of %s without braces', (_, body, hidden, shown) => {
+    const template = `<% stati.out = [] %>${body}<%= stati.out.length %>`;
+    expect(engine(false).renderString(template, { show: false })).toBe(hidden);
+    expect(engine(false).renderString(template, { show: true })).toBe(shown);
+  });
 
-    // A statement with braces, and a header that is not the end of its tag, still get a semicolon
-    expect(
-      engine(false).renderString(
-        '<% if (stati.show) { stati.out = 1 } %><% [stati.out] %><% if (stati.show) stati.out = 2 %><% (stati.out) %><%= stati.out %>',
-        { show: true },
-      ),
-    ).toBe('2');
+  it.each([
+    ['a statement with braces', '<% if (stati.show) { stati.noop() } %>'],
+    ['a call after a condition', '<% if (stati.show) stati.noop() %>'],
+    ['a loop that ended', '<% for (const x of []) { } %>'],
+    ['a comment ending the tag', '<% stati.noop // note %>'],
+    ['a string that looks like a header', `<% const s = 'if (a)' %>`],
+    ['a string with a comment and a bracket', `<% const s = 'it\\'s // (not a comment' %>`],
+    ['a template literal', '<% const s = `a "(" ${1} /* b */` %>'],
+  ])('ends the statement before a tag that follows %s', (_, before) => {
+    for (const debug of [false, true]) {
+      const template = `<% stati.out = [] %>${before}<% /* note */ (stati.out).push(1) %><%= stati.out.length %>`;
+      expect(engine(debug).renderString(template, { noop: () => 0 })).toBe('1');
+    }
+  });
+
+  it('reads code that cannot be matched as a statement without a body', () => {
+    const plugin = createStatiEtaPlugin();
+    const vals = (nodes: string[]) =>
+      (
+        plugin.processAST!(
+          nodes.map((val) => ({ t: 'e' as const, val, lineNo: 1 })),
+          {} as never,
+        ) as { val: string }[]
+      )
+        .slice(1, -1)
+        .map((node) => node.val);
+
+    // A parenthesis that closes nothing, an unfinished comment and a comment without a newline
+    expect(vals(['a)', '(b)'])).toEqual(['a)', ';(b)']);
+    expect(vals(['a /* c', '(b)'])).toEqual(['a /* c', ';(b)']);
+    expect(vals(['if (a) // c\nx()', '(b)'])).toEqual(['if (a) // c\nx()', ';(b)']);
+    expect(vals(['a // c', '(b)'])).toEqual(['a // c', ';(b)']);
+    expect(vals(['/* c', '(b)'])).toEqual(['/* c', ';(b)']);
   });
 
   it('fails when the compiled template no longer has the anchor', () => {

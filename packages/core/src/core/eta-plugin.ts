@@ -43,13 +43,71 @@ export type BlockedEtaFunction = (typeof ETA_FUNCTIONS)[number]['name'];
  */
 const CONTINUING_START = /^\s*[([`]/;
 
+/** Matches `else` or `do` at the end of code. */
+const BODYLESS_KEYWORD_END = /(?:^|[^\w$.])(?:else|do)$/;
+
+/** Matches the keyword in front of the parenthesis of a statement header, at the end of code. */
+const HEADER_KEYWORD_END = /(?:^|[^\w$.])(?:if|for|while|with)\s*$/;
+
 /**
- * Matches code that ends with the header of a statement that has no body yet, such as
- * `if (cond)`, `for (...)`, `while (cond)` or `else`. The next tag is its body, so no semicolon
- * may come between them. A header-like ending that is not one (`if (a) call()`) only means that
- * no semicolon is added, as before.
+ * Returns the code without comments and with the text of strings and template literals
+ * blanked out, so that the quotes and brackets in them cannot be mistaken for code. Regular
+ * expression literals are not recognized.
  */
-const OPEN_STATEMENT_END = /(?:^|[;{}\s])(?:(?:if|for|while|with)\s*\([^]*\)|else|do)\s*$/;
+function maskCode(code: string): string {
+  let masked = '';
+  let quote = '';
+  for (let i = 0; i < code.length; i++) {
+    const char = code[i] as string;
+    if (quote) {
+      if (char === '\\') {
+        i++;
+        masked += '  ';
+      } else if (char === quote) {
+        quote = '';
+        masked += char;
+      } else {
+        masked += ' ';
+      }
+    } else if (char === '/' && code[i + 1] === '*') {
+      const close = code.indexOf('*/', i + 2);
+      i = close === -1 ? code.length : close + 1;
+    } else if (char === '/' && code[i + 1] === '/') {
+      const close = code.indexOf('\n', i);
+      i = close === -1 ? code.length : close;
+    } else {
+      if (char === '"' || char === "'" || char === '`') {
+        quote = char;
+      }
+      masked += char;
+    }
+  }
+  return masked.trim();
+}
+
+/**
+ * Whether masked code ends with the header of a statement that has no body yet: `if (cond)`,
+ * `for (...)`, `while (cond)`, `with (obj)`, `else` or `do`. The next tag is its body, so no
+ * semicolon may come between them. `if (cond) call()` is complete, since the parenthesis that
+ * ends it belongs to the call.
+ */
+function endsWithOpenStatement(masked: string): boolean {
+  if (BODYLESS_KEYWORD_END.test(masked)) {
+    return true;
+  }
+  if (!masked.endsWith(')')) {
+    return false;
+  }
+  let depth = 0;
+  for (let i = masked.length - 1; i >= 0; i--) {
+    if (masked[i] === ')') {
+      depth++;
+    } else if (masked[i] === '(' && --depth === 0) {
+      return HEADER_KEYWORD_END.test(masked.slice(0, i));
+    }
+  }
+  return false;
+}
 
 /** Marks the start of the template's own code in the compiled function. */
 const BODY_START = '/*@stati:template-body@*/';
@@ -81,17 +139,23 @@ export function createStatiEtaPlugin(): EtaPlugin {
       // `(`, `[` or a template literal would continue the tag before it, such as
       // `<% const tags = x %>` followed by `<% (tags || []).forEach(...) %>`. The semicolon goes
       // in front of such a tag, in every mode, so development and production compile alike.
+      // A tag that follows the header of a statement without braces is its body, so it gets none.
       let previous = '';
       const separated = ast.map((node) => {
         if (typeof node !== 'object' || node.t !== 'e') {
           previous = '';
           return node;
         }
+        const code = maskCode(node.val);
+        if (code === '') {
+          // A tag with only comments neither ends a statement nor starts one
+          return node;
+        }
         const val =
-          !OPEN_STATEMENT_END.test(previous) && CONTINUING_START.test(node.val)
+          CONTINUING_START.test(code) && !endsWithOpenStatement(previous)
             ? `;${node.val}`
             : node.val;
-        previous = node.val;
+        previous = code;
         return { ...node, val };
       });
       return [start, ...separated, end];
@@ -109,7 +173,12 @@ export function createStatiEtaPlugin(): EtaPlugin {
             `${name} = (...__statiArgs) => this.${BLOCKED_CALL_HANDLER}('${name}', __statiArgs, options && options.filepath);`,
         )
         .join(' ');
-      return fnString.replace(BODY_START, `${replacements} {`);
+      // With debug on, Eta marks each tag's line with `__eta.line=N` and no semicolon. The
+      // marker ends the statement before it, as the tag-level semicolons above do, so it needs
+      // one of its own: the AST check does not see every statement a tag can end with.
+      return fnString
+        .replace(BODY_START, `${replacements} {`)
+        .replace(/__eta\.line=(\d+)\n/g, '__eta.line=$1;\n');
     },
   };
 }
