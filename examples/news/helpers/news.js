@@ -413,10 +413,8 @@ export function createNews(options) {
 
     if (image) openGraph.image ??= { url: image, alt: String(fm.imageAlt ?? '') };
     else if (!generatedCards) openGraph.image ??= { url: SOCIAL_CARD, alt: site.title };
-    openGraph.siteName ??= site.title;
     openGraph.article = { section: section.title, ...(openGraph.article ?? {}) };
     seo.openGraph = openGraph;
-    seo.twitter = { card: 'summary_large_image', ...(seo.twitter ?? {}) };
 
     const lead = byline[0];
     if (lead) {
@@ -461,17 +459,16 @@ export function createNews(options) {
   };
 
   /**
-   * Link preview defaults for pages that are not articles.
+   * The default link preview image for pages that are not articles, unless @stati/images
+   * draws a card for every page.
    * @param {PageModel} page
    * @param {boolean} generatedCards
    */
   const enrichPage = (page, generatedCards) => {
+    if (generatedCards) return;
     const seo = { ...(page.frontMatter.seo ?? {}) };
-    const openGraph = { ...(seo.openGraph ?? {}) };
-    if (!generatedCards) openGraph.image ??= { url: SOCIAL_CARD, alt: site.title };
-    openGraph.siteName ??= site.title;
-    seo.openGraph = openGraph;
-    seo.twitter = { card: 'summary_large_image', ...(seo.twitter ?? {}) };
+    seo.openGraph = { ...(seo.openGraph ?? {}) };
+    seo.openGraph.image ??= { url: SOCIAL_CARD, alt: site.title };
     page.frontMatter.seo = seo;
   };
 
