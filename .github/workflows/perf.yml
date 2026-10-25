@@ -35,7 +35,7 @@ jobs:
       - name: Run performance benchmarks
         run: |
           set -e
-          npx vitest run packages/core/test/perf --reporter=verbose || {
+          npx vitest run packages/core/test/perf packages/images/test/perf --reporter=verbose || {
             echo "Performance tests failed!"
             exit 1
           }
@@ -50,7 +50,7 @@ jobs:
             exit 0
           fi
           echo "::warning::Benchmarks exceeded the baseline. Rerunning once to rule out runner noise."
-          npx vitest run packages/core/test/perf --reporter=verbose
+          npx vitest run packages/core/test/perf packages/images/test/perf --reporter=verbose
           node scripts/compare-perf.mjs --output=perf-report.md
         env:
           STATI_METRICS: '1'

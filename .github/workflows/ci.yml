@@ -98,4 +98,4 @@ jobs:
         run: npm run build -w packages/core && npm run build -w packages/images
 
       - name: Run @stati/images tests
-        run: npx vitest run packages/images
+        run: npx vitest run packages/images --exclude='**/test/perf/**'

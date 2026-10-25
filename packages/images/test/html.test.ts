@@ -1,4 +1,3 @@
-import { performance } from 'node:perf_hooks';
 import { describe, expect, it } from 'vitest';
 import { decodeEntities, htmlToSatori, parseStyle, toCamelCase } from '../src/og/html.js';
 
@@ -136,15 +135,6 @@ describe('htmlToSatori', () => {
     const title = { type: 'div', props: { children: 'Title' } };
     expect(htmlToSatori('<div>Title</div><!-- unclosed <div>More</div>')).toEqual(title);
     expect(htmlToSatori('<div>Title</div><img src="x.png>')).toEqual(title);
-  });
-
-  it('takes linear time on input that never closes its tags', () => {
-    // A regular expression that looks for `-->` or `>` after every `<` would take quadratic time
-    for (const unit of ['<!--', '<!', '</', '<a ', '<a b="']) {
-      const started = performance.now();
-      htmlToSatori(unit.repeat(50_000));
-      expect(performance.now() - started).toBeLessThan(1000);
-    }
   });
 
   it('wraps several top-level elements in a full-size flex container', () => {

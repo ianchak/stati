@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { performance } from 'node:perf_hooks';
 import { inlineLocalImages, isOgImageExcluded } from '../../src/images/og.js';
 import type { PageModel } from '../../src/types/index.js';
 
@@ -98,12 +97,6 @@ describe('inlineLocalImages', () => {
       '<img src="/../secret.png">',
     ].join('');
     expect(await inlineLocalImages(html, dirs)).toEqual({ html, files: [] });
-  });
-
-  it('takes linear time on <img tags that never close', async () => {
-    const started = performance.now();
-    await inlineLocalImages('<img '.repeat(50_000), dirs);
-    expect(performance.now() - started).toBeLessThan(1000);
   });
 });
 
