@@ -86,9 +86,11 @@ from titles or assume all pages are directory-style `index.html`.
 
 `permalink` overrides the URL as a string; it is not a redirect or an additional
 alias route. Use unique, safe internal paths and test the output file and link.
-Do not include query strings, fragments, parent traversal, or a full external URL
-as a content route. Moving a file or changing a permalink does not create an old
-URL redirect. Implement redirects using explicit pages or hosting configuration.
+Do not include query strings, fragments, or a full external URL as a content
+route. A `..` segment in a `permalink` or `collections.generate` URL leads out of
+the output directory: the build warns and skips that page. Moving a file or
+changing a permalink does not create an old URL redirect. Implement redirects
+using explicit pages or hosting configuration.
 
 `site.baseUrl` is used for absolute metadata links, not a universal route-prefix
 transformer. A host must resolve the emitted pretty URLs to actual files.

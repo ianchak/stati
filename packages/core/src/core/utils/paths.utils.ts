@@ -230,3 +230,22 @@ export function getPageOutputFile(url: string): string {
   }
   return url.endsWith('/') ? `${url}index.html` : `${url}.html`;
 }
+
+/**
+ * Whether a page URL stays inside the output directory. A `..` segment, written with `/` or
+ * `\`, leads out of it, so the page's file would land in the project instead of `dist/`.
+ *
+ * @param url - The page URL
+ * @returns `false` when the URL has a `..` segment
+ *
+ * @example
+ * ```typescript
+ * isPageUrlInsideOutput('/blog/post');     // true
+ * isPageUrlInsideOutput('/docs/v1..2/');   // true
+ * isPageUrlInsideOutput('/../escaped');    // false
+ * isPageUrlInsideOutput('/a\\..\\b');      // false
+ * ```
+ */
+export function isPageUrlInsideOutput(url: string): boolean {
+  return !url.split(/[\\/]/).includes('..');
+}

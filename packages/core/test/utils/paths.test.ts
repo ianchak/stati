@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   normalizePathForComparison,
   isPathWithinDirectory,
+  isPageUrlInsideOutput,
 } from '../../src/core/utils/paths.utils.js';
 import { join, resolve, sep } from 'node:path';
 
@@ -290,5 +291,27 @@ describe('Path Normalization Utilities', () => {
         }
       });
     });
+  });
+});
+
+describe('isPageUrlInsideOutput', () => {
+  it.each(['/', '/blog/', '/blog/post', '/docs/v1.2/', '/a/..b/c..d', '/.hidden', '/a/./b', ''])(
+    'accepts %j',
+    (url) => {
+      expect(isPageUrlInsideOutput(url)).toBe(true);
+    },
+  );
+
+  it.each([
+    '/..',
+    '/../escaped',
+    '../escaped',
+    '/a/../../b',
+    '/blog/post/..',
+    '/../escaped/',
+    '/..\\escaped',
+    '/a\\..\\b',
+  ])('rejects %j', (url) => {
+    expect(isPageUrlInsideOutput(url)).toBe(false);
   });
 });
