@@ -58,6 +58,16 @@ describe('SEO Utils - escapeHtml', () => {
     expect(escapeHtml(input)).toBe(input);
   });
 
+  it('should write out values that are not text', () => {
+    expect(escapeHtml(1984)).toBe('1984');
+    expect(escapeHtml(true)).toBe('true');
+  });
+
+  it('should write null and undefined as nothing', () => {
+    expect(escapeHtml(null)).toBe('');
+    expect(escapeHtml(undefined)).toBe('');
+  });
+
   it('should handle empty string', () => {
     expect(escapeHtml('')).toBe('');
   });

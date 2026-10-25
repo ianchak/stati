@@ -201,8 +201,9 @@ export function sortPagesByDate(pages: PageModel[]): PageModel[] {
     if (!a.publishedAt && b.publishedAt) return 1;
 
     // Fallback to title
-    const titleA = a.frontMatter.title || basename(a.url) || 'Untitled';
-    const titleB = b.frontMatter.title || basename(b.url) || 'Untitled';
+    // String(): pages that hooks add may carry a title that is not text
+    const titleA = String(a.frontMatter.title || basename(a.url) || 'Untitled');
+    const titleB = String(b.frontMatter.title || basename(b.url) || 'Untitled');
     return titleA.localeCompare(titleB);
   });
 }

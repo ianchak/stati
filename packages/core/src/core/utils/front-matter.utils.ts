@@ -4,7 +4,7 @@
  */
 
 import { relative } from 'node:path';
-import { load, YAMLException } from 'js-yaml';
+import { load, FAILSAFE_SCHEMA, YAMLException } from 'js-yaml';
 
 /**
  * A Markdown file split into its front matter and its body.
@@ -51,10 +51,13 @@ const UNQUOTED_COLON_VALUE = /^\s*([^\s:#'"][^:]*):\s+([^\s'"[{|>&*!#].*?:(?:\s.
  *
  * Front matter starts with `---` as the file's first line, `---yaml` included, and ends at the
  * next line that starts with `---`; without one, the whole file is front matter. A file that
- * starts with `----` or any other text has none. A byte order mark is dropped.
+ * starts with `----` or any other text has none. A byte order mark is dropped. The fields Stati
+ * reads as text (`title`, `description`, `tags`, `seo.title`, `seo.description`, `seo.keywords`)
+ * come back as text even when YAML reads them as a number, a boolean or a date.
  *
  * @param source - The file's text
- * @param filePath - The file, for error messages
+ * @param filePath - The file, for error messages and warnings
+ * @param onWarning - Called with a message for each part of the front matter that is ignored
  * @returns The front matter as an object, and the Markdown after it
  * @throws {FrontMatterError} When the front matter is not valid YAML, is YAML of another shape
  *   than `key: value` lines, or names another language after `---`
@@ -65,7 +68,11 @@ const UNQUOTED_COLON_VALUE = /^\s*([^\s:#'"][^:]*):\s+([^\s'"[{|>&*!#].*?:(?:\s.
  * // { data: { title: 'Home' }, content: '# Welcome' }
  * ```
  */
-export function parseFrontMatter(source: string, filePath: string): ParsedFrontMatter {
+export function parseFrontMatter(
+  source: string,
+  filePath: string,
+  onWarning?: (message: string) => void,
+): ParsedFrontMatter {
   const text = source.charCodeAt(0) === 0xfeff ? source.slice(1) : source;
   if (!text.startsWith(DELIMITER) || text.charAt(DELIMITER.length) === '-') {
     return { data: {}, content: text };
@@ -92,7 +99,7 @@ export function parseFrontMatter(source: string, filePath: string): ParsedFrontM
     return { data: {}, content };
   }
   try {
-    return { data: parseBlock(block, language.toLowerCase(), filePath), content };
+    return { data: parseBlock(block, language.toLowerCase(), filePath, onWarning), content };
   } catch (error) {
     // Without a closing line the whole file is front matter: most likely the --- is a
     // horizontal rule, or the closing line is missing
@@ -110,7 +117,12 @@ export function parseFrontMatter(source: string, filePath: string): ParsedFrontM
 /**
  * Parses the text between the delimiters. Its first line is the file's first line.
  */
-function parseBlock(block: string, language: string, filePath: string): Record<string, unknown> {
+function parseBlock(
+  block: string,
+  language: string,
+  filePath: string,
+  onWarning?: (message: string) => void,
+): Record<string, unknown> {
   const where = `Invalid front matter in ${displayPath(filePath)}`;
   let data: unknown;
   if (language === '' || language === 'yaml' || language === 'yml') {
@@ -140,6 +152,19 @@ function parseBlock(block: string, language: string, filePath: string): Record<s
       filePath,
     );
   }
+  normalizeTextFields(
+    data,
+    () => {
+      if (language === 'json') return undefined;
+      try {
+        return load(block, { schema: FAILSAFE_SCHEMA });
+      } catch {
+        // Tags such as !!int are unknown to the schema; the parsed values are the fallback
+        return undefined;
+      }
+    },
+    (field) => onWarning?.(`Ignoring empty entry in "${field}" of ${displayPath(filePath)}`),
+  );
   return data;
 }
 
@@ -166,6 +191,87 @@ function describeYamlError(
     line,
     column,
   );
+}
+
+/** A scalar YAML reads as something other than text: a number, a boolean or a date */
+function isNonTextScalar(value: unknown): boolean {
+  return typeof value === 'number' || typeof value === 'boolean' || value instanceof Date;
+}
+
+/** The text of a scalar when the YAML source is not at hand: a date as `2024-01-01` or ISO 8601 */
+function toText(value: unknown): string {
+  if (value instanceof Date) {
+    const iso = value.toISOString();
+    return iso.endsWith('T00:00:00.000Z') ? iso.slice(0, 10) : iso;
+  }
+  return String(value);
+}
+
+/** The front matter fields Stati reads as text, as paths from the front matter's top */
+const TEXT_FIELDS: readonly (readonly string[])[] = [
+  ['title'],
+  ['description'],
+  ['tags'],
+  ['seo', 'title'],
+  ['seo', 'description'],
+  ['seo', 'keywords'],
+];
+/** The text fields that hold a list of texts */
+const TEXT_LIST_FIELDS = new Set(['tags', 'keywords']);
+
+/**
+ * Turns the front matter fields Stati reads as text into text, in place: `title`,
+ * `description`, `tags`, `seo.title`, `seo.description` and `seo.keywords`. YAML reads
+ * `title: 1984`, `tags: [2024]` and `title: 2024-01-01` as a number, a list with a number and a
+ * date, and everything that escapes or compares these fields needs strings. The text is what was
+ * written (`1.10` stays `1.10`), read from `readText`, which parses the same YAML with every
+ * scalar left as text. `null` entries in `tags` and `seo.keywords` (`tags: [~]`) are dropped.
+ *
+ * @param data - Parsed front matter
+ * @param readText - Parses the YAML again with every scalar as text; undefined when that fails
+ *   or the front matter is not YAML. Called at most once, and only when a field needs it.
+ * @param onEmpty - Called with the field for each `null` entry dropped from a list
+ */
+function normalizeTextFields(
+  data: Record<string, unknown>,
+  readText: () => unknown,
+  onEmpty: (field: string) => void,
+): void {
+  let written: { value: unknown } | undefined;
+  /** The text written at a path, or undefined when the source has none there */
+  const textAt = (path: readonly (string | number)[]): string | undefined => {
+    written ??= { value: readText() };
+    let value = written.value;
+    for (const key of path) {
+      if (typeof value !== 'object' || value === null) return undefined;
+      value = (value as Record<string | number, unknown>)[key];
+    }
+    return typeof value === 'string' ? value : undefined;
+  };
+
+  for (const path of TEXT_FIELDS) {
+    const holder = path.length === 1 ? data : data[path[0]!];
+    const key = path[path.length - 1]!;
+    if (!isMapping(holder) || !(key in holder)) continue;
+
+    const value = holder[key];
+    if (Array.isArray(value) && TEXT_LIST_FIELDS.has(key)) {
+      const entries: unknown[] = [];
+      value.forEach((entry, index) => {
+        if (entry === null || entry === undefined) {
+          onEmpty(path.join('.'));
+        } else {
+          entries.push(
+            isNonTextScalar(entry) ? (textAt([...path, index]) ?? toText(entry)) : entry,
+          );
+        }
+      });
+      holder[key] = entries;
+    } else if (isNonTextScalar(value) && key !== 'tags') {
+      // A single tags value is not a list, and is left as it is: consumers read tags as a list
+      holder[key] = textAt(path) ?? toText(value);
+    }
+  }
 }
 
 /** Whether a parsed value is a YAML mapping, which js-yaml loads as a plain object */

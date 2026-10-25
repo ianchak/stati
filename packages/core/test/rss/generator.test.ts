@@ -827,6 +827,22 @@ describe('RSS Feed Generation', () => {
       expect(aboutIndex).toBeLessThan(firstPostIndex);
     });
 
+    it('should sort by title when a title is a number', () => {
+      baseFeedConfig.sortBy = 'title-asc';
+      const numeric = {
+        ...samplePages[0]!,
+        url: '/numeric',
+        frontMatter: { ...samplePages[0]!.frontMatter, title: 1984 },
+      } as unknown as PageModel;
+
+      const result = generateRSSFeed([numeric, ...samplePages], baseConfig, baseFeedConfig);
+
+      expect(result.itemCount).toBe(4);
+      expect(result.xml.indexOf('<title>1984</title>')).toBeLessThan(
+        result.xml.indexOf('About Us'),
+      );
+    });
+
     it('should filter and exclude patterns', () => {
       baseFeedConfig.contentPatterns = ['site/**'];
       baseFeedConfig.excludePatterns = ['**/about.md'];

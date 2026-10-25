@@ -257,4 +257,32 @@ describe('Navigation', () => {
       expect(folder?.children?.map((child) => child.url)).toEqual(['/404/help']);
     });
   });
+
+  describe('titles that are not text', () => {
+    const page = (url: string, title: string | number): PageModel => ({
+      slug: url,
+      url,
+      sourcePath: `/content${url}.md`,
+      // A title YAML read as a number: the type says string
+      frontMatter: { title: title as string },
+      content: '',
+    });
+
+    it('sorts pages with numeric titles in a collection and in the navigation', () => {
+      const navigation = buildNavigation([
+        page('/docs/b', 'Beta'),
+        page('/docs/n', 42),
+        page('/docs/y', 1984),
+        page('/z', 7),
+        page('/a', 'Alpha'),
+      ]);
+
+      expect(navigation.map((node) => node.url)).toEqual(['/z', '/a', '/docs']);
+      expect(navigation.find((node) => node.url === '/docs')?.children?.map((n) => n.url)).toEqual([
+        '/docs/y',
+        '/docs/n',
+        '/docs/b',
+      ]);
+    });
+  });
 });
