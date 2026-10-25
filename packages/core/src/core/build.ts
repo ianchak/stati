@@ -38,6 +38,7 @@ import { loadConfig } from '../config/loader.js';
 import { validateDirectoryLayout } from '../config/directories.js';
 import { loadContent } from './content.js';
 import { expandPages } from './expand.js';
+import { fillTextStats } from './reading-time.js';
 import {
   createSummaryHasher,
   resolveCollectionPath,
@@ -654,6 +655,9 @@ async function processPagesWithCache(
     endHookBeforeAll();
   }
 
+  // Pages the hook added get a word count and reading time; the others have had them since load
+  fillTextStats(pages, config);
+
   // Site-wide SEO defaults go into front matter, which each page's cache hash covers, so
   // changing one rebuilds the pages it changes. After beforeAll, whose values win.
   applySEODefaults(pages, config, logger);
@@ -787,6 +791,9 @@ async function processPagesWithCache(
       ...(searchIndexPath && { searchIndexPath }),
       // Omitted without a base path, so the hash matches builds from before Stati supported one
       ...(basePath && { basePath }),
+      // What stati.page.readingTime shows, which a new reading speed changes without a file change
+      ...(page.wordCount !== undefined && { wordCount: page.wordCount }),
+      ...(page.readingTime !== undefined && { readingTime: page.readingTime }),
       bundleAutoInject: config.typescript?.autoInject !== false,
       searchAutoInject: config.search?.autoInjectMetaTag !== false,
       // Omitted without a stylesheet, so the hash matches builds from before Stati linked one

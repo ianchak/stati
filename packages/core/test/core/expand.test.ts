@@ -169,6 +169,30 @@ describe('expandPages', () => {
     expect(generated[0]!.slug).toBe('/blog/years/2025');
   });
 
+  it('gives generated and pagination pages the word count and reading time of their template', async () => {
+    const template = makePage(
+      'blog/tags/[tag].md',
+      { generate: { from: 'tags', paginate: { size: 1 } } },
+      { wordCount: 460, readingTime: 2 },
+    );
+    const pages = await expandPages([...blog(), template], config, logger);
+    const generated = pages.filter((page) => page.generated);
+
+    // /blog/tags/css, /blog/tags/go and the second page of go
+    expect(generated).toHaveLength(3);
+    for (const page of generated) {
+      expect(page.wordCount).toBe(460);
+      expect(page.readingTime).toBe(2);
+    }
+    // A template that has not been through the loader has no counts to give
+    const bare = await expandPages(
+      [...blog(), makePage('blog/tags/[tag].md', { generate: { from: 'tags' } })],
+      config,
+      logger,
+    );
+    expect(bare.find((page) => page.generated)!.wordCount).toBeUndefined();
+  });
+
   it('lists a page once when two of its values share a key', async () => {
     const template = makePage('blog/tags/[tag].md', { generate: { from: 'tags' } });
     const pages = await expandPages([...blog(), template], config, logger);

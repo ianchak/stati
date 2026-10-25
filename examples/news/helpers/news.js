@@ -3,7 +3,7 @@
  *
  *   helpers   used in templates as `stati.helpers.frontPage(...)`, `stati.helpers.byline(...)`...
  *   generate  one page per section (/news/world) and per author (/authors/your-name)
- *   hooks     reading time and search-engine metadata on every article
+ *   hooks     search-engine metadata on every article
  *   feeds     the site-wide RSS feed plus one per section
  *
  * Listings still come from Stati itself: every article lives in site/news/<section>/, so
@@ -43,9 +43,6 @@
 
 /** Article pages: /news/<section>/<slug> */
 const ARTICLE_URL = /^\/news\/([^/]+)\/[^/]+$/;
-
-/** Words a minute for the reading time */
-const WORDS_PER_MINUTE = 230;
 
 /** The link preview image for pages without their own, in public/ */
 const SOCIAL_CARD = '/images/social-card.png';
@@ -299,9 +296,9 @@ export function createNews(options) {
     /** Machine-readable date for `<time datetime="...">`. */
     isoDate: (value) => toDate(value)?.toISOString() ?? '',
 
-    /** "4 min read", from the reading time the beforeAll hook stores on every article. */
+    /** "4 min read", from the reading time Stati works out for every page. */
     readingTime: (page) => {
-      const minutes = Number(page?.frontMatter?.readingTime ?? page?.readingTime);
+      const minutes = Number(page?.readingTime);
       return minutes > 0 ? `${minutes} min read` : '';
     },
 
@@ -365,7 +362,7 @@ export function createNews(options) {
   };
 
   /**
-   * Reading time and search-engine metadata for an article: `NewsArticle` structured data,
+   * Search-engine metadata for an article: `NewsArticle` structured data,
    * Open Graph article tags with section and author, and a link preview image.
    *
    * @param {PageModel} page
@@ -382,13 +379,6 @@ export function createNews(options) {
         );
       }
     }
-
-    const words = String(page.content ?? '')
-      .replace(/```[\s\S]*?```/g, ' ')
-      .replace(/<[^>]+>|[#>*_`[\]()!-]/g, ' ')
-      .split(/\s+/)
-      .filter(Boolean).length;
-    fm.readingTime = Math.max(1, Math.round(words / WORDS_PER_MINUTE));
 
     const image = typeof fm.image === 'string' && fm.image ? fm.image : undefined;
     const published = toDate(page.publishedAt);

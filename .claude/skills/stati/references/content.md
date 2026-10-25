@@ -154,6 +154,17 @@ callbacks, and collection arrays receive. From 1.29, generated pages carry
 `generated` and every page of a paginated listing carries `pagination`; hooks
 receive those pages too.
 
+Every page also has `wordCount` and `readingTime`, computed when the content is
+loaded from the Markdown body, so `beforeAll` hooks can read them and templates print
+`stati.page.readingTime` or `post.readingTime` without a hook. Front matter,
+fenced code blocks, HTML tags, images and Markdown syntax do not count; link text and
+inline code do. Words are runs between whitespace; each Han, Hiragana and Katakana
+character counts as one word, so the count is approximate for Chinese and Japanese.
+`readingTime` is `wordCount` over `readingTime.wordsPerMinute` (default 230), rounded
+to whole minutes and at least 1. They belong to Stati's page, so front matter keys of
+those names are replaced with a warning, and a hook that edits `content` does not
+change them (pages a hook adds get theirs after the hook).
+
 `publishedAt` is a `Date` taken from the first valid front matter value among
 `publishedAt`, `published`, `date`, `createdAt`. Quoted (string) and unquoted
 (YAML `Date`) values both work; invalid values are skipped with a console

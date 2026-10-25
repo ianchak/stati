@@ -305,11 +305,28 @@ export function computePagesSummaryHash(
     pages: pages.map((page) => [
       page.url,
       toIsoDate(page.publishedAt),
-      ...fields.map((field) =>
-        field === 'content' ? page.content : (page.frontMatter[field] ?? null),
-      ),
+      ...fields.map((field) => summaryFieldValue(page, field)),
     ]),
   });
+}
+
+/**
+ * The value of a summary field. `content`, `wordCount` and `readingTime` are properties of the
+ * page itself; any other field is front matter.
+ */
+function summaryFieldValue(page: PageModel, field: string): unknown {
+  switch (field) {
+    case 'content':
+      return page.content;
+    // A front matter value of the same name counts too: listings that show it, as a hook or
+    // an author wrote it, still rebuild when it changes
+    case 'wordCount':
+      return [page.wordCount ?? null, page.frontMatter.wordCount ?? null];
+    case 'readingTime':
+      return [page.readingTime ?? null, page.frontMatter.readingTime ?? null];
+    default:
+      return page.frontMatter[field] ?? null;
+  }
 }
 
 function toIsoDate(date: Date | undefined): string | null {
