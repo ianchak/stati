@@ -1,5 +1,12 @@
 # @stati/core
 
+## 2.4.3
+
+### Patch Changes
+
+- 95b80ea: keep POSIX backslashes when comparing the output folder
+- 053cfb7: skip pages whose URL has a .. segment and guard the output path
+
 ## 2.4.2
 
 ### Patch Changes
