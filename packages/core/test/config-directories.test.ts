@@ -134,6 +134,21 @@ describe('validateDirectoryLayout', () => {
     ).toThrow(/is or contains typescript\.srcDir/);
   });
 
+  it.each([
+    ['srcDir', { srcDir: 'dist', outDir: null }, /is or contains srcDir/],
+    ['outDir', { srcDir: null, outDir: 'site' }, /is or contains srcDir/],
+    ['staticDir', { staticDir: null, outDir: 'public' }, /is or contains staticDir/],
+    ['both', { srcDir: null, outDir: null }, null],
+  ])('applies the default folder to a null %s', (_, overrides, message) => {
+    const config = makeConfig(overrides as unknown as Partial<StatiConfig>);
+
+    if (message) {
+      expect(() => validateDirectoryLayout(config)).toThrow(message);
+    } else {
+      expect(() => validateDirectoryLayout(config)).not.toThrow();
+    }
+  });
+
   it('ignores directory options of another type, which other checks report', () => {
     const config = makeConfig({ srcDir: 42 as unknown as string, outDir: 'dist' });
     expect(() => validateDirectoryLayout(config)).not.toThrow();

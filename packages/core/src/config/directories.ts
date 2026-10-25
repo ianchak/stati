@@ -8,7 +8,7 @@ import {
   resolveCacheDir,
   normalizePathForComparison,
 } from '../core/utils/paths.utils.js';
-import { DEFAULT_TS_SRC_DIR } from '../constants.js';
+import { DEFAULT_OUT_DIR, DEFAULT_TS_SRC_DIR } from '../constants.js';
 
 /** File systems on these platforms treat `Site` and `site` as one folder by default. */
 const CASE_INSENSITIVE_PLATFORMS = new Set(['win32', 'darwin']);
@@ -28,6 +28,11 @@ function isString(value: unknown): value is string {
   return typeof value === 'string';
 }
 
+/** The path resolvers fall back to the default folder for both `undefined` and `null`. */
+function isUnsetOrString(value: unknown): boolean {
+  return value === undefined || value === null || isString(value);
+}
+
 /**
  * Checks that `outDir` is a folder Stati can fill and empty without touching anything else.
  * `stati build --clean` removes `outDir` with everything in it, and every build writes pages
@@ -42,11 +47,11 @@ function isString(value: unknown): value is string {
  */
 export function validateDirectoryLayout(config: StatiConfig): void {
   // Options of another type are reported by the checks that own them
-  if (config.outDir !== undefined && !isString(config.outDir)) return;
+  if (!isUnsetOrString(config.outDir)) return;
 
   const outDir = resolveOutDir(config);
   const out = comparable(outDir);
-  const label = `outDir '${config.outDir ?? ''}' (${outDir})`;
+  const label = `outDir '${config.outDir ?? DEFAULT_OUT_DIR}' (${outDir})`;
 
   const root = process.cwd();
   if (isSameOrInside(out, comparable(root))) {
@@ -57,10 +62,10 @@ export function validateDirectoryLayout(config: StatiConfig): void {
   }
 
   const protectedDirs: Array<{ name: string; path: string }> = [];
-  if (config.srcDir === undefined || isString(config.srcDir)) {
+  if (isUnsetOrString(config.srcDir)) {
     protectedDirs.push({ name: 'srcDir', path: resolveSrcDir(config) });
   }
-  if (config.staticDir === undefined || isString(config.staticDir)) {
+  if (isUnsetOrString(config.staticDir)) {
     protectedDirs.push({ name: 'staticDir', path: resolveStaticDir(config) });
   }
   if (config.typescript?.enabled) {
