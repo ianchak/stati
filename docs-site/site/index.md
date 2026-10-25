@@ -208,7 +208,7 @@ inventory:
           }
         - {
             name: 'Starter templates',
-            text: 'Blank, blog or a full docs site, each working on first run.',
+            text: 'Blank, blog, a full docs site or a news site, each working on first run.',
             href: '/examples/list',
           }
         - {

@@ -22,7 +22,7 @@ npx create-stati
 This command will launch an interactive setup wizard that guides you through creating a new project. You'll be prompted for:
 
 - **Project name**: The directory for your new site.
-- **Template**: Start from the `blank`, `blog` or `docs` template.
+- **Template**: Start from the `blank`, `blog`, `docs` or `news` template.
 - **Styling solution**: Choose between plain CSS, Sass, or Tailwind CSS.
 - **TypeScript**: On by default, with a typed `stati.config.ts` and esbuild-compiled client code. Answer no for a JavaScript project.
 - **Image tools**: Off by default. Answer yes to add `@stati/images` for responsive images and link preview cards.
@@ -52,7 +52,7 @@ Here are the available options:
 | `--no-git` | Skips Git initialization (default: initializes Git). |
 | `--no-install` | Skips dependency installation (default: installs dependencies). |
 | `--package-manager` | Specifies the package manager to use (`npm`, `yarn`, `pnpm`, or `bun`). |
-| `--template` | Specifies a project template to use (`blank`, `blog` or `docs`). |
+| `--template` | Specifies a project template to use (`blank`, `blog`, `docs` or `news`). |
 | `--images` | Adds image tools: responsive images and link preview cards with `@stati/images`. |
 | `--no-images` | Skips image tools (the default). |
 | `--agent-skill [target]` | Installs the Stati agent skill with the [`skills` CLI](/cli/scaffolder#agent-skill) (`claude` or `agents`; default `claude`). |

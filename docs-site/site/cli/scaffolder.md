@@ -25,6 +25,9 @@ npx create-stati my-blog --template=blog
 # A complete documentation site
 npx create-stati my-docs --template=docs
 
+# A complete news site
+npx create-stati my-news --template=news
+
 # JavaScript instead of TypeScript
 npx create-stati my-site --no-typescript
 ```
@@ -48,7 +51,7 @@ Running the scaffolder will:
 The scaffolder will prompt you for:
 
 1. **Project name** - Name for your new Stati site (skipped when you pass one)
-2. **Template** - Blank, Blog or Docs (skipped with `--template`)
+2. **Template** - Blank, Blog, Docs or News (skipped with `--template`)
 3. **Styling solution** - Choose between CSS, Sass, or Tailwind CSS (skipped with `--styling`)
 4. **TypeScript** - On by default; answer no for a JavaScript project
 5. **Image tools** - Off by default; answer yes for responsive images and link preview cards
