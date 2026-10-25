@@ -125,27 +125,6 @@ title: Home
       }
     });
 
-    it('should pass configPath option', async () => {
-      const customConfigPath = join(testDir, 'custom.config.js');
-      await writeFile(
-        customConfigPath,
-        `export default { title: 'Custom Config', description: 'Custom' };`,
-      );
-
-      const server = await createDevServer({
-        configPath: testDir, // Pass directory containing config
-        logger: createMockLogger(),
-      });
-
-      expect(server).toBeDefined();
-
-      try {
-        await server.stop();
-      } catch {
-        // Server might not have been started
-      }
-    });
-
     it('should create server even with missing config file (uses defaults)', async () => {
       // Remove the config file temporarily
       const configPath = join(testDir, 'stati.config.js');

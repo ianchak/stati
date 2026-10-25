@@ -86,8 +86,8 @@ npx stati invalidate "tag:news"
 
 **CLI Commands Available:**
 
-- `stati build [--force] [--clean] [--include-drafts] [--config path]`
-- `stati dev [--port 3000] [--host localhost] [--open] [--config path]`
+- `stati build [--force] [--clean] [--include-drafts]`
+- `stati dev [--port 3000] [--host localhost] [--open]`
 - `stati invalidate [tag:foo|path:/x|age:3months]` - cache invalidation
 
 ---

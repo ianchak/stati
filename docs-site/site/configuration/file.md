@@ -569,6 +569,6 @@ For detailed information about specific configuration options, see:
 - **[TypeScript](/configuration/typescript)** - Built-in TypeScript compilation with esbuild
 - **[Images](/configuration/images)** - Image sizes, responsive images and Open Graph cards
 - **[CSS](/configuration/css)** - Hashed production stylesheets, and Tailwind CSS in `stati dev` and `stati build`
-- **[CLI commands](/cli/commands#config-file-location)** - How `--config` and the config file location work
+- **[CLI commands](/cli/commands#config-file-location)** - Where Stati looks for the config file
 
 The configuration system is designed to grow with your needs while maintaining simplicity for basic use cases. Start with minimal configuration and add complexity as your site evolves.

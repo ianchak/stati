@@ -104,7 +104,6 @@ describe('Preview Server', () => {
       port: 4000,
       host: '127.0.0.1',
       open: true,
-      configPath: './custom.config.js',
     };
 
     const previewServer = await createPreviewServer(options);
@@ -141,11 +140,7 @@ describe('Preview Server', () => {
   });
 
   it('should load configuration correctly', async () => {
-    const options: PreviewServerOptions = {
-      configPath: './custom.config.js',
-    };
-
-    await createPreviewServer(options);
+    await createPreviewServer();
 
     expect(mockLoadConfig).toHaveBeenCalledWith(process.cwd());
   });

@@ -25,7 +25,7 @@ stati dev --port 4000 --host 0.0.0.0
 stati dev --open
 ```
 
-The `--port`, `--host` and `--open` flags map directly to the options accepted by `createDevServer` in `@stati/core` and override `dev.port`, `dev.host` and `dev.open` from your config. `--config` is accepted too, but only the builds read the config from its directory: the server takes its port, host and folders from `stati.config.*` in the current directory, so start it from the project root (see [Config file location](/cli/commands#config-file-location)).
+The `--port`, `--host` and `--open` flags map directly to the options accepted by `createDevServer` in `@stati/core` and override `dev.port`, `dev.host` and `dev.open` from your config.
 
 ## What happens on startup
 

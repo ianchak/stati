@@ -23,8 +23,6 @@ export interface PreviewServerOptions {
   host?: string;
   /** Whether to open browser automatically (default: false) */
   open?: boolean;
-  /** Path to config file */
-  configPath?: string;
   /** Logger instance */
   logger?: Logger;
 }
@@ -38,14 +36,8 @@ export interface PreviewServer {
 /**
  * Loads and validates configuration for the preview server.
  */
-async function loadPreviewConfig(
-  configPath: string | undefined,
-  logger: Logger,
-): Promise<{ outDir: string; config: StatiConfig }> {
+async function loadPreviewConfig(logger: Logger): Promise<{ outDir: string; config: StatiConfig }> {
   try {
-    if (configPath) {
-      logger.info?.(`Loading config from: ${configPath}`);
-    }
     const config = await loadConfig(process.cwd());
     const { outDir } = resolveDevPaths(config);
 
@@ -68,7 +60,7 @@ export async function createPreviewServer(
   const logger = options.logger ?? createFallbackLogger();
 
   // Load configuration first to get defaults from config file
-  const { outDir, config } = await loadPreviewConfig(options.configPath, logger);
+  const { outDir, config } = await loadPreviewConfig(logger);
 
   // Merge config values with options (options take precedence)
   const { port, host, open } = mergeServerOptions({

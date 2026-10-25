@@ -90,7 +90,6 @@ stati dev [options]
 | `--port` | number | 3000 | Port to run the dev server on |
 | `--host` | string | localhost | Host to bind the dev server to |
 | `--open` | boolean | false | Open browser after starting server |
-| `--config` | string | - | Builds pages with the config in this path's directory; the server's own settings still come from the current directory (see [Config file location](#config-file-location)) |
 | `--tailwind-input` | string | - | Input file path for Tailwind CSS watcher |
 | `--tailwind-output` | string | - | Output file path for compiled Tailwind CSS; pages link it when it is a `.css` file in the output directory (see [CSS](/configuration/css)) |
 | `--tailwind-verbose` | boolean | false | Show all Tailwind CSS output (default shows errors only) |
@@ -129,7 +128,6 @@ stati preview [options]
 | `--port` | number | 4000 | Port to run the preview server on |
 | `--host` | string | localhost | Host to bind the preview server to |
 | `--open` | boolean | false | Open browser after starting server |
-| `--config` | string | - | Accepted, but `preview` currently loads the config from the current directory (see [Config file location](#config-file-location)) |
 
 **Examples:**
 
@@ -160,7 +158,6 @@ stati build [options]
 |------|------|---------|-------------|
 | `--force` | boolean | false | Re-render every page, ignoring the ISG cache (the cache is kept and updated) |
 | `--clean` | boolean | false | Delete the output directory and the `.stati/` cache before building |
-| `--config` | string | - | Path to a config file; only its directory is used (see [Config file location](#config-file-location)) |
 | `--include-drafts` | boolean | false | Include draft pages in the build |
 | `--metrics` | boolean | false | Enable build metrics collection (also enabled by `STATI_METRICS=1` or `true`) |
 | `--metrics-file` | string | - | Metrics JSON file name, resolved inside `.stati/metrics/`; paths outside that folder are rejected (default: `.stati/metrics/build-<timestamp>.json`) |
@@ -323,8 +320,6 @@ Every command supports:
 - `--help` - Show command help
 - `--version` - Show the CLI version
 
-`build`, `dev` and `preview` also accept `--config <path>`; see [Config file location](#config-file-location) for what it actually changes.
-
 ### Version information
 
 ```bash
@@ -351,11 +346,7 @@ stati.config.mjs  # ES module config
 
 If none exists, Stati builds with its defaults (site title "My Stati Site", base URL `http://localhost:3000`). If the file exists but fails to load (for example, a syntax error), the error is printed, followed by "Falling back to default configuration.", and the build continues with those defaults, so read the output when a build looks wrong. Validation errors are the exception: an option Stati does not know (such as Stati 1's `eta`), `helpers` that are not functions, and invalid `isg` or `images` settings stop the build with an error that names the setting.
 
-`--config` does not select a file by name:
-
-- `stati build --config path/to/stati.config.ts` uses only the **directory** of the path and loads the standard file name from it. `--config stati.staging.js` is ignored and `./stati.config.*` is used.
-- `stati dev` takes its port, host and the folders it serves and watches from `./stati.config.*`, but builds pages with the config in the `--config` path's directory, so the two can differ. `stati preview` ignores `--config`.
-- `srcDir`, `outDir`, `staticDir` and the `.stati/` cache are resolved from the current directory in every case.
+Every command loads the config from the current directory, and resolves `srcDir`, `outDir`, `staticDir` and the `.stati/` cache from it too.
 
 Run commands from the project root, and keep one config file per project; switch environments with environment variables instead of separate config files.
 

@@ -17,8 +17,7 @@ Stati did not use your configuration. Without a `stati.config.ts`, `stati.config
 
 1. Run commands from the project root, where the config file is
 2. Read the start of the build output for "Error loading config" and fix the reported error
-3. Use one of the standard file names; `--config` cannot point to a file with another name (see [Config file location](/cli/commands#config-file-location))
-4. A `.js` config that uses `import` loads anyway, but Node prints a warning unless `package.json` has `"type": "module"`, and the config fails to load if it says `"type": "commonjs"`. Add `"type": "module"` or rename the file to `.mjs`
+3. A `.js` config that uses `import` loads anyway, but Node prints a warning unless `package.json` has `"type": "module"`, and the config fails to load if it says `"type": "commonjs"`. Add `"type": "module"` or rename the file to `.mjs`
 
 ---
 

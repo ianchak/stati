@@ -48,10 +48,6 @@ const cli = yargs(hideBin(process.argv))
           type: 'boolean',
           description: 'Clean cache before building',
         })
-        .option('config', {
-          type: 'string',
-          description: 'Path to config file',
-        })
         .option('include-drafts', {
           type: 'boolean',
           description: 'Include draft pages in the build',
@@ -102,10 +98,6 @@ const cli = yargs(hideBin(process.argv))
           : undefined,
       };
 
-      if (argv.config) {
-        buildOptions.configPath = argv.config as string;
-      }
-
       const tailwindInput = argv['tailwind-input'];
       const tailwindOutput = argv['tailwind-output'];
       if (tailwindInput && tailwindOutput) {
@@ -127,11 +119,6 @@ const cli = yargs(hideBin(process.argv))
             name: 'Drafts',
             value: !!buildOptions.includeDrafts,
             isDefault: !buildOptions.includeDrafts,
-          },
-          {
-            name: 'Config',
-            value: buildOptions.configPath || '',
-            isDefault: !buildOptions.configPath,
           },
           { name: 'Metrics', value: metricsEnabled, isDefault: !metricsEnabled },
           {
@@ -219,10 +206,6 @@ const cli = yargs(hideBin(process.argv))
           type: 'boolean',
           description: 'Open browser after starting server',
         })
-        .option('config', {
-          type: 'string',
-          description: 'Path to config file',
-        })
         .option('tailwind-input', {
           type: 'string',
           description: 'Input file for Tailwind CSS watcher.',
@@ -242,7 +225,6 @@ const cli = yargs(hideBin(process.argv))
         ...(argv.port !== undefined && { port: argv.port }),
         ...(argv.host !== undefined && { host: argv.host }),
         ...(argv.open !== undefined && { open: argv.open }),
-        ...(argv.config && { configPath: argv.config as string }),
         // Pages link the watcher's output
         ...(argv['tailwind-input'] &&
           argv['tailwind-output'] && {
@@ -268,7 +250,6 @@ const cli = yargs(hideBin(process.argv))
           { name: 'Host', value: devAddress.host, isDefault: argv.host === undefined },
           { name: 'Port', value: devAddress.port, isDefault: argv.port === undefined },
           { name: 'Open', value: !!argv.open, isDefault: !argv.open },
-          { name: 'Config', value: (argv.config as string) || '', isDefault: !argv.config },
           {
             name: 'Tailwind',
             value: !!(argv['tailwind-input'] && argv['tailwind-output']),
@@ -341,10 +322,6 @@ const cli = yargs(hideBin(process.argv))
         .option('open', {
           type: 'boolean',
           description: 'Open browser after starting server',
-        })
-        .option('config', {
-          type: 'string',
-          description: 'Path to config file',
         }),
     async (argv) => {
       // Only pass port/host when given so config values (preview.port/preview.host) apply otherwise
@@ -352,7 +329,6 @@ const cli = yargs(hideBin(process.argv))
         ...(argv.port !== undefined && { port: argv.port }),
         ...(argv.host !== undefined && { host: argv.host }),
         ...(argv.open !== undefined && { open: argv.open }),
-        ...(argv.config && { configPath: argv.config as string }),
       };
 
       try {
@@ -373,7 +349,6 @@ const cli = yargs(hideBin(process.argv))
           { name: 'Host', value: previewAddress.host, isDefault: argv.host === undefined },
           { name: 'Port', value: previewAddress.port, isDefault: argv.port === undefined },
           { name: 'Open', value: !!argv.open, isDefault: !argv.open },
-          { name: 'Config', value: (argv.config as string) || '', isDefault: !argv.config },
         ]);
 
         await previewServer.start();

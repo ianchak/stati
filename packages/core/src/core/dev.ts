@@ -54,7 +54,6 @@ export interface DevServerOptions {
   port?: number;
   host?: string;
   open?: boolean;
-  configPath?: string;
   logger?: Logger;
   /**
    * The Tailwind CSS input and output the CLI's watcher uses (`--tailwind-input` and
@@ -64,7 +63,7 @@ export interface DevServerOptions {
 }
 
 /** What every dev server build gets besides its logger and rebuild flags */
-type DevBuildOptions = Pick<BuildOptions, 'configPath' | 'tailwind'>;
+type DevBuildOptions = Pick<BuildOptions, 'tailwind'>;
 
 export interface DevServer {
   start(): Promise<void>;
@@ -76,16 +75,10 @@ export interface DevServer {
  * Loads and validates configuration for the dev server.
  */
 async function loadDevConfig(
-  configPath: string | undefined,
   logger: Logger,
 ): Promise<{ config: StatiConfig; outDir: string; srcDir: string; staticDir: string }> {
   // Load configuration
   try {
-    if (configPath) {
-      // For custom config path, we need to change to that directory temporarily
-      // This is a limitation of the current loadConfig implementation
-      logger.info?.(`Loading config from: ${configPath}`);
-    }
     const config = await loadConfig(process.cwd());
     const { outDir, srcDir, staticDir } = resolveDevPaths(config);
 
@@ -497,10 +490,9 @@ async function describeBuildError(error: Error): Promise<ErrorDetails> {
 
 export async function createDevServer(options: DevServerOptions = {}): Promise<DevServer> {
   const logger = options.logger ?? createFallbackLogger();
-  const { configPath } = options;
 
   // Load configuration first to get defaults from config file
-  const { config, outDir, srcDir, staticDir } = await loadDevConfig(configPath, logger);
+  const { config, outDir, srcDir, staticDir } = await loadDevConfig(logger);
 
   // Pages link the Tailwind watcher's output when it is a stylesheet in the output directory.
   // Other outputs still work as before, but Stati can't link them.
@@ -516,7 +508,6 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
     }
   }
   const buildOptions: DevBuildOptions = {
-    ...(configPath && { configPath }),
     ...(tailwind && { tailwind }),
   };
 
