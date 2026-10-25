@@ -57,9 +57,13 @@ function createMockLogger(overrides: Partial<Logger> = {}): Logger {
 
 // Parses the text of the page's JSON-LD script tag, which must be the only one in the output
 function getJsonLd(html: string): unknown {
-  const matches = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)];
-  expect(matches).toHaveLength(1);
-  return JSON.parse(matches[0]![1]!);
+  const open = '<script type="application/ld+json">';
+  const start = html.indexOf(open);
+  expect(start).toBeGreaterThanOrEqual(0);
+  expect(html.indexOf(open, start + 1)).toBe(-1);
+  const end = html.indexOf('</script>', start);
+  expect(end).toBeGreaterThan(start);
+  return JSON.parse(html.slice(start + open.length, end));
 }
 
 describe('SEO Generator - generateSEOMetadata', () => {
