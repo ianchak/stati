@@ -1,5 +1,16 @@
 # @stati/cli
 
+## 2.3.0
+
+### Minor Changes
+
+- c34cb74: serve a site from a subfolder taken from site.baseUrl
+
+### Patch Changes
+
+- Updated dependencies [c34cb74]
+  - @stati/core@2.5.0
+
 ## 2.2.2
 
 ### Patch Changes

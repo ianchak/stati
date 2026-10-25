@@ -1,5 +1,11 @@
 # @stati/core
 
+## 2.5.0
+
+### Minor Changes
+
+- c34cb74: serve a site from a subfolder taken from site.baseUrl
+
 ## 2.4.6
 
 ### Patch Changes
