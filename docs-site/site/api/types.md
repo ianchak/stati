@@ -467,6 +467,9 @@ interface TemplateContext {
   /** The URL slug Stati gives generated page keys */
   slugify: (text: string) => string;
 
+  /** Adds the base path of site.baseUrl to a site path; absolute, #hash, ?query and prefixed values are unchanged */
+  url: (path: string) => string;
+
   /** Builds space-separated attribute values, like classnames */
   propValue: (...args: unknown[]) => string;
 

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { Token } from 'markdown-it';
 import {
   createMarkdownProcessor,
   renderMarkdown,
@@ -1078,6 +1079,62 @@ Even more content with **bold** and *italic* text.`;
       // All should be same instance
       expect(md1).toBe(md2);
       expect(md2).toBe(md3);
+    });
+  });
+
+  describe('renderMarkdown with a base path', () => {
+    const render = async (content: string, basePath: string | undefined, images = false) => {
+      const md = await createMarkdownProcessor(baseConfig);
+      return renderMarkdown(content, md, true, {
+        ...(basePath !== undefined && { basePath }),
+        ...(images && {
+          images: {
+            renderMarkdownImage: (token: Token) => ({ src: String(token.attrGet('src')) }),
+          } as never,
+        }),
+      }).html;
+    };
+
+    it('puts the base path in front of root-absolute links and images', async () => {
+      const html = await render(
+        '[a](/about) ![b](/pic.png) *[c](/deep/x?y=1#z)* > [d](/quote)\n\n- [e](/list)',
+        '/sub',
+      );
+
+      expect(html).toContain('<a href="/sub/about">a</a>');
+      expect(html).toContain('<img src="/sub/pic.png" alt="b">');
+      expect(html).toContain('<a href="/sub/deep/x?y=1#z">c</a>');
+      expect(html).toContain('<a href="/sub/quote">d</a>');
+      expect(html).toContain('<a href="/sub/list">e</a>');
+    });
+
+    it('leaves other URLs, raw HTML and code as written', async () => {
+      const html = await render(
+        '[a](https://x.test/a) [b](//cdn.test/a) [c](#c) [d](mailto:a@b.test) [e](rel) [f](<>)\n\n<a href="/raw">raw</a>\n\n`[g](/code)`',
+        '/sub',
+      );
+
+      expect(html).toContain('<a href="https://x.test/a">a</a>');
+      expect(html).toContain('<a href="//cdn.test/a">b</a>');
+      expect(html).toContain('<a href="#c">c</a>');
+      expect(html).toContain('<a href="mailto:a@b.test">d</a>');
+      expect(html).toContain('<a href="rel">e</a>');
+      expect(html).toContain('<a href="/raw">raw</a>');
+      expect(html).toContain('<code>[g](/code)</code>');
+    });
+
+    it('leaves image URLs to the image rule when a page has image state', async () => {
+      const html = await render('[a](/about) ![b](/pic.png)', '/sub', true);
+
+      expect(html).toContain('<a href="/sub/about">a</a>');
+      expect(html).toContain('src="/pic.png"');
+    });
+
+    it.each([undefined, ''])('changes nothing without a base path (%s)', async (basePath) => {
+      const html = await render('[a](/about) ![b](/pic.png)', basePath);
+
+      expect(html).toContain('<a href="/about">a</a>');
+      expect(html).toContain('<img src="/pic.png" alt="b">');
     });
   });
 });

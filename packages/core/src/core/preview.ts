@@ -13,6 +13,9 @@ import {
   mergeServerOptions,
   assertPortAvailable,
   toPortUnavailableError,
+  getBasePath,
+  resolveBasePathRequest,
+  respondToBasePathRequest,
 } from './utils/index.js';
 import { DEFAULT_PREVIEW_PORT, DEFAULT_DEV_HOST } from '../constants.js';
 
@@ -73,7 +76,9 @@ export async function createPreviewServer(
     },
   });
 
-  const url = `http://${host}:${port}`;
+  // The site is served under the path of site.baseUrl, as the host serves it
+  const basePath = getBasePath(config.site.baseUrl);
+  const url = `http://${host}:${port}${basePath ? `${basePath}/` : ''}`;
   let httpServer: ReturnType<typeof createServer> | null = null;
 
   /**
@@ -152,8 +157,14 @@ export async function createPreviewServer(
           return;
         }
 
+        const target = resolveBasePathRequest(req.url, requestPath, basePath);
+        if (target.kind !== 'serve') {
+          respondToBasePathRequest(res, target, basePath);
+          return;
+        }
+
         try {
-          const { content, mimeType, statusCode } = await serveFile(requestPath);
+          const { content, mimeType, statusCode } = await serveFile(target.path);
 
           res.writeHead(statusCode, {
             'Content-Type': mimeType,

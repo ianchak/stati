@@ -14,6 +14,14 @@ describe('parseServerAddress', () => {
     expect(parseServerAddress('http://::1:3000')).toEqual({ host: '::1', port: 3000 });
   });
 
+  it('should ignore the base path of a site served from a subfolder', () => {
+    expect(parseServerAddress('http://localhost:3000/docs/')).toEqual({
+      host: 'localhost',
+      port: 3000,
+    });
+    expect(parseServerAddress('http://::1:3000/demos/blog/')).toEqual({ host: '::1', port: 3000 });
+  });
+
   it('should handle https URLs', () => {
     expect(parseServerAddress('https://example.test:8443')).toEqual({
       host: 'example.test',

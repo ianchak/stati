@@ -92,8 +92,11 @@ the output directory: the build warns and skips that page. Moving a file or
 changing a permalink does not create an old URL redirect. Implement redirects
 using explicit pages or hosting configuration.
 
-`site.baseUrl` is used for absolute metadata links, not a universal route-prefix
-transformer. A host must resolve the emitted pretty URLs to actual files.
+`site.baseUrl` supplies absolute metadata links and, from core 2.5, the base path of a
+site served from a subfolder: `page.url` and navigation URLs stay relative to the
+site root, and links print through `stati.url()`. Markdown links and images that start
+with a single `/` get the base path automatically. A host must resolve the emitted
+pretty URLs to actual files.
 Verify both `/about` and intended trailing-slash variants on the target host.
 From core 1.29, `stati build` deletes the HTML of pages that no longer exist
 (only files its cache manifest records); on older versions use a clean

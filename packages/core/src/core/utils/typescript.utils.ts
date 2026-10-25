@@ -618,6 +618,8 @@ function isBundleAlreadyIncluded(html: string, bundlePath: string): boolean {
  *
  * @param html - Rendered HTML content
  * @param bundlePaths - Array of paths to compiled bundles (e.g., ['/_assets/core.js', '/_assets/docs.js'])
+ * @param basePath - The path the site is served from (see `getBasePath()`), added to each script
+ *   URL; a script tag that already has the prefixed URL is not added again
  * @returns HTML with injected script tags
  *
  * @example
@@ -627,14 +629,19 @@ function isBundleAlreadyIncluded(html: string, bundlePath: string): boolean {
  * // Returns HTML with both script tags injected before </body>
  * ```
  */
-export function autoInjectBundles(html: string, bundlePaths: string[]): string {
+export function autoInjectBundles(
+  html: string,
+  bundlePaths: string[],
+  basePath: string = '',
+): string {
   if (!bundlePaths || bundlePaths.length === 0) {
     return html;
   }
 
   // Filter paths: must be valid and not already included in HTML
   const validPaths = bundlePaths.filter(
-    (bundlePath) => isValidBundlePath(bundlePath) && !isBundleAlreadyIncluded(html, bundlePath),
+    (bundlePath) =>
+      isValidBundlePath(bundlePath) && !isBundleAlreadyIncluded(html, `${basePath}${bundlePath}`),
   );
 
   if (validPaths.length === 0) {
@@ -653,7 +660,7 @@ export function autoInjectBundles(html: string, bundlePaths: string[]): string {
 
   // Inject all script tags before </body>
   const scriptTags = validPaths
-    .map((bundlePath) => `<script type="module" src="${bundlePath}"></script>`)
+    .map((bundlePath) => `<script type="module" src="${basePath}${bundlePath}"></script>`)
     .join('\n');
 
   return `${before}${scriptTags}\n${after}`;

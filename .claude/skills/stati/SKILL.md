@@ -67,6 +67,11 @@ Read the other references that match the work; do not load everything by default
 - `<%= value %>` escapes text; `<%~ trustedHtml %>` emits HTML. Insert rendered
   Markdown, include results and `stati.body` raw, but never untrusted strings or
   arbitrary frontmatter as raw HTML. Escaping does not validate URL schemes.
+- Link to the site's own pages and files with `stati.url(path)` (core 2.5+), for
+  example `href="<%= stati.url('/about') %>"` and `src="<%= stati.url(post.url) %>"`.
+  It adds the path of `site.baseUrl` for a site served from a subfolder and returns
+  the path unchanged otherwise, so templates that use it build the same on both.
+  Hand-written `href="/…"` and `src="/…"` break under a base path.
 - Make an HTML attribute's entire dynamic value one expression:
   `class="<%= stati.propValue('card', active && 'is-active') %>"`,
   ``href="<%= `#${entry.id}` %>"``. Do not splice expressions into static
@@ -153,7 +158,8 @@ Verified against Stati core **1.24.1**, Eta **3.5.0**, source revision
 **2026-10-18**; Markdown rendering with markdown-it **15** and markdown-it-prism **4** on
 **2026-10-19**; site-wide SEO defaults against core **2.1** and the 404 page defaults
 against the core **2.2** branch on **2026-10-23**; hashed stylesheets against the
-source and tests on **2026-10-24**. See [resources](./references/resources.md) for authority rules and
+source and tests on **2026-10-24**; the base path and `stati.url()` against the
+source and tests on **2026-10-25**. See [resources](./references/resources.md) for authority rules and
 known discrepancies. When upgrading, recheck the contracts and rerun
 [the bundled smoke test](./scripts/smoke-test.mjs) from an installed Stati project;
 it builds only an isolated temporary fixture and checks its generated output.

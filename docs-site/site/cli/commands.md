@@ -142,7 +142,7 @@ stati preview --port 8080 --host 0.0.0.0
 stati preview --open
 ```
 
-The preview server serves `dist/` as built, with no live reload. Extensionless URLs such as `/about` are served from `about.html`, and query strings are ignored, so `/about?ref=nav` serves the same file. A missing file gets your site's `404.html` (from `site/404.md`) with a 404 status, as most static hosts do, or a plain-text 404 when the site has none. `stati dev` serves files the same way, with live reload added to the 404 page.
+The preview server serves `dist/` as built, with no live reload. Extensionless URLs such as `/about` are served from `about.html`, and query strings are ignored, so `/about?ref=nav` serves the same file. A missing file gets your site's `404.html` (from `site/404.md`) with a 404 status, as most static hosts do, or a plain-text 404 when the site has none. `stati dev` serves files the same way, with live reload added to the 404 page. When `site.baseUrl` has a path, both servers serve the site under it (`/docs/`) and redirect `/` there; see [Deploying to a subfolder](/advanced/deploying-to-a-subfolder).
 
 ### `stati build`
 

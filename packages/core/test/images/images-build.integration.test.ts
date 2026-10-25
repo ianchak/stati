@@ -852,4 +852,105 @@ export function createImageProvider() {
       },
     );
   });
+  describe('served from a base path', () => {
+    beforeEach(() => {
+      config.site = { title: 'Image Test', baseUrl: 'https://example.com/sub/' };
+    });
+
+    it('puts the base path in front of image URLs and copies files to the output root', async () => {
+      await runBuild();
+
+      expect(await read('dist/index.html')).toContain(
+        '<img src="/sub/images/hero.png" alt="Hero" width="1600" height="900" loading="eager"',
+      );
+      const post = await read('dist/blog/post.html');
+      const copy = post.match(/src="\/sub\/(_img\/photo-[0-9a-f]{8}\.png)"/);
+      expect(copy).not.toBeNull();
+      expect(await exists(`dist/${copy![1]}`)).toBe(true);
+      expect(await exists('dist/sub')).toBe(false);
+      expect(logger.warning).not.toHaveBeenCalled();
+    });
+
+    it('prefixes root-absolute images that are left as written, not remote ones', async () => {
+      await write(
+        'site/about.md',
+        '---\ntitle: About\n---\n![Raw](/images/hero.png?raw) ![Gone](/images/missing.png) ![Remote](https://cdn.example.com/a.png)',
+      );
+      await runBuild();
+
+      const about = await read('dist/about.html');
+      expect(about).toContain('<img src="/sub/images/hero.png" alt="Raw">');
+      expect(about).toContain('<img src="/sub/images/missing.png" alt="Gone">');
+      expect(about).toContain('<img src="https://cdn.example.com/a.png" alt="Remote">');
+    });
+
+    it('prefixes Markdown and template images with images: false', async () => {
+      config.images = false;
+      await write(
+        'site/about.eta',
+        "<html><head></head><body><%~ stati.image('/images/hero.png', { alt: 'Banner' }) %></body></html>",
+      );
+      await write('site/about.md', '---\ntitle: About\nlayout: about\n---\nNo images here.');
+      await runBuild();
+
+      expect(await read('dist/index.html')).toContain(
+        '<img src="/sub/images/hero.png" alt="Hero">',
+      );
+      expect(await read('dist/blog/post.html')).toContain('<img src="./photo.png" alt="Photo">');
+      expect(await read('dist/about.html')).toContain(
+        '<body><img src="/sub/images/hero.png" alt="Banner"></body>',
+      );
+    });
+
+    it('prefixes responsive variants and goes back to the plain image when encoding fails', async () => {
+      await installFakeImagesPackage(projectDir, { failOn: 'hero' });
+      config.images = { responsive: true };
+      await runBuild();
+
+      const post = await read('dist/blog/post.html');
+      expect(post).toMatch(
+        /<source type="image\/avif" srcset="\/sub\/_img\/photo-[0-9a-f]{8}-480\.avif 480w/,
+      );
+      expect(post).toMatch(
+        /<img src="\/sub\/_img\/photo-[0-9a-f]{8}-800\.png" srcset="\/sub\/_img\//,
+      );
+      // The failed image is back to plain markup that keeps the prefix
+      const home = await read('dist/index.html');
+      expect(home).not.toContain('<picture>');
+      expect(home).toContain('<img src="/sub/images/hero.png" alt="Hero" width="1600"');
+    });
+
+    it('makes og:image absolute with the base path and draws cards from the original file', async () => {
+      await installFakeImagesPackage(projectDir);
+      config.images = { responsive: true, og: true };
+      await write(
+        'site/og.eta',
+        `<div style="display:flex"><%~ stati.image('/images/hero.png', { alt: '' }) %><img src="<%= stati.url('/images/hero.png') %>"></div>`,
+      );
+      await runBuild();
+
+      const url = (await read('dist/index.html')).match(
+        /<meta property="og:image" content="([^"]+)">/,
+      )?.[1];
+      expect(url).toMatch(/^https:\/\/example\.com\/sub\/_img\/og\/index-[0-9a-f]{8}\.png$/);
+      expect(await exists(`dist${new URL(url!).pathname.slice('/sub'.length)}`)).toBe(true);
+      const withImages = globalThis.__statiImagesCalls!.og.filter((call) =>
+        call.html.includes('<img'),
+      );
+      expect(withImages.length).toBeGreaterThan(0);
+      for (const call of withImages) {
+        expect(call.html).not.toContain('src="/');
+        expect(call.html.match(/src="data:image\/png;base64,/g)).toHaveLength(2);
+      }
+    });
+
+    it('rebuilds every page when the base path changes', async () => {
+      expect(await runBuild()).toMatchObject({ cacheMisses: 3 });
+      expect(await runBuild()).toMatchObject({ cacheHits: 3, cacheMisses: 0 });
+
+      config.site = { title: 'Image Test', baseUrl: 'https://example.com/other' };
+      expect(await runBuild()).toMatchObject({ cacheHits: 0, cacheMisses: 3 });
+      expect(await read('dist/index.html')).toContain('src="/other/images/hero.png"');
+    });
+  });
 });

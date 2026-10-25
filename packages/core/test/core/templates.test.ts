@@ -211,6 +211,7 @@ describe('templates.ts', () => {
         'props',
         'site',
         'slugify',
+        'url',
       ]);
     });
 

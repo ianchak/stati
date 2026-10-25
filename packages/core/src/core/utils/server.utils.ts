@@ -1,6 +1,8 @@
 import { extname, join, resolve, sep } from 'node:path';
 import { stat } from 'node:fs/promises';
+import type { ServerResponse } from 'node:http';
 import { createServer } from 'node:net';
+import { stripBasePath } from './base-path.utils.js';
 
 /**
  * Content types the dev and preview servers send, by file extension. Covers the files Stati
@@ -62,6 +64,68 @@ export function parseRequestPath(url: string | undefined): string | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * What a server does with a request when the site is served from a base path.
+ * - `serve`: serve `path`, the request path from the site root
+ * - `redirect`: send the browser to `location`
+ * - `outside`: the URL is not part of the site
+ */
+export type BasePathRequest =
+  { kind: 'serve'; path: string } | { kind: 'redirect'; location: string } | { kind: 'outside' };
+
+/**
+ * Maps a request URL to the site served under a base path, as a host that maps a subfolder
+ * to the site does: `/docs/about` is the site's `/about`, `/` and `/docs` redirect to `/docs/`
+ * (keeping the query string), and any other URL is outside the site.
+ *
+ * @param url - The request URL as received (`req.url`)
+ * @param requestPath - The decoded request path, from {@link parseRequestPath}
+ * @param basePath - The base path from `getBasePath()`; without one the request is served as it is
+ */
+export function resolveBasePathRequest(
+  url: string | undefined,
+  requestPath: string,
+  basePath: string,
+): BasePathRequest {
+  if (basePath === '') {
+    return { kind: 'serve', path: requestPath };
+  }
+  let decodedBasePath = basePath;
+  try {
+    decodedBasePath = decodeURIComponent(basePath);
+  } catch {
+    // The base path is used as it is written
+  }
+  if (requestPath === '/' || requestPath === decodedBasePath) {
+    const search = /\?[^#]*/.exec(url ?? '')?.[0] ?? '';
+    return { kind: 'redirect', location: `${basePath}/${search}` };
+  }
+  const path = stripBasePath(requestPath, decodedBasePath);
+  return path === undefined ? { kind: 'outside' } : { kind: 'serve', path };
+}
+
+/**
+ * Answers a request that is not served from the site: the redirect to the base path, or the
+ * 404 for a URL outside it.
+ *
+ * @param res - The response
+ * @param target - What {@link resolveBasePathRequest} decided
+ * @param basePath - The base path, which the 404 names
+ */
+export function respondToBasePathRequest(
+  res: ServerResponse,
+  target: Exclude<BasePathRequest, { kind: 'serve' }>,
+  basePath: string,
+): void {
+  if (target.kind === 'redirect') {
+    res.writeHead(302, { Location: target.location });
+    res.end();
+    return;
+  }
+  res.writeHead(404, { 'Content-Type': 'text/plain' });
+  res.end(`404 - Not found. This site is served under ${basePath}/`);
 }
 
 /**

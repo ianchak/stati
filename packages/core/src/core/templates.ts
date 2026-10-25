@@ -18,6 +18,9 @@ import {
   propValue,
   slugify,
   createNavigationHelpers,
+  addBasePath,
+  getBasePath,
+  withBasePath,
 } from './utils/index.js';
 import {
   getCollections,
@@ -79,12 +82,16 @@ export interface RenderPageExtras {
 /**
  * `stati.image()` when images are turned off: a plain `<img>`, attributes escaped.
  */
-function renderPlainImage(src: unknown, options: StatiImageOptions = {}): string {
+function renderPlainImage(
+  src: unknown,
+  options: StatiImageOptions = {},
+  basePath: string = '',
+): string {
   if (typeof src !== 'string' || !src.trim()) {
     return '';
   }
   const attributes = [
-    `src="${escapeHtml(src)}"`,
+    `src="${escapeHtml(addBasePath(src, basePath))}"`,
     `alt="${escapeHtml(options.alt ?? '')}"`,
     ...(options.title ? [`title="${escapeHtml(options.title)}"`] : []),
     ...(options.class ? [`class="${escapeHtml(options.class)}"`] : []),
@@ -211,6 +218,8 @@ async function renderPageInScope(
   pageImages: PageImages | undefined,
 ): Promise<RenderResult> {
   const { page, logger: log, index } = scope;
+  // The path the site is served from, which stati.url() adds to a site-relative path
+  const basePath = getBasePath(config.site.baseUrl);
   // The generated Open Graph image is known once the og template has rendered, before the
   // layout. Until then stati.generateSEO() emits placeholders for its tags.
   const ogState: { image: GeneratedOgImage | undefined; pending: boolean } = {
@@ -307,9 +316,14 @@ async function renderPageInScope(
       ),
     propValue,
     slugify,
+    // A site-relative path with the base path added, safe to apply twice
+    url: (path: unknown) =>
+      withBasePath(typeof path === 'string' ? path : String(path ?? ''), basePath),
     // Image with dimensions, lazy loading and, with images.responsive, srcset variants
     image: (src: unknown, options?: StatiImageOptions) =>
-      pageImages ? pageImages.renderHelperImage(src, options) : renderPlainImage(src, options),
+      pageImages
+        ? pageImages.renderHelperImage(src, options)
+        : renderPlainImage(src, options, basePath),
     assets, // TypeScript bundle assets (available when typescript.enabled is true)
     // Set while the Open Graph template renders: { width, height }
     og: undefined as { width: number; height: number } | undefined,

@@ -110,13 +110,13 @@ The added link goes at the end of `<head>`, after the page's other stylesheets. 
 ```eta
 <head>
   <% for (const href of stati.assets.stylesheetPaths) { %>
-  <link rel="stylesheet" href="<%= href %>">
+  <link rel="stylesheet" href="<%= stati.url(href) %>">
   <% } %>
-  <link rel="stylesheet" href="/prism-theme.css">
+  <link rel="stylesheet" href="<%= stati.url('/prism-theme.css') %>">
 </head>
 ```
 
-`stati.assets.stylesheetPaths` is `['/styles.css']` in development and `['/_assets/styles-A1B2C3D4.css']` in production, and an empty array without the Tailwind flags. Print each path as it is: a production build writes the final name into the page after rendering, by replacing the path the template printed, so a path the template changes, such as one it encodes or takes apart, keeps a name no file has.
+`stati.assets.stylesheetPaths` is `['/styles.css']` in development and `['/_assets/styles-A1B2C3D4.css']` in production, and an empty array without the Tailwind flags. Print each path as it is, or through `stati.url()` when the site is [served from a subfolder](/advanced/deploying-to-a-subfolder): a production build writes the final name into the page after rendering, by replacing the path the template printed, so a path the template changes, such as one it encodes or takes apart, keeps a name no file has.
 
 ## Options
 

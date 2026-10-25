@@ -51,6 +51,9 @@ export {
 // Template utilities
 export { propValue } from './template.utils.js';
 
+// Base path utilities (sites served from a subfolder)
+export { getBasePath, addBasePath, withBasePath, stripBasePath } from './base-path.utils.js';
+
 // Slugify utilities
 export { slugify } from './slugify.utils.js';
 
@@ -106,12 +109,15 @@ export {
   assertPortAvailable,
   toPortUnavailableError,
   PortUnavailableError,
+  resolveBasePathRequest,
+  respondToBasePathRequest,
 } from './server.utils.js';
 export type {
   PrettyUrlResult,
   MergedServerOptions,
   MergeServerOptionsParams,
   PortUnavailableCode,
+  BasePathRequest,
 } from './server.utils.js';
 
 // Error overlay utilities
