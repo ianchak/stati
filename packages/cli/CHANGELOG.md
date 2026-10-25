@@ -1,5 +1,15 @@
 # @stati/cli
 
+## 2.2.1
+
+### Patch Changes
+
+- refresh benchmark baselines and drop the unchecked p95
+- cut benchmark headroom to 25ms so 2x slowdowns fail
+- Updated dependencies
+- Updated dependencies
+  - @stati/core@2.4.1
+
 ## 2.2.0
 
 ### Minor Changes

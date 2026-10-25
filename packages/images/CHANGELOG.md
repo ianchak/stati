@@ -1,5 +1,12 @@
 # @stati/images
 
+## 1.0.2
+
+### Patch Changes
+
+- refresh benchmark baselines and drop the unchecked p95
+- cut benchmark headroom to 25ms so 2x slowdowns fail
+
 ## 1.0.1
 
 ### Patch Changes
