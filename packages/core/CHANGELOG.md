@@ -1,5 +1,11 @@
 # @stati/core
 
+## 2.7.1
+
+### Patch Changes
+
+- 051ebc1: load a stati.config.ts that imports CommonJS packages such as fs-extra
+
 ## 2.7.0
 
 ### Minor Changes
