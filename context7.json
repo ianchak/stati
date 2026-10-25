@@ -1,0 +1,43 @@
+{
+  "$schema": "https://context7.com/schema/context7.json",
+  "projectTitle": "Stati",
+  "description": "Stati is a TypeScript-first static site generator. Write Markdown, template with Eta, and rebuild only what changed with Incremental Static Generation. Packages: @stati/core, @stati/cli, @stati/images and create-stati.",
+  "branch": "main",
+  "folders": [
+    "docs-site/site",
+    "packages/core",
+    "packages/cli",
+    "packages/create-stati",
+    "packages/images"
+  ],
+  "excludeFolders": [
+    "**/node_modules",
+    "**/dist",
+    "**/coverage",
+    "**/test",
+    "**/fonts",
+    "docs-site/site/information"
+  ],
+  "excludeFiles": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "CONTRIBUTING.md",
+    "contributing.md",
+    "404.md"
+  ],
+  "rules": [
+    "Stati is a TypeScript-first static site generator. Packages: @stati/core (engine), @stati/cli (the stati command), create-stati (scaffolder), @stati/images (optional image provider).",
+    "Create a site with `npx create-stati my-site`, then `cd my-site` and `npm run dev`. Markdown pages live in site/, static assets in public/, and the output goes to dist/.",
+    "Configure in stati.config.ts (or stati.config.js) with defineConfig() from @stati/core. Prefer TypeScript examples over JavaScript.",
+    "Stati 2 removed stati.partials and eta.filters. Use stati.include('path', props) for components and the top-level `helpers` option, called as stati.helpers.name(value). See Upgrading to Stati 2.",
+    "Use stati.include(), stati.layout(), stati.body and stati.props in .eta templates. Eta's own include, includeAsync, layout, block and blockAsync are blocked.",
+    "Eta attributes cannot mix static text with a tag, as in class=\"a-<%= b %>\". Make the whole value dynamic: a template literal, or stati.propValue('base', cond && 'active').",
+    "Pages are Markdown files with YAML front matter. site/blog/hello.md becomes /blog/hello. A .eta file is a layout, shell or include, never a page.",
+    "Incremental Static Generation caches in .stati/manifest.json. Clear it with `stati build --clean`, or selectively with `stati invalidate \"tag:news\"`, `\"path:/blog/\"` or `\"age:3months\"`.",
+    "Responsive images (images.responsive) and Open Graph cards (images.og) need the @stati/images package. Without it the build fails with an install message.",
+    "For Tailwind CSS, pass --tailwind-input and --tailwind-output to `stati dev` and `stati build`. Production builds link the stylesheet by its hashed file name.",
+    "Search, sitemap, robots.txt, RSS feeds and SEO meta tags are built in and configured in stati.config.ts. Enable search with search: { enabled: true }.",
+    "Requires Node.js 22.20+ or 24+. npm, pnpm, yarn and bun all work as package managers.",
+    "For concepts such as ISG, templates and routing, prefer the docs-site guides over package READMEs. For quickstart steps, prefer create-stati and @stati/cli docs."
+  ]
+}

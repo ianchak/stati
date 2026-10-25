@@ -1,5 +1,11 @@
 # @stati/images
 
+## 1.0.3
+
+### Patch Changes
+
+- move remaining scanner timing checks to the perf suites
+
 ## 1.0.2
 
 ### Patch Changes
