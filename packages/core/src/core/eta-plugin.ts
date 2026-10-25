@@ -37,76 +37,21 @@ const ETA_FUNCTIONS = [
 export type BlockedEtaFunction = (typeof ETA_FUNCTIONS)[number]['name'];
 
 /**
- * Matches code that starts with a parenthesis, a bracket or a template literal. JavaScript reads
- * such a line as the continuation of the statement before it: a call, an index or a tagged
- * template.
+ * Whether code starts, after any comments, with a parenthesis, a bracket or a template literal.
+ * JavaScript reads such a line as the continuation of the statement before it: a call, an index
+ * or a tagged template.
  */
-const CONTINUING_START = /^\s*[([`]/;
-
-/** Matches `else` or `do` at the end of code. */
-const BODYLESS_KEYWORD_END = /(?:^|[^\w$.])(?:else|do)$/;
-
-/** Matches the keyword in front of the parenthesis of a statement header, at the end of code. */
-const HEADER_KEYWORD_END = /(?:^|[^\w$.])(?:if|for|while|with)\s*$/;
-
-/**
- * Returns the code without comments and with the text of strings and template literals
- * blanked out, so that the quotes and brackets in them cannot be mistaken for code. Regular
- * expression literals are not recognized.
- */
-function maskCode(code: string): string {
-  let masked = '';
-  let quote = '';
-  for (let i = 0; i < code.length; i++) {
-    const char = code[i] as string;
-    if (quote) {
-      if (char === '\\') {
-        i++;
-        masked += '  ';
-      } else if (char === quote) {
-        quote = '';
-        masked += char;
-      } else {
-        masked += ' ';
-      }
-    } else if (char === '/' && code[i + 1] === '*') {
-      const close = code.indexOf('*/', i + 2);
-      i = close === -1 ? code.length : close + 1;
-    } else if (char === '/' && code[i + 1] === '/') {
-      const close = code.indexOf('\n', i);
-      i = close === -1 ? code.length : close;
-    } else {
-      if (char === '"' || char === "'" || char === '`') {
-        quote = char;
-      }
-      masked += char;
+function continuesPreviousStatement(code: string): boolean {
+  let rest = code.trimStart();
+  while (rest.startsWith('/*') || rest.startsWith('//')) {
+    const block = rest.startsWith('/*');
+    const close = block ? rest.indexOf('*/', 2) : rest.indexOf('\n');
+    if (close === -1) {
+      return false;
     }
+    rest = rest.slice(close + (block ? 2 : 1)).trimStart();
   }
-  return masked.trim();
-}
-
-/**
- * Whether masked code ends with the header of a statement that has no body yet: `if (cond)`,
- * `for (...)`, `while (cond)`, `with (obj)`, `else` or `do`. The next tag is its body, so no
- * semicolon may come between them. `if (cond) call()` is complete, since the parenthesis that
- * ends it belongs to the call.
- */
-function endsWithOpenStatement(masked: string): boolean {
-  if (BODYLESS_KEYWORD_END.test(masked)) {
-    return true;
-  }
-  if (!masked.endsWith(')')) {
-    return false;
-  }
-  let depth = 0;
-  for (let i = masked.length - 1; i >= 0; i--) {
-    if (masked[i] === ')') {
-      depth++;
-    } else if (masked[i] === '(' && --depth === 0) {
-      return HEADER_KEYWORD_END.test(masked.slice(0, i));
-    }
-  }
-  return false;
+  return rest.startsWith('(') || rest.startsWith('[') || rest.startsWith('`');
 }
 
 /** Marks the start of the template's own code in the compiled function. */
@@ -138,26 +83,14 @@ export function createStatiEtaPlugin(): EtaPlugin {
       // statement at a line break when the next line cannot continue it. A tag that starts with
       // `(`, `[` or a template literal would continue the tag before it, such as
       // `<% const tags = x %>` followed by `<% (tags || []).forEach(...) %>`. The semicolon goes
-      // in front of such a tag, in every mode, so development and production compile alike.
-      // A tag that follows the header of a statement without braces is its body, so it gets none.
-      let previous = '';
-      const separated = ast.map((node) => {
-        if (typeof node !== 'object' || node.t !== 'e') {
-          previous = '';
-          return node;
-        }
-        const code = maskCode(node.val);
-        if (code === '') {
-          // A tag with only comments neither ends a statement nor starts one
-          return node;
-        }
-        const val =
-          CONTINUING_START.test(code) && !endsWithOpenStatement(previous)
-            ? `;${node.val}`
-            : node.val;
-        previous = code;
-        return { ...node, val };
-      });
+      // in front of such a tag, in every mode, so development and production compile alike. A
+      // tag is therefore a statement of its own; a statement without braces, such as
+      // `<% if (x) %>`, takes the next tag as its body only when that tag does not start so.
+      const separated = ast.map((node) =>
+        typeof node === 'object' && node.t === 'e' && continuesPreviousStatement(node.val)
+          ? { ...node, val: `;${node.val}` }
+          : node,
+      );
       return [start, ...separated, end];
     },
     processFnString(fnString) {
@@ -173,9 +106,9 @@ export function createStatiEtaPlugin(): EtaPlugin {
             `${name} = (...__statiArgs) => this.${BLOCKED_CALL_HANDLER}('${name}', __statiArgs, options && options.filepath);`,
         )
         .join(' ');
-      // With debug on, Eta marks each tag's line with `__eta.line=N` and no semicolon. The
-      // marker ends the statement before it, as the tag-level semicolons above do, so it needs
-      // one of its own: the AST check does not see every statement a tag can end with.
+      // With debug on, Eta marks each tag's line with `__eta.line=N` and no semicolon. The marker
+      // gets one, as it always did, so it ends the statement before it for every kind of tag,
+      // including those the check above leaves alone.
       return fnString
         .replace(BODY_START, `${replacements} {`)
         .replace(/__eta\.line=(\d+)\n/g, '__eta.line=$1;\n');
