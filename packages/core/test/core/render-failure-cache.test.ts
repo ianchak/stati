@@ -95,6 +95,21 @@ describe('pages that fail to render', () => {
     expect(second.errors).toHaveLength(1);
   });
 
+  it("renders a page that calls Eta's own include() on every build", async () => {
+    await site.write('site/partials/card.eta', '<p>card</p>');
+    await site.write(
+      'site/broken.eta',
+      "<html><body><%~ include('./partials/card') %></body></html>",
+    );
+
+    const first = await site.build({ allowErrors: true });
+    expect(first.errors).toEqual([expect.stringContaining("Eta's include() is not available")]);
+
+    const second = await site.build({ allowErrors: true });
+    expect(second.rendered).toEqual(['/bad']);
+    expect(second.errors).toHaveLength(1);
+  });
+
   it('renders a page whose includes lead back to themselves on every build', async () => {
     await site.write(
       'site/broken.eta',

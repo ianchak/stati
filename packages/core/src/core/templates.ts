@@ -429,12 +429,18 @@ function createOgRenderer(scope: RenderScope, base: BaseContext): OgTemplateRend
       scope.record({ name, from: scope.pageFolder, file });
       return file === null ? null : join(scope.index.srcDir, file);
     },
-    render(template) {
-      return 'path' in template
-        ? scope.renderAsync(base, {
-            file: relative(scope.index.srcDir, template.path).replace(/\\/g, '/'),
-          })
-        : scope.renderAsync(base, { source: template.source });
+    async render(template) {
+      try {
+        return 'path' in template
+          ? await scope.renderAsync(base, {
+              file: relative(scope.index.srcDir, template.path).replace(/\\/g, '/'),
+            })
+          : await scope.renderAsync(base, { source: template.source });
+      } catch (error) {
+        // The image pipeline logs the failure and leaves the page without a card
+        scope.hadError = true;
+        throw error;
+      }
     },
   };
 }
