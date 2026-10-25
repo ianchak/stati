@@ -94,18 +94,17 @@ function extractPerfResults(benchmarkSummary, metrics) {
     complexBuild: null,
   };
 
-  // Prefer benchmark summary from perf tests (has aggregated results)
+  // Prefer benchmark summary from perf tests (has aggregated results). Only medians are
+  // gated: p95 over 7 runs is the slowest run, which is mostly runner noise.
   if (benchmarkSummary) {
     if (benchmarkSummary.coldBuild) {
       results.coldBuild = {
         medianMs: benchmarkSummary.coldBuild.medianMs,
-        p95Ms: benchmarkSummary.coldBuild.p95Ms,
       };
     }
     if (benchmarkSummary.warmBuild) {
       results.warmBuild = {
         medianMs: benchmarkSummary.warmBuild.medianMs,
-        p95Ms: benchmarkSummary.warmBuild.p95Ms,
         cacheHitRate: benchmarkSummary.warmBuild.cacheHitRate,
       };
     }
@@ -117,7 +116,6 @@ function extractPerfResults(benchmarkSummary, metrics) {
     if (benchmarkSummary.complexBuild) {
       results.complexBuild = {
         medianMs: benchmarkSummary.complexBuild.medianMs,
-        p95Ms: benchmarkSummary.complexBuild.p95Ms,
       };
     }
     return results;

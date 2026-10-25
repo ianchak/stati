@@ -157,10 +157,10 @@ Performance tests live in `packages/core/test/perf/` and measure build speed acr
 
 | Scenario | Description | Baseline |
 | -------- | ----------- | -------- |
-| Cold Build | Clean slate, no cache | ~220ms median |
-| Warm Build | No changes, high cache hit | ~50ms median |
-| Incremental | Single file change | ~55ms median |
-| Complex | Nested components, 111 pages | ~280ms median |
+| Cold Build | Clean slate, no cache | ~60ms median |
+| Warm Build | No changes, high cache hit | ~35ms median |
+| Incremental | Single file change | ~40ms median |
+| Complex | Nested components, 111 pages | ~60ms median |
 
 Run benchmarks locally:
 
@@ -171,7 +171,7 @@ npx vitest run packages/core/test/perf
 # Benchmarks use 100 generated pages with warmup runs
 ```
 
-Baselines are defined in `perf/baselines/benchmark.json`. Each benchmark passes if its median over 7 runs stays within 30% of the baseline or 40ms above it, whichever is larger, so fast benchmarks are not failed by CI runner noise. Cache hit rates are validated too.
+Baselines are defined in `perf/baselines/benchmark.json`. Each benchmark passes if its median over 7 runs stays within 30% of the baseline or 25ms above it, whichever is larger, so fast benchmarks are not failed by CI runner noise. Cache hit rates are validated too. If a benchmark fails, CI reruns the suite once and fails only if the rerun fails as well, so a stalled runner does not fail the check.
 
 ### Build metrics system
 
