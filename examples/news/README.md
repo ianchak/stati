@@ -71,7 +71,7 @@ The key is the folder name. The section gets a tab, a page at `/news/science`, a
 ```
 ├── helpers/
 │   └── news.js           # Front page ranking, bylines, dates, section and author pages,
-│                         # NewsArticle metadata, feeds and the Google News sitemap
+│                         # NewsArticle metadata, feeds and reading time
 ├── public/
 │   ├── fonts/            # Libre Franklin, Source Serif 4 and their licences
 │   ├── images/           # Lead images, the default link preview card, the publisher logo

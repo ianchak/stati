@@ -272,6 +272,40 @@ Output is `sitemap.xml`. Above 50,000 entries, generation splits files and makes
 an index automatically. In the checked source, `generateIndex` is typed but not
 consulted by splitting logic; do not promise it forces/disables index output.
 
+### Google News sitemap
+
+`sitemap.news` writes a separate Google News sitemap (the `news:` namespace) on
+production builds, so a news site needs no `afterAll` hook for it:
+
+```ts
+sitemap: {
+  enabled: true,
+  news: {
+    include: ['/news/*/*'], // required: URL globs, like seo.articles.include
+    publicationName: 'Stati News', // default site.title
+    language: 'en', // default from site.defaultLocale, else 'en'
+    maxAgeDays: 2, // default 2: Google reads the last two days
+    filename: 'news-sitemap.xml', // default
+  },
+},
+```
+
+Without `news` nothing is written. Each `<url>` has `news:publication` (name,
+language), `news:publication_date` (the page's `publishedAt`, ISO 8601 in UTC)
+and `news:title` (the `title` front matter), all XML-escaped, under `site.baseUrl`
+and its base path. Newest first, at most 1000. Left out: drafts, generated pages,
+later pages of a listing, the 404 page, noindex pages (unless `sitemap.exclude:
+false`), `sitemap.exclude: true`, and pages with no valid date or title (a
+warning names them). The sitemap's `excludePatterns`, `includePatterns`,
+`filter`, `transformUrl` and `transformEntry` do not apply. No recent article
+still writes a valid empty `urlset`. The file is not written when
+`sitemap.enabled` is off. Invalid options (`include` not an array of strings,
+`language` not an ISO 639 code like `en`, `maxAgeDays` not above 0, a `filename` that is not an `.xml` name of letters, digits, `.`, `_` and `-`, or is
+`sitemap.xml`/`sitemap-<n>.xml`) fail config loading.
+
+Freshness is decided at build time: a site built once and served for weeks
+keeps one day's list. Tell the user to rebuild on publish or on a schedule.
+
 ## robots.txt
 
 Production-only, opt-in:
@@ -294,7 +328,9 @@ Without rules the low-level default allows `/` for `*`.
 
 Set `robots.sitemap` **explicitly**. Type comments suggesting it is automatically
 connected to `sitemap.enabled` do not match the checked conversion logic.
-`true` uses the standard sitemap URL; a string supplies a sitemap location.
+`true` uses the standard sitemap URL, plus the news sitemap when `sitemap.news`
+is set (no `customLines` entry needed; an existing `Sitemap:` line for it is not
+repeated); a string supplies a sitemap location and lists only that.
 Validate host/domain and file existence. Robots directives are crawler hints,
 not authentication or protection of confidential data.
 

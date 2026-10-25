@@ -175,6 +175,54 @@ console.log(result.sitemaps); // Array of sitemap files (if split)
 
 ---
 
+### `generateNewsSitemap()`
+
+Generates a [Google News sitemap](/configuration/seo#google-news-sitemap) from an array of pages: the pages that match `news.include` and were published within `news.maxAgeDays`, newest first, at most 1000.
+
+> **Production Only**: In Stati's build pipeline, the news sitemap is written during production builds when `sitemap.news` is set.
+
+**Signature:**
+
+```typescript
+function generateNewsSitemap(
+  pages: PageModel[],
+  config: StatiConfig,
+  news: NewsSitemapConfig,
+  logger?: Logger,
+  now?: Date,
+): NewsSitemapGenerationResult;
+```
+
+**Parameters:**
+
+- `pages` (PageModel[]): Array of page objects
+- `config` (StatiConfig): Stati configuration object (`site.baseUrl`, `site.title` and `site.defaultLocale`)
+- `news` (NewsSitemapConfig): The `sitemap.news` options
+- `logger` (Logger, optional): Receives warnings about matching pages that have no valid `publishedAt` or no title
+- `now` (Date, optional): The time `maxAgeDays` counts back from (default: the current time)
+
+**Returns:**
+
+- `NewsSitemapGenerationResult`: Object with the generated `xml`, `entryCount`, `sizeInBytes` and the `filename` to write it to
+
+**Example:**
+
+```typescript
+import { generateNewsSitemap } from '@stati/core';
+
+const result = generateNewsSitemap(pages, config, { include: ['/news/*/*'] });
+
+console.log(result.filename); // 'news-sitemap.xml'
+console.log(result.entryCount); // Number of articles
+```
+
+**Notes:**
+
+- Drafts, generated pages, later pages of a listing, the 404 page and noindex pages are left out; the main sitemap's patterns and callbacks do not apply
+- `generateNewsSitemapXml(entries, publication)` writes the XML for entries you choose yourself
+
+---
+
 ### `generateRobotsTxt()`
 
 Generates robots.txt content from low-level options.
@@ -242,13 +290,18 @@ Generates robots.txt content from Stati configuration.
 **Signature:**
 
 ```typescript
-function generateRobotsTxtFromConfig(config: RobotsTxtConfig, siteUrl?: string): string;
+function generateRobotsTxtFromConfig(
+  config: RobotsTxtConfig,
+  siteUrl?: string,
+  additionalSitemaps?: string[],
+): string;
 ```
 
 **Parameters:**
 
 - `config` (RobotsTxtConfig): Robots.txt configuration object
 - `siteUrl` (string, optional): Site base URL for resolving sitemap paths
+- `additionalSitemaps` (string[], optional): Other sitemaps the build writes, such as `['/news-sitemap.xml']`. They are listed after `sitemap.xml` when `config.sitemap` is `true`, unless `customLines` already has a `Sitemap:` line for them
 
 **Returns:**
 

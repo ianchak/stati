@@ -442,6 +442,71 @@ The sitemap reads only this `sitemap` block; `seo.priority` and `seo.changeFreq`
 - `yearly` - Changes yearly (good for static content)
 - `never` - Archived content that never changes
 
+### Google News sitemap
+
+News publishers can have Stati write a [Google News sitemap](https://developers.google.com/search/docs/crawling-indexing/sitemaps/news-sitemap) (the `news:` namespace) as a separate file, so no build hook is needed. Set `sitemap.news` next to `enabled: true`:
+
+```typescript
+// stati.config.ts
+import { defineConfig } from '@stati/core';
+
+export default defineConfig({
+  site: {
+    title: 'Stati News',
+    baseUrl: 'https://example.com',
+    defaultLocale: 'en-US',
+  },
+  sitemap: {
+    enabled: true,
+    news: {
+      // URL globs of the articles, like seo.articles.include (required)
+      include: ['/news/*/*'],
+
+      // Name of the publication (default: site.title)
+      publicationName: 'Stati News',
+
+      // Language of the publication (default: from site.defaultLocale, or 'en')
+      language: 'en',
+
+      // Articles published longer ago than this are left out (default: 2)
+      maxAgeDays: 2,
+
+      // File name in the output folder (default: 'news-sitemap.xml')
+      filename: 'news-sitemap.xml',
+    },
+  },
+  robots: {
+    enabled: true,
+    sitemap: true, // lists sitemap.xml and news-sitemap.xml
+  },
+});
+```
+
+Without `sitemap.news` nothing changes: no file is written. With it, production builds (`stati build`) write the file next to `sitemap.xml`, with one `<url>` per article:
+
+```xml
+<url>
+  <loc>https://example.com/news/world/first-article</loc>
+  <news:news>
+    <news:publication>
+      <news:name>Stati News</news:name>
+      <news:language>en</news:language>
+    </news:publication>
+    <news:publication_date>2026-10-25T07:00:00.000Z</news:publication_date>
+    <news:title>First article</news:title>
+  </news:news>
+</url>
+```
+
+- **Which pages.** Pages whose URL matches `include` (the same globs as `seo.articles.include`: `*` stays within one URL segment, `**` crosses segments) and that were published within `maxAgeDays`. The publication date is the page's `publishedAt` (from `publishedAt`, `published`, `date` or `createdAt` front matter) and is written as ISO 8601 in UTC. The title is the page's `title` front matter. Stati warns about a matching page that has no valid date or no title and leaves it out, so choose `include` patterns that select articles only (`/news/*/*` skips the section pages at `/news/world`). A future date is listed as it is.
+- **Left out.** Drafts, pages created from a `[param].md` template, later pages of a paginated listing, the 404 page, pages marked `noindex`, and pages with `sitemap: { exclude: true }`. A page that sets `sitemap: { exclude: false }` stays in despite `noindex`. The sitemap's `excludePatterns`, `includePatterns`, `filter`, `transformUrl` and `transformEntry` do not apply to the news sitemap; `include` selects its pages.
+- **Order and size.** Newest first, at most 1000 URLs (the oldest are dropped, with a warning). When no article is recent enough, the file is still written as a valid `urlset` with no `<url>` elements.
+- **URLs.** Absolute, from `site.baseUrl` including its base path; titles and URLs are XML-escaped.
+- **robots.txt.** With `robots.sitemap: true`, `robots.txt` lists the news sitemap after `sitemap.xml`, so no `customLines` entry is needed (an existing `Sitemap:` line for it is not repeated). An explicit `robots.sitemap` URL lists only that URL. The news sitemap is not written, nor listed, when `sitemap.enabled` is off.
+- **Validation.** `include` must be an array of strings, `language` an ISO 639 code such as `en` (or `zh-cn`, `zh-tw`) rather than a locale like `en-US`, `maxAgeDays` a number above 0, and `filename` an `.xml` file name of letters, digits, `.`, `_` and `-` (no folder) that is not `sitemap.xml` or `sitemap-<n>.xml` in any case; anything else fails the build with a message naming the option.
+
+> **Freshness.** Google News reads the articles of the last two days, and Stati decides which articles are recent when it builds. A site that is built once and served for weeks keeps the list of that day. Rebuild whenever you publish, or on a schedule (for example a nightly or hourly CI job), so the file follows the clock.
+
 ## robots.txt configuration
 
 Generate a `robots.txt` file to control search engine crawling.
@@ -503,7 +568,8 @@ export default defineConfig({
     // Crawl delay in seconds, written in the "User-agent: *" group (be careful with this)
     crawlDelay: undefined,
 
-    // Sitemap reference: a URL, or true for <baseUrl>/sitemap.xml (not added when unset)
+    // Sitemap reference: a URL, or true for <baseUrl>/sitemap.xml and, with sitemap.news,
+    // the Google News sitemap (not added when unset)
     sitemap: 'https://example.com/sitemap.xml',
 
     // Custom lines to add to robots.txt

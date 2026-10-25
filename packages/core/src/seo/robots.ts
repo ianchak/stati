@@ -119,9 +119,16 @@ export function generateRobotsTxt(options: RobotsTxtOptions = {}): string {
  * Converts Stati RobotsTxtConfig to RobotsTxtOptions
  * @param config - Stati robots.txt configuration
  * @param siteUrl - Site base URL
+ * @param additionalSitemaps - Other sitemaps the build writes, such as `/news-sitemap.xml`.
+ *   They are listed after `sitemap.xml` when `config.sitemap` is `true`, unless
+ *   `customLines` already has a `Sitemap:` line for them.
  * @returns Robots.txt generation options
  */
-export function configToOptions(config: RobotsTxtConfig, siteUrl?: string): RobotsTxtOptions {
+export function configToOptions(
+  config: RobotsTxtConfig,
+  siteUrl?: string,
+  additionalSitemaps: string[] = [],
+): RobotsTxtOptions {
   const options: RobotsTxtOptions = {};
 
   // Add siteUrl if provided
@@ -175,8 +182,17 @@ export function configToOptions(config: RobotsTxtConfig, siteUrl?: string): Robo
       // Explicit sitemap URL
       sitemaps.push(config.sitemap);
     } else if (config.sitemap === true) {
-      // Auto-include sitemap.xml
+      // Auto-include sitemap.xml and the other sitemaps of the build
       sitemaps.push('/sitemap.xml');
+      const declared = new Set(
+        (config.customLines ?? []).map((line) => /^\s*sitemap\s*:\s*(\S+)\s*$/i.exec(line)?.[1]),
+      );
+      for (const path of additionalSitemaps) {
+        const url = siteUrl ? resolveAbsoluteUrl(path, siteUrl) : path;
+        if (!declared.has(url)) {
+          sitemaps.push(path);
+        }
+      }
     }
   }
 
@@ -196,6 +212,8 @@ export function configToOptions(config: RobotsTxtConfig, siteUrl?: string): Robo
  * Generates robots.txt content from Stati configuration
  * @param config - Stati robots.txt configuration
  * @param siteUrl - Site base URL for resolving sitemap paths
+ * @param additionalSitemaps - Other sitemaps the build writes, such as `/news-sitemap.xml`,
+ *   listed after `sitemap.xml` when `config.sitemap` is `true`
  * @returns Generated robots.txt content
  *
  * @example
@@ -211,7 +229,11 @@ export function configToOptions(config: RobotsTxtConfig, siteUrl?: string): Robo
  * );
  * ```
  */
-export function generateRobotsTxtFromConfig(config: RobotsTxtConfig, siteUrl?: string): string {
-  const options = configToOptions(config, siteUrl);
+export function generateRobotsTxtFromConfig(
+  config: RobotsTxtConfig,
+  siteUrl?: string,
+  additionalSitemaps: string[] = [],
+): string {
+  const options = configToOptions(config, siteUrl, additionalSitemaps);
   return generateRobotsTxt(options);
 }

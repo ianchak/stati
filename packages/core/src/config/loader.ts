@@ -5,6 +5,7 @@ import type { StatiConfig } from '../types/index.js';
 import { validateISGConfig, ISGConfigurationError } from '../core/isg/validation.js';
 import { validateImagesConfig } from '../images/config.js';
 import { validateSEOConfig } from '../seo/defaults.js';
+import { validateSitemapConfig } from '../seo/news-sitemap.js';
 import { validateCSSConfig } from '../css/config.js';
 import { validateDirectoryLayout } from './directories.js';
 import { ConfigValidationError } from './errors.js';
@@ -277,6 +278,16 @@ export async function loadConfig(cwd: string = process.cwd()): Promise<StatiConf
         );
       }
       throw error;
+    }
+
+    // The Google News sitemap; validateSitemapConfig throws only ConfigValidationError
+    try {
+      validateSitemapConfig(mergedConfig.sitemap);
+    } catch (error) {
+      throw new ConfigValidationError(
+        `Invalid sitemap configuration in ${configPath}:\n${(error as Error).message}`,
+        { cause: error },
+      );
     }
 
     // The stylesheet settings
