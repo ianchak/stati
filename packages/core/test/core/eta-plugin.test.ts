@@ -58,7 +58,7 @@ describe('Stati Eta plugin', () => {
   });
 
   it('renders tags that start with a parenthesis or a bracket with debug on', () => {
-    // Each tag ends its statement; only the line markers Eta adds between them could continue one
+    // Each tag ends its statement with a semicolon
     const template =
       '<% (stati.tags ?? []).forEach((tag) => { %><%= tag %>,<% }); %>' +
       '<% [1, 2].forEach((n) => { %><%= n %><% }); %>' +
@@ -66,6 +66,68 @@ describe('Stati Eta plugin', () => {
     for (const debug of [false, true]) {
       expect(engine(debug).renderString(template, { tags: ['a', 'b'] })).toBe('a,b,121');
     }
+  });
+
+  it('separates adjacent tags that start with a parenthesis, a bracket or a template literal', () => {
+    // No tag ends in a semicolon: only the plugin can keep each tag a statement of its own
+    const template =
+      '<% const tags = stati.tags %>\n' +
+      '<% (tags || []).forEach((tag) => { %><li><%= tag %></li><% }) %>\n' +
+      '<% const n = 1 %><% [n, 2].forEach((x) => { %><%= x %><% }) %>' +
+      '<% let total = 0 %><% `${n}`.split("").forEach(() => { total += 1 }) %>' +
+      '<%= total %>';
+    for (const debug of [false, true]) {
+      expect(engine(debug).renderString(template, { tags: ['a', 'b'] })).toBe(
+        '<li>a</li><li>b</li>121',
+      );
+    }
+  });
+
+  it('adds the semicolon in front of the tag, and only where the tag could be continued', () => {
+    const compiled = engine(false).compileToString(
+      '<% const a = 1 %><% (a) %><% const b = 2 %><% b + 1 %><% // note %><% [a] %>',
+      {},
+    );
+    expect(compiled).toContain('const a = 1\n;(a)\nconst b = 2\nb + 1\n// note\n;[a]');
+  });
+
+  it('skips comments in front of a tag when it looks for the start that continues', () => {
+    for (const debug of [false, true]) {
+      const template =
+        '<% stati.out = [] %><% const n = 1 %>' +
+        '<% /* note */ (stati.out).push(n) %>' +
+        '<% // note\n[stati.out].length %>' +
+        '<%= stati.out.length %>';
+      expect(engine(debug).renderString(template, {})).toBe('1');
+    }
+  });
+
+  it('keeps the tag that is the body of a statement without braces', () => {
+    const template =
+      '<% stati.out = [] %><% if (stati.show) %><% stati.out.push(1) %><%= stati.out.length %>';
+    expect(engine(false).renderString(template, { show: false })).toBe('0');
+    expect(engine(false).renderString(template, { show: true })).toBe('1');
+  });
+
+  it('adds nothing in front of a tag that only holds comments or an unfinished comment', () => {
+    const plugin = createStatiEtaPlugin();
+    const vals = (nodes: string[]) =>
+      (
+        plugin.processAST!(
+          nodes.map((val) => ({ t: 'e' as const, val, lineNo: 1 })),
+          {} as never,
+        ) as { val: string }[]
+      )
+        .slice(1, -1)
+        .map((node) => node.val);
+
+    expect(vals(['a', '/* (b)', '// (c)', '/* x */ // (d)'])).toEqual([
+      'a',
+      '/* (b)',
+      '// (c)',
+      '/* x */ // (d)',
+    ]);
+    expect(vals(['a', ' /* x */\n// y\n (b)'])).toEqual(['a', '; /* x */\n// y\n (b)']);
   });
 
   it('fails when the compiled template no longer has the anchor', () => {

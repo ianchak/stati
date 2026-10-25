@@ -36,6 +36,24 @@ const ETA_FUNCTIONS = [
 /** One of Eta's template functions that Stati blocks. */
 export type BlockedEtaFunction = (typeof ETA_FUNCTIONS)[number]['name'];
 
+/**
+ * Whether code starts, after any comments, with a parenthesis, a bracket or a template literal.
+ * JavaScript reads such a line as the continuation of the statement before it: a call, an index
+ * or a tagged template.
+ */
+function continuesPreviousStatement(code: string): boolean {
+  let rest = code.trimStart();
+  while (rest.startsWith('/*') || rest.startsWith('//')) {
+    const block = rest.startsWith('/*');
+    const close = block ? rest.indexOf('*/', 2) : rest.indexOf('\n');
+    if (close === -1) {
+      return false;
+    }
+    rest = rest.slice(close + (block ? 2 : 1)).trimStart();
+  }
+  return rest.startsWith('(') || rest.startsWith('[') || rest.startsWith('`');
+}
+
 /** Marks the start of the template's own code in the compiled function. */
 const BODY_START = '/*@stati:template-body@*/';
 
@@ -61,7 +79,19 @@ export function createStatiEtaPlugin(): EtaPlugin {
       );
       const start: AstNode = { t: 'e', val: BODY_START, lineNo: 1 };
       const end: AstNode = { t: 'e', val: '}', lineNo };
-      return [start, ...ast, end];
+      // Eta joins the tags of a template without separating them, and JavaScript only ends a
+      // statement at a line break when the next line cannot continue it. A tag that starts with
+      // `(`, `[` or a template literal would continue the tag before it, such as
+      // `<% const tags = x %>` followed by `<% (tags || []).forEach(...) %>`. The semicolon goes
+      // in front of such a tag, in every mode, so development and production compile alike. A
+      // tag is therefore a statement of its own; a statement without braces, such as
+      // `<% if (x) %>`, takes the next tag as its body only when that tag does not start so.
+      const separated = ast.map((node) =>
+        typeof node === 'object' && node.t === 'e' && continuesPreviousStatement(node.val)
+          ? { ...node, val: `;${node.val}` }
+          : node,
+      );
+      return [start, ...separated, end];
     },
     processFnString(fnString) {
       if (!fnString.includes(ETA_LAYOUT_DECLARATION) || !fnString.includes(BODY_START)) {
@@ -76,8 +106,9 @@ export function createStatiEtaPlugin(): EtaPlugin {
             `${name} = (...__statiArgs) => this.${BLOCKED_CALL_HANDLER}('${name}', __statiArgs, options && options.filepath);`,
         )
         .join(' ');
-      // With debug on, Eta marks each tag's line with `__eta.line=N` and no semicolon, so a tag
-      // that starts with `(`, `[` or a template literal would continue that statement
+      // With debug on, Eta marks each tag's line with `__eta.line=N` and no semicolon. The marker
+      // gets one, as it always did, so it ends the statement before it for every kind of tag,
+      // including those the check above leaves alone.
       return fnString
         .replace(BODY_START, `${replacements} {`)
         .replace(/__eta\.line=(\d+)\n/g, '__eta.line=$1;\n');
