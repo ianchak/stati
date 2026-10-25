@@ -1,5 +1,16 @@
 # @stati/cli
 
+## 2.2.0
+
+### Minor Changes
+
+- 66371c4: `stati build`, `stati dev` and `stati preview` no longer take `--config`. Every command loads `stati.config.*` from the current directory, so run Stati from the project root.
+
+### Patch Changes
+
+- Updated dependencies [66371c4]
+  - @stati/core@2.4.0
+
 ## 2.1.0
 
 ### Minor Changes
