@@ -1,5 +1,11 @@
 # create-stati
 
+## 2.3.4
+
+### Patch Changes
+
+- a522376: read numeric, boolean and date front matter titles, descriptions and tags as text instead of crashing the build
+
 ## 2.3.3
 
 ### Patch Changes
