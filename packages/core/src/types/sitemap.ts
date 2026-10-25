@@ -12,13 +12,7 @@ import type { StatiConfig } from './config.js';
  * @see https://www.sitemaps.org/protocol.html
  */
 export type ChangeFrequency =
-  | 'always'
-  | 'hourly'
-  | 'daily'
-  | 'weekly'
-  | 'monthly'
-  | 'yearly'
-  | 'never';
+  'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never';
 
 /**
  * A single entry in the sitemap.
