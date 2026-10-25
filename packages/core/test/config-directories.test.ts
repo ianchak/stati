@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { validateDirectoryLayout } from '../src/config/directories.js';
+import { validateDirectoryLayout, toComparablePath } from '../src/config/directories.js';
 import { ConfigValidationError } from '../src/config/errors.js';
 import type { StatiConfig } from '../src/types/index.js';
 
@@ -16,6 +16,30 @@ function makeConfig(overrides: Partial<StatiConfig> = {}): StatiConfig {
     ...overrides,
   };
 }
+
+describe('toComparablePath', () => {
+  it('keeps a backslash on POSIX, where it belongs to a folder name', () => {
+    // `dist/..\site` is a folder named `..\site` inside `dist`, so it stays below `/proj/dist`
+    expect(toComparablePath('/proj/dist/..\\site', 'linux')).toBe('/proj/dist/..\\site');
+    expect(toComparablePath('/proj/dist/..\\site', 'darwin')).toBe('/proj/dist/..\\site');
+    expect(toComparablePath('/proj/dist/..\\site', 'linux').startsWith('/proj/dist/')).toBe(true);
+    expect(toComparablePath('/proj/dist/..\\site', 'linux')).not.toBe('/proj/site');
+  });
+
+  it('reads a backslash as a separator on Windows', () => {
+    expect(toComparablePath('C:\\proj\\dist\\..\\Site', 'win32')).toBe('c:/proj/site');
+  });
+
+  it('collapses dot segments and drops a trailing slash', () => {
+    expect(toComparablePath('/proj/a/./b/../c/', 'linux')).toBe('/proj/a/c');
+    expect(toComparablePath('/', 'linux')).toBe('/');
+  });
+
+  it('lower-cases only where the file system ignores case', () => {
+    expect(toComparablePath('/Proj/Site', 'linux')).toBe('/Proj/Site');
+    expect(toComparablePath('/Proj/Site', 'darwin')).toBe('/proj/site');
+  });
+});
 
 describe('validateDirectoryLayout', () => {
   beforeEach(() => {
