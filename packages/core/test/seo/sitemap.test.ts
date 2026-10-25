@@ -2,7 +2,7 @@
  * Sitemap generation tests
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   generateSitemapEntry,
   generateSitemapXml,
@@ -11,7 +11,8 @@ import {
 } from '../../src/seo/sitemap.js';
 import type { PageModel } from '../../src/types/content.js';
 import type { StatiConfig } from '../../src/types/config.js';
-import type { SitemapConfig } from '../../src/types/sitemap.js';
+import type { SitemapConfig, SitemapEntry } from '../../src/types/sitemap.js';
+import type { Logger } from '../../src/types/logging.js';
 
 describe('Sitemap Generation', () => {
   let baseConfig: StatiConfig;
@@ -82,6 +83,44 @@ describe('Sitemap Generation', () => {
       const entry = generateSitemapEntry(samplePage, baseConfig, baseSitemapConfig);
 
       expect(entry?.lastmod).toBe('2025-03-25');
+    });
+
+    it('skips an invalid updated and warns, falling through to a valid date', () => {
+      samplePage.frontMatter.date = '2025-01-15';
+      samplePage.frontMatter.updated = 'soon';
+      const warn = vi.fn();
+      const logger = { warning: warn } as unknown as Logger;
+      const holder: { entry: SitemapEntry | null } = { entry: null };
+
+      expect(() => {
+        holder.entry = generateSitemapEntry(samplePage, baseConfig, baseSitemapConfig, logger);
+      }).not.toThrow();
+
+      expect(holder.entry?.lastmod).toBe('2025-01-15');
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0]?.[0]).toContain('/test-page');
+      expect(warn.mock.calls[0]?.[0]).toContain('updated');
+      expect(warn.mock.calls[0]?.[0]).toContain('soon');
+    });
+
+    it('should leave lastmod out and warn when sitemap.lastmod is not a valid date', () => {
+      samplePage.frontMatter.sitemap = { lastmod: 'next week' };
+      const warn = vi.fn();
+      const logger = { warning: warn } as unknown as Logger;
+
+      const entry = generateSitemapEntry(samplePage, baseConfig, baseSitemapConfig, logger);
+      expect(entry).not.toHaveProperty('lastmod');
+      expect(warn.mock.calls[0]?.[0]).toContain('sitemap.lastmod');
+    });
+
+    it('should leave lastmod out and warn when date is not a valid date', () => {
+      samplePage.frontMatter.date = 'soon';
+      const warn = vi.fn();
+      const logger = { warning: warn } as unknown as Logger;
+
+      const entry = generateSitemapEntry(samplePage, baseConfig, baseSitemapConfig, logger);
+      expect(entry).not.toHaveProperty('lastmod');
+      expect(warn).toHaveBeenCalled();
     });
 
     it('should exclude page when frontmatter exclude is true', () => {

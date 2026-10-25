@@ -4,6 +4,7 @@ import {
   escapeHtml,
   generateRobotsContent,
   parseRobotsDirectives,
+  resolveAbsoluteUrl,
   validateSEOMetadata,
   detectExistingSEOTags,
 } from '../../src/seo/utils/index.js';
@@ -76,6 +77,43 @@ describe('SEO Utils - escapeHtml', () => {
     // Cache should still work after eviction
     const result = escapeHtml('<test>');
     expect(result).toBe('&lt;test&gt;');
+  });
+});
+
+describe('SEO Utils - resolveAbsoluteUrl', () => {
+  it('leaves http/https URLs untouched', () => {
+    expect(resolveAbsoluteUrl('https://other.com/page', 'https://example.com')).toBe(
+      'https://other.com/page',
+    );
+    expect(resolveAbsoluteUrl('http://other.com/page', 'https://example.com')).toBe(
+      'http://other.com/page',
+    );
+  });
+
+  it('leaves other schemes (data:, mailto:) untouched', () => {
+    expect(resolveAbsoluteUrl('data:image/png;base64,AAAA', 'https://example.com')).toBe(
+      'data:image/png;base64,AAAA',
+    );
+  });
+
+  it('resolves protocol-relative URLs with the site scheme', () => {
+    expect(resolveAbsoluteUrl('//cdn.example.com/og.png', 'https://example.com')).toBe(
+      'https://cdn.example.com/og.png',
+    );
+    expect(resolveAbsoluteUrl('//cdn.example.com/og.png', 'http://example.com')).toBe(
+      'http://cdn.example.com/og.png',
+    );
+  });
+
+  it('resolves relative paths against the base', () => {
+    expect(resolveAbsoluteUrl('images/og.png', 'https://example.com')).toBe(
+      'https://example.com/images/og.png',
+    );
+    expect(resolveAbsoluteUrl('/about', 'https://example.com')).toBe('https://example.com/about');
+  });
+
+  it('does not double the slash when the base ends with one', () => {
+    expect(resolveAbsoluteUrl('/about', 'https://example.com/')).toBe('https://example.com/about');
   });
 });
 

@@ -1,0 +1,5 @@
+---
+'@stati/core': patch
+---
+
+Open Graph and Twitter card image URLs are now built with `resolveAbsoluteUrl` unconditionally, so a `site.baseUrl` that ends in a trailing slash no longer produces a double slash in `og:image` and `twitter:image`. `resolveAbsoluteUrl` also handles protocol-relative URLs (`//cdn.example.com/og.png` resolves against the site's scheme instead of producing a double slash) and relative paths, and image values that are not strings (or lack a `url`) no longer throw while the page's SEO tags are generated. Sitemap dates (`sitemap.lastmod`, `updated`, `date`) are now validated before formatting: an invalid date such as `updated: soon` is skipped with a warning that names the page and the field, instead of failing the build with `RangeError: Invalid time value`. Date strings are accepted only in ISO 8601 shape (a date, or a date-time with an optional time and timezone), and a date-time without a timezone designator is read as UTC, so `lastmod` no longer depends on the build machine's local time.

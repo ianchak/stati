@@ -156,7 +156,12 @@ export type {
 export { findHeadClosePosition, injectBeforeHeadClose } from './html.utils.js';
 
 // Date utilities
-export { getFrontMatterDate, PUBLISHED_DATE_FIELDS } from './date.utils.js';
+export {
+  describeDateValue,
+  getFrontMatterDate,
+  PUBLISHED_DATE_FIELDS,
+  parseDateValue,
+} from './date.utils.js';
 
 // Environment utilities
 export { isEnabledEnvFlag } from './env.utils.js';

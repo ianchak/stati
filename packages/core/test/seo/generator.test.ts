@@ -725,6 +725,104 @@ describe('SEO Generator - generateOpenGraphTags', () => {
     expect(tags.join('\n')).toContain('og:image" content="https://example.com/images/og.jpg"');
   });
 
+  it('should not double the slash when siteUrl ends with a trailing slash', () => {
+    const page = createMockPage({
+      frontMatter: {
+        seo: {
+          openGraph: {
+            image: '/img.png',
+          },
+        },
+      },
+    });
+    const config = createMockConfig();
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com/',
+    };
+
+    const tags = generateOpenGraphTags(ctx);
+    const joined = tags.join('\n');
+    expect(joined).toContain('og:image" content="https://example.com/img.png"');
+    expect(joined).not.toContain('https://example.com//');
+  });
+
+  it('should resolve a protocol-relative OG image with the site scheme', () => {
+    const page = createMockPage({
+      frontMatter: {
+        seo: {
+          openGraph: {
+            image: '//cdn.example.com/og.png',
+          },
+        },
+      },
+    });
+    const config = createMockConfig();
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
+
+    const tags = generateOpenGraphTags(ctx);
+    expect(tags.join('\n')).toContain('og:image" content="https://cdn.example.com/og.png"');
+  });
+
+  it('should resolve a relative OG image path against the site URL', () => {
+    const page = createMockPage({
+      frontMatter: {
+        seo: {
+          openGraph: {
+            image: 'images/og.png',
+          },
+        },
+      },
+    });
+    const config = createMockConfig();
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
+
+    const tags = generateOpenGraphTags(ctx);
+    expect(tags.join('\n')).toContain('og:image" content="https://example.com/images/og.png"');
+  });
+
+  it('should not crash on an OG image object without a url and still emit the alt', () => {
+    // Front matter is not type-checked at runtime, so `image` can arrive as a
+    // mapping without a `url` even though the type says otherwise.
+    const imageWithoutUrl = { alt: 'Cover' } as unknown as { url: string; alt?: string };
+    const page = createMockPage({
+      frontMatter: {
+        seo: {
+          openGraph: {
+            image: imageWithoutUrl,
+          },
+        },
+      },
+    });
+    const config = createMockConfig();
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
+
+    expect(() => generateOpenGraphTags(ctx)).not.toThrow();
+    const tags = generateOpenGraphTags(ctx);
+    // With no usable url the whole og:image block is skipped (no empty content,
+    // no crash); alt rides with the image, so it is omitted too.
+    const joined = tags.join('\n');
+    expect(joined).not.toContain('og:image" content');
+    expect(joined).not.toContain('og:image:alt');
+  });
+
   it('should generate OG image with dimensions and alt', () => {
     const page = createMockPage({
       frontMatter: {
@@ -1204,6 +1302,74 @@ describe('SEO Generator - generateTwitterCardTags', () => {
     expect(tags.join('\n')).toContain(
       'twitter:image" content="https://example.com/images/twitter.jpg"',
     );
+  });
+
+  it('should not double the slash in Twitter image when siteUrl ends with a trailing slash', () => {
+    const page = createMockPage({
+      frontMatter: {
+        seo: {
+          twitter: {
+            image: '/img.png',
+          },
+        },
+      },
+    });
+    const config = createMockConfig();
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com/',
+    };
+
+    const tags = generateTwitterCardTags(ctx);
+    const joined = tags.join('\n');
+    expect(joined).toContain('twitter:image" content="https://example.com/img.png"');
+    expect(joined).not.toContain('https://example.com//');
+  });
+
+  it('should resolve a protocol-relative Twitter image with the site scheme', () => {
+    const page = createMockPage({
+      frontMatter: {
+        seo: {
+          twitter: {
+            image: '//cdn.example.com/tw.png',
+          },
+        },
+      },
+    });
+    const config = createMockConfig();
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
+
+    const tags = generateTwitterCardTags(ctx);
+    expect(tags.join('\n')).toContain('twitter:image" content="https://cdn.example.com/tw.png"');
+  });
+
+  it('should resolve a relative Twitter image path against the site URL', () => {
+    const page = createMockPage({
+      frontMatter: {
+        seo: {
+          twitter: {
+            image: 'images/tw.png',
+          },
+        },
+      },
+    });
+    const config = createMockConfig();
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config,
+      siteUrl: 'https://example.com',
+    };
+
+    const tags = generateTwitterCardTags(ctx);
+    expect(tags.join('\n')).toContain('twitter:image" content="https://example.com/images/tw.png"');
   });
 
   it('should fallback to OG image for Twitter image', () => {

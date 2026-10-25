@@ -18,7 +18,8 @@ import {
   resolveAbsoluteUrl,
 } from './utils/index.js';
 import { urlMatchesAnyPattern } from '../rss/utils/index.js';
-import { isNotFoundPage } from '../core/utils/index.js';
+import { describeDateValue, isNotFoundPage, parseDateValue } from '../core/utils/index.js';
+import type { Logger } from '../types/logging.js';
 
 /**
  * Maximum entries per sitemap file (per sitemap.org spec)
@@ -36,6 +37,44 @@ function formatSitemapDate(date: Date): string {
     return parts[0];
   }
   return date.toISOString().substring(0, 10);
+}
+
+/**
+ * Resolves the page's sitemap last-modified date, in priority order:
+ * `sitemap.lastmod`, then `updated`, then `date`.
+ *
+ * Every value is checked with {@link parseDateValue} before it reaches
+ * `toISOString()`, so an invalid value (such as `updated: soon`) does not
+ * throw. An invalid value is skipped with a warning that names the page and
+ * the field, and the search continues to the next source, mirroring how
+ * `getFrontMatterDate` treats a bad date so one typo does not hide a valid
+ * fallback.
+ *
+ * @param page - Page to resolve a date for
+ * @param logger - Logger used to report invalid values
+ * @returns A `Date` to use for `<lastmod>`, or `undefined` when none is valid
+ */
+function resolveLastmodDate(page: PageModel, logger?: Logger): Date | undefined {
+  const sources: Array<[string, unknown]> = [
+    ['sitemap.lastmod', page.frontMatter.sitemap?.lastmod],
+    ['updated', page.frontMatter.updated],
+    ['date', page.frontMatter.date],
+  ];
+
+  for (const [field, value] of sources) {
+    if (value === undefined || value === null || (typeof value === 'string' && !value.trim())) {
+      continue;
+    }
+    const date = parseDateValue(value);
+    if (date) {
+      return date;
+    }
+    logger?.warning(
+      `Sitemap lastmod for ${page.url}: ignoring invalid ${field} value ${describeDateValue(value)}`,
+    );
+  }
+
+  return undefined;
 }
 
 /**
@@ -142,12 +181,14 @@ function determinePriority(
  * @param page - Page to generate entry for
  * @param config - Stati configuration
  * @param sitemapConfig - Sitemap configuration
+ * @param logger - Logger for warnings when a date field is invalid
  * @returns Sitemap entry or null if page should be excluded
  */
 export function generateSitemapEntry(
   page: PageModel,
   config: StatiConfig,
   sitemapConfig: SitemapConfig,
+  logger?: Logger,
 ): SitemapEntry | null {
   // Check frontmatter exclude flag
   const frontMatterExclude = page.frontMatter.sitemap?.exclude;
@@ -177,14 +218,13 @@ export function generateSitemapEntry(
 
   const siteUrl = config.site.baseUrl;
 
-  // Determine lastmod
+  // Determine lastmod. Each source is checked before it reaches toISOString(),
+  // so an invalid date (such as `updated: soon`) is skipped with a warning
+  // that names the page and the field, instead of failing the whole build.
   let lastmod: string | undefined;
-  if (page.frontMatter.sitemap?.lastmod) {
-    lastmod = formatSitemapDate(new Date(page.frontMatter.sitemap.lastmod));
-  } else if (page.frontMatter.updated) {
-    lastmod = formatSitemapDate(new Date(page.frontMatter.updated));
-  } else if (page.frontMatter.date) {
-    lastmod = formatSitemapDate(new Date(page.frontMatter.date));
+  const lastmodDate = resolveLastmodDate(page, logger);
+  if (lastmodDate) {
+    lastmod = formatSitemapDate(lastmodDate);
   }
 
   // Determine changefreq
@@ -318,17 +358,19 @@ function splitEntriesIntoSitemaps(entries: SitemapEntry[]): SitemapEntry[][] {
  * @param pages - All pages to include in sitemap
  * @param config - Stati configuration
  * @param sitemapConfig - Sitemap configuration
+ * @param logger - Logger for warnings when a date field is invalid
  * @returns Sitemap generation result with XML content
  */
 export function generateSitemap(
   pages: PageModel[],
   config: StatiConfig,
   sitemapConfig: SitemapConfig,
+  logger?: Logger,
 ): SitemapGenerationResult {
   // Generate entries for all pages
   const entries: SitemapEntry[] = [];
   for (const page of pages) {
-    const entry = generateSitemapEntry(page, config, sitemapConfig);
+    const entry = generateSitemapEntry(page, config, sitemapConfig, logger);
     if (entry) {
       entries.push(entry);
     }

@@ -1,5 +1,11 @@
 import { glob } from 'tinyglobby';
-import { readFile, resolveSrcDir, getFrontMatterDate, parseFrontMatter } from './utils/index.js';
+import {
+  readFile,
+  resolveSrcDir,
+  getFrontMatterDate,
+  parseFrontMatter,
+  describeDateValue,
+} from './utils/index.js';
 import { relative, dirname, basename } from 'node:path';
 import type { PageModel, StatiConfig } from '../types/index.js';
 import { MARKDOWN_EXTENSION } from '../constants.js';
@@ -88,20 +94,6 @@ function computeSlug(relativePath: string): string {
   }
 
   return dir === '.' ? `/${name}` : `/${dir}/${name}`;
-}
-
-/**
- * Describes a rejected front matter date for a warning without calling the value's
- * own conversion methods, which a YAML mapping such as `{ toString: x }` can break.
- */
-function describeDateValue(value: unknown): string {
-  if (typeof value === 'string') {
-    return JSON.stringify(value);
-  }
-  if (typeof value === 'object' && !(value instanceof Date)) {
-    return Array.isArray(value) ? 'a list' : 'a mapping';
-  }
-  return String(value);
 }
 
 function computeUrl(slug: string, frontMatter: Record<string, unknown>): string {

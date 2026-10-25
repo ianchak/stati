@@ -43,14 +43,11 @@ export function getFrontMatterDate(
       continue;
     }
 
-    let date: Date | undefined;
-    if (typeof value === 'string') {
-      date = new Date(value);
-    } else if (value instanceof Date) {
-      date = new Date(value.getTime());
-    }
+    // Strings and Date objects are both decided by parseDateValue; anything
+    // else (numbers, booleans, objects) is reported through onInvalid below.
+    const date = parseDateValue(value);
 
-    if (date && !isNaN(date.getTime())) {
+    if (date) {
       return date;
     }
 
@@ -58,4 +55,70 @@ export function getFrontMatterDate(
   }
 
   return undefined;
+}
+
+/**
+ * ISO 8601 date shapes accepted from front matter: a date (`2025-03-05`) or a
+ * date-time with an optional time, seconds, fractional seconds and timezone
+ * designator. Anything else (e.g. `"tbd 2025"`) is rejected instead of letting
+ * `new Date` make something up of it.
+ */
+const ISO_DATE =
+  /^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?$/;
+
+/**
+ * Parses a single front matter value into a `Date`, or returns `undefined` when
+ * the value is not a usable date.
+ *
+ * Unlike {@link getFrontMatterDate} this does not walk a field list: it decides
+ * about one value. It accepts quoted YAML dates (strings) and unquoted ones
+ * (`Date` objects, which YAML parses for it). Strings must be an ISO 8601
+ * shape (a date, or a date-time with an optional time and timezone); a
+ * date-time without a timezone designator is read as UTC, so the result does
+ * not depend on the build machine's local time. Numbers, booleans, objects and
+ * strings that do not match are rejected, so a value such as `soon` reports
+ * `undefined` instead of crashing the caller on `toISOString()`.
+ *
+ * @param value - A front matter value, anything YAML may produce
+ * @returns A new `Date` instance, or `undefined`
+ *
+ * @example
+ * ```typescript
+ * parseDateValue('2026-01-01'); // 2026-01-01T00:00:00.000Z
+ * parseDateValue(new Date('2026-01-01')); // 2026-01-01T00:00:00.000Z
+ * parseDateValue('soon'); // undefined
+ * ```
+ */
+export function parseDateValue(value: unknown): Date | undefined {
+  if (typeof value === 'string' && value.trim()) {
+    const trimmed = value.trim();
+    if (!ISO_DATE.test(trimmed)) {
+      return undefined;
+    }
+    const hasTime = /[T ]\d{2}:\d{2}/.test(trimmed);
+    const hasZone = /(?:Z|[+-]\d{2}:?\d{2})$/.test(trimmed);
+    const normalized = hasTime && !hasZone ? `${trimmed}Z` : trimmed;
+    const date = new Date(normalized);
+    return isNaN(date.getTime()) ? undefined : date;
+  }
+  if (value instanceof Date) {
+    const date = new Date(value.getTime());
+    return isNaN(date.getTime()) ? undefined : date;
+  }
+  return undefined;
+}
+
+/**
+ * Describes a rejected front matter date for a warning without calling the
+ * value's own conversion methods, which a YAML mapping such as
+ * `{ toString: x }` can break.
+ */
+export function describeDateValue(value: unknown): string {
+  if (typeof value === 'string') {
+    return JSON.stringify(value);
+  }
+  if (typeof value === 'object' && !(value instanceof Date)) {
+    return Array.isArray(value) ? 'a list' : 'a mapping';
+  }
+  return String(value);
 }

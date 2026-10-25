@@ -36,9 +36,15 @@ export function normalizeUrlPath(path: string): string {
  * ```
  */
 export function resolveAbsoluteUrl(url: string, baseUrl: string): string {
-  // Already absolute
-  if (url.startsWith('http://') || url.startsWith('https://')) {
+  // Already absolute: any scheme (https:, data:, ...), leave untouched
+  if (/^[a-z][a-z\d+.-]*:/i.test(url)) {
     return url;
+  }
+
+  // Protocol-relative (//cdn.example.com/og.png): use the site's scheme
+  if (url.startsWith('//')) {
+    const scheme = baseUrl.startsWith('http://') ? 'http:' : 'https:';
+    return `${scheme}${url}`;
   }
 
   // Ensure baseUrl doesn't end with /
