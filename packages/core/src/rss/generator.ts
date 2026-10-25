@@ -107,8 +107,8 @@ function sortPages(pages: PageModel[], feedConfig: RSSFeedConfig): PageModel[] {
       }
       case 'title-asc':
       case 'title-desc': {
-        const titleA = (a.frontMatter.title || '').toLowerCase();
-        const titleB = (b.frontMatter.title || '').toLowerCase();
+        const titleA = String(a.frontMatter.title || '').toLowerCase();
+        const titleB = String(b.frontMatter.title || '').toLowerCase();
         const comparison = titleA.localeCompare(titleB);
         return sortBy === 'title-asc' ? comparison : -comparison;
       }

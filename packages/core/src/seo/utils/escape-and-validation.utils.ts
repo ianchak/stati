@@ -23,7 +23,8 @@ const ESCAPE_CACHE_MAX_SIZE = 1000;
  * and the new entry is added. This prevents unbounded memory growth while
  * still providing caching benefits for repeated strings.
  *
- * @param text - The text to escape
+ * @param text - The text to escape; other values, such as the number a front matter title of
+ *   `1984` is to YAML, are written out as text first, and `null` and `undefined` become ''
  * @returns HTML-safe string with special characters escaped
  *
  * @example
@@ -32,7 +33,9 @@ const ESCAPE_CACHE_MAX_SIZE = 1000;
  * // Returns: '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;'
  * ```
  */
-export function escapeHtml(text: string): string {
+export function escapeHtml(value: unknown): string {
+  const text = value === null || value === undefined ? '' : String(value);
+
   // Check cache
   const cached = escapeHtmlCache.get(text);
   if (cached !== undefined) {

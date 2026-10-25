@@ -62,6 +62,8 @@ layout: 'post'
 # Your content starts here...
 ````
 
+YAML reads `title: 1984`, `tags: [2024]` and `title: 2024-01-01` as a number, a list with a number and a date. Stati uses the text you wrote for `title`, `description`, `tags`, `seo.title`, `seo.description` and `seo.keywords` (a date as `2024-01-01`), so such values need no quotes. A `null` entry in `tags` or `seo.keywords` (`tags: [~]`) is dropped, with a warning that names the file.
+
 ### Syntax highlighting
 
 Code blocks in markdown are rendered with language class attributes, without highlighting:

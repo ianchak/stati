@@ -52,7 +52,9 @@ export async function loadContent(
       console.warn(`Skipping file ${file}: could not read content`);
       continue;
     }
-    const { data: frontMatter, content: markdown } = parseFrontMatter(content, file);
+    const { data: frontMatter, content: markdown } = parseFrontMatter(content, file, (message) =>
+      console.warn(message),
+    );
 
     // Skip drafts unless explicitly included
     if (frontMatter.draft && !includeDrafts) {

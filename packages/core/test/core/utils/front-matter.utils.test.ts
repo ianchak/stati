@@ -200,3 +200,120 @@ describe('parseFrontMatter', () => {
     expect(second.data).not.toBe(first.data);
   });
 });
+
+describe('parseFrontMatter text fields', () => {
+  /** Front matter as the file's YAML parses it, and the warnings it caused */
+  function parse(yaml: string, language = '') {
+    const warnings: string[] = [];
+    const { data } = parseFrontMatter(`---${language}\n${yaml}\n---\n`, file, (message) =>
+      warnings.push(message),
+    );
+    return { data, warnings };
+  }
+
+  it('reads numbers and booleans as the text that was written', () => {
+    const { data } = parse(
+      'title: 1984\ndescription: 1.10\nseo:\n  title: 007\n  description: True',
+    );
+    expect(data).toEqual({
+      title: '1984',
+      description: '1.10',
+      seo: { title: '007', description: 'True' },
+    });
+  });
+
+  it('reads other number notations as written', () => {
+    const { data } = parse(
+      'title: 0x1F\ndescription: 1e3\ntags: [+5, 3.10, 123456789012345678901]',
+    );
+    expect(data).toEqual({
+      title: '0x1F',
+      description: '1e3',
+      tags: ['+5', '3.10', '123456789012345678901'],
+    });
+  });
+
+  it('reads an unquoted date as written, with or without a time or an offset', () => {
+    const { data } = parse(
+      'title: 2024-01-01\ndescription: 2024-01-01T10:30:00+02:00\ntags: [2024-05-06]',
+    );
+    expect(data).toEqual({
+      title: '2024-01-01',
+      description: '2024-01-01T10:30:00+02:00',
+      tags: ['2024-05-06'],
+    });
+  });
+
+  it('leaves a trailing comment out of the text', () => {
+    expect(parse('title: 1984 # the year').data.title).toBe('1984');
+  });
+
+  it('reads the entries of tags and seo.keywords as text', () => {
+    const { data } = parse('tags: [2024, news, true]\nseo:\n  keywords: [1, two]');
+    expect(data).toEqual({ tags: ['2024', 'news', 'true'], seo: { keywords: ['1', 'two'] } });
+  });
+
+  it('reads a single seo.keywords number as text', () => {
+    expect(parse('seo:\n  keywords: 2024').data).toEqual({ seo: { keywords: '2024' } });
+  });
+
+  it('drops null entries from lists and warns with the field and the file', () => {
+    const { data, warnings } = parse('tags: [~, a, null]\nseo:\n  keywords: [~]');
+    expect(data).toEqual({ tags: ['a'], seo: { keywords: [] } });
+    const where = 'of site/post.md';
+    expect(warnings).toEqual([
+      `Ignoring empty entry in "tags" ${where}`,
+      `Ignoring empty entry in "tags" ${where}`,
+      `Ignoring empty entry in "seo.keywords" ${where}`,
+    ]);
+  });
+
+  it('drops null entries when nobody listens for warnings', () => {
+    const { data } = parseFrontMatter('---\ntags: [~, a]\n---\n', file);
+    expect(data).toEqual({ tags: ['a'] });
+  });
+
+  it('falls back to the parsed value when the text cannot be read again', () => {
+    expect(parse('title: !!int 5\ntags: [!!float 2.50]').data).toEqual({
+      title: '5',
+      tags: ['2.5'],
+    });
+  });
+
+  it('writes a date as 2024-01-01 or ISO 8601 when the text cannot be read again', () => {
+    expect(
+      parse('title: !!timestamp 2024-01-01\ndescription: !!timestamp 2024-01-01T10:30:00Z').data,
+    ).toEqual({
+      title: '2024-01-01',
+      description: '2024-01-01T10:30:00.000Z',
+    });
+  });
+
+  it('reads JSON front matter numbers as text', () => {
+    const { data } = parse(
+      '{"title": 1984, "tags": [2024, null, "a"], "seo": {"title": true}}',
+      'json',
+    );
+    expect(data).toEqual({ title: '1984', tags: ['2024', 'a'], seo: { title: 'true' } });
+  });
+
+  it('leaves text, null, other fields and other shapes as they are', () => {
+    const yaml = 'title: Home\ndescription:\norder: 5\ndraft: true\ntags: {a: 1}\nseo: just text';
+    expect(parse(yaml).data).toEqual({
+      title: 'Home',
+      description: null,
+      order: 5,
+      draft: true,
+      tags: { a: 1 },
+      seo: 'just text',
+    });
+  });
+
+  it('leaves a single tags value and fields the front matter lacks alone', () => {
+    expect(parse('order: 1\ntags: 2024\nseo:\n  noindex: true').data).toEqual({
+      order: 1,
+      tags: 2024,
+      seo: { noindex: true },
+    });
+  });
+});

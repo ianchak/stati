@@ -350,5 +350,33 @@ describe('content.ts', () => {
       expect(pages[0]).toBeDefined();
       expect(pages[0]!.sourcePath).toBe('/test/project/src/blog\\post.md');
     });
+
+    it('should read title, description and tags that YAML parses as other types as text', async () => {
+      mockContentFiles({
+        '/test/project/src/a.md':
+          '---\ntitle: 1984\ndescription: 42\ntags: [2024, news]\nseo:\n  keywords: [1]\n---\nBody',
+        '/test/project/src/b.md': '---\ntitle: 2024-01-01\n---\nBody',
+      });
+
+      const pages = await loadContent(mockConfig);
+
+      expect(pages[0]!.frontMatter).toEqual({
+        title: '1984',
+        description: '42',
+        tags: ['2024', 'news'],
+        seo: { keywords: ['1'] },
+      });
+      expect(pages[1]!.frontMatter.title).toBe('2024-01-01');
+    });
+
+    it('should drop null tags and warn with the field and the file', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      mockContentFiles({ '/test/project/src/a.md': '---\ntitle: A\ntags: [~, news]\n---\nBody' });
+
+      const pages = await loadContent(mockConfig);
+
+      expect(pages[0]!.frontMatter.tags).toEqual(['news']);
+      expect(warn).toHaveBeenCalledWith('Ignoring empty entry in "tags" of src/a.md');
+    });
   });
 });
