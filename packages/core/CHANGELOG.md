@@ -1,5 +1,12 @@
 # @stati/core
 
+## 2.4.4
+
+### Patch Changes
+
+- move stylesheet scanner timing checks to the perf suite
+- move remaining scanner timing checks to the perf suites
+
 ## 2.4.3
 
 ### Patch Changes
