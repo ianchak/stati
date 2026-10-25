@@ -42,8 +42,18 @@ jobs:
         env:
           STATI_METRICS: '1'
 
+      # A runner stall can slow a whole benchmark for several runs, which no threshold tight
+      # enough to catch a 2x regression absorbs. Rerun once: a real regression fails both times.
       - name: Compare performance against baseline
-        run: node scripts/compare-perf.mjs --output=perf-report.md
+        run: |
+          if node scripts/compare-perf.mjs --output=perf-report.md; then
+            exit 0
+          fi
+          echo "::warning::Benchmarks exceeded the baseline. Rerunning once to rule out runner noise."
+          npx vitest run packages/core/test/perf --reporter=verbose
+          node scripts/compare-perf.mjs --output=perf-report.md
+        env:
+          STATI_METRICS: '1'
 
       - name: Upload metrics artifacts
         uses: actions/upload-artifact@v4

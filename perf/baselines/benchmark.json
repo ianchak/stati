@@ -2,35 +2,31 @@
   "$schema": "./baseline.schema.json",
   "version": "1",
   "description": "Performance baselines for Stati build benchmarks",
-  "updated": "2024-12-26T00:00:00.000Z",
+  "updated": "2026-10-25T00:00:00.000Z",
   "environment": {
     "nodeVersion": "22",
     "pageCount": 100,
-    "note": "Baselines measured with standard benchmark config"
+    "note": "Medians from 27 green perf.yml runs on ubuntu-latest, 2026-10-18 to 2026-10-25"
   },
   "thresholds": {
     "coldBuild": {
-      "medianMs": 220,
-      "p95Ms": 300,
+      "medianMs": 60,
       "tolerance": 0.3,
       "minHeadroomMs": 40
     },
     "warmBuild": {
-      "medianMs": 50,
-      "p95Ms": 80,
+      "medianMs": 35,
       "tolerance": 0.3,
       "minHeadroomMs": 40,
       "minCacheHitRate": 0.95
     },
     "incrementalBuild": {
-      "medianMs": 55,
-      "p95Ms": 90,
+      "medianMs": 40,
       "tolerance": 0.3,
       "minHeadroomMs": 40
     },
     "complexBuild": {
-      "medianMs": 280,
-      "p95Ms": 380,
+      "medianMs": 60,
       "tolerance": 0.3,
       "minHeadroomMs": 40
     }
