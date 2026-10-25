@@ -1,5 +1,15 @@
 # create-stati
 
+## 2.5.0
+
+### Minor Changes
+
+- f1a4ea5: add Google News sitemap
+
+### Patch Changes
+
+- f1a4ea5: keep the news starter's core range installable
+
 ## 2.4.0
 
 ### Minor Changes
