@@ -1003,6 +1003,7 @@ async function processPagesWithCache(
       assetDeps: committedImages?.assetDeps ?? [],
       images: committedImages?.images ?? [],
       reads: renderResult.reads,
+      failed: renderResult.failed,
       templates: renderResult.templates,
       templateLookups: renderResult.templateLookups,
     };

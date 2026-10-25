@@ -258,7 +258,9 @@ Use `stati.include.has(name)` for optional templates:
 
 Check both logs and output. Layout failures produce fallback documents and include
 failures produce `<!-- Error rendering ... -->` comments even when the overall
-build completes. Treat both as validation failures.
+build completes. Treat both as validation failures. A page that logged an error is
+never served from the ISG cache (unknown include names count): each build renders it
+again and logs the error again until it is fixed.
 
 ## Shells: `stati.layout()`
 

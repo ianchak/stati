@@ -105,6 +105,11 @@ export interface RenderedAssets {
   templates?: readonly string[] | undefined;
   /** Template names the render looked up, with what each resolved to */
   templateLookups?: readonly TemplateLookup[] | undefined;
+  /**
+   * Whether the page rendered with an error. Its entry is stored with a stale hash, so the
+   * page renders again, and logs the error again, on every build until the error is fixed.
+   */
+  failed?: boolean | undefined;
 }
 
 /**
@@ -456,7 +461,9 @@ export async function createCacheEntry(
   // Build cache entry with proper optional handling
   const cacheEntry: CacheEntry = {
     path: outputPath,
-    inputsHash,
+    // A page that rendered with an error keeps its entry, so its output can still be pruned,
+    // but never matches the inputs: the next build renders it again
+    inputsHash: rendered?.failed ? 'STALE' : inputsHash,
     deps,
     ...(rendered?.templates && {
       templateLookups: [...(rendered.templateLookups ?? [])],

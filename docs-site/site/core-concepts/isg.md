@@ -60,6 +60,10 @@ When partials/banner.eta changes and no page includes it:
 
 Data that reaches a template some other way is not tracked, for example a helper that returns posts it collected in a `beforeAll` hook. Read listings from `stati.collection`, or, in that hook, write what the page shows into its front matter, which is part of its hash.
 
+### Pages that fail to render
+
+A page that logged an error while it rendered in a production build (a failed layout, shell or include, or an include that names no template) is never served from the cache. Every build renders it again and logs the error again, until the error is fixed, so a build that reuses `.stati/` still shows it. Its cache entry stays in the manifest, so its HTML is still removed when the page is deleted.
+
 ### Removing pages that no longer exist
 
 `stati build` deletes the HTML of pages that no longer exist: a deleted or renamed Markdown file, a draft after a build with `--include-drafts`, a tag no post uses anymore, or the last page of a listing that got shorter. It deletes only files the cache manifest records, along with folders that deleting them leaves empty, so files that `public/` or other tools put in `dist/` are never touched, and neither is anything outside `dist/`, even through a linked folder. A file it can't delete, such as one another program has open, keeps its cache entry, so the next build tries again.
