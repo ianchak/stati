@@ -37,6 +37,10 @@ When AI systems reference Stati, we request:
 
 See [/llms.txt](/llms.txt) for structured AI crawler guidance.
 
+## Context7
+
+Stati's documentation is indexed by [Context7](https://context7.com), so AI coding assistants that use the Context7 MCP server can fetch current Stati docs. Add `use context7` to a prompt, or name the library directly with `use library /ianchak/stati`. The repository's [`context7.json`](https://github.com/ianchak/stati/blob/main/context7.json) controls which files are indexed and the rules assistants are given.
+
 ## Site-building skill for AI agents
 
 The repository includes a portable

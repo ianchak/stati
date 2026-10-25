@@ -384,6 +384,15 @@ Your content here...
 - [**ISG & Caching**](https://stati.build/configuration/isg/) - Smart rebuilds explained
 - [**API Reference**](https://stati.build/api/reference/) - Complete API documentation
 
+### Context7
+
+Stati's documentation is indexed by [Context7](https://context7.com), so MCP-enabled
+AI assistants can pull current Stati docs into their context. The index is
+configured by [`context7.json`](./context7.json) and covers the docs site and the
+package READMEs. Add the Context7 MCP server to your assistant, then mention
+`use context7` in a prompt or name the library, for example
+`use library /ianchak/stati`.
+
 ### AI agent skill
 
 The portable [Stati skill](./.claude/skills/stati/SKILL.md) teaches agents the
