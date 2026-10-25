@@ -1,5 +1,11 @@
 # @stati/core
 
+## 2.7.2
+
+### Patch Changes
+
+- 874fac0: end adjacent Eta tags with a semicolon in production
+
 ## 2.7.1
 
 ### Patch Changes
