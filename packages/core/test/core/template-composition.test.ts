@@ -501,6 +501,25 @@ describe('template composition', () => {
     });
   });
 
+  describe('adjacent tags', () => {
+    beforeEach(() => setup());
+
+    it('render in production when no semicolon separates them', async () => {
+      await site.write(
+        'site/layout.eta',
+        '<html><head></head><body>\n' +
+          '<% const tags = stati.page.tags %>\n' +
+          '<% (tags || []).forEach((tag) => { %><li><%= tag %></li><% }) %>\n' +
+          '<%~ stati.content %></body></html>',
+      );
+      await site.write('site/tagged.md', page({ title: 'Tagged', tags: ['a', 'b'] }, 'Text'));
+
+      // build() fails on a logged error, so a layout that falls back to the plain document throws
+      await site.build();
+      expect(await site.read('dist/tagged.html')).toContain('<li>a</li><li>b</li>');
+    });
+  });
+
   describe("Eta's own functions", () => {
     beforeEach(() => setup());
 
