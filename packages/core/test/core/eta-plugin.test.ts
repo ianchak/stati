@@ -58,7 +58,7 @@ describe('Stati Eta plugin', () => {
   });
 
   it('renders tags that start with a parenthesis or a bracket with debug on', () => {
-    // Each tag ends its statement; only the line markers Eta adds between them could continue one
+    // Each tag ends its statement with a semicolon
     const template =
       '<% (stati.tags ?? []).forEach((tag) => { %><%= tag %>,<% }); %>' +
       '<% [1, 2].forEach((n) => { %><%= n %><% }); %>' +
@@ -66,6 +66,45 @@ describe('Stati Eta plugin', () => {
     for (const debug of [false, true]) {
       expect(engine(debug).renderString(template, { tags: ['a', 'b'] })).toBe('a,b,121');
     }
+  });
+
+  it('separates adjacent tags that start with a parenthesis, a bracket or a template literal', () => {
+    // No tag ends in a semicolon: only the plugin can keep each tag a statement of its own
+    const template =
+      '<% const tags = stati.tags %>\n' +
+      '<% (tags || []).forEach((tag) => { %><li><%= tag %></li><% }) %>\n' +
+      '<% const n = 1 %><% [n, 2].forEach((x) => { %><%= x %><% }) %>' +
+      '<% let total = 0 %><% `${n}`.split("").forEach(() => { total += 1 }) %>' +
+      '<%= total %>';
+    for (const debug of [false, true]) {
+      expect(engine(debug).renderString(template, { tags: ['a', 'b'] })).toBe(
+        '<li>a</li><li>b</li>121',
+      );
+    }
+  });
+
+  it('adds the semicolon in front of the tag, and only where the tag could be continued', () => {
+    const compiled = engine(false).compileToString(
+      '<% const a = 1 %><% (a) %><% const b = 2 %><% b + 1 %><% // note %><% [a] %>',
+      {},
+    );
+    expect(compiled).toContain('const a = 1\n;(a)\nconst b = 2\nb + 1\n// note\n;[a]');
+  });
+
+  it('keeps the tag that is the body of a statement without braces', () => {
+    const template =
+      '<% if (stati.show) %><% (stati.out = []).push("shown") %>' +
+      '<% else %><% [stati.out = ["hidden"]] %><%= stati.out %>';
+    expect(engine(false).renderString(template, { show: true })).toBe('shown');
+    expect(engine(false).renderString(template, { show: false })).toBe('hidden');
+
+    // A statement with braces, and a header that is not the end of its tag, still get a semicolon
+    expect(
+      engine(false).renderString(
+        '<% if (stati.show) { stati.out = 1 } %><% [stati.out] %><% if (stati.show) stati.out = 2 %><% (stati.out) %><%= stati.out %>',
+        { show: true },
+      ),
+    ).toBe('2');
   });
 
   it('fails when the compiled template no longer has the anchor', () => {
