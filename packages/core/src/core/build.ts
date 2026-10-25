@@ -1284,7 +1284,12 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
   // Production links the static directory's stylesheets under hashed names, unless css.hash
   // is false. The Tailwind output's path is Tailwind's, so a static file there isn't one.
   const staticStylesheets = resolveCSSConfig(config.css, isDevelopment()).hash
-    ? new StaticStylesheets(resolveStaticDir(config), outDir, stylesheetPlan?.path)
+    ? new StaticStylesheets(
+        resolveStaticDir(config),
+        outDir,
+        stylesheetPlan?.path,
+        getBasePath(config.site.baseUrl),
+      )
     : null;
 
   // Image pipeline; null with images: false. Fails here, before any page renders, when a
@@ -1468,7 +1473,13 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     logger.info('');
     logger.info('Building CSS with Tailwind CSS...');
     try {
-      builtStylesheet = await buildStylesheet(plan, outDir, cacheDir);
+      builtStylesheet = await buildStylesheet(
+        plan,
+        outDir,
+        cacheDir,
+        process.cwd(),
+        getBasePath(config.site.baseUrl),
+      );
       if (logger.file) {
         logger.file(
           'compiled',

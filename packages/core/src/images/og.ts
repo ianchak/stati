@@ -6,6 +6,7 @@
 
 import { extname, join, relative, resolve } from 'node:path';
 import {
+  decodeBasePath,
   isNotFoundPage,
   isPathWithinDirectory,
   readFileBuffer,
@@ -144,26 +145,22 @@ export async function inlineLocalImages(
     // A path with the base path in front of it, such as from `stati.url()` or `stati.image()`,
     // names the file without it; a file that really sits under a folder named like the base
     // path is found as written
-    const stripped = dirs.basePath ? stripBasePath(path, dirs.basePath) : undefined;
+    const stripped = dirs.basePath ? stripBasePath(path, decodeBasePath(dirs.basePath)) : undefined;
     const candidates = stripped === undefined ? [path] : [stripped, path];
 
+    // Every file looked at is a dependency of the card, also one that does not exist yet:
+    // adding it later changes the image the card draws
     let found: (LocalImage & { bytes: Buffer }) | undefined;
-    let missing: LocalImage | undefined;
     for (const candidate of candidates) {
       const located = locateLocalImage(candidate, dirs, generatedSource);
       if (!located) continue;
+      files.push(located.filePath.replace(/\\/g, '/'));
       const bytes = await readFileBuffer(located.filePath);
       if (bytes) {
         found = { ...located, bytes };
         break;
       }
-      missing ??= located;
     }
-    // A file that does not exist yet is still a dependency of the card
-    const target = found ?? missing;
-    if (!target) continue;
-
-    files.push(target.filePath.replace(/\\/g, '/'));
     if (!found) continue;
     const dataUri = `data:${found.mime};base64,${found.bytes.toString('base64')}`;
     replacements.push({ match: match[0], replacement: `${match[1]}"${dataUri}"` });

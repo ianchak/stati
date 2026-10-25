@@ -71,19 +71,55 @@ describe('inlineLocalImages', () => {
     expect(result.html).toBe(
       '<img src="data:image/png;base64,BwgJ"><img src="data:image/png;base64,AQID">',
     );
+    // Every file looked at is a dependency, so adding a missing candidate rebuilds the card
     expect(result.files).toEqual(
-      [join(dirs.staticDir, 'brand.png'), join(dirs.staticDir, 'sub', 'only.png')].map(posix),
+      [
+        join(dirs.staticDir, 'brand.png'),
+        join(dirs.staticDir, 'only.png'),
+        join(dirs.staticDir, 'sub', 'only.png'),
+      ].map(posix),
     );
   });
 
-  it('records the file of an image that does not exist yet', async () => {
+  it('strips a base path with escapes from the decoded path of an image', async () => {
+    await mkdir(join(dirs.staticDir, 'my docs'), { recursive: true });
+    await writeFile(join(dirs.staticDir, 'my docs', 'other.png'), Buffer.from([4, 5, 6]));
+
+    const result = await inlineLocalImages(
+      '<img src="/my%20docs/images/logo.svg"><img src="/my%20docs/bad.png">',
+      { ...dirs, basePath: '/my%20docs' },
+    );
+
+    const svg = Buffer.from('<svg/>').toString('base64');
+    expect(result.html).toBe(
+      `<img src="data:image/svg+xml;base64,${svg}"><img src="/my%20docs/bad.png">`,
+    );
+  });
+
+  it('uses a base path with a malformed escape as it is', async () => {
+    const result = await inlineLocalImages('<img src="/100%25/images/logo.svg">', {
+      ...dirs,
+      basePath: '/100%',
+    });
+
+    expect(result.html).toBe(
+      `<img src="data:image/svg+xml;base64,${Buffer.from('<svg/>').toString('base64')}">`,
+    );
+  });
+
+  it('records every file an image that does not exist yet could be', async () => {
     const result = await inlineLocalImages('<img src="/sub/images/later.png">', {
       ...dirs,
       basePath: '/sub',
     });
 
     expect(result.html).toBe('<img src="/sub/images/later.png">');
-    expect(result.files).toEqual([posix(join(dirs.staticDir, 'images', 'later.png'))]);
+    expect(result.files).toEqual(
+      [
+        join(dirs.staticDir, 'images', 'later.png'),
+        join(dirs.staticDir, 'sub', 'images', 'later.png'),
+      ].map(posix),
+    );
   });
 
   it('finds the source of a generated image by the path without the base path', async () => {

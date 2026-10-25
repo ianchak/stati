@@ -52,7 +52,7 @@ Stati cannot know which `href` and `src` values in your templates mean the site,
 | Output | With `baseUrl: 'https://example.com/docs'` |
 |---|---|
 | Bundle `<script>` tags (`typescript.autoInject`) | `/docs/_assets/main-A1B2C3D4.js` |
-| The stylesheet links Stati hashes and the Tailwind stylesheet it adds, including links on cached pages it updates | `/docs/_assets/styles-A1B2C3D4.css` |
+| The stylesheet links Stati hashes and the Tailwind stylesheet it adds, including links on cached pages it updates, and the relative `url()`s inside the hashed copies | `/docs/_assets/styles-A1B2C3D4.css` |
 | The search index `<meta name="stati:search-index">` | `/docs/search-index-a1b2c3d4.json` |
 | `stati.image()` and Markdown images, responsive variants and copies of co-located images | `/docs/_img/hero-1a2b3c4d-960.webp` |
 | Root-absolute `href` and `src` in Markdown (`[Tags](/tags)`, `![Logo](/logo.png)`) | `/docs/tags`, `/docs/logo.png` |
@@ -66,7 +66,7 @@ Some values stay relative to the site root, because they are data and not links:
 <body data-base-path="<%= stati.url('/') %>">
 ```
 
-Stylesheets are not rewritten. Reference fonts and images in CSS with relative URLs (`url(../fonts/inter.woff2)`), which keep working whatever the base path is.
+Stylesheets are not rewritten, except that the hashed copies Stati writes keep their relative `url()`s and `@import`s working: a reference such as `url(fonts/inter.woff2)` in `public/styles.css` becomes `url(/docs/fonts/inter.woff2)` in the copy under `_assets/`. A root-absolute `url(/fonts/inter.woff2)` is left as written and does not know the base path, so use relative URLs in CSS.
 
 ## Output
 

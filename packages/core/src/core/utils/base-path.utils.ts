@@ -108,6 +108,21 @@ export function withBasePath(path: string, basePath: string): string {
 }
 
 /**
+ * The base path as it appears in a decoded URL path: `getBasePath()` keeps the escapes of
+ * `baseUrl` (`/my%20docs`), and a request or file path has them decoded (`/my docs`). A base
+ * path with a malformed escape is used as it is.
+ *
+ * @param basePath - The base path from {@link getBasePath}
+ */
+export function decodeBasePath(basePath: string): string {
+  try {
+    return decodeURIComponent(basePath);
+  } catch {
+    return basePath;
+  }
+}
+
+/**
  * Removes the base path from a path, giving the path from the site root. Returns undefined
  * for a path outside the base path. Without a base path, the path is returned as it is.
  *

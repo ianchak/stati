@@ -2,7 +2,7 @@ import { extname, join, resolve, sep } from 'node:path';
 import { stat } from 'node:fs/promises';
 import type { ServerResponse } from 'node:http';
 import { createServer } from 'node:net';
-import { stripBasePath } from './base-path.utils.js';
+import { decodeBasePath, stripBasePath } from './base-path.utils.js';
 
 /**
  * Content types the dev and preview servers send, by file extension. Covers the files Stati
@@ -92,12 +92,7 @@ export function resolveBasePathRequest(
   if (basePath === '') {
     return { kind: 'serve', path: requestPath };
   }
-  let decodedBasePath = basePath;
-  try {
-    decodedBasePath = decodeURIComponent(basePath);
-  } catch {
-    // The base path is used as it is written
-  }
+  const decodedBasePath = decodeBasePath(basePath);
   if (requestPath === '/' || requestPath === decodedBasePath) {
     const search = /\?[^#]*/.exec(url ?? '')?.[0] ?? '';
     return { kind: 'redirect', location: `${basePath}/${search}` };

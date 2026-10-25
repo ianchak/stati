@@ -372,6 +372,24 @@ describe('sites served from a base path', () => {
       );
     });
 
+    it('loads the files a hashed copy references from the base path', async () => {
+      await createSite('https://example.com/sub');
+      await site.write('public/styles.css', 'body { background: url(img/bg.png); }');
+      await site.write(
+        'site/layout.eta',
+        '<html><head><link rel="stylesheet" href="<%= stati.url(\'/styles.css\') %>"></head><body></body></html>',
+      );
+
+      await site.build();
+
+      const [name] = await files();
+      expect(await site.read(`dist/_assets/${name}`)).toBe(
+        'body { background: url(/sub/img/bg.png); }',
+      );
+      // The file under its own name keeps its relative references
+      expect(await site.read('dist/styles.css')).toBe('body { background: url(img/bg.png); }');
+    });
+
     it('rewrites links that carry the site origin and the base path', async () => {
       await createSite('https://example.com/sub');
       await site.write('public/styles.css', 'body { color: black; }');
@@ -429,6 +447,17 @@ describe('sites served from a base path', () => {
         }
         expect(warnings).toEqual([]);
         expect((await site.manifest()).stylesheets).toEqual({ '/styles.css': `/_assets/${name}` });
+      });
+
+      it('rebases the references of the Tailwind stylesheet onto the base path', async () => {
+        await site.write('src/styles.css', '@font-face { src: url(../fonts/inter.woff2); }');
+
+        await site.build({ tailwind });
+
+        const [name] = await files();
+        expect(await site.read(`dist/_assets/${name}`)).toBe(
+          '@font-face { src: url(/sub/fonts/inter.woff2); }',
+        );
       });
 
       it('links the new name on cached pages when the CSS changes', async () => {

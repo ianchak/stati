@@ -177,6 +177,28 @@ describe('isHashableStylesheetPath', () => {
   });
 });
 
+describe('rebaseRelativeUrls on a site served from a base path', () => {
+  it('puts the base path in front of the rebased references only', () => {
+    const css =
+      'a{b:url(fonts/inter.woff2?v=1#x);c:url("../img/bg.svg");d:url(/fonts/a.woff2)}' +
+      '@import "base.css";e{f:url(https://cdn.example/x.png);g:url(#mask)}';
+
+    expect(rebaseRelativeUrls(css, '/css/site.css', '/sub')).toBe(
+      'a{b:url(/sub/css/fonts/inter.woff2?v=1#x);c:url("/sub/img/bg.svg");d:url(/fonts/a.woff2)}' +
+        '@import "/sub/css/base.css";e{f:url(https://cdn.example/x.png);g:url(#mask)}',
+    );
+  });
+
+  it('names the hashed copy after the CSS with the base path in it', () => {
+    const plain = hashStylesheet('a{b:url(x.png)}', '/styles.css');
+    const prefixed = hashStylesheet('a{b:url(x.png)}', '/styles.css', '/sub');
+
+    expect(prefixed.css).toBe('a{b:url(/sub/x.png)}');
+    expect(prefixed.path).not.toBe(plain.path);
+    expect(prefixed.path).toMatch(/^\/_assets\/styles-[0-9A-F]{8}\.css$/);
+  });
+});
+
 describe('rebaseRelativeUrls', () => {
   it("resolves relative references against the stylesheet's own path", () => {
     const css =

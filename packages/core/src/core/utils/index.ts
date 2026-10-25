@@ -52,7 +52,13 @@ export {
 export { propValue } from './template.utils.js';
 
 // Base path utilities (sites served from a subfolder)
-export { getBasePath, addBasePath, withBasePath, stripBasePath } from './base-path.utils.js';
+export {
+  getBasePath,
+  addBasePath,
+  withBasePath,
+  stripBasePath,
+  decodeBasePath,
+} from './base-path.utils.js';
 
 // Slugify utilities
 export { slugify } from './slugify.utils.js';

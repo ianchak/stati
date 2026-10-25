@@ -158,10 +158,16 @@ export function isHashableStylesheetPath(path: string): boolean {
  *
  * @param css - The stylesheet
  * @param path - Its path under its own name, such as '/css/site.css'
+ * @param basePath - The path the site is served from (`getBasePath()`), in front of the paths
+ *   the relative references become
  * @returns The CSS to write and its hashed path, such as '/_assets/css/site-A1B2C3D4.css'
  */
-export function hashStylesheet(css: string, path: string): { css: string; path: string } {
-  const rebased = rebaseRelativeUrls(css, path);
+export function hashStylesheet(
+  css: string,
+  path: string,
+  basePath: string = '',
+): { css: string; path: string } {
+  const rebased = rebaseRelativeUrls(css, path, basePath);
   const hash = createHash('sha256').update(rebased).digest('hex').slice(0, 8).toUpperCase();
   return {
     css: rebased,
@@ -358,16 +364,18 @@ function replaceCssReferences(css: string, replace: (url: string) => string | un
  *
  * @param css - The stylesheet
  * @param path - Its path under its own name, such as '/styles.css'
+ * @param basePath - The path the site is served from (`getBasePath()`), which the rebased
+ *   paths start with, so they load from there
  * @returns The stylesheet with root-relative references
  */
-export function rebaseRelativeUrls(css: string, path: string): string {
+export function rebaseRelativeUrls(css: string, path: string, basePath: string = ''): string {
   const base = new URL(path, URL_BASE);
   return replaceCssReferences(css, (url) => {
     if (url === '' || LOCATION_INDEPENDENT_URL.test(url)) {
       return undefined;
     }
     const { pathname, search, hash } = new URL(url, base);
-    return `${pathname}${search}${hash}`;
+    return `${basePath}${pathname}${search}${hash}`;
   });
 }
 
@@ -401,6 +409,8 @@ export function getStylesheetReferences(css: string, path: string): string[] {
  * @param outDir - The output directory, absolute
  * @param cacheDir - The cache directory, for the temporary file
  * @param projectRoot - The folder Tailwind runs in
+ * @param basePath - The path the site is served from (`getBasePath()`), in front of the paths
+ *   the relative `url()`s become
  * @returns The stylesheet's path and file
  * @throws {Error} When Tailwind CSS fails
  */
@@ -409,6 +419,7 @@ export async function buildStylesheet(
   outDir: string,
   cacheDir: string,
   projectRoot: string = process.cwd(),
+  basePath: string = '',
 ): Promise<BuiltStylesheet> {
   const { inputFile: input, minify } = plan;
 
@@ -428,7 +439,7 @@ export async function buildStylesheet(
       throw new Error(`Tailwind CSS finished without writing ${tempFile}`);
     }
 
-    const { css, path } = hashStylesheet(compiled, plan.path);
+    const { css, path } = hashStylesheet(compiled, plan.path, basePath);
     const file = join(outDir, ...path.split('/'));
     await ensureDir(dirname(file));
     await writeFile(file, css, 'utf-8');
