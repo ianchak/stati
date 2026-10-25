@@ -1,5 +1,11 @@
 # @stati/images
 
+## 1.1.0
+
+### Minor Changes
+
+- 0f5e34e: add news starter template
+
 ## 1.0.4
 
 ### Patch Changes
