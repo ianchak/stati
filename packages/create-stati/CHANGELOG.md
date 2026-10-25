@@ -1,5 +1,11 @@
 # create-stati
 
+## 2.3.3
+
+### Patch Changes
+
+- add context7.json to index Stati docs with Context7
+
 ## 2.3.2
 
 ### Patch Changes

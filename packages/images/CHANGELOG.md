@@ -1,5 +1,11 @@
 # @stati/images
 
+## 1.0.4
+
+### Patch Changes
+
+- add context7.json to index Stati docs with Context7
+
 ## 1.0.3
 
 ### Patch Changes
