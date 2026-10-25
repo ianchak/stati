@@ -505,6 +505,10 @@ export async function createTypeScriptWatcher(
  * Compile stati.config.ts to a temporary JS file for import.
  * Returns the path to the compiled file.
  *
+ * Files the config imports by relative path are bundled into the output. Packages are not:
+ * the compiled file keeps their imports, so Node loads them from the project's `node_modules`
+ * exactly as it does for a `.js` config.
+ *
  * @param configPath - Path to the TypeScript config file
  * @returns Path to the compiled JavaScript module
  *
@@ -526,8 +530,10 @@ export async function compileStatiConfig(configPath: string): Promise<string> {
     platform: 'node',
     target: 'node22',
     logLevel: 'silent',
-    // Mark @stati/core as external to avoid bundling it
-    external: ['@stati/core'],
+    // Leave every package import to Node at runtime, as a .js config does. Bundled into ESM
+    // output, CommonJS packages that require Node built-ins (fs-extra, for one) fail to load.
+    // Only the config's own files, imported by relative path, are bundled and transpiled.
+    packages: 'external',
   });
 
   return outfile;

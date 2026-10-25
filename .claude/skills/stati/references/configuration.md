@@ -23,7 +23,11 @@ export default defineConfig({
 The loader searches `stati.config.ts`, then `.js`, then `.mjs`. JavaScript sites
 using `.js` should declare `"type": "module"` in their package manifest; `.mjs`
 is explicitly ESM. TypeScript configs are compiled for loading, not browser
-delivery. `defineConfig` is an identity/typing helper, **not runtime validation**.
+delivery: files imported by relative path are bundled in, while packages stay
+imports that Node resolves from the project, as in a `.js` config (so a
+CommonJS package whose named exports Node cannot see, such as `fs-extra`, needs
+a default import). `defineConfig` is an identity/typing helper, **not runtime
+validation**.
 
 Loader defaults:
 

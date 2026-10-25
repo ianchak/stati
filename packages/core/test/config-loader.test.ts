@@ -616,6 +616,25 @@ export default config;`;
     });
   });
 
+  describe('TypeScript config that imports other files', () => {
+    it("still bundles the configuration's own relative TypeScript imports", async () => {
+      writeFileSync(
+        join(testDir, 'site-settings.ts'),
+        `export const title: string = 'From Relative Import';\n`,
+        'utf-8',
+      );
+      writeFileSync(
+        join(testDir, 'stati.config.ts'),
+        `import { title } from './site-settings';\nexport default { site: { title } };\n`,
+        'utf-8',
+      );
+
+      const config = await loadConfig(testDir);
+
+      expect(config.site.title).toBe('From Relative Import');
+    });
+  });
+
   describe('template options', () => {
     const writeConfig = (body: string) =>
       writeFileSync(join(testDir, 'stati.config.js'), `export default ${body};`, 'utf-8');
