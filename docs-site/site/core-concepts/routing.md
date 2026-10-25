@@ -295,7 +295,7 @@ permalink: '/custom-path'
 **Important:** When using `permalink`:
 
 - It must be a static string (no template variables or date formatting)
-- Start it with `/`; Stati uses the value as-is and does not validate it
+- Start it with `/`; Stati uses the value as-is and does not validate it, apart from `..` segments (`/../page`), which lead out of `dist/`: the build warns and skips a page with one, and does the same for a `collections.generate` URL
 - It completely replaces the file-path-based URL, which also changes the page's place in collections and navigation
 
 Example use cases:
