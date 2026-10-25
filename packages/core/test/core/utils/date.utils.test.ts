@@ -103,6 +103,44 @@ describe('date.utils', () => {
       expect(parseDateValue(undefined)).toBeUndefined();
     });
 
+    it('rejects loose V8 date strings that are not ISO 8601 shapes', () => {
+      // `new Date` happily turns these into dates (V8); they must not pass.
+      expect(parseDateValue('tbd 2025')).toBeUndefined();
+      expect(parseDateValue('draft 3')).toBeUndefined();
+      expect(parseDateValue('March 5')).toBeUndefined();
+      expect(parseDateValue('March 5, 2025')).toBeUndefined();
+      expect(parseDateValue('invalid-date-format')).toBeUndefined();
+      expect(parseDateValue('not-a-date')).toBeUndefined();
+    });
+
+    it('accepts ISO 8601 date and date-time shapes', () => {
+      expect(parseDateValue('2025-03-05')).toEqual(new Date('2025-03-05'));
+      expect(parseDateValue('2025-03-05T10:20')).toEqual(new Date('2025-03-05T10:20:00.000Z'));
+      expect(parseDateValue('2025-03-05T10:20:30Z')).toEqual(new Date('2025-03-05T10:20:30Z'));
+      expect(parseDateValue('2025-03-05 10:20:30+02:00')).toEqual(
+        new Date('2025-03-05T08:20:30.000Z'),
+      );
+      expect(parseDateValue('2025-03-05T10:20:30.5Z')).toEqual(new Date('2025-03-05T10:20:30.5Z'));
+    });
+
+    it('reads a date-time without a timezone designator as UTC, independent of local time', () => {
+      process.env.TZ = 'Europe/Budapest';
+      expect(parseDateValue('2025-03-05T10:20')?.toISOString()).toBe('2025-03-05T10:20:00.000Z');
+      process.env.TZ = 'Pacific/Kiritimati';
+      expect(parseDateValue('2025-03-05 10:20:30')?.toISOString()).toBe('2025-03-05T10:20:30.000Z');
+      delete process.env.TZ;
+    });
+
+    it('reports a rejected non-ISO string through onInvalid in getFrontMatterDate', () => {
+      const onInvalid = vi.fn();
+      const result = getFrontMatterDate(
+        { publishedAt: 'March 5, 2025', date: '2026-06-01' },
+        onInvalid,
+      );
+      expect(result).toEqual(new Date('2026-06-01'));
+      expect(onInvalid).toHaveBeenCalledWith('publishedAt', 'March 5, 2025');
+    });
+
     it('returns a copy, not the input Date itself', () => {
       const original = new Date('2026-01-01');
       const result = parseDateValue(original);

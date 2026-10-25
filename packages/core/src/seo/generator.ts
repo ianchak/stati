@@ -203,17 +203,21 @@ export function generateOpenGraphTags(ctx: SEOContext): string[] {
   }
   if (og.image) {
     const image = typeof og.image === 'string' ? { url: og.image } : og.image;
-    const imageUrl = image.url.startsWith('/') ? resolveAbsoluteUrl(image.url, siteUrl) : image.url;
+    const imageUrl = typeof image.url === 'string' ? image.url.trim() : '';
 
-    tags.push(`<meta property="og:image" content="${escapeHtml(imageUrl)}">`);
-    if (image.alt) {
-      tags.push(`<meta property="og:image:alt" content="${escapeHtml(image.alt)}">`);
-    }
-    if (image.width) {
-      tags.push(`<meta property="og:image:width" content="${image.width}">`);
-    }
-    if (image.height) {
-      tags.push(`<meta property="og:image:height" content="${image.height}">`);
+    if (imageUrl) {
+      tags.push(
+        `<meta property="og:image" content="${escapeHtml(resolveAbsoluteUrl(imageUrl, siteUrl))}">`,
+      );
+      if (image.alt) {
+        tags.push(`<meta property="og:image:alt" content="${escapeHtml(image.alt)}">`);
+      }
+      if (image.width) {
+        tags.push(`<meta property="og:image:width" content="${image.width}">`);
+      }
+      if (image.height) {
+        tags.push(`<meta property="og:image:height" content="${image.height}">`);
+      }
     }
   }
 
@@ -298,19 +302,19 @@ export function generateTwitterCardTags(ctx: SEOContext): string[] {
   }
 
   // Image with fallback to Open Graph image
-  const imageUrl =
+  const rawImage =
     twitter.image ||
     (seo.openGraph?.image
       ? typeof seo.openGraph.image === 'string'
         ? seo.openGraph.image
         : seo.openGraph.image.url
       : undefined);
+  const imageUrl = typeof rawImage === 'string' ? rawImage.trim() : '';
 
   if (imageUrl) {
-    const fullImageUrl = imageUrl.startsWith('/')
-      ? resolveAbsoluteUrl(imageUrl, siteUrl)
-      : imageUrl;
-    tags.push(`<meta name="twitter:image" content="${escapeHtml(fullImageUrl)}">`);
+    tags.push(
+      `<meta name="twitter:image" content="${escapeHtml(resolveAbsoluteUrl(imageUrl, siteUrl))}">`,
+    );
 
     if (twitter.imageAlt) {
       tags.push(`<meta name="twitter:image:alt" content="${escapeHtml(twitter.imageAlt)}">`);
