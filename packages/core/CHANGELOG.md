@@ -1,5 +1,11 @@
 # @stati/core
 
+## 2.4.6
+
+### Patch Changes
+
+- 2a50cb1: serialize JSON-LD structured data safely for script tags
+
 ## 2.4.5
 
 ### Patch Changes
