@@ -326,6 +326,30 @@ describe('config loader', () => {
       expect((error as Error).message).toContain('seo.articles.include must be an array');
     });
 
+    it('should validate sitemap.news and throw on invalid config', async () => {
+      writeFileSync(
+        join(testDir, 'stati.config.mjs'),
+        `export default { sitemap: { enabled: true, news: { include: '/news/*' } } };`,
+        'utf-8',
+      );
+
+      const error = await loadConfig(testDir).catch((caught: unknown) => caught);
+      expect(error).toBeInstanceOf(ConfigValidationError);
+      expect((error as Error).message).toContain('Invalid sitemap configuration in');
+      expect((error as Error).message).toContain('sitemap.news.include must be an array');
+    });
+
+    it('should load a valid sitemap.news block', async () => {
+      writeFileSync(
+        join(testDir, 'stati.config.mjs'),
+        `export default { sitemap: { enabled: true, news: { include: ['/news/*/*'] } } };`,
+        'utf-8',
+      );
+
+      const config = await loadConfig(testDir);
+      expect(config.sitemap?.news).toEqual({ include: ['/news/*/*'] });
+    });
+
     it('should validate the css block and throw on invalid config', async () => {
       writeFileSync(
         join(testDir, 'stati.config.mjs'),

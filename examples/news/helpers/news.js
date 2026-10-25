@@ -3,16 +3,13 @@
  *
  *   helpers   used in templates as `stati.helpers.frontPage(...)`, `stati.helpers.byline(...)`...
  *   generate  one page per section (/news/world) and per author (/authors/your-name)
- *   hooks     reading time and search-engine metadata on every article, and news-sitemap.xml
+ *   hooks     reading time and search-engine metadata on every article
  *   feeds     the site-wide RSS feed plus one per section
  *
  * Listings still come from Stati itself: every article lives in site/news/<section>/, so
  * `stati.collection` on a page with `collection: /news` holds them all, newest first, and
  * Stati rebuilds the pages that list an article when it is added, moved, retitled or retagged.
  */
-
-import { writeFile } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
 
 /**
  * @typedef {import('@stati/core').PageModel} PageModel
@@ -50,9 +47,6 @@ const ARTICLE_URL = /^\/news\/([^/]+)\/[^/]+$/;
 /** Words a minute for the reading time */
 const WORDS_PER_MINUTE = 230;
 
-/** Google News reads articles from the last two days */
-const NEWS_SITEMAP_DAYS = 2;
-
 /** The link preview image for pages without their own, in public/ */
 const SOCIAL_CARD = '/images/social-card.png';
 
@@ -66,15 +60,6 @@ function toDate(value) {
 /** @param {string} key */
 function titleCase(key) {
   return key.replace(/[-_]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
-}
-
-/** @param {string} text */
-function escapeXml(text) {
-  return text.replace(
-    /[&<>"']/g,
-    (char) =>
-      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[char] ?? char,
-  );
 }
 
 /** @param {PageModel} page */
@@ -472,43 +457,6 @@ export function createNews(options) {
     page.frontMatter.seo = seo;
   };
 
-  /**
-   * Writes news-sitemap.xml, the Google News sitemap: articles from the last two days, in
-   * the `news:` namespace. Stati's own sitemap.xml lists every page; robots.txt names both.
-   *
-   * @param {{ pages: PageModel[], config: StatiConfig }} context
-   */
-  const writeNewsSitemap = async ({ pages, config }) => {
-    const cutoff = Date.now() - NEWS_SITEMAP_DAYS * 24 * 60 * 60 * 1000;
-    const language = locale.split('-')[0]?.toLowerCase() || 'en';
-    const entries = articlesIn(pages)
-      .filter((page) => !page.frontMatter.draft && (page.publishedAt?.getTime() ?? 0) >= cutoff)
-      .slice(0, 1000)
-      .map((page) =>
-        [
-          '  <url>',
-          `    <loc>${escapeXml(absolute(page.url))}</loc>`,
-          '    <news:news>',
-          '      <news:publication>',
-          `        <news:name>${escapeXml(site.title)}</news:name>`,
-          `        <news:language>${escapeXml(language)}</news:language>`,
-          '      </news:publication>',
-          `      <news:publication_date>${/** @type {Date} */ (page.publishedAt).toISOString()}</news:publication_date>`,
-          `      <news:title>${escapeXml(String(page.frontMatter.title ?? ''))}</news:title>`,
-          '    </news:news>',
-          '  </url>',
-        ].join('\n'),
-      );
-    const xml = [
-      '<?xml version="1.0" encoding="UTF-8"?>',
-      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">',
-      ...entries,
-      '</urlset>',
-      '',
-    ].join('\n');
-    await writeFile(join(resolve(config.outDir ?? 'dist'), 'news-sitemap.xml'), xml);
-  };
-
   /** @type {NonNullable<StatiConfig['hooks']>} */
   const hooks = {
     beforeAll: ({ pages, config }) => {
@@ -518,7 +466,6 @@ export function createNews(options) {
         else enrichPage(page, generatedCards);
       }
     },
-    afterAll: writeNewsSitemap,
   };
 
   /**

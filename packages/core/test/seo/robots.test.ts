@@ -219,6 +219,21 @@ describe('Robots.txt Generator - generateRobotsTxt', () => {
   });
 });
 
+describe('Robots.txt Generator - generateRobotsTxtFromConfig', () => {
+  it('writes absolute Sitemap lines for additional sitemaps, with the base path', () => {
+    const content = generateRobotsTxtFromConfig({ sitemap: true }, 'https://example.com/paper', [
+      '/news-sitemap.xml',
+    ]);
+    expect(content).toContain('Sitemap: https://example.com/paper/sitemap.xml');
+    expect(content).toContain('Sitemap: https://example.com/paper/news-sitemap.xml');
+  });
+
+  it('adds nothing without additional sitemaps', () => {
+    const content = generateRobotsTxtFromConfig({ sitemap: true }, 'https://example.com');
+    expect(content).not.toContain('news-sitemap.xml');
+  });
+});
+
 describe('Robots.txt Generator - configToOptions', () => {
   it('should convert basic config', () => {
     const config: RobotsTxtConfig = {
@@ -310,6 +325,55 @@ describe('Robots.txt Generator - configToOptions', () => {
     };
     const options = configToOptions(config);
     expect(options.sitemaps).toEqual(['/sitemap.xml']);
+  });
+
+  it('should list additional sitemaps after sitemap.xml when sitemap is true', () => {
+    const options = configToOptions({ sitemap: true }, 'https://example.com', [
+      '/news-sitemap.xml',
+    ]);
+    expect(options.sitemaps).toEqual(['/sitemap.xml', '/news-sitemap.xml']);
+  });
+
+  it('should not list additional sitemaps for an explicit sitemap URL or sitemap false', () => {
+    const extra = ['/news-sitemap.xml'];
+    expect(
+      configToOptions({ sitemap: 'https://example.com/custom.xml' }, 'https://example.com', extra)
+        .sitemaps,
+    ).toEqual(['https://example.com/custom.xml']);
+    expect(
+      configToOptions({ sitemap: false }, 'https://example.com', extra).sitemaps,
+    ).toBeUndefined();
+    expect(configToOptions({}, 'https://example.com', extra).sitemaps).toBeUndefined();
+  });
+
+  it('should skip an additional sitemap that customLines already declares', () => {
+    const options = configToOptions(
+      {
+        sitemap: true,
+        customLines: [
+          'Sitemap: https://example.com/news-sitemap.xml',
+          'Sitemap: https://example.com/other.xml',
+          '# a comment',
+        ],
+      },
+      'https://example.com',
+      ['/news-sitemap.xml', '/more.xml'],
+    );
+    expect(options.sitemaps).toEqual(['/sitemap.xml', '/more.xml']);
+  });
+
+  it('should list an additional sitemap when customLines declares another one', () => {
+    const options = configToOptions(
+      { sitemap: true, customLines: ['sitemap: https://example.com/other.xml'] },
+      'https://example.com',
+      ['/news-sitemap.xml'],
+    );
+    expect(options.sitemaps).toEqual(['/sitemap.xml', '/news-sitemap.xml']);
+  });
+
+  it('should list additional sitemaps without a site URL', () => {
+    const options = configToOptions({ sitemap: true }, undefined, ['/news-sitemap.xml']);
+    expect(options.sitemaps).toEqual(['/sitemap.xml', '/news-sitemap.xml']);
   });
 
   it('should handle sitemap string', () => {

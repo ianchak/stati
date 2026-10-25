@@ -86,7 +86,7 @@ Full reference: [Templates](/api/templates) and [Navigation](/api/navigation).
 
 ## SEO, sitemap and robots.txt
 
-Generated automatically from config. The underlying functions are exported for custom pipelines: `generateSEO`, `generateSEOMetadata`, `generateOpenGraphTags`, `generateTwitterCardTags`, `generateSitemap`, `generateSitemapXml`, `generateRobotsTxt`, `autoInjectSEO` and `validateSEOMetadata`. See [SEO](/api/seo).
+Generated automatically from config. The underlying functions are exported for custom pipelines: `generateSEO`, `generateSEOMetadata`, `generateOpenGraphTags`, `generateTwitterCardTags`, `generateSitemap`, `generateSitemapXml`, `generateNewsSitemap`, `generateRobotsTxt`, `autoInjectSEO` and `validateSEOMetadata`. See [SEO](/api/seo).
 
 ## RSS
 

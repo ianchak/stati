@@ -75,6 +75,49 @@ export interface SitemapConfig {
    * Required when site has >50,000 URLs.
    */
   generateIndex?: boolean;
+  /**
+   * Write a Google News sitemap (the `news:` namespace) as a separate file next to
+   * `sitemap.xml`. Without it no news sitemap is written. Like `sitemap.xml`, it is written
+   * on production builds only, and `robots.txt` lists it when `robots.sitemap` is `true`.
+   */
+  news?: NewsSitemapConfig;
+}
+
+/**
+ * Configuration for the Google News sitemap, set as `sitemap.news`.
+ *
+ * The file lists the pages that match `include` and were published within `maxAgeDays`, newest
+ * first and at most 1000. Drafts, generated pages, later pages of a paginated listing, the 404
+ * page and noindex pages are left out. The sitemap's own `excludePatterns`, `includePatterns`,
+ * `filter`, `transformUrl` and `transformEntry` do not apply to it.
+ *
+ * @see https://developers.google.com/search/docs/crawling-indexing/sitemaps/news-sitemap
+ *
+ * @example
+ * ```typescript
+ * sitemap: {
+ *   enabled: true,
+ *   news: {
+ *     include: ['/news/**'],
+ *     publicationName: 'Stati News',
+ *   },
+ * }
+ * ```
+ */
+export interface NewsSitemapConfig {
+  /** Glob patterns for the URLs of the news articles, like `seo.articles.include` */
+  include: string[];
+  /** Name of the publication (default: `site.title`) */
+  publicationName?: string;
+  /**
+   * ISO 639 language code of the publication, such as `en` or `zh-cn`
+   * (default: the language of `site.defaultLocale`, or `en`)
+   */
+  language?: string;
+  /** Articles published longer ago than this many days are left out (default: 2) */
+  maxAgeDays?: number;
+  /** File name in the output folder (default: `news-sitemap.xml`) */
+  filename?: string;
 }
 
 /**
@@ -90,4 +133,18 @@ export interface SitemapGenerationResult {
   sizeInBytes: number;
   /** Individual sitemap files (when split into multiple sitemaps) */
   sitemaps?: Array<{ filename: string; xml: string }>;
+}
+
+/**
+ * Result of Google News sitemap generation.
+ */
+export interface NewsSitemapGenerationResult {
+  /** Generated news sitemap XML string */
+  xml: string;
+  /** Number of articles in the sitemap */
+  entryCount: number;
+  /** Size of the sitemap in bytes */
+  sizeInBytes: number;
+  /** File name to write it to in the output folder */
+  filename: string;
 }

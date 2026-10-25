@@ -149,7 +149,7 @@ A complete news site, ready to publish in:
 ```text
 examples/news/
 ├── helpers/news.js       # Front page ranking, bylines, dates, section and author pages,
-│                         # NewsArticle metadata, feeds and the Google News sitemap
+│                         # NewsArticle metadata, feeds and reading time
 ├── site/
 │   ├── news/             # One folder of articles per section, the article layout,
 │   │                     # the latest stream and [section].md, a page per section

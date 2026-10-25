@@ -64,6 +64,8 @@ import {
 } from './isg/index.js';
 import {
   generateSitemap,
+  generateNewsSitemap,
+  resolveNewsSitemapFilename,
   generateRobotsTxtFromConfig,
   autoInjectSEO,
   applySEODefaults,
@@ -1689,6 +1691,12 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     const endSitemapSpan = recorder.startSpan('sitemapGenerationMs');
     const sitemapResult = generateSitemap(pages, config, config.sitemap, logger);
     await writeFile(join(outDir, 'sitemap.xml'), sitemapResult.xml);
+    const newsSitemapResult = config.sitemap.news
+      ? generateNewsSitemap(pages, config, config.sitemap.news, logger)
+      : undefined;
+    if (newsSitemapResult) {
+      await writeFile(join(outDir, newsSitemapResult.filename), newsSitemapResult.xml);
+    }
     endSitemapSpan();
 
     // Write additional sitemap files if split
@@ -1704,6 +1712,11 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
         `Generated sitemap.xml with ${sitemapResult.entryCount} entries (${(sitemapResult.sizeInBytes / 1024).toFixed(2)} KB)`,
       );
     }
+    if (newsSitemapResult) {
+      logger.success(
+        `Generated ${newsSitemapResult.filename} with ${newsSitemapResult.entryCount} ${newsSitemapResult.entryCount === 1 ? 'article' : 'articles'} (${(newsSitemapResult.sizeInBytes / 1024).toFixed(2)} KB)`,
+      );
+    }
   }
 
   // Generate robots.txt if enabled (only in production mode)
@@ -1713,7 +1726,13 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     }
     logger.info('Generating robots.txt...');
 
-    const robotsContent = generateRobotsTxtFromConfig(config.robots, config.site.baseUrl);
+    // The news sitemap is only written next to an enabled sitemap
+    const newsSitemap = config.sitemap?.enabled ? config.sitemap.news : undefined;
+    const robotsContent = generateRobotsTxtFromConfig(
+      config.robots,
+      config.site.baseUrl,
+      newsSitemap ? [`/${resolveNewsSitemapFilename(newsSitemap)}`] : [],
+    );
     await writeFile(join(outDir, 'robots.txt'), robotsContent);
     const robotsSizeBytes = Buffer.byteLength(robotsContent, 'utf8');
 

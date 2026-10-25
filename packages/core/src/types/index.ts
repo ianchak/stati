@@ -62,6 +62,8 @@ export type {
   ChangeFrequency,
   SitemapEntry,
   SitemapConfig,
+  NewsSitemapConfig,
+  NewsSitemapGenerationResult,
   SitemapGenerationResult,
 } from './sitemap.js';
 
