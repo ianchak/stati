@@ -45,6 +45,9 @@ import {
   normalizePathForComparison,
   assertPortAvailable,
   toPortUnavailableError,
+  getBasePath,
+  resolveBasePathRequest,
+  respondToBasePathRequest,
 } from './utils/index.js';
 import type { ErrorDetails } from './utils/index.js';
 import { setEnv, getEnv } from '../env.js';
@@ -528,7 +531,9 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
   const cacheDir = resolveCacheDir();
   const devLock = new DevServerLockManager(cacheDir);
 
-  const url = `http://${host}:${port}`;
+  // The site is served under the path of site.baseUrl, so links behave as they do in production
+  const basePath = getBasePath(config.site.baseUrl);
+  const url = `http://${host}:${port}${basePath ? `${basePath}/` : ''}`;
   let httpServer: ReturnType<typeof createServer> | null = null;
   let wsServer: WebSocketServer | null = null;
 
@@ -746,14 +751,22 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
           return;
         }
 
+        // With a base path, the site lives under it, as it does on the host
+        const target = resolveBasePathRequest(req.url, requestPath, basePath);
+        if (target.kind !== 'serve') {
+          respondToBasePathRequest(res, target, basePath);
+          return;
+        }
+        const sitePath = target.path;
+
         // Only log page requests, not static assets (files with extensions)
-        const hasFileExtension = requestPath.includes('.') && !requestPath.endsWith('.html');
+        const hasFileExtension = sitePath.includes('.') && !sitePath.endsWith('.html');
         if (!hasFileExtension) {
           logger.processing?.(`${req.method} ${requestPath}`);
         }
 
         try {
-          const { content, mimeType, statusCode } = await serveFile(requestPath);
+          const { content, mimeType, statusCode } = await serveFile(sitePath);
           const responseTime = Date.now() - requestStart;
 
           // Log slow responses with memory info

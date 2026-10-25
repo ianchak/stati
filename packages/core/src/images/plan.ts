@@ -77,7 +77,7 @@ export function imageBaseName(filePath: string): string {
 export interface PlannedOutput {
   /** Path relative to the output directory, with forward slashes */
   relPath: string;
-  /** Root-relative URL */
+  /** Root-relative URL, with the base path in front of it */
   url: string;
   width: number;
   format: ImageOutputFormat;
@@ -91,7 +91,7 @@ export interface CopyPlan {
   key: string;
   /** Path relative to the output directory, with forward slashes */
   relPath: string;
-  /** Root-relative URL */
+  /** Root-relative URL, with the base path in front of it */
   url: string;
 }
 
@@ -101,17 +101,19 @@ export interface CopyPlan {
  * @param filePath - Absolute source path
  * @param sourceHash - SHA-256 of the source bytes
  * @param format - Source format
+ * @param basePath - The path the site is served from (`getBasePath()`), in front of the URL
  */
 export function planCopy(
   filePath: string,
   sourceHash: string,
   format: ImageSourceFormat,
+  basePath: string = '',
 ): CopyPlan {
   const relPath = posix.join(
     IMAGES_OUTPUT_DIR,
     `${imageBaseName(filePath)}-${sourceHash.slice(0, NAME_HASH_LENGTH)}.${extensionFor(format)}`,
   );
-  return { key: `copy:${relPath}`, relPath, url: `/${relPath}` };
+  return { key: `copy:${relPath}`, relPath, url: `${basePath}/${relPath}` };
 }
 
 /**
@@ -140,6 +142,8 @@ export interface VariantPlanInput {
   responsive: ResolvedResponsiveConfig;
   /** Encoder identity, so encoder upgrades produce new URLs */
   providerVersion: string;
+  /** The path the site is served from (`getBasePath()`), in front of every URL */
+  basePath?: string;
 }
 
 function qualityFor(
@@ -183,7 +187,7 @@ export function planVariants(input: VariantPlanInput): VariantPlan {
       const quality = qualityFor(format, input.responsive);
       return {
         relPath,
-        url: `/${relPath}`,
+        url: `${input.basePath ?? ''}/${relPath}`,
         width,
         format,
         ...(quality !== undefined && { quality }),

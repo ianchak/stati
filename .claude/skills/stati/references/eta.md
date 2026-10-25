@@ -74,6 +74,7 @@ include result may be passed as another include's `body` and printed raw as
 | `stati.pagination`                    | Page of a `paginate` listing (1.29+), else undefined                           |
 | `stati.generated`                     | Key, label, items of a `[param].md` page (1.29+), else undefined               |
 | `stati.slugify(text)`                 | Stati's slug for generated page keys (1.29+)                                   |
+| `stati.url(path)`                     | Site path with the base path of `site.baseUrl` added (2.5+)                    |
 | `stati.include(name, props?, body?)`  | Renders another template here and returns its HTML (2.0+)                      |
 | `stati.layout(name, props?)`          | Wraps this template's output in another template; returns `''` (2.0+)          |
 | `stati.include.has(name)`             | Whether a name resolves for this page; same as `stati.layout.has`              |
@@ -100,6 +101,19 @@ Markdown image: from `public/` when it starts with `/`, otherwise next to the pa
 Markdown file. It returns `''` for an empty `src`, so `stati.image(stati.page.cover)`
 needs no guard, and warns when `alt` is missing (pass `alt: ''` for decorative
 images). `priority: true` loads the image eagerly with high fetch priority.
+
+`stati.url(path)` adds the path of `site.baseUrl` (`https://example.com/docs` gives
+`/docs`) to a path from the site root: `stati.url('/posts/hello')` is
+`/docs/posts/hello`, `stati.url('/')` is `/docs/`. Absolute (`https:`, `mailto:`),
+`//` and `#hash` or `?query` values, relative paths and paths already starting with
+the base path come back unchanged, so a second call is harmless, and without a base
+path every value comes back unchanged. `page.url`, navigation and collection
+`url`s, pagination URLs, front matter and `stati.assets.*` paths stay relative to
+the site root: wrap them when printing a link. Stati adds the prefix itself to
+bundle scripts, the stylesheet links, the search index meta tag, `stati.image()`
+and Markdown image URLs, and root-absolute Markdown links; raw HTML in Markdown is
+left as written. Build warnings name an `href` or `src` starting with `/` that
+lacks the prefix.
 
 The public `TemplateContext` type covers the runtime shape, including `include`,
 `layout`, `body`, `props` and `helpers`; `page.toc` is the one runtime field it

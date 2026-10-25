@@ -177,6 +177,28 @@ describe('isHashableStylesheetPath', () => {
   });
 });
 
+describe('rebaseRelativeUrls on a site served from a base path', () => {
+  it('puts the base path in front of the rebased references only', () => {
+    const css =
+      'a{b:url(fonts/inter.woff2?v=1#x);c:url("../img/bg.svg");d:url(/fonts/a.woff2)}' +
+      '@import "base.css";e{f:url(https://cdn.example/x.png);g:url(#mask)}';
+
+    expect(rebaseRelativeUrls(css, '/css/site.css', '/sub')).toBe(
+      'a{b:url(/sub/css/fonts/inter.woff2?v=1#x);c:url("/sub/img/bg.svg");d:url(/fonts/a.woff2)}' +
+        '@import "/sub/css/base.css";e{f:url(https://cdn.example/x.png);g:url(#mask)}',
+    );
+  });
+
+  it('names the hashed copy after the CSS with the base path in it', () => {
+    const plain = hashStylesheet('a{b:url(x.png)}', '/styles.css');
+    const prefixed = hashStylesheet('a{b:url(x.png)}', '/styles.css', '/sub');
+
+    expect(prefixed.css).toBe('a{b:url(/sub/x.png)}');
+    expect(prefixed.path).not.toBe(plain.path);
+    expect(prefixed.path).toMatch(/^\/_assets\/styles-[0-9A-F]{8}\.css$/);
+  });
+});
+
 describe('rebaseRelativeUrls', () => {
   it("resolves relative references against the stylesheet's own path", () => {
     const css =
@@ -814,5 +836,82 @@ describe('stylesheet files', () => {
     it('is fine without an _assets folder', async () => {
       expect(await removeStaleStylesheets(dir, '/styles.css', '/styles.css')).toEqual([]);
     });
+  });
+});
+
+describe('stylesheet links on a site served from a base path', () => {
+  const siteUrl = 'https://example.com/sub/';
+  const head = (links: string) => `<html><head><title>T</title>${links}</head><body></body></html>`;
+
+  it('reads a root-absolute link inside the base path as the site path', () => {
+    const html = head(
+      '<link rel="stylesheet" href="/sub/styles.css"><link rel="stylesheet" href="https://example.com/sub/blog/a.css?v=1">',
+    );
+
+    expect(linksStylesheet(html, '/styles.css', siteUrl)).toBe(true);
+    expect(linksStylesheet(html, '/blog/a.css', siteUrl)).toBe(true);
+    expect(getLinkedStylesheetPaths(html, '/blog/post', siteUrl)).toEqual([
+      '/styles.css',
+      '/blog/a.css',
+    ]);
+  });
+
+  it('does not take a link outside the base path for a site stylesheet', () => {
+    const html = head(
+      '<link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/subway/other.css"><link rel="stylesheet" href="https://example.com/styles.css">',
+    );
+
+    expect(linksStylesheet(html, '/styles.css', siteUrl)).toBe(false);
+    expect(getLinkedStylesheetPaths(html, '/', siteUrl)).toEqual([]);
+  });
+
+  it('resolves a relative link from the page, which is already a site path', () => {
+    const html = head('<link rel="stylesheet" href="local.css">');
+
+    expect(linksStylesheet(html, '/blog/local.css', siteUrl, '/blog/post')).toBe(true);
+    expect(getLinkedStylesheetPaths(html, '/blog/post', siteUrl)).toEqual(['/blog/local.css']);
+  });
+
+  it('reads the integrity of a link inside the base path', () => {
+    const html = head('<link rel="stylesheet" href="/sub/styles.css" integrity="sha384-x">');
+
+    expect(linksStylesheetWithIntegrity(html, '/styles.css', '/', siteUrl)).toBe(true);
+    expect(linksStylesheetWithIntegrity(html, '/other.css', '/', siteUrl)).toBe(false);
+  });
+
+  it('rewrites a link to its target with the base path, keeping the origin and the query', () => {
+    const targets = new Map([['/styles.css', '/_assets/styles-0A1B2C3D.css']]);
+    const html = head(
+      '<link rel="stylesheet" href="/sub/styles.css"><link rel="stylesheet" href="https://example.com/sub/styles.css?v=2"><link rel="stylesheet" href="../styles.css"><link rel="stylesheet" href="/styles.css">',
+    );
+
+    expect(rewriteStylesheetLinks(html, targets, '/blog/post', siteUrl)).toBe(
+      head(
+        '<link rel="stylesheet" href="/sub/_assets/styles-0A1B2C3D.css"><link rel="stylesheet" href="https://example.com/sub/_assets/styles-0A1B2C3D.css?v=2"><link rel="stylesheet" href="/sub/_assets/styles-0A1B2C3D.css"><link rel="stylesheet" href="/styles.css">',
+      ),
+    );
+  });
+
+  it('adds a link with the base path unless the page links the path already', () => {
+    expect(autoInjectStylesheets(head(''), ['/_assets/styles-1.css'], siteUrl)).toBe(
+      head('    <link rel="stylesheet" href="/sub/_assets/styles-1.css">\n'),
+    );
+
+    const linked = head('<link rel="stylesheet" href="/sub/styles.css">');
+    expect(autoInjectStylesheets(linked, ['/styles.css'], siteUrl)).toBe(linked);
+    // A link without the base path does not load there, so the path is added
+    expect(
+      autoInjectStylesheets(
+        head('<link rel="stylesheet" href="/styles.css">'),
+        ['/styles.css'],
+        siteUrl,
+      ),
+    ).toContain('    <link rel="stylesheet" href="/sub/styles.css">');
+  });
+
+  it('is unchanged without a base path', () => {
+    expect(autoInjectStylesheets(head(''), ['/styles.css'], 'https://example.com')).toBe(
+      head('    <link rel="stylesheet" href="/styles.css">\n'),
+    );
   });
 });

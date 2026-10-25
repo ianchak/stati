@@ -136,3 +136,37 @@ describe('planVariants', () => {
     expect(planVariants({ ...input, filePath: '/site/blog/hero.jpg' }).key).toBe(hero.key);
   });
 });
+
+describe('image URLs on a site served from a base path', () => {
+  it('puts the base path in front of the URL of a copy, not of its file path', () => {
+    expect(planCopy('/site/blog/hero.jpeg', 'abcdef0123456789', 'jpeg', '/sub')).toEqual({
+      key: 'copy:_img/hero-abcdef01.jpg',
+      relPath: '_img/hero-abcdef01.jpg',
+      url: '/sub/_img/hero-abcdef01.jpg',
+    });
+  });
+
+  it('puts the base path in front of every variant URL and srcset entry', () => {
+    const input = {
+      filePath: '/public/images/hero.jpg',
+      sourceHash: 'a'.repeat(64),
+      format: 'jpeg' as const,
+      width: 1600,
+      responsive,
+      providerVersion: '@stati/images@1.0.0',
+    };
+    const plain = planVariants(input);
+    const plan = planVariants({ ...input, basePath: '/sub' });
+
+    expect(plan.key).toBe(plain.key);
+    expect(plan.outputs.map((output) => output.relPath)).toEqual(
+      plain.outputs.map((output) => output.relPath),
+    );
+    expect(plan.outputs.every((output) => output.url === `/sub/${output.relPath}`)).toBe(true);
+    expect(plan.fallback.src).toBe(`/sub${plain.fallback.src}`);
+    expect(plan.fallback.srcset).toBe(plain.fallback.srcset.split('/_img/').join('/sub/_img/'));
+    expect(plan.sources[0]!.srcset).toBe(
+      plain.sources[0]!.srcset.split('/_img/').join('/sub/_img/'),
+    );
+  });
+});

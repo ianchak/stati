@@ -12,7 +12,7 @@
  * // In Eta templates, access via stati.assets
  * // Auto-injection handles most cases, but manual control is available:
  * <% for (const path of stati.assets.bundlePaths) { %>
- * <script type="module" src="<%= path %>"></script>
+ * <script type="module" src="<%= stati.url(path) %>"></script>
  * <% } %>
  * ```
  */
@@ -20,6 +20,7 @@ export interface StatiAssets {
   /**
    * Array of all bundle paths matched for this page.
    * Paths are in config order: ['/_assets/core-abc.js', '/_assets/docs-def.js']
+   * They are relative to the site root; pass one through `stati.url()` when you print it.
    * Always an array, empty [] if no TypeScript enabled or no bundles match.
    */
   bundlePaths: string[];
@@ -36,7 +37,8 @@ export interface StatiAssets {
   /**
    * Path to the search index file (e.g., '/search-index-a1b2c3d4.json').
    * Available when search index generation is enabled.
-   * Use this path in client-side JavaScript to fetch the search index.
+   * Use this path in client-side JavaScript to fetch the search index. It is relative to the
+   * site root, like the other paths: pass it through `stati.url()` when you print it.
    */
   searchIndexPath?: string;
 }
@@ -592,6 +594,14 @@ export interface TemplateContext {
   generator: { version: string };
   /** Converts text to the URL slug Stati uses for generated page keys and heading anchors */
   slugify: (text: string) => string;
+  /**
+   * Adds the base path of `site.baseUrl` to a site-relative path, such as `/posts/hello`, for a
+   * site served from a subfolder (`https://example.com/docs` gives `/docs/posts/hello`).
+   * Absolute and protocol-relative URLs, `#hash` and `?query` values, relative paths and paths
+   * that already start with the base path are returned unchanged, so it is safe to apply twice.
+   * Without a base path it returns the path as it is.
+   */
+  url: (path: string) => string;
   /**
    * Builds a space-separated attribute value from strings, numbers, arrays and objects whose
    * truthy keys are kept, like `classnames`

@@ -1112,6 +1112,7 @@ describe('build.ts', () => {
       expect(mockAutoInjectBundles).toHaveBeenCalledWith(
         expect.any(String),
         expect.arrayContaining(['/_assets/main.js']),
+        '',
       );
     });
 

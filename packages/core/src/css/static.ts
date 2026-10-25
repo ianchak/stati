@@ -22,11 +22,14 @@ export class StaticStylesheets {
    * @param skipPath - A path the static directory doesn't serve: the Tailwind output's, whose
    *   static file the build doesn't copy, and which a hashed build doesn't write, so a
    *   stylesheet that references it stops the build
+   * @param basePath - The path the site is served from (`getBasePath()`), which the copy's
+   *   rebased `url()`s start with
    */
   constructor(
     private readonly staticDir: string,
     private readonly outDir: string,
     private readonly skipPath?: string,
+    private readonly basePath: string = '',
   ) {}
 
   /**
@@ -72,7 +75,7 @@ export class StaticStylesheets {
       );
     }
 
-    const hashed = hashStylesheet(css, path);
+    const hashed = hashStylesheet(css, path, this.basePath);
     const file = join(this.outDir, ...hashed.path.split('/'));
     await ensureDir(dirname(file));
     await writeFile(file, hashed.css, 'utf-8');

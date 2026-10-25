@@ -9,9 +9,11 @@ import { dirname, join, posix, relative, resolve } from 'node:path';
 import { URL } from 'node:url';
 import type { Token } from 'markdown-it';
 import {
+  addBasePath,
   copyFile,
   createTemplateError,
   ensureDir,
+  getBasePath,
   isPathWithinDirectory,
   listFilesRecursiveSync,
   pathExists,
@@ -293,8 +295,11 @@ export class PageImages {
     options: Omit<ImgMarkupOptions, 'srcset'> & { sizes?: string | undefined },
   ): { html: string } | { src: string } {
     const resolved = resolveImageSource(rawSrc, this.context);
+    const basePath = this.runtime.basePath;
+    // A site path as the browser requests it; other values stay as written
+    const asWritten = addBasePath(resolved.src, basePath);
     if (resolved.kind === 'skip') {
-      return { src: resolved.src };
+      return { src: asWritten };
     }
 
     const filePath = resolved.filePath;
@@ -306,14 +311,14 @@ export class PageImages {
         `missing:${filePath}`,
         `Image not found: ${shownPath} (used by ${this.page.url}). It is left as written.`,
       );
-      return { src: resolved.src };
+      return { src: asWritten };
     }
     if (!info.probe) {
       this.runtime.warnOnce(
         `unreadable:${filePath}`,
         `Could not read the dimensions of ${shownPath}. It is left as written.`,
       );
-      return { src: resolved.src };
+      return { src: asWritten };
     }
 
     const probe = info.probe;
@@ -323,10 +328,10 @@ export class PageImages {
       height: options.height ?? probe.height,
     };
 
-    let tier1Src = resolved.src;
+    let tier1Src = asWritten;
     let copy: CopyPlan | undefined;
     if (resolved.kind === 'colocated') {
-      copy = planCopy(filePath, info.hash, probe.format);
+      copy = planCopy(filePath, info.hash, probe.format, basePath);
       tier1Src = copy.url;
     }
     const tier1Markup = renderImg(tier1Src, base);
@@ -341,6 +346,7 @@ export class PageImages {
         width: probe.width,
         responsive,
         providerVersion: provider.version,
+        basePath,
       });
       const markup = renderResponsiveImage(plan, base, options.sizes ?? responsive.sizes);
       this.runtime.registerJob(this.runtime.variantJob(plan, filePath));
@@ -422,6 +428,7 @@ export class PageImages {
         staticDir: this.runtime.staticDir,
         baseDir: templatePath ? dirname(templatePath) : srcDir,
         srcDir,
+        basePath: this.runtime.basePath,
       },
       (path) => this.runtime.generatedSourceFor(path),
     );
@@ -501,6 +508,8 @@ export class ImageRuntime {
   readonly og: ResolvedOgConfig | null;
   /** Counters for the build summary and metrics */
   readonly stats = { generated: 0, cached: 0, failed: 0 };
+  /** The path the site is served from, which every image URL starts with */
+  readonly basePath: string;
 
   private readonly specs = new Map<string, JobSpec>();
   /** Source file of each generated image registered this build, by URL path */
@@ -528,6 +537,7 @@ export class ImageRuntime {
     readonly development: boolean,
     generate: boolean,
   ) {
+    this.basePath = getBasePath(baseUrl);
     this.responsive = generate ? settings.responsive : null;
     this.og = generate && ogState ? settings.og : null;
   }

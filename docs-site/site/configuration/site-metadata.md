@@ -64,6 +64,8 @@ export default defineConfig({
 
 **Important:** Do not include a trailing slash in `baseUrl`.
 
+A `baseUrl` can carry a path, such as `https://example.com/docs` or `https://user.github.io/repo`. The path is the site's **base path**: Stati builds the site for that subfolder, adding it to the root-relative URLs it writes, and `stati dev` and `stati preview` serve the site under it. Without a path in `baseUrl` nothing changes. Templates add the base path to their own links with [`stati.url()`](/api/templates#stati-url-path). See [Deploying to a subfolder](/advanced/deploying-to-a-subfolder).
+
 #### `defaultLocale` (optional)
 
 The site's language, as a BCP 47 tag such as `en-US`: the form `<html lang>` needs. Stati prints it as `og:locale` on every page whose front matter sets no `seo.openGraph.locale`, converted to Open Graph's `language_TERRITORY` form (`en-US` becomes `en_US`).

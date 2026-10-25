@@ -169,7 +169,7 @@ Every page gets one page-level entry (`level: 1`, `anchor: ""`, `id` ending in `
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | `string` | Unique identifier (page URL + `#` + section anchor, or `#top` for the page-level entry) |
-| `url` | `string` | Page URL path |
+| `url` | `string` | Page URL path, relative to the site root |
 | `anchor` | `string` | Section anchor (heading ID), empty for page-level entries |
 | `title` | `string` | Page title from front matter (the page slug if there is none) |
 | `heading` | `string` | Section heading text |
@@ -185,7 +185,7 @@ Access the search index path in your templates via `stati.assets.searchIndexPath
 ```html
 <% if (stati.assets.searchIndexPath) { %>
 <script>
-  window.SEARCH_INDEX_PATH = '<%= stati.assets.searchIndexPath %>';
+  window.SEARCH_INDEX_PATH = '<%= stati.url(stati.assets.searchIndexPath) %>';
 </script>
 <% } %>
 ```
@@ -197,6 +197,8 @@ When `autoInjectMetaTag` is enabled (default), Stati automatically injects a met
 ```html
 <meta name="stati:search-index" content="/search-index-a1b2c3d4.json">
 ```
+
+On a site [served from a subfolder](/advanced/deploying-to-a-subfolder), the path in the tag includes the base path (`/docs/search-index-a1b2c3d4.json`), while the index file is still written at the root of `dist/`. The `url` of each entry stays relative to the site root, so client code adds the base path to the links it builds; a template can hand it over with `<body data-base-path="<%= stati.url('/') %>">`.
 
 This allows client-side JavaScript to discover the search index location:
 

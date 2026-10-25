@@ -316,11 +316,13 @@ If you need to access bundle paths in your templates (for example, to preload mo
   <!-- Preload all matched bundles for this page -->
   <% if (stati.assets?.bundlePaths) { %>
     <% for (const path of stati.assets.bundlePaths) { %>
-    <link rel="modulepreload" href="<%= path %>">
+    <link rel="modulepreload" href="<%= stati.url(path) %>">
     <% } %>
   <% } %>
 </head>
 ```
+
+Bundle paths are relative to the site root. Pass them through [`stati.url()`](/api/templates#stati-url-path) so they also work when the site is [served from a subfolder](/advanced/deploying-to-a-subfolder); Stati's own injected `<script>` tags already include the base path.
 
 ### Conditional rendering
 

@@ -4,7 +4,7 @@ import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import path from 'node:path';
 import type { StatiConfig, TocEntry } from '../types/index.js';
-import { slugify } from './utils/index.js';
+import { addBasePath, slugify } from './utils/index.js';
 import { isDevelopment } from '../env.js';
 import { installImageRule, selectEagerImage, IMAGES_ENV_KEY } from '../images/markdown-rule.js';
 import type { PageImages } from '../images/runtime.js';
@@ -205,6 +205,33 @@ export function extractToc(content: string, md: MarkdownIt): TocEntry[] {
 export interface RenderMarkdownOptions {
   /** Image state of the page being rendered; without it images are left as authored */
   images?: PageImages | undefined;
+  /**
+   * The path the site is served from (`getBasePath()`). Root-absolute link and image URLs get
+   * it in front of them; relative, absolute and `#hash` URLs stay as they are.
+   */
+  basePath?: string | undefined;
+}
+
+/**
+ * Puts the base path in front of the root-absolute URLs of links and, when the image rule does
+ * not handle them, images. Raw HTML in the Markdown stays as written.
+ *
+ * @param tokens - Tokens to change, with their children
+ * @param basePath - The base path
+ * @param images - Whether images are handled by the image rule, which adds the base path itself
+ */
+function addBasePathToTokens(tokens: Token[], basePath: string, images: boolean): void {
+  for (const token of tokens) {
+    const attribute =
+      token.type === 'link_open' ? 'href' : token.type === 'image' && !images ? 'src' : undefined;
+    const value = attribute ? token.attrGet(attribute) : null;
+    if (attribute && value) {
+      token.attrSet(attribute, addBasePath(String(value), basePath));
+    }
+    if (token.children) {
+      addBasePathToTokens(token.children, basePath, images);
+    }
+  }
 }
 
 /**
@@ -233,6 +260,10 @@ export function renderMarkdown(
 
   if (options.images) {
     options.images.eagerToken = selectEagerImage(tokens);
+  }
+
+  if (options.basePath) {
+    addBasePathToTokens(tokens, options.basePath, options.images !== undefined);
   }
 
   // Render tokens to HTML

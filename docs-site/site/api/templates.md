@@ -48,6 +48,7 @@ interface TemplateContext {
   pagination?: PaginationData; // This page's part of a listing with `paginate`
   generated?: GeneratedPageData; // Key and items of a page from a [param].md template
   slugify: (text: string) => string; // The slug Stati gives generated page keys
+  url: (path: string) => string; // A site path with the base path of site.baseUrl added
   assets?: StatiAssets; // Bundle paths ([] when none) and the search index path
   propValue: (...args) => string; // Class/attribute value builder
   generateSEO: (tags?: string[]) => string; // SEO tag generator
@@ -277,6 +278,21 @@ stati.propValue(...args: PropValueArg[]): string
 - `propValue()` also tracks Tailwind classes for inventory when Tailwind integration is enabled, ensuring dynamically-generated classes are included in the CSS build.
 
 For more details on Eta template limitations and best practices, see [Template Configuration](/configuration/templates).
+
+### `stati.url(path)`
+
+Adds the base path of [`site.baseUrl`](/configuration/site-metadata#baseurl-required) to a path from the site root, so a link works when the site is [served from a subfolder](/advanced/deploying-to-a-subfolder). With `baseUrl: 'https://example.com/docs'`, `stati.url('/posts/hello')` is `/docs/posts/hello`. Without a path in `baseUrl` it returns the path as it is, so templates that use it build the same site as before.
+
+```eta
+<a href="<%= stati.url('/') %>">Home</a>
+<a href="<%= stati.url(post.url) %>"><%= post.frontMatter.title %></a>
+<link rel="icon" href="<%= stati.url('/favicon.svg') %>">
+```
+
+- It leaves absolute URLs (`https://…`, `mailto:`), protocol-relative URLs (`//cdn.example.com/a.js`), `#hash` and `?query` values and relative paths (`./x`) as they are.
+- A path that already starts with the base path is returned as it is, so calling it twice is safe. This also means that a path of your site that begins like the base path, such as `/docs/intro` on a site served from `/docs`, is not prefixed again; avoid a section named like the base path, or write the link in Markdown, which always adds the prefix.
+- `page.url`, navigation `url`s, collection entries, pagination URLs, `stati.assets.*` paths and front matter stay relative to the site root. Pass them through `stati.url()` when you print them in a link.
+- Stati adds the prefix itself to what it writes: bundle scripts, the stylesheet link, the search index meta tag, `stati.image()` and Markdown image URLs, and root-absolute links in Markdown.
 
 ### `stati.image(src, options?)`
 

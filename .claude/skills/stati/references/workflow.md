@@ -147,7 +147,10 @@ Set a real base URL. The checked version emits many routes as `about.html` and
 `blog/post.html`, not universally as `about/index.html`.
 Confirm the target host supports extensionless requests and intended trailing
 slashes; configuring Stati preview is not configuring the production host.
-Subdirectory hosting requires explicit path auditing. Configure redirects/404
+For a subfolder (GitHub Pages project site, `example.com/docs/`), put the path in
+`site.baseUrl` (core 2.5+), link with `stati.url()`, deploy `dist` as the folder's
+content and fix every `href`/`src` the build warns about. Check the built pages and
+`stati preview`, which serves under the base path. Configure redirects/404
 behavior at the host or via authored files; do not assume SPA fallback is correct
 for a content SSG.
 

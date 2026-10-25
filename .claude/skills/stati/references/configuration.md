@@ -59,9 +59,19 @@ as `stati.production.js`. Run from the site root with a recognized filename.
 Relative content/static/output paths are also tied to the working directory;
 passing a config path is not a substitute for setting the site working directory.
 
-Set the real deployment `site.baseUrl` before production. Do not expect a base URL
-path prefix to rewrite every page link, stylesheet, or bundle URL automatically.
-For subpath hosting, audit generated URLs and the host's routing explicitly.
+Set the real deployment `site.baseUrl` before production. The path of `baseUrl`
+(`https://user.github.io/repo` gives `/repo`) is the site's base path (core 2.5+):
+Stati builds for that subfolder with no other setting. Output stays at the root of
+`dist/`; the host maps it to the subfolder. Core adds the prefix to bundle scripts,
+stylesheet links, the search index meta tag, images and root-absolute Markdown
+links; templates add it to their own links with `stati.url()`, and a build with a
+base path warns about `href`/`src` values starting with `/` without it. `page.url`,
+config URL patterns, front matter and ISG keys stay relative to the site root.
+`stati dev` and `stati preview` serve under the base path (`/` redirects there,
+`/__ws` stays at the root). `robots.txt` is ignored by crawlers outside a host's root.
+Search index entries keep site-relative `url`s, so client code adds the base path.
+Changing the base path rebuilds every page. Before core 2.5, a path in `baseUrl`
+only affected absolute URLs (canonical links, sitemap, feeds).
 
 ## Site metadata and custom data
 

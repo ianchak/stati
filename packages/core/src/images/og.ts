@@ -5,7 +5,13 @@
  */
 
 import { extname, join, relative, resolve } from 'node:path';
-import { isNotFoundPage, isPathWithinDirectory, readFileBuffer } from '../core/utils/index.js';
+import {
+  decodeBasePath,
+  isNotFoundPage,
+  isPathWithinDirectory,
+  readFileBuffer,
+  stripBasePath,
+} from '../core/utils/index.js';
 import { matchesGlob } from '../core/utils/glob-patterns.utils.js';
 import type { PageModel } from '../types/index.js';
 
@@ -78,6 +84,32 @@ function decodeHtmlEntities(text: string): string {
   );
 }
 
+/** A file an Open Graph template's image points at, and its type */
+interface LocalImage {
+  filePath: string;
+  mime: string;
+}
+
+/**
+ * The file a local image path names: the source of an image Stati generates, a file in the
+ * static directory for a root-relative path, or one next to the template for a relative path.
+ * Returns undefined for a path outside those directories or of a type that is not an image.
+ */
+function locateLocalImage(
+  path: string,
+  dirs: { staticDir: string; baseDir: string; srcDir: string },
+  generatedSource: ((path: string) => string | undefined) | undefined,
+): LocalImage | undefined {
+  let filePath = generatedSource?.(path);
+  if (!filePath) {
+    filePath = path.startsWith('/') ? join(dirs.staticDir, path) : resolve(dirs.baseDir, path);
+    const root = path.startsWith('/') ? dirs.staticDir : dirs.srcDir;
+    if (!isPathWithinDirectory(root, filePath)) return undefined;
+  }
+  const mime = MIME_BY_EXTENSION[extname(filePath).toLowerCase()];
+  return mime ? { filePath, mime } : undefined;
+}
+
 /**
  * Replaces local `<img src>` values in Open Graph HTML with data URIs, because the renderer
  * does not fetch files. Root-relative paths resolve from the static directory, relative ones
@@ -90,7 +122,7 @@ function decodeHtmlEntities(text: string): string {
  */
 export async function inlineLocalImages(
   html: string,
-  dirs: { staticDir: string; baseDir: string; srcDir: string },
+  dirs: { staticDir: string; baseDir: string; srcDir: string; basePath?: string },
   generatedSource?: (path: string) => string | undefined,
 ): Promise<{ html: string; files: string[] }> {
   const files: string[] = [];
@@ -110,19 +142,27 @@ export async function inlineLocalImages(
       continue;
     }
 
-    let filePath = generatedSource?.(path);
-    if (!filePath) {
-      filePath = path.startsWith('/') ? join(dirs.staticDir, path) : resolve(dirs.baseDir, path);
-      const root = path.startsWith('/') ? dirs.staticDir : dirs.srcDir;
-      if (!isPathWithinDirectory(root, filePath)) continue;
-    }
-    const mime = MIME_BY_EXTENSION[extname(filePath).toLowerCase()];
-    if (!mime) continue;
+    // A path with the base path in front of it, such as from `stati.url()` or `stati.image()`,
+    // names the file without it; a file that really sits under a folder named like the base
+    // path is found as written
+    const stripped = dirs.basePath ? stripBasePath(path, decodeBasePath(dirs.basePath)) : undefined;
+    const candidates = stripped === undefined ? [path] : [stripped, path];
 
-    files.push(filePath.replace(/\\/g, '/'));
-    const bytes = await readFileBuffer(filePath);
-    if (!bytes) continue;
-    const dataUri = `data:${mime};base64,${bytes.toString('base64')}`;
+    // Every file looked at is a dependency of the card, also one that does not exist yet:
+    // adding it later changes the image the card draws
+    let found: (LocalImage & { bytes: Buffer }) | undefined;
+    for (const candidate of candidates) {
+      const located = locateLocalImage(candidate, dirs, generatedSource);
+      if (!located) continue;
+      files.push(located.filePath.replace(/\\/g, '/'));
+      const bytes = await readFileBuffer(located.filePath);
+      if (bytes) {
+        found = { ...located, bytes };
+        break;
+      }
+    }
+    if (!found) continue;
+    const dataUri = `data:${found.mime};base64,${found.bytes.toString('base64')}`;
     replacements.push({ match: match[0], replacement: `${match[1]}"${dataUri}"` });
   }
 

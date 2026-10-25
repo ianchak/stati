@@ -46,6 +46,19 @@ describe('StaticStylesheets', () => {
     expect(await stylesheets.resolve('/css/print.css')).toBe(path);
   });
 
+  it('puts the base path in front of the references of a copy', async () => {
+    const stylesheets = new StaticStylesheets(staticDir, outDir, undefined, '/sub');
+
+    const path = await stylesheets.resolve('/styles.css');
+
+    expect(path).toBe(
+      hashStylesheet('body{background:url(img/bg.png)}', '/styles.css', '/sub').path,
+    );
+    expect(await readFile(join(outDir, ...path!.split('/')), 'utf-8')).toBe(
+      'body{background:url(/sub/img/bg.png)}',
+    );
+  });
+
   it('lists the stylesheets it hashed', async () => {
     const stylesheets = new StaticStylesheets(staticDir, outDir);
     await stylesheets.resolve('/styles.css');

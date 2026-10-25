@@ -18,6 +18,7 @@ import {
   stat,
   writeFile,
 } from '../core/utils/fs.utils.js';
+import { getBasePath, stripBasePath } from '../core/utils/base-path.utils.js';
 import { injectBeforeHeadClose } from '../core/utils/html.utils.js';
 import { CSS_OUT_DIR } from '../constants.js';
 import type { CSSConfig } from '../types/index.js';
@@ -157,10 +158,16 @@ export function isHashableStylesheetPath(path: string): boolean {
  *
  * @param css - The stylesheet
  * @param path - Its path under its own name, such as '/css/site.css'
+ * @param basePath - The path the site is served from (`getBasePath()`), in front of the paths
+ *   the relative references become
  * @returns The CSS to write and its hashed path, such as '/_assets/css/site-A1B2C3D4.css'
  */
-export function hashStylesheet(css: string, path: string): { css: string; path: string } {
-  const rebased = rebaseRelativeUrls(css, path);
+export function hashStylesheet(
+  css: string,
+  path: string,
+  basePath: string = '',
+): { css: string; path: string } {
+  const rebased = rebaseRelativeUrls(css, path, basePath);
   const hash = createHash('sha256').update(rebased).digest('hex').slice(0, 8).toUpperCase();
   return {
     css: rebased,
@@ -357,16 +364,18 @@ function replaceCssReferences(css: string, replace: (url: string) => string | un
  *
  * @param css - The stylesheet
  * @param path - Its path under its own name, such as '/styles.css'
+ * @param basePath - The path the site is served from (`getBasePath()`), which the rebased
+ *   paths start with, so they load from there
  * @returns The stylesheet with root-relative references
  */
-export function rebaseRelativeUrls(css: string, path: string): string {
+export function rebaseRelativeUrls(css: string, path: string, basePath: string = ''): string {
   const base = new URL(path, URL_BASE);
   return replaceCssReferences(css, (url) => {
     if (url === '' || LOCATION_INDEPENDENT_URL.test(url)) {
       return undefined;
     }
     const { pathname, search, hash } = new URL(url, base);
-    return `${pathname}${search}${hash}`;
+    return `${basePath}${pathname}${search}${hash}`;
   });
 }
 
@@ -400,6 +409,8 @@ export function getStylesheetReferences(css: string, path: string): string[] {
  * @param outDir - The output directory, absolute
  * @param cacheDir - The cache directory, for the temporary file
  * @param projectRoot - The folder Tailwind runs in
+ * @param basePath - The path the site is served from (`getBasePath()`), in front of the paths
+ *   the relative `url()`s become
  * @returns The stylesheet's path and file
  * @throws {Error} When Tailwind CSS fails
  */
@@ -408,6 +419,7 @@ export async function buildStylesheet(
   outDir: string,
   cacheDir: string,
   projectRoot: string = process.cwd(),
+  basePath: string = '',
 ): Promise<BuiltStylesheet> {
   const { inputFile: input, minify } = plan;
 
@@ -427,7 +439,7 @@ export async function buildStylesheet(
       throw new Error(`Tailwind CSS finished without writing ${tempFile}`);
     }
 
-    const { css, path } = hashStylesheet(compiled, plan.path);
+    const { css, path } = hashStylesheet(compiled, plan.path, basePath);
     const file = join(outDir, ...path.split('/'));
     await ensureDir(dirname(file));
     await writeFile(file, css, 'utf-8');
@@ -557,7 +569,7 @@ function getSiteOrigin(siteUrl: string | undefined): string | undefined {
 interface SiteHref {
   /** The site's origin as the `href` spells it, such as 'https://example.com', or '' */
   origin: string;
-  /** The path from the site root, such as '/css/site.css' */
+  /** The path from the site root, without the base path, such as '/css/site.css' */
   path: string;
   /** The query and fragment, such as '?v=2', or '' */
   suffix: string;
@@ -566,12 +578,14 @@ interface SiteHref {
 /**
  * Splits an `href` into the site's origin, the path and the query or fragment. A relative
  * `href` resolves against the page's URL. Another origin, a scheme such as `data:`, and a
- * relative `href` without the page's URL give undefined.
+ * relative `href` without the page's URL give undefined. On a site served from a base path, a
+ * root-absolute `href` is on the site only inside the base path, which the path leaves out.
  */
 function parseSiteHref(
   href: string,
   siteOrigin: string | undefined,
   pageUrl: string | undefined,
+  basePath = '',
 ): SiteHref | undefined {
   const suffixStart = href.search(/[?#]/);
   const suffix = suffixStart === -1 ? '' : href.slice(suffixStart);
@@ -596,11 +610,13 @@ function parseSiteHref(
   }
   // Resolves a relative path and dot segments as a browser does
   const { pathname } = new URL(path, new URL(pageUrl ?? '/', URL_BASE));
-  return { origin, path: pathname, suffix };
+  // A relative path resolves against the page's URL, which is already from the site root
+  const sitePath = path.startsWith('/') ? stripBasePath(pathname, basePath) : pathname;
+  return sitePath === undefined ? undefined : { origin, path: sitePath, suffix };
 }
 
 /** An attribute of a tag: its name in lowercase, its value, and where the value is in the tag */
-interface TagAttribute {
+export interface TagAttribute {
   name: string;
   value: string;
   /** Where the value starts in the tag, after an opening quote */
@@ -609,8 +625,9 @@ interface TagAttribute {
   end: number;
 }
 
-/** A `<link>` tag of a page: where it starts and ends, and its attributes */
-interface LinkTag {
+/** A tag of a page: its name in lowercase, where it starts and ends, and its attributes */
+export interface HtmlTag {
+  name: string;
   start: number;
   end: number;
   attributes: TagAttribute[];
@@ -735,13 +752,16 @@ function isHashableLink(attributes: readonly TagAttribute[]): boolean {
 }
 
 /**
- * The `<link>` tags of a page that are markup: every tag is read with its quoted attribute
- * values, so a `>` or a `<link>` in one is text, and tags in a comment, or in a script, style,
- * template, textarea or title, aren't markup. A tag, comment or element left open runs to the
- * end of the page, as browsers read it. One pass over the page, whatever it holds.
+ * The tags of a page, named in `names` (lowercase), that are markup: every tag is read with its
+ * quoted attribute values, so a `>` or a `<link>` in one is text, and tags in a comment, or in a
+ * script, style, template, textarea or title, aren't markup. A tag, comment or element left open
+ * runs to the end of the page, as browsers read it. One pass over the page, whatever it holds.
+ *
+ * @param html - The page's HTML
+ * @param names - The tag names to find, in lowercase, such as `link` or `a`
  */
-function findLinkTags(html: string): LinkTag[] {
-  const tags: LinkTag[] = [];
+export function findHtmlTags(html: string, names: ReadonlySet<string>): HtmlTag[] {
+  const tags: HtmlTag[] = [];
   const tagName = new RegExp(HTML_TAG_NAME.source, 'y');
   // The closing tag of an element whose contents are text, found from where the scan is
   const findClose = (element: string, from: number): number => {
@@ -777,9 +797,15 @@ function findLinkTags(html: string): LinkTag[] {
           break;
         }
         next = end + 1;
-        if (!closing && name === 'link') {
-          tags.push({ start: i, end: next, attributes: parseAttributes(html.slice(i, next)) });
-        } else if (!closing && HTML_TEXT_ELEMENTS.has(name)) {
+        if (!closing && names.has(name)) {
+          tags.push({
+            name,
+            start: i,
+            end: next,
+            attributes: parseAttributes(html.slice(i, next)),
+          });
+        }
+        if (!closing && HTML_TEXT_ELEMENTS.has(name)) {
           const close = findClose(name, next);
           if (close === -1) {
             break;
@@ -791,6 +817,13 @@ function findLinkTags(html: string): LinkTag[] {
     i = html.indexOf('<', next);
   }
   return tags;
+}
+
+const LINK_TAG = new Set(['link']);
+
+/** The `<link>` tags of a page that are markup */
+function findLinkTags(html: string): HtmlTag[] {
+  return findHtmlTags(html, LINK_TAG);
 }
 
 /**
@@ -809,9 +842,12 @@ export function linksStylesheet(
   pageUrl?: string,
 ): boolean {
   const origin = getSiteOrigin(siteUrl);
+  const basePath = getBasePath(siteUrl);
   return findLinkTags(html).some(({ attributes }) => {
     const href = isStylesheetLink(attributes) ? getAttribute(attributes, 'href') : undefined;
-    return href !== undefined && parseSiteHref(href.value, origin, pageUrl)?.path === path;
+    return (
+      href !== undefined && parseSiteHref(href.value, origin, pageUrl, basePath)?.path === path
+    );
   });
 }
 
@@ -830,10 +866,11 @@ export function getLinkedStylesheetPaths(
   siteUrl?: string,
 ): string[] {
   const origin = getSiteOrigin(siteUrl);
+  const basePath = getBasePath(siteUrl);
   const paths = new Set<string>();
   for (const { attributes } of findLinkTags(html)) {
     const href = isHashableLink(attributes) ? getAttribute(attributes, 'href') : undefined;
-    const path = href && parseSiteHref(href.value, origin, pageUrl)?.path;
+    const path = href && parseSiteHref(href.value, origin, pageUrl, basePath)?.path;
     if (path !== undefined) {
       paths.add(path);
     }
@@ -861,13 +898,14 @@ export function linksStylesheetWithIntegrity(
     return false;
   }
   const origin = getSiteOrigin(siteUrl);
+  const basePath = getBasePath(siteUrl);
   return findLinkTags(html).some(({ attributes }) => {
     const href = getAttribute(attributes, 'href');
     return (
       href !== undefined &&
       loadsStylesheet(attributes) &&
       getAttribute(attributes, 'integrity') !== undefined &&
-      parseSiteHref(href.value, origin, pageUrl)?.path === path
+      parseSiteHref(href.value, origin, pageUrl, basePath)?.path === path
     );
   });
 }
@@ -894,14 +932,15 @@ export function rewriteStylesheetLinks(
     return html;
   }
   const origin = getSiteOrigin(siteUrl);
+  const basePath = getBasePath(siteUrl);
   let rewritten = '';
   let copied = 0;
   for (const { start, attributes } of findLinkTags(html)) {
     const href = isHashableLink(attributes) ? getAttribute(attributes, 'href') : undefined;
-    const parts = href && parseSiteHref(href.value, origin, pageUrl);
+    const parts = href && parseSiteHref(href.value, origin, pageUrl, basePath);
     const target = parts && targets.get(parts.path);
     if (href && parts && target !== undefined) {
-      rewritten += `${html.slice(copied, start + href.start)}${parts.origin}${target}${parts.suffix}`;
+      rewritten += `${html.slice(copied, start + href.start)}${parts.origin}${basePath}${target}${parts.suffix}`;
       copied = start + href.end;
     }
   }
@@ -928,6 +967,7 @@ export function autoInjectStylesheets(
   if (missing.length === 0) {
     return html;
   }
-  const links = missing.map((path) => `<link rel="stylesheet" href="${path}">`);
+  const basePath = getBasePath(siteUrl);
+  const links = missing.map((path) => `<link rel="stylesheet" href="${basePath}${path}">`);
   return injectBeforeHeadClose(html, links.join('\n    '));
 }

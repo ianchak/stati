@@ -28,9 +28,11 @@ import {
   getPageOutputFile,
   isPathWithinDirectory,
   resolveSrcDir,
+  getBasePath,
 } from './utils/index.js';
 import type { CompiledBundleInfo } from './utils/index.js';
 import { join, dirname, relative, resolve, posix } from 'node:path';
+import { URL } from 'node:url';
 import { performance } from 'node:perf_hooks';
 import { loadConfig } from '../config/loader.js';
 import { validateDirectoryLayout } from '../config/directories.js';
@@ -46,6 +48,7 @@ import { createMarkdownProcessor, renderMarkdown, extractToc } from './markdown.
 import { createTemplateEngine, renderPage } from './templates.js';
 import { loadTemplateIndex, type TemplateIndex } from './template-index.js';
 import { buildNavigation } from './navigation.js';
+import { BasePathLinkReport } from './base-path-links.js';
 import {
   loadCacheManifest,
   saveCacheManifest,
@@ -688,6 +691,10 @@ async function processPagesWithCache(
     logger.startProgress(pages.length);
   }
 
+  // The path the site is served from, which every root-relative URL core emits starts with
+  const basePath = getBasePath(config.site.baseUrl);
+  const basePathLinks = new BasePathLinkReport(basePath);
+
   // Track timing for shouldRebuildPage
   let totalShouldRebuildTime = 0;
   let totalMarkdownTime = 0;
@@ -776,6 +783,8 @@ async function processPagesWithCache(
     const staticRenderInputs = {
       bundlePaths,
       ...(searchIndexPath && { searchIndexPath }),
+      // Omitted without a base path, so the hash matches builds from before Stati supported one
+      ...(basePath && { basePath }),
       bundleAutoInject: config.typescript?.autoInject !== false,
       searchAutoInject: config.search?.autoInjectMetaTag !== false,
       // Omitted without a stylesheet, so the hash matches builds from before Stati linked one
@@ -881,6 +890,7 @@ async function processPagesWithCache(
     const tocEnabled = config.markdown?.toc !== false;
     const { html: htmlContent, toc } = renderMarkdown(page.content, md, tocEnabled, {
       images: pageImages,
+      ...(basePath && { basePath }),
     });
     totalMarkdownTime += performance.now() - markdownStart;
 
@@ -933,7 +943,7 @@ async function processPagesWithCache(
       searchIndexFilename &&
       config.search?.autoInjectMetaTag !== false
     ) {
-      finalHtml = autoInjectSearchMeta(finalHtml, `/${searchIndexFilename}`);
+      finalHtml = autoInjectSearchMeta(finalHtml, `${basePath}/${searchIndexFilename}`);
     }
 
     // A hashed build writes the Tailwind stylesheet under its hashed name only, so a link that
@@ -968,8 +978,11 @@ async function processPagesWithCache(
 
     // Auto-inject TypeScript bundle script tags if available and autoInject is enabled (default: true)
     if (config.typescript?.autoInject !== false && assets.bundlePaths.length > 0) {
-      finalHtml = autoInjectBundles(finalHtml, assets.bundlePaths);
+      finalHtml = autoInjectBundles(finalHtml, assets.bundlePaths, basePath);
     }
+
+    // A root-relative link without the base path breaks when the site is served from it
+    basePathLinks.add(page.url, finalHtml);
 
     // Start the image jobs the final HTML needs and record its image files for the cache,
     // along with what the render read, which decides the hash it is stored under
@@ -1096,6 +1109,8 @@ async function processPagesWithCache(
       totalCacheEntryTime = performance.now() - cacheEntryStart;
     }
   }
+
+  basePathLinks.report(logger);
 
   // Record detailed phase timings in metrics
   recorder.recordPhase('shouldRebuildTotalMs', totalShouldRebuildTime);
@@ -1269,7 +1284,12 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
   // Production links the static directory's stylesheets under hashed names, unless css.hash
   // is false. The Tailwind output's path is Tailwind's, so a static file there isn't one.
   const staticStylesheets = resolveCSSConfig(config.css, isDevelopment()).hash
-    ? new StaticStylesheets(resolveStaticDir(config), outDir, stylesheetPlan?.path)
+    ? new StaticStylesheets(
+        resolveStaticDir(config),
+        outDir,
+        stylesheetPlan?.path,
+        getBasePath(config.site.baseUrl),
+      )
     : null;
 
   // Image pipeline; null with images: false. Fails here, before any page renders, when a
@@ -1453,7 +1473,13 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     logger.info('');
     logger.info('Building CSS with Tailwind CSS...');
     try {
-      builtStylesheet = await buildStylesheet(plan, outDir, cacheDir);
+      builtStylesheet = await buildStylesheet(
+        plan,
+        outDir,
+        cacheDir,
+        process.cwd(),
+        getBasePath(config.site.baseUrl),
+      );
       if (logger.file) {
         logger.file(
           'compiled',
@@ -1692,6 +1718,13 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     const robotsSizeBytes = Buffer.byteLength(robotsContent, 'utf8');
 
     logger.success(`Generated robots.txt (${robotsSizeBytes} bytes)`);
+
+    const robotsBasePath = getBasePath(config.site.baseUrl);
+    if (robotsBasePath) {
+      logger.info(
+        `Crawlers read robots.txt only at a host's root, so they ignore it under ${robotsBasePath}/. Serve it from the root of ${new URL(config.site.baseUrl).host} as well.`,
+      );
+    }
   }
 
   // Generate RSS feeds if enabled (only in production mode)
