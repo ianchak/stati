@@ -8,7 +8,7 @@ seo:
 
 # TypeScript
 
-Stati provides first-class TypeScript support for your site's client-side code. Using [esbuild](https://esbuild.github.io/) under the hood, Stati compiles your TypeScript to optimized JavaScript bundles with near-instant build times.
+Stati compiles your site's client-side TypeScript into JavaScript bundles with [esbuild](https://esbuild.github.io/) and adds them to your pages.
 
 ## Quick start
 
@@ -50,15 +50,13 @@ export default defineConfig({
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `enabled` | `boolean` | `false` | Enable TypeScript compilation |
+| `enabled` | `boolean` | required | Enable TypeScript compilation; without a `typescript` block nothing is compiled |
 | `srcDir` | `string` | `'src'` | Directory containing TypeScript source files |
 | `outDir` | `string` | `'_assets'` | Output subdirectory within `dist/` |
 | `bundles` | `BundleConfig[]` | `[{ entryPoint: 'main.ts', bundleName: 'main' }]` | Array of bundle configurations (see [Multiple Bundles](#multiple-bundles)) |
 | `hash` | `boolean` | `true` | Add content hash to filename (production only) |
 | `minify` | `boolean` | `true` | Minify JavaScript output (production only) |
 | `autoInject` | `boolean` | `true` | Automatically inject bundle script tags before `</body>` |
-
-> **Note:** Source maps, hashing, and minification are automatic based on build mode. The `hash` and `minify` options only apply to production builds - development mode always uses stable filenames and unminified output for easier debugging.
 
 ## Development vs production
 
@@ -73,7 +71,7 @@ Stati automatically adjusts TypeScript settings based on the build mode:
 
 ### Production (`stati build`)
 
-- **Hashed filenames** - `main-a1b2c3d4.js` for cache busting
+- **Hashed filenames** - `main-A1B2C3D4.js` for cache busting
 - **No source maps** - Smaller bundle size, no source code exposure
 - **Minified** - Optimized for production
 
@@ -81,13 +79,11 @@ The `hash` and `minify` options only take effect in production builds. Set them 
 
 ## Automatic bundle injection
 
-When TypeScript is enabled, Stati **automatically injects** script tags into your HTML output before the closing `</body>` tag during both `stati dev` and `stati build`. No template modifications required!
-
-Your compiled bundles are seamlessly added to every page (or specific pages if using include/exclude patterns):
+When TypeScript is enabled, Stati **automatically injects** script tags into your HTML output before the closing `</body>` tag during both `stati dev` and `stati build`, on every page or on the pages a bundle's `include` and `exclude` patterns select. Stati does not add a script tag that is already in the page.
 
 ```html
 <!-- Automatically injected by Stati -->
-<script type="module" src="/_assets/main-a1b2c3d4.js"></script>
+<script type="module" src="/_assets/main-A1B2C3D4.js"></script>
 </body>
 ```
 
@@ -107,16 +103,14 @@ export default defineConfig({
 });
 ```
 
-When `autoInject: false`, you must manually add script tags in your templates using `stati.assets.bundlePaths`:
+When `autoInject: false`, you must manually add script tags in your templates using `stati.assets.bundlePaths`. The paths start at the site root, so print them through `stati.url()`:
 
 ```eta
 <body>
   <!-- Your content -->
 
-  <% if (stati.assets?.bundlePaths) { %>
-    <% for (const path of stati.assets.bundlePaths) { %>
-    <script type="module" src="<%= path %>"></script>
-    <% } %>
+  <% for (const path of stati.assets.bundlePaths) { %>
+  <script type="module" src="<%= stati.url(path) %>"></script>
   <% } %>
 </body>
 ```
@@ -129,25 +123,15 @@ This is useful when you need to:
 
 ### Accessing bundle info in templates
 
-If you need to access bundle paths in your templates (for example, to preload or customize placement), Stati provides them via `stati.assets`:
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `bundlePaths` | `string[]` | Array of paths to matched JS bundles for this page (e.g., `['/_assets/main-a1b2c3d4.js']`) |
-
-Example for preloading:
+`stati.assets.bundlePaths` lists the bundles matched for the page, such as `['/_assets/main-A1B2C3D4.js']`, with auto-injection on or off. Use it to preload them:
 
 ```eta
 <head>
-  <% if (stati.assets?.bundlePaths) { %>
-    <% for (const path of stati.assets.bundlePaths) { %>
-    <link rel="modulepreload" href="<%= path %>">
-    <% } %>
+  <% for (const path of stati.assets.bundlePaths) { %>
+  <link rel="modulepreload" href="<%= stati.url(path) %>">
   <% } %>
 </head>
 ```
-
-> **Note:** Script tags are auto-injected, so you don't need to add them manually. Stati also prevents duplicate injection if a bundle path already exists in your HTML.
 
 ## Multiple bundles
 
@@ -270,17 +254,6 @@ Bundle 'home':       include=['/']            → NO MATCH
 Result: ['core', 'docs'] scripts injected
 ```
 
-### Use cases
-
-Multiple bundles are ideal for:
-
-- **Documentation sites** with interactive code playgrounds only on certain pages
-- **Landing pages** with animation libraries not needed elsewhere
-- **Admin sections** with rich editors
-- **Blog posts** with embedded visualizations
-
-This approach avoids shipping unused JavaScript to pages that don't need it.
-
 ## Project structure
 
 A TypeScript-enabled Stati project typically looks like:
@@ -289,8 +262,8 @@ A TypeScript-enabled Stati project typically looks like:
 my-site/
 ├── dist/                    # Build output
 │   ├── _assets/
-│   │   ├── main-a1b2c3d4.js
-│   │   └── docs-e5f6g7h8.js
+│   │   ├── main-A1B2C3D4.js
+│   │   └── docs-E5F6G7H8.js
 │   └── index.html
 ├── public/                  # Static assets
 ├── site/                    # Content and templates
@@ -312,39 +285,9 @@ Run the TypeScript compiler to check for type errors:
 npm run typecheck
 ```
 
-This runs `tsc --noEmit` to validate your TypeScript without generating output (esbuild handles compilation).
+This runs `tsc --noEmit` to validate your TypeScript without generating output. esbuild compiles without checking types, so run it before you deploy.
 
-## Example: Adding interactivity
-
-Here's a simple example of adding interactivity to your site:
-
-### src/main.ts
-
-```typescript
-interface MenuItem {
-  element: HTMLElement;
-  isOpen: boolean;
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  // Mobile menu toggle
-  const menuButton = document.querySelector<HTMLButtonElement>('.menu-toggle');
-  const menu = document.querySelector<HTMLElement>('.nav-menu');
-
-  if (menuButton && menu) {
-    const menuItem: MenuItem = { element: menu, isOpen: false };
-
-    menuButton.addEventListener('click', () => {
-      menuItem.isOpen = !menuItem.isOpen;
-      menuItem.element.classList.toggle('open', menuItem.isOpen);
-    });
-  }
-
-  console.log('Site initialized');
-});
-```
-
-### Shared code between bundles
+## Shared code between bundles
 
 For code shared between bundles, use standard ES module imports. esbuild will bundle all imports into each output file:
 
@@ -391,11 +334,3 @@ A syntax error in a bundle fails the build with `Bundle '<name>' compilation fai
 ### Bundle missing on a page
 
 Check the page's URL against the bundle's `include` and `exclude` patterns. Patterns see `/docs/intro`, not `/docs/intro.html`, and `/docs/**` does not match the `/docs` index page.
-
-### Type errors not caught during build
-
-Stati uses esbuild for compilation, which doesn't perform type checking. Always run `npm run typecheck` to validate your types before deploying.
-
-### Source maps in production
-
-Source maps are automatically disabled in production builds for security (to avoid exposing source code) and performance (smaller bundle size). They are always enabled in development mode for debugging.

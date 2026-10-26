@@ -8,8 +8,6 @@ seo:
 
 # Templates
 
-Stati templates have access to a rich context object and built-in functions for building dynamic pages. This reference covers all template-specific APIs.
-
 ## Template context (`stati`)
 
 Every Eta template receives a `TemplateContext` object with site metadata, front matter, and rendered content:
@@ -25,8 +23,6 @@ interface TemplateContext {
     navNode?: NavNode; // Current page's navigation node
     wordCount?: number; // Words in the Markdown body
     readingTime?: number; // Whole minutes to read, at least 1
-    title?: string;
-    description?: string;
     [key: string]: unknown; // Front matter fields
   };
   content: string; // Rendered HTML content
@@ -51,12 +47,12 @@ interface TemplateContext {
   generated?: GeneratedPageData; // Key and items of a page from a [param].md template
   slugify: (text: string) => string; // The slug Stati gives generated page keys
   url: (path: string) => string; // A site path with the base path of site.baseUrl added
-  assets?: StatiAssets; // Bundle paths ([] when none) and the search index path
+  assets?: StatiAssets; // Bundle, stylesheet and search index paths
   propValue: (...args) => string; // Class/attribute value builder
   generateSEO: (tags?: string[]) => string; // SEO tag generator
   image: (src: string, options?: ImageOptions) => string; // Sized, lazy-loaded <img> or <picture>
-  ogImage: GeneratedOgImage | undefined; // The page's generated Open Graph image, with images.og
-  og: { width: number; height: number } | undefined; // Card size, only while og.eta renders
+  ogImage?: GeneratedOgImage; // The page's generated Open Graph image, with images.og
+  og?: { width: number; height: number }; // Card size, only while og.eta renders
   generator: { version: string }; // Stati core version
 }
 
@@ -275,13 +271,9 @@ stati.propValue(...args: PropValueArg[]): string
 </div>
 ```
 
-**Important Notes:**
+`propValue()` also tracks Tailwind classes for inventory when Tailwind integration is enabled, ensuring dynamically-generated classes are included in the CSS build.
 
-- Stati's convention is to write each dynamic attribute value as one expression instead of splicing expressions into static text (`class="static-<%= dynamic %>-morestatic"`). Eta renders spliced values, but the convention keeps attributes readable and lets `propValue()` record Tailwind classes.
-- For single concatenated values (like `data-id="item-42"`), use template literals: ``data-id="<%= `item-${id}` %>"``.
-- `propValue()` also tracks Tailwind classes for inventory when Tailwind integration is enabled, ensuring dynamically-generated classes are included in the CSS build.
-
-For more details on Eta template limitations and best practices, see [Template Configuration](/configuration/templates).
+See [Dynamic attribute values](/core-concepts/templates#dynamic-attribute-values) for the attribute convention.
 
 ### `stati.url(path)`
 
@@ -296,7 +288,7 @@ Adds the base path of [`site.baseUrl`](/configuration/site-metadata#baseurl-requ
 - It leaves absolute URLs (`https://…`, `mailto:`), protocol-relative URLs (`//cdn.example.com/a.js`), `#hash` and `?query` values and relative paths (`./x`) as they are.
 - A path that already starts with the base path is returned as it is, so calling it twice is safe. This also means that a path of your site that begins like the base path, such as `/docs/intro` on a site served from `/docs`, is not prefixed again; avoid a section named like the base path, or write the link in Markdown, which always adds the prefix.
 - `page.url`, navigation `url`s, collection entries, pagination URLs, `stati.assets.*` paths and front matter stay relative to the site root. Pass them through `stati.url()` when you print them in a link.
-- Stati adds the prefix itself to what it writes: bundle scripts, the stylesheet link, the search index meta tag, `stati.image()` and Markdown image URLs, and root-absolute links in Markdown.
+- Stati adds the prefix itself to what it writes: bundle scripts, the Tailwind stylesheet link it adds, the search index meta tag, `stati.image()` and Markdown image URLs, and root-absolute links in Markdown.
 
 ### `stati.image(src, options?)`
 
@@ -316,7 +308,7 @@ Renders an image from a layout or an included template the way Stati renders Mar
 - A path that starts with `/` is read from `public/`; any other path is read next to the page's Markdown file and copied to `/_img/`.
 - An empty `src` returns an empty string, so an optional cover image needs no guard.
 - The function is synchronous, so it works anywhere in a template, included templates too.
-- With `images: false`, it returns a plain `<img>` with the attributes you passed.
+- With `images: false`, it returns a plain `<img>` with `src`, `alt`, `title` and `class`.
 
 ### `stati.ogImage`
 
@@ -332,55 +324,14 @@ In an `og.eta` card template, `stati.og` holds the card's `width` and `height`.
 
 ## Helpers
 
-Register your own functions under `helpers` in the configuration, and call them from any template as `stati.helpers.name()`:
-
-```typescript
-import { defineConfig } from '@stati/core';
-
-export default defineConfig({
-  site: { title: 'My Site', baseUrl: 'https://example.com' },
-  helpers: {
-    formatDate: (value: string | Date, locale = 'en-US') =>
-      new Intl.DateTimeFormat(locale).format(new Date(value)),
-    uppercase: (value: string) => value.toUpperCase(),
-    json: (value: unknown) => JSON.stringify(value, null, 2),
-  },
-});
-```
+Register your own functions under [`helpers`](/configuration/templates#helpers) in the configuration, and call them from any template as `stati.helpers.name()`:
 
 ```eta
 <time><%= stati.helpers.formatDate(stati.page.date) %></time>
-<pre><%= stati.helpers.json(stati.page.metadata) %></pre>
 <h1><%= stati.helpers.uppercase(stati.page.title) %></h1>
 ```
 
 `helpers` is typed `Record<string, (...args: any[]) => unknown>`, so a helper declares whatever parameters it needs. Helpers reach every template Stati renders: layouts, the shells they name, included templates and the Open Graph template. A helper written with `function` or method syntax gets the helpers object as `this`.
-
-## Text processing utilities
-
-Common text processing patterns for templates. Code inside `<% %>` tags is plain JavaScript: Stati does not compile TypeScript in templates, so type annotations or `as` casts cause a syntax error. Functions you need in more than one template belong in [helpers](#helpers).
-
-```eta
-<!-- Truncate text -->
-<%
-function truncate(text, length = 150) {
-  if (!text || text.length <= length) return text;
-  return text.slice(0, length).replace(/\s+\S*$/, '') + '...';
-}
-%>
-<p class="excerpt"><%= truncate(stati.page.description) %></p>
-
-<!-- Slugify text with Stati's own function -->
-<a href="<%= `/tags/${stati.slugify(tag)}` %>" class="tag">#<%= tag %></a>
-
-<!-- Strip HTML -->
-<%
-function stripHtml(html) {
-  return html.replace(/<[^>]*>/g, '');
-}
-%>
-<meta name="description" content="<%= truncate(stripHtml(stati.content), 160) %>">
-```
 
 ## Related documentation
 

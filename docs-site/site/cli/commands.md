@@ -8,11 +8,11 @@ seo:
 
 # Commands
 
-Stati provides a simple and powerful command-line interface for building, developing, and managing your static sites. The CLI is designed to be intuitive while providing advanced options for complex workflows.
+The `stati` command builds, serves and previews your site, and manages its cache.
 
 ## Requirements
 
-- Node.js 22.20 or higher, or 24 and later
+- Node.js 22.20 or later on the 22.x line, or 24 and later
 - npm, pnpm, yarn or bun
 
 ## Running Stati commands
@@ -41,8 +41,6 @@ npm run dev
 npm run build
 npm run invalidate -- "tag:blog"  # Pass arguments after --
 ```
-
-This is the recommended approach because it keeps your project self-contained and works consistently across all environments.
 
 ### Using npx
 
@@ -90,7 +88,7 @@ stati dev [options]
 | `--port` | number | 3000 | Port to run the dev server on |
 | `--host` | string | localhost | Host to bind the dev server to |
 | `--open` | boolean | false | Open browser after starting server |
-| `--tailwind-input` | string | - | Input file path for Tailwind CSS watcher |
+| `--tailwind-input` | string | - | Input file path for Tailwind CSS watcher; needs `--tailwind-output`, and with only one of the two no watcher starts |
 | `--tailwind-output` | string | - | Output file path for compiled Tailwind CSS; pages link it when it is a `.css` file in the output directory (see [CSS](/configuration/css)) |
 | `--tailwind-verbose` | boolean | false | Show all Tailwind CSS output (default shows errors only) |
 
@@ -112,6 +110,8 @@ stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css
 # Tailwind with verbose output
 stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css --tailwind-verbose
 ```
+
+One dev server runs per project folder: a second `stati dev` in the same folder stops with "A dev server is already running in this directory".
 
 ### `stati preview`
 
@@ -228,7 +228,7 @@ Invalidation only removes entries from `.stati/manifest.json`; the pages are re-
 # Invalidate all content with 'blog' tag
 stati invalidate tag:blog
 
-# Invalidate one page (its key is /about.html)
+# Invalidate /about.html (and every other key that starts with /about)
 stati invalidate path:/about
 
 # Invalidate everything under /blog/
@@ -320,17 +320,7 @@ Every command supports:
 - `--help` - Show command help
 - `--version` - Show the CLI version
 
-### Version information
-
-```bash
-# Show Stati CLI version
-stati --version
-
-# Show help for any command
-stati --help
-stati build --help
-stati dev --help
-```
+Unknown options are ignored, so a mistyped flag such as `--frce` does nothing; check the options box the CLI prints when a command starts.
 
 ## Configuration options
 
@@ -344,7 +334,7 @@ stati.config.js   # JavaScript config
 stati.config.mjs  # ES module config
 ```
 
-If none exists, Stati builds with its defaults (site title "My Stati Site", base URL `http://localhost:3000`). If the file exists but fails to load (for example, a syntax error), the error is printed, followed by "Falling back to default configuration.", and the build continues with those defaults, so read the output when a build looks wrong. Validation errors are the exception: an option Stati does not know (such as Stati 1's `eta`), `helpers` that are not functions, and invalid `isg` or `images` settings stop the build with an error that names the setting.
+If none exists, Stati builds with its defaults (site title "My Stati Site", base URL `http://localhost:3000`). If the file exists but fails to load (for example, a syntax error), the error is printed, followed by "Falling back to default configuration.", and the build continues with those defaults, so read the output when a build looks wrong. Validation errors are the exception: an option Stati does not know (such as Stati 1's `eta`), `helpers` that are not functions, invalid `isg`, `images`, `css`, `sitemap.news`, `seo.twitter`, `seo.articles`, `seo.defaultAuthor.twitter` or `readingTime` settings, and an `outDir` that overlaps the project's folders, stop the build with an error that names the setting.
 
 Every command loads the config from the current directory, and resolves `srcDir`, `outDir`, `staticDir` and the `.stati/` cache from it too.
 
@@ -352,133 +342,13 @@ Run commands from the project root, and keep one config file per project; switch
 
 ## Development workflows
 
-### Live reload
-
-The development server automatically rebuilds affected pages and refreshes the browser. Terminal output shows the changed path and how long the rebuild took:
-
-```text
-▸ site/blog/post.md rebuilt
-   Done in 120ms
-▸ site/layout.eta changed
-   12/12 pages rebuilt in 340ms
-▸ site/partials/banner.eta changed
-   No page uses it
-```
-
-A template change rebuilds the pages that rendered it, and adding or deleting a template rebuilds the pages whose template names now find a different file; a template no page uses rebuilds nothing. A Markdown change rebuilds the page, the pages that list it, and the pages that render the navigation when it changed; a deleted page's HTML is removed. Changes to `stati.config.*` are not watched; restart `stati dev` after editing the config.
-
-### Preview builds
-
-Preview production builds locally:
-
-```bash
-# Build and serve
-stati build && stati preview
-
-# Or use npx serve
-stati build && npx serve dist
-
-```
-
-### Debugging
-
-- During `stati dev`, any build failure shows a browser overlay with the stack trace and file location.
-- The terminal logs which file triggered the rebuild (for example, `▸ site/docs/api.md rebuilt`, then `Done in 92ms`).
-- Run `stati build --clean` to regenerate everything from scratch if cached output looks stale.
-
-## Scripting and automation
-
-### npm scripts
-
-Common npm script patterns:
-
-```json
-{
-  "scripts": {
-    "dev": "stati dev",
-    "build": "stati build",
-    "preview": "stati preview",
-    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true});require('node:fs').rmSync('.stati',{recursive:true,force:true})\"",
-    "fresh": "npm run clean && npm run build",
-    "deploy": "npm run build && rsync -av dist/ server:/path/",
-    "invalidate": "stati invalidate tag:blog"
-  }
-}
-```
-
-### Bash scripts
-
-```bash
-#!/bin/bash
-# scripts/deploy.sh
-
-set -e
-
-echo "Building site..."
-stati build --clean
-
-echo "Optimizing images..."
-find dist -name "*.jpg" -exec jpegoptim --strip-all {} \;
-find dist -name "*.png" -exec optipng -o7 {} \;
-
-echo "Deploying..."
-rsync -av --delete dist/ user@server:/var/www/html/
-
-echo "Invalidating CDN..."
-curl -X POST "https://api.cloudflare.com/client/v4/zones/$CF_ZONE/purge_cache" \
-  -H "Authorization: Bearer $CF_TOKEN" \
-  -H "Content-Type: application/json" \
-  --data '{"purge_everything":true}'
-
-echo "Deployment complete!"
-```
-
-### Makefile
-
-```makefile
-# Makefile
-.PHONY: dev build deploy clean
-
-dev:
-	stati dev --open
-
-build:
-	stati build --clean
-
-deploy: build
-	rsync -av dist/ user@server:/var/www/html/
-
-clean:
-	rm -rf dist .stati
-
-fresh: clean build
-
-invalidate-blog:
-	stati invalidate tag:blog
-
-invalidate-all:
-	stati invalidate
-```
+See [Dev server](/cli/development) for live reload, what each change rebuilds and the error overlay.
 
 ## Error handling
 
 ### Common issues
 
-**Port already in use:**
-
-```bash
-# Error: Port 3000 is already in use
-# Solution: Use different port
-stati dev --port 3001
-```
-
-**Build failures:**
-
-```bash
-# Error: Build failed with template error
-# Solution: Check template syntax and rerun a clean build
-stati build --clean
-```
+**Template errors:** a production build logs a failing template, such as `× Error rendering site/layout.eta for /: ...`, writes fallback HTML for that page (or an HTML comment in place of a failing included template) and still exits with `0`. Read the build output before deploying; `stati dev` shows the same error in the browser overlay.
 
 **Cache corruption:**
 
@@ -491,6 +361,8 @@ Stati uses conventional exit codes:
 - `0` - Command completed successfully
 - `1` - The command failed, or no command or an unknown command was given
 
+A build whose templates failed still exits with `0`; see Template errors above.
+
 ```bash
 # Use in scripts
 stati build
@@ -502,7 +374,5 @@ else
   exit 1
 fi
 ```
-
-The Stati CLI is designed to be both simple for basic use and powerful for advanced workflows. Whether you're developing locally, deploying to production, or integrating with CI/CD systems, the CLI provides the tools you need for efficient static site generation.
 
 Next, learn about the [Scaffolder](/cli/scaffolder) for creating new Stati projects, or explore [Development Workflows](/cli/development) for advanced development techniques.

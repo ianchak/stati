@@ -37,7 +37,7 @@ This page becomes `/hello`.
 
 Save it as `site/hello.md`, add a layout at `site/layout.eta`, install Stati with `npm install -D @stati/cli @stati/core`, and run `npx stati build`. The output in `dist/` is static HTML with no client-side framework. (Install first: without a local `@stati/cli`, `npx stati` downloads an unrelated npm package of the same name.)
 
-```html
+```eta
 <!doctype html>
 <html lang="en">
   <head><title><%= stati.page.title %></title></head>
@@ -49,27 +49,10 @@ Save it as `site/hello.md`, add a layout at `site/layout.eta`, install Stati wit
 
 - **Small and simple**: Markdown plus Eta templates, nine runtime dependencies in `@stati/core`, and no framework runtime in the browser.
 - **TypeScript-first**: `defineConfig()` gives you a typed `stati.config.ts`, and client-side TypeScript is compiled with esbuild and injected only on the pages that need it.
-- **Incremental Static Generation**: a build cache that rebuilds a listing when a post it lists changes, removes the pages of deleted posts, and supports TTLs, age-based aging rules and invalidation by tag, path or age (`stati invalidate "tag:news"`).
+- **Incremental Static Generation**: a build cache that rebuilds a listing when a post it lists is added, removed or retitled, removes the pages of deleted posts, and supports TTLs, age-based aging rules and invalidation by tag, path or age (`stati invalidate "tag:news"`).
 - **Collections**: folder listings sorted by date and grouped by tag, split into pages with `paginate`, and one page per tag or author from a `[tag].md` template.
 - **Built in, not bolted on**: search index, sitemap, robots.txt, RSS feeds, SEO metadata, sized and lazy-loaded images, build hooks and build metrics ship with Stati. The optional `@stati/images` package adds responsive AVIF and WebP images and an Open Graph image for every page.
 - **Fast feedback**: a dev server with live reload, incremental rebuilds and an in-browser error overlay.
-
-## Quick overview
-
-1. **[Installation](/getting-started/installation)** - Install Stati and create your first site
-2. **[Project Structure](/getting-started/project-structure)** - Understanding how Stati organizes your files
-3. **[Quick start](/getting-started/quick-start)** - Build your first site step by step
-
-## Philosophy
-
-Stati follows these core principles:
-
-- **Simplicity over complexity** - Keep things simple and focused
-- **Sensible defaults** - Works out of the box with minimal configuration
-- **Developer experience first** - Great tooling and debugging experience
-- **Modern standards** - Built with modern web technologies
-
-Ready to get started? Head over to the [Installation guide](/getting-started/installation).
 
 ## Related topics
 

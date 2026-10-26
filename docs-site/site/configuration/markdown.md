@@ -147,8 +147,6 @@ npm install markdown-it-external-links
 
 ### Common plugins
 
-> **Built-in Features:** Stati has built-in TOC extraction and heading anchor generation (enabled by default). You don't need `markdown-it-anchor` or `markdown-it-toc-done-right` plugins.
-
 | Plugin | Package | Purpose |
 |--------|---------|---------|
 | `prism` | `markdown-it-prism` | Syntax highlighting at build time |
@@ -156,6 +154,8 @@ npm install markdown-it-external-links
 | `external-links` | `markdown-it-external-links` | External link attributes |
 | `container` | `markdown-it-container` | Custom containers |
 | `attrs` | `markdown-it-attrs` | Add attributes to elements |
+
+With `markdown.toc` on, Stati sets the `id` of every `h2` to `h6` heading itself, which replaces an `{#id}` from markdown-it-attrs on those headings.
 
 For emoji shortcodes, load `markdown-it-emoji` in `configure`, because version 3 has no default export:
 
@@ -167,35 +167,6 @@ export default defineConfig({
     configure: (md) => {
       md.use(emoji);
     },
-  },
-});
-```
-
-### Example: Complete plugin setup
-
-```javascript
-export default defineConfig({
-  markdown: {
-    // Note: TOC and heading anchors are built-in (enabled by default)
-    plugins: [
-      // Syntax highlighting with Prism.js
-      ['prism', {
-        defaultLanguage: 'javascript',
-      }],
-
-      // Add target="_blank" to external links
-      ['external-links', {
-        externalTarget: '_blank',
-        internalDomains: ['stati.build'],
-      }],
-
-      // Support for ::: container syntax
-      ['container', 'warning'],
-      ['container', 'tip'],
-
-      // Footnote support
-      'footnote',
-    ],
   },
 });
 ```
@@ -259,6 +230,13 @@ export default defineConfig({
           }
         }
         return defaultLinkOpen(tokens, idx, options, env, self);
+      };
+
+      // Wrap fenced code blocks (``` blocks use the "fence" rule)
+      const defaultFence = md.renderer.rules.fence;
+      md.renderer.rules.fence = (tokens, idx, options, env, self) => {
+        const html = defaultFence(tokens, idx, options, env, self);
+        return `<div class="code-block">${html}</div>`;
       };
     },
   },
@@ -324,8 +302,8 @@ export default defineConfig({
 
 **Add a Prism theme stylesheet to your layout** (any Prism theme CSS, copied into `public/`):
 
-```html
-<link rel="stylesheet" href="/prism-theme.css">
+```eta
+<link rel="stylesheet" href="<%= stati.url('/prism-theme.css') %>">
 ```
 
 markdown-it-prism 4 puts the `language-xxx` class on `<code>` only, while Prism's themes style `pre[class*="language-"]`. Add `pre:has(> code[class*="language-"])` to those selectors, or code blocks lose the theme's padding and background.
@@ -341,6 +319,8 @@ Leave the Markdown as it is and load a highlighter in the browser, such as Prism
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs/themes/prism.min.css">
 <script src="https://cdn.jsdelivr.net/npm/prismjs/prism.min.js"></script>
 ```
+
+Prism's core script highlights HTML, CSS and JavaScript; add a component script per other language, or Prism's autoloader plugin.
 
 **Pros:** No build configuration
 **Cons:** Requires JavaScript, and code is unstyled until the script runs
@@ -378,25 +358,9 @@ All front matter fields are available in templates:
 <time><%= new Date(stati.page.date).toLocaleDateString() %></time>
 ```
 
-## Best practices
+## Performance
 
-### Plugin selection
-
-1. **Install only what you need** - Each plugin adds processing overhead
-2. **Check compatibility** - Stati 2 uses markdown-it 15, which some older plugins don't support
-3. **Test thoroughly** - Some plugins may conflict with each other
-
-### Custom rendering
-
-1. **Use configure for overrides** - The configure function runs after plugins
-2. **Preserve defaults** - Store default renderer before overriding
-3. **Handle edge cases** - Check for null/undefined values in custom rules
-
-### Performance
-
-1. **Limit plugins** - Too many plugins slow down builds
-2. **Rely on ISG** - Unchanged pages are served from the build cache and are not re-rendered (see [ISG](/core-concepts/isg)); with search on, every page's Markdown is still parsed for the search index
-3. **Keep `configure` cheap** - It runs once per build (once per dev server session)
+Unchanged pages come from the build cache and are not rendered again (see [ISG](/core-concepts/isg)); with search on, every page's Markdown is still parsed for the search index. `configure` runs once per build, and once per dev server session. Stati uses markdown-it 15, which some older plugins don't support.
 
 ## Complete example
 
@@ -407,7 +371,6 @@ import { defineConfig } from '@stati/core';
 
 export default defineConfig({
   markdown: {
-    // Note: TOC and heading anchors are built-in (enabled by default)
     plugins: [
       // Syntax highlighting
       ['prism', { defaultLanguage: 'javascript' }],
@@ -416,6 +379,7 @@ export default defineConfig({
       ['external-links', {
         externalTarget: '_blank',
         internalDomains: ['stati.build'],
+        internalClassName: 'internal-link',
       }],
 
       // Custom containers
@@ -427,23 +391,6 @@ export default defineConfig({
     ],
 
     configure: (md) => {
-      // Add custom CSS classes to links
-      const defaultLinkOpen = md.renderer.rules.link_open ||
-        ((tokens, idx, options, env, self) => self.renderToken(tokens, idx, options));
-
-      md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
-        const aIndex = tokens[idx].attrIndex('href');
-        if (aIndex >= 0) {
-          const href = tokens[idx].attrs[aIndex][1];
-          if (href.startsWith('http')) {
-            tokens[idx].attrPush(['class', 'external-link']);
-          } else {
-            tokens[idx].attrPush(['class', 'internal-link']);
-          }
-        }
-        return defaultLinkOpen(tokens, idx, options, env, self);
-      };
-
       // Enable line breaks
       md.set({ breaks: true });
     },
@@ -507,6 +454,6 @@ Stati generates URL-friendly anchor IDs from heading text:
 
 ## Next steps
 
-- Learn about [Templates & Layouts](/core-concepts/templates) for rendering markdown
+- Learn about [Templates and layouts](/core-concepts/templates) for rendering markdown
 - Explore [Markdown concepts](/core-concepts/markdown) for content authoring
 - See [Build Hooks](/api/hooks) for programmatic customization

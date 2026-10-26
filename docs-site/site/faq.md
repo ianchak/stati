@@ -12,27 +12,27 @@ seo:
         "name": "What is Stati?"
         "acceptedAnswer":
           "@type": "Answer"
-          "text": "Stati is a TypeScript-first static site generator for documentation, blogs, and content-heavy sites, with zero-config setup, fast esbuild bundling, and file-based routing."
+          "text": "Stati is a TypeScript-first static site generator for documentation, blogs, and content-heavy sites. It runs without a config file, bundles client-side TypeScript with esbuild, and turns the files in site/ into URLs."
       - "@type": "Question"
         "name": "Does Stati support Incremental Static Generation (ISG)?"
         "acceptedAnswer":
           "@type": "Answer"
-          "text": "Yes. Stati includes built-in ISG so you can update specific pages without running a full rebuild. It uses intelligent caching with configurable TTL and invalidation strategies."
+          "text": "Yes. ISG is enabled by default: Stati caches rendered pages between builds and re-renders only the pages whose content, templates, data they show or TTL require it. A listing rebuilds when a post it lists is added, removed or retitled, and a deleted page's HTML is removed. Configure TTLs and aging rules under isg, and clear entries with stati invalidate."
       - "@type": "Question"
         "name": "What templating engine does Stati use?"
         "acceptedAnswer":
           "@type": "Answer"
-          "text": "Stati uses Eta, a fast and lightweight templating engine. Stati adds shared layouts, includes with props and template helpers."
+          "text": "Stati uses Eta, a fast and lightweight templating engine. Features include layouts chosen by folder, which replace the layouts above them, shared page shells, includes with props and a body, template helpers, and await in layouts and the shells they name."
       - "@type": "Question"
         "name": "How does Stati handle SEO?"
         "acceptedAnswer":
           "@type": "Answer"
-          "text": "Stati automatically injects SEO metadata including title, description, canonical URLs, Open Graph tags, and Twitter Cards. You can also call stati.generateSEO() in a template for manual control."
+          "text": "Stati automatically injects SEO metadata during build: title and description from front matter, canonical URLs based on site.baseUrl, Open Graph and Twitter Card tags, and structured data (JSON-LD) from seo.structuredData. Sitemap generation with priority rules, robots.txt with a sitemap reference, and RSS feed generation are opt-in."
       - "@type": "Question"
         "name": "Can I use TypeScript in my Stati project?"
         "acceptedAnswer":
           "@type": "Answer"
-          "text": "Yes. Stati is TypeScript-first. Your configuration file (stati.config.ts) is written in TypeScript, and client-side TypeScript is compiled automatically via esbuild."
+          "text": "Yes. Stati is TypeScript-first: configuration via stati.config.ts with full type safety, client-side TypeScript compiled with esbuild, and multiple bundle targets with include/exclude patterns."
 ---
 
 # FAQ
@@ -41,14 +41,14 @@ Frequently asked questions about Stati, the TypeScript-first static site generat
 
 ## What is Stati?
 
-Stati is a TypeScript-first static site generator for documentation, blogs, and content-heavy sites, with zero-config setup, fast esbuild bundling, and file-based routing.
+Stati is a TypeScript-first static site generator for documentation, blogs, and content-heavy sites. It runs without a config file, bundles client-side TypeScript with esbuild, and turns the files in `site/` into URLs.
 
 ## When should I choose Stati over other generators?
 
 Choose Stati if you want:
 
 - **Type safety** – TypeScript config, client-side bundling with esbuild, and full IntelliSense
-- **Minimal footprint** – No heavy frameworks or unnecessary abstractions
+- **Minimal footprint** – No client-side framework, and nine runtime dependencies in `@stati/core`
 - **Incremental builds** – ISG support for efficient rebuilds on large sites
 - **Built-in SEO** – Automatic metadata injection, with opt-in sitemap and robots.txt generation
 
@@ -64,9 +64,9 @@ Yes. `paginate: 10` in a listing's front matter splits it into `/blog`, `/blog/p
 
 Stati uses [Eta](https://eta.js.org/), a fast and lightweight templating engine. Features include:
 
-- Layout inheritance
+- Layouts chosen by folder, which replace the layouts above them
 - Shared page shells
-- Includes with props and content
+- Includes with props and a body
 - Template helpers
 - `await` in layouts and the shells they name
 
@@ -74,7 +74,7 @@ Stati uses [Eta](https://eta.js.org/), a fast and lightweight templating engine.
 
 Stati automatically injects SEO metadata during build:
 
-- Title and description from frontmatter
+- Title and description from front matter
 - Canonical URLs based on `site.baseUrl`
 - Open Graph and Twitter Card tags
 - Structured data (JSON-LD) from `seo.structuredData`

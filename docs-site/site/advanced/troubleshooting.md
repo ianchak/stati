@@ -11,7 +11,7 @@ Common errors you may encounter when using Stati and how to fix them.
 ## Site uses the default title or `localhost` URLs
 
 **Cause:**
-Stati did not use your configuration. Without a `stati.config.ts`, `stati.config.js` or `stati.config.mjs` in the current directory, Stati silently uses its defaults (site title "My Stati Site", base URL `http://localhost:3000`). If the file exists but fails to load, the build prints the error followed by "Falling back to default configuration." and continues with the defaults. Validation errors are different: an option Stati does not know (such as Stati 1's `eta`), `helpers` that are not functions, and invalid `isg` or `images` settings stop the build with an error that names the setting.
+Stati did not use your configuration. Without a `stati.config.ts`, `stati.config.js` or `stati.config.mjs` in the current directory, Stati silently uses its defaults (site title "My Stati Site", base URL `http://localhost:3000`). If the file exists but fails to load, the build prints the error followed by "Falling back to default configuration." and continues with the defaults. Validation errors are different: a top-level option Stati does not know (such as Stati 1's `eta`), `helpers` that are not functions, an `outDir` that is the project folder or overlaps `srcDir`, `staticDir`, `typescript.srcDir` or `.stati`, and invalid `isg`, `images`, `readingTime`, `seo.twitter`, `seo.articles`, `seo.defaultAuthor.twitter`, `sitemap.news` or `css` settings stop the build with an error that names the setting.
 
 **Solution:**
 
@@ -57,7 +57,7 @@ Full rebuilds on every change, or ISG cache may be corrupted.
 
 1. ISG is enabled by default; if disabled, re-enable with `isg: { enabled: true }` in `stati.config.ts`
 2. Use `stati dev` during development for incremental rebuilds and live reload
-3. Run `npm run clean` then `stati build` if cache is corrupted
+3. Run `stati build --clean` if the cache is corrupted
 
 ---
 
@@ -71,6 +71,7 @@ Auto-injection disabled or manual generation not called.
 1. Check `seo.autoInject` is not set to `false`
 2. If using manual mode, add `<%~ stati.generateSEO() %>` to your layout's `<head>`
 3. Ensure `site.baseUrl` is set for canonical URLs
+4. Make sure the layout or shell has a `<head>` element: auto-injection writes the tags before `</head>`
 
 ---
 
@@ -136,7 +137,6 @@ The front matter may not start on the file's first line, or the Markdown may hav
 1. Start the file with the opening `---` line. With a blank line or other text before it, the front matter is read as Markdown and shows up in the page. (Front matter that is not valid YAML stops the build with the file and the line.)
 2. Check for unclosed code blocks or invalid Markdown syntax
 3. Verify the file has a `.md` extension
-4. Check the `layout` field points to an existing template
 
 ---
 
@@ -148,7 +148,7 @@ Static assets may not be copied or paths may be incorrect.
 **Solution:**
 
 1. Ensure assets are in the `public/` directory
-2. Use absolute paths starting with `/` (e.g., `/images/logo.png`)
+2. Use paths from the site root (`/images/logo.png`), and in templates write them as `stati.url('/images/logo.png')` so they also work when the site is served from a subfolder (see [Deploying to a subfolder](/advanced/deploying-to-a-subfolder))
 3. Run `stati build` to copy static assets to `dist/`
 4. Check browser console for 404 errors
 
@@ -206,7 +206,7 @@ TypeScript bundles may not be compiling or bundle patterns may not match your pa
 2. Verify your entry point exists at `src/main.ts` (or configured `srcDir`)
 3. Check the dev server console for TypeScript compilation errors
 4. If using `include`/`exclude` patterns in bundles, verify they match your page URLs
-5. Bundles are automatically injected when TypeScript is enabled
+5. Check that `typescript.autoInject` is not `false`; with it off, add the script tags from `stati.assets.bundlePaths` yourself
 
 ---
 
@@ -232,10 +232,7 @@ Stati preserves filenames exactly (no automatic slug transformation). Spaces, un
 
 **Solution:**
 
-1. Use lowercase letters, numbers, and hyphens only in filenames
-2. Replace spaces with hyphens: `my-post.md` not `my post.md`
-3. Replace underscores with hyphens: `my-post.md` not `my_post.md`
-4. Rename files with problematic characters before building
+1. Name files with lowercase letters, digits and hyphens: `my-post.md`, not `my post.md` or `my_post.md`
 
 ---
 
@@ -246,20 +243,17 @@ Custom hook functions (`beforeAll`, `afterAll`, `beforeRender`, `afterRender`) a
 
 **Solution:**
 
-1. Wrap hook logic in try-catch for graceful error handling
-2. Check the error message in console output for specific details
-3. Ensure async hooks return a Promise or use async/await properly
-4. Test hooks in isolation before integrating
+1. Read the error in the build output. Stati doesn't catch hook errors: a hook that throws stops the build, and `stati dev` shows the error in the error overlay
+2. To add context, catch the error, log what the hook was doing and throw it again, so the build still stops:
 
 ```javascript
-// Example: Safe hook with error handling
 hooks: {
   beforeRender: async (ctx) => {
     try {
       await yourLogic();
     } catch (error) {
-      console.error('Hook failed:', error);
-      // Decide: throw to stop build, or continue
+      console.error(`beforeRender failed for ${ctx.page.url}:`, error);
+      throw error;
     }
   },
 }

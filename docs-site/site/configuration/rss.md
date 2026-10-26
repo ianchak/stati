@@ -8,17 +8,7 @@ seo:
 
 # RSS feeds
 
-Stati supports automatic RSS feed generation for your content. RSS feeds allow visitors to subscribe to your content and receive updates in their feed readers.
-
-## Overview
-
-RSS feed generation in Stati:
-
-- **Production-only**: RSS feeds are only generated during production builds
-- **Auto-regenerate**: Feeds regenerate on every production build with latest content
-- **Multiple feeds**: Support for multiple feeds with different content
-- **Highly customizable**: Field mappings, content filtering, and custom metadata
-- **Works out of the box**: Minimal configuration required
+Stati writes RSS 2.0 feeds during production builds (`stati build`), never in `stati dev`. A site can have several feeds, each with its own content selection.
 
 ## Basic configuration
 
@@ -45,7 +35,13 @@ export default defineConfig({
 });
 ```
 
-This minimal configuration will generate a `feed.xml` file containing all your pages, including index pages such as the home page. Use `excludePatterns: ['**/index.md']` to leave index pages out.
+This minimal configuration will generate a `feed.xml` file containing all your pages, including index pages such as the home page. To leave a listing page out, exclude its file, such as `excludePatterns: ['**/blog/index.md']`. A pattern like `'**/index.md'` also drops posts written as `post-name/index.md`.
+
+Stati does not link the feed from your pages. Add a link to the `<head>` of your layout:
+
+```eta
+<link rel="alternate" type="application/rss+xml" title="My Blog Posts" href="<%= stati.url('/feed.xml') %>">
+```
 
 ## Content filtering
 
@@ -67,7 +63,7 @@ rss: {
 }
 ```
 
-> **How patterns match:** `contentPatterns` and `excludePatterns` are tested against each page's **source file path**, which is an absolute path such as `/home/me/my-site/site/blog/post.md`. Start folder patterns with `**/` (`'**/blog/**'`). A pattern like `'blog/**'` or `'site/blog/**'` matches nothing and produces an empty feed. Patterns without `*` or `?` must equal the path or be a prefix of it, so prefer glob patterns. `**/blog/**` also matches `blog/index.md`; add `excludePatterns: ['**/index.md']` to leave the listing page out. Pages created from a `[param].md` template, the later pages of a paginated listing and [the 404 page](/core-concepts/routing#the-404-page) are never in a feed, whatever the patterns.
+> **How patterns match:** `contentPatterns` and `excludePatterns` are tested against each page's **source file path**, which is an absolute path such as `/home/me/my-site/site/blog/post.md`. Start folder patterns with `**/` (`'**/blog/**'`). A pattern like `'blog/**'` or `'site/blog/**'` matches nothing and produces an empty feed. Patterns without `*` or `?` must equal the path or be a prefix of it, so prefer glob patterns. `**/blog/**` also matches `blog/index.md`; add `excludePatterns: ['**/blog/index.md']` to leave the listing page out. An empty `contentPatterns` array includes every page. Pages created from a `[param].md` template, the later pages of a paginated listing and [the 404 page](/core-concepts/routing#the-404-page) are never in a feed, whatever the patterns.
 
 ### Exclude patterns
 
@@ -80,8 +76,8 @@ rss: {
     {
       filename: 'feed.xml',
       title: 'Main Feed',
-      description: 'All content except drafts',
-      excludePatterns: ['**/draft-*', '**/index.md'],
+      description: 'All content except draft-* files',
+      excludePatterns: ['**/draft-*', '**/blog/index.md'],
     },
   ],
 }
@@ -220,16 +216,17 @@ Customize how page data maps to RSS feed items:
 
 ### Default mapping
 
-By default, Stati uses these frontmatter fields:
+By default, Stati uses these front matter fields:
 
 - `title` → RSS item title
 - `description` → RSS item description
 - `publishedAt`, `published`, `date` or `createdAt` (first valid one) → RSS item pubDate
+- `author` → RSS item author
 - `tags` → RSS item categories
 
 ### Custom field names
 
-Map to different frontmatter fields:
+Map to different front matter fields:
 
 ```typescript
 {
@@ -239,7 +236,7 @@ Map to different frontmatter fields:
   itemMapping: {
     title: 'headline',        // Use 'headline' instead of 'title'
     description: 'excerpt',   // Use 'excerpt' instead of 'description'
-    pubDate: 'publishDate',   // Use 'publishDate' instead of 'publishedAt'
+    pubDate: 'publishDate',   // Use 'publishDate' instead of the default date fields
     author: 'authorName',     // Use 'authorName' instead of 'author'
     category: 'categories',   // Use 'categories' instead of 'tags'
   },
@@ -272,10 +269,12 @@ Use functions for custom transformations:
 
     // Custom link
     link: (page, config) =>
-      `${config.site.baseUrl}/posts${page.url}?utm_source=rss`,
+      `${config.site.baseUrl}${page.url}?utm_source=rss`,
   },
 }
 ```
+
+An item's `guid` defaults to its link, so a custom `link` changes the `guid` too. Set `itemMapping.guid` to keep it stable.
 
 ## Include full content
 
@@ -292,7 +291,7 @@ Include each page's body in its feed item:
 }
 ```
 
-> **Note:** `includeContent` uses the page's **Markdown source** (the text after the front matter), not rendered HTML. It is written inside a CDATA section in `<description>`. Feed readers that expect HTML will show the Markdown as plain text.
+> **Note:** `includeContent` uses the page's **Markdown source** (the text after the front matter), not rendered HTML. It is written inside a CDATA section in `<description>`. Feed readers that expect HTML will show the Markdown as plain text. The body is not escaped, so a body that contains `]]>` produces invalid XML.
 
 ## Advanced features
 
@@ -323,7 +322,7 @@ Add custom XML elements to each item:
   description: 'Latest posts',
   customItemElements: (page) => ({
     'dc:creator': String(page.frontMatter.author ?? ''),
-    'custom:readTime': `${page.frontMatter.readTime} min`,
+    'custom:readTime': `${page.readingTime} min`,
   }),
 }
 ```
@@ -352,144 +351,11 @@ Add enclosures for podcasts or other media:
 }
 ```
 
-## Real-world examples
-
-### Blog feed
-
-```typescript
-rss: {
-  enabled: true,
-  feeds: [
-    {
-      filename: 'feed.xml',
-      title: 'My Development Blog',
-      description: 'Articles about web development, JavaScript, and more',
-      contentPatterns: ['**/blog/**'],
-      excludePatterns: ['**/index.md'],
-      language: 'en-US',
-      copyright: 'Copyright 2025 Your Name',
-      category: 'Technology',
-      maxItems: 20,
-      sortBy: 'date-desc',
-      itemMapping: {
-        category: 'tags',
-        includeContent: false,
-      },
-    },
-  ],
-}
-```
-
-### News site with multiple feeds
-
-```typescript
-rss: {
-  enabled: true,
-  feeds: [
-    {
-      filename: 'all.xml',
-      title: 'All News',
-      description: 'Complete news feed',
-      maxItems: 50,
-    },
-    {
-      filename: 'breaking.xml',
-      title: 'Breaking News',
-      description: 'Breaking news only',
-      filter: (page) => page.frontMatter.breaking === true,
-      maxItems: 10,
-    },
-    {
-      filename: 'sports.xml',
-      title: 'Sports News',
-      description: 'Sports coverage',
-      contentPatterns: ['**/news/sports/**'],
-      maxItems: 20,
-    },
-  ],
-}
-```
-
-### Podcast feed
-
-```typescript
-rss: {
-  enabled: true,
-  feeds: [
-    {
-      filename: 'podcast.xml',
-      title: 'My Tech Podcast',
-      description: 'Weekly discussions about technology',
-      contentPatterns: ['**/episodes/**'],
-      language: 'en-US',
-      category: 'Technology',
-      image: {
-        url: 'https://example.com/podcast-cover.jpg',
-        title: 'My Tech Podcast',
-        link: 'https://example.com/podcast',
-      },
-      enclosure: (page) => ({
-        url: String(page.frontMatter.audioUrl),
-        length: Number(page.frontMatter.audioSize),
-        type: 'audio/mpeg',
-      }),
-      itemMapping: {
-        author: (page) => `podcast@example.com (${page.frontMatter.host})`,
-        description: 'summary',
-      },
-    },
-  ],
-}
-```
-
 ## Configuration validation
 
 Stati automatically validates your RSS configuration during the build process. If validation reports any error, Stati logs the errors and generates **no** feeds for that build; the rest of the build continues. Warnings are logged and the feeds are still generated.
 
-### Automatic validation
-
-Validation happens automatically when you run a production build:
-
-```typescript
-export default defineConfig({
-  // site: { … },
-  rss: {
-    enabled: true,
-    feeds: [
-      {
-        filename: 'feed.xml',
-        title: 'My Blog',
-        description: 'Latest posts',
-        // Validation will check:
-        // - Required fields are present
-        // - Email formats are valid
-        // - Image dimensions are within limits
-        // - No duplicate filenames
-      },
-    ],
-  },
-});
-```
-
-### Manual validation
-
-You can also validate RSS configuration programmatically:
-
-```typescript
-import { validateRSSConfig } from '@stati/core';
-
-const result = validateRSSConfig(config.rss);
-
-if (!result.valid) {
-  console.error('RSS configuration errors:');
-  result.errors.forEach(error => console.error(`  - ${error}`));
-}
-
-if (result.warnings.length > 0) {
-  console.warn('RSS configuration warnings:');
-  result.warnings.forEach(warning => console.warn(`  - ${warning}`));
-}
-```
+To validate a config in your own code, use [`validateRSSConfig()`](/api/rss#validaterssconfig).
 
 ### Validation rules
 
@@ -502,6 +368,7 @@ if (result.warnings.length > 0) {
 - Missing `sortFn` when `sortBy` is `custom`
 - Duplicate feed filenames
 - Missing image fields when image is specified
+- An empty `feeds` array
 
 **Warnings** (informational only):
 
@@ -510,22 +377,6 @@ if (result.warnings.length > 0) {
 - Filename not ending in `.xml`
 - TTL set to 0 (no caching)
 - Empty content patterns array
-
-For more details on validation, see the [RSS API](/api/rss#rssvalidationresult).
-
-## Development vs production
-
-**Important**: RSS feeds are **only generated in production builds**, not in development mode.
-
-```bash
-# RSS feeds will NOT be generated
-npm run dev
-
-# RSS feeds WILL be generated
-npm run build
-```
-
-This is by design to avoid unnecessary regeneration during development. When you run a production build, all enabled feeds will be regenerated with the latest content.
 
 ## Troubleshooting
 
@@ -556,19 +407,8 @@ If your feed has XML errors:
 2. **Check custom elements**: Ensure custom elements use valid XML tag names
 3. **Validate feed**: Use an RSS validator to check your feed
 
-## Best practices
-
-1. **Use clear titles**: Make feed titles descriptive and unique
-2. **Provide good descriptions**: Write clear descriptions for both feeds and items
-3. **Limit items**: Use `maxItems` to keep feeds manageable (10-50 items typical)
-4. **Sort by date**: Most recent content first (`date-desc`) is standard
-5. **Include categories**: Use tags/categories to help readers filter content
-6. **Set TTL**: Use `ttl` to suggest appropriate cache duration
-7. **Test feeds**: Validate generated feeds with RSS validators
-8. **Link in HTML**: Add `<link>` tags in your HTML to advertise feeds
-
 ## Next steps
 
 - Learn about [SEO configuration](/configuration/seo)
-- Configure [Sitemap generation](/configuration/seo)
+- Configure [Sitemap generation](/configuration/seo#sitemap-configuration)
 - Explore [Build hooks](/api/hooks)

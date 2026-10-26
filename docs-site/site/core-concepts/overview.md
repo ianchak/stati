@@ -19,17 +19,14 @@ seo:
 
 # Overview
 
-Stati is built on several key concepts that work together to create a powerful yet simple static site generation experience. Understanding these concepts will help you make the most of Stati's features.
-
-## Overview
-
-Stati combines modern web development tools with proven static site generation patterns:
+The core concepts:
 
 - **[Filesystem-based Routing](/core-concepts/routing)** - Your directory structure becomes your site structure
-- **[Templates & Layouts](/core-concepts/templates)** - Flexible templating with Eta and layout inheritance
+- **[Templates and layouts](/core-concepts/templates)** - Eta layouts chosen by folder, which replace the layouts above them
 - **[Markdown Pipeline](/core-concepts/markdown)** - Enhanced Markdown processing with extensible plugins
+- **[Collections](/core-concepts/collections)** - Listings, pagination and one page per tag
 - **[Incremental Static Generation (ISG)](/core-concepts/isg)** - Smart caching and selective rebuilds
-- **[Static Assets & Bundling](/core-concepts/static-assets)** - Modern asset processing
+- **[Static Assets & Bundling](/core-concepts/static-assets)** - Copying `public/`, client TypeScript bundles and stylesheets
 
 ## The Stati philosophy
 
@@ -44,25 +41,6 @@ Stati is built with TypeScript from the ground up, providing:
 - Automatic script tag injection during dev and build (no template changes needed)
 - Bundle paths available via `stati.assets` for preloading or custom use
 - Development mode with source maps; production mode with minification and hashing
-
-### Minimal dependencies
-
-Stati keeps its dependency footprint small by:
-
-- Using modern build tools for development and bundling
-- Leveraging proven libraries like Markdown-It and Eta
-- Avoiding heavy frameworks and unnecessary abstractions
-- Focusing on core functionality that most sites need
-
-### Developer experience
-
-Great DX is at the heart of Stati:
-
-- Zero-config setup that works out of the box
-- Intuitive file-based routing system
-- Live reload during development
-- Clear error messages and debugging information
-- Flexible enough for any use case
 
 ## How it all works together
 
@@ -79,7 +57,7 @@ Stati uses Eta templates to render your content, with support for:
 - Layouts chosen by folder (the nearest `layout.eta`) or per page
 - Includes and shared page shells
 - Template helpers
-- Dynamic content generation
+- Collections, pagination and generated pages
 
 ### 3. Asset processing
 
@@ -91,28 +69,17 @@ ISG tracks dependencies and only rebuilds what's necessary:
 
 - A changed page is re-rendered; unchanged pages are served from the cache
 - Template changes rebuild the pages that use them
-- Static assets are copied on every build; an image a page shows is one of its dependencies, so replacing it rebuilds that page
+- Static assets are copied on every build; an image in the page's Markdown or from `stati.image()` is one of its dependencies, so replacing it rebuilds that page
 - Time-based cache expiration for content that changes over time
 
 ### 5. Output generation
 
-The final result is a fully static site optimized for:
-
-- Static delivery (no server-side rendering needed)
-- SEO-friendly URLs
-- Modern web standards
-- Easy deployment anywhere
+The result is static HTML in `dist/` that any static host can serve.
 
 ## Getting deeper
-
-Each core concept builds on the others to create Stati's unique approach to static site generation. As you dive deeper into each topic, you'll discover how they work together to create a powerful and flexible system.
 
 Start with [Filesystem-based Routing](/core-concepts/routing) to understand how Stati maps your content to URLs, then explore the other concepts to master the full Stati workflow.
 
 ## Related topics
 
-- [Templates & Layouts](/core-concepts/templates) – Eta templates and layout inheritance
-- [Markdown Pipeline](/core-concepts/markdown) – Markdown processing and plugins
-- [Incremental Static Generation](/core-concepts/isg) – Smart caching and rebuilds
-- [Static Assets](/core-concepts/static-assets) – Asset handling and bundling
 - [Glossary](/glossary) – Definitions of key terms and concepts

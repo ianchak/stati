@@ -72,7 +72,7 @@ const server = await createDevServer({
 });
 await server.start();
 
-// Or build for production (build() alone runs a development build)
+// Or build for production (build() alone runs a development build unless NODE_ENV is production)
 setEnv('production');
 const stats = await build({
   clean: true,
@@ -81,7 +81,7 @@ const stats = await build({
 
 Most projects use the `stati` command from [`@stati/cli`](https://www.npmjs.com/package/@stati/cli) instead (`stati dev`, `stati build`), which sets the environment for you.
 
-That's it! Your site is ready.
+Add `site/layout.eta` to shape the page; without one Stati writes a basic fallback page and warns.
 
 ---
 
@@ -99,7 +99,7 @@ That's it! Your site is ready.
 - **Programmatic API** - Full control over the build process
 - **TypeScript-First** - Complete type safety for configuration
 - **TypeScript Compilation** - Built-in esbuild for client-side TypeScript
-- **Extensible Hooks** - Customize every stage of the build
+- **Build Hooks** - Run code before and after the build and each rendered page
 - **Smart Caching** - Incremental builds with intelligent invalidation
 
 ---
@@ -122,7 +122,7 @@ my-site/
 
 **The workflow:**
 
-1. Write content in Markdown with front-matter
+1. Write content in Markdown with front matter
 2. Stati processes it through templates
 3. Static HTML is generated with smart caching
 4. Deploy anywhere (Netlify, Vercel, GitHub Pages, etc.)
@@ -131,7 +131,7 @@ my-site/
 
 #### Markdown-First Content
 
-Write naturally with front-matter for metadata:
+Write naturally with front matter for metadata:
 
 ```markdown
 ---
@@ -150,7 +150,7 @@ Your content here...
 
 Customize layouts with [Eta templates](https://eta.js.org):
 
-```html
+```eta
 <!DOCTYPE html>
 <html>
   <head>
@@ -190,7 +190,7 @@ A folder with an `index.md` is a collection: templates read its pages as `stati.
 
 #### Built-In SEO
 
-SEO optimization works automatically with zero configuration:
+Stati injects SEO metadata into every page by default, with no `seo` block needed. Canonical and Open Graph URLs use `site.baseUrl`:
 
 - Meta tags (title, description, keywords from front matter)
 - Open Graph for social sharing, with `og:locale` from `site.defaultLocale`
@@ -203,7 +203,7 @@ Enable sitemap and robots.txt with one config option.
 
 ---
 
-## Complete Configuration Reference
+## Configuration
 
 Stati works with **zero configuration**, but you can customize every aspect when needed.
 
@@ -254,11 +254,7 @@ export default defineConfig({
     ],
     configure: (md) => {
       // Configure MarkdownIt instance directly
-      md.set({
-        html: true,
-        linkify: true,
-        typographer: true,
-      });
+      md.set({ breaks: true }); // Turn single line breaks into <br>
     },
   },
 
@@ -270,10 +266,10 @@ export default defineConfig({
   // Incremental Static Generation (enabled by default)
   isg: {
     ttlSeconds: 86400,        // Cache TTL: 24 hours (default: 21600 / 6 hours)
-    maxAgeCapDays: 30,        // Max age for aging rules (default: 365)
+    maxAgeCapDays: 30,        // Dated pages older than this stop rebuilding on TTL (default: 365)
     aging: [
       { untilDays: 7, ttlSeconds: 86400 },   // up to 7 days old: 1 day
-      { untilDays: 30, ttlSeconds: 604800 }, // up to 30 days old (and older): 1 week
+      { untilDays: 30, ttlSeconds: 604800 }, // up to 30 days old: 1 week
     ],
   },
 
@@ -281,7 +277,6 @@ export default defineConfig({
   seo: {
     defaultAuthor: {
       name: 'John Doe',
-      email: 'john@example.com',
       url: 'https://johndoe.com', // article:author on article pages
       twitter: '@johndoe',        // twitter:creator
     },
@@ -355,18 +350,19 @@ export default defineConfig({
 
 #### `build(options?: BuildOptions): Promise<BuildResult>`
 
-Build your static site. `build()` uses Stati's current environment, which is `development` unless you call `setEnv('production')` first (the `stati build` command does). Sitemap, robots.txt and RSS are only generated in production.
+Build your static site. `build()` uses Stati's current environment, which is `NODE_ENV` or else `development`, unless you call `setEnv('production')` first (the `stati build` command does). Sitemap, robots.txt and RSS are only generated in production.
 
 **Options:**
 
 ```typescript
 {
   force?: boolean;        // Force rebuild of all pages (ignores cache)
-  clean?: boolean;        // Clean output directory before build
+  clean?: boolean;        // Delete the output directory and the .stati cache first
   includeDrafts?: boolean; // Include draft pages in build
   configPath?: string;    // Config file; only its directory is used to find stati.config.*
   metrics?: MetricsOptions; // Collect build metrics
   logger?: Logger;        // Custom logger for build output
+  tailwind?: { input: string; output: string }; // As --tailwind-input/--tailwind-output; production builds run Tailwind
 }
 ```
 
@@ -401,6 +397,7 @@ Start a development server with live reload.
   host?: string;          // Host address (default: 'localhost')
   open?: boolean;         // Auto-open browser (default: false)
   logger?: Logger;        // Custom logger
+  tailwind?: { input: string; output: string }; // Links the output; run Tailwind's watcher yourself (stati dev does)
 }
 ```
 
@@ -562,6 +559,7 @@ import type {
   PageModel,
   PageContext,
   FrontMatter,
+  TemplateContext,
 
   // Navigation
   NavNode,
@@ -575,8 +573,8 @@ import type {
   AgingRule,
 } from '@stati/core';
 
-// Template and cache types are only exported from the types entry point
-import type { TemplateContext, CacheManifest } from '@stati/core/types';
+// Cache types are only exported from the types entry point
+import type { CacheManifest } from '@stati/core/types';
 ```
 
 > **Need more types?** This is a curated list of commonly used types. For the complete type reference including all SEO, sitemap, and configuration types, see the [API Types Documentation](https://stati.build/api/types/).
@@ -589,7 +587,7 @@ import type { TemplateContext, CacheManifest } from '@stati/core/types';
 
 Stati supports rich Markdown features out of the box:
 
-- **Front-matter** - YAML (default) or JSON (`---json`) metadata
+- **Front matter** - YAML (default) or JSON (`---json`) metadata
 - **Plugins** - Any markdown-it plugin that supports markdown-it 15
 - **Syntax highlighting** - Code blocks get `language-*` classes; add a plugin such as `markdown-it-prism` to highlight them
 - **Custom rendering** - Configure parser behavior
@@ -609,19 +607,21 @@ export default defineConfig({
 });
 ```
 
+Install each plugin first, such as `npm install markdown-it-footnote`; Stati loads `markdown-it-<name>` from your project.
+
 ### Template Engine
 
 Powered by [Eta](https://eta.js.org) for fast, flexible templates:
 
 - **Layouts** - Chosen by folder or front matter, sharing one page shell through `stati.layout()`
-- **Includes** - Reusable templates with props and content through `stati.include()`
+- **Includes** - Reusable templates with props and a body through `stati.include()`
 - **Helpers** - Your own functions, called as `stati.helpers.name()`
 - **Typed context** - The `TemplateContext` type describes everything templates can read
 - **Live reload** - The browser reloads when a template changes
 
 **Template structure:**
 
-```html
+```eta
 <!-- site/layout.eta -->
 <!DOCTYPE html>
 <html>
@@ -644,23 +644,23 @@ Automatic navigation hierarchy based on your file structure:
 
 - **Auto-generated tree** - Built from your folders (each folder of pages is a top-level node)
 - **Breadcrumbs** - Parent-child relationships
-- **Custom ordering** - Use `order` in front-matter
+- **Custom ordering** - Use `order` in front matter
 - **Index pages** - Special handling for `index.md`
 
 **Access in templates:**
 
-```html
+```eta
 <!-- Show breadcrumbs -->
 <nav>
   <% stati.nav.getBreadcrumbs().forEach(crumb => { %>
-    <a href="<%= crumb.url %>"><%= crumb.title %></a>
+    <a href="<%= stati.url(crumb.url) %>"><%= crumb.title %></a>
   <% }) %>
 </nav>
 
 <!-- Show navigation tree -->
 <ul>
   <% stati.nav.tree.forEach(item => { %>
-    <li><a href="<%= item.url %>"><%= item.title %></a></li>
+    <li><a href="<%= stati.url(item.url) %>"><%= item.title %></a></li>
   <% }) %>
 </ul>
 ```
@@ -674,31 +674,6 @@ Built for productivity:
 - **Error overlay** - See build errors in browser
 - **Static assets** - Served from `public/` directory
 - **Source maps** - Debug with original code
-
-### Caching & Performance
-
-Smart caching for lightning-fast builds:
-
-- **Content hashing** - Rebuild pages whose content or templates changed
-- **Incremental builds** - Skip unchanged pages
-- **Tag invalidation** - Update related content together
-- **TTL-based refresh** - Control cache lifetime
-- **Age-based rules** - Different TTL for old content
-
-**Cache strategies:**
-
-```javascript
-export default defineConfig({
-  isg: {
-    ttlSeconds: 21600,     // 6 hours default
-    aging: [
-      { untilDays: 7, ttlSeconds: 3600 },    // up to 7 days old: 1 hour
-      { untilDays: 30, ttlSeconds: 86400 },  // up to 30 days old: 1 day
-      // Older content also uses the last rule (1 day)
-    ],
-  },
-});
-```
 
 ---
 
@@ -734,7 +709,7 @@ export default defineConfig({
   isg: {
     aging: [
       { untilDays: 30, ttlSeconds: 3600 },   // up to 30 days old: 1 hour
-      { untilDays: 365, ttlSeconds: 86400 }, // up to a year old (and older): 1 day
+      { untilDays: 365, ttlSeconds: 86400 }, // up to a year old: 1 day
     ],
   },
 });
@@ -778,39 +753,14 @@ export default defineConfig({
 
 ---
 
-## Philosophy
-
-Stati Core is built on these principles:
-
-- **Simplicity First** - Sensible defaults that just work
-- **Performance Matters** - Fast builds, smart caching
-- **Developer Experience** - Great tooling, clear errors
-- **Type Safety** - TypeScript throughout
-- **Extensibility** - Customize when you need to
-
----
-
 ## Support & Community
 
 - [GitHub Issues](https://github.com/ianchak/stati/issues) - Report bugs or request features
 - [Discussions](https://github.com/ianchak/stati/discussions) - Ask questions, share ideas
-- [Documentation](https://stati.build) - Comprehensive guides
 
 ---
 
 ## License
 
 MIT © [Imre Csige](https://github.com/ianchak)
-
----
-
-**Ready to build?**
-
-```bash
-# New project (easiest way)
-npx create-stati my-site
-
-# Or use core directly
-npm install @stati/core
-```
 

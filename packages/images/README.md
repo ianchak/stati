@@ -7,7 +7,7 @@ Stati already gives every Markdown image its intrinsic `width` and `height`, `lo
 - **Responsive images.** Every Markdown image and every `stati.image()` becomes a `<picture>` with AVIF and WebP sources at several widths, plus a fallback in the original format.
 - **Open Graph images.** Every page gets a social card rendered from an Eta template, so links shared on social platforms show a preview. There is a built-in card, and you can design your own in `og.eta`.
 
-Encoding uses [sharp](https://sharp.pixelplumbing.com). Cards are laid out by [Satori](https://github.com/vercel/satori) and rasterized by sharp, with no headless browser, so builds work on Netlify, Vercel, Cloudflare Pages and GitHub Actions without system packages.
+Encoding uses [sharp](https://sharp.pixelplumbing.com). Cards are laid out by [Satori](https://github.com/vercel/satori) and rasterized by sharp, with no headless browser.
 
 ---
 
@@ -42,7 +42,7 @@ export default defineConfig({
 
 Turning on `images.responsive` or `images.og` without this package installed stops the build with a message that tells you to install it.
 
-Requires `@stati/core` 1.28 or later and Node.js 22.20 or later.
+Requires `@stati/core` 1.28 or later and Node.js 22.20 or later on the 22.x line, or 24 and later.
 
 ---
 

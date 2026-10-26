@@ -8,8 +8,6 @@ seo:
 
 # SEO
 
-Complete reference for Stati's SEO API including functions, types, and configuration interfaces.
-
 ## Functions
 
 ### `generateSEOMetadata()`
@@ -50,7 +48,6 @@ const html = generateSEOMetadata({
 **Behavior:**
 
 - Validation errors are logged as warnings rather than throwing to allow builds to continue with degraded SEO
-- This prevents a single SEO issue from blocking the entire build
 - Validation warnings are logged when `config.seo.debug` is enabled
 - The robots meta tag gets `noindex` on the 404 page (`/404` or `/404/`) unless the page sets `seo.noindex`, or a `seo.robots` value that says whether to index it (`index`, `noindex`, `all`, `none` or `index:`)
 
@@ -76,7 +73,7 @@ function generateSEO(
 **Parameters:**
 
 - `context` (object): The SEO generation context
-  - `page` (PageModel): The page model with frontmatter and metadata
+  - `page` (PageModel): The page model with front matter and metadata
   - `config` (StatiConfig): The Stati configuration object
   - `site` (SiteConfig, optional): Site configuration (can be omitted if provided in config)
 - `tags` (Array<SEOTagType | string>, optional): Array of tag types to generate. Use **strings** in Eta templates (`'title'`, `'description'`, etc.). The `SEOTagType` enum is only available for programmatic/TypeScript usage.
@@ -87,7 +84,7 @@ function generateSEO(
 
 **Examples:**
 
-```html
+```eta
 <!-- Generate all SEO tags -->
 <%~ stati.generateSEO() %>
 
@@ -114,17 +111,11 @@ const html = generateSEO({ page, config, site: config.site }, [
 const html2 = generateSEO({ page, config, site: config.site }, ['title', 'description']);
 ```
 
-**Template Context:**
-
-When used in Eta templates, Stati automatically wraps this function to provide the context, so you call it as `stati.generateSEO(tags)` where `stati` is the template context object.
-
 ---
 
 ### `generateSitemap()`
 
 Generates an XML sitemap from an array of pages.
-
-> **Production Only**: In Stati's build pipeline, sitemaps are only generated during production builds to improve development build performance.
 
 **Signature:**
 
@@ -133,6 +124,7 @@ function generateSitemap(
   pages: PageModel[],
   config: StatiConfig,
   sitemapConfig: SitemapConfig,
+  logger?: Logger,
 ): SitemapGenerationResult;
 ```
 
@@ -141,6 +133,7 @@ function generateSitemap(
 - `pages` (PageModel[]): Array of page objects to include in sitemap
 - `config` (StatiConfig): Stati configuration object (used for `site.baseUrl`)
 - `sitemapConfig` (SitemapConfig): Sitemap-specific configuration options
+- `logger` (Logger, optional): Receives a warning for each invalid `sitemap.lastmod`, `updated` or `date` value, which is skipped
 
 **Returns:**
 
@@ -178,8 +171,6 @@ console.log(result.sitemaps); // Array of sitemap files (if split)
 ### `generateNewsSitemap()`
 
 Generates a [Google News sitemap](/configuration/seo#google-news-sitemap) from an array of pages: the pages that match `news.include` and were published within `news.maxAgeDays`, newest first, at most 1000.
-
-> **Production Only**: In Stati's build pipeline, the news sitemap is written during production builds when `sitemap.news` is set.
 
 **Signature:**
 
@@ -226,8 +217,6 @@ console.log(result.entryCount); // Number of articles
 ### `generateRobotsTxt()`
 
 Generates robots.txt content from low-level options.
-
-> **Production Only**: In Stati's build pipeline, robots.txt is only generated during production builds to improve development build performance.
 
 **Signature:**
 
@@ -481,6 +470,7 @@ function generateSitemapEntry(
   page: PageModel,
   config: StatiConfig,
   sitemapConfig: SitemapConfig,
+  logger?: Logger,
 ): SitemapEntry | null;
 ```
 
@@ -489,6 +479,7 @@ function generateSitemapEntry(
 - `page` (PageModel): The page to generate entry for
 - `config` (StatiConfig): Stati configuration
 - `sitemapConfig` (SitemapConfig): Sitemap configuration
+- `logger` (Logger, optional): Receives a warning for each invalid `sitemap.lastmod`, `updated` or `date` value, which is skipped
 
 **Returns:**
 
@@ -614,12 +605,12 @@ Escapes HTML special characters for safe output.
 **Signature:**
 
 ```typescript
-function escapeHtml(text: string): string;
+function escapeHtml(value: unknown): string;
 ```
 
 **Parameters:**
 
-- `text` (string): Text to escape
+- `value` (unknown): Text to escape; other values are converted to text, and `null` and `undefined` become `''`
 
 **Returns:**
 
@@ -711,6 +702,18 @@ if (existingTags.has(SEOTagType.Title)) {
   console.log('Title tag already exists');
 }
 ```
+
+#### URL helpers
+
+```typescript
+function normalizeUrlPath(path: string): string;
+function resolveAbsoluteUrl(url: string, baseUrl: string): string;
+function isValidUrl(url: string): boolean;
+```
+
+- `normalizeUrlPath` adds a leading `/` when the path has none: `'about'` becomes `'/about'`.
+- `resolveAbsoluteUrl` returns a URL that has a scheme (`https:`, `data:` and so on) unchanged, gives a protocol-relative URL (`//cdn.example.com/og.png`) the scheme of `baseUrl` (`http:` when `baseUrl` starts with `http://`, otherwise `https:`), and otherwise joins `baseUrl`, without one trailing `/`, and the path with a leading `/`: `resolveAbsoluteUrl('/about', 'https://example.com/docs')` returns `'https://example.com/docs/about'`.
+- `isValidUrl` returns `true` when the string parses as a URL with the `http:` or `https:` protocol.
 
 ---
 
@@ -894,24 +897,7 @@ interface SEOConfig {
 }
 ```
 
-**Example:**
-
-```typescript
-{
-  autoInject: true,
-  defaultAuthor: {
-    name: 'John Doe',
-    email: 'john@example.com',
-    url: 'https://johndoe.com',
-    twitter: '@johndoe'
-  },
-  twitter: { site: '@example' },
-  articles: { include: ['/blog/*'] },
-  debug: false
-}
-```
-
-Stati checks `seo.twitter`, `seo.articles` and `seo.defaultAuthor.twitter` when it loads the config, and stops with an error when one has the wrong type, such as `include: '/blog/*'` instead of `include: ['/blog/*']`.
+Stati checks `seo.twitter`, `seo.articles` and `seo.defaultAuthor.twitter` when it loads the config, and stops with an error when one has the wrong type, such as `include: '/blog/*'` instead of `include: ['/blog/*']`. An unknown key in `seo.twitter` or `seo.articles` stops it too.
 
 ---
 
@@ -948,7 +934,7 @@ Generated pages and every page of a paginated listing never match. See [article 
 
 ### `SEOMetadata`
 
-Page-level SEO metadata (used in frontmatter).
+Page-level SEO metadata (used in front matter).
 
 ```typescript
 interface SEOMetadata {
@@ -1003,7 +989,7 @@ interface AuthorConfig {
   /** Author's name (required) */
   name: string;
 
-  /** Author's email address */
+  /** Author's email address; accepted but not printed in any tag */
   email?: string;
 
   /** Author's website or profile URL, printed as article:author on article pages */
@@ -1218,19 +1204,40 @@ interface SitemapConfig {
 
   /** Declared but currently not read: splitting always produces an index */
   generateIndex?: boolean;
+
+  /** Google News sitemap, written as its own file */
+  news?: NewsSitemapConfig;
 }
 ````
 
-**Notes:**
+Pattern matching, `lastmod`, priorities and splitting are described in [Sitemap configuration](/configuration/seo#advanced-sitemap-options).
 
-- Sitemap URLs use `config.site.baseUrl` for absolute URL generation
-- `transformEntry` can return `null` to exclude an entry from the sitemap
-- `transformUrl` receives the config object as third parameter for advanced transformations
-- `excludePatterns`, `includePatterns` and `priorityRules[].pattern` are matched against the page URL (`/blog/first-post`, `/` for the home page). A pattern containing `*` or `?` is a glob that must match the whole URL (`/blog/**` matches `/blog/first-post` but not `/blog`). A pattern without wildcards matches that exact URL, or any URL below it when followed by `/` (`/blog` matches `/blog` and `/blog/first-post`, but not `/blog-archive`); `/` matches only the home page
-- `priorityRules` are applied in order; first matching pattern sets the priority. A page's own `sitemap.priority` front matter wins over the rules
-- `lastmod` comes from front matter `sitemap.lastmod`, then `updated`, then `date`; `publishedAt` is not used
-- Priorities are written with one decimal place (`0.85` becomes `0.8`)
-- Above 50,000 entries the sitemap is split into `sitemap-1.xml`, `sitemap-2.xml`, … and `sitemap.xml` becomes a sitemap index
+---
+
+### `NewsSitemapConfig`
+
+The `sitemap.news` options. See [Google News sitemap](/configuration/seo#google-news-sitemap).
+
+```typescript
+interface NewsSitemapConfig {
+  /** URL glob patterns of the articles, like seo.articles.include */
+  include: string[];
+
+  /** Name of the publication (default: site.title) */
+  publicationName?: string;
+
+  /** ISO 639 code such as 'en' or 'zh-cn' (default: from site.defaultLocale, or 'en') */
+  language?: string;
+
+  /** Articles published longer ago than this many days are left out (default: 2) */
+  maxAgeDays?: number;
+
+  /** File name in the output folder (default: 'news-sitemap.xml') */
+  filename?: string;
+}
+```
+
+`generateNewsSitemap()` returns a `NewsSitemapGenerationResult`: `xml`, `entryCount` (the number of articles), `sizeInBytes` and the `filename` to write it to.
 
 ---
 
@@ -1273,7 +1280,7 @@ interface RobotsTxtConfig {
   /** Crawl delay in seconds (written in the `User-agent: *` group) */
   crawlDelay?: number;
 
-  /** `true` adds `Sitemap: <baseUrl>/sitemap.xml`; a string adds that URL; unset adds nothing */
+  /** `true` adds `Sitemap: <baseUrl>/sitemap.xml`, and the news sitemap with sitemap.news; a string adds that URL only; unset adds nothing */
   sitemap?: string | boolean;
 
   /** Custom lines to add to robots.txt */
@@ -1281,79 +1288,9 @@ interface RobotsTxtConfig {
 }
 ````
 
-**Example:**
-
-```typescript
-{
-  enabled: true,
-  userAgents: [
-    {
-      userAgent: 'Googlebot',
-      allow: ['/api/public/'],
-      disallow: ['/admin/']
-    }
-  ],
-  disallow: ['/admin/', '/private/'],
-  allow: ['/api/public/'],
-  sitemap: true, // Adds "Sitemap: <baseUrl>/sitemap.xml"
-  customLines: ['# Custom robots.txt directives']
-}
-```
-
 The global `allow`, `disallow` and `crawlDelay` values form a `User-agent: *` group, written after the `userAgents` groups; within a group, `Allow` lines come before `Disallow` lines. Without any rules, Stati writes `User-agent: *` / `Allow: /`. `sitemap: true` adds the line whether or not sitemap generation is enabled, so enable `sitemap` too.
-
----
-
-## Complete configuration example
-
-```typescript
-// stati.config.ts
-import { defineConfig } from '@stati/core';
-
-export default defineConfig({
-  site: {
-    title: 'My Site',
-    baseUrl: 'https://example.com',
-    defaultLocale: 'en-US', // og:locale en_US
-  },
-
-  seo: {
-    autoInject: true,
-    defaultAuthor: {
-      name: 'John Doe',
-      email: 'john@example.com',
-      url: 'https://johndoe.com',
-      twitter: '@johndoe',
-    },
-    twitter: { site: '@example' },
-    articles: { include: ['/blog/*'] },
-    debug: false,
-  },
-
-  sitemap: {
-    enabled: true,
-    defaultPriority: 0.5,
-    defaultChangeFreq: 'monthly',
-    excludePatterns: ['/draft/**', '/admin/**'],
-    filter: (page) => !page.frontMatter.draft,
-    transformUrl: (url, page, config) => (url.endsWith('/') ? url : `${url}/`),
-    priorityRules: [
-      { pattern: '/', priority: 1.0 },
-      { pattern: '/blog/**', priority: 0.8 },
-      { pattern: '/docs/**', priority: 0.9 },
-    ],
-  },
-
-  robots: {
-    enabled: true,
-    disallow: ['/admin/', '/private/'],
-    allow: ['/api/public/'],
-  },
-});
-```
 
 ## See also
 
 - [SEO Configuration Guide](/configuration/seo) - User-friendly configuration guide
 - [SEO Usage Scenarios](/advanced/seo-usage-scenarios) - Usage strategies for different project needs
-- [Incremental Static Generation](/core-concepts/isg) - How SEO integrates with ISG caching
