@@ -18,9 +18,11 @@ Pages are usually served with no caching or a short one, but a stylesheet with a
 
 A template links the stylesheet under its own path:
 
-```html
-<link rel="stylesheet" href="/styles.css" />
+```eta
+<link rel="stylesheet" href="<%= stati.url('/styles.css') %>" />
 ```
+
+On a site served from a subfolder, write the link with `stati.url()` as here: a root path without the base path is neither prefixed nor hashed.
 
 A production build writes the page with the hashed name:
 
@@ -82,7 +84,7 @@ Pass the same two flags to both commands:
 - `--tailwind-input` is Tailwind's input stylesheet.
 - `--tailwind-output` is the stylesheet's file in the output directory. The dev server's Tailwind watcher writes it, and pages link it under its path there, `/styles.css`. It must be a `.css` file inside the output directory, with only letters, digits, `-`, `_`, `.` and `/` in its path. A file at the same path in `public/`, such as `public/styles.css`, is never copied, in development or production, and the build warns about it.
 
-`stati build` stops with an error when it gets only one of the two. Tailwind CSS 4 needs `tailwindcss` and `@tailwindcss/cli` installed in the project, Tailwind CSS 3 needs `tailwindcss`. See [Tailwind CSS integration](/core-concepts/static-assets#tailwind-css-integration) for the stylesheet itself, including the `@source` rule for classes your templates build at render time.
+`stati build` stops with an error when it gets only one of the two; `stati dev` then starts no watcher and links nothing. Tailwind CSS 4 needs `tailwindcss` and `@tailwindcss/cli` installed in the project, Tailwind CSS 3 needs `tailwindcss`. See [Tailwind CSS integration](/core-concepts/static-assets#tailwind-css-integration) for the stylesheet itself, including the `@source` rule for classes your templates build at render time.
 
 A template can link `/styles.css` or leave the link out: Stati adds `<link rel="stylesheet">` before `</head>` on every page that doesn't have one to the path. A preload of the path, and a link in a comment or script, don't count.
 
@@ -93,7 +95,7 @@ A template can link `/styles.css` or leave the link out: Stati adds `<link rel="
 3. With that list complete, it runs Tailwind once, with `--minify`, and writes `dist/_assets/styles-A1B2C3D4.css`.
 4. It writes the pages it rendered, with their links to `/styles.css` pointed at that file.
 
-Tailwind runs after the pages, so the build holds the pages it renders in memory until then, with `css.hash: false` too, and writes each once, with the final file name, after the [`afterRender`](/api/hooks) hook has run for it. If Tailwind fails, the build stops with Tailwind's error and the previous build's pages and stylesheet stay as they were.
+Tailwind runs after the pages, so the build holds the pages it renders until then (in memory, or in `.stati/pending-pages/` for a very large site), with `css.hash: false` too, and writes each once, with the final file name, after the [`afterRender`](/api/hooks) hook has run for it. If Tailwind fails, the build stops with Tailwind's error and the previous build's pages and stylesheet stay as they were.
 
 Unlike a stylesheet in `public/`, the Tailwind stylesheet isn't written under its own name, so a deploy carries no copy that no page links. A `dist/styles.css` the dev server's watcher wrote stays there out of date; `stati build --clean` starts from an empty `dist/`. A reference to `/styles.css` that the build doesn't rewrite therefore loads nothing:
 
@@ -116,7 +118,7 @@ The added link goes at the end of `<head>`, after the page's other stylesheets. 
 </head>
 ```
 
-`stati.assets.stylesheetPaths` is `['/styles.css']` in development and `['/_assets/styles-A1B2C3D4.css']` in production, and an empty array without the Tailwind flags. Print each path as it is, or through `stati.url()` when the site is [served from a subfolder](/advanced/deploying-to-a-subfolder): a production build writes the final name into the page after rendering, by replacing the path the template printed, so a path the template changes, such as one it encodes or takes apart, keeps a name no file has.
+`stati.assets.stylesheetPaths` is `['/styles.css']` in development and with `css.hash: false`, and an empty array without the Tailwind flags. In a hashed production build it holds a temporary path that becomes `/_assets/styles-A1B2C3D4.css` when the page is written. Print each path as it is, or through `stati.url()` when the site is [served from a subfolder](/advanced/deploying-to-a-subfolder): a production build writes the final name into the page after rendering, by replacing the path the template printed, so a path the template changes, such as one it encodes or takes apart, keeps a name no file has.
 
 ## Options
 

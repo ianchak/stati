@@ -6,7 +6,7 @@ order: 4
 
 # Collections and generated pages
 
-A folder of pages with an `index.md` is a **collection**. Templates read it as `stati.collection`: the pages in the folder, sorted by date and grouped by tag. On top of that, Stati can split a listing into numbered pages with `paginate`, and turn one `[param].md` template into a page for every tag, author or other key. Listings stay current: when a post is added, removed, retitled or retagged, Stati rebuilds the pages that list it and, if the navigation changed, the pages that show the navigation. Other pages stay as they are.
+A folder of pages with an `index.md` is a **collection**. Templates read it as `stati.collection`: the pages in the folder, sorted by date and grouped by tag. On top of that, Stati can split a listing into numbered pages with `paginate`, and turn one `[param].md` template into a page for every tag, author or other key.
 
 ```text
 site/
@@ -42,7 +42,7 @@ Each entry is a page model, not a template context. Read front matter through `f
 <ul class="post-list">
   <% posts.forEach(post => { %>
   <li>
-    <a href="<%= post.url %>"><%= post.frontMatter.title %></a>
+    <a href="<%= stati.url(post.url) %>"><%= post.frontMatter.title %></a>
     <% if (post.publishedAt) { %>
     <time datetime="<%= post.publishedAt.toISOString() %>">
       <%= post.publishedAt.toLocaleDateString('en-US', { dateStyle: 'medium' }) %>
@@ -58,7 +58,7 @@ A tag list with counts comes straight from `pagesByTag`:
 ```eta
 <% const byTag = stati.collection?.pagesByTag ?? {}; %>
 <% Object.keys(byTag).sort().forEach(tag => { %>
-<a href="<%= `/tags/${stati.slugify(tag)}` %>"><%= tag %> (<%= byTag[tag].length %>)</a>
+<a href="<%= stati.url(`/tags/${stati.slugify(tag)}`) %>"><%= tag %> (<%= byTag[tag].length %>)</a>
 <% }) %>
 ```
 
@@ -81,7 +81,7 @@ collection: /blog
 
 ```eta
 <% for (const post of (stati.collection?.recentPages ?? []).slice(0, 5)) { %>
-  <a href="<%= post.url %>"><%= post.frontMatter.title %></a>
+  <a href="<%= stati.url(post.url) %>"><%= post.frontMatter.title %></a>
 <% } %>
 ```
 
@@ -94,8 +94,8 @@ Since posts read their own collection, prev/next links need no hook:
   const newer = posts[i - 1];
   const older = posts[i + 1];
 %>
-<% if (newer) { %><a href="<%= newer.url %>" rel="prev"><%= newer.frontMatter.title %></a><% } %>
-<% if (older) { %><a href="<%= older.url %>" rel="next"><%= older.frontMatter.title %></a><% } %>
+<% if (newer) { %><a href="<%= stati.url(newer.url) %>" rel="prev"><%= newer.frontMatter.title %></a><% } %>
+<% if (older) { %><a href="<%= stati.url(older.url) %>" rel="next"><%= older.frontMatter.title %></a><% } %>
 ```
 
 A collection name that matches no index page is reported with a warning, and the page reads its default collection instead.
@@ -149,15 +149,15 @@ Later pages follow the first page's style: with `permalink: /blog/`, page 2 is `
 ```eta
 <% const pagination = stati.pagination; %>
 <% for (const post of pagination.items) { %>
-  <a href="<%= post.url %>"><%= post.frontMatter.title %></a>
+  <a href="<%= stati.url(post.url) %>"><%= post.frontMatter.title %></a>
 <% } %>
 <% if (pagination.totalPages > 1) { %>
 <nav aria-label="Pages">
-  <% if (pagination.prevUrl) { %><a href="<%= pagination.prevUrl %>" rel="prev">Newer</a><% } %>
+  <% if (pagination.prevUrl) { %><a href="<%= stati.url(pagination.prevUrl) %>" rel="prev">Newer</a><% } %>
   <% pagination.urls.forEach((url, i) => { %>
-    <a href="<%= url %>"<% if (i + 1 === pagination.pageNumber) { %> aria-current="page"<% } %>><%= i + 1 %></a>
+    <a href="<%= stati.url(url) %>"<% if (i + 1 === pagination.pageNumber) { %> aria-current="page"<% } %>><%= i + 1 %></a>
   <% }) %>
-  <% if (pagination.nextUrl) { %><a href="<%= pagination.nextUrl %>" rel="next">Older</a><% } %>
+  <% if (pagination.nextUrl) { %><a href="<%= stati.url(pagination.nextUrl) %>" rel="next">Older</a><% } %>
 </nav>
 <% } %>
 ```
@@ -185,7 +185,7 @@ With posts tagged `CSS` and `JavaScript`, this creates `/blog/tags/css` and `/bl
 - **Keys:** `generate.from` names a front matter field of the pages in the template's collection. Lists such as `tags` give a page per value, and so do single values such as `author: ada`. Each value becomes a key through the same slugify Stati uses for heading anchors: `CSS` becomes `css`, `Node.js` becomes `node-js`.
 - **Collection:** the template reads the collection its `collection` front matter names, or else the nearest collection its folder belongs to. `site/blog/tags/[tag].md` reads `/blog`, even when `site/blog/tags/index.md` exists, because that folder holds no pages of its own.
 - **URLs:** the file's path, with the bracketed name replaced by the key. To put the pages elsewhere, write the bracketed name into `permalink`: `permalink: /topics/[tag]/` gives `/topics/css/`.
-- **Collisions:** values that slugify to the same key share one page, under the first value seen (newest page first), with a warning. Values whose key comes out empty get no page, also with a warning: slugify keeps Latin letters and digits only, so `!!!` or a tag written in another script has no key. Give such pages URLs of your own with [`collections.generate`](#pages-from-data). When another page already has a generated page's URL, or writes the same file (`/tags/` and `/tags/index` both write `tags/index.html`), that page wins.
+- **Collisions:** values that slugify to the same key share one page, under the first value seen (newest page first), with a warning. Values whose key comes out empty get no page, also with a warning: slugify keeps only ASCII letters, digits and `_`, after dropping accents (`é` becomes `e`), so `!!!` or a tag written in another script has no key. Give such pages URLs of your own with [`collections.generate`](#pages-from-data). When another page already has a generated page's URL, or writes the same file (`/tags/` and `/tags/index` both write `tags/index.html`), that page wins.
 - **Drafts:** a tag only drafts use gets a page only when you build with `--include-drafts`.
 
 Templates read the page's key and items as `stati.generated`:
@@ -201,7 +201,7 @@ Templates read the page's key and items as `stati.generated`:
 ```eta
 <h1>Posts tagged <%= stati.generated.label %></h1>
 <% for (const post of (stati.pagination ?? stati.generated).items) { %>
-  <a href="<%= post.url %>"><%= post.frontMatter.title %></a>
+  <a href="<%= stati.url(post.url) %>"><%= post.frontMatter.title %></a>
 <% } %>
 ```
 
@@ -222,7 +222,7 @@ Generated pages render with the layout their template's folder would use, so `si
 
 ```eta
 <% for (const tag of stati.page.tags ?? []) { %>
-  <a href="<%= `/blog/tags/${stati.slugify(tag)}` %>"><%= tag %></a>
+  <a href="<%= stati.url(`/blog/tags/${stati.slugify(tag)}`) %>"><%= tag %></a>
 <% } %>
 ```
 
@@ -281,4 +281,4 @@ Hooks see them: `beforeAll`, `afterAll` and the per-page hooks receive them like
 - **Drafts:** pages with `draft: true` are left out unless you build with `--include-drafts`.
 - **Index layouts:** an `index.eta` next to an index page is used for that page, and for the later pages of its listing, ahead of `layout.eta`. The listing can have its own template while the posts keep the folder layout. A folder's `index.md` is an index page once the folder holds another page; the root `index.md` always is.
 - **Reserved front matter:** `collection`, `paginate`, `generate`, and in templates `nav` and `search`, configure these features.
-- **Template names:** `[tag].md`, `[author].md` and `[release-year].md` work; the name inside the brackets uses letters, digits, `-` and `_`. Brackets in folder names have no meaning.
+- **Template names:** `[tag].md`, `[author].md` and `[release-year].md` work; the name inside the brackets starts with a letter or `_` and uses letters, digits, `-` and `_`. Brackets in folder names have no meaning.

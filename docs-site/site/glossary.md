@@ -16,7 +16,7 @@ Stati maps your directory structure in `site/` directly to URL paths. A file at 
 
 ## Incremental Static Generation (ISG)
 
-A build optimization that caches rendered pages and only rebuilds when content changes or TTL expires. Configured via `isg` in `stati.config.ts`.
+A build optimization that caches rendered pages and rebuilds a page when its content, its templates or the data it shows change, or its TTL expires. Configured via `isg` in `stati.config.ts`.
 
 ## Eta templates
 
@@ -26,9 +26,9 @@ Stati's templating engine. Eta files (`.eta`) hold HTML with embedded JavaScript
 
 The template that renders a page: the nearest `layout.eta` (on index pages, an `index.eta` in the same or a nearer folder wins), or the one named in front matter without the extension (`layout: layouts/post`). A layout can name a [shell](#shell) to wrap it with `stati.layout()`.
 
-## Layout inheritance
+## Layout override
 
-Stati's hierarchical layout system where more specific layouts **override** parent directory layouts. A `layout.eta` in a subdirectory replaces the root layout for pages in that directory. For example, `site/blog/layout.eta` overrides `site/layout.eta` for all pages under `/blog/`. The document around both can live in one [shell](#shell) that each layout names.
+A `layout.eta` in a subdirectory **replaces** the layouts of parent folders for pages in that directory. For example, `site/blog/layout.eta` overrides `site/layout.eta` for all pages under `/blog/`. The document around both can live in one [shell](#shell) that each layout names.
 
 ## Shell
 
@@ -48,13 +48,6 @@ Rendering another template inside the current one with `stati.include(name, prop
 
 The included template reads the props as `stati.props`, and the optional third argument, HTML to wrap, as `stati.body`. Includes give component-like reuse: the same template renders different content for different props.
 
-**Examples:**
-
-- Simple: `<%~ stati.include('partials/header') %>`
-- With props: `<%~ stati.include('partials/card', { title: 'My Card', url: '/page' }) %>`
-- With content: `<%~ stati.include('partials/callout', { tone: 'note' }, '<p>Heads up</p>') %>`
-- In loops: `<% posts.forEach(post => { %> <%~ stati.include('partials/card', { title: post.frontMatter.title }) %> <% }) %>`
-
 **Inside the template:**
 
 ```eta
@@ -68,9 +61,9 @@ The included template reads the props as `stati.props`, and the optional third a
 
 A template renders only where it is included.
 
-## Frontmatter
+## Front matter
 
-YAML metadata at the top of Markdown files. Controls title, description, layout, order, and SEO settings.
+YAML metadata (or JSON after `---json`) at the top of Markdown files. Controls title, description, layout, order, and SEO settings.
 
 ## Template lookup
 
@@ -81,7 +74,7 @@ How Stati finds a template by name in `stati.include()`, `stati.layout()` and fr
 The object passed to every Eta template containing:
 
 - `stati.site` – Site configuration
-- `stati.page` – Current page data and frontmatter
+- `stati.page` – Current page data and front matter
 - `stati.content` – Rendered HTML content
 - `stati.nav` – Navigation helpers and tree
 - `stati.include()` and `stati.layout()` – Render another template here, or wrap this one in a shell
@@ -106,7 +99,7 @@ Extension points (`beforeAll`, `afterAll`, `beforeRender`, `afterRender`) that l
 
 ## esbuild
 
-The underlying JavaScript bundler that powers Stati's TypeScript compilation. Provides near-instant build times for client-side code.
+The bundler Stati uses to compile client-side TypeScript.
 
 ## Development server
 
@@ -118,11 +111,11 @@ The duration in seconds that cached content remains valid before requiring a reb
 
 ## Cache invalidation
 
-The process of marking cached entries as stale using `stati invalidate` with patterns like `tag:`, `path:`, `glob:`, or `age:`.
+Removing entries from the build cache with `stati invalidate`, so the next build renders those pages again. It takes queries with patterns like `tag:`, `path:`, `glob:`, or `age:`.
 
 ## Draft
 
-A page marked with `draft: true` in frontmatter. Drafts are excluded from every build, including `stati dev`, unless you run `stati build --include-drafts`.
+A page marked with `draft: true` in front matter. Drafts are excluded from every build, including `stati dev`, unless you run `stati build --include-drafts`.
 
 ## Dynamic attribute values
 
@@ -183,7 +176,7 @@ The output folder for images Stati copies from `site/` and for the files it gene
 
 ## Scaffolder (`create-stati`)
 
-The interactive CLI tool that creates new Stati projects with styling options, TypeScript support, and Git initialization.
+The interactive CLI tool that creates a Stati project from a starter template, with a choice of styling, TypeScript, image tools, an agent skill and git initialization.
 
 ## Related resources
 

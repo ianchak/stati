@@ -18,13 +18,12 @@ cd my-first-site
 npm run dev
 ```
 
-Press Enter to accept each default; the scaffolder installs dependencies for you. `npm run dev` then serves the site at [http://localhost:3000](http://localhost:3000) and reloads the browser whenever you make changes. The steps below explain each command.
+Press Enter to accept each default; the scaffolder installs dependencies for you. The defaults also install the Stati agent skill in `.claude/skills/stati/`, which needs network access. `npm run dev` then serves the site at [http://localhost:3000](http://localhost:3000) and reloads the browser whenever you make changes. The steps below explain each command.
 
 ## Prerequisites
 
-- Node.js 22.20 or a later 22.x release, or 24 and later
+- Node.js 22.20 or later on the 22.x line, or 24 and later
 - npm, pnpm, yarn or bun
-- A text editor (VS Code recommended)
 
 ## Step 1: Create a new project
 
@@ -61,6 +60,7 @@ Your new project will have this structure:
 ```text
 my-first-site/
 ├── package.json          # Project dependencies and scripts
+├── README.md             # The template's notes
 ├── stati.config.ts       # Stati configuration (stati.config.js for JavaScript projects)
 ├── tsconfig.json         # TypeScript compiler configuration
 ├── src/
@@ -113,17 +113,7 @@ description: 'My first Stati-powered website'
 
 # Hello, Stati!
 
-This is my first page built with Stati, a TypeScript-first static site generator.
-
-## Features I Love
-
-- Markdown-based content
-- Flexible templating with Eta
-- TypeScript-first configuration with IntelliSense
-- Built-in esbuild compilation for client-side TypeScript
-- Incremental Static Generation
-
-Ready to build something amazing!
+This is my first page built with Stati.
 ```
 
 Save the file and watch your browser automatically refresh with the changes.
@@ -140,20 +130,7 @@ description: 'Learn more about me and this site'
 
 # About Me
 
-Welcome to my personal website! I'm excited to be using Stati for this project.
-
-## Why Stati?
-
-I chose Stati because:
-
-1. **TypeScript Support** - Full type safety for config plus built-in esbuild compilation for client-side code
-2. **Modern Tooling** - esbuild-compiled client TypeScript, live reload, and automatic bundle injection
-3. **Flexible** - Powerful but not overwhelming
-4. **Smart Caching** - Incremental builds with intelligent caching
-
-## Contact
-
-Feel free to reach out if you have any questions!
+A few words about me and this site.
 ```
 
 Your new page will be available at [http://localhost:3000/about](http://localhost:3000/about)
@@ -162,14 +139,14 @@ Your new page will be available at [http://localhost:3000/about](http://localhos
 
 `site/layout.eta` wraps every page. Its header already has a navigation with a Home link; add one for your About page:
 
-```html
+```eta
 <nav aria-label="Main">
-  <a href="/" aria-current="<%= stati.page.url === '/' ? 'page' : 'false' %>">Home</a>
-  <a href="/about" aria-current="<%= stati.page.url === '/about' ? 'page' : 'false' %>">About</a>
+  <a href="<%= stati.url('/') %>" aria-current="<%= stati.page.url === '/' ? 'page' : 'false' %>">Home</a>
+  <a href="<%= stati.url('/about') %>" aria-current="<%= stati.page.url === '/about' ? 'page' : 'false' %>">About</a>
 </nav>
 ```
 
-`aria-current="page"` tells screen readers which page is open, and the stylesheet highlights that link. The whole attribute value is one expression, following Stati's convention for dynamic attributes (see [Dynamic attribute values](/core-concepts/templates#dynamic-attribute-values)).
+`aria-current="page"` tells screen readers which page is open, and the stylesheet highlights that link. `stati.url()` adds the site's base path when the site is served from a subfolder. The whole attribute value is one expression, following Stati's convention for dynamic attributes (see [Dynamic attribute values](/core-concepts/templates#dynamic-attribute-values)).
 
 ### Step 7: Change the colors
 
@@ -256,7 +233,7 @@ Now that you have a working Stati site, explore these topics:
 ### Learn core concepts
 
 - [Filesystem-based Routing](/core-concepts/routing)
-- [Templates & Layouts](/core-concepts/templates)
+- [Templates and layouts](/core-concepts/templates)
 - [Markdown Pipeline](/core-concepts/markdown)
 - [Incremental Static Generation](/core-concepts/isg)
 
@@ -274,5 +251,4 @@ Now that you have a working Stati site, explore these topics:
 ## Need help?
 
 - Check the [API overview](/api/reference) for detailed documentation
-- Browse [Examples](/examples/list) for inspiration
 - Visit the [Contributing](/advanced/contributing) section to help improve Stati

@@ -12,18 +12,9 @@ This page describes how AI systems, LLMs, and automated tools may use the conten
 
 Stati documentation is released under the [MIT License](https://github.com/ianchak/stati/blob/main/LICENSE). You are free to:
 
-- **Use** the documentation for training, inference, and indexing
+- **Use** the documentation for training, inference, indexing and AI-generated answers
 - **Copy** and redistribute the material
 - **Adapt** and build upon the material
-
-## AI usage permissions
-
-We explicitly permit AI and LLM systems to:
-
-- Index and learn from this documentation
-- Use content for training datasets
-- Generate responses based on this documentation
-- Quote or summarize content in AI-generated answers
 
 ## Attribution
 
@@ -50,29 +41,8 @@ includes, props and helpers, configuration, assets, SEO, search, feeds, caching,
 and deployment.
 
 `create-stati --agent-skill` installs it in a new site. To add it to an existing
-site, or update it, use the open [`skills` CLI](https://github.com/vercel-labs/skills):
-
-```bash
-# Add the skill (asks which agents)
-npx skills add ianchak/stati --skill stati
-
-# Without prompts, for Claude Code and Copilot in VS Code
-npx skills add ianchak/stati --skill stati -a claude-code --copy -y
-# Without prompts, into .agents/skills (Copilot, Codex, Cursor and others)
-npx skills add ianchak/stati --skill stati -a universal --copy -y
-
-# Update the skill
-npx skills update stati -p
-```
-
-For Claude Code and Copilot in VS Code, use one copy in `.claude/skills/stati/`.
-Claude Code does not normally discover native project skills in
-`.agents/skills/` or `.github/skills/`. Commit `skills-lock.json`, or
-`npx skills update` finds nothing to update, and keep project rules in
-`CLAUDE.md` or `AGENTS.md`: an update replaces the whole skill folder. The
-[scaffolder docs](/cli/scaffolder#add-or-update-the-skill-in-an-existing-site)
-cover older copies, `.github/skills`, personal installs and the CLI's
-requirements and usage data.
+site or update it, see
+[Add or update the skill in an existing site](/cli/scaffolder#add-or-update-the-skill-in-an-existing-site).
 
 Start a fresh Claude Code session in the project and check for `/stati` in the
 command menu. Invoke `/stati` explicitly to verify it loads. Discovery makes a
