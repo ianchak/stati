@@ -7,12 +7,12 @@
   "scripts": {
     "dev": "stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css",
     "dev:local": "node ../packages/cli/dist/cli.js dev --tailwind-input src/styles.css --tailwind-output dist/styles.css",
-    "build": "stati build && npm run build:css",
-    "build:local": "node ../packages/cli/dist/cli.js build --clean && npm run build:css",
-    "build:local:metrics": "node ../packages/cli/dist/cli.js build --clean --metrics && npm run build:css",
-    "build:local:metrics:detailed": "node ../packages/cli/dist/cli.js build --clean --metrics --metrics-detailed && npm run build:css",
-    "build:local:metrics:html": "node ../packages/cli/dist/cli.js build --clean --metrics --metrics-html && npm run build:css",
-    "build:local:metrics:full": "node ../packages/cli/dist/cli.js build --clean --metrics --metrics-detailed --metrics-html && npm run build:css",
+    "build": "stati build --tailwind-input src/styles.css --tailwind-output dist/styles.css",
+    "build:local": "node ../packages/cli/dist/cli.js build --clean --tailwind-input src/styles.css --tailwind-output dist/styles.css",
+    "build:local:metrics": "node ../packages/cli/dist/cli.js build --clean --metrics --tailwind-input src/styles.css --tailwind-output dist/styles.css",
+    "build:local:metrics:detailed": "node ../packages/cli/dist/cli.js build --clean --metrics --metrics-detailed --tailwind-input src/styles.css --tailwind-output dist/styles.css",
+    "build:local:metrics:html": "node ../packages/cli/dist/cli.js build --clean --metrics --metrics-html --tailwind-input src/styles.css --tailwind-output dist/styles.css",
+    "build:local:metrics:full": "node ../packages/cli/dist/cli.js build --clean --metrics --metrics-detailed --metrics-html --tailwind-input src/styles.css --tailwind-output dist/styles.css",
     "preview": "stati preview",
     "preview:local": "node ../packages/cli/dist/cli.js preview",
     "invalidate": "stati invalidate",
@@ -20,7 +20,6 @@
     "clean:dist": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "clean:cache": "node -e \"require('node:fs').rmSync('.stati',{recursive:true,force:true})\"",
     "clean": "npm run clean:dist && npm run clean:cache",
-    "build:css": "tailwindcss -i src/styles.css -o dist/styles.css --minify",
     "typecheck": "tsc --noEmit && npm run check:snippets",
     "check:snippets": "node scripts/check-snippets.mjs"
   },
@@ -31,14 +30,14 @@
   ],
   "stati": {
     "engine": "stati",
-    "version": "2.2.0"
+    "version": "2.8.0"
   },
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@stati/cli": "2.1.0",
-    "@stati/core": "2.3.0",
-    "@stati/images": "1.0.1",
+    "@stati/cli": "2.4.0",
+    "@stati/core": "2.8.0",
+    "@stati/images": "1.1.0",
     "@tailwindcss/cli": "4.3.3",
     "@tailwindcss/typography": "0.5.20",
     "@types/prismjs": "1.26.6",

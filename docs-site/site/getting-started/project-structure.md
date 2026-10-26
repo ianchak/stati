@@ -8,8 +8,6 @@ seo:
 
 # Project structure
 
-Stati organizes your files in a clean and structured way, designed for simplicity and flexibility.
-
 ## Example structure
 
 ```text
@@ -110,19 +108,6 @@ export default defineConfig({
 
 See the [TypeScript Configuration](/configuration/typescript) guide for more details on multiple bundles and per-page targeting.
 
-### `package.json`
-
-Standard Node.js package file with your dependencies and build scripts.
-
-```json
-{
-  "scripts": {
-    "dev": "stati dev",
-    "build": "stati build"
-  }
-}
-```
-
 ## Template files
 
 ### Layouts
@@ -132,11 +117,13 @@ Standard Node.js package file with your dependencies and build scripts.
 - **`blog/index.eta`** - Optional layout of the index page `blog/index.md`, used ahead of `layout.eta` once the folder holds other pages
 - **`base.eta`** - Optional page shell that layouts share, named with `stati.layout('base')`
 
+A page uses the nearest `layout.eta` from its folder up, so `site/blog/layout.eta` replaces `site/layout.eta` for the pages in `site/blog/`. Included templates are looked up the same way, from the page's folder up: `site/blog/partials/header.eta` replaces `site/partials/header.eta` on the pages in `site/blog/`.
+
 You can also give a page its own layout by naming it in the page's front matter, without the `.eta` extension. Stati looks for the name from the page's folder up to `site/`, so `layout: home` on a page in `site/` uses `site/home.eta`; a name starting with `/`, such as `layout: /home`, is read from `site/` only. If no file matches, the build warns and falls back to the usual `layout.eta` lookup.
 
 ### Content files
 
-- **`.md` files** - Markdown content with front matter; every `.md` file outside an underscore folder becomes a page
+- **`.md` files** - Markdown content with front matter; every `.md` file outside an underscore folder becomes a page, apart from drafts and `[param].md` templates
 - **`.eta` files** - Layouts, shells and included templates; an `.eta` file never becomes a page on its own
 - **`og.eta`** - With [`images.og`](/configuration/images#open-graph-images), the template for the link preview image of the pages in its folder and below
 
@@ -178,17 +165,7 @@ site/
 - **Templates still work** - Like any `.eta` file under `site/`, a template in one can be included with `stati.include()`
 - **Examples**: `_drafts/`, `_data/`
 
-> **Note:** Individual files starting with `_` (like `_draft.md`) are NOT automatically excluded. Use `draft: true` in frontmatter to exclude drafts.
-
-### Template inheritance
-
-Layouts cascade down the directory tree:
-
-1. `site/layout.eta` (root layout)
-2. `site/blog/layout.eta` (override for /blog pages)
-3. `site/blog/tutorials/layout.eta` (override for /blog/tutorials pages)
-
-Included templates are looked up the same way, from the page's folder up: `site/blog/partials/header.eta` replaces `site/partials/header.eta` on the pages in `site/blog/`.
+> **Note:** Individual files starting with `_` (like `_draft.md`) are NOT automatically excluded. Use `draft: true` in front matter to exclude drafts.
 
 ### Index files
 
@@ -207,6 +184,7 @@ dist/
 ├── blog.html
 ├── blog/
 │   └── first-post.html
+├── _assets/       # hashed stylesheets and script bundles
 ├── _img/          # images copied from site/, and generated ones
 ├── favicon.svg
 └── styles.css
@@ -214,7 +192,7 @@ dist/
 
 ## Next steps
 
-- Learn about [Templates & Layouts](/core-concepts/templates)
+- Learn about [Templates and layouts](/core-concepts/templates)
 - Understand [Filesystem-based Routing](/core-concepts/routing)
 - Explore [Static Assets](/core-concepts/static-assets)
 - Configure your [Site Metadata](/configuration/site-metadata)

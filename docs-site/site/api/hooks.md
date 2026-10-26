@@ -6,7 +6,7 @@ order: 2
 
 # Build hooks
 
-Build hooks allow you to inject custom logic at various stages of the Stati build process. They provide powerful extension points for preprocessing content, integrating external services, generating additional files, and customizing the build pipeline.
+Build hooks run your own code at four points of a build: `beforeAll`, `beforeRender`, `afterRender` and `afterAll`. Define them under `hooks` in `stati.config.ts`; each may be synchronous or async. The dev server runs them on every rebuild, `beforeAll` and `afterAll` with every page.
 
 ## Hook lifecycle
 
@@ -44,13 +44,6 @@ Called once, after the content has been loaded and before any page is rendered. 
 
 Generated pages and pagination are worked out before `beforeAll` runs, from the content as loaded: tags a hook adds don't create tag pages.
 
-**Use cases:**
-
-- Initialize external services
-- Fetch remote data
-- Validate environment setup
-- Generate build metadata
-
 ```javascript
 export default defineConfig({
   hooks: {
@@ -72,13 +65,6 @@ export default defineConfig({
 ### `afterAll`
 
 Called once after completing the build process, after the static assets, sitemap, robots.txt and RSS feeds have been written.
-
-**Use cases:**
-
-- Deploy to CDN or hosting service
-- Send build notifications
-- Write extra files to the output directory
-- Clean up temporary resources
 
 Sitemaps, robots.txt and RSS feeds are built in; enable them with the `sitemap`, `robots` and `rss` options instead of generating them here.
 
@@ -111,21 +97,14 @@ export default defineConfig({
 
 Called before rendering each page that is rendered in this build (not for pages served from the cache).
 
-**Use cases:**
-
-- Add dynamic data to pages
-- Derive values from the page, such as a section name from its URL
-- Modify page content before Markdown rendering
-
-Values you add to `ctx.page.frontMatter` appear in templates as `stati.page.<name>`, and `ctx.page.content` is the Markdown body. Word count and reading time need no hook: every page has `wordCount` and `readingTime`, which hooks can read on `ctx.page` (see [Word count and reading time](/core-concepts/markdown#word-count-and-reading-time)).
+Changes the hook makes to `ctx.page.frontMatter` appear in templates as `stati.page.<name>`, and `ctx.page.content` is the Markdown body. Word count and reading time need no hook: every page has `wordCount` and `readingTime`, which hooks can read on `ctx.page` (see [Word count and reading time](/core-concepts/markdown#word-count-and-reading-time)).
 
 ```javascript
 export default defineConfig({
   hooks: {
     beforeRender: async (ctx) => {
-      // Add custom metadata based on URL
-      if (ctx.page.url.startsWith('/blog/')) {
-        ctx.page.frontMatter.section = 'blog';
+      if (!ctx.page.frontMatter.description) {
+        console.warn(`${ctx.page.url} has no description`);
       }
     }
   }
@@ -138,29 +117,23 @@ export default defineConfig({
 
 Called after each rendered page has been processed. The context holds the page model and the config only; the rendered HTML is not passed to the hook.
 
-**Use cases:**
-
-- Log or collect per-page information
-- Record metrics or analytics data
-- Track which pages changed in this build
-
 ```javascript
 export default defineConfig({
   hooks: {
     afterRender: async (ctx) => {
       console.log(`Rendered page: ${ctx.page.url}`);
 
-      // Extract data for search index or analytics
-      const wordCount = ctx.page.content.split(/\s+/).length;
       await trackPageMetrics({
         url: ctx.page.url,
         title: ctx.page.frontMatter.title,
-        wordCount: wordCount
+        wordCount: ctx.page.wordCount,
       });
     }
   }
 });
 ```
+
+`trackPageMetrics` stands for your own function.
 
 ## Hook context
 
@@ -215,7 +188,7 @@ export default defineConfig({
 });
 ```
 
-Pages served from the cache are not re-rendered when this shared data changes; see the caching note under [`beforeRender`](#beforerender).
+Pages served from the cache are not re-rendered when this shared data changes; see [Dependency tracking](/core-concepts/isg#dependency-tracking).
 
 ### Conditional hook execution
 
@@ -224,15 +197,13 @@ import { getEnv } from '@stati/core';
 
 export default defineConfig({
   hooks: {
-    beforeRender: async (ctx) => {
-      // Only process blog posts
-      if (!ctx.page.url.startsWith('/blog/')) {
-        return;
+    beforeAll: async (ctx) => {
+      // Only blog posts; values set here are part of each page's cache hash
+      for (const page of ctx.pages) {
+        if (page.url.startsWith('/blog/')) {
+          page.frontMatter.category = extractCategory(page.url);
+        }
       }
-
-      // Add blog-specific data
-      ctx.page.frontMatter.category = extractCategory(ctx.page.url);
-      ctx.page.frontMatter.tags = normalizeTags(ctx.page.frontMatter.tags || []);
     },
 
     afterRender: async (ctx) => {
@@ -240,67 +211,6 @@ export default defineConfig({
       if (getEnv() === 'production') {
         console.log(`Built production page: ${ctx.page.url}`);
       }
-    }
-  }
-});
-```
-
-### Error handling in hooks
-
-```javascript
-let fallbackData = null;
-
-export default defineConfig({
-  hooks: {
-    beforeAll: async (ctx) => {
-      try {
-        fallbackData = await fetchExternalData();
-      } catch (error) {
-        console.warn('Failed to fetch external data, using fallback:', error.message);
-        fallbackData = { fallback: true };
-      }
-    },
-
-    beforeRender: async (ctx) => {
-      try {
-        await processPageData(ctx.page);
-      } catch (error) {
-        console.error(`Failed to process page ${ctx.page.url}:`, error);
-        // Decide whether to continue or fail the build
-        if (error.critical) {
-          throw error; // Stop the build
-        }
-        // Otherwise continue with default data
-      }
-    }
-  }
-});
-```
-
-### Async hook patterns
-
-```javascript
-let sharedData = {};
-
-export default defineConfig({
-  hooks: {
-    beforeAll: async (ctx) => {
-      // Parallel data fetching
-      const [posts, authors, categories] = await Promise.all([
-        fetchPosts(),
-        fetchAuthors(),
-        fetchCategories()
-      ]);
-
-      sharedData = { posts, authors, categories };
-    },
-
-    afterAll: async (ctx) => {
-      // Parallel deployment tasks
-      await Promise.all([
-        uploadToS3(ctx.config.outDir),
-        purgeCloudflareCache()
-      ]);
     }
   }
 });
@@ -333,18 +243,6 @@ export default defineConfig({
     }
   }
 });
-```
-
-### Content processing helpers
-
-Templates already get the page's headings as `stati.page.toc`, so hooks need no heading parser.
-
-```javascript
-function calculateReadingTime(content) {
-  const wordsPerMinute = 200;
-  const wordCount = content.split(/\s+/).length;
-  return Math.ceil(wordCount / wordsPerMinute);
-}
 ```
 
 ## Real-world examples
@@ -384,5 +282,3 @@ export default defineConfig({
   }
 });
 ```
-
-Build hooks provide powerful extensibility while maintaining Stati's performance and simplicity. Use them to integrate external services, process content dynamically, and customize the build pipeline to match your specific needs.

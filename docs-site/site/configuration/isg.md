@@ -8,7 +8,7 @@ seo:
 
 # ISG
 
-Incremental Static Generation (ISG) is Stati's intelligent caching system that provides selective rebuilds by only regenerating content that has actually changed. Configure ISG to optimize your site's build workflow and deployment strategy.
+The `isg` options set how long Stati reuses a cached page before it renders it again. See [Incremental Static Generation](/core-concepts/isg) for what the cache tracks.
 
 ## Configuration options
 
@@ -59,27 +59,6 @@ is missing, even when its TTL has not expired or it is frozen by the age cap.
 You can delete the output directory without deleting `.stati/`; the next build
 recreates the missing pages.
 
-The `ttlSeconds` option sets the default cache duration for all pages:
-
-```javascript
-export default defineConfig({
-  isg: {
-    enabled: true,
-    ttlSeconds: 3600, // 1 hour (override default of 6 hours)
-  },
-});
-```
-
-### Common TTL values
-
-| Duration  | Seconds | Use Case                      |
-| --------- | ------- | ----------------------------- |
-| 5 minutes | 300     | Frequently updated news sites |
-| 1 hour    | 3600    | Regular blog updates          |
-| 6 hours   | 21600   | Daily updated content         |
-| 24 hours  | 86400   | Static documentation          |
-| 1 week    | 604800  | Rarely changing content       |
-
 ## Aging rules
 
 Aging rules set a page's TTL from its age, so recent content is refreshed often and older content is cached longer.
@@ -112,75 +91,9 @@ export default defineConfig({
 
 Rules must be listed in ascending `untilDays` order, without duplicate `untilDays`, with `untilDays` no greater than `maxAgeCapDays` and `ttlSeconds` no greater than 30 days (2592000); otherwise the config is rejected.
 
-### Practical examples
-
-**News Site (Keep Recent Content Fresh):**
-
-```javascript
-export default defineConfig({
-  isg: {
-    enabled: true,
-    ttlSeconds: 3600, // undated pages: 1 hour
-    maxAgeCapDays: 30, // articles older than 30 days are frozen
-    aging: [
-      { untilDays: 1, ttlSeconds: 300 }, // first day: 5 minutes
-      { untilDays: 7, ttlSeconds: 3600 }, // first week: 1 hour
-      { untilDays: 30, ttlSeconds: 86400 }, // first month: 1 day
-    ],
-  },
-});
-```
-
-**Documentation Site (Long Caching):**
-
-```javascript
-export default defineConfig({
-  isg: {
-    enabled: true,
-    ttlSeconds: 21600, // undated pages: 6 hours
-    maxAgeCapDays: 365,
-    aging: [
-      { untilDays: 30, ttlSeconds: 86400 }, // up to 30 days old: 1 day
-      { untilDays: 90, ttlSeconds: 604800 }, // older: 1 week
-    ],
-  },
-});
-```
-
-**Blog (Balanced Approach):**
-
-```javascript
-export default defineConfig({
-  isg: {
-    enabled: true,
-    ttlSeconds: 3600, // undated pages: 1 hour
-    maxAgeCapDays: 180,
-    aging: [
-      { untilDays: 7, ttlSeconds: 21600 }, // up to 7 days old: 6 hours
-      { untilDays: 30, ttlSeconds: 86400 }, // up to 30 days old: 1 day
-      { untilDays: 90, ttlSeconds: 604800 }, // older: 1 week
-    ],
-  },
-});
-```
-
 ## Maximum age cap
 
-`maxAgeCapDays` freezes old content. A dated page older than `maxAgeCapDays` is never rebuilt because its TTL expired. Every other reason still rebuilds it, such as a change to its content, its templates or what it lists, and so does forcing it (`stati build --force` or `stati invalidate`):
-
-```javascript
-export default defineConfig({
-  isg: {
-    enabled: true,
-    ttlSeconds: 3600,
-    maxAgeCapDays: 365, // pages published more than a year ago are frozen
-    aging: [
-      { untilDays: 7, ttlSeconds: 86400 },
-      { untilDays: 30, ttlSeconds: 604800 },
-    ],
-  },
-});
-```
+`maxAgeCapDays` freezes old content. A dated page older than `maxAgeCapDays` is never rebuilt because its TTL expired. Every other reason still rebuilds it, such as a change to its content, its templates or what it lists, and so does forcing it (`stati build --force` or `stati invalidate`).
 
 Pages without a publish date are never frozen.
 
@@ -199,6 +112,8 @@ Stati provides cache invalidation through the `stati invalidate` CLI command. Se
 | (empty)        | `stati invalidate` | Clear entire cache                                 |
 
 Cache keys are output paths with a leading slash, such as `/blog.html` and `/blog/first-post.html`, so include the `/` in `path:` and `glob:` values. When a query has several terms, an entry that matches **any** of them is invalidated.
+
+The same queries work from code: `import { invalidate } from '@stati/core'`, then `await invalidate('tag:blog')`, or `await invalidate()` to clear everything. It reads `.stati/` in the current working directory.
 
 ### CLI examples
 
@@ -236,8 +151,6 @@ The `age:` pattern uses exact calendar arithmetic for precise time calculations:
 | `age:Nmonths` | `age:3months` | Content rendered in last N months (exact calendar months) |
 | `age:Nyears`  | `age:1year`   | Content rendered in last N years (exact calendar years)   |
 
-**Note:** Months and years use exact calendar arithmetic (accounting for varying month lengths and leap years), not approximate day counts.
-
 ## Build command options
 
 ISG can be controlled via CLI flags:
@@ -249,7 +162,7 @@ stati build
 # Force rebuild, bypassing cache
 stati build --force
 
-# Clean cache before building
+# Delete the output directory and the cache, then build everything
 stati build --clean
 ```
 
@@ -257,20 +170,7 @@ stati build --clean
 
 ### Cache manifest
 
-ISG maintains a cache manifest at `.stati/manifest.json`, with one entry per output path (such as `/blog/first-post.html`) that tracks:
-
-- **inputsHash**: Hash of page content and all dependencies
-- **deps**: The template files the page rendered, layout first: its layout, the shells it names with `stati.layout()`, the templates it includes and its Open Graph template
-- **templateLookups**: Every template name the page looked up, the folder the lookup started from, and the file it found (`null` when none)
-- **templatesRecorded**: `true` when `deps` and `templateLookups` were recorded while the page rendered
-- **assetDeps**: Files found while rendering, such as the images the page shows; their content is part of `inputsHash`
-- **images**: Generated image files the page references, such as responsive variants and its Open Graph card
-- **tags**: Tags from front matter for invalidation
-- **renderedAt**: ISO date when page was last rendered
-- **ttlSeconds**: Effective TTL for this page
-- **publishedAt**: ISO date when content was originally published (from front matter)
-
-Generated images are tracked separately, in `.stati/images/manifest.json`, so later builds reuse them instead of encoding them again. See [Caching and cleanup](/configuration/images#caching-and-cleanup).
+Each page's entry in `.stati/manifest.json` is described in [Cache manifest](/core-concepts/isg#cache-manifest). Generated images are tracked separately, in `.stati/images/manifest.json`, so later builds reuse them instead of encoding them again. See [Caching and cleanup](/configuration/images#caching-and-cleanup).
 
 ### Rebuild decision logic
 
@@ -279,17 +179,13 @@ A page is rebuilt if:
 1. Cache is bypassed (`--force` flag) or ISG is disabled (`isg.enabled: false`)
 2. Its HTML file, or a generated image it references, is missing from the output directory
 3. Page is not in cache manifest (for example, after `stati invalidate`)
-4. Page's `inputsHash` has changed (its own content or front matter, one of its templates, an image it shows, the `images` settings, or data it read: the summary of its collection, the pages of its listing, or the navigation tree)
+4. Page's `inputsHash` has changed (its own content or front matter, one of its templates, an image it shows, the `images` settings, the bundle and search index paths, the stylesheet settings, or data it read: the summary of its collection, the pages of its listing, or the navigation tree)
 5. Page's TTL has expired and the page is not frozen by `maxAgeCapDays`
 6. An image job for the page failed in the previous build
 7. Its layout would now be a different file, a template name it looked up would now find a different file, or a template it rendered was deleted
 8. Its cache entry has no record of what the page read and rendered, which happens once after upgrading to a version that records more
 
 Changes to other pages rebuild a page only through data it read: a listing that reads `stati.collection` rebuilds when a post's title, description, tags or publish date changes, not when its body does. See [Dependency tracking](/core-concepts/isg#dependency-tracking).
-
-### Removing stale pages
-
-When a page no longer exists, `stati build` deletes its HTML file and its cache entry: a deleted post, a tag no post uses, or the last page of a listing that got shorter. Only files recorded in the cache manifest are deleted, so `stati build --clean` is no longer needed to clear out removed pages.
 
 ### Template dependency tracking
 
@@ -316,37 +212,7 @@ tags: [blog, tutorial, javascript]
 ---
 ```
 
-Only values in the `tags` array become searchable tags for invalidation. Individual properties like `category` are not automatically converted to tags.
-
-## Best practices
-
-### Cache strategy
-
-1. **Appropriate TTL**: Use shorter TTL (5-60 minutes) for frequently changing content, longer TTL (6-24 hours) for stable content
-2. **Aging Rules**: Define 2-4 aging rules that progressively extend TTL as content ages
-3. **Max Age Cap**: Set `maxAgeCapDays` to the age after which old pages no longer need refreshing (typically 30-365 days); older pages are frozen
-4. **Tag Organization**: Use consistent, hierarchical tags in front matter for efficient invalidation
-
-### Development workflow
-
-1. **Dev Mode**: Cache is cleared at dev server startup, then ISG is used for incremental rebuilds during watch mode
-2. **Test Builds**: Use `stati build` locally to test ISG behavior
-3. **Selective Invalidation**: Use `stati invalidate` with specific patterns during testing
-4. **Cache Inspection**: Review `.stati/manifest.json` to understand cache state
-
-### Production deployment
-
-1. **Persistent Cache**: Keep both `.stati/` and `dist/` between CI/CD builds; a cache entry is only reused when its HTML file still exists
-2. **Invalidation Strategy**: Define clear invalidation patterns for content updates
-3. **Monitoring**: Track build times to measure ISG effectiveness
-4. **Listing pages**: Give index pages that list other pages a short `ttlSeconds`, or invalidate them after publishing
-
-### Build tips
-
-1. **Enable ISG**: ISG can reduce build times for incremental updates
-2. **Template Organization**: Keep included templates small and focused: a page depends only on the templates it renders
-3. **Tag Granularity**: Balance between too many tags (complex management) and too few (broad invalidation)
-4. **TTL Tuning**: Start with conservative TTL values and adjust based on content update patterns
+Only values in the `tags` array, and a generated page's key and label, become tags for invalidation; other properties such as `category` don't. `tags` must be a list of strings: `tags: news` stops the build.
 
 ## Troubleshooting
 
@@ -370,5 +236,3 @@ Only values in the `tags` array become searchable tags for invalidation. Individ
 - Check path patterns use correct syntax and a leading slash (`path:/blog`, `glob:/blog/**`)
 - Review manifest to confirm tags are being extracted
 - Try full cache clear with `stati invalidate` (no arguments)
-
-ISG is a powerful feature that can help with build workflows. Configure it appropriately for your content patterns and deployment strategy.

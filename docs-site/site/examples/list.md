@@ -33,7 +33,7 @@ A minimal Stati site demonstrating core concepts:
 ```text
 examples/blank/
 ├── site/
-│   ├── index.md          # Homepage with front-matter
+│   ├── index.md          # Homepage with front matter
 │   └── layout.eta        # Main layout template
 ├── public/
 │   ├── styles.css        # Light and dark theme from CSS custom properties
@@ -134,7 +134,7 @@ A complete news site, ready to publish in:
 
 - **Location:** [`examples/news/`](https://github.com/ianchak/stati/tree/main/examples/news)
 - **Features:** Sections as folders, each with its own page and RSS feed; a front page ranked by front matter, with a lead story, top stories and a column per section; articles with a standfirst, bylines that link to author pages, published and updated dates, a lead image with caption and credit, reading time and related stories; author and topic pages; a latest-stories stream grouped by day; pagination on every listing; search with <kbd>/</kbd> or <kbd>Ctrl</kbd> <kbd>K</kbd>; `NewsArticle` structured data, Open Graph article tags, a sitemap, a Google News sitemap and `robots.txt`; light and dark themes and drafts. The sample articles explain how each part works.
-- **Best for:** Running a newsroom or magazine with many sections and writers, and seeing `collections.generate`, generated pages, several RSS feeds and build hooks work together
+- **Best for:** Running a newsroom or magazine with many sections and writers, and seeing `collections.generate`, generated pages, several RSS feeds and a `beforeAll` hook work together
 
 <figure>
 
@@ -175,42 +175,10 @@ npx create-stati my-news --template=news
 - **Getting started** - [/getting-started/installation](/getting-started/installation)
 - **Configuration Reference** - [/configuration/file](/configuration/file)
 - **CLI commands** - [/cli/commands](/cli/commands)
-
-## Community examples
-
-As the Stati community grows, we'll showcase community-built examples here.
-
-## Development patterns
-
-### Content organization
-
-```text
-site/
-├── index.md              # Homepage
-├── about.md              # About page
-├── blog/                 # Blog section
-│   ├── index.md          # Blog listing
-│   └── first-post.md     # Blog post
-└── layout.eta            # Site layout
-```
-
-### Template hierarchy
-
-```text
-site/
-├── layout.eta            # Root layout
-├── blog/
-│   ├── layout.eta        # Blog-specific layout
-│   └── post.md           # Uses blog layout
-└── docs/
-    ├── layout.eta        # Docs-specific layout
-    └── guide.md          # Uses docs layout
-```
+- **Project structure** - [/getting-started/project-structure](/getting-started/project-structure)
 
 ## Need help?
 
 - **Documentation** - Browse the full [Stati documentation](/)
 - **GitHub Issues** - [Report bugs or request features](https://github.com/ianchak/stati/issues)
 - **Discussions** - [Ask questions and share ideas](https://github.com/ianchak/stati/discussions)
-
-Happy building with Stati!

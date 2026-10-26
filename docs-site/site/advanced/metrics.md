@@ -8,7 +8,7 @@ seo:
 
 # Build metrics
 
-Stati includes a built-in performance metrics system that helps you understand and optimize your site's build performance. This guide explains how to use it.
+Stati can record how long each build phase takes, what the cache saved and how much memory the build used.
 
 ## Quick start
 
@@ -79,12 +79,6 @@ The report is a single HTML file that follows your system's light or dark theme.
 ![The Stati build metrics report: a header with the Stati mark and links to its sections; the headline Built 45 pages in 4.25s; badges for a local, detailed build; the pages rendered, cache hit rate, templates loaded and peak memory; the flags, branch and versions of the build; and the phase breakdown, slowest first, starting with image generation.](/images/stati_build_metrics.jpg){.dark:hidden}
 ![The Stati build metrics report in its dark theme: the headline Built 45 pages in 4.25s, the pages rendered, cache hit rate, templates loaded and peak memory, the build's flags, branch and versions, and the phase breakdown.](/images/stati_build_metrics_dark.jpg){.hidden .dark:block}
 
-You can combine all flags for the most comprehensive output:
-
-```bash
-stati build --metrics --metrics-detailed --metrics-html
-```
-
 ## Understanding the output
 
 ### JSON output
@@ -99,7 +93,7 @@ Metrics are saved to `.stati/metrics/build-<timestamp>.json`:
     "gitCommit": "9180b39c1d2e…",
     "gitBranch": "main",
     "ci": false,
-    "nodeVersion": "22.13.0",
+    "nodeVersion": "22.20.0",
     "platform": "darwin",
     "arch": "arm64",
     "cpuCount": 8,
@@ -108,7 +102,8 @@ Metrics are saved to `.stati/metrics/build-<timestamp>.json`:
     "command": "build",
     "flags": {
       "force": false,
-      "clean": false
+      "clean": false,
+      "includeDrafts": false
     }
   },
   "totals": {
@@ -134,7 +129,10 @@ Metrics are saved to `.stati/metrics/build-<timestamp>.json`:
     "templateRenders": 31,
     "includeCacheHits": 4,
     "templatesIndexed": 9,
-    "markdownFilesProcessed": 20
+    "markdownFilesProcessed": 20,
+    "imagesGenerated": 0,
+    "imagesCached": 0,
+    "imagesFailed": 0
   },
   "isg": {
     "enabled": true,
@@ -149,17 +147,20 @@ Metrics are saved to `.stati/metrics/build-<timestamp>.json`:
 
 ### Cache hit rate
 
-The cache hit rate (`isg.cacheHitRate`) shows what percentage of pages were served from cache without re-rendering:
+The cache hit rate (`isg.cacheHitRate`) is the share of pages served from the cache without re-rendering, from 0 to 1:
 
-- **100%**: All pages were cached (no changes detected)
-- **0%**: Full rebuild (all pages rendered)
-- **50-90%**: Incremental build (some pages changed)
+- **1**: All pages were cached (no changes detected)
+- **0**: Full rebuild (all pages rendered)
+- **0.5 to 0.9**: Incremental build (some pages changed)
+
+`isg.invalidatedEntries` is the number of pages rendered in this build (the same as `counts.renderedPages`), and `isg.manifestEntries` the number of entries in the cache manifest.
 
 A consistently low cache hit rate might indicate:
 
-- ISG is disabled
-- Content files are being modified unnecessarily
-- Template changes are triggering full rebuilds
+- `isg.enabled: false`, `--force` or `--clean`
+- No `.stati/` cache from an earlier build, as in a fresh CI checkout
+- A `beforeRender` hook that changes front matter, which re-renders the page on every build (see [Hooks](/api/hooks#beforerender))
+- A change to a template every page renders, such as the layout
 
 ### Phase breakdown
 
@@ -177,7 +178,7 @@ The `phases` object shows how long each build phase took:
 | `markdownRenderTotalMs` | Aggregate time rendering each rendered page's Markdown to HTML, with its plugins |
 | `renderPageTotalMs` | Aggregate time rendering pages through their templates |
 | `postRenderTotalMs` | Aggregate time between a page's templates and its file write: SEO, search and bundle tag injection, image registration and cache hashing |
-| `fileWriteTotalMs` | Aggregate time writing HTML files to disk |
+| `fileWriteTotalMs` | Aggregate time writing HTML files to disk; with `--tailwind-input`, also the pages held until Tailwind ran, which `tailwindBuildMs` contains |
 | `cacheEntryTotalMs` | Aggregate time updating cache entries |
 | `searchIndexGenerationMs` | Generating search index JSON |
 | `searchIndexWriteMs` | Writing search index to disk |
@@ -194,7 +195,7 @@ The `phases` object shows how long each build phase took:
 | `hookBeforeRenderTotalMs` | Total time spent in `beforeRender` hooks across all pages |
 | `hookAfterRenderTotalMs` | Total time spent in `afterRender` hooks across all pages |
 
-> **Note:** The `MetricsPhases` type also declares `navigationBuildMs`, `rssGenerationMs`, `lockAcquireMs` and `lockReleaseMs`, but the build does not record them yet.
+> **Note:** The `MetricsPhases` type also declares `navigationBuildMs`, `rssGenerationMs`, `lockAcquireMs` and `lockReleaseMs`, but the build does not record them.
 >
 > `pageRenderingMs` already contains `hookBeforeAllMs`, `searchIndexGenerationMs`, `searchIndexWriteMs` and the per-page totals (`shouldRebuildTotalMs`, `hookBeforeRenderTotalMs`, `markdownRenderTotalMs`, `renderPageTotalMs`, `postRenderTotalMs`, `fileWriteTotalMs`, `cacheEntryTotalMs` and `hookAfterRenderTotalMs`), so adding them all up counts that time twice. The HTML report lists them under page rendering.
 >
@@ -241,14 +242,8 @@ Cached pages have neither count, since nothing renders for them.
 
 ### Memory usage
 
-- `peakRssBytes`: Maximum resident set size during build
+- `peakRssBytes`: the larger resident set size of two readings, at the start and the end of the build (memory is not sampled in between)
 - `heapUsedBytes`: V8 heap usage at the end of the build
-
-High memory usage might indicate:
-
-- Many large pages
-- Memory-intensive templates
-- Large static assets being processed
 
 ## Using metrics in CI
 

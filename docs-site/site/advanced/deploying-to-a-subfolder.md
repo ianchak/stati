@@ -24,9 +24,9 @@ export default defineConfig({
 });
 ```
 
-The path of `baseUrl` is the **base path**: `/repo` here. A trailing slash does not matter. A `baseUrl` without a path, or with `/`, has no base path, and the site builds exactly as before.
+The path of `baseUrl` is the **base path**: `/repo` here. A trailing slash does not matter. A `baseUrl` without a path, or with `/`, has no base path, and the site is built for the root of the host.
 
-There is no second setting to keep in step with `baseUrl`. Moving a site to a subfolder changes this one value: content, front matter, URL patterns in the config (`seo.articles`, `rss.contentPatterns`, `sitemap.priorityRules`, bundle `include` and `exclude`) and the ISG cache keys all stay relative to the site root, like `/posts/hello`.
+There is no second setting to keep in step with `baseUrl`. Moving a site to a subfolder changes this one value: content, front matter, URL patterns in the config (`seo.articles`, `sitemap.priorityRules`, bundle `include` and `exclude`) and the ISG cache keys all stay relative to the site root, like `/posts/hello`.
 
 ## Link with `stati.url()`
 
@@ -34,6 +34,7 @@ Stati cannot know which `href` and `src` values in your templates mean the site,
 
 ```eta
 <link rel="icon" href="<%= stati.url('/favicon.svg') %>">
+<link rel="stylesheet" href="<%= stati.url('/styles.css') %>">
 
 <nav>
   <a href="<%= stati.url('/') %>">Home</a>
@@ -56,9 +57,9 @@ Stati cannot know which `href` and `src` values in your templates mean the site,
 | The search index `<meta name="stati:search-index">` | `/docs/search-index-a1b2c3d4.json` |
 | `stati.image()` and Markdown images, responsive variants and copies of co-located images | `/docs/_img/hero-1a2b3c4d-960.webp` |
 | Root-absolute `href` and `src` in Markdown (`[Tags](/tags)`, `![Logo](/logo.png)`) | `/docs/tags`, `/docs/logo.png` |
-| Canonical links, Open Graph images, the sitemap, RSS links and the `Sitemap:` line of `robots.txt` | `https://example.com/docs/…` (these always followed `baseUrl`) |
+| Canonical links, Open Graph images, the sitemap, RSS links and the `Sitemap:` line of `robots.txt` | `https://example.com/docs/…` |
 
-Relative links, absolute URLs, `#hash` links and `mailto:` links in Markdown are left alone. Raw HTML in Markdown is not changed; write `<a href="/docs/tags">` there yourself or use a Markdown link.
+Relative links, absolute URLs, `#hash` links and `mailto:` links in Markdown are left alone. Raw HTML in Markdown is not changed; write `<a href="/docs/tags">` there yourself or use a Markdown link. Write Markdown links from the site root, without the base path: `[Tags](/docs/tags)` would become `/docs/docs/tags`.
 
 Some values stay relative to the site root, because they are data and not links: the `url` of each search index entry, `stati.assets.bundlePaths`, `stati.assets.stylesheetPaths`, `stati.assets.searchIndexPath` and `stati.ogImage.path`. Print them with `stati.url()`. Client-side code that builds links from the search index needs the base path too; a template can hand it over:
 
@@ -84,7 +85,7 @@ After a build with a base path, Stati warns about each `href` or `src` in a page
 / and 12 more page(s): href="/about" does not start with the base path /docs, so it breaks when the site is served from there. Use stati.url("/about").
 ```
 
-A template that skips `stati.url()` shows up in the build log instead of as a 404 in production. Pages served from the ISG cache are not checked again; run `stati build --force` to check them all. There are no warnings without a base path.
+Pages served from the ISG cache are not checked again; run `stati build --force` to check them all. There are no warnings without a base path.
 
 ## robots.txt
 
@@ -129,7 +130,7 @@ jobs:
         with:
           node-version: 22
       - run: npm ci
-      - run: npx stati build
+      - run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

@@ -8,11 +8,9 @@ seo:
 
 # Configuration file
 
-Stati is designed to work great out of the box, but it's also highly configurable. The `stati.config.js` file (or `stati.config.ts` for TypeScript projects) is where you customize every aspect of your site's behavior, from basic metadata to advanced build optimizations.
+`stati.config.ts` (or `.js`, `.mjs`) configures your site.
 
-## Configuration file
-
-### File name and location
+## File name and location
 
 Stati looks in the directory you run it from for `stati.config.ts`, then `stati.config.js`, then `stati.config.mjs`, and uses the first one it finds. The file's default export is the configuration. Without a config file, Stati uses its defaults:
 
@@ -25,9 +23,9 @@ Stati looks in the directory you run it from for `stati.config.ts`, then `stati.
 | `site.baseUrl` | `'http://localhost:3000'` |
 | `isg` | `{ enabled: true, ttlSeconds: 21600, maxAgeCapDays: 365 }` |
 
-Your config is merged over these defaults: `site` and `isg` are merged field by field, every other section replaces the default as a whole. If the file fails to load (for example, a syntax error), Stati prints the error and builds with the defaults, so watch the output for "Falling back to default configuration.". Invalid `isg` or `images` values, an option Stati does not know (such as a leftover `eta` block) and `helpers` entries that are not functions stop the build instead. An `outDir` that is, contains or sits inside `srcDir`, `staticDir`, `typescript.srcDir` (when TypeScript is enabled) or the `.stati/` cache folder, or that is the project folder or one of its parents, stops the build with an error that names both paths, because every build writes pages into `outDir` and `stati build --clean` deletes it. A `stati.config.ts` is compiled with esbuild before it loads: files it imports by relative path are bundled into it, while packages (including CommonJS ones such as `fs-extra`) stay imports that Node resolves from your project at load time, as in a `.js` config, so they must be installed and Node's rules for importing CommonJS apply (when it cannot see a package's named exports, as with `fs-extra`, use the default import). A `.js` config with `import` statements loads without `"type": "module"` in `package.json`, but Node prints a warning; add it, or name the file `.mjs`.
+Your config is merged over these defaults: `site` and `isg` are merged field by field, every other section replaces the default as a whole. If the file fails to load (for example, a syntax error), Stati prints the error and builds with the defaults, so watch the output for "Falling back to default configuration.". These stop the build with an error instead: invalid `isg`, `images`, `readingTime` or `css` blocks, invalid `seo.defaultAuthor.twitter`, `seo.twitter` or `seo.articles` values, an invalid `sitemap.news` block, `helpers` entries that are not functions, and a top-level option Stati does not know (such as a leftover `eta` block). Unknown keys stop the build at the top level and inside `css`, `images`, `readingTime`, `seo.twitter`, `seo.articles` and `sitemap.news`; an unknown key inside other blocks, such as `search` or `markdown`, is ignored. An `outDir` that is, contains or sits inside `srcDir`, `staticDir`, `typescript.srcDir` (when TypeScript is enabled) or the `.stati/` cache folder, or that is the project folder or one of its parents, stops the build with an error that names both paths, because every build writes pages into `outDir` and `stati build --clean` deletes it. A `stati.config.ts` is compiled with esbuild before it loads: files it imports by relative path are bundled into it, while packages (including CommonJS ones such as `fs-extra`) stay imports that Node resolves from your project at load time, as in a `.js` config, so they must be installed and Node's rules for importing CommonJS apply (when it cannot see a package's named exports, as with `fs-extra`, use the default import). A `.js` config with `import` statements loads without `"type": "module"` in `package.json`, but Node prints a warning; add it, or name the file `.mjs`.
 
-### Basic setup
+## Basic setup
 
 Create `stati.config.js` in your project root:
 
@@ -43,7 +41,7 @@ export default defineConfig({
 });
 ```
 
-### TypeScript configuration
+## TypeScript configuration
 
 For full type safety, use `stati.config.ts`:
 
@@ -77,8 +75,6 @@ export default defineConfig(config);
 
 ### Site metadata
 
-The foundation of your site configuration:
-
 ```javascript
 export default defineConfig({
   site: {
@@ -90,51 +86,11 @@ export default defineConfig({
 });
 ```
 
-**Required Fields:**
-
-- `title` (string) - The site's title, used in templates and metadata
-- `baseUrl` (string) - Base URL for the site, used for absolute URL generation
-
-**Optional Fields:**
-
-- `defaultLocale` (string) - Default locale for internationalization (e.g., 'en-US', 'fr-FR')
-- `description` (string) - Default site description for meta tags (used as fallback when page has no description)
+See [Site metadata](/configuration/site-metadata) for each field.
 
 ### Markdown configuration
 
-Configure markdown processing with plugins and custom renderer modifications:
-
-```javascript
-export default defineConfig({
-  markdown: {
-    // Plugin configuration - array of plugin names or [name, options] tuples
-    plugins: [
-      'footnote',                          // markdown-it-footnote - Footnotes
-      ['container', 'tip'],                // markdown-it-container: [plugin, container name]
-    ],
-
-    // Custom markdown-it configuration function (runs after plugins)
-    configure: (md) => {
-      // Add custom plugins or modify renderer
-      md.use(customPlugin, options);
-
-      // Modify rendering rules
-      md.renderer.rules.code_inline = (tokens, idx) => {
-        const token = tokens[idx];
-        return `<code class="inline-code">${md.utils.escapeHtml(token.content)}</code>`;
-      };
-    },
-  },
-});
-```
-
-> **Note:** TOC extraction and heading anchor generation are built into Stati and enabled by default. You don't need `markdown-it-anchor` or `markdown-it-toc-done-right` plugins.
-
-**Available Options:**
-
-- `plugins` (array) - Array of markdown-it plugin names (strings) or [name, options] tuples
-- `configure` (function) - Function that receives the markdown-it instance for custom configuration
-- `toc` (boolean) - Enable/disable TOC extraction and heading anchor generation (default: `true`)
+The `markdown` block takes `plugins` (markdown-it plugin names or `[name, options]` tuples), `configure` (a function that receives the markdown-it instance after the plugins) and `toc` (heading anchors and `stati.page.toc`, default `true`). See [Markdown](/configuration/markdown).
 
 ### Template configuration
 
@@ -168,7 +124,7 @@ export default defineConfig({
 <span><%= stati.helpers.upper(stati.page.category) %></span>
 
 <!-- Combine with Stati's slugify -->
-<a href="<%= `/${stati.slugify(stati.page.title)}` %>"><%= stati.helpers.upper(stati.page.title) %></a>
+<a href="<%= stati.url(`/${stati.slugify(stati.page.title)}`) %>"><%= stati.helpers.upper(stati.page.title) %></a>
 ```
 
 See [Template configuration](/configuration/templates) for more helper patterns.
@@ -209,14 +165,6 @@ export default defineConfig({
 **Aging Rules:**
 
 Aging rules set a dated page's TTL from its age. A page's age is counted from its `publishedAt` (or `published`, `date`, `createdAt`) front matter. Stati applies the first rule whose `untilDays` is at least the page's age; pages older than every rule use the last rule. Pages without a publish date use `ttlSeconds`.
-
-```javascript
-// Example: older content gets cached longer
-aging: [
-  { untilDays: 7, ttlSeconds: 86400 },    // up to 7 days old: 1 day
-  { untilDays: 30, ttlSeconds: 604800 },  // older: 1 week
-]
-```
 
 See [ISG configuration](/configuration/isg) for validation rules and examples.
 
@@ -309,45 +257,27 @@ See [CSS](/configuration/css) for how the build names and links stylesheets.
 
 ### Development server
 
-Configure the development server:
-
 ```javascript
 export default defineConfig({
   dev: {
-    // Server configuration
-    port: 3000,        // Port for development server
-    host: 'localhost', // Host to bind to
-    open: false,       // Whether to open browser automatically
+    port: 3000,        // Port (default: 3000)
+    host: 'localhost', // Host to bind to (default: 'localhost')
+    open: false,       // Open the browser automatically (default: false)
   },
 });
 ```
 
-**Available Options:**
-
-- `port` (number) - Port for development server (default: 3000)
-- `host` (string) - Host to bind to (default: 'localhost')
-- `open` (boolean) - Whether to open browser automatically (default: false)
-
 ### Preview server
-
-Configure the preview server:
 
 ```javascript
 export default defineConfig({
   preview: {
-    // Server configuration
-    port: 4000,        // Port for preview server
-    host: 'localhost', // Host to bind to
-    open: false,       // Whether to open browser automatically
+    port: 4000,        // Port (default: 4000)
+    host: 'localhost', // Host to bind to (default: 'localhost')
+    open: false,       // Open the browser automatically (default: false)
   },
 });
 ```
-
-**Available Options:**
-
-- `port` (number) - Port for preview server (default: 4000)
-- `host` (string) - Host to bind to (default: 'localhost')
-- `open` (boolean) - Whether to open browser automatically (default: false)
 
 > **Note:** CLI options (e.g., `stati dev --port 8080` or `stati preview --port 8080`) take precedence over config file settings.
 
@@ -399,22 +329,6 @@ export default defineConfig({
 
 See [Build hooks](/api/hooks) for the full order and the caching notes.
 
-**Context Types:**
-
-```typescript
-// BuildContext - passed to beforeAll and afterAll
-interface BuildContext {
-  config: StatiConfig;  // The resolved configuration
-  pages: PageModel[];   // Array of all loaded pages
-}
-
-// PageContext - passed to beforeRender and afterRender
-interface PageContext {
-  page: PageModel;      // The page being processed
-  config: StatiConfig;  // The resolved configuration
-}
-```
-
 ### Multiple configuration files
 
 You can split configuration across multiple files:
@@ -429,6 +343,7 @@ export const baseConfig = {
 };
 
 // stati.config.js
+import { defineConfig } from '@stati/core';
 import { baseConfig } from './config/base.js';
 
 export default defineConfig({
@@ -441,63 +356,6 @@ export default defineConfig({
   },
 });
 ```
-
-## Best practices
-
-### Configuration organization
-
-1. **Keep it readable**
-
-   ```javascript
-   // Good: organized and commented
-   export default defineConfig({
-     // Site metadata
-     site: {
-       title: 'My Site',
-       baseUrl: 'https://example.com',
-     },
-
-     // Markdown processing
-     markdown: {
-       plugins: ['footnote'],  // markdown-it-footnote
-     },
-   });
-   ```
-
-2. **Use environment variables for secrets**
-
-   ```javascript
-   export default defineConfig({
-     site: {
-       title: 'My Site',
-       baseUrl: process.env.SITE_URL || 'http://localhost:3000',
-     },
-   });
-   ```
-
-3. **Split large configurations**
-
-   ```javascript
-   // config/site.js
-   export const siteConfig = {
-     title: 'My Site',
-     baseUrl: 'https://example.com',
-   };
-
-   // config/markdown.js
-   export const markdownConfig = {
-     plugins: ['footnote', ['container', 'tip']],  // Stati auto-prepends 'markdown-it-'
-   };
-
-   // stati.config.js
-   import { siteConfig } from './config/site.js';
-   import { markdownConfig } from './config/markdown.js';
-
-   export default defineConfig({
-     site: siteConfig,
-     markdown: markdownConfig,
-   });
-   ```
 
 ## Multi-environment configuration
 
@@ -585,5 +443,3 @@ For detailed information about specific configuration options, see:
 - **[Images](/configuration/images)** - Image sizes, responsive images and Open Graph cards
 - **[CSS](/configuration/css)** - Hashed production stylesheets, and Tailwind CSS in `stati dev` and `stati build`
 - **[CLI commands](/cli/commands#config-file-location)** - Where Stati looks for the config file
-
-The configuration system is designed to grow with your needs while maintaining simplicity for basic use cases. Start with minimal configuration and add complexity as your site evolves.

@@ -8,17 +8,6 @@ seo:
 
 # Contributing
 
-Stati is an open-source project and we welcome contributions from the community! Whether you're fixing bugs, adding features, improving documentation, or helping with testing, there are many ways to get involved.
-
-## Quick start
-
-1. **Fork the repository** on GitHub
-2. **Clone your fork** locally
-3. **Install dependencies** with `npm install`
-4. **Run the test suite** with `npm test`
-5. **Make your changes** and add tests
-6. **Submit a pull request**
-
 ## Development setup
 
 ### Prerequisites
@@ -73,7 +62,8 @@ stati/
 ├── examples/              # Example projects (bundled with the scaffolder)
 │   ├── blog/
 │   ├── docs/
-│   └── blank/
+│   ├── blank/
+│   └── news/
 ├── docs-site/             # Project documentation site
 ├── scripts/               # Build and development scripts
 └── package.json           # Root package.json
@@ -81,24 +71,12 @@ stati/
 
 ### Monorepo workflow
 
-Stati uses a monorepo structure with multiple packages:
-
 ```bash
-# Install dependencies for all packages
-npm install
-
-# Build all packages (required order: core → images → cli → create-stati)
-npm run build
-
-# Test all packages
-npm run test
-
-# Test specific package
+# Test one package
 npm run test --workspace=@stati/core
 
-# Develop with a specific example
+# Run an example with the local packages
 cd examples/blog
-npm install
 npm run dev
 ```
 
@@ -113,17 +91,7 @@ Stati uses strict TypeScript and follows these conventions:
 - **TypeScript** strict mode
 - **Conventional Commits** for commit messages
 
-```bash
-# Run linting
-npm run lint
-
-# Type checking
-npm run typecheck
-```
-
 ### Testing
-
-We maintain comprehensive test coverage:
 
 ```bash
 # Run all tests
@@ -165,7 +133,7 @@ Performance tests live in `packages/core/test/perf/` and measure build speed acr
 Run benchmarks locally:
 
 ```bash
-# Run only the perf tests (CI skips them; npm test runs them too)
+# Run only the perf tests (npm test runs them too; CI runs them in the Performance workflow)
 npx vitest run packages/core/test/perf packages/images/test/perf
 
 # Benchmarks use 100 generated pages with warmup runs
@@ -173,27 +141,9 @@ npx vitest run packages/core/test/perf packages/images/test/perf
 
 The `linear-time.test.ts` files beside the benchmarks hold the tests that assert a wall-clock limit on scanners fed input that never closes. Put new timing assertions in a `test/perf/` folder, not next to the unit tests, since coverage runs on CI are too slow and noisy for them.
 
-Baselines are defined in `perf/baselines/benchmark.json`. Each benchmark passes if its median over 7 runs stays within 30% of the baseline or 25ms above it, whichever is larger, so fast benchmarks are not failed by CI runner noise. Cache hit rates are validated too. If a benchmark fails, CI reruns the suite once and fails only if the rerun fails as well, so a stalled runner does not fail the check.
+Baselines are defined in `perf/baselines/benchmark.json`, and `scripts/compare-perf.mjs` checks them in the Performance workflow: each benchmark passes if its median over 7 runs stays within 30% of the baseline or 25ms above it, whichever is larger, so fast benchmarks are not failed by CI runner noise. Cache hit rates are validated too. If a benchmark fails, CI reruns the suite once and fails only if the rerun fails as well, so a stalled runner does not fail the check.
 
-### Build metrics system
-
-Stati includes a metrics system for debugging performance issues. Enable it via CLI:
-
-```bash
-stati build --metrics                    # Write JSON to .stati/metrics/
-stati build --metrics --metrics-html     # Also generate HTML report
-stati build --metrics --metrics-detailed # Include per-page timings
-```
-
-**Metrics include:**
-
-- **Totals:** Duration, peak RSS, heap usage
-- **Phases:** Config load, content discovery, rendering, asset copy, etc.
-- **Counts:** Pages rendered, cache hits/misses, assets copied, templates loaded and rendered, include cache hits
-- **ISG:** Whether ISG is enabled, cache hit rate, manifest entries, invalidated entries
-- **Per-page timing** (when `--metrics-detailed` is used)
-
-Metrics are written to `.stati/metrics/` as JSON files with timestamps. Use these to diagnose slow builds or cache inefficiencies.
+To find slow phases, build with `--metrics` (see [Build metrics](/advanced/metrics)).
 
 ## Contributing guidelines
 
@@ -205,35 +155,6 @@ Metrics are written to `.stati/metrics/` as JSON files with timestamps. Use thes
 4. **Update Documentation** if needed
 5. **Test Thoroughly** across packages
 6. **Submit PR** with clear description
-
-### PR template
-
-```markdown
-## Description
-
-Brief description of changes
-
-## Type of Change
-
-- [ ] Bug fix
-- [ ] New feature
-- [ ] Documentation update
-- [ ] Performance improvement
-- [ ] Refactoring
-
-## Testing
-
-- [ ] Unit tests added/updated
-- [ ] Integration tests passing
-- [ ] Manual testing completed
-
-## Checklist
-
-- [ ] Code follows style guidelines
-- [ ] Self-review completed
-- [ ] Documentation updated
-- [ ] No breaking changes (or properly documented)
-```
 
 ### Commit messages
 
@@ -271,7 +192,7 @@ feat(core)!: rename the isg.ttl option
 - `chore` - Maintenance tasks
 - `revert` - Reverting a previous commit
 
-Every type except `feat` produces a patch release, and `!` produces a major release.
+Every type except `feat` produces a patch release, and `!` produces a major release. A commit releases the packages whose files it changes (`examples/` counts as `create-stati`, and a root build file such as `package.json` as every package); a commit that changes none of them, such as a docs-only commit, releases nothing.
 
 ## Development guidelines
 
@@ -374,7 +295,7 @@ export async function computeFileHash(filePath: string): Promise<string | null> 
 }
 ```
 
-**Bounded caches with LRU eviction:**
+**Bounded caches that clear when full:**
 
 ```typescript
 const escapeHtmlCache = new Map<string, string>();
@@ -452,60 +373,7 @@ Add ISG aging algorithm for cache TTL management
 
 ## Documentation
 
-### Writing style
-
-- **Clear and concise** explanations
-- **Code examples** for every concept
-- **Step-by-step** instructions
-- **Real-world** use cases
-
-### Documentation structure
-
-````markdown
-# Page Title
-
-Brief description of what this page covers.
-
-## Section 1
-
-Explanation with code example:
-
-```javascript
-// Code example
-const example = 'value';
-```
-
-### Subsection
-
-More detailed information.
-
-## Best practices
-
-- Tip 1
-- Tip 2
-- Tip 3
-
-## Next steps
-
-Links to related documentation.
-````
-
-### API documentation
-
-Use TypeScript interfaces for API docs:
-
-```typescript
-/**
- * An ISG aging rule: a cache lifetime for pages up to a given age.
- */
-export interface AgingRule {
-  /** Pages up to this many days old use this rule */
-  untilDays: number;
-
-  /** Cache time-to-live in seconds for pages in this age range */
-  ttlSeconds: number;
-}
-```
+Pages live in `docs-site/site/`. `docs-site/README.md` explains how to run the docs site with the local packages and the checks to run before a pull request.
 
 ## Community
 
@@ -514,30 +382,9 @@ export interface AgingRule {
 - **GitHub Discussions** - Ask questions and share ideas
 - **GitHub Issues** - Report bugs and request features
 
-### Code of conduct
-
-We follow the [Contributor Covenant](https://www.contributor-covenant.org/):
-
-- **Be respectful** and inclusive
-- **Be patient** with newcomers
-- **Be constructive** in feedback
-- **Be collaborative** in discussions
-
 ## Getting started contributing
 
 1. **Browse Issues** - Look for "good first issue" labels
 2. **Join Discussions** - Introduce yourself and ask questions
 3. **Start Small** - Fix typos, add tests, improve docs
 4. **Ask for Help** - Don't hesitate to ask for guidance
-
-### Good first issues
-
-- Documentation improvements
-- Test coverage additions
-- Error message improvements
-- Example project enhancements
-- Performance optimizations
-
-Thank you for considering contributing to Stati! Every contribution, no matter how small, helps make Stati better for everyone. We're excited to work with you and see what we can build together.
-
-For questions about contributing, feel free to open a discussion on GitHub or reach out to the maintainers. We're here to help and want to make contributing as smooth as possible for everyone.

@@ -16,7 +16,7 @@ Built for developers who want modern tooling without the complexity. Write in Ma
 
 ## Why Stati?
 
-- **Fast Setup** - Create a site in under 2 minutes with `npx create-stati`
+- **Fast Setup** - Create a site with `npx create-stati`
 - **Simple by Design** - Markdown files become pages. No complex configuration required.
 - **Smart Caching** - Incremental builds with intelligent cache invalidation
 - **Your Choice of CSS** - Plain CSS, Sass, or Tailwind CSS
@@ -75,7 +75,7 @@ This is my first page. It's just Markdown.
 
 ### Markdown-First
 
-Write content in Markdown with front-matter for metadata:
+Write content in Markdown with front matter for metadata:
 
 ```markdown
 ---
@@ -93,7 +93,7 @@ Your content here...
 
 Customize layouts with [Eta templates](https://eta.js.org). Layouts share one page shell with `stati.layout()` and reuse other templates with `stati.include()`:
 
-```html
+```eta
 <!-- site/base.eta -->
 <!DOCTYPE html>
 <html>
@@ -126,7 +126,7 @@ stati invalidate "tag:news"
 # Invalidate by path
 stati invalidate "path:/blog/2024/"
 
-# Invalidate by age
+# Invalidate pages rendered within the last 3 months
 stati invalidate "age:3months"
 ```
 
@@ -152,14 +152,14 @@ generate:
 
 ### Built-in SEO
 
-SEO optimization works automatically with zero configuration. Stati analyzes your pages and injects SEO metadata during build.
+Stati injects SEO metadata into every page during the build, with no `seo` block needed. Canonical and Open Graph URLs use `site.baseUrl`.
 
 **What's included by default:**
 - Meta tags (title, description, keywords)
 - Open Graph tags for Facebook/LinkedIn, with `og:locale` from `site.defaultLocale`
 - Twitter Cards, with `twitter:site` and `twitter:creator` from handles in the config
 - Article tags (`og:type`, publish date, tags) on the pages `seo.articles` matches
-- Structured data (JSON-LD) when configured in frontmatter
+- Structured data (JSON-LD) when configured in front matter
 - `noindex` on the 404 page, which also stays out of the sitemap, search index, RSS feeds, navigation and Open Graph cards
 
 You can also enable sitemap and robots.txt generation with a single config option.
@@ -202,7 +202,7 @@ npx stati invalidate "age:6months"
 
 ## Configuration
 
-Stati works with zero configuration, but you can customize it by creating `stati.config.js` (or `stati.config.ts` for TypeScript projects):
+Stati works with zero configuration, but you can customize it by creating `stati.config.js` (or `stati.config.ts` for TypeScript projects). Without a config file, `site.baseUrl` is `http://localhost:3000`, so canonical and Open Graph URLs point there:
 
 ### Minimal Configuration
 
@@ -261,10 +261,10 @@ export default defineConfig({
   // Incremental Static Generation (enabled by default)
   isg: {
     ttlSeconds: 86400,        // Cache TTL: 24 hours (default: 21600 / 6 hours)
-    maxAgeCapDays: 30,        // Max age for aging rules (default: 365)
+    maxAgeCapDays: 30,        // Dated pages older than this stop rebuilding on TTL (default: 365)
     aging: [
       { untilDays: 7, ttlSeconds: 86400 },   // up to 7 days old: 1 day
-      { untilDays: 30, ttlSeconds: 604800 }, // up to 30 days old (and older): 1 week
+      { untilDays: 30, ttlSeconds: 604800 }, // up to 30 days old: 1 week
     ],
   },
 
@@ -272,7 +272,6 @@ export default defineConfig({
   seo: {
     defaultAuthor: {
       name: 'John Doe',
-      email: 'john@example.com',
       url: 'https://johndoe.com', // article:author on article pages
       twitter: '@johndoe',        // twitter:creator
     },
@@ -356,7 +355,7 @@ Your content here...
 
 ### Custom Layout
 
-```html
+```eta
 <!-- site/blog/layout.eta -->
 <!DOCTYPE html>
 <html>
@@ -366,7 +365,7 @@ Your content here...
   <body>
     <article>
       <h1><%= stati.page.title %></h1>
-      <time><%= stati.page.date %></time>
+      <time><%= stati.helpers.formatDate(stati.page.date) %></time>
       <%~ stati.content %>
     </article>
   </body>
@@ -439,8 +438,6 @@ packages/
 └── create-stati      # Project scaffolding tool
 ```
 
-Each package can be used independently or together for the complete Stati experience.
-
 ---
 
 ## Requirements
@@ -462,18 +459,6 @@ We welcome contributions! See [CONTRIBUTING.md](./CONTRIBUTING.md) for:
 
 ---
 
-## Philosophy
-
-Stati is built on these principles:
-
-- **Simplicity over complexity** - Only include what you need
-- **Speed by default** - Fast builds, fast development, fast sites
-- **TypeScript-first** - Type safety throughout
-- **Developer experience** - Great tooling makes great sites
-- **Safe defaults** - Sensible choices that just work
-
----
-
 ## License
 
 MIT © [Imre Csige](https://github.com/ianchak)
@@ -486,9 +471,3 @@ MIT © [Imre Csige](https://github.com/ianchak)
 - [Examples](https://stati.build/examples/list/)
 - [GitHub Issues](https://github.com/ianchak/stati/issues)
 - [Discussions](https://github.com/ianchak/stati/discussions)
-
-**Ready to build something?**
-
-```bash
-npx create-stati my-awesome-site
-```

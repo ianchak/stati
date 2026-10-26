@@ -25,17 +25,11 @@ public/
     └── guide.pdf        → /downloads/guide.pdf
 ```
 
-Static assets are copied after the pages are written, and generated files are written last: if `public/` contains a `robots.txt` or `sitemap.xml` and the matching feature is enabled, the generated file replaces your copy in production builds.
+Static assets are copied after the pages are written, so a file in `public/` at a page's output path, such as `public/about.html`, replaces that page. Generated files are written last: if `public/` contains a `robots.txt` or `sitemap.xml` and the matching feature is enabled, the generated file replaces your copy in production builds.
+
+A file you delete from `public/` stays in `dist/` until you run `stati build --clean`.
 
 Avoid a `public/_img/` folder: Stati writes copied and generated images to `/_img/`.
-
-Use the `public/` directory for:
-
-- Favicons and meta images
-- Document downloads
-- Third-party scripts
-- Pre-built CSS stylesheets
-- Any assets that don't need processing
 
 ## TypeScript compilation (`src/`)
 
@@ -53,30 +47,15 @@ Your compiled bundles are automatically injected into pages before the closing `
 
 ## CSS processing
 
-Stati does not include a built-in CSS preprocessor. Tailwind CSS runs from Stati's commands when you pass them its input and output (see [Tailwind CSS integration](#tailwind-css-integration)); other tools, such as Sass or PostCSS, run from your npm scripts.
-
-The `create-stati` scaffolder can set up these tools for you. See the [Styling Solutions](/cli/scaffolder#styling-solutions) section for available options.
+The `create-stati` scaffolder can set up Tailwind CSS or Sass for you. See the [Styling Solutions](/cli/scaffolder#styling-solutions) section for available options.
 
 ### Basic CSS
 
-For simple projects, place your CSS file in `public/` and link to it in your layout template:
-
-```css
-/* public/styles.css */
-:root {
-  --color-primary: #0066cc;
-  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-}
-
-body {
-  font-family: var(--font-family);
-  color: #333;
-}
-```
+Put your stylesheet in `public/`, such as `public/styles.css`, and link it from your layout:
 
 ```eta
 <head>
-  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="<%= stati.url('/styles.css') %>">
 </head>
 ```
 
@@ -172,83 +151,18 @@ The `propValue()` function:
 Link the output under its path, as in development; production builds point the link at the hashed file. A page without the link gets one before `</head>`.
 
 ```eta
-<!DOCTYPE html>
-<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= stati.page.title %></title>
-  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="<%= stati.url('/styles.css') %>">
 </head>
-<body class="bg-gray-50 text-gray-900">
-  <header class="bg-white shadow-sm border-b">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <nav class="flex items-center justify-between h-16">
-        <div class="flex items-center space-x-4">
-          <a href="/" class="text-xl font-bold text-brand-500">
-            <%= stati.site.title %>
-          </a>
-        </div>
-
-        <div class="hidden md:flex items-center space-x-6">
-          <a href="/docs" class="text-gray-600 hover:text-gray-900 transition-colors">
-            Documentation
-          </a>
-          <a href="/blog" class="text-gray-600 hover:text-gray-900 transition-colors">
-            Blog
-          </a>
-        </div>
-      </nav>
-    </div>
-  </header>
-
-  <main class="max-w-4xl mx-auto px-4 py-8">
-    <article class="prose prose-lg max-w-none">
-      <%~ stati.content %>
-    </article>
-  </main>
-</body>
-</html>
 ```
 
-### Development with built-in watcher
+### Development
 
-Stati's development server includes integrated Tailwind CSS support. Simply pass the input and output file paths:
-
-```bash
-stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css
-```
-
-This starts both the Stati dev server and Tailwind watcher in a single process. Pages link the output under its path in `dist/`, `/styles.css`. The watcher runs for as long as the dev server does, also when the dev server runs in a background or CI shell. When you stop the dev server (`Ctrl+C`), the Tailwind watcher stops automatically, and it also exits when the dev server process is killed.
-
-**Quiet mode (default):**
-
-- Shows only errors from Tailwind
-- Keeps console output clean during development
-
-**Verbose mode:**
-
-- Use `--tailwind-verbose` flag to see all Tailwind output
-- Helpful for debugging or monitoring compilation times
-
-**Requirements:**
-
-- The Tailwind command must be installed locally in your project: `@tailwindcss/cli` for Tailwind CSS 4, or `tailwindcss` for Tailwind CSS 3
-- Stati validates the installation before starting the watcher
-
-See the [Development Server](/cli/development) documentation for more details on Tailwind integration.
+`stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css` runs Tailwind's watcher next to the dev server. See [Development server](/cli/development#tailwind-css-integration).
 
 ### Production builds
 
-`stati build` takes the same flags:
-
-```bash
-stati build --tailwind-input src/styles.css --tailwind-output dist/styles.css
-```
-
-The build runs Tailwind once, after the last page has rendered, so the CSS has every class the templates built with `stati.propValue()`. It writes the minified stylesheet as `dist/_assets/styles-[hash].css`, named after its content, and points every page's link to `/styles.css` at it, adding one where a page has none. A deploy that changes the CSS gives it a new URL, so no browser shows new pages with a cached copy of the old stylesheet. The build also deletes the stylesheets earlier builds wrote under other names.
-
-See [CSS](/configuration/css) for how the build links the file, the `css` options and moving from a separate `build:css` script.
+`stati build` takes the same flags and writes the stylesheet under a name made from its content. See [CSS](/configuration/css#tailwind-css).
 
 ## Images and media
 
@@ -262,7 +176,7 @@ Images in `public/` are copied to the output as they are. When a Markdown page s
 <img src="/images/hero.jpg" alt="Hero image" width="1600" height="900" loading="eager" fetchpriority="high" decoding="async">
 ```
 
-Images can also sit next to the pages that use them: `![Map](./map.png)` in `site/blog/post.md` reads `site/blog/map.png`, and Stati copies it to `/_img/` under a name that changes with its content. In layouts and partials, `stati.image()` does the same for images such as a post's cover:
+Images can also sit next to the pages that use them: `![Map](./map.png)` in `site/blog/post.md` reads `site/blog/map.png`, and Stati copies it to `/_img/` under a name that changes with its content. In layouts and included templates, `stati.image()` does the same for images such as a post's cover:
 
 ```eta
 <%~ stati.image(stati.page.cover, { alt: stati.page.coverAlt, priority: true }) %>
@@ -278,63 +192,12 @@ For art direction, such as a different crop on small screens, write the `<pictur
 
 ```eta
 <picture>
-  <source media="(max-width: 768px)" srcset="/images/hero-mobile.jpg">
-  <source media="(max-width: 1200px)" srcset="/images/hero-tablet.jpg">
-  <img src="/images/hero-desktop.jpg" alt="Hero image" width="1600" height="900">
+  <source media="(max-width: 768px)" srcset="<%= stati.url('/images/hero-mobile.jpg') %>">
+  <source media="(max-width: 1200px)" srcset="<%= stati.url('/images/hero-tablet.jpg') %>">
+  <img src="<%= stati.url('/images/hero-desktop.jpg') %>" alt="Hero image" width="1600" height="900">
 </picture>
 ```
 
-## Web fonts
+## Fonts
 
-### Google fonts
-
-```css
-/* Import in CSS */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
-/* Or preload in template */
-```
-
-```eta
-<head>
-  <!-- Preconnect for performance -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-  <!-- Load fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-</head>
-```
-
-### Self-hosted fonts
-
-Place font files in your `public/` directory and reference them in your CSS:
-
-```css
-/* public/styles.css */
-@font-face {
-  font-family: 'CustomFont';
-  src:
-    url('/fonts/custom-font.woff2') format('woff2'),
-    url('/fonts/custom-font.woff') format('woff');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-body {
-  font-family: 'CustomFont', sans-serif;
-}
-```
-
-With a directory structure like:
-
-```text
-public/
-├── fonts/
-│   ├── custom-font.woff2
-│   └── custom-font.woff
-└── styles.css
-```
-
-Static assets are automatically copied to your output directory during builds.
+Put font files in `public/`, such as `public/fonts/inter.woff2`, and reference them from your CSS as `url('/fonts/inter.woff2')`. A relative `url()` works too: production rewrites it for the hashed copy (see [CSS](/configuration/css#how-pages-link-the-hashed-name)).

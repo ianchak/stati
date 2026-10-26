@@ -8,7 +8,7 @@ order: 2
 
 ## Prerequisites
 
-- **Node.js** 22.20.0 or higher on the 22.x line, or 24 and later
+- **Node.js** 22.20 or later on the 22.x line, or 24 and later
 - **A package manager**: npm, pnpm, yarn or bun
 
 ## Interactive scaffolder
@@ -39,24 +39,7 @@ You can also pass command-line arguments to pre-configure the scaffolder and ski
 npx create-stati my-site --styling tailwind
 ```
 
-This creates a project in `my-site` with Tailwind CSS and asks only the remaining questions (template, TypeScript, image tools, agent skill, Git, dependency installation and, when several are detected, the package manager). To skip every prompt, see [Running without prompts](/cli/scaffolder#running-without-prompts).
-
-Here are the available options:
-
-| Argument | Description |
-| --- | --- |
-| `[project-name]` | Sets the project directory name. |
-| `--styling` | Sets the styling solution (`css`, `sass`, or `tailwind`). |
-| `--typescript`, `--ts` | Uses TypeScript (the default). |
-| `--no-typescript`, `--no-ts` | Uses JavaScript instead of TypeScript. |
-| `--no-git` | Skips Git initialization (default: initializes Git). |
-| `--no-install` | Skips dependency installation (default: installs dependencies). |
-| `--package-manager` | Specifies the package manager to use (`npm`, `yarn`, `pnpm`, or `bun`). |
-| `--template` | Specifies a project template to use (`blank`, `blog`, `docs` or `news`). |
-| `--images` | Adds image tools: responsive images and link preview cards with `@stati/images`. |
-| `--no-images` | Skips image tools (the default). |
-| `--agent-skill [target]` | Installs the Stati agent skill with the [`skills` CLI](/cli/scaffolder#agent-skill) (`claude` or `agents`; default `claude`). |
-| `--no-agent-skill` | Skips agent skill installation. |
+This creates a project in `my-site` with Tailwind CSS and asks only the remaining questions (template, TypeScript, image tools, agent skill, Git, dependency installation and, when several are detected, the package manager). To skip every prompt, see [Running without prompts](/cli/scaffolder#running-without-prompts). See [Command line options](/cli/scaffolder#command-line-options) for every flag.
 
 ### TypeScript by default
 
@@ -76,7 +59,7 @@ Stati compiles your TypeScript files from `src/` using esbuild. Run `npm run typ
 
 For a JavaScript project instead, pass `--no-typescript` (you get `stati.config.js` and no `src/` entry point).
 
-> **Tip:** If you choose Tailwind CSS, the scaffolder sets up Stati's built-in Tailwind integration in the dev and build scripts. `stati dev` runs the dev server and Tailwind watcher in a single process, and `stati build` runs Tailwind after the pages and names the stylesheet after its content, so you need no separate CSS scripts or process managers.
+> **Tip:** If you choose Tailwind CSS, the scaffolder sets up Stati's built-in Tailwind integration in the dev and build scripts. `stati dev` and `stati build` run Tailwind themselves, so you need no separate CSS scripts. See [Tailwind CSS](/cli/scaffolder#tailwind-css).
 
 ## Manual installation
 
@@ -87,8 +70,9 @@ If you prefer to set up Stati manually:
 mkdir my-stati-site
 cd my-stati-site
 
-# Initialize npm
+# Initialize npm as an ES module package
 npm init -y
+npm pkg set type=module
 
 # Install Stati
 npm install --save-dev @stati/cli @stati/core
@@ -96,6 +80,21 @@ npm install --save-dev @stati/cli @stati/core
 # Create basic structure
 mkdir site public
 echo '# Hello Stati' > site/index.md
+```
+
+Create `site/layout.eta`, the layout every page uses:
+
+```eta
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title><%= stati.page.title || stati.site.title %></title>
+  </head>
+  <body>
+    <main><%~ stati.content %></main>
+  </body>
+</html>
 ```
 
 Create a `stati.config.js` file:
@@ -111,7 +110,7 @@ export default defineConfig({
 });
 ```
 
-Add scripts to your `package.json` (and ensure `"type": "module"` for ESM imports):
+Add scripts to your `package.json`:
 
 ```json
 {
@@ -126,7 +125,7 @@ Add scripts to your `package.json` (and ensure `"type": "module"` for ESM import
 
 ### Optional: image tools
 
-Stati sizes and lazy-loads your images without extra packages. For responsive AVIF and WebP images and an Open Graph image for every page, install `@stati/images` and turn the features on in your config:
+Stati sizes and lazy-loads Markdown images without extra packages. For responsive AVIF and WebP images and an Open Graph image for every page, install `@stati/images` and turn the features on in your config:
 
 ```bash
 npm install --save-dev @stati/images

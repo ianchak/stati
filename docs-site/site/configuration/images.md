@@ -13,7 +13,7 @@ Stati gives every image in your Markdown its width and height and loads it lazil
 | | Built in | With `@stati/images` |
 |---|---|---|
 | Markdown images | `width`, `height`, `loading="lazy"`, `decoding="async"` | `<picture>` with AVIF and WebP at several widths |
-| Images next to a page | Copied to the output | Same, plus responsive variants |
+| Images next to a page | Copied to the output | Responsive variants instead of the copy (animated images are still copied) |
 | Link previews | `og:image` from front matter | A generated card for every page |
 | Configuration | None | `images.responsive`, `images.og` |
 
@@ -56,7 +56,7 @@ Markdown images are then written exactly as authored, and images next to pages a
 
 ### Images in templates
 
-Use `stati.image()` for images that come from layouts and partials, such as a post's cover image. It returns HTML, so print it with `<%~ %>`:
+Use `stati.image()` for images that come from layouts and included templates, such as a post's cover image. It returns HTML, so print it with `<%~ %>`:
 
 ```eta
 <%~ stati.image(stati.page.cover, { alt: stati.page.coverAlt, priority: true }) %>
@@ -130,7 +130,7 @@ export default defineConfig({
 });
 ```
 
-Stati adds `og:image`, `og:image:width`, `og:image:height`, `og:image:alt` and `twitter:image` to each page, pointing to a 1200 by 630 PNG under `/_img/og/`. Social networks need absolute URLs, so production builds stop with an error unless `site.baseUrl` is your site's public address.
+Stati adds `og:image`, `og:image:width`, `og:image:height`, `og:image:alt`, `twitter:image` and `twitter:image:alt` to each page, pointing to a 1200 by 630 PNG under `/_img/og/`. Social networks need absolute URLs, so production builds stop with an error unless `site.baseUrl` is your site's public address.
 
 A page keeps the image it sets in front matter, and `false` gives it none:
 

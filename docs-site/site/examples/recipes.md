@@ -8,7 +8,7 @@ seo:
 
 # Recipes
 
-Practical recipes and patterns for building sites with Stati. Each recipe solves a common use case with code you can adapt. A recipe that starts with a `site/partials/` file name, such as `site/partials/menu.eta`, is a template to include from a layout: `<%~ stati.include('partials/menu') %>`. The others are layouts: they say which pages they lay out, and wrap themselves in the page shell `site/base.eta` with `stati.layout('base')` (see [Sharing a shell](/core-concepts/templates#sharing-a-shell)).
+Practical recipes and patterns for building sites with Stati. Each recipe solves a common use case with code you can adapt. A recipe that starts with a `site/partials/` file name, such as `site/partials/menu.eta`, is a template to include from a layout: `<%~ stati.include('partials/menu') %>`. The others are layouts: they say which pages they lay out, and wrap themselves in the page shell `site/base.eta` with `stati.layout('base')` (see [Sharing a shell](/core-concepts/templates#sharing-a-shell)). Links to the site's own pages go through `stati.url()`, so the templates also work on a site served from a subfolder.
 
 ## Content management
 
@@ -16,7 +16,7 @@ Practical recipes and patterns for building sites with Stati. Each recipe solves
 
 Automatically generate navigation from your content structure using Stati's built-in navigation:
 
-```html
+```eta
 <!-- site/partials/menu.eta -->
 <nav class="menu">
   <% function renderNavigation(items, level = 0) { %>
@@ -24,7 +24,7 @@ Automatically generate navigation from your content structure using Stati's buil
       <% items.forEach(item => { %>
         <li class="menu-item">
           <a
-            href="<%= item.url %>"
+            href="<%= stati.url(item.url) %>"
             class="<%= stati.propValue('menu-link', stati.page.url === item.url && 'active') %>"
           >
             <%= item.title %>
@@ -46,7 +46,7 @@ Call a template function that writes markup with `<% %>`: it adds to the output 
 
 Use `stati.page.navNode` to show the current page's child pages:
 
-```html
+```eta
 <!-- site/partials/section-nav.eta -->
 <% if (stati.page.navNode?.children && stati.page.navNode.children.length > 0) { %>
   <nav class="section-navigation">
@@ -57,7 +57,7 @@ Use `stati.page.navNode` to show the current page's child pages:
       <% stati.page.navNode.children.forEach(page => { %>
         <li>
           <a
-            href="<%= page.url %>"
+            href="<%= stati.url(page.url) %>"
             class="<%= stati.page.url === page.url ? 'active' : '' %>"
           >
             <%= page.title %>
@@ -79,11 +79,50 @@ Common navigation patterns:
 - **Any section's children** - Use `stati.nav.getChildren('/path')`
 - **Current page's siblings** - Use `stati.nav.getSiblings()`
 
+```eta
+<!-- site/partials/docs-sidebar.eta -->
+<!-- Show children of the docs section, regardless of current page -->
+<aside class="docs-sidebar">
+  <h3>Documentation</h3>
+  <ul>
+    <% stati.nav.getChildren('/docs').forEach(page => { %>
+      <li>
+        <a
+          href="<%= stati.url(page.url) %>"
+          class="<%= stati.page.url === page.url ? 'active' : '' %>"
+        >
+          <%= page.title %>
+        </a>
+      </li>
+    <% }) %>
+  </ul>
+</aside>
+```
+
+```eta
+<!-- site/partials/sibling-nav.eta -->
+<!-- Show siblings of the current page -->
+<% const siblings = stati.nav.getSiblings() %>
+
+<% if (siblings.length > 0) { %>
+  <nav class="sibling-nav">
+    <h3>Related Pages</h3>
+    <ul>
+      <% siblings.forEach(sibling => { %>
+        <li>
+          <a href="<%= stati.url(sibling.url) %>"><%= sibling.title %></a>
+        </li>
+      <% }) %>
+    </ul>
+  </nav>
+<% } %>
+```
+
 ### Table of contents (in-page navigation)
 
 Stati automatically extracts headings (h2-h6) and makes them available via `stati.page.toc`:
 
-```html
+```eta
 <!-- site/partials/toc.eta -->
 <% if (stati.page.toc && stati.page.toc.length > 0) { %>
   <nav class="table-of-contents">
@@ -107,7 +146,7 @@ Each TOC entry contains:
 
 For hierarchical TOC with nesting:
 
-```html
+```eta
 <!-- site/partials/hierarchical-toc.eta -->
 <%
   // Build a nested tree structure from flat TOC entries
@@ -155,83 +194,9 @@ For hierarchical TOC with nesting:
 <% } %>
 ```
 
-Here are practical examples:
-
-```html
-<!-- site/partials/docs-sidebar.eta -->
-<!-- Show children of the docs section, regardless of current page -->
-<aside class="docs-sidebar">
-  <h3>Documentation</h3>
-  <ul>
-    <% stati.nav.getChildren('/docs').forEach(page => { %>
-      <li>
-        <a
-          href="<%= page.url %>"
-          class="<%= stati.page.url === page.url ? 'active' : '' %>"
-        >
-          <%= page.title %>
-        </a>
-      </li>
-    <% }) %>
-  </ul>
-</aside>
-```
-
-```html
-<!-- site/partials/sibling-nav.eta -->
-<!-- Show siblings of the current page -->
-<% const siblings = stati.nav.getSiblings() %>
-
-<% if (siblings.length > 0) { %>
-  <nav class="sibling-nav">
-    <h3>Related Pages</h3>
-    <ul>
-      <% siblings.forEach(sibling => { %>
-        <li>
-          <a href="<%= sibling.url %>"><%= sibling.title %></a>
-        </li>
-      <% }) %>
-    </ul>
-  </nav>
-<% } %>
-```
-
-```html
-<!-- site/partials/multi-section-sidebar.eta -->
-<!-- Show multiple sections using getChildren() -->
-<aside class="sidebar">
-  <section>
-    <h3>Getting Started</h3>
-    <ul>
-      <% stati.nav.getChildren('/getting-started').forEach(page => { %>
-        <li><a href="<%= page.url %>"><%= page.title %></a></li>
-      <% }) %>
-    </ul>
-  </section>
-
-  <section>
-    <h3>Core Concepts</h3>
-    <ul>
-      <% stati.nav.getChildren('/core-concepts').forEach(page => { %>
-        <li><a href="<%= page.url %>"><%= page.title %></a></li>
-      <% }) %>
-    </ul>
-  </section>
-
-  <section>
-    <h3>API Reference</h3>
-    <ul>
-      <% stati.nav.getChildren('/api').forEach(page => { %>
-        <li><a href="<%= page.url %>"><%= page.title %></a></li>
-      <% }) %>
-    </ul>
-  </section>
-</aside>
-```
-
 ### Prev/Next navigation using siblings
 
-```html
+```eta
 <!-- site/partials/page-nav.eta -->
 <%
   // Get siblings to create prev/next navigation
@@ -244,14 +209,14 @@ Here are practical examples:
 <% if (prevPage || nextPage) { %>
   <nav class="page-navigation">
     <% if (prevPage) { %>
-      <a href="<%= prevPage.url %>" class="nav-prev">
+      <a href="<%= stati.url(prevPage.url) %>" class="nav-prev">
         <span class="label">← Previous</span>
         <span class="title"><%= prevPage.title %></span>
       </a>
     <% } %>
 
     <% if (nextPage) { %>
-      <a href="<%= nextPage.url %>" class="nav-next">
+      <a href="<%= stati.url(nextPage.url) %>" class="nav-next">
         <span class="label">Next →</span>
         <span class="title"><%= nextPage.title %></span>
       </a>
@@ -262,9 +227,9 @@ Here are practical examples:
 
 ### Collection index pages
 
-Use collection data provided to index pages to list and filter content:
+Use collection data provided to index pages to list content and link to tag pages:
 
-```html
+```eta
 <!-- site/blog/index.eta: layout of site/blog/index.md -->
 <% stati.layout('base') %>
 <% // Collection data is automatically provided to index pages %>
@@ -272,14 +237,13 @@ Use collection data provided to index pages to list and filter content:
 <% const tags = stati.collection ? Object.keys(stati.collection.pagesByTag) : [] %>
 
 <div class="blog-index">
-  <!-- Tag filter -->
+  <!-- Tag links -->
   <% if (tags.length > 0) { %>
     <div class="tag-filter">
       <% tags.forEach(tag => { %>
         <a
-          href="<%= `#tag-${tag}` %>"
-          class="<%= stati.propValue('tag', 'filter-tag') %>"
-          data-tag="<%= tag %>"
+          href="<%= stati.url(`/blog/tags/${stati.slugify(tag)}`) %>"
+          class="tag"
         >
           <%= tag %> (<%= stati.collection.pagesByTag[tag].length %>)
         </a>
@@ -292,12 +256,12 @@ Use collection data provided to index pages to list and filter content:
     <% posts.forEach(post => { %>
       <article class="post-card">
         <h2>
-          <a href="<%= post.url %>"><%= post.frontMatter.title %></a>
+          <a href="<%= stati.url(post.url) %>"><%= post.frontMatter.title %></a>
         </h2>
         <div class="post-meta">
           <% if (post.publishedAt) { %>
             <time datetime="<%= post.publishedAt.toISOString() %>">
-              <%= post.publishedAt.toLocaleDateString() %>
+              <%= post.publishedAt.toLocaleDateString('en-US') %>
             </time>
           <% } %>
           <% if (post.frontMatter.author) { %>
@@ -320,11 +284,13 @@ Use collection data provided to index pages to list and filter content:
 </div>
 ```
 
+The tag links lead to the pages from [A page for every tag](#a-page-for-every-tag).
+
 ### Related posts
 
 A post reads the collection of its folder, so the post layout can pick related posts from `stati.collection` with no hook:
 
-```html
+```eta
 <!-- site/blog/layout.eta: layout of the posts -->
 <% stati.layout('base') %>
 <%
@@ -349,7 +315,7 @@ A post reads the collection of its folder, so the post layout can pick related p
     <ul>
       <% related.forEach(({ post, commonTags }) => { %>
         <li>
-          <a href="<%= post.url %>"><%= post.frontMatter.title %></a>
+          <a href="<%= stati.url(post.url) %>"><%= post.frontMatter.title %></a>
           <span class="common-tags"><%= commonTags.join(', ') %></span>
         </li>
       <% }) %>
@@ -372,25 +338,25 @@ paginate: 10
 ---
 ```
 
-```html
+```eta
 <!-- site/blog/index.eta: layout of site/blog/index.md -->
 <% stati.layout('base') %>
 <% const { items, pageNumber, totalPages, prevUrl, nextUrl, urls } = stati.pagination; %>
 <% items.forEach((post) => { %>
-  <h2><a href="<%= post.url %>"><%= post.frontMatter.title %></a></h2>
+  <h2><a href="<%= stati.url(post.url) %>"><%= post.frontMatter.title %></a></h2>
 <% }) %>
 
 <% if (totalPages > 1) { %>
   <nav aria-label="Pages">
-    <% if (prevUrl) { %><a href="<%= prevUrl %>" rel="prev">Newer</a><% } %>
+    <% if (prevUrl) { %><a href="<%= stati.url(prevUrl) %>" rel="prev">Newer</a><% } %>
     <% urls.forEach((url, i) => { %>
       <% if (i + 1 === pageNumber) { %>
         <span aria-current="page"><%= i + 1 %></span>
       <% } else { %>
-        <a href="<%= url %>"><%= i + 1 %></a>
+        <a href="<%= stati.url(url) %>"><%= i + 1 %></a>
       <% } %>
     <% }) %>
-    <% if (nextUrl) { %><a href="<%= nextUrl %>" rel="next">Older</a><% } %>
+    <% if (nextUrl) { %><a href="<%= stati.url(nextUrl) %>" rel="next">Older</a><% } %>
   </nav>
 <% } %>
 ```
@@ -410,22 +376,22 @@ generate:
 ---
 ```
 
-```html
+```eta
 <!-- site/blog/tags/layout.eta: layout of the pages from site/blog/tags/[tag].md -->
 <% stati.layout('base') %>
 <h1><%= stati.page.title %></h1>
 <ul>
   <% stati.generated.items.forEach((post) => { %>
-    <li><a href="<%= post.url %>"><%= post.frontMatter.title %></a></li>
+    <li><a href="<%= stati.url(post.url) %>"><%= post.frontMatter.title %></a></li>
   <% }) %>
 </ul>
 ```
 
 Link to the pages with `stati.slugify`, which gives the same key Stati used for the URL:
 
-```html
+```eta
 <% (stati.page.tags ?? []).forEach((tag) => { %>
-  <a href="<%= `/blog/tags/${stati.slugify(tag)}` %>"><%= tag %></a>
+  <a href="<%= stati.url(`/blog/tags/${stati.slugify(tag)}`) %>"><%= tag %></a>
 <% }) %>
 ```
 
@@ -437,6 +403,8 @@ Add reusable functions for templates under `helpers` in the config:
 
 ```javascript
 // stati.config.js
+import { defineConfig } from '@stati/core';
+
 export default defineConfig({
   helpers: {
     // Date formatting
@@ -461,31 +429,14 @@ export default defineConfig({
       if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
       if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
       return `${Math.floor(diffDays / 365)} years ago`;
-    },
-
-    // Excerpt generation
-    excerpt: (content, length = 150) => {
-      const text = content.replace(/<[^>]*>/g, '');
-      return text.length > length
-        ? text.substring(0, length).trim() + '...'
-        : text;
-    },
-
-    // Reading time estimation
-    readingTime: (content) => {
-      const wordsPerMinute = 200;
-      const text = content.replace(/<[^>]*>/g, '');
-      const words = text.trim().split(/\s+/).length;
-      const minutes = Math.ceil(words / wordsPerMinute);
-      return `${minutes} min read`;
     }
   }
 });
 ```
 
-Call them in templates as `stati.helpers.name()`. For slugs, Stati's own `stati.slugify()` is built in:
+Call them in templates as `stati.helpers.name()`. For slugs, Stati's own `stati.slugify()` is built in, and so is the reading time: `stati.page.readingTime` holds whole minutes at `readingTime.wordsPerMinute` (default 230).
 
-```html
+```eta
 <!-- Post template -->
 <article class="post">
   <header>
@@ -496,7 +447,7 @@ Call them in templates as `stati.helpers.name()`. For slugs, Stati's own `stati.
         <time><%= stati.helpers.formatDate(published) %></time>
         <span><%= stati.helpers.timeAgo(published) %></span>
       <% } %>
-      <span><%= stati.helpers.readingTime(stati.content) %></span>
+      <span><%= stati.page.readingTime %> min read</span>
     </div>
   </header>
   <%~ stati.content %>
@@ -507,19 +458,19 @@ Call them in templates as `stati.helpers.name()`. For slugs, Stati's own `stati.
 
 `stati.nav.getBreadcrumbs()` returns the trail from the page's top-level navigation node, which for nested pages is the nearest folder rather than the site root, so add the Home link yourself (see [getBreadcrumbs](/api/navigation#stati-nav-getbreadcrumbs-path)):
 
-```html
+```eta
 <!-- site/partials/breadcrumbs.eta -->
 <nav class="breadcrumbs" aria-label="Breadcrumb">
   <ol class="breadcrumb-list">
     <li class="breadcrumb-item">
-      <a href="/">Home</a>
+      <a href="<%= stati.url('/') %>">Home</a>
     </li>
     <% stati.nav.getBreadcrumbs().forEach((crumb, index, array) => { %>
       <li class="breadcrumb-item">
         <% if (index === array.length - 1) { %>
           <span aria-current="page"><%= crumb.title %></span>
         <% } else { %>
-          <a href="<%= crumb.url %>"><%= crumb.title %></a>
+          <a href="<%= stati.url(crumb.url) %>"><%= crumb.title %></a>
         <% } %>
       </li>
     <% }); %>
@@ -535,6 +486,8 @@ Stati provides automatic SEO tag injection. Configure it in your config:
 
 ```javascript
 // stati.config.js
+import { defineConfig } from '@stati/core';
+
 export default defineConfig({
   site: {
     title: 'My Awesome Site',
@@ -546,7 +499,6 @@ export default defineConfig({
     autoInject: true,
     defaultAuthor: {
       name: 'Your Name',
-      email: 'you@example.com',
       url: 'https://yoursite.com',
       twitter: '@yourname'
     },
@@ -595,7 +547,7 @@ seo:
 ---
 ```
 
-Quote dates inside `seo` (`'2024-01-15'`): an unquoted YAML date becomes a `Date` object, which breaks the Open Graph tag generator. Dates Stati fills in itself, such as the publish date, are always printed in ISO 8601 form.
+Quote dates inside `seo` (`'2024-01-15'`): an unquoted YAML date becomes a `Date` object, which the tag prints as a local date string such as `Mon Jan 15 2024 ...` instead of ISO 8601. Dates Stati fills in itself, such as the publish date, are always printed in ISO 8601 form.
 
 ### Custom structured data
 
@@ -603,6 +555,8 @@ Add structured data in a `beforeAll` hook. Changes made there are part of each p
 
 ```javascript
 // stati.config.js
+import { defineConfig } from '@stati/core';
+
 export default defineConfig({
   hooks: {
     beforeAll: async (ctx) => {
@@ -643,6 +597,8 @@ Fetch external data during build using hooks:
 
 ```javascript
 // stati.config.js
+import { defineConfig } from '@stati/core';
+
 export default defineConfig({
   hooks: {
     beforeAll: async (ctx) => {
@@ -665,7 +621,7 @@ export default defineConfig({
 
 Use `stati.propValue()` for clean dynamic class generation:
 
-```html
+```eta
 <!-- Component with dynamic classes -->
 <button
   class="<%= stati.propValue(
@@ -694,6 +650,8 @@ Configure intelligent caching with aging rules:
 
 ```javascript
 // stati.config.js
+import { defineConfig } from '@stati/core';
+
 export default defineConfig({
   isg: {
     enabled: true,
@@ -711,9 +669,9 @@ export default defineConfig({
 
 **Cache Tags:**
 
-Stati automatically extracts tags from each page's frontmatter `tags` array field. These tags can be used for targeted cache invalidation.
+Stati automatically extracts tags from each page's front matter `tags` array field. These tags can be used for targeted cache invalidation.
 
-**Example frontmatter:**
+**Example front matter:**
 
 ```markdown
 ---
@@ -725,7 +683,7 @@ tags: [blog, tutorial, javascript]
 This page will be tagged with `blog`, `tutorial`, and `javascript` in the cache, allowing you to invalidate all related content:
 
 ```bash
-# Invalidate by tag from frontmatter
+# Invalidate by tag from front matter
 stati invalidate "tag:blog"
 stati invalidate "tag:tutorial"
 
@@ -741,12 +699,12 @@ stati invalidate "age:3months"
 
 ### Performance monitoring
 
-Track build performance with hooks:
-
 Each hook receives a new context object, so keep timing state in module-level variables:
 
 ```javascript
 // stati.config.js
+import { defineConfig } from '@stati/core';
+
 let buildStart = 0;
 const renderStarts = new Map();
 
@@ -785,7 +743,7 @@ Use environment variables for different build targets:
 
 ```javascript
 // stati.config.js
-import { getEnv } from '@stati/core';
+import { defineConfig, getEnv } from '@stati/core';
 
 const isDev = getEnv() === 'development';
 const isProd = getEnv() === 'production';
@@ -799,8 +757,7 @@ export default defineConfig({
   },
 
   isg: {
-    enabled: isProd, // Only enable ISG in production
-    ttlSeconds: isDev ? 0 : 21600 // No cache in dev
+    enabled: isProd // Only enable ISG in production
   },
 
   seo: {
@@ -812,10 +769,12 @@ export default defineConfig({
 
 ### Markdown extensions
 
-Add custom markdown processing with plugins and the configure function:
+Add custom markdown processing with plugins and the configure function. Install the plugins first: `npm install -D markdown-it-container`.
 
 ```javascript
 // stati.config.js
+import { defineConfig } from '@stati/core';
+
 export default defineConfig({
   markdown: {
     // Load markdown-it plugins (Stati auto-prepends 'markdown-it-')
@@ -830,27 +789,15 @@ export default defineConfig({
       // Customize renderer rules. Wrap the default image rule instead of
       // replacing it: Stati's rule adds width, height and lazy loading, and
       // with images.responsive it writes a <picture> with srcset.
-      const defaultImageRender = md.renderer.rules.image || ((tokens, idx, options, env, self) => self.renderToken(tokens, idx, options));
+      const defaultImageRender = md.renderer.rules.image;
 
       md.renderer.rules.image = (tokens, idx, options, env, self) => {
-        const token = tokens[idx];
-        const alt = token.content;
-
         // Attributes set on the token, such as a class, are kept on the <img>
-        token.attrJoin('class', 'responsive-image');
-        const image = defaultImageRender(tokens, idx, options, env, self);
-
-        return `
-          <figure class="image-figure">
-            ${image}
-            ${alt ? `<figcaption>${md.utils.escapeHtml(alt)}</figcaption>` : ''}
-          </figure>
-        `;
+        tokens[idx].attrJoin('class', 'responsive-image');
+        return defaultImageRender(tokens, idx, options, env, self);
       };
 
       // Customize fence (code block) rendering
-      const defaultFenceRender = md.renderer.rules.fence || ((tokens, idx, options, env, self) => self.renderToken(tokens, idx, options));
-
       md.renderer.rules.fence = (tokens, idx, options, env, self) => {
         const token = tokens[idx];
         const info = token.info ? md.utils.unescapeAll(token.info).trim() : '';
@@ -879,13 +826,11 @@ An image rule that doesn't call `defaultImageRender` replaces Stati's own, and M
 ```json
 {
   "scripts": {
-    "dev": "stati dev --port 3000",
-    "build": "npm run build:clean && stati build",
-    "build:clean:dist": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
-    "build:clean:cache": "node -e \"require('node:fs').rmSync('.stati',{recursive:true,force:true})\"",
-    "build:clean": "npm run build:clean:dist && npm run build:clean:cache",
+    "dev": "stati dev",
+    "build": "stati build",
+    "build:clean": "stati build --clean",
     "preview": "stati preview --port 8080",
-    "invalidate:recent": "stati invalidate 'tag:recent'",
+    "invalidate:recent": "stati invalidate tag:recent",
     "invalidate:all": "stati invalidate"
   }
 }
