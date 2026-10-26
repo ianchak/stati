@@ -146,21 +146,21 @@ interface RSSItemMapping {
   - String: front matter property name
   - Function: custom description generator
 
-- `link` - Custom link generator (default: `site.baseUrl` plus the page URL)
+- `link` - Custom link generator (default: `site.baseUrl` plus the page URL). A relative URL is resolved against `site.baseUrl`. If the function throws or returns no URL, the item is skipped with a warning
 
 - `pubDate` - Publication date field mapping (default: the first valid of `'publishedAt'`, `'published'`, `'date'`, `'createdAt'`)
   - String: front matter property name
   - Function: custom date generator
 
 - `author` - Author field mapping (default: `'author'`)
-  - String: front matter property name
+  - String: front matter property name. The value is text, or an object with `name` and `email`, which is written as `email (name)`; a list is joined with commas
   - Function: custom author generator
 
 - `category` - Category/categories field mapping (default: `'tags'`)
   - String: front matter property name
   - Function: custom category generator
 
-- `guid` - Custom GUID generator (default: the item's link, written with `isPermaLink="true"`)
+- `guid` - Custom GUID generator (default: the item's link). The `<guid>` is a permalink (`isPermaLink="true"`) only when it is an absolute `http` or `https` URL. If the function throws, the item has no `<guid>`
 
 - `includeContent` - Whether to put the page body in `<description>` (default: `false`). The body is the page's Markdown source (`PageModel.content`), wrapped in CDATA; it is not rendered to HTML.
 
@@ -208,8 +208,8 @@ interface RSSEnclosure {
 
 **Properties:**
 
-- `url` - URL of the media file
-- `length` - File size in bytes
+- `url` - URL of the media file. A relative URL is resolved against `site.baseUrl`; an enclosure without one is left out
+- `length` - File size in bytes. A missing or invalid value is written as `0`
 - `type` - MIME type (e.g., `'audio/mpeg'`)
 
 ---
@@ -349,9 +349,9 @@ function generateRSSFeed(
 - `pages` - All pages in the site
 - `config` - Stati configuration
 - `feedConfig` - Feed configuration
-- `logger` - Optional logger instance for warnings
+- `logger` - Optional logger instance for warnings (default: the console)
 
-**Returns:** RSS generation result
+**Returns:** RSS generation result. `itemCount` counts the items written, without the ones skipped because their `link` mapping failed. Throws when `filter` or `sortFn` throws.
 
 **Example:**
 
@@ -385,9 +385,9 @@ function generateRSSFeeds(
 
 - `pages` - All pages in the site
 - `config` - Stati configuration (with RSS config)
-- `logger` - Optional logger instance for warnings
+- `logger` - Optional logger instance for warnings and errors (default: the console)
 
-**Returns:** Array of RSS generation results
+**Returns:** Array of RSS generation results. A feed that fails is logged with `logger.error` and left out of the array; the other feeds are still generated.
 
 **Example:**
 

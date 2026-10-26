@@ -404,9 +404,16 @@ Extensions: `enclosure(page)` returns `{ url, length, type }` or undefined;
 `namespaces` maps prefixes to URLs; `customItemElements(page)` returns a record
 of string/number/boolean/undefined values.
 
-Default links use the absolute site base URL plus page URL. Invalid dates may
-be omitted; mapping exceptions can warn and yield undefined; invalid RSS config
-can log errors and skip feeds without failing the entire build. Inspect XML,
+Default links use the absolute site base URL plus page URL; a relative `link`,
+`enclosure.url`, feed `link` or `image` URL is resolved against `site.baseUrl` the same
+way. Invalid dates may be omitted. A mapping callback that throws warns, naming the
+feed and page: a failing `link` skips that item, while a failing `guid`, `enclosure`,
+`customItemElements` or field mapping leaves out only that field. A feed whose
+`filter` or `sortFn` throws is skipped with an error and the other feeds are still
+written; invalid RSS config logs errors and skips every feed without failing the
+build. `author` is text or `{ name, email }` (written as `email (name)`), or a list of them joined with commas; `guid` is
+`isPermaLink="true"` only for an absolute http(s) URL; a missing enclosure `length` is
+written as `0`; `customItemElements` keys that aren't valid XML names are skipped. Inspect XML,
 dates, absolute links, item count, exclusions, and any generated extension tags.
 Add an actual `<link rel="alternate" type="application/rss+xml">` to the layout
 when desired; configuring RSS does not imply every template advertises it.

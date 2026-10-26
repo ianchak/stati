@@ -974,10 +974,49 @@ describe('build.ts', () => {
       };
 
       mockLoadConfig.mockResolvedValue(configWithRSS);
+      const logger = {
+        info: vi.fn(),
+        success: vi.fn(),
+        warning: vi.fn(),
+        error: vi.fn(),
+        status: vi.fn(),
+        building: vi.fn(),
+        processing: vi.fn(),
+        stats: vi.fn(),
+      };
 
       // Build should complete despite RSS error
-      const result = await build();
+      const result = await build({ logger });
       expect(result).toBeDefined();
+      expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('Filter function failed'));
+      expect(logger.warning).toHaveBeenCalledWith('No RSS feeds were generated');
+      expect(mockWriteFile.mock.calls.find((call) => call[0].includes('feed.xml'))).toBeUndefined();
+    });
+
+    it('should write the feeds that work when another feed fails', async () => {
+      const configWithRSS: StatiConfig = {
+        ...mockConfig,
+        rss: {
+          enabled: true,
+          feeds: [
+            { filename: 'a.xml', title: 'A', description: 'Feed a' },
+            {
+              filename: 'b.xml',
+              title: 'B',
+              description: 'Feed b',
+              filter: () => {
+                throw new Error('Filter function failed');
+              },
+            },
+          ],
+        },
+      };
+      mockLoadConfig.mockResolvedValue(configWithRSS);
+
+      await build();
+
+      expect(mockWriteFile.mock.calls.find((call) => call[0].includes('a.xml'))).toBeDefined();
+      expect(mockWriteFile.mock.calls.find((call) => call[0].includes('b.xml'))).toBeUndefined();
     });
 
     it('should generate multiple RSS feeds', async () => {
