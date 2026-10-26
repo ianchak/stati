@@ -223,6 +223,13 @@ By default, Stati uses these front matter fields:
 - `publishedAt`, `published`, `date` or `createdAt` (first valid one) → RSS item pubDate
 - `author` → RSS item author
 - `tags` → RSS item categories
+- `author` → RSS item author. Text is used as written; an object is written as `email (name)`, or as just the email or name when it has only one of them. A list of authors is joined with commas:
+
+  ```yaml
+  author:
+    name: Jane Doe
+    email: jane@example.com
+  ```
 
 ### Custom field names
 
@@ -276,6 +283,17 @@ Use functions for custom transformations:
 
 An item's `guid` defaults to its link, so a custom `link` changes the `guid` too. Set `itemMapping.guid` to keep it stable.
 
+A `link` or `guid` function can return any text. A `link` that isn't an absolute URL is resolved against `site.baseUrl`, as are the feed's `link`, the `image` URLs and an enclosure's `url`. The `<guid>` is marked as a permalink (`isPermaLink="true"`) only when it is an absolute `http` or `https` URL; any other value, such as `urn:post:42`, is written with `isPermaLink="false"`.
+
+### When a callback fails
+
+A callback that throws for one page doesn't stop the feed. Stati logs a warning that names the feed and the page, and leaves out what failed:
+
+- `link`: the item is skipped, since Stati can't know where it points.
+- `title`, `description`, `pubDate`, `author` and `category`, `guid`, `enclosure` and `customItemElements`: the item stays and only that field is left out.
+
+A callback that fails for the whole feed, such as a `filter` or `sortFn` that throws, skips that feed and logs an error. The other feeds are still written, and the build finishes. The skipped feed's file from an earlier build stays in `dist/` unless you build with `--clean`.
+
 ## Include full content
 
 Include each page's body in its feed item:
@@ -327,7 +345,7 @@ Add custom XML elements to each item:
 }
 ```
 
-Values are converted to strings and HTML-escaped; `undefined` and `null` values are skipped. Declare any prefix you use (`dc:`, `custom:`) in `namespaces`.
+Values are converted to strings and HTML-escaped; `undefined` and `null` values are skipped. Declare any prefix you use (`dc:`, `custom:`) in `namespaces`. A key that isn't a valid XML element name (`'read time'`, or anything starting with `xml`) is skipped with a warning.
 
 ### Enclosures (media files)
 
@@ -350,6 +368,8 @@ Add enclosures for podcasts or other media:
   },
 }
 ```
+
+`length` is the file size in bytes. RSS requires it, so a missing or invalid value is written as `0`. An enclosure without a `url` is left out with a warning.
 
 ## Configuration validation
 

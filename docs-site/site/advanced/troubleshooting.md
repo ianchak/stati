@@ -165,7 +165,8 @@ RSS feeds are only generated during production builds, not in development mode.
 2. Ensure `rss.enabled: true` is set in your `stati.config.ts`
 3. Verify `site.baseUrl` is configured (used for RSS URLs)
 4. Check the build output for "RSS configuration validation failed": any validation error stops all feeds
-5. Check the `dist/` directory for your configured feed file(s) (filename is set in `rss.feeds[].filename`)
+5. Check the build output for "Failed to generate RSS feed": a feed whose `filter` or `sortFn` throws is skipped, and the other feeds are still written
+6. Check the `dist/` directory for your configured feed file(s) (filename is set in `rss.feeds[].filename`)
 
 ---
 
@@ -178,6 +179,7 @@ RSS feeds are only generated during production builds, not in development mode.
 
 1. Start folder patterns with `**/`: `contentPatterns: ['**/blog/**']`
 2. Check that `excludePatterns` and `filter` do not remove every page
+3. Check the build output for warnings that name a page ("link mapping failed for page"): an item whose `link` function throws is skipped
 
 ---
 
