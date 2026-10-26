@@ -179,7 +179,7 @@ A page is rebuilt if:
 1. Cache is bypassed (`--force` flag) or ISG is disabled (`isg.enabled: false`)
 2. Its HTML file, or a generated image it references, is missing from the output directory
 3. Page is not in cache manifest (for example, after `stati invalidate`)
-4. Page's `inputsHash` has changed (its own content or front matter, one of its templates, an image it shows, the `images` settings, the bundles, search index and stylesheet it links, or data it read: the summary of its collection, the pages of its listing, or the navigation tree)
+4. Page's `inputsHash` has changed (its own content or front matter, one of its templates, an image it shows, the `images` settings, the bundle and search index paths, the stylesheet settings, or data it read: the summary of its collection, the pages of its listing, or the navigation tree)
 5. Page's TTL has expired and the page is not frozen by `maxAgeCapDays`
 6. An image job for the page failed in the previous build
 7. Its layout would now be a different file, a template name it looked up would now find a different file, or a template it rendered was deleted
