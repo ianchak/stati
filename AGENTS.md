@@ -43,7 +43,7 @@ Edit this file, not the tool-specific ones, when guidance changes.
 
 - Build errors during incremental rebuilds should be surfaced via `logger.error()` rather than throwing - this keeps the dev server alive and feeds the error overlay.
 - The error overlay (`core/utils/error-overlay.utils.ts`) renders build failures in-browser during dev mode; it expects structured error objects with `message`, `file`, and optional `line`/`column`.
-- Template rendering errors are caught in `renderPage` and logged with context (template path, page slug); they don't halt the entire build. In production, a failing layout or shell writes the fallback HTML, and a failing include leaves an HTML comment; in development, misuse of `stati.include()`/`stati.layout()` throws `TemplateUsageError` so the overlay points at the calling template.
+- Template rendering errors are caught in `renderPage` and logged with context (template path, page slug); they don't halt the entire build. In production, a failing layout or shell writes the fallback HTML, and a failing include leaves an HTML comment, and any error the render logs sets `RenderResult.failed` (the scope's `hadError`), so its cache entry is stored with `inputsHash: 'STALE'` (the page renders and logs again on every build, and its output stays known for pruning); in development, misuse of `stati.include()`/`stati.layout()` throws `TemplateUsageError` so the overlay points at the calling template.
 - Use `logger.warning()` for recoverable issues (missing optional fields, deprecated config); use `logger.error()` for failures that skip a page.
 - Validation errors from config loading throw immediately since the build cannot proceed without valid configuration.
 

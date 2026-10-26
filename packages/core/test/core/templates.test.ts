@@ -312,6 +312,15 @@ describe('templates.ts', () => {
       // The failing layout is recorded, so fixing it rebuilds the page
       expect(result.templatesLoaded).toBe(1);
       expect(result.templates).toEqual([`${srcDir.replace(/\\/g, '/')}/layout.eta`]);
+      expect(result.failed).toBe(true);
+    });
+
+    it('does not report a failure for a page that renders', async () => {
+      mockEtaInstance.renderAsync.mockResolvedValue('<html></html>');
+
+      const result = await render(mockPage, ['layout.eta']);
+
+      expect(result.failed).toBe(false);
     });
 
     it('throws a template error for the overlay in development', async () => {

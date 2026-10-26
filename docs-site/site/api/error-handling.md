@@ -65,7 +65,7 @@ export default {
 **Handling**:
 
 - **Development mode**: Throws `TemplateError` with detailed context (file, line, column) for the template that failed, even when it was included or named as a shell, shown in the error overlay
-- **Production mode**: A failing layout or shell is logged as an error and the page is written with the built-in fallback template (see Fallback Mechanisms section); a failing include is logged as an error and replaced by `<!-- Error rendering site/partials/card.eta: message -->`, and the rest of the page renders
+- **Production mode**: A failing layout or shell is logged as an error and the page is written with the built-in fallback template (see Fallback Mechanisms section); a failing include is logged as an error and replaced by `<!-- Error rendering site/partials/card.eta: message -->`, and the rest of the page renders. Either way the page is not cached: each later build renders it again and logs the error again until the template is fixed (an include that names no template is handled the same way)
 
 **Common scenarios**:
 
@@ -313,7 +313,7 @@ Use one date field across the site. Stati reads the page's publication date (use
 
 ### Partial build success
 
-In production builds, a page whose layout fails is still written, using the fallback template, and the build continues. Check the build output for errors before deploying. A layout, shell or include that failed logs a message starting with `Error rendering`; an include whose name matches no template logs `stati.include('…'): no template at …`, and the page is written without it. Configuration and front matter errors, hook errors and file system errors still stop the build.
+In production builds, a page whose layout fails is still written, using the fallback template, and the build continues. Check the build output for errors before deploying. A layout, shell or include that failed logs a message starting with `Error rendering`; an include whose name matches no template logs `stati.include('…'): no template at …`, and the page is written without it. A page that logged an error like this is rendered again, and the error logged again, on every build until you fix it, so a cached build never hides it. Configuration and front matter errors, hook errors and file system errors still stop the build.
 
 ### Build interruption recovery
 
