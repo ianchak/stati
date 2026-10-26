@@ -107,6 +107,8 @@ export class RenderScope {
   renders = 0;
   /** Includes served from the page's cache instead of rendering again */
   includeCacheHits = 0;
+  /** Whether the page logged an error in production: a failed include, an unknown name or a cycle */
+  hadError = false;
   private readonly stack: string[] = [];
   private readonly includeCache = new Map<string, string>();
 
@@ -464,6 +466,7 @@ export class RenderScope {
     }
     const text = `${message} (page ${this.page.url})`;
     if (level === 'error') {
+      this.hadError = true;
       this.logger.error(text);
     } else {
       this.logger.warning(text);
@@ -533,6 +536,7 @@ export class RenderScope {
     const failure = error instanceof Error ? error : new Error(String(error));
     const failed = failingTemplates.get(failure) ?? file;
     const message = failure.message;
+    this.hadError = true;
     this.logger.error(`Error rendering ${this.display(failed)} for ${this.page.url}: ${message}`);
     if (awaitErrors.has(failure)) {
       return '';

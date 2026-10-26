@@ -814,6 +814,24 @@ export function createImageProvider() {
       expect(ogImageOf(await read('dist/index.html'))).toBeDefined();
     });
 
+    it('renders a page again, and logs the og.eta error again, until the card renders', async () => {
+      await write('site/blog/og.eta', '<div><%= stati.page.missing.title %></div>');
+      await runBuild();
+      expect(logger.error).toHaveBeenCalledTimes(1);
+
+      vi.mocked(logger.error).mockClear();
+      await runBuild();
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to render site/blog/og.eta for /blog/post:'),
+      );
+
+      await write('site/blog/og.eta', '<div>fixed</div>');
+      vi.mocked(logger.error).mockClear();
+      await runBuild();
+      expect(logger.error).not.toHaveBeenCalled();
+      expect(await read('dist/blog/post.html')).toContain('og:image');
+    });
+
     it('sends an og.eta error to the dev server overlay', async () => {
       setEnv('development');
       config.images = { og: true, dev: 'full' };

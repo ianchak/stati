@@ -317,6 +317,21 @@ describe('ISG Build Integration', () => {
       expect(mockComputeEffectiveTTL).toHaveBeenCalledWith(mockPage, mockConfig.isg);
     });
 
+    it('should store the entry of a page that rendered with an error as stale', async () => {
+      const result = await createCacheEntry(
+        mockPage,
+        mockConfig,
+        fixedDate,
+        'r',
+        rendered({ failed: true }),
+      );
+
+      // The entry stays, so the output can be pruned, but never matches the page's inputs
+      expect(result.inputsHash).toBe('STALE');
+      expect(result.path).toBe('/test.html');
+      expect(result.deps).toEqual([testLayoutPath, testHeaderPath]);
+    });
+
     it('should not mark an entry recorded when the render reported no templates', async () => {
       const result = await createCacheEntry(mockPage, mockConfig, fixedDate);
 

@@ -198,6 +198,7 @@ function handleBlockedCall(name: BlockedEtaFunction, args: unknown[], filepath?:
   const page = scope ? ` (page ${scope.page.url})` : '';
   const text = `${where}${message}${page}`;
   if (scope) {
+    scope.hadError = true;
     scope.logger.error(text);
   } else {
     console.error(text);

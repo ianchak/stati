@@ -55,6 +55,12 @@ export interface RenderResult {
   templateRenders: number;
   /** Includes served from the page's cache instead of rendering again */
   includeCacheHits: number;
+  /**
+   * Whether the page logged an error while it rendered in production: a failed layout or shell
+   * wrote the fallback HTML, or an include failed, named no template or led back to itself. The
+   * cache never serves such a page.
+   */
+  failed: boolean;
   /** Open Graph image generated for the page, if any */
   ogImage?: GeneratedOgImage | undefined;
   /** Shared data the render read, which the cache entry records */
@@ -352,8 +358,9 @@ async function renderPageInScope(
     values.ogImage = ogState.image;
   }
 
-  const result = (html: string): RenderResult => ({
+  const result = (html: string, failed = false): RenderResult => ({
     html,
+    failed: failed || scope.hadError,
     templatesLoaded: scope.templates.size,
     templateRenders: scope.renders,
     includeCacheHits: scope.includeCacheHits,
@@ -385,7 +392,7 @@ async function renderPageInScope(
     }
 
     log.error(`Error rendering ${scope.display(failed)} for ${page.url}: ${failure.message}`);
-    return result(createFallbackHtml(page, body));
+    return result(createFallbackHtml(page, body), true);
   }
 }
 
@@ -422,12 +429,18 @@ function createOgRenderer(scope: RenderScope, base: BaseContext): OgTemplateRend
       scope.record({ name, from: scope.pageFolder, file });
       return file === null ? null : join(scope.index.srcDir, file);
     },
-    render(template) {
-      return 'path' in template
-        ? scope.renderAsync(base, {
-            file: relative(scope.index.srcDir, template.path).replace(/\\/g, '/'),
-          })
-        : scope.renderAsync(base, { source: template.source });
+    async render(template) {
+      try {
+        return 'path' in template
+          ? await scope.renderAsync(base, {
+              file: relative(scope.index.srcDir, template.path).replace(/\\/g, '/'),
+            })
+          : await scope.renderAsync(base, { source: template.source });
+      } catch (error) {
+        // The image pipeline logs the failure and leaves the page without a card
+        scope.hadError = true;
+        throw error;
+      }
     },
   };
 }
