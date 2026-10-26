@@ -6,16 +6,7 @@ order: 3
 
 # Error handling
 
-Stati implements a comprehensive error handling strategy designed to provide graceful failures, clear error messages, and robust recovery mechanisms. Understanding how Stati handles errors helps you debug issues and build more resilient sites.
-
-## Error handling philosophy
-
-Stati follows these key principles:
-
-1. **Graceful Degradation** - Continue operation with fallback behavior when possible
-2. **Clear Error Messages** - Errors name the file and, where possible, the line
-3. **Invalid cache settings fail early** - Invalid `isg` settings stop the build before any page renders
-4. **Recovery Mechanisms** - Built-in fallbacks let a production build finish when a single template fails
+This page lists what stops a build, what a production build works around, and how errors are reported in the terminal and in the dev server's error overlay.
 
 ## Error categories
 
@@ -27,11 +18,13 @@ Stati follows these key principles:
 
 - **No config file**: not an error; Stati uses its defaults (site title "My Stati Site", base URL `http://localhost:3000`)
 - **Config file fails to load** (syntax error, failing import): the error is printed, followed by "Falling back to default configuration.", and the build **continues with the defaults**. Check the output if your title, base URL or other settings seem to be ignored.
-- **Invalid `isg` values**: the build stops with an `Invalid ISG configuration` error that names the field (see [ISG configuration errors](#isg-configuration-errors))
+- **Invalid `isg` values**: the build stops with an `Invalid ISG configuration` error that names the field (see [Error names](#error-names))
 - **Invalid `images` values**: the build stops with an `Invalid images configuration in <config file>` error that names the option. Unknown keys are rejected too, which catches typos (see [Image errors](#image-errors))
 - **Unknown options**: an option Stati does not know, such as Stati 1's `eta`, stops the build with `Invalid configuration in <config file>` and `Unknown option eta.`, naming a similar option when there is one (`Unknown option sitmap. Did you mean sitemap?`)
 - **`helpers` that are not functions**: the build stops with, for example, `helpers.formatDate must be a function that templates call as stati.helpers.formatDate() (got number 1).`
-- **Other values are not validated** at load time. A wrong type usually surfaces later as a generic error, for example `srcDir: 123` fails with `The "path" argument must be of type string`.
+- **Invalid `readingTime` or `css` blocks, invalid `seo.defaultAuthor.twitter`, `seo.twitter` or `seo.articles` values, or an invalid `sitemap.news` block**: the build stops with an `Invalid <option> configuration in <config file>` error, such as `Invalid css configuration`, that names the value.
+- **An `outDir` that overlaps the site's folders**: the build stops with `Invalid configuration in <config file>`, naming both paths. See [Configuration file](/configuration/file).
+- **Other values are not validated** at load time. Unknown keys are rejected at the top level and inside `images`, `css`, `readingTime`, `seo.twitter`, `seo.articles` and `sitemap.news`; an unknown key in another block, such as `search` or `markdown`, is ignored. A wrong type usually surfaces later as a generic error, for example `srcDir: 123` fails with `The "path" argument must be of type string`.
 
 **Example errors**:
 
@@ -55,6 +48,7 @@ export default {
 
 - **Unreadable files**: A file that disappears during the build, or an empty file, is skipped with a warning; other read errors, such as missing permissions, stop the build with `Failed to read file <path>`
 - **Invalid front matter**: YAML that cannot be read, or front matter that is a list or a single value instead of `key: value` lines, stops the build with `Invalid front matter in <file>` and the line of the problem
+- **Invalid ISG front matter**: `tags` that is not a list of strings, a `ttlSeconds` that is not a whole number of 0 or more, or a `maxAgeCapDays` that is not a whole number above 0 stops the build, for example `Invalid tags in front-matter of <file>. Must be an array of strings.`
 - **Missing or empty content directory**: The build succeeds with 0 pages ("Found 0 pages"), so check `srcDir` if a build produces nothing
 - **Unsupported front matter format**: A front matter block marked with an unknown language (for example `---toml`) fails the build; YAML (the default) and `---json` are supported
 
@@ -95,7 +89,7 @@ export default {
 
 ### Include and layout errors
 
-Mistakes in `stati.include()` and `stati.layout()` calls stop the dev server with an error overlay at the template that made the call. Production builds keep going:
+Mistakes in `stati.include()` and `stati.layout()` calls fail the dev build and show the error overlay at the template that made the call. Production builds keep going:
 
 | Case                                                             | Development                                                          | Production                                                                            |
 | ---------------------------------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
@@ -136,7 +130,7 @@ Check an optional template with `stati.include.has(name)` instead of including i
 
 **What is not checked**:
 
-- Frontmatter under `stati.page`, because each page can have different fields. Use optional chaining for fields that some pages leave out: `stati.page.hero?.image`.
+- Front matter under `stati.page`, because each page can have different fields. Use optional chaining for fields that some pages leave out: `stati.page.hero?.image`.
 - Code that does not run on the page being rendered, such as the branch of an `if` that is not taken
 
 To test whether an optional helper exists, use the `in` operator, which never throws: `<% if ('formatDate' in stati.helpers) { %>`. `stati.props` always exists, so `stati.props?.title ?? 'Default'` works in every template.
@@ -148,13 +142,6 @@ The overlay also gives a hint when a template uses `it` or a bare context name s
 **When they occur**: During output file writing and static asset copying
 
 **Handling**: Immediate failure (critical for build success)
-
-**Common scenarios**:
-
-- Output directory permission errors
-- Disk space exhausted
-- File system corruption
-- Directory creation failures
 
 ### Image errors
 
@@ -204,90 +191,18 @@ export default defineConfig({
 });
 ```
 
-## Error classes
+## Error names
 
-Stati uses domain-specific error classes that capture relevant context for debugging. Each error type includes structured information to help identify and resolve issues quickly.
+Stati's error classes are internal: `@stati/core` does not export them, so check `error.name` instead of using `instanceof`.
 
-These classes are internal: `@stati/core` does not export them, so you cannot use `instanceof` with them in your own code. Check `error.name` instead, or `error.cause?.name` for configuration errors: an invalid `isg` block arrives as an `Error` whose `cause` is the `ISGConfigurationError`.
-
-### Template errors
-
-```typescript
-class TemplateError extends Error {
-  public readonly filePath?: string;
-  public readonly line?: number;
-  public readonly column?: number;
-  public readonly template?: string;
-  /** Error-specific suggestions shown first in the overlay, such as "Did you mean ...?" */
-  public readonly suggestions?: string[];
-  public readonly context?: {
-    before?: string[];
-    after?: string[];
-  };
-
-  constructor(
-    message: string,
-    filePath?: string,
-    line?: number,
-    column?: number,
-    template?: string,
-    suggestions?: string[],
-  ) {
-    super(message);
-    this.name = 'TemplateError';
-    if (filePath !== undefined) this.filePath = filePath;
-    if (line !== undefined) this.line = line;
-    if (column !== undefined) this.column = column;
-    if (template !== undefined) this.template = template;
-    if (suggestions !== undefined) this.suggestions = suggestions;
-  }
-}
-```
-
-**Thrown when**: Template syntax errors, missing templates, template rendering failures, or (in development) reads of unknown `stati.*` properties occur.
-
-### ISG configuration errors
-
-```typescript
-class ISGConfigurationError extends Error {
-  constructor(
-    public readonly code: ISGValidationError,
-    public readonly field: string,
-    public readonly value: unknown,
-    message: string,
-  ) {
-    super(message);
-    this.name = 'ISGConfigurationError';
-  }
-}
-
-enum ISGValidationError {
-  INVALID_TTL = 'ISG_INVALID_TTL',
-  INVALID_MAX_AGE_CAP = 'ISG_INVALID_MAX_AGE_CAP',
-  INVALID_AGING_RULE = 'ISG_INVALID_AGING_RULE',
-  DUPLICATE_AGING_RULE = 'ISG_DUPLICATE_AGING_RULE',
-  UNSORTED_AGING_RULES = 'ISG_UNSORTED_AGING_RULES',
-  AGING_RULE_EXCEEDS_CAP = 'ISG_AGING_RULE_EXCEEDS_CAP',
-}
-```
-
-**Thrown when**: ISG configuration validation fails (invalid TTL, aging rules, etc.).
-
-### Bundle configuration errors
-
-```typescript
-class DuplicateBundleNameError extends Error {
-  constructor(duplicates: string[]) {
-    super(
-      `Duplicate bundleName(s) found in configuration: ${duplicates.join(', ')}. ` +
-        'Each bundle must have a unique bundleName.',
-    );
-    this.name = 'DuplicateBundleNameError';
-  }
-}
-```
-
-**Thrown when**: TypeScript bundle configurations contain duplicate bundle names.
+| `error.name`                                      | Thrown when                                                                                                                                                                                                                                     |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ConfigValidationError`                           | An option is unknown or invalid, `helpers` are not functions, or `outDir` overlaps the site's folders                                                                                                                                           |
+| `Error` with `cause.name` `ISGConfigurationError` | The `isg` block is invalid. `cause.code` is `ISG_INVALID_TTL`, `ISG_INVALID_MAX_AGE_CAP`, `ISG_INVALID_AGING_RULE`, `ISG_DUPLICATE_AGING_RULE`, `ISG_UNSORTED_AGING_RULES` or `ISG_AGING_RULE_EXCEEDS_CAP`, and `cause.field` names the setting |
+| `ISGConfigurationError`                           | A page's `tags`, `ttlSeconds` or `maxAgeCapDays` front matter is invalid                                                                                                                                                                        |
+| `FrontMatterError`                                | A page's front matter can't be read                                                                                                                                                                                                             |
+| `TemplateError`                                   | A template fails in development; it carries `filePath`, `line` and `column` when known                                                                                                                                                          |
+| `DuplicateBundleNameError`                        | Two TypeScript bundles share a `bundleName`                                                                                                                                                                                                     |
 
 ## Fallback mechanisms
 
@@ -295,34 +210,25 @@ class DuplicateBundleNameError extends Error {
 
 When a page has no layout, or its layout or a shell it names fails in a production build, Stati writes the page with a built-in fallback that generates minimal valid HTML. A failing include doesn't use it: the include is replaced by an error comment, or renders nothing when its name matches no template.
 
+<!-- prettier-ignore -->
 ```html
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>${escapeHtml(title)}</title>
-    ${description ? `
-    <meta name="description" content="${escapeHtml(description)}" />
-    ` : ''}
-  </head>
-  <body>
-    <main>${body}</main>
-  </body>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page title</title>
+  <meta name="description" content="Page description">
+</head>
+<body>
+  <main>
+    <!-- the page's rendered Markdown -->
+  </main>
+</body>
 </html>
 ```
 
-The fallback template:
-
-- Uses the page's title and description from front matter (HTML-escaped)
-- Inserts the rendered Markdown body as HTML
-- Provides a minimal but valid HTML structure
-
-It is also used when no layout is found at all, with the warning "No layout template found, using fallback".
-
-### Navigation fallback
-
-Stati builds navigation from the page structure during the content loading phase. If no pages are found or the pages array is empty, navigation will be an empty array. However, if navigation building encounters an error (such as corrupted page data), the build will fail rather than providing a fallback, as navigation is critical to site structure
+The title and description come from front matter, HTML-escaped (the title is `Untitled` without one), and the description tag is left out when there is none. A page with no layout at all logs "No layout template found, using fallback".
 
 ## Error reporting
 
@@ -391,108 +297,15 @@ interface BuildStats {
 
 ## Debugging approaches
 
-### 1. Isolate the problem
-
-**Build with subset of content:**
-
-```bash
-# Move most content out temporarily
-mv site/blog site/blog-backup
-stati build
-```
-
-**Check configuration:**
-
-```bash
-# Test configuration loading
-node -e "console.log(require('./stati.config.js'))"
-```
-
-### 2. Check build output
-
-Examine build output for error messages and stack traces. Stati provides detailed error information including file paths and line numbers when available.
-
-### 3. Common error scenarios
-
-**Build fails immediately:**
-
-- ✅ Check configuration file syntax
-- ✅ Verify directory permissions
-- ✅ Ensure required directories exist
-
-**Some pages missing from output:**
-
-- ✅ Check for `draft: true` in front matter
-- ✅ Verify content directory structure
-- ✅ Look for template resolution errors
-
-**Template rendering issues:**
-
-- ✅ Verify template syntax in isolation
-- ✅ Check template data availability
-- ✅ Review template file permissions
+To check the configuration, run `stati build` and read the first lines. A config that fails to load prints `Error loading config from ...` followed by "Falling back to default configuration."
 
 ## Best practices
 
 ### 1. Validate configuration
 
-Test your configuration in development:
+`defineConfig()` gives your editor and `tsc` the config's types. At load time Stati checks the option names, `helpers`, `outDir`, and the `isg`, `images`, `css`, `readingTime`, `seo.twitter`, `seo.articles`, `seo.defaultAuthor.twitter` and `sitemap.news` settings, so the type check is your safeguard for everything else.
 
-```typescript
-// stati.config.ts: the editor and `tsc` check the shape of the config
-import { defineConfig, getEnv } from '@stati/core';
-
-export default defineConfig({
-  site: {
-    title: 'My Site',
-    baseUrl: getEnv() === 'production' ? 'https://mysite.com' : 'http://localhost:3000',
-  },
-});
-```
-
-At load time Stati checks the option names, `helpers`, and the `isg` and `images` settings, so the type check is your safeguard for everything else.
-
-### 2. Handle hook errors gracefully
-
-```javascript
-export default defineConfig({
-  hooks: {
-    beforeRender: async (ctx) => {
-      try {
-        // Your hook logic
-        await processExternalData();
-      } catch (error) {
-        console.error('Hook failed:', error);
-        // Decide whether to continue or fail
-        throw error; // Re-throw to stop build
-      }
-    },
-  },
-});
-```
-
-### 3. Test content incrementally
-
-**Gradual rollout approach:**
-
-1. Test with a subset of content first
-2. Use `--include-drafts` flag for testing draft content
-3. Monitor build output for errors
-4. Fix issues before expanding content
-
-### 4. Use consistent front matter
-
-**Establish a schema:**
-
-```yaml
----
-title: string (required)
-description: string (required)
-publishedAt: YYYY-MM-DD (required for dated content)
-draft: boolean (optional)
-tags: string[] (optional)
----
-```
+### 2. Use consistent front matter
 
 Use one date field across the site. Stati reads the page's publication date (used for sorting collections, navigation, ISG aging and RSS) from the first valid value among `publishedAt`, `published`, `date` and `createdAt`, quoted or unquoted. An invalid value is skipped with a warning, so a typo silently moves the page to the end of date-sorted lists.
 
@@ -500,7 +313,7 @@ Use one date field across the site. Stati reads the page's publication date (use
 
 ### Partial build success
 
-In production builds, a page whose layout fails is still written, using the fallback template, and the build continues. Check the build output for errors before deploying. A layout, shell or include that failed logs a message starting with `Error rendering`; an include whose name matches no template logs `stati.include('…'): no template at …`, and the page is written without it. Hook errors, file system errors and invalid `isg` settings still stop the build.
+In production builds, a page whose layout fails is still written, using the fallback template, and the build continues. Check the build output for errors before deploying. A layout, shell or include that failed logs a message starting with `Error rendering`; an include whose name matches no template logs `stati.include('…'): no template at …`, and the page is written without it. Configuration and front matter errors, hook errors and file system errors still stop the build.
 
 ### Build interruption recovery
 
@@ -512,52 +325,4 @@ If a build is interrupted:
 
 ### Cache-related issues
 
-**Clear cache when encountering:**
-
-```bash
-# Clear all cache
-stati build --clean
-
-# Force complete rebuild
-stati build --force
-
-# Clear and rebuild
-stati build --clean --force
-```
-
-## Development workflow
-
-### 1. Start with clean build
-
-```bash
-# Ensure clean starting point
-stati build --clean
-```
-
-### 2. Monitor development server
-
-```bash
-# Watch for errors in development
-stati dev
-```
-
-The development server provides an [error overlay](#error-overlay) in the browser when build errors occur, making it easy to identify and fix issues without checking terminal output.
-
-### 3. Test production build
-
-```bash
-# Test the production build before deployment
-stati build
-stati preview
-```
-
-### 4. Validate output
-
-```bash
-# Check generated files
-ls -la dist/
-# Verify critical pages exist
-test -f dist/index.html && echo "✅ Homepage exists"
-```
-
-Understanding Stati's error handling helps you build more reliable sites and debug issues more effectively. Combined with proper configuration validation and incremental testing, you can maintain robust build processes even with complex content structures.
+`stati build --clean` deletes the output directory and the cache, then builds everything. `stati build --force` renders every page and keeps both.

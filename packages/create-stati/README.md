@@ -20,12 +20,11 @@ The interactive wizard will guide you through:
 2. **Template** - Starting point: blank, a complete blog, a complete docs site, or a complete news site
 3. **CSS solution** - Plain CSS, Sass, or Tailwind
 4. **TypeScript** - On by default; answer no for a JavaScript project
-5. **Agent skill** - Optional Stati skill for AI coding assistants
-6. **Git initialization** - Optional repository setup
-7. **Dependency installation** - Install now or later
-8. **Package manager** - Only when several are detected
-
-In less than 2 minutes, you'll have a complete static site ready to customize.
+5. **Image tools** - Off by default; yes adds `@stati/images` for responsive images and link preview cards
+6. **Agent skill** - Optional Stati skill for AI coding assistants
+7. **Git initialization** - Optional repository setup
+8. **Dependency installation** - Install now or later
+9. **Package manager** - Only when several are detected
 
 ---
 
@@ -37,7 +36,7 @@ Skip the prompts and create a site with specific options:
 npx create-stati my-site --template=blank --styling=tailwind --no-git --no-install
 ```
 
-When the project name, `--template` and `--styling` are all given, the TypeScript and agent skill prompts are skipped. The Git and install prompts still appear unless you pass `--no-git` and `--no-install`; there are no `--git` or `--install` flags.
+When the project name, `--template` and `--styling` are all given, the TypeScript, image tools and agent skill prompts are skipped: the project uses TypeScript (unless `--no-typescript`) and gets neither image tools (unless `--images`) nor an agent skill (unless `--agent-skill`). The Git and install prompts still appear unless you pass `--no-git` and `--no-install`; there are no `--git` or `--install` flags.
 
 **Available flags:**
 
@@ -45,6 +44,8 @@ When the project name, `--template` and `--styling` are all given, the TypeScrip
 - `--styling <type>` - CSS solution (`css` | `sass` | `tailwind`)
 - `--typescript`, `--ts` - Use TypeScript (default)
 - `--no-typescript`, `--no-ts` - Use JavaScript instead of TypeScript
+- `--images` - Add image tools: responsive AVIF/WebP images and link preview cards (`@stati/images`)
+- `--no-images` - Skip image tools (default)
 - `--no-git` - Skip git initialization (default: initializes Git)
 - `--no-install` - Skip dependency installation (default: installs dependencies)
 - `--package-manager <pm>` - Package manager to use (`npm` | `yarn` | `pnpm` | `bun`)
@@ -74,7 +75,7 @@ npx create-stati my-site --agent-skill
 npx create-stati my-site --template=blank --typescript --styling=tailwind --no-git --no-install --package-manager=yarn
 ```
 
-> **Note:** When no prompt is shown at all, dependencies are installed with `npm` unless you pass `--no-install`. Use `--package-manager` to specify a different package manager (yarn, pnpm, or bun).
+> **Note:** Without `--package-manager`, the scaffolder uses the one package manager it finds, asks when it finds several, and falls back to npm.
 
 ---
 
@@ -90,6 +91,7 @@ When you run `npx create-stati`, you'll see a friendly wizard:
     Sass/SCSS
     Tailwind CSS
 ? Use TypeScript? (Y/n)
+? Add image tools? Responsive AVIF/WebP images and link preview cards (@stati/images) (y/N)
 ? Install the Stati agent skill for AI coding assistants? (Use arrow keys)
   > .claude/skills (Claude Code, Copilot in VS Code)
     .agents/skills (Copilot, Codex, Cursor and other agents)
@@ -102,8 +104,6 @@ When you run `npx create-stati`, you'll see a friendly wizard:
     pnpm
     bun
 ```
-
-Each choice is explained, so you can make the right decision for your project.
 
 > **Note:** The package manager prompt only appears if you choose to install dependencies, another prompt was shown, and multiple package managers are detected on your system.
 
@@ -132,7 +132,7 @@ The bundle paths are also available as `stati.assets.bundlePaths` (an array) for
 ```eta
 <head>
   <% for (const path of stati.assets.bundlePaths) { %>
-  <link rel="modulepreload" href="<%= path %>">
+  <link rel="modulepreload" href="<%= stati.url(path) %>">
   <% } %>
 </head>
 ```
@@ -150,35 +150,25 @@ create-stati can add the [Stati agent skill](https://github.com/ianchak/stati/tr
 
 In interactive mode you're asked where to install it. In non-interactive mode it is only installed when `--agent-skill` is passed. Invoke it in Claude Code with `/stati`. `--agent-skill=github` still works and installs to `.agents/skills/stati/`, which Copilot reads.
 
-create-stati installs the skill with the open [`skills` CLI](https://github.com/vercel-labs/skills), from the `main` branch of this repository:
+create-stati installs the skill from this repository (`ianchak/stati`) with the [`skills` CLI](https://github.com/vercel-labs/skills). For the `claude` target it runs:
 
 ```bash
 npx --yes skills@1 add ianchak/stati --skill stati --agent claude-code --copy --yes --json
 ```
 
-It copies plain files (no symlinks) and writes `skills-lock.json` in the project root, which records where the skill came from. This needs `git` on your `PATH` and network access, even with `--no-git`. If the install fails, the site is still created and create-stati prints the command to add the skill later.
+The install downloads the `skills` CLI and clones the Stati repository, so it needs network access. If it fails, the site is still created, and create-stati prints the command that adds the skill later.
 
 ### Add or update the skill in an existing site
 
-```bash
-# Add the skill to an existing Stati site (asks which agents)
-npx skills add ianchak/stati --skill stati
+create-stati prints these commands: the first when the install fails, the second after it succeeds. For `.agents/skills/`, use `-a universal` instead of `-a claude-code`.
 
-# Without prompts, for Claude Code and Copilot in VS Code
-npx skills add ianchak/stati --skill stati -a claude-code --copy -y
-# Without prompts, into .agents/skills (Copilot, Codex, Cursor and others)
-npx skills add ianchak/stati --skill stati -a universal --copy -y
+```bash
+# Add the skill
+npx skills@1 add ianchak/stati --skill stati -a claude-code --copy -y
 
 # Update the skill
-npx skills update stati -p
+npx skills@1 update stati -p
 ```
-
-- Commit `skills-lock.json`. Without it, `npx skills update` finds nothing to update.
-- An update replaces the whole folder: edits to the skill's files and files added to it are removed without warning, and `npx skills update` doesn't notice local edits. Put project rules in `CLAUDE.md` or `AGENTS.md`, not in the skill.
-- Copies made by hand or by older create-stati releases, which copied the skill from the package, have no `skills-lock.json` entry, so `npx skills update` skips them (with `-y` it even falls back to personal skills and reports none). Run `npx skills add` once: it replaces the copy and tracks it from then on.
-- The CLI doesn't manage `.github/skills/stati`. Add the skill to `.claude/skills` or `.agents/skills`, then delete the old folder so Copilot doesn't see two skills named `stati`.
-- For a personal install, add `-g`. With `-a claude-code` it goes to `~/.claude/skills/stati`.
-- The CLI sends anonymous usage data unless `DISABLE_TELEMETRY=1` or `DO_NOT_TRACK=1` is set.
 
 ---
 
@@ -228,9 +218,6 @@ A minimal, flexible starting point for any type of Stati site.
 
 - Clean, minimal layout with a small light and dark theme that is easy to replace
 - Basic page structure with welcome content and clear instructions
-- Responsive design foundation ready to customize
-- Extensible architecture for any project type
-- Just the essentials - build on your own terms
 
 **File Structure (Plain CSS, TypeScript):**
 
@@ -284,15 +271,8 @@ my-site/
 - **Homepage (`site/index.md`)** - Welcome page with getting started instructions
 - **Layout (`site/layout.eta`)** - HTML5 boilerplate with responsive meta tags
 - **Styles** - CSS in `public/` (plain CSS) or `src/` (Sass/Tailwind)
-- **Configuration (`stati.config.ts` or `.js`)** - Sets the site title and description; add `baseUrl` before deploying
+- **Configuration (`stati.config.ts` or `.js`)** - Sets the site title, description and a placeholder `baseUrl`; set your real address before deploying
 - **Favicon (`public/favicon.svg`)** - Simple SVG favicon ready to customize
-
-### Perfect For
-
-- Personal websites and portfolios
-- Landing pages and marketing sites
-- Learning Stati fundamentals
-- Any project where you want full control
 
 ### Getting Started with Blank
 
@@ -414,9 +394,9 @@ my-site/
 ### Learn Stati
 
 - [Documentation](https://stati.build) - Complete guides and tutorials
-- [Core Concepts](https://stati.build/core-concepts/overview/) - Templates, routing, and markdown
-- [Configuration](https://stati.build/configuration/file/) - Site config, ISG, and hooks
-- [Examples](https://stati.build/examples/list/) - Real-world recipes
+- [Core Concepts](https://stati.build/core-concepts/overview) - Templates, routing, and markdown
+- [Configuration](https://stati.build/configuration/file) - Site config, ISG, and hooks
+- [Examples](https://stati.build/examples/list) - Real-world recipes
 
 ### Customize Your Site
 
@@ -458,7 +438,7 @@ export default defineConfig({
 
 Set `site.baseUrl` to your real address before you deploy: canonical links, the sitemap and feeds start with it. The blog, docs and news templates ship their own config, with a placeholder `baseUrl` to replace as well.
 
-You can customize this file to add features like SEO, sitemap, ISG caching, and more. See the [Configuration Guide](https://stati.build/configuration/file/) for all options.
+You can customize this file to add features like SEO, sitemap, ISG caching, and more. See the [Configuration Guide](https://stati.build/configuration/file) for all options.
 
 ---
 
@@ -472,9 +452,9 @@ You can customize this file to add features like SEO, sitemap, ISG caching, and 
 ## Learn More
 
 - [Full Documentation](https://stati.build) - Complete guides and tutorials
-- [CLI Commands](https://stati.build/cli/commands/) - All available commands
-- [Core Concepts](https://stati.build/core-concepts/overview/) - How Stati works
-- [Examples](https://stati.build/examples/list/) - Real-world projects and recipes
+- [CLI Commands](https://stati.build/cli/commands) - All available commands
+- [Core Concepts](https://stati.build/core-concepts/overview) - How Stati works
+- [Examples](https://stati.build/examples/list) - Real-world projects and recipes
 
 ---
 

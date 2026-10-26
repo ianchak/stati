@@ -118,7 +118,7 @@ stati build [options]
 - Names stylesheets after their content, such as `/_assets/styles-[hash].css`, and points the pages' `<link>` tags at them: the stylesheets in `public/` that pages link, and, with the Tailwind flags, the stylesheet Tailwind CSS builds after the last page renders
 - Uses smart caching to skip unchanged pages (ISG)
 - Creates sitemap, robots.txt and RSS feeds (if configured)
-- Reports build statistics and performance metrics
+- Reports build statistics, and with `--metrics` writes performance metrics
 
 **Options:**
 
@@ -247,75 +247,20 @@ stati invalidate
 
 ---
 
-## Quick Start Guide
-
-### Creating Your First Site
-
-1. **Create a new site:**
-
-   ```bash
-   npx create-stati my-site
-   ```
-
-2. **Navigate to your project:**
-
-   ```bash
-   cd my-site
-   ```
-
-3. **Start developing:**
-
-   ```bash
-   npm run dev
-   ```
-
-   Your site will be available at `http://localhost:3000`
-
-4. **Make changes:**
-
-   - Edit `site/index.md` for your homepage content
-   - Modify `site/layout.eta` for your HTML structure
-   - Update `public/styles.css` for styling
-   - Configure `stati.config.ts` (or `stati.config.js`) for site settings
-
-5. **Build for production:**
-
-   ```bash
-   npm run build
-   ```
-
-   Your static site will be in the `dist/` directory
-
-6. **Preview production build:**
-
-   ```bash
-   npm run preview
-   ```
-
-   Test your production build at `http://localhost:4000`
-
----
-
 ## Common Workflows
 
-### Development Workflow
+### Editing Your Site
 
-```bash
-# Start development server
-npm run dev
-
-# Edit your content in site/
-# Save files and see changes instantly
-
-# When ready, build for production
-npm run build
-```
+- Edit `site/index.md` for your homepage content
+- Modify the `.eta` templates in `site/` for your HTML structure
+- Update your stylesheet (`public/styles.css`, or `src/` with Sass or Tailwind)
+- Configure `stati.config.ts` (or `stati.config.js`) for site settings
 
 ### Deployment Workflow
 
 ```bash
 # Clean build for production
-npx stati build --clean
+npm run build -- --clean
 
 # Test production build locally
 npm run preview
@@ -327,14 +272,14 @@ npm run preview
 ### Cache Management Workflow
 
 ```bash
-# After updating a template that affects blog posts
+# After changing data Stati can't track, such as a file a helper reads
 stati invalidate "tag:blog"
 
 # Rebuild affected pages
 npm run build
 
 # Or do a clean build
-npx stati build --clean
+npm run build -- --clean
 ```
 
 ---

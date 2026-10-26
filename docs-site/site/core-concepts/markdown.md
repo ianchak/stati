@@ -6,43 +6,11 @@ order: 5
 
 # Markdown pipeline
 
-Stati uses Markdown-It as its core markdown processor, enhanced with carefully selected plugins and customization options. The pipeline is designed to be extensible and developer-friendly while supporting modern markdown features.
+Stati renders Markdown with [markdown-it](https://github.com/markdown-it/markdown-it). On top of it, Stati adds heading anchors, a table of contents and image sizes; other syntax comes from markdown-it plugins you install. The options are on [Markdown configuration](/configuration/markdown).
 
 ## Core features
 
-### Standard Markdown
-
-Stati supports all standard Markdown syntax out of the box:
-
-````markdown
-# Headings
-
-## Subheadings
-
-### And so on...
-
-**Bold text** and _italic text_
-
-[Links](https://example.com) and [internal links](/getting-started/introduction/)
-
-- Unordered lists
-- With multiple items
-
-1. Ordered lists
-2. With numbers
-
-> Blockquotes for emphasis
-> Can span multiple lines
-
-`Inline code` and:
-
-```javascript
-// Code blocks with syntax highlighting
-function hello() {
-  console.log('Hello, Stati!');
-}
-```
-````
+markdown-it follows CommonMark and adds tables and strikethrough (`~~text~~`). Stati also turns on raw HTML in Markdown, linkify and typographer.
 
 ### Front matter
 
@@ -57,12 +25,34 @@ tags: ['stati', 'markdown', 'documentation']
 author: 'John Doe'
 draft: false
 layout: 'post'
+difficulty: 'advanced'
+estimatedTime: '30 minutes'
+lastModified: '2024-01-15'
 ---
 
 # Your content starts here...
 ````
 
 YAML reads `title: 1984`, `tags: [2024]` and `title: 2024-01-01` as a number, a list with a number and a date. Stati uses the text you wrote for `title`, `description`, `tags`, `seo.title`, `seo.description` and `seo.keywords` (a date as `2024-01-01`), so such values need no quotes. A `null` entry in `tags` or `seo.keywords` (`tags: [~]`) is dropped, with a warning that names the file.
+
+Stati reads fields such as `title`, `description`, `tags`, `layout`, `date`, `order` and `draft`. Any other field, such as `difficulty` above, is available in templates as `stati.page.*`:
+
+```eta
+<article class="<%= stati.propValue('difficulty', `difficulty-${stati.page.difficulty}`) %>">
+  <header>
+    <h1><%= stati.page.title %></h1>
+    <div class="meta">
+      <span>Difficulty: <%= stati.page.difficulty %></span>
+      <span>Est. time: <%= stati.page.estimatedTime %></span>
+      <span>Last updated: <%= new Date(stati.page.lastModified).toLocaleDateString() %></span>
+    </div>
+  </header>
+
+  <div class="content">
+    <%~ stati.content %>
+  </div>
+</article>
+```
 
 ### Syntax highlighting
 
@@ -75,66 +65,9 @@ Code blocks in markdown are rendered with language class attributes, without hig
 </code></pre>
 ```
 
-To highlight code, either add the `markdown-it-prism` plugin, which highlights at build time with no browser JavaScript (see [Syntax highlighting](/configuration/markdown#syntax-highlighting)), or load a client-side library that picks up the `language-*` classes:
-
-**Example with Prism.js in the browser:**
-
-```eta
-<!-- In your layout.eta -->
-<head>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs/themes/prism.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/prismjs/prism.min.js"></script>
-</head>
-```
-
-**Markdown example:**
-
-````markdown
-```typescript
-interface StatiConfig {
-  site: {
-    title: string;
-    baseUrl: string;
-  };
-  markdown?: MarkdownConfig;
-}
-```
-
-```css
-.highlight {
-  background: #f0f8ff;
-  border-left: 4px solid #0066cc;
-  padding: 1rem;
-}
-```
-
-```bash
-npm install @stati/core
-npm run build
-```
-````
+To highlight code, either add the `markdown-it-prism` plugin, which highlights at build time with no browser JavaScript (see [Syntax highlighting](/configuration/markdown#syntax-highlighting)), or load a client-side library that picks up the `language-*` classes.
 
 ## Enhanced features
-
-### Table support
-
-Create tables using standard markdown table syntax:
-
-```markdown
-| Command         | Purpose                    |
-| --------------- | -------------------------- |
-| `stati dev`     | Development server         |
-| `stati build`   | Production build           |
-| `stati preview` | Serve the built site       |
-```
-
-Renders as:
-
-| Command         | Purpose                    |
-| --------------- | -------------------------- |
-| `stati dev`     | Development server         |
-| `stati build`   | Production build           |
-| `stati preview` | Serve the built site       |
 
 ### Images
 
@@ -174,101 +107,9 @@ En-dash (--) and em-dash (---)
 Ellipsis (...)
 ```
 
-## Markdown configuration
-
-### Base configuration
-
-Stati uses Markdown-It with the following default configuration:
-
-- **HTML tags** - Enabled for raw HTML in markdown
-- **Linkify** - Auto-convert URLs such as `https://example.com` to clickable links
-- **Typographer** - Smart quotes and other typography enhancements
-
-```javascript
-// stati.config.js
-import { defineConfig } from '@stati/core';
-
-export default defineConfig({
-  markdown: {
-    plugins: [
-      'footnote',        // markdown-it-footnote
-      ['mark', { /* options */ }], // markdown-it-mark with options
-    ]
-  },
-});
-```
-
-> **Note:** TOC extraction and heading anchor generation are built into Stati and enabled by default. You don't need `markdown-it-anchor` or `markdown-it-toc-done-right` plugins.
-
-**Note:** You need to install the plugins separately via npm:
-
-```bash
-npm install markdown-it-footnote markdown-it-mark
-```
-
 ## Configuration
 
-### Basic configuration
-
-Configure markdown processing in `stati.config.js`:
-
-```javascript
-import { defineConfig } from '@stati/core';
-
-export default defineConfig({
-  markdown: {
-    // Plugins array - Stati auto-prepends 'markdown-it-'
-    plugins: [
-      'footnote',                                   // Plugin name only
-      ['container', 'tip'],                         // Plugin with an argument
-    ],
-
-    // Custom markdown-it configuration
-    configure: (md) => {
-      // Modify settings (html, linkify, typographer are enabled by default)
-      md.set({ breaks: true });
-
-      // Add custom rendering rules
-      md.renderer.rules.code_inline = (tokens, idx) => {
-        const token = tokens[idx];
-        return `<code class="inline-code">${md.utils.escapeHtml(token.content)}</code>`;
-      };
-    },
-
-    // Enable/disable TOC extraction and heading anchors (default: true)
-    toc: true,
-  },
-});
-```
-
-> **Note:** HTML tags, linkify, and typographer are enabled by default; change them with `md.set()` in `configure`. TOC extraction and heading anchors are built in and controlled by `markdown.toc`.
-
-### Advanced configuration
-
-```javascript
-export default defineConfig({
-  markdown: {
-    // Custom renderer modifications
-    configure(md) {
-      // Add custom rules
-      md.renderer.rules.code_inline = (tokens, idx) => {
-        const token = tokens[idx];
-        return `<code class="inline-code">${md.utils.escapeHtml(token.content)}</code>`;
-      };
-
-      // Add custom plugins
-      md.use(customPlugin, options);
-
-      // Wrap fenced code blocks (``` blocks use the "fence" rule)
-      const defaultFence = md.renderer.rules.fence;
-      md.renderer.rules.fence = (tokens, idx, options, env, self) => {
-        const html = defaultFence(tokens, idx, options, env, self);
-        return `<div class="code-block">${html}</div>`;
-      };
-    },
-  },
-});
-```
+Plugins, the markdown-it instance (`markdown.configure`) and the table of contents (`markdown.toc`) are set in `stati.config.ts`. See [Markdown configuration](/configuration/markdown).
 
 ## Custom plugins
 
@@ -325,43 +166,6 @@ Each renders as `<blockquote class="alert alert-note">…</blockquote>`, ready f
 
 ## Content processing
 
-### Front matter processing
-
-Front matter is parsed and made available to templates:
-
-```markdown
----
-title: 'Advanced Guide'
-lastModified: '2024-01-15'
-contributors: ['John', 'Jane']
-difficulty: 'advanced'
-estimatedTime: '30 minutes'
----
-
-# Content here...
-```
-
-> **Note:** Stati supports standard frontmatter fields like `title`, `description`, `tags`, `layout`, `date`, `order`, and `draft`. You can also add custom fields (like `difficulty`, `estimatedTime`, `lastModified`, `contributors` above) which will be available in templates via `stati.page.*`.
-
-Access in templates:
-
-```eta
-<article class="<%= stati.propValue('difficulty', `difficulty-${stati.page.difficulty}`) %>">
-  <header>
-    <h1><%= stati.page.title %></h1>
-    <div class="meta">
-      <span>Difficulty: <%= stati.page.difficulty %></span>
-      <span>Est. time: <%= stati.page.estimatedTime %></span>
-      <span>Last updated: <%= new Date(stati.page.lastModified).toLocaleDateString() %></span>
-    </div>
-  </header>
-
-  <div class="content">
-    <%~ stati.content %>
-  </div>
-</article>
-```
-
 ### Word count and reading time
 
 Stati counts the words of every page and works out how long it takes to read, so templates and listings need no hook for it:
@@ -376,7 +180,7 @@ Both are set when the content is loaded, so `beforeAll` hooks can read them on `
 ```eta
 <p class="meta"><%= stati.page.readingTime %> min read, <%= stati.page.wordCount %> words</p>
 
-<% for (const post of stati.collection.recentPages) { %>
+<% for (const post of stati.collection?.recentPages ?? []) { %>
   <li><%= post.frontMatter.title %> (<%= post.readingTime %> min read)</li>
 <% } %>
 ```
@@ -385,70 +189,10 @@ The count covers the text a reader sees. Front matter, fenced code blocks, HTML 
 
 The reading time is the word count divided by `readingTime.wordsPerMinute` (230 unless you [set it](/configuration/file#reading-time-configuration)), rounded to the nearest minute. `wordCount` and `readingTime` are properties of Stati's page, so front matter keys of those names are replaced, with a warning.
 
-A listing that reads `post.readingTime` or `post.wordCount` is rebuilt only for the fields in [`collections.summaryFields`](/core-concepts/collections#what-rebuilds-a-listing), like any other field, so it can go stale if you leave them out. To show the reading time in a listing that rebuilds when the minutes change, and only then, add `readingTime` to [`collections.summaryFields`](/core-concepts/collections#what-rebuilds-a-listing). A `beforeAll` hook that changes `page.content` does not change the counts, which are taken when the page is loaded. Pages a hook adds get theirs after the hook runs.
+A listing that shows `post.readingTime` or `post.wordCount` rebuilds when they change only if you add them to [`collections.summaryFields`](/core-concepts/collections#what-rebuilds-a-listing). A `beforeAll` hook that changes `page.content` does not change the counts, which are taken when the page is loaded. Pages a hook adds get theirs after the hook runs.
 
 ### Content excerpts
 
-Stati does not currently provide built-in excerpt support. To create excerpts, you can:
+Stati has no excerpt feature. Write one in front matter (`excerpt: 'A short summary.'`) and print it as `stati.page.excerpt` on the page or `post.frontMatter.excerpt` in a listing. Add `excerpt` to [`collections.summaryFields`](/core-concepts/collections#what-rebuilds-a-listing) so listings rebuild when it changes.
 
-1. Add an `excerpt` field to your frontmatter
-2. Use a template helper to truncate content
-3. Process content in build hooks
-
-**Example using frontmatter:**
-
-```markdown
----
-title: 'My Post'
-excerpt: 'This is a custom excerpt for the post.'
----
-
-# My Post
-
-Full content goes here...
-```
-
-Access in templates:
-
-```eta
-<p class="excerpt"><%= stati.page.excerpt %></p>
-```
-
-## Performance optimization
-
-### Build-time processing
-
-All markdown processing happens at build time, not at runtime. This means:
-
-- Markdown is parsed and rendered to HTML during the build
-- All plugins run once during build
-- The output is static HTML with no runtime markdown processing
-
-```javascript
-// This runs during build, not at runtime
-export default defineConfig({
-  markdown: {
-    configure(md) {
-      // Expensive processing is done once during build
-      md.use(expensivePlugin, {
-        // Pre-computed options
-        dictionary: loadLargeDictionary(),
-        rules: compileComplexRules(),
-      });
-    },
-  },
-});
-```
-
-### Incremental Static Generation
-
-Stati's ISG system provides intelligent caching for rendered pages:
-
-- **Page caching** - Rendered HTML is cached and only rebuilt when content or dependencies change
-- **Content hash tracking** - Changes trigger rebuilds automatically
-- **Template dependency tracking** - Updates to a template invalidate the pages that rendered it
-- **TTL-based rebuilds** - Configure how long pages stay cached
-
-See the [ISG Configuration](/configuration/isg) documentation for details on cache TTL, aging rules, and invalidation strategies.
-
-The markdown pipeline is one of Stati's core features, providing powerful content processing with extensible plugins. Next, learn about [Incremental Static Generation](/core-concepts/isg) to understand how Stati handles caching and rebuilds.
+Next, learn about [Incremental Static Generation](/core-concepts/isg) to understand how Stati handles caching and rebuilds.

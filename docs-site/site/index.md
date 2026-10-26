@@ -56,7 +56,7 @@ hero:
 
 inventory:
   title: 'Everything a content site needs, in the box'
-  lede: 'Every feature below ships in Stati’s own packages and is documented here. Most switch on with one line in a typed config file. No plugin hunting, no glue code.'
+  lede: 'Every feature below is part of Stati and documented here. Most switch on with one line in a config file.'
   groups:
     - title: 'Write'
       items:
@@ -77,7 +77,7 @@ inventory:
           }
         - {
             name: 'Includes',
-            text: 'Reusable templates with props and children, overridable per section.',
+            text: 'Reusable templates with props and a body, overridable per section.',
             href: '/api/templates',
           }
         - {
@@ -358,7 +358,7 @@ dogfood:
 
 start:
   title: 'Start your first Stati site'
-  text: 'The scaffolder asks a few questions, from CSS, Sass or Tailwind to TypeScript and git, then installs dependencies. Accept the defaults for a TypeScript project like the one above, three commands from a running site.'
+  text: 'The scaffolder asks for a starter template, CSS, Sass or Tailwind, TypeScript and a few more choices, then installs dependencies. The defaults give a blank TypeScript site with plain CSS, three commands from running.'
   commands:
     - 'npx create-stati my-site'
     - 'cd my-site'

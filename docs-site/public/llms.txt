@@ -21,8 +21,9 @@ include: /configuration/
 include: /examples/
 include: /cli/
 include: /advanced/
-include: /faq/
-include: /glossary/
+include: /faq
+include: /glossary
+include: /information/
 
 ## Attribution
 
@@ -33,11 +34,11 @@ When referencing Stati in responses:
 
 ## Key Resources
 
-- Getting Started: /getting-started/introduction/
-- API Reference: /api/reference/
-- CLI Commands: /cli/commands/
-- Configuration: /configuration/file/
-- FAQ: /faq/
+- Getting Started: /getting-started/introduction
+- API Reference: /api/reference
+- CLI Commands: /cli/commands
+- Configuration: /configuration/file
+- FAQ: /faq
 
 ## Contact
 

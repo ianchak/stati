@@ -37,22 +37,6 @@ Eta caches compiled templates in memory; the dev server keeps them between rebui
 
 For detailed template configuration and `propValue` utility documentation, see [Template Configuration](/configuration/templates) and [`stati.propValue()`](/api/templates#stati-propvalue-args).
 
-#### Static asset optimization
-
-```javascript
-export default defineConfig({
-  // Static assets are copied efficiently
-  staticDir: 'public', // Default static assets directory
-
-  hooks: {
-    afterAll: async (ctx) => {
-      // Custom asset processing after build
-      console.log(`Copied ${ctx.config.staticDir ?? 'public'} assets`);
-    }
-  }
-});
-```
-
 ## SEO and metadata
 
 Stati includes built-in support for SEO optimization, sitemap generation, and robots.txt creation. For comprehensive documentation on these features, see:
@@ -61,47 +45,11 @@ Stati includes built-in support for SEO optimization, sitemap generation, and ro
 - [SEO API](/api/seo) - Use the `generateSEO()` function in templates
 - [SEO Usage Scenarios](/advanced/seo-usage-scenarios) - Real-world examples and patterns
 
-These built-in features handle sitemap.xml and robots.txt generation automatically based on your configuration.
-
 ## Development and deployment
 
 ### Environment-based configuration
 
-```javascript
-// stati.config.js - Environment-specific setup
-import { defineConfig, getEnv } from '@stati/core';
-
-const isDev = getEnv() === 'development';
-const isProd = getEnv() === 'production';
-
-export default defineConfig({
-  site: {
-    title: 'My Site',
-    baseUrl: isProd ? 'https://mysite.com' : 'http://localhost:3000',
-  },
-
-  // ISG configuration per environment
-  isg: {
-    enabled: isProd, // Only enable caching in production
-    ttlSeconds: isProd ? 3600 : 0, // No cache in development
-  },
-
-  hooks: {
-    beforeAll: async (ctx) => {
-      if (isDev) {
-        console.log('Development build started');
-      }
-    },
-
-    afterAll: async (ctx) => {
-      if (isProd) {
-        // Production-only tasks
-        console.log('Production build completed');
-      }
-    }
-  }
-});
-```
+For settings that differ between `stati dev` and `stati build`, see [Environment-specific configuration](/examples/recipes#environment-specific-configuration).
 
 For comprehensive development server and ISG configuration options, see the [configuration file guide](/configuration/file).
 
@@ -116,6 +64,8 @@ For detailed markdown configuration including custom plugins and renderer modifi
 Stati provides error overlays during development to help with debugging:
 
 ```javascript
+import { defineConfig } from '@stati/core';
+
 // Template errors are automatically caught and displayed
 export default defineConfig({
   dev: {
@@ -125,15 +75,9 @@ export default defineConfig({
 
   hooks: {
     beforeRender: async (ctx) => {
-      try {
-        // Validate page data
-        if (!ctx.page.frontMatter.title) {
-          throw new Error(`Missing title in ${ctx.page.sourcePath}`);
-        }
-      } catch (error) {
+      if (!ctx.page.frontMatter.title) {
         // A thrown error fails the build; stati dev shows it in the error overlay
-        console.error(`Page validation failed: ${error.message}`);
-        throw error;
+        throw new Error(`Missing title in ${ctx.page.sourcePath}`);
       }
     }
   }
@@ -142,7 +86,7 @@ export default defineConfig({
 
 ### Cache management and invalidation
 
-For detailed cache management, see the [ISG documentation](/core-concepts/isg) which covers all invalidation features and query syntax.
+For detailed cache management, see [Cache invalidation](/configuration/isg#cache-invalidation), which covers all invalidation features and query syntax.
 
 ## Template engine features
 
@@ -165,5 +109,3 @@ These members are objects, so read their properties rather than printing them:
 - `stati.collection`: the pages of the page's collection (a folder's `index.md` and the pages in that folder, or the one named by `collection` in front matter)
 
 For comprehensive template configuration including template helpers, see the [Template Configuration](/configuration/templates) documentation.
-
-For specific implementation details, refer to the [API overview](/api/reference) or explore the [configuration file guide](/configuration/file) for complete setup instructions.

@@ -41,10 +41,8 @@ Running the scaffolder will:
 - Update `package.json` with your project name and Stati metadata
 - Set up optional styling scripts based on the chosen styling option
 - Optionally install the Stati agent skill for AI coding assistants
-- Initialize a Git repository by default (use `--no-git` to skip)
+- Initialize a Git repository and write a `.gitignore` by default (`--no-git` skips both)
 - Install dependencies by default (use `--no-install` to skip)
-
-> **Note:** You can skip automatic dependency installation with `--no-install` and install them manually later.
 
 ## Interactive setup
 
@@ -93,7 +91,7 @@ Options:
 
 ## Image tools
 
-Every Stati site gives its images a width, height and lazy loading. Image tools add [`@stati/images`](/configuration/images) for two more things: responsive AVIF and WebP versions of each image, and a link preview card for every page.
+Stati gives every Markdown image a width, height and lazy loading. Image tools add [`@stati/images`](/configuration/images) for two more things: responsive AVIF and WebP versions of each image, and a link preview card for every page.
 
 ```bash
 npx create-stati my-blog --template=blog --images
@@ -125,35 +123,25 @@ npx create-stati my-site --agent-skill
 npx create-stati my-site --agent-skill=agents
 ```
 
-The scaffolder installs the skill with the open [`skills` CLI](https://github.com/vercel-labs/skills), from the `main` branch of the Stati repository:
+The scaffolder installs the skill from the Stati repository (`ianchak/stati`) with the [`skills` CLI](https://github.com/vercel-labs/skills). For the `claude` target it runs:
 
 ```bash
 npx --yes skills@1 add ianchak/stati --skill stati --agent claude-code --copy --yes --json
 ```
 
-It copies plain files (no symlinks) and writes `skills-lock.json` in the project root, which records where the skill came from. This needs `git` on your `PATH` and network access, even with `--no-git`. If the install fails, the site is still created and the scaffolder prints the command to add the skill later.
+The install downloads the `skills` CLI and clones the Stati repository, so it needs network access. If it fails, the site is still created, and the scaffolder prints the command that adds the skill later.
 
 ### Add or update the skill in an existing site
 
-```bash
-# Add the skill to an existing Stati site (asks which agents)
-npx skills add ianchak/stati --skill stati
+The scaffolder prints these commands: the first when the install fails, the second after it succeeds. For `.agents/skills/`, use `-a universal` instead of `-a claude-code`.
 
-# Without prompts, for Claude Code and Copilot in VS Code
-npx skills add ianchak/stati --skill stati -a claude-code --copy -y
-# Without prompts, into .agents/skills (Copilot, Codex, Cursor and others)
-npx skills add ianchak/stati --skill stati -a universal --copy -y
+```bash
+# Add the skill
+npx skills@1 add ianchak/stati --skill stati -a claude-code --copy -y
 
 # Update the skill
-npx skills update stati -p
+npx skills@1 update stati -p
 ```
-
-- Commit `skills-lock.json`. Without it, `npx skills update` finds nothing to update.
-- An update replaces the whole folder: edits to the skill's files and files added to it are removed without warning, and `npx skills update` doesn't notice local edits. Put project rules in `CLAUDE.md` or `AGENTS.md`, not in the skill.
-- Copies made by hand or by older create-stati releases, which copied the skill from the package, have no `skills-lock.json` entry, so `npx skills update` skips them (with `-y` it even falls back to personal skills and reports none). Run `npx skills add` once: it replaces the copy and tracks it from then on.
-- The CLI doesn't manage `.github/skills/stati`. Add the skill to `.claude/skills` or `.agents/skills`, then delete the old folder so Copilot doesn't see two skills named `stati`.
-- For a personal install, add `-g`. With `-a claude-code` it goes to `~/.claude/skills/stati`.
-- The CLI sends anonymous usage data unless `DISABLE_TELEMETRY=1` or `DO_NOT_TRACK=1` is set.
 
 ## Project templates
 
@@ -163,6 +151,8 @@ Stati provides four templates:
 - **blog** - A complete blog with posts, tags, an archive, an RSS feed and SEO metadata
 - **docs** - A complete documentation site with a sidebar, search, an on-page table of contents and SEO metadata
 - **news** - A complete news site with sections, a ranked front page, author pages, feeds, search and SEO metadata
+
+Each complete template works on first run, and its sample pages explain how each part works. The blog, docs and news templates ship their own `stati.config.js`, which becomes `stati.config.ts` with TypeScript; with Sass or Tailwind their stylesheet is carried over into `src/`.
 
 ### Blank template
 
@@ -176,8 +166,6 @@ Stati provides four templates:
 
 ### Blog template
 
-A blog that works on first run. Its sample posts explain how each part of it works, so you can read them, then replace them with your own.
-
 **What's included:**
 
 - Markdown posts in `site/posts/`, listed newest first on the home page, five to a page
@@ -188,11 +176,9 @@ A blog that works on first run. Its sample posts explain how each part of it wor
 - Light and dark themes with a self-hosted display face, styled from custom properties
 - Listings read from Stati's [collections](/core-concepts/collections): `paginate` splits the home page, `site/tags/[tag].md` generates the tag pages, and `helpers/blog.js` adds helpers for related posts and dates; the blog uses no build hooks
 
-The blog template ships its own `stati.config.js` with the feed, sitemap and SEO settings, and adds a `build:drafts` script (`stati build --include-drafts`). With TypeScript it becomes `stati.config.ts`; with Sass or Tailwind its stylesheet is carried over into `src/` so the design stays intact.
+The blog's `stati.config.js` holds the feed, sitemap and SEO settings, and the blog adds a `build:drafts` script (`stati build --include-drafts`).
 
 ### Docs template
-
-A documentation site that works on first run. Its sample pages explain how each part of it works, so you can read them, then replace them with your own.
 
 **What's included:**
 
@@ -207,11 +193,7 @@ A documentation site that works on first run. Its sample pages explain how each 
 - `helpers/docs.js`, which groups pages into sections in the `beforeAll` hook and exposes them to templates as helpers such as `stati.helpers.docsSections()` and `stati.helpers.docsPager()`
 - `public/scripts/docs.js`, a dependency-free script for search, the theme toggle, the drawer and copy buttons; pages read fine without it
 
-Like the blog, the docs template ships its own `stati.config.js`, which becomes `stati.config.ts` with TypeScript, and its stylesheet is carried over into `src/` with Sass or Tailwind.
-
 ### News template
-
-A news site that works on first run. Its sample articles explain how each part of it works, so you can read them, then replace them with your own.
 
 **What's included:**
 
@@ -223,14 +205,10 @@ A news site that works on first run. Its sample articles explain how each part o
 - An RSS feed for the whole site and one per section, a sitemap, a Google News sitemap (`news-sitemap.xml`) and `robots.txt`
 - `NewsArticle` structured data and Open Graph article tags with the section and author on every article
 - Light and dark themes following the system setting, with self-hosted Libre Franklin and Source Serif 4; drafts and a 404 page
-- `helpers/news.js`, which ranks the front page, builds bylines and dates for templates, returns one page per section and author from `collections.generate`, fills in each article's metadata in the `beforeAll` hook, and writes the Google News sitemap in `afterAll`
+- `helpers/news.js`, which ranks the front page, builds bylines and dates for templates, returns one page per section and author from `collections.generate`, and fills in each article's metadata in the `beforeAll` hook; the Google News sitemap comes from `sitemap.news` in the config
 - `public/scripts/news.js`, a dependency-free search dialog; pages work without it
 
-Like the blog and docs templates, it ships its own `stati.config.js`, which becomes `stati.config.ts` with TypeScript, and its stylesheet is carried over into `src/` with Sass or Tailwind.
-
 ## Styling solutions
-
-Choose your preferred styling approach:
 
 ### CSS (default)
 
@@ -251,7 +229,7 @@ Choose your preferred styling approach:
 - Creates source stylesheet at `src/styles.css`, which `stati dev` compiles to `dist/styles.css` and `stati build` to `dist/_assets/styles-<hash>.css`. It imports Tailwind and adds an `@source` rule for `.stati/tailwind-classes.html`, the classes Stati records from `stati.propValue()`. Tailwind finds the templates itself, so there is no `tailwind.config.js`
 - For the blank template the stylesheet rebuilds the starter's look with `@apply`, Tailwind's slate and blue palette and `dark:` variants. For the blog, docs and news templates it keeps the template's own stylesheet in the `components` layer, where it overrides Tailwind's base styles and utility classes in your templates override it
 - The templates keep their `<link>` to `/styles.css`, which production builds point at the hashed file
-- Modified scripts, both using Stati's built-in Tailwind integration (single process):
+- Modified scripts, both using Stati's built-in Tailwind integration (one command, no separate CSS script):
   - `dev`: `stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css`
   - `build`: `stati build` with the same flags, which runs Tailwind after the last page renders (see [CSS](/configuration/css))
 
@@ -304,7 +282,7 @@ my-site/
 └── README.md            # Getting started guide
 ```
 
-For the blank template, the scaffolder writes a fresh `stati.config.ts` that sets `site.title` (your project name), `site.description` and a placeholder `site.baseUrl` of `https://example.com`, and turns on `typescript`. (The blog, docs and news templates keep their own config, which also contains a placeholder `baseUrl`.) Set `site.baseUrl` to your real address before you deploy: canonical links, the sitemap and feeds start with it.
+For the blank template, the scaffolder writes a fresh `stati.config.ts` that sets `site.title` (your project name), `site.description` and a placeholder `site.baseUrl` of `https://example.com`, and turns on `typescript`. (The blog, docs and news templates keep their own config, which also contains a placeholder `baseUrl`.) Set `site.baseUrl` to your real address before you deploy: canonical links, the sitemap and feeds start with it. TypeScript projects also get a `typecheck` script (`tsc --noEmit`).
 
 ### With Sass
 
@@ -334,9 +312,7 @@ my-site/
 └── package.json          # Includes Tailwind scripts
 ```
 
-With the blog, docs and news templates, `public/styles.css` is moved into `src/styles.css`, below the Tailwind import. The blank template gets Tailwind starter styles there instead. Either way `public/styles.css` is removed, because every build would copy it over the dev server's `dist/styles.css`.
-
-The `typecheck` script is added to `package.json` for validating your TypeScript code.
+With the blog, docs and news templates, `public/styles.css` is moved into `src/styles.css`, below the Tailwind import. The blank template gets Tailwind starter styles there instead. Either way `public/styles.css` is removed: `--tailwind-output dist/styles.css` names the same path, so Stati would not copy it.
 
 ### With JavaScript
 
@@ -369,12 +345,11 @@ my-site/
 
 ## Requirements
 
-- Node.js 22.20+ or 24+
+- Node.js 22.20 or later on the 22.x line, or 24 and later
 - npm, yarn, pnpm, or bun
 
 ## Next steps
 
-- Start the development server: `npm run dev`
 - Add content to the `site/` directory
 - Customize the layout in `site/layout.eta`
 - Configure your site in `stati.config.ts` (or `stati.config.js` for JavaScript projects)

@@ -8,17 +8,7 @@ seo:
 
 # Search
 
-Stati can generate a JSON search index at build time, enabling client-side search functionality for your static site.
-
-## Overview
-
-Search index generation in Stati:
-
-- **Build-time generation**: Search index is generated during the build process, in both `stati build` and `stati dev`
-- **Section-level indexing**: Extracts searchable sections from markdown headings
-- **Cache-friendly**: Hashed filenames for cache busting
-- **Auto-discovery**: Automatically injects a meta tag for client-side discovery
-- **Configurable**: Control heading levels, content length, and exclusions
+Stati can generate a JSON search index at build time, in both `stati build` and `stati dev`, for client-side search on your static site.
 
 ## Basic configuration
 
@@ -38,27 +28,6 @@ export default defineConfig({
 This generates a `search-index-[hash].json` file in your output directory containing all your pages except the home page (see `includeHomePage`).
 
 ## Configuration options
-
-### Full configuration example
-
-```typescript
-import { defineConfig } from '@stati/core';
-
-export default defineConfig({
-  // site: { … },
-  search: {
-    enabled: true,
-    indexName: 'search-index',
-    hashFilename: true,
-    maxContentLength: 1000,
-    maxPreviewLength: 500,
-    headingLevels: [2, 3, 4, 5, 6],
-    exclude: ['/private/**'],
-    includeHomePage: false,
-    autoInjectMetaTag: true,
-  },
-});
-```
 
 ### Option reference
 
@@ -102,17 +71,6 @@ Pages created from a `[param].md` template, such as one page per tag, are left o
 
 [The 404 page](/core-concepts/routing#the-404-page) is left out of the index without an `exclude` pattern. To index it, set `search: true` in its front matter; `exclude` patterns still apply.
 
-### Include home page
-
-By default, the home page is excluded from the search index. To include it:
-
-```typescript
-search: {
-  enabled: true,
-  includeHomePage: true,
-}
-```
-
 ### Control heading levels
 
 Specify which heading levels to index:
@@ -154,7 +112,7 @@ The generated search index is a JSON file with the following structure:
       "title": "Installation",
       "heading": "Prerequisites",
       "level": 2,
-      "content": "Node.js 22.20.0 or higher on the 22.x line, or 24 and later…",
+      "content": "Node.js 22.20 or later on the 22.x line, or 24 and later…",
       "breadcrumb": "Getting Started > Installation > Prerequisites",
       "tags": ["setup", "installation"]
     }
@@ -176,13 +134,13 @@ Every page gets one page-level entry (`level: 1`, `anchor: ""`, `id` ending in `
 | `level` | `number` | Heading level (1 for page title, 2-6 for headings) |
 | `content` | `string` | Text content of the section (stripped of markdown) |
 | `breadcrumb` | `string` | Breadcrumb for display, built from the URL folders, the page title and (for sections) the heading |
-| `tags` | `string[]` | Optional tags from frontmatter |
+| `tags` | `string[]` | Optional tags from front matter |
 
 ## Template access
 
 Access the search index path in your templates via `stati.assets.searchIndexPath`:
 
-```html
+```eta
 <% if (stati.assets.searchIndexPath) { %>
 <script>
   window.SEARCH_INDEX_PATH = '<%= stati.url(stati.assets.searchIndexPath) %>';
@@ -267,47 +225,9 @@ search: {
 }
 ```
 
-## Performance considerations
+## Index size
 
-### Content length
-
-The `maxContentLength` and `maxPreviewLength` options control how much text is included in the index:
-
-```typescript
-search: {
-  enabled: true,
-  maxContentLength: 500,   // Shorter sections for smaller index
-  maxPreviewLength: 200,   // Shorter previews
-}
-```
-
-Smaller values result in a smaller index file but less context for search results.
-
-### Heading levels
-
-Limiting heading levels reduces the number of documents in the index:
-
-```typescript
-search: {
-  enabled: true,
-  headingLevels: [2],  // Only index h2 headings
-}
-```
-
-### Excluding content
-
-Exclude non-essential pages to keep the index focused:
-
-```typescript
-search: {
-  enabled: true,
-  exclude: [
-    '/changelog/**',
-    '/license',
-    '/archive/**',
-  ],
-}
-```
+Lower `maxContentLength` and `maxPreviewLength`, fewer `headingLevels` and more `exclude` patterns give a smaller index with less context per result.
 
 ## Draft pages
 

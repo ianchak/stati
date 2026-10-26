@@ -1,5 +1,13 @@
 # @stati/cli
 
+## 2.4.1
+
+### Patch Changes
+
+- e27f093: update documentation
+- Updated dependencies [e27f093]
+  - @stati/core@2.8.1
+
 ## 2.4.0
 
 ### Minor Changes

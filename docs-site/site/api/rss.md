@@ -8,8 +8,6 @@ seo:
 
 # RSS
 
-This document provides a reference for RSS feed generation in Stati.
-
 ## Types
 
 ### RSSConfig
@@ -92,10 +90,10 @@ interface RSSFeedConfig {
 
 - `contentPatterns` - Glob patterns to include content (e.g., `['**/blog/**']`)
 - `excludePatterns` - Glob patterns to exclude content (e.g., `['**/draft-*']`)
-
-Both are matched against each page's absolute source file path (`PageModel.sourcePath`), so folder patterns need a leading `**/`. A pattern such as `'blog/**'` matches nothing.
 - `filter` - Custom filter function for fine-grained control
 - `maxItems` - Maximum number of items to include in feed
+
+Both pattern lists are matched against each page's absolute source file path (`PageModel.sourcePath`), so folder patterns need a leading `**/`. A pattern such as `'blog/**'` matches nothing.
 
 **Sorting:**
 
@@ -123,7 +121,7 @@ Both are matched against each page's absolute source file path (`PageModel.sourc
 
 Field mappings for RSS feed items.
 
-> **Note:** This type is defined inline within `RSSFeedConfig.itemMapping` but documented here for clarity and reference.
+> **Note:** Not exported: this is the inline type of `RSSFeedConfig.itemMapping`.
 
 ```typescript
 interface RSSItemMapping {
@@ -141,28 +139,28 @@ interface RSSItemMapping {
 **Properties:**
 
 - `title` - Title field mapping (default: `'title'`)
-  - String: frontMatter property name
+  - String: front matter property name
   - Function: custom title generator
 
 - `description` - Description field mapping (default: `'description'`)
-  - String: frontMatter property name
+  - String: front matter property name
   - Function: custom description generator
 
-- `link` - Custom link generator (default: uses page URL). A relative URL is resolved against `site.baseUrl`. If the function throws or returns no URL, the item is skipped with a warning
+- `link` - Custom link generator (default: `site.baseUrl` plus the page URL). A relative URL is resolved against `site.baseUrl`. If the function throws or returns no URL, the item is skipped with a warning
 
 - `pubDate` - Publication date field mapping (default: the first valid of `'publishedAt'`, `'published'`, `'date'`, `'createdAt'`)
-  - String: frontMatter property name
+  - String: front matter property name
   - Function: custom date generator
 
 - `author` - Author field mapping (default: `'author'`)
-  - String: frontMatter property name. The value is text, or an object with `name` and `email`, which is written as `email (name)`; a list is joined with commas
+  - String: front matter property name. The value is text, or an object with `name` and `email`, which is written as `email (name)`; a list is joined with commas
   - Function: custom author generator
 
 - `category` - Category/categories field mapping (default: `'tags'`)
-  - String: frontMatter property name
+  - String: front matter property name
   - Function: custom category generator
 
-- `guid` - Custom GUID generator (default: uses page URL). The `<guid>` is a permalink (`isPermaLink="true"`) only when it is an absolute `http` or `https` URL. If the function throws, the item has no `<guid>`
+- `guid` - Custom GUID generator (default: the item's link). The `<guid>` is a permalink (`isPermaLink="true"`) only when it is an absolute `http` or `https` URL. If the function throws, the item has no `<guid>`
 
 - `includeContent` - Whether to put the page body in `<description>` (default: `false`). The body is the page's Markdown source (`PageModel.content`), wrapped in CDATA; it is not rendered to HTML.
 
@@ -172,7 +170,7 @@ interface RSSItemMapping {
 
 Feed image configuration.
 
-> **Note:** This type is defined inline within `RSSFeedConfig.image` but documented here for clarity and reference.
+> **Note:** Not exported: this is the inline type of `RSSFeedConfig.image`.
 
 ```typescript
 interface RSSImageConfig {
@@ -189,8 +187,8 @@ interface RSSImageConfig {
 - `url` - Image URL
 - `title` - Image alt text
 - `link` - URL the image links to
-- `width` - Image width in pixels (max 144)
-- `height` - Image height in pixels (max 400)
+- `width` - Image width in pixels (RSS recommends at most 144; a larger value logs a warning)
+- `height` - Image height in pixels (RSS recommends at most 400; a larger value logs a warning)
 
 ---
 
@@ -198,7 +196,7 @@ interface RSSImageConfig {
 
 Media enclosure for podcast episodes or other media files.
 
-> **Note:** This type is the return type of `RSSFeedConfig.enclosure` function but documented here for clarity and reference.
+> **Note:** Not exported: this is the return type of `RSSFeedConfig.enclosure`.
 
 ```typescript
 interface RSSEnclosure {
@@ -255,24 +253,6 @@ interface RSSValidationResult {
 - `valid` - Whether validation passed (no errors)
 - `errors` - Array of validation error messages
 - `warnings` - Array of validation warning messages (non-critical issues)
-
-**Example:**
-
-```typescript
-import { validateRSSConfig } from '@stati/core';
-
-const result = validateRSSConfig(config.rss);
-
-if (!result.valid) {
-  console.error('Validation failed with errors:');
-  result.errors.forEach(error => console.error(`  - ${error}`));
-}
-
-if (result.warnings.length > 0) {
-  console.warn('Validation warnings:');
-  result.warnings.forEach(warning => console.warn(`  - ${warning}`));
-}
-```
 
 ## Functions
 
@@ -339,8 +319,13 @@ import { validateRSSConfig } from '@stati/core';
 const result = validateRSSConfig(config.rss);
 
 if (!result.valid) {
-  console.error('RSS configuration is invalid');
-  result.errors.forEach(error => console.error('  -', error));
+  console.error('RSS configuration errors:');
+  result.errors.forEach(error => console.error(`  - ${error}`));
+}
+
+if (result.warnings.length > 0) {
+  console.warn('RSS configuration warnings:');
+  result.warnings.forEach(warning => console.warn(`  - ${warning}`));
 }
 ```
 
@@ -414,90 +399,6 @@ const results = generateRSSFeeds(pages, config);
 for (const result of results) {
   console.log(`Generated ${result.filename} (${result.itemCount} items)`);
 }
-```
-
-## Usage examples
-
-### Basic feed
-
-```typescript
-export default defineConfig({
-  site: {
-    title: 'My Site',
-    baseUrl: 'https://example.com',
-  },
-  rss: {
-    enabled: true,
-    feeds: [
-      {
-        filename: 'feed.xml',
-        title: 'My Site Feed',
-        description: 'Latest content from my site',
-      },
-    ],
-  },
-});
-```
-
-### Multiple feeds
-
-```typescript
-export default defineConfig({
-  site: {
-    title: 'My Site',
-    baseUrl: 'https://example.com',
-  },
-  rss: {
-    enabled: true,
-    feeds: [
-      {
-        filename: 'all.xml',
-        title: 'All Content',
-        description: 'Everything from the site',
-        maxItems: 50,
-      },
-      {
-        filename: 'blog.xml',
-        title: 'Blog Posts',
-        description: 'Latest blog posts',
-        contentPatterns: ['**/blog/**'],
-        excludePatterns: ['**/index.md'],
-        maxItems: 20,
-      },
-    ],
-  },
-});
-```
-
-### Custom field mapping
-
-```typescript
-export default defineConfig({
-  site: {
-    title: 'My Site',
-    baseUrl: 'https://example.com',
-  },
-  rss: {
-    enabled: true,
-    feeds: [
-      {
-        filename: 'feed.xml',
-        title: 'My Blog',
-        description: 'Latest posts',
-        itemMapping: {
-          title: (page) => `${page.frontMatter.title} - My Blog`,
-          description: 'excerpt',
-          author: (page) => {
-            const author = page.frontMatter.author;
-            const email = page.frontMatter.email;
-            if (typeof author !== 'string') return undefined;
-            return typeof email === 'string' ? `${email} (${author})` : author;
-          },
-        },
-      },
-    ],
-  },
-});
 ```
 
 ## See also

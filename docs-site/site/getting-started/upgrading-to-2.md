@@ -62,6 +62,8 @@ export default defineConfig({
 });
 ```
 
+An `eta` option left in the config stops the build with "Unknown option eta".
+
 | Before                           | After                                                                       |
 | -------------------------------- | --------------------------------------------------------------------------- |
 | `stati.formatDate(x)`            | `stati.helpers.formatDate(x)`                                               |

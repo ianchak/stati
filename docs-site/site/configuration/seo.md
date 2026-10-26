@@ -18,11 +18,11 @@ seo:
 
 # SEO and sitemap
 
-Stati provides comprehensive SEO support with automatic metadata generation, sitemap creation, and robots.txt configuration. The SEO features are designed to work automatically with minimal configuration while offering granular control when needed.
+Stati adds SEO metadata to every page and can write a sitemap and a robots.txt file.
 
 ## Automatic SEO injection
 
-By default, Stati automatically injects SEO metadata into all pages during build. This requires **zero configuration** and works out of the box.
+By default, Stati injects SEO metadata into every page during the build.
 
 ### How it works
 
@@ -63,13 +63,13 @@ export default defineConfig({
 
 ## Manual SEO generation
 
-For complete control, you can generate SEO tags in your templates with Stati's own `stati.generateSEO()`.
+For complete control, you can generate SEO tags in your templates with Stati's own `stati.generateSEO()`. Auto-injection still runs and adds only the tags your template does not write; set `seo.autoInject: false` to stop it.
 
 ### Basic usage
 
 Generate all SEO tags:
 
-```html
+```eta
 <head>
   <%~ stati.generateSEO() %>
   <!-- Your custom tags here -->
@@ -80,7 +80,7 @@ Generate all SEO tags:
 
 Generate only specific SEO tags using tag type strings:
 
-```html
+```eta
 <head>
   <%~ stati.generateSEO(['title', 'description', 'canonical']) %>
   <!-- Add custom Open Graph tags -->
@@ -119,7 +119,6 @@ export default defineConfig({
     // Default author for all pages
     defaultAuthor: {
       name: 'John Doe',
-      email: 'john@example.com',
       url: 'https://johndoe.com', // article:author on article pages
       twitter: '@johndoe', // twitter:creator; the @ is optional
     },
@@ -210,19 +209,9 @@ Stati writes these values into each page's `seo` front matter after the `beforeA
 
 To print these tags from the config, set them here rather than in a layout: one `og:` or `twitter:` tag in the layout's `<head>` turns off Stati's whole Open Graph or Twitter group for that page (see [tag type groups](#tag-type-groups)).
 
-## Frontmatter SEO fields
+## Front matter SEO fields
 
-Customize SEO metadata for individual pages using frontmatter:
-
-### Basic SEO fields
-
-```markdown
----
-title: 'SEO & Sitemap'
-description: 'Configure SEO settings, meta tags, and sitemap generation.'
-order: 6
----
-```
+Customize SEO metadata for individual pages using front matter:
 
 ### Open Graph configuration
 
@@ -252,7 +241,7 @@ seo:
 ---
 ```
 
-> **Quote dates.** YAML turns an unquoted date or timestamp into a date object, and an unquoted `publishedTime` or `modifiedTime` makes the build fail with "text.replace is not a function". Dates inside `structuredData` must be quoted too; unquoted ones are written as `{}`.
+> **Quote dates.** YAML turns an unquoted date or timestamp into a date object. An unquoted `publishedTime` or `modifiedTime` is printed in JavaScript's long date format (`Wed Jan 15 2025 11:00:00 GMT+0100 ...`), not ISO 8601, and an unquoted date inside `structuredData` is written as `{}`.
 
 Article tags (`article:published_time`, `article:tag` and so on) are only written when `type` is `article`. On the pages [`seo.articles`](#article-pages) matches, the type and the article values the front matter leaves out are filled in from the page. `locale` is printed as written; without it, `og:locale` comes from [`site.defaultLocale`](#locale). Image URLs that start with `/` are made absolute with `site.baseUrl`.
 
@@ -417,7 +406,7 @@ Pages created from a `[param].md` template and the later pages of a paginated li
 
 ### Per-page sitemap configuration
 
-Control sitemap behavior for individual pages using frontmatter:
+Control sitemap behavior for individual pages using front matter:
 
 ```markdown
 ---
@@ -434,13 +423,7 @@ The sitemap reads only this `sitemap` block; `seo.priority` and `seo.changeFreq`
 
 ### Change frequency values
 
-- `always` - Changes on every access
-- `hourly` - Changes hourly
-- `daily` - Changes daily (good for news/blogs)
-- `weekly` - Changes weekly (good for general content)
-- `monthly` - Changes monthly
-- `yearly` - Changes yearly (good for static content)
-- `never` - Archived content that never changes
+`always`, `hourly`, `daily`, `weekly`, `monthly`, `yearly` and `never`. Any other `changefreq` value is ignored, and the page falls back to `defaultChangeFreq`.
 
 ### Google News sitemap
 
@@ -529,6 +512,8 @@ export default defineConfig({
 
 With no rules configured, this writes `User-agent: *` and `Allow: /`. The `Sitemap:` line is only added when you set `robots.sitemap` (see below).
 
+Crawlers read `robots.txt` only at the root of a host. For a site served from a subfolder, see [robots.txt](/advanced/deploying-to-a-subfolder#robots-txt).
+
 ### Advanced robots.txt options
 
 ```typescript
@@ -608,8 +593,6 @@ Disallow: /restricted/
 
 ## SEO tag types
 
-Stati supports nine types of SEO tags. Understanding these helps with selective generation and granular override.
-
 ### Tag type groups
 
 Some tag types are **grouped**, meaning if you manually add any tag from a group, Stati skips auto-generating **all** tags in that group:
@@ -619,92 +602,6 @@ Some tag types are **grouped**, meaning if you manually add any tag from a group
 
 This prevents duplicate or conflicting tags.
 
-### Individual tag types
-
-1. **Title** - `<title>` tag
-2. **Description** - `<meta name="description">`
-3. **Keywords** - `<meta name="keywords">`
-4. **Author** - `<meta name="author">`
-5. **Robots** - `<meta name="robots">`
-6. **Canonical** - `<link rel="canonical">`
-7. **OpenGraph** - All `<meta property="og:*">` tags (grouped)
-8. **Twitter** - All `<meta name="twitter:*">` tags (grouped)
-9. **StructuredData** - `<script type="application/ld+json">` (JSON-LD)
-
-## Best practices
-
-### 1. Use meaningful titles
-
-```markdown
----
-title: Complete Guide to SEO in Static Sites | Stati Docs
-description: Learn how to optimize your static site for search engines with Stati's powerful SEO features
----
-```
-
-### 2. Write compelling descriptions
-
-Keep descriptions between 50-160 characters for optimal search result display.
-
-### 3. Set priorities wisely
-
-Use sitemap priority to indicate relative importance within your site:
-
-- **1.0** - Homepage, most important pages
-- **0.8** - Main section pages, popular content
-- **0.5** - Regular pages (default)
-- **0.3** - Less important pages
-- **0.1** - Rarely accessed pages
-
-### 4. Use appropriate change frequencies
-
-Match change frequency to actual update patterns to help search engines crawl efficiently.
-
-### 5. Include Open Graph images
-
-Always include Open Graph images for better social media sharing:
-
-```markdown
----
-seo:
-  openGraph:
-    image:
-      url: https://example.com/og-image.jpg
-      alt: Descriptive alt text
-      width: 1200
-      height: 630
----
-```
-
-Recommended dimensions: **1200 x 630 pixels** (not enforced by Stati).
-
-### 6. Use structured data
-
-Add structured data for rich search results:
-
-```markdown
----
-seo:
-  structuredData:
-    '@context': https://schema.org
-    '@type': Article
-    headline: Your Article Title
-    datePublished: '2025-01-15'
-    author:
-      '@type': Person
-      name: Jane Doe
----
-```
-
-### 7. Test your SEO
-
-Use these tools to validate your SEO implementation:
-
-- [Google Search Console](https://search.google.com/search-console)
-- [Google Rich Results Test](https://search.google.com/test/rich-results)
-- [Facebook Sharing Debugger](https://developers.facebook.com/tools/debug/)
-- [Twitter Card Validator](https://cards-dev.twitter.com/validator)
-
 ## Troubleshooting
 
 ### Why aren't my SEO tags being injected?
@@ -713,7 +610,7 @@ Use these tools to validate your SEO implementation:
 
 1. **Auto-injection disabled**: Verify `seo.autoInject` is `true` (default)
 2. **Tags already exist**: Stati skips tags that already exist in your HTML
-3. **Invalid frontmatter**: Check for YAML syntax errors
+3. **Invalid front matter**: Check for YAML syntax errors
 4. **Missing `</head>`**: Auto-injection requires a closing `</head>` tag
 
 ### How do I debug SEO generation?
@@ -722,6 +619,8 @@ Enable debug mode to see detailed logs:
 
 ```typescript
 // stati.config.ts
+import { defineConfig } from '@stati/core';
+
 export default defineConfig({
   // site: { … },
   seo: {
@@ -738,8 +637,6 @@ export default defineConfig({
 - **Missing data**: No source data available (e.g., no page description, so no description tags)
 - **No `</head>`**: Tags are injected before `</head>`; a layout without it gets none
 
-Validation problems (for example a malformed canonical URL) are logged as warnings, but the tags are still generated with the values you gave.
-
 ### How do I override specific tags?
 
 Use **hybrid mode** - keep auto-injection enabled and add manual tags for specific fields:
@@ -753,24 +650,14 @@ Use **hybrid mode** - keep auto-injection enabled and add manual tags for specif
 </head>
 ```
 
-### Configuration validation errors
+### Front matter validation
 
-When `seo.autoInject` is on (the default), Stati checks each page's `seo` front matter during the build and logs what it finds; none of these stop the build:
+When `seo.autoInject` is on (the default), Stati checks each page's `seo` front matter during the build and logs what it finds; none of these stop the build, and the tags are still generated with the values you gave:
 
-- **Invalid priority** (error): `seo.priority` must be between 0.0 and 1.0
-- **Invalid canonical URL** (error): `seo.canonical` must be an absolute `http` or `https` URL
-- **Structured data too large** (warning): should be under 100KB
-- **Title or description length** (warning)
+- Errors, such as a `seo.canonical` that is not an absolute `http` or `https` URL, or a `seo.priority` outside 0.0 to 1.0.
+- Warnings, such as a `seo.title` or `seo.description` of unusual length.
 
-Errors are always logged; warnings are only logged when `seo.debug` is `true`. With `autoInject` off, nothing is logged: `stati.generateSEO()` does not report these checks.
-
-### Performance concerns
-
-For large sites (10,000+ pages):
-
-- Sitemap generation automatically splits into multiple files, with a sitemap index, above 50,000 URLs
-- Auto-injection overhead is minimal during builds
-- Consider using `sitemap.filter` to exclude unnecessary pages from sitemap
+The full list is in [`SEOValidationResult`](/api/seo#seovalidationresult). Errors are always logged; warnings are only logged when `seo.debug` is `true`. With `autoInject` off, nothing is logged: `stati.generateSEO()` does not report these checks.
 
 ## Next steps
 

@@ -8,7 +8,7 @@ seo:
 
 # Types
 
-Stati is built with TypeScript-first design, providing comprehensive type definitions for type-safe development and excellent IntelliSense support in your editor.
+These types give you editor completion and compile-time checks in `stati.config.ts`, hooks and build scripts. Templates are plain JavaScript and are not type-checked.
 
 ## Core types
 
@@ -153,16 +153,16 @@ export default defineConfig({ site });
 ```typescript
 interface SiteConfig {
   /** The site's title, used in templates and metadata (required) */
-  title: string;
+  readonly title: string;
 
   /** Base URL for the site, used for absolute URL generation (required) */
-  baseUrl: string;
+  readonly baseUrl: string;
 
   /** Default locale for internationalization (optional) */
-  defaultLocale?: string;
+  readonly defaultLocale?: string;
 
   /** Default site description for meta tags (used as fallback when page has no description) */
-  description?: string;
+  readonly description?: string;
 }
 ```
 
@@ -203,7 +203,7 @@ interface AuthorConfig {
   /** Author's full name */
   name: string;
 
-  /** Author's email address */
+  /** Author's email address; not printed in any tag */
   email?: string;
 
   /** Author's website or profile URL, printed as article:author on article pages */
@@ -273,6 +273,8 @@ interface BuildStats {
   cacheMisses?: number;
 }
 ```
+
+`build()` returns a `BuildResult`: these statistics plus `buildMetrics` when metrics are enabled.
 
 ## Content types
 
@@ -426,7 +428,7 @@ interface TemplateContext {
     wordCount?: number;
     /** Whole minutes to read the page, at least 1 */
     readingTime?: number;
-    /** Frontmatter fields spread into page object */
+    /** Front matter fields spread into page object */
     [key: string]: unknown;
   };
 
@@ -483,7 +485,7 @@ interface TemplateContext {
   /** Key and items of a page created from a [param].md template */
   generated?: GeneratedPageData;
 
-  /** Bundle and search index paths (passed on every render) */
+  /** Bundle, stylesheet and search index paths (passed on every render) */
   assets?: StatiAssets;
 
   /** The Stati version that rendered the page */
@@ -540,13 +542,13 @@ The root of the context holds only Stati's API. Your functions are under `helper
 
 ```typescript
 interface ISGConfig {
-  /** Whether ISG caching is enabled */
+  /** Whether ISG caching is enabled (default: true) */
   enabled?: boolean;
 
-  /** Default cache time-to-live in seconds */
+  /** Default cache time-to-live in seconds (default: 21600) */
   ttlSeconds?: number;
 
-  /** Maximum age in days for applying aging rules */
+  /** Dated pages older than this many days are no longer rebuilt for TTL reasons (default: 365) */
   maxAgeCapDays?: number;
 
   /** Array of aging rules for progressive cache extension */
@@ -554,7 +556,10 @@ interface ISGConfig {
 }
 
 interface AgingRule {
-  /** Number of days after which this aging rule applies */
+  /**
+   * The rule applies to pages up to this many days old. A page older than every rule's
+   * untilDays gets the last rule's TTL.
+   */
   untilDays: number;
 
   /** Cache time-to-live in seconds for content matching this age */
@@ -617,7 +622,7 @@ interface TemplateLookup {
 }
 ```
 
-An entry without `templatesRecorded`, `readsCollection` or `readsNav` was written by a version of Stati that didn't record them, such as Stati 1; its page rebuilds once.
+An entry without `templatesRecorded`, `readsCollection` or `readsNav` was written before Stati recorded them; its page rebuilds once.
 
 ### TypeScript configuration
 
@@ -688,7 +693,7 @@ interface BundleConfig {
 }
 ```
 
-> **Note:** Source maps, hashing, and minification are automatic based on build mode. In development, source maps are enabled and hash/minify are disabled. In production, source maps are disabled and hash/minify default to true but can be set to false for debugging.
+> **Note:** Development builds always write source maps for TypeScript bundles; production builds never do.
 
 ### Image configuration
 
@@ -771,18 +776,22 @@ interface StatiAssets {
    * Array of all bundle paths matched for this page.
    * Paths are in config order: ['/_assets/core-abc.js', '/_assets/docs-def.js']
    * Always an array, empty [] if no TypeScript enabled or no bundles match.
+   * Relative to the site root; print them with stati.url().
    */
   bundlePaths: string[];
 
   /**
    * Paths of the stylesheet Stati builds with Tailwind CSS (--tailwind-input, --tailwind-output):
    * ['/styles.css'] in development, ['/_assets/styles-A1B2C3D4.css'] in production.
-   * Always an array, empty [] without the Tailwind flags. Print each path as it is: a
-   * production build writes the final name into the page after rendering.
+   * Always an array, empty [] without the Tailwind flags. Print each path through stati.url()
+   * without changing it: a production build writes the final name into the page after rendering.
    */
   stylesheetPaths: string[];
 
-  /** Path to the search index (e.g., '/search-index-a1b2c3d4.json') when search is enabled */
+  /**
+   * Path to the search index (e.g., '/search-index-a1b2c3d4.json') when search is enabled;
+   * relative to the site root, like the others
+   */
   searchIndexPath?: string;
 }
 ```
@@ -792,7 +801,7 @@ For advanced use cases like preloading, access via `stati.assets`:
 ```eta
 <% if (stati.assets?.bundlePaths?.length) { %>
   <% for (const path of stati.assets.bundlePaths) { %>
-  <link rel="modulepreload" href="<%= path %>">
+  <link rel="modulepreload" href="<%= stati.url(path) %>">
   <% } %>
 <% } %>
 ```
@@ -880,6 +889,8 @@ import type {
   AgingRule,
   BuildStats,
   BundleConfig,
+  CSSConfig,
+  ReadingTimeConfig,
   // The markdown-it instance that markdown.configure receives
   MarkdownIt,
   // Collections, pagination and generated pages
@@ -894,6 +905,7 @@ import type {
   BuildOptions,
   BuildResult,
   MetricsOptions,
+  TailwindBuildOptions,
   DevServerOptions,
   PreviewServerOptions,
   InvalidationResult,
@@ -964,7 +976,7 @@ import type {
 import type { CacheManifest, Logger, TocEntry } from '@stati/core/types';
 ```
 
-**`@stati/core/config`** exports `loadConfig`, `clearConfigCache`, `getConfigFilePaths(cwd)`, which returns the config file paths Stati looks for in a directory, and `validateConfigOptions(config)`, which throws for an option Stati does not know, such as Stati 1's `eta`, or for `helpers` that are not functions.
+**`@stati/core/config`** exports `loadConfig`, `clearConfigCache`, `getConfigFilePaths(cwd)`, which returns the config file paths Stati looks for in a directory, and `validateConfigOptions(config)`, which throws for an option Stati does not know, such as a leftover `eta` block, or for `helpers` that are not functions.
 
 ### CLI package
 
@@ -973,68 +985,3 @@ The `@stati/cli` package provides the `stati` command-line interface as a binary
 ### `create-stati` package
 
 `create-stati` is a command-line tool only: the package declares a `bin` entry and no importable module or type declarations. See [Scaffolder](/cli/scaffolder) for its options.
-
-## Usage examples
-
-### Type-safe configuration
-
-```typescript
-import { defineConfig, type StatiConfig } from '@stati/core';
-
-const config: StatiConfig = defineConfig({
-  site: {
-    title: 'My Site',
-    baseUrl: 'https://example.com',
-  },
-
-  srcDir: 'site',
-  outDir: 'dist',
-  staticDir: 'public',
-
-  markdown: {
-    toc: true, // Enable automatic TOC extraction
-  },
-
-  hooks: {
-    beforeAll: async ({ config, pages }) => {
-      console.log(`Building ${pages.length} pages`);
-    },
-  },
-});
-
-export default config;
-```
-
-### Using build hooks
-
-```typescript
-import { defineConfig } from '@stati/core';
-
-export default defineConfig({
-  site: {
-    title: 'My Site',
-    baseUrl: 'https://example.com',
-  },
-
-  hooks: {
-    beforeAll: async (ctx) => {
-      console.log(`Starting build with ${ctx.pages.length} pages`);
-      // Change page data here: beforeAll runs before the cache check
-      for (const page of ctx.pages) {
-        page.frontMatter.description ??= ctx.config.site.description;
-      }
-    },
-    beforeRender: async (ctx) => {
-      console.log(`Rendering: ${ctx.page.url}`);
-    },
-    afterRender: async (ctx) => {
-      console.log(`Rendered: ${ctx.page.url}`);
-    },
-    afterAll: async (ctx) => {
-      console.log('Build complete!');
-    },
-  },
-});
-```
-
-These types give you editor completion and compile-time checks in `stati.config.ts`, hooks and build scripts. Templates are plain JavaScript and are not type-checked.

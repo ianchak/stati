@@ -56,9 +56,7 @@ Each page's cache entry records the templates it rendered and the template names
 
 Pages whose cache entries predate this record are rebuilt in full once.
 
-Markdown changes rebuild the edited page, plus the pages whose output depends on it: pages that read its [collection](/core-concepts/collections) when its title, description, tags or date changed, and pages that render the navigation when the edit changed it (a `title` or `order`, or a page added or removed). Deleting a page removes its HTML from the output directory.
-
-Template changes are handled by `markTemplateChanges` in `packages/core/src/core/dev.ts`; the pages a Markdown change affects are found by the ISG checks in `packages/core/src/core/isg/builder.ts`.
+Markdown changes rebuild the edited page, plus the pages whose output depends on it: pages that read its [collection](/core-concepts/collections) when a field in [`collections.summaryFields`](/core-concepts/collections#what-rebuilds-a-listing) (by default the title, description, tags and draft flag), its URL or its date changed, and pages that render the navigation when the edit changed it (a `title` or `order`, or a page added or removed). Deleting a page removes its HTML from the output directory.
 
 ## Static assets
 
@@ -77,7 +75,7 @@ stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css
 **How it works:**
 
 - Stati spawns a Tailwind CLI process in watch mode using the locally installed `tailwindcss` executable from `node_modules/.bin/`. Tailwind CSS 4 and 3 both work.
-- Pages link the output under its path in `dist/`, here `/styles.css`: Stati adds `<link rel="stylesheet" href="/styles.css">` before `</head>` unless the page links it already. An output outside `dist/` is still written, but Stati can't link it, and the dev server says so when it starts.
+- Pages link the output under its path in `dist/`, here `/styles.css`: Stati adds `<link rel="stylesheet" href="/styles.css">` before `</head>` unless the page links it already or `css.autoInject` is `false`. An output outside `dist/` is still written, but Stati can't link it, and the dev server says so when it starts.
 - By default, only errors are shown (quiet mode) to keep the console clean.
 - Use `--tailwind-verbose` to see all Tailwind output including "done in Xms" messages.
 - The watcher runs for as long as the dev server does, including when the dev server runs in a background or CI shell without a terminal.
@@ -87,7 +85,7 @@ stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css
 **Requirements:**
 
 - You must have the `tailwindcss` command installed locally in your project. Tailwind CSS 4, the version the scaffolder installs, ships it in `@tailwindcss/cli`: `npm install -D tailwindcss @tailwindcss/cli`. With Tailwind CSS 3, `npm install -D tailwindcss@3` includes it.
-- Stati will check for the installation and show an error if it's not found.
+- If Tailwind CSS or the input file is missing, `stati dev` prints an error and exits.
 
 `stati build` takes the same two flags and runs Tailwind once after the last page renders, writing a stylesheet named after its content. See [CSS](/configuration/css).
 
@@ -110,7 +108,6 @@ Press `Ctrl+C` (or send `SIGINT`/`SIGTERM`) to stop the server. Stati closes the
 
 ## Troubleshooting
 
-- **Repeated failures** – Check the browser overlay for the full stack trace, then inspect the terminal output logged by the CLI.
 - **Changes not showing up** – Ensure the file is inside `site` or `public` (or your TypeScript `srcDir`, which esbuild watches). Other files, including `stati.config.*`, are not watched: restart the server after editing the config.
 - **Cache feels stale** – Restart `stati dev`: startup clears the cache and rebuilds every page. Don't run `stati build --clean` while the dev server runs, as it deletes the output and the cache the server is using.
 - **Port already in use** – Start the server on a different port with `stati dev --port 4001`.

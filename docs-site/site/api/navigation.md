@@ -30,7 +30,7 @@ Each navigation node has the following structure:
 
 ```typescript
 interface NavNode {
-  title: string;              // Front matter title, or the file/folder name
+  title: string;              // Front matter title, or the last URL segment
   url: string;                // URL path
   path: string;               // URL path of the page or collection folder
   order?: number;             // Sort order (from front matter)
@@ -78,44 +78,19 @@ Nodes are sorted by `order`, then by title; pages inside a collection are sorted
 
 ### `stati.nav.tree`
 
-Direct access to the full navigation tree.
+The full navigation tree. `stati.nav.getTree()` returns the same array.
 
 **Type:** `NavNode[]`
 
 **Example:**
 
-```html
+```eta
 <!-- Display top-level navigation -->
 <nav>
   <% stati.nav.tree.forEach(node => { %>
-    <a href="<%= node.url %>"><%= node.title %></a>
+    <a href="<%= stati.url(node.url) %>"><%= node.title %></a>
   <% }) %>
 </nav>
-```
-
----
-
-### `stati.nav.getTree()`
-
-Returns the complete navigation tree.
-
-**Signature:**
-
-```typescript
-getTree(): NavNode[]
-```
-
-**Returns:** Array of top-level navigation nodes
-
-**Example:**
-
-```html
-<% const navigation = stati.nav.getTree() %>
-<ul>
-  <% navigation.forEach(item => { %>
-    <li><a href="<%= item.url %>"><%= item.title %></a></li>
-  <% }) %>
-</ul>
 ```
 
 ---
@@ -138,7 +113,7 @@ findNode(path: string): NavNode | undefined
 
 **Example:**
 
-```html
+```eta
 <% const docsNode = stati.nav.findNode('/docs') %>
 <% if (docsNode) { %>
   <h3><%= docsNode.title %></h3>
@@ -166,14 +141,14 @@ getChildren(path: string): NavNode[]
 
 **Example:**
 
-```html
+```eta
 <!-- Show all pages in the docs section -->
 <div class="docs-listing">
   <h2>Documentation</h2>
   <ul>
     <% stati.nav.getChildren('/docs').forEach(page => { %>
       <li>
-        <a href="<%= page.url %>"><%= page.title %></a>
+        <a href="<%= stati.url(page.url) %>"><%= page.title %></a>
       </li>
     <% }) %>
   </ul>
@@ -182,7 +157,7 @@ getChildren(path: string): NavNode[]
 
 **Advanced Example - Nested Sidebar:**
 
-```html
+```eta
 <!-- site/partials/sidebar.eta -->
 <aside class="sidebar">
   <% function renderSection(path, title) { %>
@@ -192,7 +167,7 @@ getChildren(path: string): NavNode[]
         <% stati.nav.getChildren(path).forEach(item => { %>
           <li>
             <a
-              href="<%= item.url %>"
+              href="<%= stati.url(item.url) %>"
               class="<%= stati.page.url === item.url ? 'active' : '' %>"
             >
               <%= item.title %>
@@ -231,11 +206,11 @@ getParent(path?: string): NavNode | undefined
 
 **Example:**
 
-```html
+```eta
 <!-- Show "Back to Parent" link -->
 <% const parent = stati.nav.getParent() %>
 <% if (parent) { %>
-  <a href="<%= parent.url %>" class="back-link">
+  <a href="<%= stati.url(parent.url) %>" class="back-link">
     ← Back to <%= parent.title %>
   </a>
 <% } %>
@@ -262,14 +237,14 @@ getSiblings(path?: string, includeSelf?: boolean): NavNode[]
 
 **Example:**
 
-```html
+```eta
 <!-- Show related pages (siblings) -->
 <div class="related-pages">
   <h3>Related Pages</h3>
   <ul>
     <% stati.nav.getSiblings().forEach(sibling => { %>
       <li>
-        <a href="<%= sibling.url %>"><%= sibling.title %></a>
+        <a href="<%= stati.url(sibling.url) %>"><%= sibling.title %></a>
       </li>
     <% }) %>
   </ul>
@@ -278,7 +253,7 @@ getSiblings(path?: string, includeSelf?: boolean): NavNode[]
 
 **Example with Prev/Next Navigation:**
 
-```html
+```eta
 <!-- Previous/Next page navigation -->
 <%
   const siblings = stati.nav.getSiblings(undefined, true);
@@ -289,13 +264,13 @@ getSiblings(path?: string, includeSelf?: boolean): NavNode[]
 
 <nav class="page-navigation">
   <% if (prevPage) { %>
-    <a href="<%= prevPage.url %>" class="prev">
+    <a href="<%= stati.url(prevPage.url) %>" class="prev">
       ← <%= prevPage.title %>
     </a>
   <% } %>
 
   <% if (nextPage) { %>
-    <a href="<%= nextPage.url %>" class="next">
+    <a href="<%= stati.url(nextPage.url) %>" class="next">
       <%= nextPage.title %> →
     </a>
   <% } %>
@@ -322,7 +297,7 @@ getSubtree(path: string): NavNode[]
 
 **Example:**
 
-```html
+```eta
 <!-- Render a specific section's navigation tree -->
 <% const blogTree = stati.nav.getSubtree('/blog') %>
 <% if (blogTree.length > 0) { %>
@@ -331,7 +306,7 @@ getSubtree(path: string): NavNode[]
     <% if (blogTree[0].children) { %>
       <ul>
         <% blogTree[0].children.forEach(post => { %>
-          <li><a href="<%= post.url %>"><%= post.title %></a></li>
+          <li><a href="<%= stati.url(post.url) %>"><%= post.title %></a></li>
         <% }) %>
       </ul>
     <% } %>
@@ -359,17 +334,17 @@ getBreadcrumbs(path?: string): NavNode[]
 
 **Example:**
 
-```html
+```eta
 <!-- Breadcrumb navigation -->
 <nav class="breadcrumbs" aria-label="Breadcrumb">
   <ol>
-    <li><a href="/">Home</a></li>
+    <li><a href="<%= stati.url('/') %>">Home</a></li>
     <% stati.nav.getBreadcrumbs().forEach((crumb, index, array) => { %>
       <li>
         <% if (index === array.length - 1) { %>
           <span aria-current="page"><%= crumb.title %></span>
         <% } else { %>
-          <a href="<%= crumb.url %>"><%= crumb.title %></a>
+          <a href="<%= stati.url(crumb.url) %>"><%= crumb.title %></a>
         <% } %>
       </li>
     <% }) %>
@@ -393,7 +368,7 @@ getCurrentNode(): NavNode | undefined
 
 **Example:**
 
-```html
+```eta
 <!-- Show current page's metadata -->
 <% const currentNode = stati.nav.getCurrentNode() %>
 <% if (currentNode) { %>
@@ -423,7 +398,7 @@ Direct access to the current page's navigation node with all its properties and 
 
 **Example:**
 
-```html
+```eta
 <!-- Show children of current page -->
 <% if (stati.page.navNode?.children) { %>
   <div class="child-pages">
@@ -431,7 +406,7 @@ Direct access to the current page's navigation node with all its properties and 
     <ul>
       <% stati.page.navNode.children.forEach(child => { %>
         <li>
-          <a href="<%= child.url %>"><%= child.title %></a>
+          <a href="<%= stati.url(child.url) %>"><%= child.title %></a>
         </li>
       <% }) %>
     </ul>
@@ -445,14 +420,14 @@ Direct access to the current page's navigation node with all its properties and 
 
 ### Multi-level nested navigation
 
-```html
+```eta
 <!-- site/partials/nested-nav.eta -->
 <% function renderNavTree(nodes, level = 0) { %>
   <ul class="<%= stati.propValue(`nav-level-${level}`) %>">
     <% nodes.forEach(node => { %>
       <li>
         <a
-          href="<%= node.url %>"
+          href="<%= stati.url(node.url) %>"
           class="<%= stati.page.url === node.url ? 'active' : '' %>"
         >
           <%= node.title %>
@@ -474,7 +449,7 @@ Because every collection folder is a top-level node, this renders at most two le
 
 ### Section navigation with active state
 
-```html
+```eta
 <!-- Show navigation for current section only -->
 <% const parent = stati.nav.getParent() %>
 
@@ -485,7 +460,7 @@ Because every collection folder is a top-level node, this renders at most two le
       <% parent.children.forEach(page => { %>
         <li>
           <a
-            href="<%= page.url %>"
+            href="<%= stati.url(page.url) %>"
             class="<%= stati.page.url === page.url ? 'active' : '' %>"
           >
             <%= page.title %>
@@ -501,7 +476,7 @@ Because every collection folder is a top-level node, this renders at most two le
 
 A subsection's pages are not under its node in `children`, so look each subsection up among the top-level collection nodes:
 
-```html
+```eta
 <!-- Generate TOC for a section and its subsections -->
 <%
   const collection = (url) => stati.nav.tree.find(n => n.isCollection && n.url === url);
@@ -514,12 +489,12 @@ A subsection's pages are not under its node in `children`, so look each subsecti
       <% section.children.forEach(subsection => { %>
         <% const pages = collection(subsection.url)?.children ?? [] %>
         <div class="toc-section">
-          <a href="<%= subsection.url %>"><%= subsection.title %></a>
+          <a href="<%= stati.url(subsection.url) %>"><%= subsection.title %></a>
           <% if (pages.length > 0) { %>
             <ul>
               <% pages.forEach(page => { %>
                 <li>
-                  <a href="<%= page.url %>"><%= page.title %></a>
+                  <a href="<%= stati.url(page.url) %>"><%= page.title %></a>
                 </li>
               <% }) %>
             </ul>
@@ -531,48 +506,10 @@ A subsection's pages are not under its node in `children`, so look each subsecti
 <% } %>
 ```
 
-### Smart sidebar (current section only)
-
-```html
-<!-- site/partials/smart-sidebar.eta -->
-<% const parent = stati.nav.getParent() %>
-
-<aside class="sidebar">
-  <% if (parent) { %>
-    <div class="sidebar-section">
-      <h3><%= parent.title %></h3>
-      <ul>
-        <% stati.nav.getSiblings(undefined, true).forEach(page => { %>
-          <li>
-            <a
-              href="<%= page.url %>"
-              class="<%= stati.page.url === page.url ? 'active' : '' %>"
-            >
-              <%= page.title %>
-            </a>
-
-            <!-- Show children if this is the current page -->
-            <% if (page.url === stati.page.url && page.children) { %>
-              <ul class="subsection">
-                <% page.children.forEach(child => { %>
-                  <li>
-                    <a href="<%= child.url %>"><%= child.title %></a>
-                  </li>
-                <% }) %>
-              </ul>
-            <% } %>
-          </li>
-        <% }) %>
-      </ul>
-    </div>
-  <% } %>
-</aside>
-```
-
 ---
 
 ## See also
 
-- [Template Data and Context](/core-concepts/templates/#template-data-and-context)
+- [Template Data and Context](/core-concepts/templates#template-data-and-context)
 - [API overview](/api/reference)
 - [Routing System](/core-concepts/routing)

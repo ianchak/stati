@@ -14,10 +14,10 @@ A minimal starter template for [Stati](https://github.com/ianchak/stati) static 
 
 1. Edit the homepage: `site/index.md`
 2. Customize the layout: `site/layout.eta`
-3. Add your styles: `public/styles.css`
+3. Add your styles: `public/styles.css` (`src/` with Sass or Tailwind)
 4. Configure your site: `stati.config.js` (or `stati.config.ts` for TypeScript projects)
 
-> **Tip:** Create a TypeScript-enabled project with `npx create-stati my-site --typescript`
+> **Tip:** `npx create-stati` creates TypeScript projects by default; pass `--no-typescript` for JavaScript.
 
 ## Available Scripts
 
@@ -46,6 +46,6 @@ A minimal starter template for [Stati](https://github.com/ianchak/stati) static 
 - Move shared pieces such as the header into their own templates, for example `site/partials/header.eta`, and include them with `<%~ stati.include('partials/header') %>`
 - Add collections for blog posts or documentation
 - Customize the CSS or switch to Sass/Tailwind
-- Enable [TypeScript compilation](https://stati.build/configuration/typescript/) for client-side code
+- Enable [TypeScript compilation](https://stati.build/configuration/typescript) for client-side code
 
 Happy building with Stati!

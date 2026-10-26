@@ -6,11 +6,11 @@ order: 3
 
 # Templates and layouts
 
-Stati uses Eta as its templating engine, providing a powerful yet familiar syntax for creating dynamic layouts and templates. Layouts are chosen by folder, share one page shell through `stati.layout()`, and reuse other templates through `stati.include()`.
+Stati renders pages with [Eta](https://eta.js.org/) templates. Layouts are chosen by folder, share one page shell through `stati.layout()`, and reuse other templates through `stati.include()`.
 
 ## Template engine: Eta
 
-Eta is a fast, lightweight templating engine with a syntax similar to EJS but with better performance and TypeScript support.
+Code inside `<% %>` tags is plain JavaScript: Stati does not compile TypeScript in templates, so type annotations or `as` casts are a syntax error. Templates read their data from `stati`, not Eta's usual `it`.
 
 ### Dynamic attribute values
 
@@ -37,7 +37,7 @@ For more complex combinations, prefer Stati's own `stati.propValue()`. It builds
 </a>
 ```
 
-`stati.propValue()` joins all truthy values with spaces (similar to `classnames`). For attributes that need a single concatenated string, use a template literal instead:
+`stati.propValue()` joins its strings and numbers, the truthy items of arrays, and the keys of objects whose values are truthy, with spaces, and skips falsy values (similar to `classnames`). For attributes that need a single concatenated string, use a template literal instead:
 
 ```eta
 data-id="<%= `item-${id}` %>"
@@ -63,7 +63,7 @@ data-id="<%= `item-${id}` %>"
 <!-- Loops (collection entries keep front matter under frontMatter) -->
 <ul>
 <% (stati.collection?.pages || []).forEach(page => { %>
-  <li><a href="<%= page.url %>"><%= page.frontMatter.title %></a></li>
+  <li><a href="<%= stati.url(page.url) %>"><%= page.frontMatter.title %></a></li>
 <% }); %>
 </ul>
 
@@ -79,7 +79,7 @@ In your templates, you have access to:
 <!-- Page data -->
 <%= stati.page.title %>     <!-- From front matter -->
 <%= stati.page.description %> <!-- From front matter -->
-<%~ stati.content %>        <!-- Rendered markdown content (HTML, so use <%~) -->
+<%~ stati.content %>        <!-- Rendered Markdown (HTML, so print it raw) -->
 <%= stati.page.url %>       <!-- Current page URL -->
 <%= stati.page.date %>      <!-- Page date (if specified) -->
 <% stati.page.toc.forEach(entry => { %>  <!-- TOC entries (h2-h6) -->
@@ -99,19 +99,21 @@ In your templates, you have access to:
 <%= stati.page.layout %>    <!-- Layout name from front matter -->
 
 <!-- Other templates and your own functions -->
-<%~ stati.include('partials/header') %> <!-- Another template's HTML (use <%~) -->
+<%~ stati.include('partials/header') %> <!-- Another template's HTML, printed raw -->
 <%= stati.helpers.formatDate(stati.page.date) %> <!-- A function from helpers in the config -->
 
 <!-- Images -->
-<%~ stati.image(stati.page.cover, { alt: stati.page.coverAlt }) %> <!-- Sized, lazy-loaded image (HTML, so use <%~) -->
+<%~ stati.image(stati.page.cover, { alt: stati.page.coverAlt }) %> <!-- Sized, lazy-loaded image (HTML, so print it raw) -->
 <%= stati.ogImage?.url %>   <!-- Generated Open Graph image, with images.og -->
 ```
 
 `stati.image()` sizes an image from a layout, such as a post's cover, the way Stati sizes Markdown images. See [Images in templates](/configuration/images#images-in-templates) and the [Template API](/api/templates#stati-image-src-options).
 
+The [Template API](/api/templates#template-context-stati) lists everything on `stati`.
+
 ## Layout system
 
-### Layout inheritance
+### Section layouts
 
 Stati supports hierarchical layouts where more specific layouts **override** parent directory layouts:
 
@@ -133,15 +135,16 @@ A section's layout replaces the root layout for the pages in its folder. The pag
 Stati looks for a page's layout in this order:
 
 1. **Named template** specified in front matter (e.g., `layout: 'article'`)
-2. **Directory-specific** `layout.eta` (cascades from current to root)
-3. **Root** `layout.eta` as final fallback
+2. The nearest `layout.eta`, from the page's folder up to `site/`
+
+Without either, the build warns and writes the page with a bare fallback HTML document.
 
 **Example:** For `/blog/tech/post.md`, Stati checks:
 
 1. Front matter `layout` field first
 2. `/blog/tech/layout.eta`
 3. `/blog/layout.eta`
-4. `/layout.eta` (root fallback)
+4. `/layout.eta`
 
 ```yaml
 ---
@@ -152,8 +155,6 @@ title: 'My Post'
 ```
 
 The `layout` value is a template name without the `.eta` extension, looked up the same way as [`stati.include()`](#template-names): `layout: 'article'` uses the nearest `article.eta` from the page's folder up to `site/`, `layout: '/article'` uses `site/article.eta` only, and `layout: 'layouts/post'` uses the nearest `layouts/post.eta`. If no file matches, the build warns, suggests similar names, and uses the `layout.eta` lookup instead.
-
-The first match wins, providing maximum flexibility while maintaining sensible defaults.
 
 Index pages of a [collection](#collections) check for an `index.eta` in each directory before its `layout.eta`, so a listing page can have its own layout. The root `index.md` is always an index page; a folder's `index.md` is one once the folder holds another page.
 
@@ -173,18 +174,10 @@ On a site with one layout, `site/layout.eta` can be the whole page:
     <% } %>
 
     <!-- Favicon -->
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="<%= stati.url('/favicon.svg') %>" type="image/svg+xml">
 
     <!-- Styles -->
-    <link rel="stylesheet" href="/styles.css">
-
-    <!-- SEO Meta Tags -->
-    <meta property="og:title" content="<%= stati.page.title || stati.site.title %>">
-    <% if (stati.page.description) { %>
-    <meta property="og:description" content="<%= stati.page.description %>">
-    <% } %>
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="<%= stati.site.baseUrl + stati.page.url %>">
+    <link rel="stylesheet" href="<%= stati.url('/styles.css') %>">
 </head>
 <body>
     <%~ stati.include('partials/header') %>
@@ -197,6 +190,8 @@ On a site with one layout, `site/layout.eta` can be the whole page:
 </body>
 </html>
 ```
+
+Stati's [SEO injection](/configuration/seo#automatic-seo-injection) adds the Open Graph, Twitter and canonical tags, so the layout doesn't write them.
 
 ### Sharing a shell
 
@@ -211,7 +206,7 @@ With more than one layout, keep the document around them in one template and let
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= stati.page.title ? `${stati.page.title} | ${stati.site.title}` : stati.site.title %></title>
-    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="<%= stati.url('/styles.css') %>">
 </head>
 <body class="<%= stati.propValue('site', stati.props?.bodyClass) %>">
     <%~ stati.include('partials/header') %>
@@ -323,7 +318,7 @@ The second argument is an object of props. Inside the included template, they ar
 
 ```eta
 <article class="card">
-  <h3><a href="<%= stati.props.url %>"><%= stati.props.title %></a></h3>
+  <h3><a href="<%= stati.url(stati.props.url) %>"><%= stati.props.title %></a></h3>
   <% if (stati.props.description) { %>
     <p><%= stati.props.description %></p>
   <% } %>
@@ -372,7 +367,7 @@ A component can also name a frame with `stati.layout()`, the same way a layout n
 
 - Included templates render synchronously, so they cannot use `await`. Development shows an error that names the template.
 - An include without props or content renders once per page. Including the same template again on that page reuses its HTML.
-- A template that includes itself without props, directly or through other templates, is a cycle: development shows an error naming the chain (`site/partials/a.eta → site/partials/b.eta → site/partials/a.eta`), and production logs it and skips the repeat. With props, a template can include itself, for example to render a tree, up to a depth of 100.
+- A template that includes itself without props, directly or through other templates, is a cycle: development shows an error naming the chain (`site/layout.eta → site/partials/a.eta → site/partials/b.eta → site/partials/a.eta`), and production logs it and skips the repeat. With props, a template can include itself, for example to render a tree, up to a depth of 100.
 - An unknown name opens the error overlay in development, with the paths of similar templates. In production the build logs the error and the include renders nothing.
 
 Eta's own `include()`, `includeAsync()`, `layout()` and `block()` are not available in Stati templates. Use `stati.include()` and `stati.layout()`, and pass content a layout should place to it as props.
@@ -413,7 +408,7 @@ Template usage:
 
     <div class="tags">
         <% (stati.page.tags ?? []).forEach(tag => { %>
-        <a href="<%= `/tags#${tag}` %>" class="tag">#<%= tag %></a>
+        <a href="<%= stati.url(`/tags#${tag}`) %>" class="tag">#<%= tag %></a>
         <% }); %>
     </div>
 
@@ -431,14 +426,12 @@ A folder of pages with an `index.md` is a collection. Templates read it as `stat
 <% const posts = stati.collection?.recentPages ?? []; %>
 <ul class="post-list">
   <% posts.forEach(post => { %>
-  <li><a href="<%= post.url %>"><%= post.frontMatter.title %></a></li>
+  <li><a href="<%= stati.url(post.url) %>"><%= post.frontMatter.title %></a></li>
   <% }) %>
 </ul>
 ```
 
 Each entry is a page model, not a template context: read front matter through `frontMatter`, and use `url` for links. Stati rebuilds the pages that read a collection when one of its pages is added, removed, retitled or retagged.
-
-An `index.eta` next to an index page is used for that page ahead of `layout.eta`, so the listing can have its own template while the posts keep the folder layout. A folder's `index.md` is an index page once the folder holds another page; the root `index.md` always is.
 
 [Collections and generated pages](/core-concepts/collections) covers the collection data, which collection a page reads, pagination with `paginate`, and one page per tag or author from a `[param].md` template.
 
@@ -468,7 +461,7 @@ export default defineConfig({
 <p class="excerpt"><%= stati.helpers.truncate(stati.page.description ?? '') %></p>
 ```
 
-Helpers are plain functions: they take arguments and return a value. A helper written with `function` or method syntax gets the helpers object as `this`, so it can call another helper as `this.formatDate()`. Stati's own functions stay on `stati` itself: `stati.slugify()`, `stati.propValue()`, `stati.image()` and `stati.generateSEO()`.
+Helpers are plain functions: they take arguments and return a value. A helper written with `function` or method syntax gets the helpers object as `this`, so it can call another helper as `this.formatDate()`. Stati's own functions stay on `stati` itself: `stati.slugify()`, `stati.url()`, `stati.propValue()`, `stati.image()` and `stati.generateSEO()`.
 
 [Template configuration](/configuration/templates) covers helpers in more detail.
 
@@ -495,48 +488,13 @@ const diffDays = Math.ceil(Math.abs(now - postDate) / (1000 * 60 * 60 * 24));
 </span>
 
 <!-- Stati's own slugify for tag links -->
-<a href="<%= `/tags/${stati.slugify(tag)}` %>" class="tag-link">#<%= tag %></a>
+<% for (const tag of stati.page.tags ?? []) { %>
+  <a href="<%= stati.url(`/tags/${stati.slugify(tag)}`) %>" class="tag-link">#<%= tag %></a>
+<% } %>
 ```
 
-## Performance considerations
+## Performance
 
-### Template caching
+Stati compiles each template once and reuses it for every page. A page renders only its layout, the shells it names and the templates it includes, and an include without props renders once per page however often it appears.
 
-Stati compiles each template once and reuses it for every page. A page renders only its layout, the shells it names and the templates it includes, and an include without props renders once per page however often it appears. You can optimize further:
-
-1. **Keep included templates small and focused**
-2. **Avoid complex logic in templates**
-3. **Use front matter for data that doesn't change**
-4. **Cache expensive computations in build process**
-
-### Best practices
-
-1. **Separate logic from presentation**
-   - Use front matter for data
-   - Keep complex logic in helpers or build hooks
-   - Use simple helpers for common tasks
-
-2. **Organize templates**
-   - Keep the page shell in one template, such as `site/base.eta`
-   - Don't over-fragment templates
-   - Reuse partials across sections, and override them per section only where a section differs
-
-3. **Performance-friendly patterns**
-   - Minimize nested loops
-   - Use conditionals to skip unnecessary work
-   - Cache computed values when possible
-
-## Generator information
-
-### Displaying version information
-
-You can access Stati's version information in templates using `stati.generator.version`. This is useful for attribution, debugging, or technical information display:
-
-```eta
-<!-- Simple footer attribution -->
-<footer>
-    <p>Generated with Stati v<%= stati.generator.version %></p>
-</footer>
-```
-
-Understanding templates and layouts is crucial for creating maintainable Stati sites. Next, learn about the [Markdown Pipeline](/core-concepts/markdown) to understand how your content gets processed.
+Next, learn about the [Markdown pipeline](/core-concepts/markdown).
