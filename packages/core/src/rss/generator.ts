@@ -19,8 +19,42 @@ import {
 /** A value with a scheme (`https://`, `mailto:`) or a protocol-relative one (`//cdn.example`) */
 const ABSOLUTE_URL = /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i;
 
-/** A prefixed or plain XML name; names that start with `xml` are reserved by the XML spec */
-const XML_NAME = /^(?!xml)[A-Za-z_][A-Za-z0-9_.-]*(?::[A-Za-z_][A-Za-z0-9_.-]*)?$/i;
+/** XML 1.0 NameStartChar and NameChar code point ranges, without the colon */
+const NAME_START_RANGES: Array<[number, number]> = [
+  [0x41, 0x5a],
+  [0x5f, 0x5f],
+  [0x61, 0x7a],
+  [0xc0, 0xd6],
+  [0xd8, 0xf6],
+  [0xf8, 0x2ff],
+  [0x370, 0x37d],
+  [0x37f, 0x1fff],
+  [0x200c, 0x200d],
+  [0x2070, 0x218f],
+  [0x2c00, 0x2fef],
+  [0x3001, 0xd7ff],
+  [0xf900, 0xfdcf],
+  [0xfdf0, 0xfffd],
+  [0x10000, 0xeffff],
+];
+const NAME_RANGES: Array<[number, number]> = [
+  ...NAME_START_RANGES,
+  [0x2d, 0x2e],
+  [0x30, 0x39],
+  [0xb7, 0xb7],
+  [0x300, 0x36f],
+  [0x203f, 0x2040],
+];
+const toCharClass = (ranges: Array<[number, number]>): string =>
+  ranges.map(([from, to]) => `${String.fromCodePoint(from)}-${String.fromCodePoint(to)}`).join('');
+const NAME_START_CHARS = toCharClass(NAME_START_RANGES);
+const NAME_CHARS = toCharClass(NAME_RANGES);
+
+/** A plain or prefixed XML name; names that start with `xml` in any case are reserved */
+const XML_NAME = new RegExp(
+  `^(?![Xx][Mm][Ll])[${NAME_START_CHARS}][${NAME_CHARS}]*(?::[${NAME_START_CHARS}][${NAME_CHARS}]*)?$`,
+  'u',
+);
 
 /** What an item's mapping callbacks and warnings need */
 interface ItemContext {
@@ -275,10 +309,12 @@ function buildItem(page: PageModel, context: ItemContext): string[] | undefined 
   // Link: an item without one is left out, since a guessed URL would send readers elsewhere
   let link: string | undefined;
   if (itemMapping.link) {
-    const mapped = callMapping(context, page, 'link mapping', 'item skipped', () =>
-      itemMapping.link!(page, config),
-    );
-    if (mapped === undefined) return undefined;
+    // Wrapped, so a callback that threw (already reported) differs from one that returned nothing
+    const called = callMapping(context, page, 'link mapping', 'item skipped', () => ({
+      url: itemMapping.link!(page, config) as unknown,
+    }));
+    if (!called) return undefined;
+    const mapped = called.url;
     if (typeof mapped !== 'string' || !mapped.trim()) {
       logger.warning(
         `RSS feed '${feedConfig.filename}': link mapping returned no URL for page ${page.slug} (item skipped)`,
@@ -347,10 +383,10 @@ function buildItem(page: PageModel, context: ItemContext): string[] | undefined 
   // GUID: a permalink only when it is an absolute URL
   let guid: string | undefined = link;
   if (itemMapping.guid) {
-    const mapped = callMapping(context, page, 'guid mapping', 'guid left out', () =>
-      itemMapping.guid!(page, config),
-    );
-    guid = mapped === undefined ? undefined : String(mapped ?? '') || link;
+    const called = callMapping(context, page, 'guid mapping', 'guid left out', () => ({
+      value: itemMapping.guid!(page, config) as unknown,
+    }));
+    guid = called ? String(called.value ?? '') || link : undefined;
   }
   if (guid !== undefined) {
     const isPermaLink = /^https?:\/\//i.test(guid);

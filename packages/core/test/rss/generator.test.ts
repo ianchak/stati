@@ -900,6 +900,20 @@ describe('RSS Feed Generation', () => {
       expect(logger.warning).toHaveBeenCalledWith(expect.stringContaining('link boom'));
     });
 
+    it('should warn and skip an item whose link callback returns undefined', () => {
+      baseFeedConfig.itemMapping = {
+        link: (page) =>
+          (page.slug === 'about' ? undefined : `https://example.com${page.url}`) as string,
+      };
+
+      const result = generateRSSFeed(samplePages, baseConfig, baseFeedConfig, logger);
+
+      expect(result.itemCount).toBe(2);
+      expect(logger.warning).toHaveBeenCalledWith(
+        expect.stringContaining('returned no URL for page about'),
+      );
+    });
+
     it('should skip an item whose link callback returns no URL', () => {
       baseFeedConfig.itemMapping = {
         link: (page) => (page.slug === 'about' ? '' : `https://example.com${page.url}`),
@@ -1006,6 +1020,9 @@ describe('RSS Feed Generation', () => {
         'a:b:c': 'd',
         'dc:creator': 'ok',
         valid_name: 'fine',
+        étiquette: 'accent',
+        記事: 'article',
+        'dc:étiquette': 'prefixed',
       });
 
       const result = generateRSSFeed(samplePages, baseConfig, baseFeedConfig, logger);
@@ -1016,6 +1033,9 @@ describe('RSS Feed Generation', () => {
       expect(result.xml).not.toContain('a:b:c');
       expect(result.xml).toContain('<dc:creator>ok</dc:creator>');
       expect(result.xml).toContain('<valid_name>fine</valid_name>');
+      expect(result.xml).toContain('<étiquette>accent</étiquette>');
+      expect(result.xml).toContain('<記事>article</記事>');
+      expect(result.xml).toContain('<dc:étiquette>prefixed</dc:étiquette>');
       // One warning per bad name, not one per item
       const warned = vi.mocked(logger.warning).mock.calls.filter(([m]) => m.includes('my tag'));
       expect(warned).toHaveLength(1);
