@@ -171,6 +171,16 @@ The overlay also gives a hint when a template uses `it` or a bare context name s
 
 See [Images troubleshooting](/configuration/images#troubleshooting) for fixes.
 
+### RSS errors
+
+**When they occur**: While feeds are generated at the end of a production build
+
+**Handling**:
+
+- **A callback throws for one page**: Stati logs a warning that names the feed and the page. A `link` that fails skips the item; a failing `title`, `description`, `pubDate`, `author`, `category`, `guid`, `enclosure` or `customItemElements` leaves out only that field.
+- **A feed fails as a whole** (its `filter` or `sortFn` throws): the error is logged, that feed is skipped and the other feeds are written. The build still finishes.
+- **Invalid RSS configuration**: the errors are logged and no feeds are written.
+
 ### Build hook errors
 
 **When they occur**: During execution of user-defined build hooks

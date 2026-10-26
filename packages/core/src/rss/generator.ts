@@ -9,7 +9,27 @@ import type { RSSFeedConfig, RSSGenerationResult } from '../types/rss.js';
 import type { Logger } from '../types/logging.js';
 import { escapeHtml } from '../seo/utils/index.js';
 import { filterByPatterns } from './utils/index.js';
-import { getFrontMatterDate, isNotFoundPage, isVirtualPage } from '../core/utils/index.js';
+import {
+  createFallbackLogger,
+  getFrontMatterDate,
+  isNotFoundPage,
+  isVirtualPage,
+} from '../core/utils/index.js';
+
+/** A value with a scheme (`https://`, `mailto:`) or a protocol-relative one (`//cdn.example`) */
+const ABSOLUTE_URL = /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i;
+
+/** A prefixed or plain XML name; names that start with `xml` are reserved by the XML spec */
+const XML_NAME = /^(?!xml)[A-Za-z_][A-Za-z0-9_.-]*(?::[A-Za-z_][A-Za-z0-9_.-]*)?$/i;
+
+/** What an item's mapping callbacks and warnings need */
+interface ItemContext {
+  config: StatiConfig;
+  feedConfig: RSSFeedConfig;
+  logger: Logger;
+  /** Custom element names already reported, so a bad name warns once per feed */
+  warnedElementNames: Set<string>;
+}
 
 /**
  * Formats a date for RSS pubDate field (RFC 822)
@@ -170,15 +190,225 @@ function getFieldValue<T>(
 }
 
 /**
+ * Makes a URL absolute. Absolute and protocol-relative URLs are kept; anything else is a
+ * path from the site root and goes behind `site.baseUrl`, base path included.
+ * @param value - URL or site path
+ * @param config - Stati configuration
+ * @returns Absolute URL
+ */
+function toAbsoluteUrl(value: string, config: StatiConfig): string {
+  if (ABSOLUTE_URL.test(value)) return value;
+  const baseUrl = config.site.baseUrl.replace(/\/$/, '');
+  const path = value.replace(/^\.\//, '');
+  return baseUrl + (path.startsWith('/') ? path : '/' + path);
+}
+
+/**
  * Builds the absolute URL for a page
  * @param page - Page to build URL for
  * @param config - Stati configuration
  * @returns Absolute URL
  */
 function buildPageUrl(page: PageModel, config: StatiConfig): string {
-  const baseUrl = config.site.baseUrl.replace(/\/$/, '');
-  const pageUrl = page.url.startsWith('/') ? page.url : '/' + page.url;
-  return baseUrl + pageUrl;
+  return toAbsoluteUrl(page.url, config);
+}
+
+function describeError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+/**
+ * Runs a mapping callback for one page. A callback that throws is reported as a warning
+ * that names the feed and page, so one bad page cannot take the feed down.
+ * @returns The callback's result, or undefined when it threw
+ */
+function callMapping<T>(
+  context: ItemContext,
+  page: PageModel,
+  what: string,
+  outcome: string,
+  call: () => T,
+): T | undefined {
+  try {
+    return call();
+  } catch (error) {
+    context.logger.warning(
+      `RSS feed '${context.feedConfig.filename}': ${what} failed for page ${page.slug} (${outcome}): ${describeError(error)}`,
+    );
+    return undefined;
+  }
+}
+
+/**
+ * Formats an author for the `<author>` element: text as written, or an author object
+ * (`name`, `email`) as `email (name)`, which is the form RSS expects. A list of authors
+ * is joined with commas.
+ * @returns The author text, or undefined when the value has none
+ */
+function formatAuthor(value: unknown): string | undefined {
+  if (typeof value === 'string') {
+    return value.trim() || undefined;
+  }
+  if (typeof value === 'number') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(formatAuthor).filter(Boolean).join(', ') || undefined;
+  }
+  if (!isValidRecord(value)) {
+    return undefined;
+  }
+  const name = typeof value.name === 'string' ? value.name.trim() : '';
+  const email = typeof value.email === 'string' ? value.email.trim() : '';
+  if (email && name) return `${email} (${name})`;
+  return email || name || undefined;
+}
+
+/**
+ * Builds the XML lines of one item.
+ * @returns The lines, or undefined when the item has to be left out
+ */
+function buildItem(page: PageModel, context: ItemContext): string[] | undefined {
+  const { config, feedConfig, logger } = context;
+  const itemMapping = feedConfig.itemMapping || {};
+
+  // Link: an item without one is left out, since a guessed URL would send readers elsewhere
+  let link: string | undefined;
+  if (itemMapping.link) {
+    const mapped = callMapping(context, page, 'link mapping', 'item skipped', () =>
+      itemMapping.link!(page, config),
+    );
+    if (mapped === undefined) return undefined;
+    if (typeof mapped !== 'string' || !mapped.trim()) {
+      logger.warning(
+        `RSS feed '${feedConfig.filename}': link mapping returned no URL for page ${page.slug} (item skipped)`,
+      );
+      return undefined;
+    }
+    link = toAbsoluteUrl(mapped.trim(), config);
+  } else {
+    link = buildPageUrl(page, config);
+  }
+
+  const lines: string[] = [`    <item>`];
+
+  // Title
+  const title = getFieldValue<string>(page, itemMapping.title, 'title', logger);
+  if (title) {
+    lines.push(`      <title>${escapeHtml(title)}</title>`);
+  }
+
+  lines.push(`      <link>${escapeHtml(link)}</link>`);
+
+  // Description (or full content)
+  if (itemMapping.includeContent && page.content) {
+    lines.push(`      <description><![CDATA[${page.content}]]></description>`);
+  } else {
+    const description = getFieldValue<string>(page, itemMapping.description, 'description', logger);
+    if (description) {
+      lines.push(`      <description>${escapeHtml(description)}</description>`);
+    }
+  }
+
+  // Pub date
+  const pubDate = itemMapping.pubDate
+    ? getFieldValue<Date | string>(page, itemMapping.pubDate, undefined, logger)
+    : getPageDate(page);
+  const formattedPubDate = parseAndFormatDate(pubDate);
+  if (formattedPubDate) {
+    lines.push(`      <pubDate>${formattedPubDate}</pubDate>`);
+  }
+
+  // Author
+  const rawAuthor = getFieldValue<unknown>(page, itemMapping.author, 'author', logger);
+  const author = formatAuthor(rawAuthor);
+  if (author) {
+    lines.push(`      <author>${escapeHtml(author)}</author>`);
+  } else if (rawAuthor !== undefined && typeof rawAuthor !== 'string') {
+    logger.warning(
+      `RSS feed '${feedConfig.filename}': the author of page ${page.slug} is neither text nor an object with name or email (author left out)`,
+    );
+  }
+
+  // Category/categories
+  const category = getFieldValue<string | string[] | undefined>(
+    page,
+    itemMapping.category,
+    'tags',
+    logger,
+  );
+  if (category) {
+    const categories = Array.isArray(category) ? category : [category];
+    for (const cat of categories) {
+      lines.push(`      <category>${escapeHtml(cat)}</category>`);
+    }
+  }
+
+  // GUID: a permalink only when it is an absolute URL
+  let guid: string | undefined = link;
+  if (itemMapping.guid) {
+    const mapped = callMapping(context, page, 'guid mapping', 'guid left out', () =>
+      itemMapping.guid!(page, config),
+    );
+    guid = mapped === undefined ? undefined : String(mapped ?? '') || link;
+  }
+  if (guid !== undefined) {
+    const isPermaLink = /^https?:\/\//i.test(guid);
+    lines.push(`      <guid isPermaLink="${isPermaLink}">${escapeHtml(guid)}</guid>`);
+  }
+
+  // Enclosure
+  if (feedConfig.enclosure) {
+    const enclosure = callMapping(context, page, 'enclosure mapping', 'enclosure left out', () =>
+      feedConfig.enclosure!(page),
+    );
+    if (enclosure) {
+      if (typeof enclosure.url !== 'string' || !enclosure.url) {
+        logger.warning(
+          `RSS feed '${feedConfig.filename}': the enclosure of page ${page.slug} has no url (enclosure left out)`,
+        );
+      } else {
+        // RSS requires a length; 0 means unknown
+        const length =
+          Number.isFinite(enclosure.length) && enclosure.length >= 0
+            ? Math.trunc(enclosure.length)
+            : 0;
+        lines.push(
+          `      <enclosure url="${escapeHtml(toAbsoluteUrl(enclosure.url, config))}" length="${length}" type="${escapeHtml(enclosure.type)}" />`,
+        );
+      }
+    }
+  }
+
+  // Custom elements
+  if (feedConfig.customItemElements) {
+    const customElements = callMapping(
+      context,
+      page,
+      'customItemElements',
+      'extra elements left out',
+      () => feedConfig.customItemElements!(page),
+    );
+    if (isValidRecord(customElements)) {
+      for (const [key, value] of Object.entries(customElements)) {
+        if (!XML_NAME.test(key)) {
+          if (!context.warnedElementNames.has(key)) {
+            context.warnedElementNames.add(key);
+            logger.warning(
+              `RSS feed '${feedConfig.filename}': customItemElements key '${key}' is not a valid XML element name (element left out)`,
+            );
+          }
+          continue;
+        }
+        if (value !== undefined && value !== null) {
+          lines.push(`      <${key}>${escapeHtml(String(value))}</${key}>`);
+        }
+      }
+    }
+  }
+
+  lines.push(`    </item>`);
+  return lines;
 }
 
 /**
@@ -195,6 +425,13 @@ export function generateRSSFeed(
   feedConfig: RSSFeedConfig,
   logger?: Logger,
 ): RSSGenerationResult {
+  const context: ItemContext = {
+    config,
+    feedConfig,
+    logger: logger ?? createFallbackLogger(),
+    warnedElementNames: new Set(),
+  };
+
   // Filter and sort pages
   let feedPages = sortPages(filterPages(pages, feedConfig), feedConfig);
 
@@ -204,7 +441,7 @@ export function generateRSSFeed(
   }
 
   // Build feed metadata
-  const feedLink = feedConfig.link || config.site.baseUrl;
+  const feedLink = toAbsoluteUrl(feedConfig.link || config.site.baseUrl, config);
   const feedTitle = feedConfig.title;
   const feedDescription = feedConfig.description;
 
@@ -262,9 +499,9 @@ export function generateRSSFeed(
   // Image
   if (feedConfig.image) {
     xmlLines.push(`    <image>`);
-    xmlLines.push(`      <url>${escapeHtml(feedConfig.image.url)}</url>`);
+    xmlLines.push(`      <url>${escapeHtml(toAbsoluteUrl(feedConfig.image.url, config))}</url>`);
     xmlLines.push(`      <title>${escapeHtml(feedConfig.image.title)}</title>`);
-    xmlLines.push(`      <link>${escapeHtml(feedConfig.image.link)}</link>`);
+    xmlLines.push(`      <link>${escapeHtml(toAbsoluteUrl(feedConfig.image.link, config))}</link>`);
     if (feedConfig.image.width) {
       xmlLines.push(`      <width>${feedConfig.image.width}</width>`);
     }
@@ -275,100 +512,13 @@ export function generateRSSFeed(
   }
 
   // Add items
-  const itemMapping = feedConfig.itemMapping || {};
-
+  let itemCount = 0;
   for (const page of feedPages) {
-    xmlLines.push(`    <item>`);
-
-    // Title
-    const title = getFieldValue<string>(page, itemMapping.title, 'title', logger);
-    if (title) {
-      xmlLines.push(`      <title>${escapeHtml(title)}</title>`);
+    const item = buildItem(page, context);
+    if (item) {
+      xmlLines.push(...item);
+      itemCount++;
     }
-
-    // Link
-    let link: string;
-    if (itemMapping.link) {
-      link = itemMapping.link(page, config);
-    } else {
-      link = buildPageUrl(page, config);
-    }
-    xmlLines.push(`      <link>${escapeHtml(link)}</link>`);
-
-    // Description (or full content)
-    if (itemMapping.includeContent && page.content) {
-      xmlLines.push(`      <description><![CDATA[${page.content}]]></description>`);
-    } else {
-      const description = getFieldValue<string>(
-        page,
-        itemMapping.description,
-        'description',
-        logger,
-      );
-      if (description) {
-        xmlLines.push(`      <description>${escapeHtml(description)}</description>`);
-      }
-    }
-
-    // Pub date
-    const pubDate = itemMapping.pubDate
-      ? getFieldValue<Date | string>(page, itemMapping.pubDate, undefined, logger)
-      : getPageDate(page);
-    const formattedPubDate = parseAndFormatDate(pubDate);
-    if (formattedPubDate) {
-      xmlLines.push(`      <pubDate>${formattedPubDate}</pubDate>`);
-    }
-
-    // Author
-    const author = getFieldValue<string | undefined>(page, itemMapping.author, 'author', logger);
-    if (author) {
-      xmlLines.push(`      <author>${escapeHtml(author)}</author>`);
-    }
-
-    // Category/categories
-    const category = getFieldValue<string | string[] | undefined>(
-      page,
-      itemMapping.category,
-      'tags',
-      logger,
-    );
-    if (category) {
-      const categories = Array.isArray(category) ? category : [category];
-      for (const cat of categories) {
-        xmlLines.push(`      <category>${escapeHtml(cat)}</category>`);
-      }
-    }
-
-    // GUID
-    let guid: string;
-    if (itemMapping.guid) {
-      guid = itemMapping.guid(page, config);
-    } else {
-      guid = link;
-    }
-    xmlLines.push(`      <guid isPermaLink="true">${escapeHtml(guid)}</guid>`);
-
-    // Enclosure
-    if (feedConfig.enclosure) {
-      const enclosure = feedConfig.enclosure(page);
-      if (enclosure) {
-        xmlLines.push(
-          `      <enclosure url="${escapeHtml(enclosure.url)}" length="${enclosure.length}" type="${escapeHtml(enclosure.type)}" />`,
-        );
-      }
-    }
-
-    // Custom elements
-    if (feedConfig.customItemElements) {
-      const customElements = feedConfig.customItemElements(page);
-      for (const [key, value] of Object.entries(customElements)) {
-        if (value !== undefined && value !== null) {
-          xmlLines.push(`      <${key}>${escapeHtml(String(value))}</${key}>`);
-        }
-      }
-    }
-
-    xmlLines.push(`    </item>`);
   }
 
   xmlLines.push('  </channel>');
@@ -378,7 +528,7 @@ export function generateRSSFeed(
 
   return {
     filename: feedConfig.filename,
-    itemCount: feedPages.length,
+    itemCount,
     sizeInBytes: Buffer.byteLength(xml, 'utf8'),
     xml,
   };
@@ -389,7 +539,7 @@ export function generateRSSFeed(
  * @param pages - All pages in the site
  * @param config - Stati configuration
  * @param logger - Logger instance for warnings (optional)
- * @returns Array of RSS generation results
+ * @returns Array of RSS generation results, without the feeds that failed
  */
 export function generateRSSFeeds(
   pages: PageModel[],
@@ -401,11 +551,16 @@ export function generateRSSFeeds(
     return [];
   }
 
+  const log = logger ?? createFallbackLogger();
   const results: RSSGenerationResult[] = [];
 
+  // A feed that cannot be generated is reported and the others still are
   for (const feedConfig of rssConfig.feeds) {
-    const result = generateRSSFeed(pages, config, feedConfig, logger);
-    results.push(result);
+    try {
+      results.push(generateRSSFeed(pages, config, feedConfig, log));
+    } catch (error) {
+      log.error(`Failed to generate RSS feed '${feedConfig.filename}': ${describeError(error)}`);
+    }
   }
 
   return results;

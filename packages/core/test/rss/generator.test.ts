@@ -861,4 +861,369 @@ describe('RSS Feed Generation', () => {
       expect(result.xml).toContain('<link>https://custom-link.com/feed</link>');
     });
   });
+
+  describe('failing callbacks and front matter', () => {
+    let logger: Logger;
+
+    beforeEach(() => {
+      logger = {
+        info: vi.fn(),
+        success: vi.fn(),
+        warning: vi.fn(),
+        error: vi.fn(),
+        status: vi.fn(),
+        building: vi.fn(),
+        processing: vi.fn(),
+        stats: vi.fn(),
+      };
+    });
+
+    function item(xml: string, title: string): string {
+      const items = xml.split('<item>').slice(1);
+      return items.find((candidate) => candidate.includes(`<title>${title}</title>`)) ?? '';
+    }
+
+    it('should skip an item whose link callback throws and name the page', () => {
+      baseFeedConfig.itemMapping = {
+        link: (page) => {
+          if (page.slug === 'post-2') throw new Error('link boom');
+          return `https://example.com${page.url}`;
+        },
+      };
+
+      const result = generateRSSFeed(samplePages, baseConfig, baseFeedConfig, logger);
+
+      expect(result.itemCount).toBe(2);
+      expect(result.xml).toContain('First Post');
+      expect(result.xml).not.toContain('Second Post');
+      expect(logger.warning).toHaveBeenCalledWith(expect.stringContaining('post-2'));
+      expect(logger.warning).toHaveBeenCalledWith(expect.stringContaining('link boom'));
+    });
+
+    it('should skip an item whose link callback returns no URL', () => {
+      baseFeedConfig.itemMapping = {
+        link: (page) => (page.slug === 'about' ? '' : `https://example.com${page.url}`),
+      };
+
+      const result = generateRSSFeed(samplePages, baseConfig, baseFeedConfig, logger);
+
+      expect(result.itemCount).toBe(2);
+      expect(result.xml).not.toContain('About Us');
+      expect(logger.warning).toHaveBeenCalledWith(expect.stringContaining('about'));
+    });
+
+    it('should leave out only the field when a guid callback throws', () => {
+      baseFeedConfig.itemMapping = {
+        guid: () => {
+          throw new Error('guid boom');
+        },
+      };
+
+      const result = generateRSSFeed(samplePages, baseConfig, baseFeedConfig, logger);
+
+      expect(result.itemCount).toBe(3);
+      expect(result.xml).not.toContain('<guid');
+      expect(logger.warning).toHaveBeenCalledWith(expect.stringContaining('guid boom'));
+    });
+
+    it('should use the link when a guid callback returns nothing', () => {
+      baseFeedConfig.itemMapping = { guid: () => '' };
+
+      const result = generateRSSFeed(samplePages, baseConfig, baseFeedConfig, logger);
+
+      expect(result.xml).toContain(
+        '<guid isPermaLink="true">https://example.com/blog/post-1</guid>',
+      );
+    });
+
+    it('should leave out only the enclosure when the enclosure callback throws', () => {
+      baseFeedConfig.enclosure = (page) => {
+        if (page.slug === 'post-1') throw new Error('enclosure boom');
+        return { url: 'https://example.com/a.mp3', length: 10, type: 'audio/mpeg' };
+      };
+
+      const result = generateRSSFeed(samplePages, baseConfig, baseFeedConfig, logger);
+
+      expect(result.itemCount).toBe(3);
+      expect(item(result.xml, 'First Post')).not.toContain('<enclosure');
+      expect(item(result.xml, 'Second Post')).toContain('<enclosure');
+      expect(logger.warning).toHaveBeenCalledWith(expect.stringContaining('post-1'));
+    });
+
+    it('should skip an enclosure without a URL', () => {
+      baseFeedConfig.enclosure = () =>
+        ({ length: 10, type: 'audio/mpeg' }) as unknown as {
+          url: string;
+          length: number;
+          type: string;
+        };
+
+      const result = generateRSSFeed(samplePages, baseConfig, baseFeedConfig, logger);
+
+      expect(result.xml).not.toContain('<enclosure');
+      expect(logger.warning).toHaveBeenCalledWith(expect.stringContaining('enclosure'));
+    });
+
+    it('should leave out only the extra elements when customItemElements throws', () => {
+      baseFeedConfig.customItemElements = () => {
+        throw new Error('elements boom');
+      };
+
+      const result = generateRSSFeed(samplePages, baseConfig, baseFeedConfig, logger);
+
+      expect(result.itemCount).toBe(3);
+      expect(logger.warning).toHaveBeenCalledWith(expect.stringContaining('elements boom'));
+    });
+
+    it('should ignore customItemElements that return something other than an object', () => {
+      baseFeedConfig.customItemElements = () => null as unknown as Record<string, string>;
+
+      const result = generateRSSFeed(samplePages, baseConfig, baseFeedConfig, logger);
+
+      expect(result.itemCount).toBe(3);
+    });
+
+    it('should fall back to a console logger when none is passed', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      baseFeedConfig.itemMapping = {
+        link: () => {
+          throw new Error('link boom');
+        },
+      };
+
+      const result = generateRSSFeed(samplePages, baseConfig, baseFeedConfig);
+
+      expect(result.itemCount).toBe(0);
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('link boom'));
+      warn.mockRestore();
+    });
+
+    it('should skip custom elements whose names are not valid XML names', () => {
+      baseFeedConfig.customItemElements = () => ({
+        'my tag': 'a',
+        '1st': 'b',
+        xmlThing: 'c',
+        'a:b:c': 'd',
+        'dc:creator': 'ok',
+        valid_name: 'fine',
+      });
+
+      const result = generateRSSFeed(samplePages, baseConfig, baseFeedConfig, logger);
+
+      expect(result.xml).not.toContain('my tag');
+      expect(result.xml).not.toContain('<1st>');
+      expect(result.xml).not.toContain('xmlThing');
+      expect(result.xml).not.toContain('a:b:c');
+      expect(result.xml).toContain('<dc:creator>ok</dc:creator>');
+      expect(result.xml).toContain('<valid_name>fine</valid_name>');
+      // One warning per bad name, not one per item
+      const warned = vi.mocked(logger.warning).mock.calls.filter(([m]) => m.includes('my tag'));
+      expect(warned).toHaveLength(1);
+    });
+
+    it('should write author objects as email (name)', () => {
+      const pages = [
+        {
+          ...samplePages[0]!,
+          frontMatter: { title: 'Both', author: { name: 'Bob', email: 'bob@example.com' } },
+        },
+        { ...samplePages[1]!, frontMatter: { title: 'Name', author: { name: 'Ann' } } },
+        { ...samplePages[2]!, frontMatter: { title: 'Mail', author: { email: 'cy@example.com' } } },
+      ] as PageModel[];
+
+      const result = generateRSSFeed(pages, baseConfig, baseFeedConfig, logger);
+
+      expect(item(result.xml, 'Both')).toContain('<author>bob@example.com (Bob)</author>');
+      expect(item(result.xml, 'Name')).toContain('<author>Ann</author>');
+      expect(item(result.xml, 'Mail')).toContain('<author>cy@example.com</author>');
+    });
+
+    it('should leave out an author that is neither text nor an author object', () => {
+      const pages = [
+        { ...samplePages[0]!, frontMatter: { title: 'Flag', author: true } },
+        { ...samplePages[1]!, frontMatter: { title: 'Empty', author: {} } },
+        { ...samplePages[2]!, frontMatter: { title: 'Blank', author: '  ' } },
+      ] as unknown as PageModel[];
+
+      const result = generateRSSFeed(pages, baseConfig, baseFeedConfig, logger);
+
+      expect(result.xml).not.toContain('<author>');
+      expect(logger.warning).toHaveBeenCalledWith(expect.stringContaining('author'));
+    });
+
+    it('should join a list of authors and keep numeric authors', () => {
+      const pages = [
+        {
+          ...samplePages[0]!,
+          frontMatter: {
+            title: 'List',
+            author: ['Bob', { name: 'Ann', email: 'ann@example.com' }, ''],
+          },
+        },
+        { ...samplePages[1]!, frontMatter: { title: 'Number', author: 42 } },
+        { ...samplePages[2]!, frontMatter: { title: 'Empty list', author: [] } },
+      ] as unknown as PageModel[];
+
+      const result = generateRSSFeed(pages, baseConfig, baseFeedConfig, logger);
+
+      expect(item(result.xml, 'List')).toContain('<author>Bob, ann@example.com (Ann)</author>');
+      expect(item(result.xml, 'Number')).toContain('<author>42</author>');
+      expect(item(result.xml, 'Empty list')).not.toContain('<author>');
+    });
+
+    it('should trim an author string', () => {
+      const pages = [
+        { ...samplePages[0]!, frontMatter: { title: 'Text', author: ' Bob ' } },
+      ] as PageModel[];
+
+      const result = generateRSSFeed(pages, baseConfig, baseFeedConfig, logger);
+
+      expect(result.xml).toContain('<author>Bob</author>');
+    });
+
+    it('should mark a guid that is not an absolute URL as not a permalink', () => {
+      baseFeedConfig.itemMapping = { guid: (page) => `urn:post:${page.slug}` };
+
+      const result = generateRSSFeed(samplePages, baseConfig, baseFeedConfig, logger);
+
+      expect(result.xml).toContain('<guid isPermaLink="false">urn:post:post-1</guid>');
+      expect(result.xml).not.toContain('isPermaLink="true"');
+    });
+
+    it('should keep isPermaLink true for an absolute guid URL', () => {
+      baseFeedConfig.itemMapping = { guid: (page) => `https://other.example/${page.slug}` };
+
+      const result = generateRSSFeed(samplePages, baseConfig, baseFeedConfig, logger);
+
+      expect(result.xml).toContain('<guid isPermaLink="true">https://other.example/post-1</guid>');
+    });
+
+    it('should write length 0 for an enclosure without a length', () => {
+      baseFeedConfig.enclosure = () =>
+        ({ url: 'https://example.com/a.mp3', type: 'audio/mpeg' }) as unknown as {
+          url: string;
+          length: number;
+          type: string;
+        };
+
+      const result = generateRSSFeed(samplePages, baseConfig, baseFeedConfig, logger);
+
+      expect(result.xml).toContain('length="0"');
+      expect(result.xml).not.toContain('undefined');
+    });
+
+    it('should make relative links, enclosure URLs and feed URLs absolute', () => {
+      baseFeedConfig.link = '/blog';
+      baseFeedConfig.image = { url: './logo.png', title: 'Logo', link: '/' };
+      baseFeedConfig.itemMapping = { link: (page) => `${page.url}/` };
+      baseFeedConfig.enclosure = () => ({ url: '/media/a.mp3', length: 5, type: 'audio/mpeg' });
+
+      const result = generateRSSFeed(samplePages, baseConfig, baseFeedConfig, logger);
+
+      expect(result.xml).toContain('<link>https://example.com/blog</link>');
+      expect(result.xml).toContain('<url>https://example.com/logo.png</url>');
+      expect(result.xml).toContain('<link>https://example.com/</link>');
+      expect(result.xml).toContain('<link>https://example.com/blog/post-1/</link>');
+      expect(result.xml).toContain('<enclosure url="https://example.com/media/a.mp3"');
+    });
+
+    it('should leave absolute and protocol-relative URLs alone', () => {
+      baseFeedConfig.link = '//cdn.example.com/feed';
+      baseFeedConfig.enclosure = () => ({
+        url: 'https://cdn.example.com/a.mp3',
+        length: 5,
+        type: 'audio/mpeg',
+      });
+
+      const result = generateRSSFeed(samplePages, baseConfig, baseFeedConfig, logger);
+
+      expect(result.xml).toContain('<link>//cdn.example.com/feed</link>');
+      expect(result.xml).toContain('url="https://cdn.example.com/a.mp3"');
+    });
+
+    it('should resolve relative URLs against a baseUrl that has a path', () => {
+      baseConfig = {
+        ...baseConfig,
+        site: { ...baseConfig.site, baseUrl: 'https://example.com/docs/' },
+      };
+      baseFeedConfig.link = 'blog';
+
+      const result = generateRSSFeed(samplePages, baseConfig, baseFeedConfig, logger);
+
+      expect(result.xml).toContain('<link>https://example.com/docs/blog</link>');
+      expect(result.xml).toContain('<link>https://example.com/docs/blog/post-1</link>');
+    });
+
+    describe('generateRSSFeeds', () => {
+      it('should generate the other feeds when one feed fails', () => {
+        baseConfig.rss = {
+          enabled: true,
+          feeds: [
+            { ...baseFeedConfig, filename: 'a.xml' },
+            {
+              ...baseFeedConfig,
+              filename: 'b.xml',
+              filter: () => {
+                throw new Error('filter boom');
+              },
+            },
+            { ...baseFeedConfig, filename: 'c.xml' },
+          ],
+        };
+
+        const results = generateRSSFeeds(samplePages, baseConfig, logger);
+
+        expect(results.map((result) => result.filename)).toEqual(['a.xml', 'c.xml']);
+        expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('b.xml'));
+        expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('filter boom'));
+      });
+
+      it('should keep every feed when one feed has a throwing link callback', () => {
+        baseConfig.rss = {
+          enabled: true,
+          feeds: [
+            { ...baseFeedConfig, filename: 'a.xml' },
+            {
+              ...baseFeedConfig,
+              filename: 'b.xml',
+              itemMapping: {
+                link: (page) => {
+                  if (page.slug === 'post-1') throw new Error('boom');
+                  return `https://example.com${page.url}`;
+                },
+              },
+            },
+          ],
+        };
+
+        const results = generateRSSFeeds(samplePages, baseConfig, logger);
+
+        expect(results.map((result) => [result.filename, result.itemCount])).toEqual([
+          ['a.xml', 3],
+          ['b.xml', 2],
+        ]);
+      });
+
+      it('should report a failing feed with a console logger when none is passed', () => {
+        const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+        baseConfig.rss = {
+          enabled: true,
+          feeds: [
+            {
+              ...baseFeedConfig,
+              filter: () => {
+                throw 'not an error object';
+              },
+            },
+          ],
+        };
+
+        const results = generateRSSFeeds(samplePages, baseConfig);
+
+        expect(results).toEqual([]);
+        expect(error).toHaveBeenCalledWith(expect.stringContaining('not an error object'));
+        error.mockRestore();
+      });
+    });
+  });
 });

@@ -1793,7 +1793,8 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
               `Generated ${rssResults.length} RSS feed${rssResults.length > 1 ? 's' : ''}`,
             );
           } else {
-            logger.info('No RSS feeds generated (no matching pages found)');
+            // Every feed failed; generateRSSFeeds has logged why
+            logger.warning('No RSS feeds were generated');
           }
         }
       }
