@@ -1,5 +1,11 @@
 # @stati/core
 
+## 2.8.1
+
+### Patch Changes
+
+- e27f093: update documentation
+
 ## 2.8.0
 
 ### Minor Changes

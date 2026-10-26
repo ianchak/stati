@@ -1,5 +1,11 @@
 # create-stati
 
+## 2.6.1
+
+### Patch Changes
+
+- e27f093: update documentation
+
 ## 2.6.0
 
 ### Minor Changes

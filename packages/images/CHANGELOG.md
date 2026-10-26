@@ -1,5 +1,11 @@
 # @stati/images
 
+## 1.1.1
+
+### Patch Changes
+
+- e27f093: update documentation
+
 ## 1.1.0
 
 ### Minor Changes
