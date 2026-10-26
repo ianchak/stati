@@ -370,6 +370,8 @@ function initSearch() {
     return doc.url === section.url ? section.title : `${section.title} › ${doc.title}`;
   };
 
+  /** The base path of a site served from a folder, from the index; result URLs start with it. */
+  let basePath = '';
   /** @type {Promise<IndexedDocument[]> | null} */
   let loading = null;
   /** @type {HTMLAnchorElement[]} */
@@ -392,14 +394,15 @@ function initSearch() {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
       })
-      .then((data) =>
-        /** @type {SearchDocument[]} */ (data.documents ?? []).map((doc) => ({
+      .then((data) => {
+        basePath = data.basePath ?? '';
+        return /** @type {SearchDocument[]} */ (data.documents ?? []).map((doc) => ({
           ...doc,
           _title: normalize(doc.title ?? ''),
           _heading: normalize(doc.heading ?? ''),
           _content: normalize(doc.content ?? ''),
-        })),
-      )
+        }));
+      })
       .catch((error) => {
         loading = null;
         throw error;
@@ -512,7 +515,7 @@ function initSearch() {
       const label = groupLabel(group[0].doc);
       html += `<li class="search-group" role="presentation">${escapeHtml(label)}</li>`;
       for (const { doc } of group.slice(0, 4)) {
-        const href = doc.anchor ? `${doc.url}#${doc.anchor}` : doc.url;
+        const href = `${basePath}${doc.anchor ? `${doc.url}#${doc.anchor}` : doc.url}`;
         const title = doc.level === 1 ? doc.title : doc.heading;
         html += `<li class="search-result" role="option" id="search-option-${n}" aria-selected="false">
           <a href="${escapeHtml(href)}" tabindex="-1">${icon(doc.level === 1 ? 'page' : 'hash', 16)}

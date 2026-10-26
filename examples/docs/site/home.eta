@@ -19,7 +19,7 @@
       <% if (actions.length > 0) { %>
       <div class="hero-actions">
         <% actions.forEach((action, index) => { %>
-        <a class="<%= stati.propValue('button', index === 0 ? 'button-primary' : 'button-secondary') %>" href="<%= action.url %>">
+        <a class="<%= stati.propValue('button', index === 0 ? 'button-primary' : 'button-secondary') %>" href="<%= stati.url(action.url) %>">
           <%= action.label %>
           <% if (index === 0) { %><%~ stati.include('partials/icon', { name: 'arrow-right', size: 16 }) %><% } %>
         </a>
@@ -37,12 +37,12 @@
       <% for (const section of sections) { %>
       <section class="section-block" aria-labelledby="<%= `section-${section.url.slice(1)}` %>">
         <h3 id="<%= `section-${section.url.slice(1)}` %>">
-          <% if (section.hasOverview) { %><a href="<%= section.url %>"><%= section.title %></a><% } else { %><%= section.title %><% } %>
+          <% if (section.hasOverview) { %><a href="<%= stati.url(section.url) %>"><%= section.title %></a><% } else { %><%= section.title %><% } %>
         </h3>
         <% if (section.description) { %><p><%= section.description %></p><% } %>
         <ul role="list">
           <% for (const page of section.pages) { %>
-          <li><a href="<%= page.url %>"><%= page.title %></a></li>
+          <li><a href="<%= stati.url(page.url) %>"><%= page.title %></a></li>
           <% } %>
         </ul>
       </section>

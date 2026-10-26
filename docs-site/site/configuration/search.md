@@ -91,6 +91,7 @@ The generated search index is a JSON file with the following structure:
 ```json
 {
   "version": "1.0.0",
+  "basePath": "",
   "generatedAt": "2025-01-15T10:30:00.000Z",
   "documentCount": 150,
   "documents": [
@@ -121,6 +122,8 @@ The generated search index is a JSON file with the following structure:
 ```
 
 Every page gets one page-level entry (`level: 1`, `anchor: ""`, `id` ending in `#top`) with the text before its first heading, plus one entry per heading section that has text.
+
+`basePath` is the path of [`site.baseUrl`](/configuration/site-metadata#baseurl-required): `"/docs"` for `https://example.com/docs`, and `""` when `baseUrl` has no path. The `url` of each entry stays relative to the site root, so the link to a result is `basePath + url`, followed by `#` and the anchor for a section. `SearchIndex` in `@stati/core/types` describes the file.
 
 ### Document fields
 
@@ -156,7 +159,7 @@ When `autoInjectMetaTag` is enabled (default), Stati automatically injects a met
 <meta name="stati:search-index" content="/search-index-a1b2c3d4.json">
 ```
 
-On a site [served from a subfolder](/advanced/deploying-to-a-subfolder), the path in the tag includes the base path (`/docs/search-index-a1b2c3d4.json`), while the index file is still written at the root of `dist/`. The `url` of each entry stays relative to the site root, so client code adds the base path to the links it builds; a template can hand it over with `<body data-base-path="<%= stati.url('/') %>">`.
+On a site [served from a subfolder](/advanced/deploying-to-a-subfolder), the path in the tag includes the base path (`/docs/search-index-a1b2c3d4.json`), while the index file is still written at the root of `dist/`. The `url` of each entry stays relative to the site root, so client code builds links with the index's `basePath`: `${index.basePath}${doc.url}`.
 
 This allows client-side JavaScript to discover the search index location:
 
@@ -210,7 +213,7 @@ When `hashFilename` is enabled (default), the search index filename includes a h
 search-index-a1b2c3d4.json
 ```
 
-In a production build the hash is computed from the index content, so the filename changes only when the indexed text does and browsers never use a stale cached index. `stati build` deletes the index files earlier builds wrote under other names. During `stati dev` the name stays the same between rebuilds. Because the name changes, read it from the meta tag or `stati.assets.searchIndexPath` instead of hard-coding it.
+In a production build the hash is computed from the index content, so the filename changes only when the indexed text or the base path does and browsers never use a stale cached index. `stati build` deletes the index files earlier builds wrote under other names. During `stati dev` the name stays the same between rebuilds. Because the name changes, read it from the meta tag or `stati.assets.searchIndexPath` instead of hard-coding it.
 
 Every page links to the index, so the filename is part of each page's [cache](/configuration/isg) hash. A build that changes no indexed text reuses every cached page. A build that changes indexed text, such as a heading or a paragraph on one page, renames the index and renders every page again with the new name. With `hashFilename: false` the name never changes, so only the changed pages render; serve `search-index.json` with a short cache lifetime instead.
 

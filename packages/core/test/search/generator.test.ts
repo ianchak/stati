@@ -441,10 +441,29 @@ describe('generateSearchIndex', () => {
 
     expect(index).toMatchObject({
       version: '1.0.0',
+      basePath: expect.any(String),
       documentCount: expect.any(Number),
       generatedAt: expect.any(String),
       documents: expect.any(Array),
     });
+  });
+
+  it('gives a site served from the root an empty base path', () => {
+    const searchablePages = [createSearchablePage('/about', 'About', '# About\n\nAbout content')];
+
+    const index = generateSearchIndex(searchablePages, { enabled: true });
+
+    expect(index.basePath).toBe('');
+  });
+
+  it('records the base path and keeps each url relative to the site root', () => {
+    const searchablePages = [createSearchablePage('/about', 'About', '# About\n\nAbout content')];
+
+    const index = generateSearchIndex(searchablePages, { enabled: true }, '/sub');
+
+    expect(index.basePath).toBe('/sub');
+    expect(index.documents.map((d) => d.url)).toEqual(['/about']);
+    expect(index.documents.map((d) => d.id)).toEqual(['/about#top']);
   });
 
   it('excludes draft pages', () => {
@@ -485,6 +504,7 @@ describe('writeSearchIndex', () => {
   it('writes search index to output directory', async () => {
     const searchIndex: SearchIndex = {
       version: '1.0.0',
+      basePath: '',
       generatedAt: new Date().toISOString(),
       documentCount: 2,
       documents: [
@@ -519,6 +539,7 @@ describe('writeSearchIndex', () => {
   it('returns correct metadata with document count', async () => {
     const searchIndex: SearchIndex = {
       version: '1.0.0',
+      basePath: '',
       generatedAt: new Date().toISOString(),
       documentCount: 5,
       documents: [],
@@ -534,6 +555,7 @@ describe('writeSearchIndex', () => {
   it('serializes index as compact JSON', async () => {
     const searchIndex: SearchIndex = {
       version: '1.0.0',
+      basePath: '',
       generatedAt: '2024-01-01T00:00:00.000Z',
       documentCount: 1,
       documents: [],
@@ -568,6 +590,7 @@ describe('writeSearchIndex', () => {
     it('writes file on first call even with skipIfUnchanged=true', async () => {
       const searchIndex: SearchIndex = {
         version: '1.0.0',
+        basePath: '',
         generatedAt: '2024-01-01T00:00:00.000Z',
         documentCount: 2,
         documents: [
@@ -592,6 +615,7 @@ describe('writeSearchIndex', () => {
     it('skips write when content hash matches (same count, same content)', async () => {
       const searchIndex: SearchIndex = {
         version: '1.0.0',
+        basePath: '',
         generatedAt: '2024-01-01T00:00:00.000Z',
         documentCount: 2,
         documents: [
@@ -620,6 +644,7 @@ describe('writeSearchIndex', () => {
     it('writes when document count changes (fast path)', async () => {
       const searchIndex1: SearchIndex = {
         version: '1.0.0',
+        basePath: '',
         generatedAt: '2024-01-01T00:00:00.000Z',
         documentCount: 2,
         documents: [
@@ -663,6 +688,7 @@ describe('writeSearchIndex', () => {
     it('writes when content changes but count stays same (hash detects change)', async () => {
       const searchIndex1: SearchIndex = {
         version: '1.0.0',
+        basePath: '',
         generatedAt: '2024-01-01T00:00:00.000Z',
         documentCount: 2,
         documents: [
@@ -681,6 +707,7 @@ describe('writeSearchIndex', () => {
 
       const searchIndex2: SearchIndex = {
         version: '1.0.0',
+        basePath: '',
         generatedAt: '2024-01-01T00:00:00.000Z',
         documentCount: 2, // Same count
         documents: [
@@ -707,6 +734,7 @@ describe('writeSearchIndex', () => {
     it('always writes when skipIfUnchanged=false', async () => {
       const searchIndex: SearchIndex = {
         version: '1.0.0',
+        basePath: '',
         generatedAt: '2024-01-01T00:00:00.000Z',
         documentCount: 2,
         documents: [
@@ -734,6 +762,7 @@ describe('writeSearchIndex', () => {
     it('returns correct metadata when skipping write', async () => {
       const searchIndex: SearchIndex = {
         version: '1.0.0',
+        basePath: '',
         generatedAt: '2024-01-01T00:00:00.000Z',
         documentCount: 5,
         documents: [],
@@ -764,6 +793,7 @@ describe('writeSearchIndex', () => {
     it('handles empty documents array', async () => {
       const searchIndex: SearchIndex = {
         version: '1.0.0',
+        basePath: '',
         generatedAt: '2024-01-01T00:00:00.000Z',
         documentCount: 0,
         documents: [],

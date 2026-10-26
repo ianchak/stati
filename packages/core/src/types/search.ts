@@ -75,7 +75,7 @@ export interface SearchConfig {
 export interface SearchDocument {
   /** Unique identifier (page URL + section anchor) */
   id: string;
-  /** Page URL path */
+  /** Page URL path from the site root, without the base path */
   url: string;
   /** Section anchor (heading ID), empty string for page-level entry */
   anchor: string;
@@ -101,6 +101,7 @@ export interface SearchDocument {
  * ```typescript
  * const index: SearchIndex = {
  *   version: '1.0.0',
+ *   basePath: '',
  *   generatedAt: '2025-01-15T10:30:00.000Z',
  *   documentCount: 150,
  *   documents: [...]
@@ -110,6 +111,11 @@ export interface SearchDocument {
 export interface SearchIndex {
   /** Schema version for forward compatibility */
   version: string;
+  /**
+   * The path of `site.baseUrl` (`'/sub'`), or `''` when the site is served from the root.
+   * Each document's `url` is relative to the site root, so a link is `basePath + url`.
+   */
+  basePath: string;
   /** ISO timestamp when the index was generated */
   generatedAt: string;
   /** Total document count */

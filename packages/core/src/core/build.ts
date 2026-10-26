@@ -555,14 +555,15 @@ async function writeSearchIndexBeforeRendering(
       toc: tocEnabled ? extractToc(page.content, md) : [],
       markdownContent: page.content,
     }));
-  const index = generateSearchIndex(searchablePages, config.search);
+  const basePath = getBasePath(config.site.baseUrl);
+  const index = generateSearchIndex(searchablePages, config.search, basePath);
 
-  // A production hash covers the documents and schema version, not generatedAt, which
-  // changes on every build; serializing them is skipped when the name has no hash
+  // A production hash covers the documents, base path and schema version, not generatedAt,
+  // which changes on every build; serializing them is skipped when the name has no hash
   const hashInput = isDevMode
     ? 'dev'
     : config.search.hashFilename !== false
-      ? JSON.stringify({ version: index.version, documents: index.documents })
+      ? JSON.stringify({ version: index.version, basePath, documents: index.documents })
       : undefined;
   const filename = computeSearchIndexFilename(config.search, hashInput);
   endSearchIndexSpan();

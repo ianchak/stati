@@ -126,17 +126,10 @@ function snippet(content, terms) {
 
 function initSearch() {
   const dialog = /** @type {HTMLDialogElement | null} */ (document.getElementById('search-dialog'));
-  const indexPath = document
+  const indexUrl = document
     .querySelector('meta[name="stati:search-index"]')
     ?.getAttribute('content');
-  if (!dialog || !indexPath || typeof dialog.showModal !== 'function') return;
-
-  // Index URLs are paths from the site root; the meta tag's path carries the base path of
-  // a site served from a folder, such as /news-site/search-index-1a2b3c4d.json
-  const indexUrl = indexPath;
-  const basePath = indexPath.replace(/[?#].*$/, '').replace(/\/[^/]*$/, '');
-  /** @param {string} path */
-  const siteUrl = (path) => `${basePath}${path}`;
+  if (!dialog || !indexUrl || typeof dialog.showModal !== 'function') return;
 
   const input = /** @type {HTMLInputElement} */ (dialog.querySelector('#search-input'));
   const list = /** @type {HTMLUListElement} */ (dialog.querySelector('#search-results'));
@@ -155,6 +148,8 @@ function initSearch() {
   const sectionOf = (url) =>
     sections.find((section) => url.startsWith(`${section.url}/`))?.title ?? '';
 
+  /** The base path of a site served from a folder, from the index; result URLs start with it. */
+  let basePath = '';
   /** @type {Promise<IndexedDocument[]> | null} */
   let loading = null;
   /** @type {HTMLAnchorElement[]} */
@@ -177,14 +172,15 @@ function initSearch() {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
       })
-      .then((data) =>
-        /** @type {SearchDocument[]} */ (data.documents ?? []).map((doc) => ({
+      .then((data) => {
+        basePath = data.basePath ?? '';
+        return /** @type {SearchDocument[]} */ (data.documents ?? []).map((doc) => ({
           ...doc,
           _title: normalize(doc.title ?? ''),
           _heading: normalize(doc.heading ?? ''),
           _content: normalize(doc.content ?? ''),
-        })),
-      )
+        }));
+      })
       .catch((error) => {
         loading = null;
         throw error;
@@ -288,7 +284,7 @@ function initSearch() {
 
     list.innerHTML = matches
       .map(({ doc }, n) => {
-        const href = siteUrl(doc.anchor ? `${doc.url}#${doc.anchor}` : doc.url);
+        const href = `${basePath}${doc.anchor ? `${doc.url}#${doc.anchor}` : doc.url}`;
         const section = sectionOf(doc.url);
         const text = doc.level === 1 ? doc.content : `${doc.heading}: ${doc.content}`;
         return `<li class="search-result" role="option" id="search-option-${n}" aria-selected="false">

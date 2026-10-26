@@ -22,7 +22,7 @@
   "license": "MIT",
   "devDependencies": {
     "@stati/cli": "^2.3.0",
-    "@stati/core": "^2.5.0"
+    "@stati/core": "^2.9.0"
   },
   "engines": {
     "node": "^22.20.0 || >=24"

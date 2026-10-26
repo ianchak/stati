@@ -182,7 +182,8 @@ This loader intentionally returns `unknown`: validate `documents` and document
 fields before searching/rendering them. The calling UI must visibly handle load
 errors; do not catch and return an empty list that disguises a failed request as
 "no matches." Render text using DOM text APIs, and build result links from the
-verified URL plus nonempty anchor.
+verified URL plus nonempty anchor, with the index's `basePath` (`""` or a string such as
+`/sub`) in front of the URL.
 
 ## Data-driven content
 
