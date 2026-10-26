@@ -9,7 +9,8 @@ import { writeFile, ensureDir, readdir, remove } from '../core/utils/fs.utils.js
 import { matchesGlob } from '../core/utils/glob-patterns.utils.js';
 import { isNotFoundPage, isVirtualPage } from '../core/utils/template-discovery.utils.js';
 import { SEARCH_INDEX_VERSION, SEARCH_DEFAULTS } from './constants.js';
-import type { PageModel, TocEntry } from '../types/content.js';
+import type { FrontMatter, PageModel, TocEntry } from '../types/content.js';
+import type { Logger } from '../types/logging.js';
 import type {
   SearchConfig,
   SearchDocument,
@@ -181,6 +182,7 @@ export function stripMarkdown(markdown: string): string {
  * @param pageTitle - Page title from frontmatter
  * @param tags - Optional tags from frontmatter
  * @param config - Search configuration
+ * @param fields - Front matter values for the page-level document, from `collectSearchFields`
  * @returns Array of SearchDocument objects
  */
 export function extractSectionsFromMarkdown(
@@ -190,6 +192,7 @@ export function extractSectionsFromMarkdown(
   pageTitle: string,
   tags: readonly string[] | undefined,
   config: SearchConfig,
+  fields?: Record<string, unknown>,
 ): SearchDocument[] {
   const documents: SearchDocument[] = [];
   const headingLevels = config.headingLevels ?? SEARCH_DEFAULTS.headingLevels;
@@ -251,6 +254,7 @@ export function extractSectionsFromMarkdown(
     content: pageContent,
     breadcrumb,
     ...(tags && tags.length > 0 ? { tags: [...tags] } : {}),
+    ...(fields ? { fields } : {}),
   });
 
   // Create documents for each heading section
@@ -287,6 +291,95 @@ export function extractSectionsFromMarkdown(
   }
 
   return documents;
+}
+
+/** A value converted for the index, or `undefined` when it cannot be written as JSON. */
+type SearchFieldValue = { value: unknown } | undefined;
+
+/**
+ * Converts a front matter value to something JSON can hold: dates become ISO strings, arrays
+ * and plain objects are converted entry by entry. Anything else JSON cannot hold, such as
+ * functions, symbols, `NaN`, invalid dates, class instances and circular structures, makes the
+ * whole value unusable.
+ */
+function toSearchFieldValue(value: unknown, ancestors: object[] = []): SearchFieldValue {
+  if (value === null || typeof value === 'string' || typeof value === 'boolean') {
+    return { value };
+  }
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? { value } : undefined;
+  }
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? undefined : { value: value.toISOString() };
+  }
+  if (typeof value !== 'object' || ancestors.includes(value)) {
+    return undefined;
+  }
+
+  const path = [...ancestors, value];
+  if (Array.isArray(value)) {
+    const items: unknown[] = [];
+    for (const item of value) {
+      const converted = toSearchFieldValue(item, path);
+      if (!converted) {
+        return undefined;
+      }
+      items.push(converted.value);
+    }
+    return { value: items };
+  }
+
+  const prototype = Object.getPrototypeOf(value) as unknown;
+  if (prototype !== Object.prototype && prototype !== null) {
+    return undefined;
+  }
+  const entries: Array<[string, unknown]> = [];
+  for (const [key, entry] of Object.entries(value)) {
+    const converted = toSearchFieldValue(entry, path);
+    if (!converted) {
+      return undefined;
+    }
+    entries.push([key, converted.value]);
+  }
+  return { value: Object.fromEntries(entries) };
+}
+
+/**
+ * Picks the front matter values `search.fields` lists for a page's document. A field the page
+ * does not set, or sets to `null`, is left out. A value JSON cannot hold is left out with a
+ * warning that names the page and the field.
+ *
+ * @param frontMatter - The page's front matter
+ * @param names - The field names from `search.fields`
+ * @param url - Page URL path, for warnings
+ * @param logger - Receives a warning for each value that is left out
+ * @returns The values by field name, or `undefined` when no field has a value
+ */
+export function collectSearchFields(
+  frontMatter: FrontMatter,
+  names: readonly string[] | undefined,
+  url: string,
+  logger?: Logger,
+): Record<string, unknown> | undefined {
+  const fields: Array<[string, unknown]> = [];
+  for (const name of new Set(names)) {
+    if (!Object.hasOwn(frontMatter, name)) {
+      continue;
+    }
+    const raw = (frontMatter as Record<string, unknown>)[name];
+    if (raw === undefined || raw === null) {
+      continue;
+    }
+    const converted = toSearchFieldValue(raw);
+    if (!converted) {
+      logger?.warning(
+        `Search field "${name}" of ${url} cannot be written as JSON and is left out of the search index.`,
+      );
+      continue;
+    }
+    fields.push([name, converted.value]);
+  }
+  return fields.length > 0 ? Object.fromEntries(fields) : undefined;
 }
 
 /**
@@ -364,11 +457,13 @@ export interface SearchablePage {
  *
  * @param searchablePages - Array of pages with TOC and markdown content
  * @param config - Search configuration
+ * @param logger - Receives warnings for `search.fields` values that are left out
  * @returns SearchIndex object
  */
 export function generateSearchIndex(
   searchablePages: SearchablePage[],
   config: SearchConfig,
+  logger?: Logger,
 ): SearchIndex {
   const documents: SearchDocument[] = [];
 
@@ -388,6 +483,7 @@ export function generateSearchIndex(
       pageTitle,
       tags,
       config,
+      collectSearchFields(page.frontMatter, config.fields, page.url, logger),
     );
     documents.push(...pageDocs);
   }
