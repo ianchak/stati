@@ -1,5 +1,11 @@
 # @stati/core
 
+## 2.8.2
+
+### Patch Changes
+
+- f4e7f1b: A page that rendered with an error in a production build is rendered again, and its error logged again, on every build until it is fixed
+
 ## 2.8.1
 
 ### Patch Changes
