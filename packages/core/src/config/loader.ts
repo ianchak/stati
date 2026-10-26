@@ -7,6 +7,7 @@ import { validateImagesConfig } from '../images/config.js';
 import { validateSEOConfig } from '../seo/defaults.js';
 import { validateSitemapConfig } from '../seo/news-sitemap.js';
 import { validateCSSConfig } from '../css/config.js';
+import { validateSearchConfig } from '../search/config.js';
 import { validateReadingTimeConfig } from '../core/reading-time.js';
 import { validateDirectoryLayout } from './directories.js';
 import { ConfigValidationError } from './errors.js';
@@ -293,6 +294,17 @@ export async function loadConfig(cwd: string = process.cwd()): Promise<StatiConf
         );
       }
       throw error;
+    }
+
+    // The front matter fields in the search index; validateSearchConfig throws only
+    // ConfigValidationError
+    try {
+      validateSearchConfig(mergedConfig.search);
+    } catch (error) {
+      throw new ConfigValidationError(
+        `Invalid search configuration in ${configPath}:\n${(error as Error).message}`,
+        { cause: error },
+      );
     }
 
     // The Google News sitemap; validateSitemapConfig throws only ConfigValidationError

@@ -555,7 +555,7 @@ async function writeSearchIndexBeforeRendering(
       toc: tocEnabled ? extractToc(page.content, md) : [],
       markdownContent: page.content,
     }));
-  const index = generateSearchIndex(searchablePages, config.search);
+  const index = generateSearchIndex(searchablePages, config.search, logger);
 
   // A production hash covers the documents and schema version, not generatedAt, which
   // changes on every build; serializing them is skipped when the name has no hash

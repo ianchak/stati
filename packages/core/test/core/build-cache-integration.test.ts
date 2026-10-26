@@ -311,6 +311,53 @@ describe('build cache integration', () => {
     expect(await readHome()).toBe(html);
   });
 
+  it('writes search.fields to the index and renames it when a listed field changes', async () => {
+    config.search = { enabled: true, fields: ['description', 'date', 'section'] };
+    const about = (description: string) =>
+      `---\ntitle: About\ndescription: ${description}\ndate: 2026-10-25T09:15:00.000Z\nsection: Company\n---\n# About\n\n## Team\n\nPeople.`;
+    await writeFile(join(projectDir, 'site', 'about.md'), about('Who we are'));
+    const indexFiles = async () =>
+      (await readdir(join(projectDir, 'dist'))).filter((file) => file.startsWith('search-index'));
+    const readIndex = async (file: string) =>
+      JSON.parse(await readFile(join(projectDir, 'dist', file), 'utf-8')) as {
+        documents: Array<{ id: string; fields?: Record<string, unknown> }>;
+      };
+
+    await runBuild();
+    const [oldIndex] = await indexFiles();
+    const { documents } = await readIndex(oldIndex!);
+    expect(documents.find((doc) => doc.id === '/about#top')?.fields).toEqual({
+      description: 'Who we are',
+      date: '2026-10-25T09:15:00.000Z',
+      section: 'Company',
+    });
+    expect(documents.find((doc) => doc.id === '/about#team')).not.toHaveProperty('fields');
+    expect(documents.find((doc) => doc.id === '/docs#top')).not.toHaveProperty('fields');
+
+    // Nothing changed: every page is reused
+    expect(await runBuild()).toMatchObject({ cacheHits: 3, cacheMisses: 0 });
+
+    // The indexed text did not change, a listed field did
+    await writeFile(join(projectDir, 'site', 'about.md'), about('Who we are now'));
+    expect(await runBuild()).toMatchObject({ cacheHits: 0, cacheMisses: 3 });
+    const [newIndex, ...others] = await indexFiles();
+    expect(others).toEqual([]);
+    expect(newIndex).not.toBe(oldIndex);
+    expect(await readHome()).toContain(`/${newIndex}`);
+  });
+
+  it('keeps the index name and cached pages when search.fields is an empty list', async () => {
+    config.search = { enabled: true };
+    await runBuild();
+    const indexFiles = async () =>
+      (await readdir(join(projectDir, 'dist'))).filter((file) => file.startsWith('search-index'));
+    const withoutFields = await indexFiles();
+
+    config.search = { enabled: true, fields: [] };
+    expect(await runBuild()).toMatchObject({ cacheHits: 3, cacheMisses: 0 });
+    expect(await indexFiles()).toEqual(withoutFields);
+  });
+
   it('renames the hashed search index when indexed text changes and deletes the old one', async () => {
     config.search = { enabled: true };
     await runBuild();

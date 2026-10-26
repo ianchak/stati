@@ -1304,6 +1304,7 @@ describe('build.ts', () => {
           }),
         ]),
         configWithSearch.search,
+        expect.objectContaining({ warning: expect.any(Function) }),
       );
 
       // Should write search index
@@ -1566,6 +1567,7 @@ describe('build.ts', () => {
             toc: extractedToc,
           }),
         ]),
+        expect.any(Object),
         expect.any(Object),
       );
       expect(mockGenerateSearchIndex.mock.invocationCallOrder[0]).toBeLessThan(
