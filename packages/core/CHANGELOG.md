@@ -1,5 +1,11 @@
 # @stati/core
 
+## 2.9.0
+
+### Minor Changes
+
+- 78eaca2: copy front matter fields into search index documents
+
 ## 2.8.3
 
 ### Patch Changes
