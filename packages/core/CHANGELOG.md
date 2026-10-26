@@ -1,5 +1,11 @@
 # @stati/core
 
+## 2.8.3
+
+### Patch Changes
+
+- 080415b: keep RSS feeds when a callback or one feed fails
+
 ## 2.8.2
 
 ### Patch Changes
