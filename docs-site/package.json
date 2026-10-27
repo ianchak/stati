@@ -35,9 +35,9 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@stati/cli": "2.4.0",
-    "@stati/core": "2.8.0",
-    "@stati/images": "1.1.0",
+    "@stati/cli": "2.4.1",
+    "@stati/core": "2.10.0",
+    "@stati/images": "1.1.1",
     "@tailwindcss/cli": "4.3.3",
     "@tailwindcss/typography": "0.5.20",
     "@types/prismjs": "1.26.6",

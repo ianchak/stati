@@ -28,7 +28,7 @@
     "node": "^22.20.0 || >=24"
   },
   "dependencies": {
-    "@stati/core": "^2.8.1",
+    "@stati/core": "^2.10.0",
     "yargs": "^18.2.0"
   },
   "devDependencies": {
