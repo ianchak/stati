@@ -1,5 +1,11 @@
 # @stati/cli
 
+## 2.4.2
+
+### Patch Changes
+
+- bc89084: Require `@stati/core` ^2.10.0.
+
 ## 2.4.1
 
 ### Patch Changes
