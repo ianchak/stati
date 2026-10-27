@@ -1,5 +1,15 @@
 # create-stati
 
+## 2.7.0
+
+### Minor Changes
+
+- d9ad4c4: add the base path to the search index
+
+### Patch Changes
+
+- d9ad4c4: require @stati/core 2.5 in the docs starter
+
 ## 2.6.2
 
 ### Patch Changes

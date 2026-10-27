@@ -1,5 +1,11 @@
 # @stati/core
 
+## 2.10.0
+
+### Minor Changes
+
+- d9ad4c4: add the base path to the search index
+
 ## 2.9.0
 
 ### Minor Changes
