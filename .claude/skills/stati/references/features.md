@@ -234,7 +234,7 @@ Default injection:
 ```
 
 The index object holds `version`, `basePath`, `generatedAt`, `documentCount` and
-`documents`. `basePath` is the path of `site.baseUrl` (`""` without one, core 2.9+);
+`documents`. `basePath` is the path of `site.baseUrl` (`""` without one);
 each document's `url` stays site-relative, so link a result with `basePath + url`.
 
 Use this tag in browser code rather than guessing a filename. Templates can

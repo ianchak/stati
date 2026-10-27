@@ -144,8 +144,9 @@ export interface SearchIndex {
   /**
    * The path of `site.baseUrl` (`'/sub'`), or `''` when the site is served from the root.
    * Each document's `url` is relative to the site root, so a link is `basePath + url`.
+   * Generated indexes always include it; treat a missing value as `''`.
    */
-  basePath: string;
+  basePath?: string;
   /** ISO timestamp when the index was generated */
   generatedAt: string;
   /** Total document count */

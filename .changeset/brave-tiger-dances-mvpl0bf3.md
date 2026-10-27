@@ -2,4 +2,4 @@
 "create-stati": patch
 ---
 
-require released @stati/core in the docs and news starters
+require @stati/core 2.5 in the docs starter

@@ -73,7 +73,7 @@ base path warns about `href`/`src` values starting with `/` without it. `page.ur
 config URL patterns, front matter and ISG keys stay relative to the site root.
 `stati dev` and `stati preview` serve under the base path (`/` redirects there,
 `/__ws` stays at the root). `robots.txt` is ignored by crawlers outside a host's root.
-Search index entries keep site-relative `url`s; the index holds `basePath` (core 2.9+),
+Search index entries keep site-relative `url`s; the index holds `basePath`,
 so a result links to `index.basePath + doc.url`.
 Changing the base path rebuilds every page. Before core 2.5, a path in `baseUrl`
 only affected absolute URLs (canonical links, sitemap, feeds).
