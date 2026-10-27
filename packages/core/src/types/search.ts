@@ -20,6 +20,7 @@
  *     exclude: ['/private/**'],
  *     includeHomePage: false,
  *     autoInjectMetaTag: true,
+ *     fields: ['description', 'date'],
  *   }
  * };
  * ```
@@ -51,6 +52,15 @@ export interface SearchConfig {
 
   /** Auto-inject search index meta tag into rendered HTML. @default true */
   autoInjectMetaTag?: boolean;
+
+  /**
+   * Front matter fields to copy onto each page-level document, under `fields`. Values must be
+   * JSON-serializable: dates are written as ISO strings, and other values are skipped with a
+   * warning. A page without a value for a field (or with `null`) leaves it out. Heading
+   * documents never carry them.
+   * @default []
+   */
+  fields?: string[];
 }
 
 /**
@@ -69,6 +79,24 @@ export interface SearchConfig {
  *   content: 'Before installing Stati, ensure you have Node.js 22 or later...',
  *   breadcrumb: 'Getting Started > Installation',
  *   tags: ['setup', 'installation']
+ * };
+ * ```
+ *
+ * With `search.fields: ['description']`, a page-level document also carries
+ * `fields: { description: '…' }`.
+ *
+ * @example
+ * ```typescript
+ * const pageDoc: SearchDocument = {
+ *   id: '/getting-started/installation#top',
+ *   url: '/getting-started/installation',
+ *   anchor: '',
+ *   title: 'Installation',
+ *   heading: 'Installation',
+ *   level: 1,
+ *   content: 'Text before the first heading…',
+ *   breadcrumb: 'Getting Started > Installation',
+ *   fields: { description: 'Install Stati' }
  * };
  * ```
  */
@@ -91,6 +119,8 @@ export interface SearchDocument {
   breadcrumb: string;
   /** Optional tags from frontmatter */
   tags?: string[];
+  /** Front matter values listed in `search.fields`, on page-level documents only */
+  fields?: Record<string, unknown>;
 }
 
 /**

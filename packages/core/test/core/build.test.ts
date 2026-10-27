@@ -1305,6 +1305,7 @@ describe('build.ts', () => {
           }),
         ]),
         configWithSearch.search,
+        expect.objectContaining({ warning: expect.any(Function) }),
         '',
       );
 
@@ -1568,6 +1569,7 @@ describe('build.ts', () => {
             toc: extractedToc,
           }),
         ]),
+        expect.any(Object),
         expect.any(Object),
         expect.any(String),
       );

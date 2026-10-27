@@ -42,6 +42,7 @@ This generates a `search-index-[hash].json` file in your output directory contai
 | `exclude` | `string[]` | `[]` | Glob patterns for pages to exclude |
 | `includeHomePage` | `boolean` | `false` | Include the home page in the search index |
 | `autoInjectMetaTag` | `boolean` | `true` | Auto-inject search index meta tag into HTML |
+| `fields` | `string[]` | `[]` | Front matter fields to copy onto each page-level entry (see [Front matter fields](#front-matter-fields)) |
 
 ## Content filtering
 
@@ -83,6 +84,43 @@ search: {
 ```
 
 Sections come from the heading anchors that `markdown.toc` creates. With `markdown: { toc: false }`, each page contributes only its page-level entry.
+
+## Front matter fields
+
+A search interface often shows more than a title and a text snippet: a standfirst, a date, the section a story belongs to. List the front matter fields it needs in `fields`, and Stati copies them onto each page's entry in the index, so the page does not have to embed that data itself:
+
+```typescript
+search: {
+  enabled: true,
+  fields: ['description', 'date', 'section'],
+}
+```
+
+```json
+{
+  "id": "/news/world/a-story#top",
+  "url": "/news/world/a-story",
+  "anchor": "",
+  "title": "A story",
+  "heading": "A story",
+  "level": 1,
+  "content": "Text before the first heading…",
+  "breadcrumb": "News > World > A story",
+  "fields": {
+    "description": "The standfirst of the story",
+    "date": "2026-10-25T09:15:00.000Z",
+    "section": "World"
+  }
+}
+```
+
+- Only page-level entries (`level: 1`) carry `fields`, so the entries for a page's headings do not repeat them.
+- A page that does not set a field, or sets it to `null`, leaves it out; a page with none of the listed fields has no `fields` key. Without the `fields` option the index is the same as before.
+- Values must be JSON-serializable. Dates (YAML reads `date: 2026-10-25` as one) are written as ISO strings. A value JSON cannot hold, such as a function, a circular structure or an invalid date, is left out with a warning that names the page and the field.
+- The values are read from each page's front matter after the `beforeAll` hook and before any page renders. Collections and navigation are not available there, so a value derived from them, such as a page's section, has to be front matter: write it in the page, or set it in `beforeAll`.
+- The fields are part of the index content, so changing a listed field changes the index file name, and every page renders again with the new name (see [Cache busting](#cache-busting)).
+
+An entry's fields are `doc.fields?.description` in client code. Treat them as text, like the rest of the index: do not set them with `innerHTML`.
 
 ## Search index structure
 
@@ -138,6 +176,7 @@ Every page gets one page-level entry (`level: 1`, `anchor: ""`, `id` ending in `
 | `content` | `string` | Text content of the section (stripped of markdown) |
 | `breadcrumb` | `string` | Breadcrumb for display, built from the URL folders, the page title and (for sections) the heading |
 | `tags` | `string[]` | Optional tags from front matter |
+| `fields` | `object` | The front matter values listed in the `fields` option, on page-level entries only |
 
 ## Template access
 

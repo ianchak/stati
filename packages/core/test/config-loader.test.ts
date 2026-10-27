@@ -350,6 +350,29 @@ describe('config loader', () => {
       expect(config.sitemap?.news).toEqual({ include: ['/news/*/*'] });
     });
 
+    it('should validate search.fields and throw on invalid config', async () => {
+      writeFileSync(
+        join(testDir, 'stati.config.mjs'),
+        `export default { search: { enabled: true, fields: 'description' } };`,
+        'utf-8',
+      );
+
+      const error = await loadConfig(testDir).catch((caught: unknown) => caught);
+      expect(error).toBeInstanceOf(ConfigValidationError);
+      expect((error as Error).message).toContain('Invalid search configuration in');
+      expect((error as Error).message).toContain('search.fields must be an array');
+    });
+
+    it('should accept search.fields', async () => {
+      writeFileSync(
+        join(testDir, 'stati.config.mjs'),
+        `export default { search: { enabled: true, fields: ['description', 'date'] } };`,
+        'utf-8',
+      );
+
+      expect((await loadConfig(testDir)).search?.fields).toEqual(['description', 'date']);
+    });
+
     it('should validate the css block and throw on invalid config', async () => {
       writeFileSync(
         join(testDir, 'stati.config.mjs'),

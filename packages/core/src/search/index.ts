@@ -19,6 +19,7 @@
 
 export {
   generateSearchIndex,
+  collectSearchFields,
   writeSearchIndex,
   extractSectionsFromMarkdown,
   stripMarkdown,

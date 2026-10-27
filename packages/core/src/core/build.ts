@@ -556,7 +556,7 @@ async function writeSearchIndexBeforeRendering(
       markdownContent: page.content,
     }));
   const basePath = getBasePath(config.site.baseUrl);
-  const index = generateSearchIndex(searchablePages, config.search, basePath);
+  const index = generateSearchIndex(searchablePages, config.search, logger, basePath);
 
   // A production hash covers the documents, base path and schema version, not generatedAt,
   // which changes on every build; serializing them is skipped when the name has no hash

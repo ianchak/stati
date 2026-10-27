@@ -174,6 +174,7 @@ search: {
   exclude: ['/private/**'],
   includeHomePage: false,
   autoInjectMetaTag: true,
+  fields: ['description', 'date'], // optional; default none
 }
 ```
 
@@ -207,12 +208,23 @@ The file is an **object**, not a bare document array:
     content: string,
     breadcrumb: string,
     tags?: string[],
+    fields?: Record<string, unknown>, // page-level documents, with search.fields
   }>,
 }
 ```
 
 Included pages get page-level documents (`level: 1`, empty anchor); configured
-heading levels produce additional section documents. Drafts are always excluded,
+heading levels produce additional section documents.
+
+`search.fields` (core 2.9+) lists front matter fields to copy onto page-level
+documents, under `fields`, so a results list can show a description, date or
+section without embedding that data in every page. A page's missing or `null`
+value is left out, dates become ISO strings, and a value JSON cannot hold is
+skipped with a warning. Heading documents never carry them. Collections and
+navigation do not exist when the index is built, so a derived value such as a
+section must be front matter (a `beforeAll` hook can set it). The fields are in
+the index content, so editing one renames the index and re-renders every page.
+A `fields` that is not an array of non-empty strings stops the build. Drafts are always excluded,
 even if the HTML build includes them. Home is excluded by default.
 
 Default injection:

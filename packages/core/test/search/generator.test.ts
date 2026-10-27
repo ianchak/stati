@@ -12,11 +12,13 @@ import {
   shouldExcludePage,
   isGeneratedPageExcludedFromSearch,
   generateSearchIndex,
+  collectSearchFields,
   writeSearchIndex,
   computeSearchIndexFilename,
 } from '../../src/search/generator.js';
 import type { SearchConfig, SearchIndex } from '../../src/types/search.js';
-import type { PageModel, TocEntry } from '../../src/types/content.js';
+import type { FrontMatter, PageModel, TocEntry } from '../../src/types/content.js';
+import type { Logger } from '../../src/types/logging.js';
 
 // Mock fs-extra functions
 const { mockWriteFile, mockEnsureDir } = vi.hoisted(() => ({
@@ -459,7 +461,7 @@ describe('generateSearchIndex', () => {
   it('records the base path and keeps each url relative to the site root', () => {
     const searchablePages = [createSearchablePage('/about', 'About', '# About\n\nAbout content')];
 
-    const index = generateSearchIndex(searchablePages, { enabled: true }, '/sub');
+    const index = generateSearchIndex(searchablePages, { enabled: true }, undefined, '/sub');
 
     expect(index.basePath).toBe('/sub');
     expect(index.documents.map((d) => d.url)).toEqual(['/about']);
@@ -487,6 +489,208 @@ describe('generateSearchIndex', () => {
     const index = generateSearchIndex(searchablePages, config);
 
     expect(() => new Date(index.generatedAt)).not.toThrow();
+  });
+});
+
+describe('search.fields', () => {
+  const logger = (): Logger => ({ warning: vi.fn() }) as unknown as Logger;
+
+  describe('collectSearchFields', () => {
+    const collect = (frontMatter: Record<string, unknown>, names: string[], log?: Logger) =>
+      collectSearchFields(frontMatter as FrontMatter, names, '/news/story', log);
+
+    it('returns nothing without field names', () => {
+      expect(collect({ title: 'T', description: 'D' }, [])).toBeUndefined();
+      expect(collectSearchFields({ title: 'T' }, undefined, '/story')).toBeUndefined();
+    });
+
+    it('copies strings, numbers, booleans, arrays and objects as they are', () => {
+      const values = {
+        description: 'A story',
+        rank: 3,
+        featured: false,
+        authors: ['Ada', 'Grace'],
+        meta: { region: 'EU', tags: ['a'], parent: null },
+      };
+      expect(collect(values, Object.keys(values))).toEqual(values);
+    });
+
+    it('writes dates as ISO strings, nested ones too', () => {
+      const date = new Date('2026-10-25T09:15:00.000Z');
+      expect(collect({ date, history: [{ at: date }] }, ['date', 'history'])).toEqual({
+        date: '2026-10-25T09:15:00.000Z',
+        history: [{ at: '2026-10-25T09:15:00.000Z' }],
+      });
+    });
+
+    it('leaves out fields the page does not set, or sets to null or undefined', () => {
+      const log = logger();
+      expect(
+        collect({ description: null, section: undefined }, ['description', 'section', 'date'], log),
+      ).toBeUndefined();
+      expect(log.warning).not.toHaveBeenCalled();
+    });
+
+    it('does not read inherited properties', () => {
+      expect(collect({}, ['constructor', 'toString', '__proto__'])).toBeUndefined();
+    });
+
+    it('keeps a field named __proto__ as an own property', () => {
+      const frontMatter = JSON.parse('{"__proto__": {"x": 1}}') as Record<string, unknown>;
+      const fields = collect(frontMatter, ['__proto__'])!;
+      expect(Object.keys(fields)).toEqual(['__proto__']);
+      expect(JSON.stringify(fields)).toBe('{"__proto__":{"x":1}}');
+    });
+
+    it('lists a repeated field name once', () => {
+      expect(collect({ section: 'World' }, ['section', 'section'])).toEqual({ section: 'World' });
+    });
+
+    it('skips values JSON cannot hold, with a warning that names the page and the field', () => {
+      const log = logger();
+      const circular: Record<string, unknown> = {};
+      circular.self = circular;
+      class Point {
+        x = 1;
+      }
+      const bad: Record<string, unknown> = {
+        fn: () => 1,
+        symbol: Symbol('s'),
+        big: BigInt(10),
+        nan: Number.NaN,
+        infinite: Number.POSITIVE_INFINITY,
+        badDate: new Date('not a date'),
+        instance: new Point(),
+        map: new Map(),
+        sparse: [1, undefined],
+        nestedFn: { a: { b: () => 1 } },
+        nestedBadDate: [{ at: new Date('x') }],
+        circular,
+        loop: [circular],
+      };
+
+      const fields = collect({ ok: 'kept', ...bad }, ['ok', ...Object.keys(bad)], log);
+
+      expect(fields).toEqual({ ok: 'kept' });
+      expect(log.warning).toHaveBeenCalledTimes(Object.keys(bad).length);
+      expect(log.warning).toHaveBeenCalledWith(
+        'Search field "fn" of /news/story cannot be written as JSON and is left out of the search index.',
+      );
+    });
+
+    it('skips them quietly without a logger', () => {
+      expect(collect({ fn: () => 1 }, ['fn'])).toBeUndefined();
+    });
+
+    it('accepts the same object in two places, since that is no cycle', () => {
+      const shared = { a: 1 };
+      expect(collect({ pair: [shared, shared] }, ['pair'])).toEqual({
+        pair: [{ a: 1 }, { a: 1 }],
+      });
+    });
+
+    it('accepts objects without a prototype', () => {
+      const bare = Object.assign(Object.create(null) as Record<string, unknown>, { a: 1 });
+      expect(collect({ bare }, ['bare'])).toEqual({ bare: { a: 1 } });
+    });
+  });
+
+  describe('in documents', () => {
+    const page = (url: string, frontMatter: Record<string, unknown>): PageModel => ({
+      slug: url.split('/').pop() || 'index',
+      url,
+      sourcePath: `/src${url}.md`,
+      content: '',
+      frontMatter: { title: 'Story', ...frontMatter } as FrontMatter,
+    });
+    const searchable = (p: PageModel, markdown: string, toc: TocEntry[] = []) => ({
+      page: p,
+      toc,
+      markdownContent: markdown,
+    });
+    const toc: TocEntry[] = [{ id: 'part', text: 'Part', level: 2 }];
+    const markdown = 'Intro.\n\n## Part\n\nDetails.';
+
+    it('puts the fields on the page-level document only', () => {
+      const date = new Date('2026-10-25T09:15:00.000Z');
+      const story = page('/news/story', { description: 'Standfirst', date, section: 'World' });
+      const index = generateSearchIndex([searchable(story, markdown, toc)], {
+        enabled: true,
+        fields: ['description', 'date', 'section'],
+      });
+
+      expect(index.documents).toHaveLength(2);
+      expect(index.documents[0]).toMatchObject({
+        id: '/news/story#top',
+        level: 1,
+        fields: { description: 'Standfirst', date: '2026-10-25T09:15:00.000Z', section: 'World' },
+      });
+      expect(index.documents[1]).toMatchObject({ id: '/news/story#part', level: 2 });
+      expect(index.documents[1]).not.toHaveProperty('fields');
+    });
+
+    it('leaves out the fields a page lacks, and the key when it has none', () => {
+      const index = generateSearchIndex(
+        [
+          searchable(page('/a', { description: 'Only this' }), markdown),
+          searchable(page('/b', {}), markdown),
+        ],
+        { enabled: true, fields: ['description', 'section'] },
+      );
+
+      expect(index.documents[0]!.fields).toEqual({ description: 'Only this' });
+      expect(index.documents[1]).not.toHaveProperty('fields');
+    });
+
+    it('writes the same documents without fields as with an empty or unmatched list', () => {
+      const pages = [searchable(page('/a', { description: 'D', tags: ['x'] }), markdown, toc)];
+      const documents = (config: SearchConfig) =>
+        JSON.stringify(generateSearchIndex(pages, config).documents);
+
+      const without = documents({ enabled: true });
+      expect(documents({ enabled: true, fields: [] })).toBe(without);
+      expect(documents({ enabled: true, fields: ['section'] })).toBe(without);
+      expect(without).not.toContain('fields');
+    });
+
+    it('changes the serialized documents when a listed field changes', () => {
+      const config: SearchConfig = { enabled: true, fields: ['description'] };
+      const documents = (description: string) =>
+        JSON.stringify(
+          generateSearchIndex([searchable(page('/a', { description }), markdown)], config)
+            .documents,
+        );
+
+      expect(documents('one')).not.toBe(documents('two'));
+      expect(documents('one')).toBe(documents('one'));
+    });
+
+    it('warns through the logger it is given', () => {
+      const log = logger();
+      generateSearchIndex(
+        [searchable(page('/a', { description: () => 1 }), markdown)],
+        { enabled: true, fields: ['description'] },
+        log,
+      );
+
+      expect(log.warning).toHaveBeenCalledWith(
+        'Search field "description" of /a cannot be written as JSON and is left out of the search index.',
+      );
+    });
+
+    it('takes the fields of a page-level document from extractSectionsFromMarkdown', () => {
+      const docs = extractSectionsFromMarkdown(
+        toc,
+        markdown,
+        '/a',
+        'A',
+        undefined,
+        { enabled: true },
+        { section: 'World' },
+      );
+      expect(docs[0]!.fields).toEqual({ section: 'World' });
+      expect(docs[1]).not.toHaveProperty('fields');
+    });
   });
 });
 
