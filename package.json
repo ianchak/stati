@@ -13,7 +13,7 @@
     "test:create-stati:images:cleanup": "node -e \"require('node:fs').rmSync('examples/test-images', { recursive: true, force: true })\"",
     "lint": "eslint .",
     "lint:ci": "eslint examples",
-    "typecheck": "tsc -p tsconfig.base.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json",
     "typecheck:ci": "echo 'No TypeScript files to check in examples'",
     "build": "npm run build -w packages/core && npm run build -w packages/images && npm run build -w packages/cli && npm run build -w packages/create-stati",
     "test:blank:build": "npm run build && cd examples/blank && npm run build",
