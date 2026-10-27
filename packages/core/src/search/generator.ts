@@ -458,12 +458,15 @@ export interface SearchablePage {
  * @param searchablePages - Array of pages with TOC and markdown content
  * @param config - Search configuration
  * @param logger - Receives warnings for `search.fields` values that are left out
+ * @param basePath - The base path of `site.baseUrl` (`''` for a site served from the root), which
+ *   client code puts in front of each document's site-relative `url`
  * @returns SearchIndex object
  */
 export function generateSearchIndex(
   searchablePages: SearchablePage[],
   config: SearchConfig,
   logger?: Logger,
+  basePath = '',
 ): SearchIndex {
   const documents: SearchDocument[] = [];
 
@@ -490,6 +493,7 @@ export function generateSearchIndex(
 
   return {
     version: SEARCH_INDEX_VERSION,
+    basePath,
     generatedAt: new Date().toISOString(),
     documentCount: documents.length,
     documents,

@@ -8,8 +8,8 @@
 %>
 <aside id="sidebar" class="sidebar">
   <div class="sidebar-top">
-    <a class="brand" href="/">
-      <img src="/favicon.svg" alt="" width="26" height="26" />
+    <a class="brand" href="<%= stati.url('/') %>">
+      <img src="<%= stati.url('/favicon.svg') %>" alt="" width="26" height="26" />
       <span><%= stati.site.title %></span>
     </a>
     <button type="button" class="icon-button" data-menu-close>
@@ -22,7 +22,7 @@
     <% if (nav.length > 0) { %>
     <ul class="sidebar-main-links" role="list">
       <% for (const item of nav) { %>
-      <li><a href="<%= item.url %>"><%= item.label %></a></li>
+      <li><a href="<%= stati.url(item.url) %>"><%= item.label %></a></li>
       <% } %>
     </ul>
     <% } %>
@@ -31,7 +31,7 @@
     <div class="sidebar-section">
       <p class="sidebar-heading">
         <% if (section.hasOverview) { %>
-        <a href="<%= section.url %>"<% if (stati.helpers.isCurrent(section.url, here)) { %> aria-current="page"<% } %>><%= section.title %></a>
+        <a href="<%= stati.url(section.url) %>"<% if (stati.helpers.isCurrent(section.url, here)) { %> aria-current="page"<% } %>><%= section.title %></a>
         <% } else { %>
         <%= section.title %>
         <% } %>
@@ -39,7 +39,7 @@
       <ul class="sidebar-list" role="list">
         <% for (const page of section.pages) { %>
         <li>
-          <a href="<%= page.url %>"<% if (stati.helpers.isCurrent(page.url, here)) { %> aria-current="page"<% } %>><%= page.label %><% if (page.draft) { %> <span class="draft-badge">Draft</span><% } %></a>
+          <a href="<%= stati.url(page.url) %>"<% if (stati.helpers.isCurrent(page.url, here)) { %> aria-current="page"<% } %>><%= page.label %><% if (page.draft) { %> <span class="draft-badge">Draft</span><% } %></a>
         </li>
         <% } %>
       </ul>

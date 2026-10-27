@@ -255,6 +255,7 @@ describe('build.ts', () => {
     mockComputeSearchIndexFilename.mockReturnValue('search-index-abc123.json');
     mockGenerateSearchIndex.mockReturnValue({
       version: '1.0.0',
+      basePath: '',
       generatedAt: new Date().toISOString(),
       documentCount: 3,
       documents: [],
@@ -1305,6 +1306,7 @@ describe('build.ts', () => {
         ]),
         configWithSearch.search,
         expect.objectContaining({ warning: expect.any(Function) }),
+        '',
       );
 
       // Should write search index
@@ -1569,6 +1571,7 @@ describe('build.ts', () => {
         ]),
         expect.any(Object),
         expect.any(Object),
+        expect.any(String),
       );
       expect(mockGenerateSearchIndex.mock.invocationCallOrder[0]).toBeLessThan(
         mockRenderPage.mock.invocationCallOrder[0]!,

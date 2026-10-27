@@ -15,8 +15,8 @@
     </button>
     <% } %>
 
-    <a class="brand" href="/"<% if (here === '/') { %> aria-current="page"<% } %>>
-      <img src="/favicon.svg" alt="" width="26" height="26" />
+    <a class="brand" href="<%= stati.url('/') %>"<% if (here === '/') { %> aria-current="page"<% } %>>
+      <img src="<%= stati.url('/favicon.svg') %>" alt="" width="26" height="26" />
       <span><%= stati.site.title %></span>
     </a>
 
@@ -29,7 +29,7 @@
           const active = stati.helpers.isCurrent(item.url, here)
             || (section && (stati.helpers.isCurrent(item.url, section.url) || covers.some((url) => stati.helpers.isCurrent(url, section.url))));
         %>
-        <li><a href="<%= item.url %>"<% if (active) { %> aria-current="true"<% } %>><%= item.label %></a></li>
+        <li><a href="<%= stati.url(item.url) %>"<% if (active) { %> aria-current="true"<% } %>><%= item.label %></a></li>
         <% } %>
       </ul>
     </nav>

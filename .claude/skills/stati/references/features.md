@@ -233,6 +233,10 @@ Default injection:
 <meta name="stati:search-index" content="/search-index-HASH.json" />
 ```
 
+The index object holds `version`, `basePath`, `generatedAt`, `documentCount` and
+`documents`. `basePath` is the path of `site.baseUrl` (`""` without one);
+each document's `url` stays site-relative, so link a result with `basePath + url`.
+
 Use this tag in browser code rather than guessing a filename. Templates can
 inspect `stati.assets?.searchIndexPath`. Search generation runs in development
 as well as production; its JSON does not include a built-in interactive UI.

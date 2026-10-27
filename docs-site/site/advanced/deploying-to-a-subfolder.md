@@ -61,11 +61,7 @@ Stati cannot know which `href` and `src` values in your templates mean the site,
 
 Relative links, absolute URLs, `#hash` links and `mailto:` links in Markdown are left alone. Raw HTML in Markdown is not changed; write `<a href="/docs/tags">` there yourself or use a Markdown link. Write Markdown links from the site root, without the base path: `[Tags](/docs/tags)` would become `/docs/docs/tags`.
 
-Some values stay relative to the site root, because they are data and not links: the `url` of each search index entry, `stati.assets.bundlePaths`, `stati.assets.stylesheetPaths`, `stati.assets.searchIndexPath` and `stati.ogImage.path`. Print them with `stati.url()`. Client-side code that builds links from the search index needs the base path too; a template can hand it over:
-
-```eta
-<body data-base-path="<%= stati.url('/') %>">
-```
+Some values stay relative to the site root, because they are data and not links: the `url` of each search index entry, `stati.assets.bundlePaths`, `stati.assets.stylesheetPaths`, `stati.assets.searchIndexPath` and `stati.ogImage.path`. Print them with `stati.url()`. Client-side code that builds links from the search index finds the base path in the index itself: link a result with `index.basePath + doc.url`.
 
 Stylesheets are not rewritten, except that the hashed copies Stati writes keep their relative `url()`s and `@import`s working: a reference such as `url(fonts/inter.woff2)` in `public/styles.css` becomes `url(/docs/fonts/inter.woff2)` in the copy under `_assets/`. A root-absolute `url(/fonts/inter.woff2)` is left as written and does not know the base path, so use relative URLs in CSS.
 

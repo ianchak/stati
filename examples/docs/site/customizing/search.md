@@ -12,7 +12,7 @@ Open search with the button in the header, <kbd>Ctrl</kbd> <kbd>K</kbd> (<kbd>‚å
 
 When you build, Stati writes a search index to `dist/`: one entry for every page and every heading in it, with the text under that heading. It adds a `<meta name="stati:search-index">` tag pointing at the file to every page.
 
-The first time a reader opens search, `public/scripts/docs.js` reads that tag, downloads the index, and searches it in the browser. Nothing is sent to a server, and the search works on any static host.
+The first time a reader opens search, `public/scripts/docs.js` reads that tag, downloads the index, and searches it in the browser. Result links start with the index's `basePath`, so search also works on a site served from a subfolder. Nothing is sent to a server, and the search works on any static host.
 
 Results are ranked by where the words appear: matches in a page title rank above matches in a heading, which rank above matches in the text. Every word you type has to appear, but it can match anywhere inside a word, so `bar sec` finds "Sidebar and sections". Matches at the start of a word rank above matches inside one.
 

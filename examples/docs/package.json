@@ -22,7 +22,7 @@
   "license": "MIT",
   "devDependencies": {
     "@stati/cli": "^2.1.0",
-    "@stati/core": "^2.3.0",
+    "@stati/core": "^2.5.0",
     "markdown-it-prism": "^4.0.0"
   },
   "engines": {

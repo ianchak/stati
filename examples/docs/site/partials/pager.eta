@@ -5,13 +5,13 @@
 <% if (prev || next) { %>
 <nav class="pager" aria-label="Previous and next pages">
   <% if (prev) { %>
-  <a class="pager-link pager-prev" href="<%= prev.url %>" rel="prev">
+  <a class="pager-link pager-prev" href="<%= stati.url(prev.url) %>" rel="prev">
     <span class="pager-hint"><%~ stati.include('partials/icon', { name: 'arrow-left', size: 14 }) %> Previous</span>
     <span class="pager-title"><%= prev.title %></span>
   </a>
   <% } %>
   <% if (next) { %>
-  <a class="pager-link pager-next" href="<%= next.url %>" rel="next">
+  <a class="pager-link pager-next" href="<%= stati.url(next.url) %>" rel="next">
     <span class="pager-hint">Next <%~ stati.include('partials/icon', { name: 'arrow-right', size: 14 }) %></span>
     <span class="pager-title"><%= next.title %></span>
   </a>

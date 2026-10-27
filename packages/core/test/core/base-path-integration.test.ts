@@ -269,6 +269,56 @@ describe('sites served from a base path', () => {
       expect(await site.exists(`dist${index!.slice('/sub'.length)}`)).toBe(true);
     });
 
+    /** The index file name the home page's meta tag points at, without the base path */
+    async function indexFile(basePath: string): Promise<string> {
+      const html = await site.read('dist/index.html');
+      const content = html.match(/<meta name="stati:search-index" content="([^"]+)">/)![1]!;
+      return content.slice(basePath.length + 1);
+    }
+
+    async function readIndex(
+      file: string,
+    ): Promise<{ basePath: string; documents: { url: string }[] }> {
+      return JSON.parse(await site.read(`dist/${file}`));
+    }
+
+    it('records the base path in the index and keeps each url relative to the site root', async () => {
+      await createSite('https://example.com/sub/', { search: { enabled: true } });
+
+      await site.build();
+
+      const index = await readIndex(await indexFile('/sub'));
+      expect(index.basePath).toBe('/sub');
+      expect(index.documents.map((doc) => doc.url)).toEqual(['/about']);
+    });
+
+    it('records an empty base path for a baseUrl without a path', async () => {
+      await createSite('https://example.com/', { search: { enabled: true } });
+
+      await site.build();
+
+      const index = await readIndex(await indexFile(''));
+      expect(index.basePath).toBe('');
+      expect(index.documents.map((doc) => doc.url)).toEqual(['/about']);
+    });
+
+    it('names the file after the base path as well as the indexed content', async () => {
+      await createSite('https://example.com/sub', { search: { enabled: true } });
+      await site.build();
+      const sub = await indexFile('/sub');
+
+      await site.build();
+      expect(await indexFile('/sub')).toBe(sub);
+
+      setBaseUrl('https://example.com/other');
+      await site.build();
+      const other = await indexFile('/other');
+      expect(other).not.toBe(sub);
+      expect((await readIndex(other)).basePath).toBe('/other');
+      // The file of the earlier base path is removed with the other stale indexes
+      expect(await site.exists(`dist/${sub}`)).toBe(false);
+    });
+
     it('keeps the site path in stati.assets.searchIndexPath', async () => {
       await createSite('https://example.com/sub', {
         search: { enabled: true, autoInjectMetaTag: false },

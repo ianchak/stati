@@ -24,7 +24,7 @@
             <% if (index === crumbs.length - 1) { %>
             <li><span aria-current="page"><%= crumb.title %></span></li>
             <% } else { %>
-            <li><a href="<%= crumb.url %>"><%= crumb.title %></a><%~ stati.include('partials/icon', { name: 'chevron-right', size: 14 }) %></li>
+            <li><a href="<%= stati.url(crumb.url) %>"><%= crumb.title %></a><%~ stati.include('partials/icon', { name: 'chevron-right', size: 14 }) %></li>
             <% } %>
             <% }) %>
           </ol>
@@ -47,7 +47,7 @@
         <ul class="page-list" role="list">
           <% for (const page of section.pages) { %>
           <li>
-            <a href="<%= page.url %>">
+            <a href="<%= stati.url(page.url) %>">
               <span class="page-list-title"><%= page.title %><%~ stati.include('partials/icon', { name: 'arrow-right', size: 16 }) %></span>
               <% if (page.description) { %><span class="page-list-description"><%= page.description %></span><% } %>
             </a>

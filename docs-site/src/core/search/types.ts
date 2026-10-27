@@ -26,6 +26,8 @@ export interface SearchDocument {
 export interface SearchIndex {
   /** Schema version */
   version: string;
+  /** Path of site.baseUrl, empty for a site served from the root */
+  basePath: string;
   /** ISO timestamp when generated */
   generatedAt: string;
   /** Total document count */
