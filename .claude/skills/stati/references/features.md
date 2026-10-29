@@ -486,8 +486,9 @@ npx stati invalidate "age:1week"
 - `age:` uses **renderedAt >= cutoff**: recently rendered entries within the
   interval, not content published before it or entries older than the interval.
   Days/weeks/months/years are supported; month/year arithmetic is calendar-based.
-- Invalidating removes manifest entries; it does not regenerate or delete output.
-  Run a subsequent build.
+- Invalidating marks the matching manifest entries out of date; it does not
+  regenerate or delete output. The entries stay, so the next build still removes
+  the HTML of a page deleted since. Run a subsequent build.
 
 Use `--force` when validating output-affecting config/hook/helper changes instead
 of assuming their effects are always captured by existing cache hashes. External

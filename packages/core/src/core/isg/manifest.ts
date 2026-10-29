@@ -1,7 +1,7 @@
 import { readFile, writeFile, pathExists, ensureDir } from '../utils/index.js';
 import { join } from 'node:path';
 import type { CacheManifest, CacheEntry } from '../../types/index.js';
-import { MANIFEST_FILENAME } from '../../constants.js';
+import { MANIFEST_FILENAME, STALE_INPUTS_HASH } from '../../constants.js';
 import { isTemplateLookupList } from '../template-index.js';
 
 /**
@@ -77,7 +77,8 @@ export async function loadCacheManifest(cacheDir: string): Promise<CacheManifest
       return null;
     }
 
-    // Validate individual cache entries
+    // Validate individual cache entries. An invalid one is reset, not dropped: its key still
+    // names the page's output file, which pruning needs to delete the file once the page is gone
     const entries = manifestObj.entries as Record<string, unknown>;
     const validatedEntries: Record<string, CacheEntry> = {};
     let invalidEntryCount = 0;
@@ -86,12 +87,13 @@ export async function loadCacheManifest(cacheDir: string): Promise<CacheManifest
       if (validateCacheEntry(entry, path)) {
         validatedEntries[path] = entry as CacheEntry;
       } else {
+        validatedEntries[path] = createStaleEntry(path);
         invalidEntryCount++;
       }
     }
 
     if (invalidEntryCount > 0) {
-      console.warn(`Removed ${invalidEntryCount} invalid cache entries`);
+      console.warn(`Reset ${invalidEntryCount} invalid cache entries`);
     }
 
     // Return manifest with entries AND navigationHash (if present)
@@ -246,6 +248,25 @@ export async function saveCacheManifest(cacheDir: string, manifest: CacheManifes
 export function createEmptyManifest(): CacheManifest {
   return {
     entries: {},
+  };
+}
+
+/**
+ * Creates a cache entry that records only where a page's output is and always renders again.
+ * Pruning finds the output of a page that no longer exists through the entry, so a stale entry
+ * takes the place of one that is invalid.
+ *
+ * @param path - The cache key, the output path relative to the output directory
+ * @returns A stale cache entry
+ */
+export function createStaleEntry(path: string): CacheEntry {
+  return {
+    path,
+    inputsHash: STALE_INPUTS_HASH,
+    deps: [],
+    tags: [],
+    renderedAt: new Date(0).toISOString(),
+    ttlSeconds: 0,
   };
 }
 

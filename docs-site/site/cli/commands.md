@@ -220,7 +220,7 @@ Cache entries are keyed by **output path**, with a leading slash: `/index.html`,
 
 A query can hold several terms separated by spaces; an entry is invalidated if it matches **any** of them. To use a value that contains spaces, quote it inside the query, for example `stati invalidate '"tag:release notes" path:/blog'`.
 
-Invalidation only removes entries from `.stati/manifest.json`; the pages are re-rendered on the next `stati build`.
+Invalidation marks the entries in `.stati/manifest.json` as out of date, and the pages are re-rendered on the next `stati build`. The entries stay, so that build still removes the HTML of a page you deleted in the meantime.
 
 **Examples:**
 
@@ -352,7 +352,7 @@ See [Dev server](/cli/development) for live reload, what each change rebuilds an
 
 **Cache corruption:**
 
-A cache manifest Stati cannot read is not an error: the build warns, for example "Cache manifest contains invalid JSON, ignoring existing cache", and renders every page. Nothing needs fixing; the build writes a new manifest.
+A cache manifest Stati cannot read is not an error: the build warns, for example "Cache manifest contains invalid JSON, ignoring existing cache", and renders every page. Nothing needs fixing; the build writes a new manifest. An entry that fails validation is reset with a warning: its page renders again, and its HTML is still removed if the page is deleted. Nothing records the HTML of pages in a manifest that cannot be read at all, so after one, delete the HTML of removed pages yourself or build with `--clean`.
 
 ## Exit codes
 

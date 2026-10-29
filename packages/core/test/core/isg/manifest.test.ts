@@ -19,6 +19,7 @@ vi.mock('fs-extra', () => {
 // Import the module under test
 import {
   createEmptyManifest,
+  createStaleEntry,
   loadCacheManifest,
   saveCacheManifest,
 } from '../../../src/core/isg/manifest.js';
@@ -161,7 +162,7 @@ describe('ISG Cache Manifest', () => {
       expect(Object.keys(result!.entries)).toHaveLength(2);
     });
 
-    it('should keep image fields and drop entries whose image fields are not string lists', async () => {
+    it('should keep image fields and reset entries whose image fields are not string lists', async () => {
       const valid = {
         path: 'page1.html',
         inputsHash: 'abc123',
@@ -186,7 +187,12 @@ describe('ISG Cache Manifest', () => {
 
       const result = await loadCacheManifest(testCacheDir);
 
-      expect(result!.entries).toEqual({ '/page1': valid });
+      expect(result!.entries).toEqual({
+        '/page1': valid,
+        '/page2': createStaleEntry('/page2'),
+        '/page3': createStaleEntry('/page3'),
+      });
+      expect(warn).toHaveBeenCalledWith('Reset 2 invalid cache entries');
       expect(warn).toHaveBeenCalledWith(
         'Invalid cache entry for /page2: "assetDeps" must be an array of strings',
       );
@@ -281,7 +287,7 @@ describe('ISG Cache Manifest', () => {
   });
 
   describe('Manifest validation scenarios', () => {
-    it('should keep boolean read flags and drop entries with other values', async () => {
+    it('should keep boolean read flags and reset entries with other values', async () => {
       const entry = {
         path: '/a.html',
         inputsHash: 'a',
@@ -304,15 +310,17 @@ describe('ISG Cache Manifest', () => {
 
       const result = await loadCacheManifest(testCacheDir);
 
-      expect(Object.keys(result!.entries)).toEqual(['/a.html']);
+      expect(Object.keys(result!.entries)).toEqual(['/a.html', '/b.html', '/c.html']);
       expect(result!.entries['/a.html']).toMatchObject({ readsCollection: true, readsNav: false });
+      expect(result!.entries['/b.html']).toEqual(createStaleEntry('/b.html'));
+      expect(result!.entries['/c.html']).toEqual(createStaleEntry('/c.html'));
       expect(warn).toHaveBeenCalledWith(
         expect.stringContaining('"readsCollection" must be a boolean'),
       );
       warn.mockRestore();
     });
 
-    it('should keep recorded template lookups and drop entries with malformed ones', async () => {
+    it('should keep recorded template lookups and reset entries with malformed ones', async () => {
       const entry = {
         path: '/a.html',
         inputsHash: 'a',
@@ -341,8 +349,9 @@ describe('ISG Cache Manifest', () => {
 
       const result = await loadCacheManifest(testCacheDir);
 
-      expect(Object.keys(result!.entries)).toEqual(['/a.html']);
+      expect(Object.keys(result!.entries)).toEqual(['/a.html', '/b.html', '/c.html', '/d.html']);
       expect(result!.entries['/a.html']?.templateLookups).toEqual(lookups);
+      expect(result!.entries['/b.html']).toEqual(createStaleEntry('/b.html'));
       expect(warn).toHaveBeenCalledWith(
         'Invalid cache entry for /b.html: "templateLookups" must be a list of { name, from?, file } objects',
       );

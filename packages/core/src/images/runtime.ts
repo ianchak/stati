@@ -29,6 +29,7 @@ import {
   DEFAULT_STATIC_DIR,
   IMAGES_OUTPUT_DIR,
   OG_IMAGES_SUBDIR,
+  STALE_INPUTS_HASH,
 } from '../constants.js';
 import type {
   CacheManifest,
@@ -741,7 +742,7 @@ export class ImageRuntime {
         ].sort();
         cacheManifest.entries[record.cacheKey] = {
           ...rest,
-          inputsHash: 'STALE',
+          inputsHash: STALE_INPUTS_HASH,
           ...(images.length > 0 && { images }),
         };
       }

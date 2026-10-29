@@ -31,7 +31,7 @@ The `--port`, `--host` and `--open` flags map directly to the options accepted b
 
 When you start the server Stati:
 
-1. Clears the incremental cache by calling `invalidate()` with no query.
+1. Invalidates the incremental cache by calling `invalidate()` with no query, so every page renders again.
 2. Runs a full build with the current configuration so the `dist/` directory is ready to serve.
 3. Boots an HTTP server (default `http://localhost:3000`) and a WebSocket endpoint at `/__ws` for live reload events. When `site.baseUrl` has a path, the site is served under it (`http://localhost:3000/docs/`): `/` redirects there and other URLs outside it are a 404, while `/__ws` stays at the server's root. See [Deploying to a subfolder](/advanced/deploying-to-a-subfolder).
 4. Begins watching the resolved content directory (default `site`) and static assets directory (default `public`).

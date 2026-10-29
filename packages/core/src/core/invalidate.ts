@@ -1,4 +1,5 @@
 import { loadCacheManifest, saveCacheManifest } from './isg/index.js';
+import { STALE_INPUTS_HASH } from '../constants.js';
 import type { CacheEntry } from '../types/index.js';
 import { resolveCacheDir, matchesGlob as matchesGlobPattern } from './utils/index.js';
 
@@ -186,6 +187,9 @@ function matchesAge(entry: CacheEntry, ageValue: string): boolean {
  * Invalidates cache entries based on a query string.
  * Supports tag-based, path-based, pattern-based, and time-based invalidation.
  *
+ * An invalidated entry stays in the manifest, marked so that its page renders again. The entry
+ * is how a later build finds the output of a page that was deleted in the meantime.
+ *
  * @param query - Invalidation query string, or undefined to clear all cache
  * @returns Promise resolving to invalidation result
  *
@@ -226,8 +230,10 @@ export async function invalidate(query?: string): Promise<InvalidationResult> {
 
   if (!query || query.trim() === '') {
     // Clear entire cache
-    invalidatedPaths.push(...Object.keys(cacheManifest.entries));
-    cacheManifest.entries = {};
+    for (const [path, entry] of Object.entries(cacheManifest.entries)) {
+      cacheManifest.entries[path] = { ...entry, inputsHash: STALE_INPUTS_HASH };
+      invalidatedPaths.push(path);
+    }
 
     await saveCacheManifest(cacheDir, cacheManifest);
 
@@ -246,7 +252,7 @@ export async function invalidate(query?: string): Promise<InvalidationResult> {
     const shouldInvalidate = terms.some((term) => matchesInvalidationTerm(entry, path, term));
 
     if (shouldInvalidate) {
-      delete cacheManifest.entries[path];
+      cacheManifest.entries[path] = { ...entry, inputsHash: STALE_INPUTS_HASH };
       invalidatedPaths.push(path);
     }
   }

@@ -51,7 +51,12 @@ import {
 } from './utils/index.js';
 import type { ErrorDetails } from './utils/index.js';
 import { setEnv, getEnv } from '../env.js';
-import { DEFAULT_DEV_PORT, DEFAULT_DEV_HOST, DEFAULT_OUT_DIR } from '../constants.js';
+import {
+  DEFAULT_DEV_PORT,
+  DEFAULT_DEV_HOST,
+  DEFAULT_OUT_DIR,
+  STALE_INPUTS_HASH,
+} from '../constants.js';
 
 export interface DevServerOptions {
   port?: number;
@@ -429,7 +434,7 @@ async function markTemplateChanges(
       if (renderedChangedFile || lookupsChanged) {
         affectedPages++;
         // Forces a rebuild in shouldRebuildPage
-        cacheManifest.entries[pagePath] = { ...entry, inputsHash: 'STALE' };
+        cacheManifest.entries[pagePath] = { ...entry, inputsHash: STALE_INPUTS_HASH };
       }
     }
 

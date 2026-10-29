@@ -55,7 +55,7 @@ A page that logged an error while it rendered in a production build (a failed la
 
 ### Removing pages that no longer exist
 
-`stati build` deletes the HTML of pages that no longer exist: a deleted or renamed Markdown file, a draft after a build with `--include-drafts`, a tag no post uses anymore, or the last page of a listing that got shorter. It deletes only files the cache manifest records, along with folders that deleting them leaves empty, so files that `public/` or other tools put in `dist/` are never touched, and neither is anything outside `dist/`, even through a linked folder. A file it can't delete, such as one another program has open, keeps its cache entry, so the next build tries again.
+`stati build` deletes the HTML of pages that no longer exist: a deleted or renamed Markdown file, a draft after a build with `--include-drafts`, a tag no post uses anymore, or the last page of a listing that got shorter. It deletes only files the cache manifest records, along with folders that deleting them leaves empty, so files that `public/` or other tools put in `dist/` are never touched, and neither is anything outside `dist/`, even through a linked folder. A file it can't delete, such as one another program has open, keeps its cache entry, so the next build tries again. Invalidating the cache (`stati invalidate`, or `stati dev` at start-up) keeps the entries, marked to render again, so a page deleted afterwards is still removed.
 
 ### Cache manifest
 
