@@ -13,6 +13,7 @@ import {
   isVirtualPage,
 } from './utils/index.js';
 import { computeContentHash } from './isg/hash.js';
+import { findRelatedPages } from './related.js';
 import { MARKDOWN_EXTENSION } from '../constants.js';
 
 /**
@@ -147,10 +148,12 @@ function createCollectionData(
     return !cleanPath.includes('/');
   });
 
+  const recentPages = sortPagesByDate([...collectionPages]);
+
   return {
     pages: collectionPages,
     children,
-    recentPages: sortPagesByDate([...collectionPages]),
+    recentPages,
     pagesByTag: groupPagesByTags(collectionPages),
     metadata: {
       totalPages: collectionPages.length,
@@ -158,6 +161,8 @@ function createCollectionData(
       collectionPath,
       collectionName: collectionPath === '/' ? 'Home' : basename(collectionPath),
     },
+    // Newest first, so equal scores go to the newest page
+    related: (url, options) => findRelatedPages(recentPages, url, options),
   };
 }
 
@@ -371,7 +376,6 @@ export function createSummaryHasher(
 }
 
 const COLLECTION_KEYS = ['pages', 'children', 'recentPages', 'pagesByTag', 'metadata'] as const;
-
 /**
  * Wraps collection data for one render. Reading any of its properties sets `reads.collection`,
  * so the cache knows the page depends on the collection. Arrays and objects are copied on
@@ -379,7 +383,8 @@ const COLLECTION_KEYS = ['pages', 'children', 'recentPages', 'pagesByTag', 'meta
  * the collection data within a build.
  *
  * The properties are accessors on a plain object, not a Proxy, so spreading the template
- * context (as callable partials do) passes the view along without reading it.
+ * context (as callable partials do) passes the view along without reading it. `related()`
+ * counts as a read when it is called.
  *
  * @param data - The shared collection data
  * @param reads - The render's read flags
@@ -387,6 +392,11 @@ const COLLECTION_KEYS = ['pages', 'children', 'recentPages', 'pagesByTag', 'meta
  */
 export function createCollectionView(data: CollectionData, reads: PageReads): CollectionData {
   const view = {} as CollectionData;
+  // A method, not an accessor: the read is recorded when the page calls it
+  view.related = (url, options) => {
+    reads.collection = true;
+    return data.related(url, options);
+  };
   for (const key of COLLECTION_KEYS) {
     let value: unknown;
     let copied = false;

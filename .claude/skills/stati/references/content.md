@@ -233,7 +233,9 @@ Do not mutate the shared navigation tree to implement one view's sorting.
 
 ## Collections, pagination and generated pages
 
-`collection` contains `pages`, `children`, `recentPages`, `pagesByTag`, `metadata`.
+`collection` contains `pages`, `children`, `recentPages`, `pagesByTag`, `metadata`
+and the method `related(url, options?)` for related pages (core 2.11+; see
+[Eta and components](./eta.md#collections-inside-templates)).
 Nonroot aggregation pages include descendants, excluding the current page.
 Root aggregation is not the entire website: only top-level pages, including
 folder index pages such as `/blog`. An `index.eta` can specialize the listing

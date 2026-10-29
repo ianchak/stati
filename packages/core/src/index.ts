@@ -39,6 +39,7 @@ export type {
   BundleConfig,
   CSSConfig,
   CollectionData,
+  RelatedPagesOptions,
   CollectionsConfig,
   ReadingTimeConfig,
   GeneratedPageEntry,
