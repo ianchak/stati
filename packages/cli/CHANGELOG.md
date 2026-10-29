@@ -1,5 +1,13 @@
 # @stati/cli
 
+## 2.4.3
+
+### Patch Changes
+
+- df5872d: say that `stati invalidate` invalidates entries instead of clearing the cache
+- Updated dependencies [a8ccaad]
+  - @stati/core@2.10.1
+
 ## 2.4.2
 
 ### Patch Changes

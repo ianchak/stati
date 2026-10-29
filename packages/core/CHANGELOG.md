@@ -1,5 +1,11 @@
 # @stati/core
 
+## 2.10.1
+
+### Patch Changes
+
+- a8ccaad: keep invalidated cache entries so deleted pages are pruned
+
 ## 2.10.0
 
 ### Minor Changes
