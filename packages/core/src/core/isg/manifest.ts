@@ -3,6 +3,29 @@ import { join } from 'node:path';
 import type { CacheManifest, CacheEntry } from '../../types/index.js';
 import { MANIFEST_FILENAME } from '../../constants.js';
 import { isTemplateLookupList } from '../template-index.js';
+import { createStaleEntry } from './stale.js';
+
+/**
+ * Cache keys of page entries in manifest text that is not valid JSON, such as `"/about.html": {`.
+ * Only entry keys have this form: the other objects hold fixed field names or stylesheet paths.
+ */
+const ENTRY_KEY_PATTERN = /"(\/[^"\\]*\.html)"\s*:\s*\{/g;
+
+/**
+ * Reads the cache keys of page entries out of a damaged manifest, such as one cut short by a
+ * crash while it was written.
+ *
+ * @param manifestContent - The text of the manifest
+ * @returns A manifest with a stale entry per key found, or null when there is none
+ */
+function recoverStaleEntries(manifestContent: string): CacheManifest | null {
+  const entries: Record<string, CacheEntry> = {};
+  for (const match of manifestContent.matchAll(ENTRY_KEY_PATTERN)) {
+    const key = match[1]!;
+    entries[key] = createStaleEntry(key);
+  }
+  return Object.keys(entries).length > 0 ? { entries } : null;
+}
 
 /**
  * Type for Node.js errno exceptions
@@ -56,7 +79,8 @@ export async function loadCacheManifest(cacheDir: string): Promise<CacheManifest
         `Cache manifest contains invalid JSON, ignoring existing cache. ` +
           `Error: ${parseError instanceof Error ? parseError.message : String(parseError)}`,
       );
-      return null;
+      // The pages it lists still have output that pruning must be able to find
+      return recoverStaleEntries(manifestContent);
     }
 
     // Detailed validation of manifest structure
@@ -77,7 +101,8 @@ export async function loadCacheManifest(cacheDir: string): Promise<CacheManifest
       return null;
     }
 
-    // Validate individual cache entries
+    // Validate individual cache entries. An invalid one is reset, not dropped: its key still
+    // names the page's output file, which pruning needs to delete the file once the page is gone
     const entries = manifestObj.entries as Record<string, unknown>;
     const validatedEntries: Record<string, CacheEntry> = {};
     let invalidEntryCount = 0;
@@ -86,12 +111,13 @@ export async function loadCacheManifest(cacheDir: string): Promise<CacheManifest
       if (validateCacheEntry(entry, path)) {
         validatedEntries[path] = entry as CacheEntry;
       } else {
+        validatedEntries[path] = createStaleEntry(path);
         invalidEntryCount++;
       }
     }
 
     if (invalidEntryCount > 0) {
-      console.warn(`Removed ${invalidEntryCount} invalid cache entries`);
+      console.warn(`Reset ${invalidEntryCount} invalid cache entries`);
     }
 
     // Return manifest with entries AND navigationHash (if present)

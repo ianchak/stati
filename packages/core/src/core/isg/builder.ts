@@ -7,6 +7,7 @@ import {
   computeInputsHash,
 } from './hash.js';
 import { resolveLayoutDependency } from './deps.js';
+import { STALE_INPUTS_HASH } from '../../constants.js';
 import { computeEffectiveTTL, computeNextRebuildAt, isPageFrozen } from './ttl.js';
 import { validatePageISGOverrides, extractNumericOverride } from './validation.js';
 import { getFrontMatterDate, normalizePathForComparison, resolveSrcDir } from '../utils/index.js';
@@ -463,7 +464,7 @@ export async function createCacheEntry(
     path: outputPath,
     // A page that rendered with an error keeps its entry, so its output can still be pruned,
     // but never matches the inputs: the next build renders it again
-    inputsHash: rendered?.failed ? 'STALE' : inputsHash,
+    inputsHash: rendered?.failed ? STALE_INPUTS_HASH : inputsHash,
     deps,
     ...(rendered?.templates && {
       templateLookups: [...(rendered.templateLookups ?? [])],

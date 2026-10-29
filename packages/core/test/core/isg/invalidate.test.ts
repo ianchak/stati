@@ -5,6 +5,7 @@ import {
   invalidate,
 } from '../../../src/core/invalidate.js';
 import { loadCacheManifest, saveCacheManifest } from '../../../src/core/isg/manifest.js';
+import { STALE_INPUTS_HASH } from '../../../src/constants.js';
 import type { CacheEntry, CacheManifest } from '../../../src/types/index.js';
 
 // Mock the manifest functions
@@ -233,9 +234,15 @@ describe('ISG Cache Invalidation', () => {
         clearedAll: true,
       });
 
-      expect(mockSaveCacheManifest).toHaveBeenCalledWith(expect.stringContaining('.stati'), {
-        entries: {},
-      });
+      // Entries stay, so a later build can still find the output of a page deleted since
+      const saved = mockSaveCacheManifest.mock.calls[0]![1];
+      expect(Object.keys(saved.entries)).toEqual(['/blog/post-1', '/blog/post-2', '/about']);
+      for (const [path, entry] of Object.entries(saved.entries)) {
+        expect(entry).toEqual({
+          ...mockManifest.entries[path],
+          inputsHash: STALE_INPUTS_HASH,
+        });
+      }
     });
 
     it('should clear entire cache when empty query provided', async () => {
@@ -267,8 +274,17 @@ describe('ISG Cache Invalidation', () => {
         clearedAll: false,
       });
 
+      // Invalidated entries are marked stale, not removed; the others are untouched
       const expectedManifest = {
         entries: {
+          '/blog/post-1': {
+            ...mockManifest.entries['/blog/post-1'],
+            inputsHash: STALE_INPUTS_HASH,
+          },
+          '/blog/post-2': {
+            ...mockManifest.entries['/blog/post-2'],
+            inputsHash: STALE_INPUTS_HASH,
+          },
           '/about': mockManifest.entries['/about'],
         },
       };

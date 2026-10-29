@@ -109,7 +109,7 @@ Stati provides cache invalidation through the `stati invalidate` CLI command. Se
 | `path:value`   | `path:/blog`       | Invalidate entries whose key starts with the value |
 | `glob:pattern` | `glob:/blog/**`    | Invalidate entries whose key matches the glob      |
 | `age:duration` | `age:1week`        | Invalidate entries rendered within time window     |
-| (empty)        | `stati invalidate` | Clear entire cache                                 |
+| (empty)        | `stati invalidate` | Invalidate every entry                             |
 
 Cache keys are output paths with a leading slash, such as `/blog.html` and `/blog/first-post.html`, so include the `/` in `path:` and `glob:` values. When a query has several terms, an entry that matches **any** of them is invalidated.
 
@@ -118,7 +118,7 @@ The same queries work from code: `import { invalidate } from '@stati/core'`, the
 ### CLI examples
 
 ```bash
-# Clear all cache
+# Invalidate every entry
 stati invalidate
 
 # Invalidate by tag (from front matter)

@@ -23,6 +23,12 @@ export const CACHE_SUBDIR = 'cache';
 /** ISG cache manifest filename */
 export const MANIFEST_FILENAME = 'manifest.json';
 
+/**
+ * `inputsHash` of a cache entry that must render again. No page's inputs hash to it, so the
+ * page rebuilds, while the entry keeps its output path known for pruning.
+ */
+export const STALE_INPUTS_HASH = 'STALE';
+
 // === Configuration File Constants ===
 
 /** Supported configuration file extensions in order of preference */

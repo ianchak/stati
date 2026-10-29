@@ -473,7 +473,7 @@ Invalidate cache by tags, paths, patterns, or age.
 - `path:/posts` - Invalidate cache entries whose key (output path, such as `/posts/hello.html`) starts with this prefix
 - `glob:/blog/**` - Invalidate by glob pattern matched against the whole key
 - `age:3months` - Invalidate pages rendered within the last 3 months
-- No query - Clear entire cache
+- No query - Invalidate every entry
 
 **Examples:**
 
@@ -492,7 +492,7 @@ await invalidate('age:6months');
 // Multiple criteria (OR logic)
 await invalidate('tag:blog age:1month');
 
-// Clear everything
+// Invalidate everything
 await invalidate();
 ```
 
