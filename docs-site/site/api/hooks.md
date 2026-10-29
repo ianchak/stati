@@ -249,7 +249,7 @@ export default defineConfig({
 
 ### Blog with related posts
 
-Posts read the collection of their folder, so a post layout can also find related posts in `stati.collection.recentPages`, as the blog starter does. Computing them in a hook suits data that templates can't reach, such as posts from several collections:
+Posts read the collection of their folder, so a post layout can also find related posts with [`stati.collection.related()`](/core-concepts/collections#related-pages). Computing them in a hook suits data that templates can't reach, such as posts from several collections:
 
 ```javascript
 function intersection(arr1, arr2) {

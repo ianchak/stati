@@ -343,6 +343,16 @@ in place is safe. Reading `stati.collection`, `stati.nav` or
 Read `stati.pagination.items` rather than the whole collection on paginated
 pages, so a page only rebuilds when its own slice changes.
 
+Related pages (core 2.11+): `stati.collection.related(stati.page.url, { limit, by,
+exclude, sameFolderBonus })` scores the collection's other pages by shared `tags`
+(or the `by` field, a list or a single value, compared case-insensitively), newest
+first on ties. It leaves out pages that share nothing, the page itself and
+`exclude` (URLs or pages; empty entries are ignored), and returns `[]` for a URL
+outside the collection or a page without values. `limit` defaults to 3 (a whole number, or `Infinity`).
+`sameFolderBonus` only adds to the score of pages that already share a value. A
+wrong option type throws. Calling it records the collection read; a `by` field
+outside `collections.summaryFields` (default `title`, `description`, `tags`, `draft`) does not rebuild the page when it changes.
+
 ## Template dependency recording
 
 Each page's cache entry stores the template files it rendered (layout first,

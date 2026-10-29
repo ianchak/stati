@@ -34,6 +34,7 @@ site/
 | `metadata.hasChildren`    | Whether `children` is non-empty                                                     |
 | `metadata.collectionPath` | The index page's URL, such as `/blog`                                               |
 | `metadata.collectionName` | The folder name, such as `blog`, or `Home` for the root                             |
+| `related(url, options?)`  | The pages most related to one page of the collection, [scored by shared tags](#related-pages) |
 
 Each entry is a page model, not a template context. Read front matter through `frontMatter`, and use `url` for links:
 
@@ -63,6 +64,41 @@ A tag list with counts comes straight from `pagesByTag`:
 ```
 
 Each page gets its own copy of the lists, so sorting or filtering them in place doesn't affect other pages. The templates of one page share that copy.
+
+### Related pages
+
+`stati.collection.related(url, options?)` returns the pages of the collection that share the most tags with one of its pages, most related first:
+
+```eta
+<% const related = stati.collection?.related(stati.page.url, { limit: 3 }) ?? []; %>
+<% if (related.length > 0) { %>
+<aside>
+  <h2>Related posts</h2>
+  <% for (const post of related) { %>
+  <a href="<%= stati.url(post.url) %>"><%= post.frontMatter.title %></a>
+  <% } %>
+</aside>
+<% } %>
+```
+
+A page scores one point for each value it shares with the page, compared without regard to case. Pages with the same score are listed newest first, and pages that share no value are left out, as is the page itself. The result is empty when `url` is not a page of the collection or the page has no values. A page that belongs to no collection has no `stati.collection`, so guard it as shown. Drafts are in the collection only in builds with `--include-drafts`, and count like any other page.
+
+| Option            | Default    | What it does |
+| ----------------- | ---------- | ------------ |
+| `limit`           | `3`        | The most pages returned; a whole number, `0` or more, or `Infinity` for all |
+| `by`              | `'tags'`   | The front matter field to compare, holding a list or a single text or number value |
+| `exclude`         | `[]`       | URLs or pages to leave out, such as the newer and older posts a layout already links. Empty entries are ignored |
+| `sameFolderBonus` | `0`        | Extra score, a number of `0` or more, for pages in the same folder, so a section's pages can rank first. Only pages that share a value get it |
+
+```eta
+<%
+  const posts = stati.collection?.recentPages ?? [];
+  const i = posts.findIndex((post) => post.url === stati.page.url);
+  const related = stati.collection?.related(stati.page.url, { exclude: [posts[i - 1], posts[i + 1]] }) ?? [];
+%>
+```
+
+An option of the wrong type throws an error that names it, and the build reports it for the page that made the call. Calling `related()` counts as reading the collection, so the page is rebuilt when a page in the collection is added, removed or moved, or when its `title`, `description`, `tags` or `draft` change. `collections.summaryFields` replaces that list, so keep `tags` in it when you set it, and add the field when `by` names another one, so that changing it rebuilds the page too.
 
 ## Which collection a page reads
 

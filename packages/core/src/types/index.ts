@@ -35,6 +35,7 @@ export type {
   FrontMatter,
   PageModel,
   CollectionData,
+  RelatedPagesOptions,
   PaginationData,
   GeneratedPageData,
   PaginateOptions,

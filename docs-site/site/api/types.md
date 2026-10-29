@@ -895,6 +895,7 @@ import type {
   MarkdownIt,
   // Collections, pagination and generated pages
   CollectionData,
+  RelatedPagesOptions,
   CollectionsConfig,
   GeneratedPageEntry,
   PaginationData,

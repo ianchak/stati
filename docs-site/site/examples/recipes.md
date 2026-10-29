@@ -288,23 +288,12 @@ The tag links lead to the pages from [A page for every tag](#a-page-for-every-ta
 
 ### Related posts
 
-A post reads the collection of its folder, so the post layout can pick related posts from `stati.collection` with no hook:
+A post reads the collection of its folder, so the post layout can ask it for related posts with no hook. `related()` scores the other posts by shared tags, newest first on ties:
 
 ```eta
 <!-- site/blog/layout.eta: layout of the posts -->
 <% stati.layout('base') %>
-<%
-  const tags = stati.page.tags ?? [];
-  const related = (stati.collection?.recentPages ?? [])
-    .filter((post) => post.url !== stati.page.url)
-    .map((post) => ({
-      post,
-      commonTags: (post.frontMatter.tags ?? []).filter((tag) => tags.includes(tag)),
-    }))
-    .filter(({ commonTags }) => commonTags.length > 0)
-    .sort((a, b) => b.commonTags.length - a.commonTags.length)
-    .slice(0, 3);
-%>
+<% const related = stati.collection?.related(stati.page.url, { limit: 3 }) ?? []; %>
 <article class="post">
   <%~ stati.content %>
 </article>
@@ -313,10 +302,9 @@ A post reads the collection of its folder, so the post layout can pick related p
   <aside class="related-posts">
     <h2>Related Posts</h2>
     <ul>
-      <% related.forEach(({ post, commonTags }) => { %>
+      <% related.forEach((post) => { %>
         <li>
           <a href="<%= stati.url(post.url) %>"><%= post.frontMatter.title %></a>
-          <span class="common-tags"><%= commonTags.join(', ') %></span>
         </li>
       <% }) %>
     </ul>
@@ -324,7 +312,7 @@ A post reads the collection of its folder, so the post layout can pick related p
 <% } %>
 ```
 
-Because the layout reads `stati.collection`, ISG re-renders the posts when a post is added or removed or its title or tags change.
+Because the layout calls `stati.collection.related()`, ISG re-renders the posts when a post is added or removed or its title or tags change. See [Related pages](/core-concepts/collections#related-pages) for the options.
 
 ### Paginated listing
 

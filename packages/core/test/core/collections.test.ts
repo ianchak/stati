@@ -224,7 +224,7 @@ describe('createCollectionView', () => {
 
     const context = { collection: view };
     const spread = { ...context };
-    expect(Object.keys(view)).toHaveLength(5);
+    expect(Object.keys(view)).toHaveLength(6);
     expect(reads.collection).toBe(false);
 
     expect(urls(spread.collection.recentPages)).toEqual(['/blog/newer', '/blog/older']);

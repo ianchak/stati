@@ -125,7 +125,7 @@ interface GeneratedPageData {
 }
 ```
 
-`stati.collection` is the page's own collection on a folder's index page, the collection it belongs to on other pages, or the one its `collection` front matter names. `stati.pagination` and `stati.generated` are set on the pages they describe and `undefined` elsewhere. Reading `stati.collection` or `stati.nav` makes the page depend on that data for [ISG](/core-concepts/isg#dependency-tracking). See [Collections and generated pages](/core-concepts/collections).
+`stati.collection` is the page's own collection on a folder's index page, the collection it belongs to on other pages, or the one its `collection` front matter names. `stati.pagination` and `stati.generated` are set on the pages they describe and `undefined` elsewhere. `stati.collection.related(url, options?)` lists the pages most related to one of its pages (see [Related pages](/core-concepts/collections#related-pages)). Reading `stati.collection` or `stati.nav`, or calling `related()`, makes the page depend on that data for [ISG](/core-concepts/isg#dependency-tracking). See [Collections and generated pages](/core-concepts/collections).
 
 The root of `stati` holds only Stati's own API. Your functions live under [`stati.helpers`](#helpers), so a helper named `page` or `slugify` never replaces Stati's value.
 

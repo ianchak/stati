@@ -466,6 +466,25 @@ export interface GeneratedPageData {
 }
 
 /**
+ * Options of `stati.collection.related()`.
+ *
+ * @example
+ * ```eta
+ * <% const related = stati.collection.related(stati.page.url, { limit: 3, exclude: [newer, older] }); %>
+ * ```
+ */
+export interface RelatedPagesOptions {
+  /** Most pages returned; a whole number, or `Infinity` for all. Default: `3` */
+  limit?: number;
+  /** Front matter field to compare, holding a list or a single value. Default: `'tags'` */
+  by?: string;
+  /** URLs or pages to leave out, such as the newer and older neighbours. Default: `[]` */
+  exclude?: ReadonlyArray<string | { url: string } | null | undefined>;
+  /** Extra score for pages in the same folder as the page. Default: `0` */
+  sameFolderBonus?: number;
+}
+
+/**
  * Collection aggregation data available to index page templates.
  * Provides access to child pages and collection metadata for content listing.
  */
@@ -489,6 +508,17 @@ export interface CollectionData {
     /** Name of the collection (derived from path) */
     collectionName: string;
   };
+  /**
+   * Pages of the collection related to one of its pages, most related first. Pages score a
+   * point for each value of the `by` field (`tags`) they share with the page, compared without
+   * regard to case, and ties go to the newest page. Pages that share no value, the page itself
+   * and the pages in `exclude` are left out. Returns an empty list when `url` is not a page of
+   * the collection or the page has no values.
+   *
+   * Calling it counts as reading the collection, so the page is rebuilt when a page is added,
+   * removed or moved, or when a field in `collections.summaryFields` changes.
+   */
+  related(url: string, options?: RelatedPagesOptions): PageModel[];
 }
 
 /**
