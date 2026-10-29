@@ -56,6 +56,7 @@ describe('findRelatedPages', () => {
     expect(findRelatedPages(many, '/p/a', { limit: 1 })).toHaveLength(1);
     expect(findRelatedPages(many, '/p/a', { limit: 0 })).toEqual([]);
     expect(findRelatedPages(many, '/p/a', { limit: 99 })).toHaveLength(4);
+    expect(findRelatedPages(many, '/p/a', { limit: Infinity })).toHaveLength(4);
   });
 
   it('compares values without regard to case or surrounding spaces', () => {
@@ -215,6 +216,7 @@ describe('findRelatedPages', () => {
     [{ limit: -1 }, 'limit'],
     [{ limit: 1.5 }, 'limit'],
     [{ limit: Number.NaN }, 'limit'],
+    [{ limit: -Infinity }, 'limit'],
     [{ limit: '3' as never }, 'limit'],
     [{ by: '' }, 'by'],
     [{ by: 3 as never }, 'by'],

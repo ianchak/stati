@@ -70,7 +70,7 @@ Each page gets its own copy of the lists, so sorting or filtering them in place 
 `stati.collection.related(url, options?)` returns the pages of the collection that share the most tags with one of its pages, most related first:
 
 ```eta
-<% const related = stati.collection.related(stati.page.url, { limit: 3 }); %>
+<% const related = stati.collection?.related(stati.page.url, { limit: 3 }) ?? []; %>
 <% if (related.length > 0) { %>
 <aside>
   <h2>Related posts</h2>
@@ -81,20 +81,20 @@ Each page gets its own copy of the lists, so sorting or filtering them in place 
 <% } %>
 ```
 
-A page scores one point for each value it shares with the page, compared without regard to case. Pages with the same score are listed newest first, and pages that share no value are left out, as is the page itself. The result is empty when `url` is not a page of the collection or the page has no values. Drafts are in the collection only in builds with `--include-drafts`, and count like any other page.
+A page scores one point for each value it shares with the page, compared without regard to case. Pages with the same score are listed newest first, and pages that share no value are left out, as is the page itself. The result is empty when `url` is not a page of the collection or the page has no values. A page that belongs to no collection has no `stati.collection`, so guard it as shown. Drafts are in the collection only in builds with `--include-drafts`, and count like any other page.
 
 | Option            | Default    | What it does |
 | ----------------- | ---------- | ------------ |
-| `limit`           | `3`        | The most pages returned; a whole number, `0` or more |
+| `limit`           | `3`        | The most pages returned; a whole number, `0` or more, or `Infinity` for all |
 | `by`              | `'tags'`   | The front matter field to compare, holding a list or a single text or number value |
 | `exclude`         | `[]`       | URLs or pages to leave out, such as the newer and older posts a layout already links. Empty entries are ignored |
 | `sameFolderBonus` | `0`        | Extra score, a number of `0` or more, for pages in the same folder, so a section's pages can rank first. Only pages that share a value get it |
 
 ```eta
 <%
-  const posts = stati.collection.recentPages;
+  const posts = stati.collection?.recentPages ?? [];
   const i = posts.findIndex((post) => post.url === stati.page.url);
-  const related = stati.collection.related(stati.page.url, { exclude: [posts[i - 1], posts[i + 1]] });
+  const related = stati.collection?.related(stati.page.url, { exclude: [posts[i - 1], posts[i + 1]] }) ?? [];
 %>
 ```
 

@@ -474,7 +474,7 @@ export interface GeneratedPageData {
  * ```
  */
 export interface RelatedPagesOptions {
-  /** Most pages returned. Default: `3` */
+  /** Most pages returned; a whole number, or `Infinity` for all. Default: `3` */
   limit?: number;
   /** Front matter field to compare, holding a list or a single value. Default: `'tags'` */
   by?: string;
@@ -515,8 +515,8 @@ export interface CollectionData {
    * and the pages in `exclude` are left out. Returns an empty list when `url` is not a page of
    * the collection or the page has no values.
    *
-   * Reading it counts as reading the collection, so the page is rebuilt when the collection's
-   * pages change.
+   * Calling it counts as reading the collection, so the page is rebuilt when a page is added,
+   * removed or moved, or when a field in `collections.summaryFields` changes.
    */
   related(url: string, options?: RelatedPagesOptions): PageModel[];
 }

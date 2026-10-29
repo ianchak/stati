@@ -376,6 +376,7 @@ export function createSummaryHasher(
 }
 
 const COLLECTION_KEYS = ['pages', 'children', 'recentPages', 'pagesByTag', 'metadata'] as const;
+
 /**
  * Wraps collection data for one render. Reading any of its properties sets `reads.collection`,
  * so the cache knows the page depends on the collection. Arrays and objects are copied on

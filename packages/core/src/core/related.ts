@@ -1,10 +1,10 @@
 import type { PageModel, RelatedPagesOptions } from '../types/index.js';
 
 /** Pages `related()` returns when `limit` is not set. */
-export const DEFAULT_RELATED_LIMIT = 3;
+const DEFAULT_RELATED_LIMIT = 3;
 
 /** Front matter field `related()` compares when `by` is not set. */
-export const DEFAULT_RELATED_FIELD = 'tags';
+const DEFAULT_RELATED_FIELD = 'tags';
 
 /**
  * Drops the trailing slash of a page URL, so `/blog/post` and `/blog/post/` name the same page.
@@ -62,8 +62,10 @@ function resolveOptions(options: RelatedPagesOptions): {
   const { limit = DEFAULT_RELATED_LIMIT, by = DEFAULT_RELATED_FIELD, exclude = [] } = options;
   const { sameFolderBonus = 0 } = options;
 
-  if (!Number.isInteger(limit) || limit < 0) {
-    throw new TypeError(`related(): limit must be a whole number of at least 0, got ${limit}`);
+  if ((!Number.isInteger(limit) && limit !== Infinity) || limit < 0) {
+    throw new TypeError(
+      `related(): limit must be a whole number of at least 0 or Infinity, got ${limit}`,
+    );
   }
   if (typeof by !== 'string' || !by) {
     throw new TypeError('related(): by must be the name of a front matter field');
