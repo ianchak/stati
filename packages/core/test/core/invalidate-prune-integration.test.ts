@@ -133,6 +133,19 @@ describe('pruning after the cache is invalidated', () => {
     expect(await site.exists('dist/index.html')).toBe(true);
   });
 
+  it('removes a deleted page after the manifest was cut short', async () => {
+    await site.build();
+    const text = await site.read('.stati/manifest.json');
+    await site.write('.stati/manifest.json', text.slice(0, Math.floor(text.length * 0.9)));
+
+    await site.remove('site/about.md');
+    const second = await site.build();
+
+    expect(await site.exists('dist/about.html')).toBe(false);
+    expect(await site.exists('dist/index.html')).toBe(true);
+    expect(second.info).toContain('Removed 1 page that no longer exists');
+  });
+
   it('renders a page whose cache entry fails validation again', async () => {
     await site.build();
     const manifest = await site.manifest();

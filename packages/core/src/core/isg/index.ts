@@ -10,6 +10,9 @@
 // Manifest management
 export { loadCacheManifest, saveCacheManifest, createEmptyManifest } from './manifest.js';
 
+// Stale entries, which render again and keep their output known for pruning
+export { markStale, createStaleEntry } from './stale.js';
+
 // Build decision logic
 export {
   shouldRebuildPage,

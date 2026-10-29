@@ -1,5 +1,5 @@
 import { loadCacheManifest, saveCacheManifest } from './isg/index.js';
-import { STALE_INPUTS_HASH } from '../constants.js';
+import { markStale } from './isg/stale.js';
 import type { CacheEntry } from '../types/index.js';
 import { resolveCacheDir, matchesGlob as matchesGlobPattern } from './utils/index.js';
 
@@ -190,7 +190,7 @@ function matchesAge(entry: CacheEntry, ageValue: string): boolean {
  * An invalidated entry stays in the manifest, marked so that its page renders again. The entry
  * is how a later build finds the output of a page that was deleted in the meantime.
  *
- * @param query - Invalidation query string, or undefined to clear all cache
+ * @param query - Invalidation query string, or undefined to invalidate every entry
  * @returns Promise resolving to invalidation result
  *
  * @example
@@ -207,7 +207,7 @@ function matchesAge(entry: CacheEntry, ageValue: string): boolean {
  * // Invalidate multiple criteria
  * await invalidate('tag:blog age:1week');
  *
- * // Clear entire cache
+ * // Invalidate every entry
  * await invalidate();
  * ```
  */
@@ -229,9 +229,9 @@ export async function invalidate(query?: string): Promise<InvalidationResult> {
   const invalidatedPaths: string[] = [];
 
   if (!query || query.trim() === '') {
-    // Clear entire cache
+    // Invalidate every entry
     for (const [path, entry] of Object.entries(cacheManifest.entries)) {
-      cacheManifest.entries[path] = { ...entry, inputsHash: STALE_INPUTS_HASH };
+      cacheManifest.entries[path] = markStale(entry);
       invalidatedPaths.push(path);
     }
 
@@ -252,7 +252,7 @@ export async function invalidate(query?: string): Promise<InvalidationResult> {
     const shouldInvalidate = terms.some((term) => matchesInvalidationTerm(entry, path, term));
 
     if (shouldInvalidate) {
-      cacheManifest.entries[path] = { ...entry, inputsHash: STALE_INPUTS_HASH };
+      cacheManifest.entries[path] = markStale(entry);
       invalidatedPaths.push(path);
     }
   }

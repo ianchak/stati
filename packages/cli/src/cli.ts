@@ -377,7 +377,7 @@ const cli = yargs(hideBin(process.argv))
       y.positional('query', {
         type: 'string',
         description:
-          'Invalidation query: tag:value, path:value, glob:pattern, age:3months, or empty to clear all',
+          'Invalidation query: tag:value, path:value, glob:pattern, age:3months, or empty to invalidate all',
       }),
     async (argv) => {
       try {
@@ -400,7 +400,7 @@ const cli = yargs(hideBin(process.argv))
         } = await invalidate(argv.query as string | undefined);
 
         if (result.clearedAll) {
-          log.success(`Cleared entire cache (${result.invalidatedCount} entries)`);
+          log.success(`Invalidated entire cache (${result.invalidatedCount} entries)`);
         } else if (result.invalidatedCount > 0) {
           log.success(`Invalidated ${result.invalidatedCount} cache entries:`);
           result.invalidatedPaths.forEach((path) => {

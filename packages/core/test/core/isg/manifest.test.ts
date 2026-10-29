@@ -19,10 +19,10 @@ vi.mock('fs-extra', () => {
 // Import the module under test
 import {
   createEmptyManifest,
-  createStaleEntry,
   loadCacheManifest,
   saveCacheManifest,
 } from '../../../src/core/isg/manifest.js';
+import { createStaleEntry } from '../../../src/core/isg/stale.js';
 
 describe('ISG Cache Manifest', () => {
   const testCacheDir = join('test', 'cache');
@@ -127,6 +127,40 @@ describe('ISG Cache Manifest', () => {
       const result = await loadCacheManifest(testCacheDir);
 
       expect(result).toBeNull();
+    });
+
+    it('should keep the pages a manifest that is cut short still lists, as stale entries', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const entry = JSON.stringify({ path: '/a.html', inputsHash: 'a', deps: [], tags: ['x'] });
+      mockPathExists.mockResolvedValue(true);
+      mockReadFile.mockResolvedValue(
+        `{"entries": {"/index.html": ${entry}, "/blog/my post.html": ${entry}, "/blog/post.html": {"path": "/blo`,
+      );
+
+      const result = await loadCacheManifest(testCacheDir);
+
+      expect(result).toEqual({
+        entries: {
+          '/index.html': createStaleEntry('/index.html'),
+          '/blog/my post.html': createStaleEntry('/blog/my post.html'),
+          '/blog/post.html': createStaleEntry('/blog/post.html'),
+        },
+      });
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('invalid JSON'));
+      warn.mockRestore();
+    });
+
+    it('should not take stylesheet paths or field names for pages in a damaged manifest', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      mockPathExists.mockResolvedValue(true);
+      mockReadFile.mockResolvedValue(
+        '{"stylesheets": {"/styles.css": "/_assets/styles-ABC.css"}, "entries": {"/a.html": {"path": "/a.html", "deps": ["x.html"',
+      );
+
+      const result = await loadCacheManifest(testCacheDir);
+
+      expect(Object.keys(result!.entries)).toEqual(['/a.html']);
+      warn.mockRestore();
     });
 
     it('should handle manifest with multiple entries', async () => {

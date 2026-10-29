@@ -51,12 +51,8 @@ import {
 } from './utils/index.js';
 import type { ErrorDetails } from './utils/index.js';
 import { setEnv, getEnv } from '../env.js';
-import {
-  DEFAULT_DEV_PORT,
-  DEFAULT_DEV_HOST,
-  DEFAULT_OUT_DIR,
-  STALE_INPUTS_HASH,
-} from '../constants.js';
+import { DEFAULT_DEV_PORT, DEFAULT_DEV_HOST, DEFAULT_OUT_DIR } from '../constants.js';
+import { markStale } from './isg/stale.js';
 
 export interface DevServerOptions {
   port?: number;
@@ -109,7 +105,7 @@ async function performInitialBuild(
 ): Promise<void> {
   try {
     // Clear cache to ensure fresh build on dev server start
-    logger.status('Clearing cache for fresh development build...');
+    logger.status('Invalidating cache for fresh development build...');
     await invalidate();
 
     await build({
@@ -434,7 +430,7 @@ async function markTemplateChanges(
       if (renderedChangedFile || lookupsChanged) {
         affectedPages++;
         // Forces a rebuild in shouldRebuildPage
-        cacheManifest.entries[pagePath] = { ...entry, inputsHash: STALE_INPUTS_HASH };
+        cacheManifest.entries[pagePath] = markStale(entry);
       }
     }
 

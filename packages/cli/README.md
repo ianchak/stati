@@ -209,7 +209,7 @@ stati invalidate [query]
 - `path:value` - Invalidate cache entries whose key starts with this prefix (keys are output paths such as `/blog/post.html`)
 - `glob:pattern` - Invalidate by a glob pattern matched against the whole key
 - `age:duration` - Invalidate pages rendered within the specified period
-- No query - Clear entire cache
+- No query - Invalidate every entry
 
 **Examples:**
 
@@ -232,7 +232,7 @@ stati invalidate "age:1week"
 # Multiple criteria (OR logic)
 stati invalidate "tag:blog age:1month"
 
-# Clear entire cache
+# Invalidate every entry
 stati invalidate
 ```
 

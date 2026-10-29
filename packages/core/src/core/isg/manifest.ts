@@ -1,8 +1,31 @@
 import { readFile, writeFile, pathExists, ensureDir } from '../utils/index.js';
 import { join } from 'node:path';
 import type { CacheManifest, CacheEntry } from '../../types/index.js';
-import { MANIFEST_FILENAME, STALE_INPUTS_HASH } from '../../constants.js';
+import { MANIFEST_FILENAME } from '../../constants.js';
 import { isTemplateLookupList } from '../template-index.js';
+import { createStaleEntry } from './stale.js';
+
+/**
+ * Cache keys of page entries in manifest text that is not valid JSON, such as `"/about.html": {`.
+ * Only entry keys have this form: the other objects hold fixed field names or stylesheet paths.
+ */
+const ENTRY_KEY_PATTERN = /"(\/[^"\\]*\.html)"\s*:\s*\{/g;
+
+/**
+ * Reads the cache keys of page entries out of a damaged manifest, such as one cut short by a
+ * crash while it was written.
+ *
+ * @param manifestContent - The text of the manifest
+ * @returns A manifest with a stale entry per key found, or null when there is none
+ */
+function recoverStaleEntries(manifestContent: string): CacheManifest | null {
+  const entries: Record<string, CacheEntry> = {};
+  for (const match of manifestContent.matchAll(ENTRY_KEY_PATTERN)) {
+    const key = match[1]!;
+    entries[key] = createStaleEntry(key);
+  }
+  return Object.keys(entries).length > 0 ? { entries } : null;
+}
 
 /**
  * Type for Node.js errno exceptions
@@ -56,7 +79,8 @@ export async function loadCacheManifest(cacheDir: string): Promise<CacheManifest
         `Cache manifest contains invalid JSON, ignoring existing cache. ` +
           `Error: ${parseError instanceof Error ? parseError.message : String(parseError)}`,
       );
-      return null;
+      // The pages it lists still have output that pruning must be able to find
+      return recoverStaleEntries(manifestContent);
     }
 
     // Detailed validation of manifest structure
@@ -248,25 +272,6 @@ export async function saveCacheManifest(cacheDir: string, manifest: CacheManifes
 export function createEmptyManifest(): CacheManifest {
   return {
     entries: {},
-  };
-}
-
-/**
- * Creates a cache entry that records only where a page's output is and always renders again.
- * Pruning finds the output of a page that no longer exists through the entry, so a stale entry
- * takes the place of one that is invalid.
- *
- * @param path - The cache key, the output path relative to the output directory
- * @returns A stale cache entry
- */
-export function createStaleEntry(path: string): CacheEntry {
-  return {
-    path,
-    inputsHash: STALE_INPUTS_HASH,
-    deps: [],
-    tags: [],
-    renderedAt: new Date(0).toISOString(),
-    ttlSeconds: 0,
   };
 }
 

@@ -216,7 +216,7 @@ Cache entries are keyed by **output path**, with a leading slash: `/index.html`,
 | Glob | `glob:pattern` | `glob:/blog/**` | Entries whose whole key matches the glob; include the leading `/` |
 | Age | `age:duration` | `age:1week` | Entries **rendered** within the given period: `days`, `weeks`, `months`, `years` (singular or plural); months and years use calendar arithmetic |
 | Plain term | `term` | `news` | Entries with a tag containing the text, or a key containing it |
-| Clear All | (empty) | `stati invalidate` | Clear entire cache |
+| Invalidate All | (empty) | `stati invalidate` | Invalidate every entry |
 
 A query can hold several terms separated by spaces; an entry is invalidated if it matches **any** of them. To use a value that contains spaces, quote it inside the query, for example `stati invalidate '"tag:release notes" path:/blog'`.
 
@@ -237,7 +237,7 @@ stati invalidate "glob:/blog/**"
 # Invalidate entries rendered in the last week
 stati invalidate age:1week
 
-# Clear all cache (no query)
+# Invalidate every entry (no query)
 stati invalidate
 ```
 
@@ -352,7 +352,7 @@ See [Dev server](/cli/development) for live reload, what each change rebuilds an
 
 **Cache corruption:**
 
-A cache manifest Stati cannot read is not an error: the build warns, for example "Cache manifest contains invalid JSON, ignoring existing cache", and renders every page. Nothing needs fixing; the build writes a new manifest. An entry that fails validation is reset with a warning: its page renders again, and its HTML is still removed if the page is deleted. Nothing records the HTML of pages in a manifest that cannot be read at all, so after one, delete the HTML of removed pages yourself or build with `--clean`.
+A cache manifest Stati cannot read is not an error: the build warns, for example "Cache manifest contains invalid JSON, ignoring existing cache", and renders every page. Nothing needs fixing; the build writes a new manifest. The pages a damaged manifest still lists are kept, and so is an entry that fails validation, which is reset with a warning: the page renders again, and its HTML is still removed if the page is deleted. A missing manifest lists no pages, so after deleting `.stati/`, remove the HTML of deleted pages yourself or build with `--clean`.
 
 ## Exit codes
 
