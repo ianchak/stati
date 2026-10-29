@@ -1,5 +1,11 @@
 # @stati/core
 
+## 2.11.0
+
+### Minor Changes
+
+- 470a0f6: add related pages method to stati.collection
+
 ## 2.10.1
 
 ### Patch Changes
