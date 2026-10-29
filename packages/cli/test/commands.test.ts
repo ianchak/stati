@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   build: vi.fn(),
   createDevServer: vi.fn(),
+  invalidate: vi.fn(),
   watchTailwindCSS: vi.fn(),
   stopTailwindWatcher: vi.fn(),
 }));
@@ -12,7 +13,7 @@ vi.mock('@stati/core', () => ({
   build: mocks.build,
   createDevServer: mocks.createDevServer,
   createPreviewServer: vi.fn(),
-  invalidate: vi.fn(),
+  invalidate: mocks.invalidate,
   setEnv: vi.fn(),
   writeMetrics: vi.fn(),
   getStatiVersion: vi.fn(() => '2.0.0'),
@@ -113,6 +114,51 @@ describe('stati commands', () => {
     // untranslated "Implications failed:" where the locale has none, such as CI's
     expect(errors).toContain('tailwind-input -> tailwind-output');
     expect(mocks.build).not.toHaveBeenCalled();
+  });
+
+  describe('invalidate', () => {
+    /** Runs `stati invalidate` and returns what it printed */
+    async function runInvalidate(
+      result: { invalidatedCount: number; invalidatedPaths: string[]; clearedAll: boolean },
+      args: string[] = [],
+    ): Promise<string> {
+      mocks.invalidate.mockResolvedValue(result);
+      const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const { exitCode } = await runCli(['invalidate', ...args]);
+      expect(exitCode).toBeUndefined();
+      return log.mock.calls.flat().join('\n');
+    }
+
+    it('says every entry was invalidated when no query is given', async () => {
+      const output = await runInvalidate({
+        invalidatedCount: 3,
+        invalidatedPaths: ['/a.html', '/b.html', '/c.html'],
+        clearedAll: true,
+      });
+
+      expect(mocks.invalidate).toHaveBeenCalledWith(undefined);
+      expect(output).toContain('Invalidated entire cache (3 entries)');
+    });
+
+    it('lists the entries a query matched', async () => {
+      const output = await runInvalidate(
+        { invalidatedCount: 1, invalidatedPaths: ['/blog/post.html'], clearedAll: false },
+        ['tag:news'],
+      );
+
+      expect(mocks.invalidate).toHaveBeenCalledWith('tag:news');
+      expect(output).toContain('Invalidated 1 cache entries:');
+      expect(output).toContain('/blog/post.html');
+    });
+
+    it('says when no entry matched', async () => {
+      const output = await runInvalidate(
+        { invalidatedCount: 0, invalidatedPaths: [], clearedAll: false },
+        ['tag:none'],
+      );
+
+      expect(output).toContain('No cache entries matched the query');
+    });
   });
 
   it('stops the Tailwind watcher, then the dev server, on Ctrl+C', async () => {

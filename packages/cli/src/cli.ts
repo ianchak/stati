@@ -388,7 +388,7 @@ const cli = yargs(hideBin(process.argv))
         log.commandInfo('invalidate', [
           {
             name: 'Query',
-            value: (argv.query as string) || 'clear all',
+            value: (argv.query as string) || 'all entries',
             isDefault: !argv.query,
           },
         ]);
