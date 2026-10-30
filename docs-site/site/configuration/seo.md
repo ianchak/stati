@@ -151,7 +151,7 @@ A few Open Graph, Twitter and robots values are the same on every page, or follo
 | `twitter:creator` | The `twitter` handle of the page's own `seo.author`, then of `seo.defaultAuthor` |
 | `og:type` | `article` on the pages `seo.articles` matches, `website` elsewhere |
 | `article:published_time` | The page's publish date (`publishedAt`, `published`, `date` or `createdAt`), on article pages |
-| `article:modified_time` | Front matter `updated`, on article pages |
+| `article:modified_time` | Front matter `updated`, an ISO 8601 date such as `2026-02-01` (a time without a zone is UTC), on article pages |
 | `article:tag` | One per front matter `tags` entry, on article pages |
 | `article:author` | The `url` of the page's own `seo.author`, then of `seo.defaultAuthor`, on article pages |
 | `robots` | `noindex` (`seo.noindex: true`) on [the 404 page](/core-concepts/routing#the-404-page), unless it sets `seo.noindex`, or a `seo.robots` value that says whether to index it (`index`, `noindex`, `all`, `none`, or `index:` in the object form) |
@@ -404,7 +404,7 @@ Two more kinds of page are left out without a pattern: [the 404 page](/core-conc
 
 Pages created from a `[param].md` template and the later pages of a paginated listing (`/blog/page/2`) are in the sitemap like any other page. Leave them out with a pattern such as `excludePatterns: ['/blog/page/**']`, `sitemap: { exclude: true }` in the template's front matter, or a `filter` that checks `page.generated` and `page.pagination`.
 
-**Output.** `lastmod` comes from the page's `sitemap.lastmod`, then `updated`, then `date` front matter (not `publishedAt`). A date is written as `2024-03-04`, and a value with a time as the same moment in UTC: `2024-03-04T23:30:00-05:00` becomes `2024-03-05T04:30:00Z`. URLs are percent-encoded, as the sitemap protocol requires, so a page at `/blog/My Post` or `/café` is listed as `/blog/My%20Post` or `/caf%C3%A9`, and an internationalized domain in `site.baseUrl` in its `xn--` form; escapes a URL already has are kept. Priorities are written with one decimal place, so `0.85` becomes `0.8`. Above 50,000 URLs the sitemap is split into `sitemap-1.xml`, `sitemap-2.xml`, … with `sitemap.xml` as the index; this happens automatically (the `generateIndex` option is not used).
+**Output.** `lastmod` comes from the page's `sitemap.lastmod`, then `updated` front matter, then its publish date (the first valid of `publishedAt`, `published`, `date` and `createdAt`). A date is written as `2024-03-04`, and a value with a time as the same moment in UTC: `2024-03-04T23:30:00-05:00` becomes `2024-03-05T04:30:00Z`. URLs are percent-encoded, as the sitemap protocol requires, so a page at `/blog/My Post` or `/café` is listed as `/blog/My%20Post` or `/caf%C3%A9`, and an internationalized domain in `site.baseUrl` in its `xn--` form; escapes a URL already has are kept. Priorities are written with one decimal place, so `0.85` becomes `0.8`. Above 50,000 URLs the sitemap is split into `sitemap-1.xml`, `sitemap-2.xml`, … with `sitemap.xml` as the index; this happens automatically (the `generateIndex` option is not used).
 
 ### Per-page sitemap configuration
 

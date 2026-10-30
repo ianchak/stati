@@ -89,13 +89,14 @@ export interface RSSFeedConfig {
 
   /**
    * Content directory patterns to include in this feed.
-   * Uses glob patterns to match content files.
+   * Uses glob patterns to match content files: the page's source file path. A pattern without
+   * `*` or `?` also matches the files below it.
    * @example ['blog/**', 'news/**']
    */
   contentPatterns?: string[];
 
   /**
-   * Glob patterns for pages to exclude from feed
+   * Glob patterns for pages to exclude from feed, matched like `contentPatterns`
    * @example ['**\/draft-*', '**\/index.md']
    */
   excludePatterns?: string[];

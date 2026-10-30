@@ -8,8 +8,13 @@ import type { PageModel } from '../types/content.js';
 import type { StatiConfig } from '../types/config.js';
 import type { Logger } from '../types/logging.js';
 import { ConfigValidationError } from '../config/errors.js';
-import { isVirtualPage, matchesGlob } from '../core/utils/index.js';
-import { escapeHtml, percentEncodeUrl, resolveAbsoluteUrl } from './utils/index.js';
+import {
+  compileUrlPatterns,
+  escapeHtml,
+  isVirtualPage,
+  percentEncodeUrl,
+  resolveAbsoluteUrl,
+} from '../core/utils/index.js';
 import { CHANGE_FREQUENCIES, isLeftOutBySitemapRules } from './sitemap.js';
 
 /** The XML namespace of Google News sitemap elements */
@@ -247,13 +252,15 @@ export function generateNewsSitemap(
 ): NewsSitemapGenerationResult {
   const cutoff = now.getTime() - (news.maxAgeDays ?? DEFAULT_MAX_AGE_DAYS) * DAY_MS;
   const entries: NewsEntry[] = [];
+  // Globs that match the whole URL, like seo.articles.include
+  const isIncluded = compileUrlPatterns(news.include, { option: 'sitemap.news.include', logger });
 
   for (const page of pages) {
     if (
       page.frontMatter.draft ||
       isVirtualPage(page) ||
       isLeftOutBySitemapRules(page) ||
-      !news.include.some((pattern) => matchesGlob(page.url, pattern))
+      !isIncluded(page.url)
     ) {
       continue;
     }

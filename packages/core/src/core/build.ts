@@ -19,6 +19,7 @@ import {
   compileTypeScript,
   detectExistingBundles,
   removeStaleBundleFiles,
+  reportInvalidBundlePatterns,
   formatBytes,
   isVirtualPage,
   resolveSrcDir,
@@ -630,6 +631,11 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     });
     endTsSpan();
   }
+  // Pages match bundles without reporting invalid include and exclude patterns; report them once
+  reportInvalidBundlePatterns(
+    compiledBundles.map((bundle) => bundle.config),
+    logger,
+  );
 
   // Process pages with ISG caching logic
   if (logger.step) {

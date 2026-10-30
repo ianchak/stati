@@ -40,9 +40,16 @@ export interface SitemapConfig {
   defaultPriority?: number;
   /** Default change frequency for all pages (default: 'monthly') */
   defaultChangeFreq?: ChangeFrequency;
-  /** Glob patterns for pages to exclude from sitemap */
+  /**
+   * URL patterns for pages to exclude from sitemap. A pattern without `*` or `?` also
+   * matches the URLs below it (`/blog` leaves out `/blog/post` too); a glob must match the
+   * whole URL.
+   */
   excludePatterns?: string[];
-  /** Glob patterns for pages to include in sitemap (if specified, only these are included) */
+  /**
+   * URL patterns for pages to include in sitemap (if specified, only these are included),
+   * matched like `excludePatterns`
+   */
   includePatterns?: string[];
   /** Custom filter function for fine-grained control over page inclusion */
   filter?: (page: PageModel) => boolean;
@@ -57,7 +64,7 @@ export interface SitemapConfig {
    */
   transformEntry?: (entry: SitemapEntry, page: PageModel) => SitemapEntry | null;
   /**
-   * Priority rules based on URL patterns.
+   * Priority rules based on URL patterns, matched like `excludePatterns`.
    * Applied in order, first match wins.
    *
    * @example

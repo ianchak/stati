@@ -134,12 +134,14 @@ export type { ErrorDetails } from './error-overlay.utils.js';
 export { getStatiVersion } from './version.utils.js';
 
 // Glob pattern utilities
-export { globToRegex, matchesGlob } from './glob-patterns.utils.js';
+export { globToRegex, matchesGlob, compileUrlPatterns } from './glob-patterns.utils.js';
+export type { UrlPatternOptions, UrlPatternMatcher } from './glob-patterns.utils.js';
 
 // Bundle matching utilities
 export {
   matchBundlesForPage,
   getBundlePathsForPage,
+  reportInvalidBundlePatterns,
   validateUniqueBundleNames,
   DuplicateBundleNameError,
 } from './bundle-matching.utils.js';
@@ -166,12 +168,17 @@ export type {
 } from './typescript.utils.js';
 
 // HTML manipulation utilities
-export { findHeadClosePosition, injectBeforeHeadClose } from './html.utils.js';
+export { escapeHtml, findHeadClosePosition, injectBeforeHeadClose } from './html.utils.js';
+
+// URL utilities
+export { normalizeUrlPath, resolveAbsoluteUrl, percentEncodeUrl, isValidUrl } from './url.utils.js';
 
 // Date utilities
 export {
   describeDateValue,
   getFrontMatterDate,
+  getPageModifiedDate,
+  getPagePublishedDate,
   PUBLISHED_DATE_FIELDS,
   parseDateValue,
 } from './date.utils.js';

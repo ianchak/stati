@@ -9,7 +9,7 @@ import {
   resolveAbsoluteUrl,
   normalizeUrlPath,
   percentEncodeUrl,
-} from './utils/index.js';
+} from '../core/utils/index.js';
 
 /**
  * User agent rule entry for robots.txt

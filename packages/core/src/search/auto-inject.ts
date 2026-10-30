@@ -3,7 +3,7 @@
  * @module search/auto-inject
  */
 
-import { injectBeforeHeadClose } from '../core/index.js';
+import { injectBeforeHeadClose } from '../core/utils/html.utils.js';
 import { SEARCH_INDEX_META_NAME } from './constants.js';
 
 /**

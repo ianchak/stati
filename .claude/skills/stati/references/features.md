@@ -34,10 +34,10 @@ Site-wide defaults (core 2.1+), each used only where front matter leaves the val
   author's name there.
 - `seo.articles` (`include` required, `exclude` wins; whole-URL globs as in
   bundles): matching pages print `og:type` `article`, `article:published_time`
-  (`page.publishedAt`, ISO), `article:modified_time` (front matter `updated`),
-  one `article:tag` per tag and `article:author` (the author's `url`), filled
-  field by field. Generated pages and every page of a paginated listing never
-  match. No `seo.articles` means no derived article tags.
+  (`page.publishedAt`, ISO), `article:modified_time` (front matter `updated`,
+  ISO 8601 only), one `article:tag` per tag and `article:author` (the author's
+  `url`), filled field by field. Generated pages and every page of a paginated
+  listing never match. No `seo.articles` means no derived article tags.
 - `noindex` (core 2.2+): `seo.noindex: true` on [the 404 page](#the-404-page),
   unless its front matter sets `seo.noindex`, or a `seo.robots` value that says
   whether to index (`index`, `noindex`, `all`, `none`, or `index:` in the
@@ -280,10 +280,11 @@ sitemap:
 
 Defaults apply at generation. Config load rejects a `defaultPriority` outside
 0.0 to 1.0 and an unknown `defaultChangeFreq`. Lastmod falls back from
-`sitemap.lastmod` to `updated`, then `date` (do not assume every date alias is
-read everywhere); a date is written `YYYY-MM-DD`, a value with a time as that
-moment in UTC (`2024-03-05T04:30:00Z`). Priority falls back to matching rules
-then default; changefreq to default.
+`sitemap.lastmod` to `updated`, then the publish date (the first valid of
+`publishedAt`, `published`, `date`, `createdAt`); a date is written
+`YYYY-MM-DD`, a value with a time as that moment in UTC
+(`2024-03-05T04:30:00Z`). Priority falls back to matching rules then default;
+changefreq to default.
 Frequency values: `always`, `hourly`, `daily`, `weekly`, `monthly`, `yearly`,
 `never`; front matter `changefreq` matches in any letter case. URLs use
 `site.baseUrl` and are percent-encoded (`/My Post` → `/My%20Post`).

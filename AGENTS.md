@@ -141,7 +141,9 @@ All utilities in `packages/core/src/core/utils/` follow the `*.utils.ts` naming 
 - **fs.utils.ts**: `ensureDir`, `readFile`, `writeFile`, `pathExists`, `remove`, `stat`, `lstat`, `realpath`, `copyFile`, `readdir`, `readFileBuffer`, `readFileBufferSync`, `statSyncOrNull`, `listFilesRecursiveSync` - safe filesystem helpers with consistent error handling (the sync ones serve template helpers such as `stati.image()`, which must stay synchronous).
 - **paths.utils.ts**: `resolveSrcDir`, `resolveOutDir`, `resolveStaticDir`, `resolveCacheDir`, `normalizePathForComparison`, `isPathWithinDirectory`, `getPageOutputFile` - path resolution, cross-platform comparison, and the output file of a page URL.
 - **slugify.utils.ts**: `slugify(text)` - URL-safe slug generation.
-- **html.utils.ts**: `findHeadClosePosition`, `injectBeforeHeadClose` - HTML manipulation for SEO/meta tag injection.
+- **html.utils.ts**: `escapeHtml`, `findHeadClosePosition`, `injectBeforeHeadClose` - HTML escaping (the one copy; `seo/index.ts` re-exports it publicly) and HTML manipulation for SEO/meta tag injection. `seo/` and `search/` import it from this file, not from the `core/index.ts` barrel, which loads `build.ts`.
+- **url.utils.ts**: `resolveAbsoluteUrl`, `normalizeUrlPath`, `percentEncodeUrl`, `isValidUrl` - absolute URLs behind `site.baseUrl` for SEO tags, sitemaps, robots.txt, RSS and images.
+- **date.utils.ts**: `parseDateValue` (the one front matter date parser), `getFrontMatterDate`, `getPagePublishedDate` (`page.publishedAt`, then front matter), `getPageModifiedDate` (`sitemap.lastmod`, `updated`, then the publish date), `describeDateValue`.
 - **navigation-helpers.utils.ts**: `createNavigationHelpers` - creates navigation helper object with `findNode`, `getChildren`, `getParent`, `getSiblings`, `getSubtree`, `getBreadcrumbs`, `getCurrentNode` methods.
 - **template-discovery.utils.ts**: Page helpers for layout discovery: `isVirtualPage`, `isNotFoundPage`, `isCollectionIndexPage`, `getCollectionPathForPage`, `getFirstPaginationPage`.
 - **context-validation.utils.ts**: `createValidatingContextProxy` - the dev-mode proxy that turns reads of unknown `stati.*` properties into "Did you mean" errors.
@@ -149,7 +151,7 @@ All utilities in `packages/core/src/core/utils/` follow the `*.utils.ts` naming 
 - **theme.utils.ts**: Design tokens and the Stati mark shared by the error overlay and the metrics HTML report.
 - **template-errors.utils.ts**: Formats template errors with source context for the error overlay.
 - **bundle-matching.utils.ts**: Matches pages to TypeScript bundles based on `include`/`exclude` patterns.
-- **glob-patterns.utils.ts**: Minimatch-based pattern matching for sitemap rules and bundle selection.
+- **glob-patterns.utils.ts**: `globToRegex`, `matchesGlob` (invalidate queries) and `compileUrlPatterns(patterns, { prefix, option, logger })`, the matcher for every URL and path pattern option: compile once per build, report invalid patterns as warnings naming the option. `prefix: true` (a pattern without wildcards also matches the paths below it) is the rule for the sitemap patterns and RSS `contentPatterns`/`excludePatterns`; `search.exclude`, `images.og.exclude`, `seo.articles`, `sitemap.news.include` and bundle `include`/`exclude` match the whole URL. Changing an option's rule changes which pages it selects.
 - **server.utils.ts**: Shared HTTP server helpers for dev/preview.
 - **version.utils.ts**: `getStatiVersion()` - reads version from package.json.
 - **tailwind-inventory.utils.ts**: Detects Tailwind CSS setup in projects.

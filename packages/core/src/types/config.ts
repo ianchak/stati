@@ -321,7 +321,7 @@ export interface BundleConfig {
   include?: string[];
 
   /**
-   * Glob patterns for page URLs to exclude from this bundle.
+   * Glob patterns for page URLs to exclude from this bundle, matched like `include`.
    * Takes precedence over include patterns.
    *
    * @example ['/docs/legacy/**']

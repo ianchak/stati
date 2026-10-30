@@ -3,6 +3,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { inlineLocalImages, isOgImageExcluded } from '../../src/images/og.js';
+import { compileUrlPatterns } from '../../src/core/utils/glob-patterns.utils.js';
 import type { PageModel } from '../../src/types/index.js';
 
 describe('inlineLocalImages', () => {
@@ -200,21 +201,33 @@ describe('isOgImageExcluded', () => {
     content: '',
   });
 
+  const none = compileUrlPatterns([]);
+
   it('excludes the 404 page without an exclude pattern', () => {
-    expect(isOgImageExcluded(page('/404'), [])).toBe(true);
-    expect(isOgImageExcluded(page('/404/'), [])).toBe(true);
+    expect(isOgImageExcluded(page('/404'), none)).toBe(true);
+    expect(isOgImageExcluded(page('/404/'), none)).toBe(true);
   });
 
   it('keeps other pages, including a page named 404 in a subfolder', () => {
-    expect(isOgImageExcluded(page('/about'), [])).toBe(false);
-    expect(isOgImageExcluded(page('/docs/404'), [])).toBe(false);
+    expect(isOgImageExcluded(page('/about'), none)).toBe(false);
+    expect(isOgImageExcluded(page('/docs/404'), none)).toBe(false);
   });
 
   it('excludes pages with their own image or matching a pattern', () => {
-    expect(isOgImageExcluded(page('/a', { seo: { openGraph: { image: '/a.png' } } }), [])).toBe(
+    expect(isOgImageExcluded(page('/a', { seo: { openGraph: { image: '/a.png' } } }), none)).toBe(
       true,
     );
-    expect(isOgImageExcluded(page('/a', { seo: { openGraph: { image: false } } }), [])).toBe(true);
-    expect(isOgImageExcluded(page('/drafts/a'), ['/drafts/**'])).toBe(true);
+    expect(isOgImageExcluded(page('/a', { seo: { openGraph: { image: false } } }), none)).toBe(
+      true,
+    );
+    expect(isOgImageExcluded(page('/drafts/a'), compileUrlPatterns(['/drafts/**']))).toBe(true);
+  });
+
+  // images.og.exclude matches the whole URL, unlike the sitemap's patterns
+  it('exclude: a pattern without wildcards leaves out that URL only, not the URLs below it', () => {
+    const exclude = compileUrlPatterns(['/drafts']);
+
+    expect(isOgImageExcluded(page('/drafts'), exclude)).toBe(true);
+    expect(isOgImageExcluded(page('/drafts/a'), exclude)).toBe(false);
   });
 });

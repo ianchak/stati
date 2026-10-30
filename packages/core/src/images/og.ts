@@ -12,15 +12,19 @@ import {
   readFileBuffer,
   stripBasePath,
 } from '../core/utils/index.js';
-import { matchesGlob } from '../core/utils/glob-patterns.utils.js';
+import type { UrlPatternMatcher } from '../core/utils/glob-patterns.utils.js';
 import type { PageModel } from '../types/index.js';
 
 /**
  * Whether a page gets no generated Open Graph image: it is the site's 404 page, sets its own
  * image in front matter (`seo.openGraph.image`, or `false` to have none) or matches an
  * `exclude` pattern.
+ *
+ * @param page - The page
+ * @param isExcludedUrl - `images.og.exclude`, compiled with `compileUrlPatterns`: globs that
+ *   match the whole URL
  */
-export function isOgImageExcluded(page: PageModel, exclude: readonly string[]): boolean {
+export function isOgImageExcluded(page: PageModel, isExcludedUrl: UrlPatternMatcher): boolean {
   if (isNotFoundPage(page)) {
     return true;
   }
@@ -29,7 +33,7 @@ export function isOgImageExcluded(page: PageModel, exclude: readonly string[]): 
   if (image !== undefined && image !== null && image !== '') {
     return true;
   }
-  return exclude.some((pattern) => matchesGlob(page.url, pattern));
+  return isExcludedUrl(page.url);
 }
 
 /**

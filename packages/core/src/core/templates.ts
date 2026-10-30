@@ -11,6 +11,7 @@ import type {
 } from '../types/index.js';
 import {
   createFallbackLogger,
+  escapeHtml,
   getStatiVersion,
   isCollectionIndexPage,
   resolveSrcDir,
@@ -463,16 +464,4 @@ function createFallbackHtml(page: PageModel, body: string): string {
   </main>
 </body>
 </html>`;
-}
-
-function escapeHtml(value: unknown): string {
-  const text = String(value);
-  const map: Record<string, string> = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;',
-  };
-  return text.replace(/[&<>"']/g, (m) => map[m]!);
 }

@@ -3,7 +3,7 @@
  * @module images/markup
  */
 
-import { escapeHtml } from '../seo/utils/index.js';
+import { escapeHtml } from '../core/utils/index.js';
 import type { VariantPlan } from './plan.js';
 
 /** Attributes Stati sets itself; authored values for these are ignored or handled separately. */

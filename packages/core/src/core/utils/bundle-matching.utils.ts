@@ -5,7 +5,8 @@
  */
 
 import type { BundleConfig } from '../../types/config.js';
-import { matchesGlob } from './glob-patterns.utils.js';
+import type { Logger } from '../../types/logging.js';
+import { compileUrlPatterns } from './glob-patterns.utils.js';
 
 /**
  * Error thrown when bundle configuration contains duplicate bundleNames.
@@ -115,16 +116,14 @@ export function matchBundlesForPage(pageUrl: string, bundles: BundleConfig[]): B
     return [];
   }
 
-  // Normalize path to use forward slashes
-  const normalizedPath = pageUrl.replace(/\\/g, '/');
-
   return bundles.filter((bundle) => {
+    // Runs for every page; the patterns are converted once and cached, and
+    // reportInvalidBundlePatterns reports the invalid ones once per build
+    const patterns = compileBundlePatterns(bundle);
+
     // Check exclude patterns first (they take precedence)
-    if (bundle.exclude && bundle.exclude.length > 0) {
-      const matchesExclude = bundle.exclude.some((pattern) => matchesGlob(normalizedPath, pattern));
-      if (matchesExclude) {
-        return false;
-      }
+    if (patterns.exclude(pageUrl)) {
+      return false;
     }
 
     // If no include patterns, bundle is global (matches all pages)
@@ -133,8 +132,41 @@ export function matchBundlesForPage(pageUrl: string, bundles: BundleConfig[]): B
     }
 
     // Check if page matches any include pattern
-    return bundle.include.some((pattern) => matchesGlob(normalizedPath, pattern));
+    return patterns.include(pageUrl);
   });
+}
+
+/**
+ * Compiles a bundle's `include` and `exclude`: globs that must match the whole URL, so
+ * `/docs` matches `/docs` but not `/docs/intro`.
+ */
+function compileBundlePatterns(bundle: BundleConfig, logger?: Pick<Logger, 'warning'>) {
+  return {
+    include: compileUrlPatterns(bundle.include, {
+      option: `the include patterns of bundle '${bundle.bundleName}'`,
+      logger,
+    }),
+    exclude: compileUrlPatterns(bundle.exclude, {
+      option: `the exclude patterns of bundle '${bundle.bundleName}'`,
+      logger,
+    }),
+  };
+}
+
+/**
+ * Warns about each bundle `include` or `exclude` pattern that is not a valid glob. Call it once
+ * per build: {@link matchBundlesForPage} runs for every page and skips them without a word.
+ *
+ * @param bundles - The bundle configurations
+ * @param logger - Receives the warnings
+ */
+export function reportInvalidBundlePatterns(
+  bundles: BundleConfig[],
+  logger: Pick<Logger, 'warning'>,
+): void {
+  for (const bundle of bundles) {
+    compileBundlePatterns(bundle, logger);
+  }
 }
 
 /**

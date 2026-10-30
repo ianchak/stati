@@ -8,6 +8,7 @@ import { loadConfig } from '../../src/config/loader.js';
 import { loadCacheManifest } from '../../src/core/isg/index.js';
 import { setEnv } from '../../src/env.js';
 import { clearSourceCache } from '../../src/images/sources.js';
+import { ImageRuntime } from '../../src/images/runtime.js';
 import type { Logger, StatiConfig } from '../../src/types/index.js';
 import { pngBytes } from './fixtures.js';
 
@@ -538,6 +539,34 @@ describe('image pipeline in builds', () => {
       await runBuild();
       expect(await read('dist/blog/post.html')).not.toContain('og:image');
       expect(ogImageOf(await read('dist/index.html'))).toBeDefined();
+    });
+
+    it('matches og.exclude against the whole URL and renders no card when asked directly', async () => {
+      config.images = { og: { exclude: ['/blog', '/drafts/[x'] } };
+      const runtime = await ImageRuntime.create(config, {
+        outDir: join(projectDir, 'dist'),
+        cacheDir: join(projectDir, '.stati'),
+        logger,
+        development: false,
+      });
+      const pageAt = (url: string) =>
+        runtime!.createPageContext({
+          slug: url,
+          url,
+          sourcePath: join(projectDir, `site${url}.md`),
+          frontMatter: {},
+          content: '',
+        });
+      const renderer = { find: () => null, render: async () => '<div>card</div>' };
+
+      // A pattern without wildcards is the URL itself, not the pages below it
+      expect(pageAt('/blog').wantsOg()).toBe(false);
+      expect(pageAt('/blog/post').wantsOg()).toBe(true);
+      expect(await pageAt('/blog').renderOg(renderer)).toBeNull();
+      expect(globalThis.__statiImagesCalls!.og).toHaveLength(0);
+      expect(logger.warning).toHaveBeenCalledWith(
+        'Ignoring invalid pattern "/drafts/[x" in images.og.exclude: Unclosed character class at position 8',
+      );
     });
 
     it('skips the 404 page without an exclude pattern', async () => {

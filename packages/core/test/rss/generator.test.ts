@@ -126,6 +126,56 @@ describe('RSS Feed Generation', () => {
       expect(result.xml).not.toContain('About Us');
     });
 
+    // Feed patterns match the source path by prefix, like the sitemap patterns
+    it('contentPatterns: a pattern without wildcards also selects the files below it', () => {
+      baseFeedConfig.contentPatterns = ['site/blog'];
+
+      const result = generateRSSFeed(samplePages, baseConfig, baseFeedConfig);
+
+      expect(result.itemCount).toBe(2);
+      expect(result.xml).not.toContain('About Us');
+    });
+
+    it('excludePatterns: a pattern without wildcards also leaves out the files below it', () => {
+      baseFeedConfig.contentPatterns = ['site'];
+      baseFeedConfig.excludePatterns = ['site/blog'];
+
+      const result = generateRSSFeed(samplePages, baseConfig, baseFeedConfig);
+
+      expect(result.itemCount).toBe(1);
+      expect(result.xml).toContain('About Us');
+    });
+
+    it('skips a pattern that is not a valid glob with a warning that names the feed', () => {
+      baseFeedConfig.contentPatterns = ['site/[blog*', 'site/blog/**'];
+      baseFeedConfig.excludePatterns = ['**/[x?'];
+      const warning = vi.fn();
+      const logger = { warning } as unknown as Logger;
+
+      const result = generateRSSFeed(samplePages, baseConfig, baseFeedConfig, logger);
+
+      expect(result.itemCount).toBe(2);
+      expect(warning).toHaveBeenCalledTimes(2);
+      expect(warning).toHaveBeenCalledWith(
+        'Ignoring invalid pattern "site/[blog*" in the contentPatterns of RSS feed \'feed.xml\': Unclosed character class at position 5',
+      );
+      expect(warning).toHaveBeenCalledWith(
+        expect.stringContaining('"**/[x?" in the excludePatterns of RSS feed \'feed.xml\''),
+      );
+    });
+
+    it('takes the publish date the page was loaded with over its front matter', () => {
+      const page: PageModel = {
+        ...samplePages[0]!,
+        frontMatter: { title: 'Loaded', date: '2025-06-01' },
+        publishedAt: new Date('2025-01-15'),
+      };
+
+      const result = generateRSSFeed([page], baseConfig, baseFeedConfig);
+
+      expect(result.xml).toContain('<pubDate>Wed, 15 Jan 2025 00:00:00 GMT</pubDate>');
+    });
+
     it('should respect maxItems limit', () => {
       baseFeedConfig.maxItems = 1;
 
@@ -1147,7 +1197,7 @@ describe('RSS Feed Generation', () => {
       expect(result.xml).toContain('<enclosure url="https://example.com/media/a.mp3"');
     });
 
-    it('should leave absolute and protocol-relative URLs alone', () => {
+    it('should leave absolute URLs alone and give protocol-relative ones the site scheme', () => {
       baseFeedConfig.link = '//cdn.example.com/feed';
       baseFeedConfig.enclosure = () => ({
         url: 'https://cdn.example.com/a.mp3',
@@ -1157,7 +1207,7 @@ describe('RSS Feed Generation', () => {
 
       const result = generateRSSFeed(samplePages, baseConfig, baseFeedConfig, logger);
 
-      expect(result.xml).toContain('<link>//cdn.example.com/feed</link>');
+      expect(result.xml).toContain('<link>https://cdn.example.com/feed</link>');
       expect(result.xml).toContain('url="https://cdn.example.com/a.mp3"');
     });
 

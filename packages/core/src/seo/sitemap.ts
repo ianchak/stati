@@ -11,15 +11,17 @@ import type {
 } from '../types/sitemap.js';
 import type { PageModel } from '../types/content.js';
 import type { StatiConfig } from '../types/config.js';
+import { generateRobotsContent, parseRobotsDirectives } from './utils/index.js';
 import {
+  compileUrlPatterns,
+  describeDateValue,
   escapeHtml,
-  generateRobotsContent,
-  parseRobotsDirectives,
+  getPageModifiedDate,
+  isNotFoundPage,
   percentEncodeUrl,
   resolveAbsoluteUrl,
-} from './utils/index.js';
-import { urlMatchesAnyPattern } from '../rss/utils/index.js';
-import { describeDateValue, isNotFoundPage, parseDateValue } from '../core/utils/index.js';
+  type UrlPatternMatcher,
+} from '../core/utils/index.js';
 import type { Logger } from '../types/logging.js';
 
 /**
@@ -43,44 +45,6 @@ function formatSitemapDate(date: Date): string {
     return iso.slice(0, 10);
   }
   return iso.replace('.000Z', 'Z');
-}
-
-/**
- * Resolves the page's sitemap last-modified date, in priority order:
- * `sitemap.lastmod`, then `updated`, then `date`.
- *
- * Every value is checked with {@link parseDateValue} before it reaches
- * `toISOString()`, so an invalid value (such as `updated: soon`) does not
- * throw. An invalid value is skipped with a warning that names the page and
- * the field, and the search continues to the next source, mirroring how
- * `getFrontMatterDate` treats a bad date so one typo does not hide a valid
- * fallback.
- *
- * @param page - Page to resolve a date for
- * @param logger - Logger used to report invalid values
- * @returns A `Date` to use for `<lastmod>`, or `undefined` when none is valid
- */
-function resolveLastmodDate(page: PageModel, logger?: Logger): Date | undefined {
-  const sources: Array<[string, unknown]> = [
-    ['sitemap.lastmod', page.frontMatter.sitemap?.lastmod],
-    ['updated', page.frontMatter.updated],
-    ['date', page.frontMatter.date],
-  ];
-
-  for (const [field, value] of sources) {
-    if (value === undefined || value === null || (typeof value === 'string' && !value.trim())) {
-      continue;
-    }
-    const date = parseDateValue(value);
-    if (date) {
-      return date;
-    }
-    logger?.warning(
-      `Sitemap lastmod for ${page.url}: ignoring invalid ${field} value ${describeDateValue(value)}`,
-    );
-  }
-
-  return undefined;
 }
 
 /**
@@ -123,29 +87,49 @@ function validateChangeFreq(changefreq: unknown): ChangeFrequency | undefined {
 }
 
 /**
- * Checks if a page matches exclude patterns
- * @param page - Page to check
- * @param patterns - Exclude patterns (glob or regex)
- * @returns true if page should be excluded
+ * The sitemap's URL patterns, compiled once per sitemap. They match by prefix: a pattern
+ * without `*` or `?` also matches the URLs below it, so `/blog` matches `/blog/post`.
  */
-function matchesExcludePattern(page: PageModel, patterns?: string[]): boolean {
-  if (!patterns || patterns.length === 0) {
-    return false;
-  }
-  return urlMatchesAnyPattern(page.url, patterns);
+interface SitemapPatterns {
+  /** Whether `excludePatterns` leaves the URL out */
+  isExcluded: UrlPatternMatcher;
+  /** Whether `includePatterns` keeps the URL in; every URL is in without include patterns */
+  isIncluded: UrlPatternMatcher;
+  /** The `priorityRules`, in order */
+  priorityRules: Array<{ matches: UrlPatternMatcher; priority: number }>;
 }
 
 /**
- * Checks if a page matches include patterns
- * @param page - Page to check
- * @param patterns - Include patterns (glob or regex)
- * @returns true if page should be included
+ * Compiles the sitemap's URL patterns.
+ * @param sitemapConfig - Sitemap configuration
+ * @param logger - Receives a warning for each pattern that is not a valid glob
+ * @returns The compiled patterns
  */
-function matchesIncludePattern(page: PageModel, patterns?: string[]): boolean {
-  if (!patterns || patterns.length === 0) {
-    return true; // Include all by default
-  }
-  return urlMatchesAnyPattern(page.url, patterns);
+function compileSitemapPatterns(sitemapConfig: SitemapConfig, logger?: Logger): SitemapPatterns {
+  const { excludePatterns, includePatterns, priorityRules = [] } = sitemapConfig;
+  return {
+    isExcluded: compileUrlPatterns(excludePatterns, {
+      prefix: true,
+      option: 'sitemap.excludePatterns',
+      logger,
+    }),
+    isIncluded:
+      includePatterns && includePatterns.length > 0
+        ? compileUrlPatterns(includePatterns, {
+            prefix: true,
+            option: 'sitemap.includePatterns',
+            logger,
+          })
+        : () => true,
+    priorityRules: priorityRules.map((rule) => ({
+      matches: compileUrlPatterns([rule.pattern], {
+        prefix: true,
+        option: 'sitemap.priorityRules',
+        logger,
+      }),
+      priority: rule.priority,
+    })),
+  };
 }
 
 /**
@@ -181,28 +165,18 @@ export function isLeftOutBySitemapRules(page: PageModel): boolean {
 /**
  * Determines priority for a page based on priority rules
  * @param page - Page to evaluate
- * @param rules - Priority rules from config
+ * @param rules - Compiled priority rules from config
  * @param defaultPriority - Default priority value
  * @returns Calculated priority
  */
 function determinePriority(
   page: PageModel,
-  rules?: Array<{ pattern: string; priority: number }>,
+  rules: SitemapPatterns['priorityRules'],
   defaultPriority = 0.5,
 ): number {
-  if (!rules || rules.length === 0) {
-    return defaultPriority;
-  }
-
   // Check each rule in order (first match wins)
-  for (const rule of rules) {
-    const pattern = rule.pattern;
-    if (urlMatchesAnyPattern(page.url, [pattern])) {
-      return validatePriority(rule.priority);
-    }
-  }
-
-  return defaultPriority;
+  const rule = rules.find(({ matches }) => matches(page.url));
+  return rule ? validatePriority(rule.priority) : defaultPriority;
 }
 
 /**
@@ -215,7 +189,7 @@ function determinePriority(
  * @param page - Page to generate entry for
  * @param config - Stati configuration
  * @param sitemapConfig - Sitemap configuration
- * @param logger - Logger for warnings when a date field is invalid
+ * @param logger - Logger for warnings when a date field or a pattern is invalid
  * @returns Sitemap entry or null if page should be excluded
  */
 export function generateSitemapEntry(
@@ -224,17 +198,36 @@ export function generateSitemapEntry(
   sitemapConfig: SitemapConfig,
   logger?: Logger,
 ): SitemapEntry | null {
+  return createSitemapEntry(
+    page,
+    config,
+    sitemapConfig,
+    compileSitemapPatterns(sitemapConfig, logger),
+    logger,
+  );
+}
+
+/**
+ * {@link generateSitemapEntry} with the sitemap's patterns already compiled.
+ */
+function createSitemapEntry(
+  page: PageModel,
+  config: StatiConfig,
+  sitemapConfig: SitemapConfig,
+  patterns: SitemapPatterns,
+  logger?: Logger,
+): SitemapEntry | null {
   if (isLeftOutBySitemapRules(page)) {
     return null;
   }
 
   // Check exclude patterns
-  if (matchesExcludePattern(page, sitemapConfig.excludePatterns)) {
+  if (patterns.isExcluded(page.url)) {
     return null;
   }
 
   // Check include patterns
-  if (!matchesIncludePattern(page, sitemapConfig.includePatterns)) {
+  if (!patterns.isIncluded(page.url)) {
     return null;
   }
 
@@ -245,11 +238,15 @@ export function generateSitemapEntry(
 
   const siteUrl = config.site.baseUrl;
 
-  // Determine lastmod. Each source is checked before it reaches toISOString(),
-  // so an invalid date (such as `updated: soon`) is skipped with a warning
-  // that names the page and the field, instead of failing the whole build.
+  // Determine lastmod: sitemap.lastmod, then updated, then the publish date. Each source is
+  // checked before it reaches toISOString(), so an invalid date (such as `updated: soon`) is
+  // skipped with a warning that names the page and the field, instead of failing the build.
   let lastmod: string | undefined;
-  const lastmodDate = resolveLastmodDate(page, logger);
+  const lastmodDate = getPageModifiedDate(page, (field, value) => {
+    logger?.warning(
+      `Sitemap lastmod for ${page.url}: ignoring invalid ${field} value ${describeDateValue(value)}`,
+    );
+  });
   if (lastmodDate) {
     lastmod = formatSitemapDate(lastmodDate);
   }
@@ -268,7 +265,7 @@ export function generateSitemapEntry(
   if (page.frontMatter.sitemap?.priority !== undefined) {
     priority = validatePriority(page.frontMatter.sitemap.priority);
   } else {
-    priority = determinePriority(page, sitemapConfig.priorityRules, sitemapConfig.defaultPriority);
+    priority = determinePriority(page, patterns.priorityRules, sitemapConfig.defaultPriority);
   }
 
   // Resolve absolute URL
@@ -385,7 +382,7 @@ function splitEntriesIntoSitemaps(entries: SitemapEntry[]): SitemapEntry[][] {
  * @param pages - All pages to include in sitemap
  * @param config - Stati configuration
  * @param sitemapConfig - Sitemap configuration
- * @param logger - Logger for warnings when a date field is invalid
+ * @param logger - Logger for warnings when a date field or a pattern is invalid
  * @returns Sitemap generation result with XML content
  */
 export function generateSitemap(
@@ -394,10 +391,11 @@ export function generateSitemap(
   sitemapConfig: SitemapConfig,
   logger?: Logger,
 ): SitemapGenerationResult {
-  // Generate entries for all pages
+  // Generate entries for all pages, with the patterns compiled (and reported) once
+  const patterns = compileSitemapPatterns(sitemapConfig, logger);
   const entries: SitemapEntry[] = [];
   for (const page of pages) {
-    const entry = generateSitemapEntry(page, config, sitemapConfig, logger);
+    const entry = createSitemapEntry(page, config, sitemapConfig, patterns, logger);
     if (entry) {
       entries.push(entry);
     }

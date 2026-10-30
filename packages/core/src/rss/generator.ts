@@ -7,17 +7,15 @@ import type { PageModel } from '../types/content.js';
 import type { StatiConfig } from '../types/config.js';
 import type { RSSFeedConfig, RSSGenerationResult } from '../types/rss.js';
 import type { Logger } from '../types/logging.js';
-import { escapeHtml } from '../seo/utils/index.js';
-import { filterByPatterns } from './utils/index.js';
 import {
+  compileUrlPatterns,
   createFallbackLogger,
-  getFrontMatterDate,
+  escapeHtml,
+  getPagePublishedDate,
   isNotFoundPage,
   isVirtualPage,
+  resolveAbsoluteUrl,
 } from '../core/utils/index.js';
-
-/** A value with a scheme (`https://`, `mailto:`) or a protocol-relative one (`//cdn.example`) */
-const ABSOLUTE_URL = /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i;
 
 /** XML 1.0 NameStartChar and NameChar code point ranges, without the colon */
 const NAME_START_RANGES: Array<[number, number]> = [
@@ -100,21 +98,35 @@ function parseAndFormatDate(dateInput: Date | string | undefined): string | unde
  * Filters pages based on feed configuration
  * @param pages - All pages
  * @param feedConfig - Feed configuration
+ * @param logger - Receives a warning for each pattern that is not a valid glob
  * @returns Filtered pages
  */
-function filterPages(pages: PageModel[], feedConfig: RSSFeedConfig): PageModel[] {
-  const options: { includePatterns?: string[]; excludePatterns?: string[] } = {};
-  if (feedConfig.contentPatterns) {
-    options.includePatterns = feedConfig.contentPatterns;
-  }
-  if (feedConfig.excludePatterns) {
-    options.excludePatterns = feedConfig.excludePatterns;
-  }
+function filterPages(pages: PageModel[], feedConfig: RSSFeedConfig, logger: Logger): PageModel[] {
+  // The patterns match the source path by prefix: one without `*` or `?` also matches the
+  // files below it
+  const { contentPatterns, excludePatterns } = feedConfig;
+  const feed = `RSS feed '${feedConfig.filename}'`;
+  const isIncluded = compileUrlPatterns(contentPatterns, {
+    prefix: true,
+    option: `the contentPatterns of ${feed}`,
+    logger,
+  });
+  const isExcluded = compileUrlPatterns(excludePatterns, {
+    prefix: true,
+    option: `the excludePatterns of ${feed}`,
+    logger,
+  });
+  const hasContentPatterns = contentPatterns !== undefined && contentPatterns.length > 0;
 
   // Generated and pagination pages share their template's source path, so patterns can't
   // tell them apart from content; feeds list content only, and never the 404 page
-  const contentPages = pages.filter((page) => !isVirtualPage(page) && !isNotFoundPage(page));
-  let filtered = filterByPatterns(contentPages, (page) => page.sourcePath, options);
+  let filtered = pages.filter(
+    (page) =>
+      !isVirtualPage(page) &&
+      !isNotFoundPage(page) &&
+      (!hasContentPatterns || isIncluded(page.sourcePath)) &&
+      !isExcluded(page.sourcePath),
+  );
 
   // Apply custom filter function if provided
   if (feedConfig.filter) {
@@ -122,15 +134,6 @@ function filterPages(pages: PageModel[], feedConfig: RSSFeedConfig): PageModel[]
   }
 
   return filtered;
-}
-
-/**
- * Helper to get date value from page for sorting
- * @param page - Page to get date from
- * @returns Date value or undefined
- */
-function getPageDate(page: PageModel): Date | undefined {
-  return getFrontMatterDate(page.frontMatter);
 }
 
 /**
@@ -147,12 +150,19 @@ function sortPages(pages: PageModel[], feedConfig: RSSFeedConfig): PageModel[] {
     return sorted.sort(feedConfig.sortFn);
   }
 
+  // Each page's date once, not once per comparison
+  const dates = new Map<PageModel, Date | undefined>();
+  const dateOf = (page: PageModel): Date | undefined => {
+    if (!dates.has(page)) dates.set(page, getPagePublishedDate(page));
+    return dates.get(page);
+  };
+
   return sorted.sort((a, b) => {
     switch (sortBy) {
       case 'date-desc':
       case 'date-asc': {
-        const dateA = getPageDate(a);
-        const dateB = getPageDate(b);
+        const dateA = dateOf(a);
+        const dateB = dateOf(b);
         if (!dateA && !dateB) return 0;
         if (!dateA) return 1;
         if (!dateB) return -1;
@@ -221,30 +231,6 @@ function getFieldValue<T>(
 
   // Return value with proper type checking
   return value !== undefined && value !== null ? (value as T) : undefined;
-}
-
-/**
- * Makes a URL absolute. Absolute and protocol-relative URLs are kept; anything else is a
- * path from the site root and goes behind `site.baseUrl`, base path included.
- * @param value - URL or site path
- * @param config - Stati configuration
- * @returns Absolute URL
- */
-function toAbsoluteUrl(value: string, config: StatiConfig): string {
-  if (ABSOLUTE_URL.test(value)) return value;
-  const baseUrl = config.site.baseUrl.replace(/\/$/, '');
-  const path = value.replace(/^\.\//, '');
-  return baseUrl + (path.startsWith('/') ? path : '/' + path);
-}
-
-/**
- * Builds the absolute URL for a page
- * @param page - Page to build URL for
- * @param config - Stati configuration
- * @returns Absolute URL
- */
-function buildPageUrl(page: PageModel, config: StatiConfig): string {
-  return toAbsoluteUrl(page.url, config);
 }
 
 function describeError(error: unknown): string {
@@ -321,9 +307,9 @@ function buildItem(page: PageModel, context: ItemContext): string[] | undefined 
       );
       return undefined;
     }
-    link = toAbsoluteUrl(mapped.trim(), config);
+    link = resolveAbsoluteUrl(mapped.trim(), config.site.baseUrl);
   } else {
-    link = buildPageUrl(page, config);
+    link = resolveAbsoluteUrl(page.url, config.site.baseUrl);
   }
 
   const lines: string[] = [`    <item>`];
@@ -349,7 +335,7 @@ function buildItem(page: PageModel, context: ItemContext): string[] | undefined 
   // Pub date
   const pubDate = itemMapping.pubDate
     ? getFieldValue<Date | string>(page, itemMapping.pubDate, undefined, logger)
-    : getPageDate(page);
+    : getPagePublishedDate(page);
   const formattedPubDate = parseAndFormatDate(pubDate);
   if (formattedPubDate) {
     lines.push(`      <pubDate>${formattedPubDate}</pubDate>`);
@@ -410,7 +396,7 @@ function buildItem(page: PageModel, context: ItemContext): string[] | undefined 
             ? Math.trunc(enclosure.length)
             : 0;
         lines.push(
-          `      <enclosure url="${escapeHtml(toAbsoluteUrl(enclosure.url, config))}" length="${length}" type="${escapeHtml(enclosure.type)}" />`,
+          `      <enclosure url="${escapeHtml(resolveAbsoluteUrl(enclosure.url, config.site.baseUrl))}" length="${length}" type="${escapeHtml(enclosure.type)}" />`,
         );
       }
     }
@@ -469,7 +455,7 @@ export function generateRSSFeed(
   };
 
   // Filter and sort pages
-  let feedPages = sortPages(filterPages(pages, feedConfig), feedConfig);
+  let feedPages = sortPages(filterPages(pages, feedConfig, context.logger), feedConfig);
 
   // Limit to maxItems if specified
   if (feedConfig.maxItems && feedConfig.maxItems > 0) {
@@ -477,7 +463,7 @@ export function generateRSSFeed(
   }
 
   // Build feed metadata
-  const feedLink = toAbsoluteUrl(feedConfig.link || config.site.baseUrl, config);
+  const feedLink = resolveAbsoluteUrl(feedConfig.link || config.site.baseUrl, config.site.baseUrl);
   const feedTitle = feedConfig.title;
   const feedDescription = feedConfig.description;
 
@@ -535,9 +521,13 @@ export function generateRSSFeed(
   // Image
   if (feedConfig.image) {
     xmlLines.push(`    <image>`);
-    xmlLines.push(`      <url>${escapeHtml(toAbsoluteUrl(feedConfig.image.url, config))}</url>`);
+    xmlLines.push(
+      `      <url>${escapeHtml(resolveAbsoluteUrl(feedConfig.image.url, config.site.baseUrl))}</url>`,
+    );
     xmlLines.push(`      <title>${escapeHtml(feedConfig.image.title)}</title>`);
-    xmlLines.push(`      <link>${escapeHtml(toAbsoluteUrl(feedConfig.image.link, config))}</link>`);
+    xmlLines.push(
+      `      <link>${escapeHtml(resolveAbsoluteUrl(feedConfig.image.link, config.site.baseUrl))}</link>`,
+    );
     if (feedConfig.image.width) {
       xmlLines.push(`      <width>${feedConfig.image.width}</width>`);
     }
