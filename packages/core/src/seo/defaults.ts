@@ -16,7 +16,12 @@ import type {
 } from '../types/content.js';
 import type { Logger } from '../types/logging.js';
 import { ConfigValidationError } from '../config/errors.js';
-import { isNotFoundPage, matchesGlob } from '../core/utils/index.js';
+import {
+  compileUrlPatterns,
+  getPagePublishedDate,
+  isNotFoundPage,
+  parseDateValue,
+} from '../core/utils/index.js';
 import { parseRobotsDirectives } from './utils/index.js';
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -87,6 +92,21 @@ export function toTwitterHandle(value: unknown): string | undefined {
 }
 
 /**
+ * Compiles `seo.articles`: globs that must match the whole URL, so `/blog` matches `/blog` but
+ * not `/blog/post`.
+ *
+ * @param config - Site configuration
+ * @param logger - Receives a warning for each pattern that is not a valid glob
+ */
+function compileArticlePatterns(config: StatiConfig, logger?: Logger) {
+  const articles = config.seo?.articles;
+  return {
+    include: compileUrlPatterns(articles?.include, { option: 'seo.articles.include', logger }),
+    exclude: compileUrlPatterns(articles?.exclude, { option: 'seo.articles.exclude', logger }),
+  };
+}
+
+/**
  * Whether `seo.articles` makes the page an article. Generated pages and the pages of a
  * paginated listing never are, as they are never collection members.
  *
@@ -94,14 +114,13 @@ export function toTwitterHandle(value: unknown): string | undefined {
  * @param config - Site configuration
  */
 export function isArticlePage(page: PageModel, config: StatiConfig): boolean {
-  const articles = config.seo?.articles;
-  if (!articles || page.generated || page.pagination) {
+  if (!config.seo?.articles || page.generated || page.pagination) {
     return false;
   }
-  if (articles.exclude?.some((pattern) => matchesGlob(page.url, pattern))) {
-    return false;
-  }
-  return (articles.include ?? []).some((pattern) => matchesGlob(page.url, pattern));
+  // Runs several times for every page; the patterns are converted once and cached, and
+  // applySEODefaults reports the invalid ones once per build
+  const articles = compileArticlePatterns(config);
+  return !articles.exclude(page.url) && articles.include(page.url);
 }
 
 /** The page's own author when its front matter names one, otherwise the default author. */
@@ -114,11 +133,12 @@ function authorField(author: unknown, field: keyof AuthorConfig): unknown {
   return isPlainObject(author) ? author[field] : undefined;
 }
 
-/** A front matter date as ISO 8601, or `undefined` when it is not a valid date. */
+/**
+ * A front matter date as ISO 8601, or `undefined` when it is not a valid date, read with
+ * `parseDateValue` like every other front matter date.
+ */
 function toISODate(value: unknown): string | undefined {
-  const date =
-    value instanceof Date ? value : typeof value === 'string' ? new Date(value) : undefined;
-  return date && !isNaN(date.getTime()) ? date.toISOString() : undefined;
+  return parseDateValue(value)?.toISOString();
 }
 
 /** Copies `target` with `fill` added, or returns it as it was when there is nothing to add. */
@@ -142,7 +162,7 @@ function resolveArticle(
   const fill: OpenGraphArticle = {};
 
   if (isMissing(own.publishedTime)) {
-    const published = toISODate(page.publishedAt);
+    const published = getPagePublishedDate(page)?.toISOString();
     if (published) fill.publishedTime = published;
   }
   if (isMissing(own.modifiedTime)) {
@@ -265,9 +285,13 @@ export function resolveSEODefaults(page: PageModel, config: StatiConfig): SEOMet
  *
  * @param pages - Every page of the build
  * @param config - Site configuration
- * @param logger - Reports, under `seo.debug`, a `site.defaultLocale` without a region
+ * @param logger - Reports `seo.articles` patterns that are not valid globs and, under
+ *   `seo.debug`, a `site.defaultLocale` without a region
  */
 export function applySEODefaults(pages: PageModel[], config: StatiConfig, logger: Logger): void {
+  // isArticlePage skips invalid seo.articles patterns on every page; report them once
+  compileArticlePatterns(config, logger);
+
   const defaultLocale = config.site.defaultLocale;
   if (config.seo?.debug && typeof defaultLocale === 'string' && defaultLocale !== '') {
     if (!toOpenGraphLocale(defaultLocale)) {

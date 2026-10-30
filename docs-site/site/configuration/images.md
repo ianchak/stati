@@ -241,7 +241,7 @@ Encoding images takes time, so by default the dev server skips responsive images
 | `images.og.height` | `number` | `630` | Card height in pixels |
 | `images.og.format` | `'png' \| 'jpeg'` | `'png'` | Card format |
 | `images.og.fonts` | `{ name, path, weight?, style? }[]` | `[]` | Fonts added to the bundled ones |
-| `images.og.exclude` | `string[]` | `[]` | URL patterns of pages that get no card |
+| `images.og.exclude` | `string[]` | `[]` | URL patterns of pages that get no card; a pattern must match the whole URL |
 | `images.dev` | `'fast' \| 'full'` | `'fast'` | Whether the dev server generates images |
 
 ## Troubleshooting

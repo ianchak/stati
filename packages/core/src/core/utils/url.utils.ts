@@ -1,6 +1,7 @@
 /**
- * URL resolution and normalization utilities for SEO module
- * @module seo/utils/url
+ * URL resolution and normalization utilities, shared by the SEO tags, sitemaps, RSS feeds and
+ * images.
+ * @module core/utils/url
  */
 
 import { URL } from 'node:url';
@@ -21,7 +22,10 @@ export function normalizeUrlPath(path: string): string {
 }
 
 /**
- * Resolves a relative or absolute URL to a full absolute URL
+ * Resolves a relative or absolute URL to a full absolute URL. A URL with a scheme is kept, a
+ * protocol-relative one (`//cdn.example.com/a.png`) gets the scheme of `baseUrl`, and anything
+ * else is a path from the site root, with or without a leading `/` or `./`, that goes behind
+ * `baseUrl`, base path included.
  * @param url - Relative or absolute URL
  * @param baseUrl - Base site URL
  * @returns Absolute URL
@@ -30,6 +34,9 @@ export function normalizeUrlPath(path: string): string {
  * ```typescript
  * resolveAbsoluteUrl('/about', 'https://example.com');
  * // Returns: 'https://example.com/about'
+ *
+ * resolveAbsoluteUrl('./images/a.png', 'https://example.com/docs/');
+ * // Returns: 'https://example.com/docs/images/a.png'
  *
  * resolveAbsoluteUrl('https://other.com/page', 'https://example.com');
  * // Returns: 'https://other.com/page'
@@ -50,8 +57,8 @@ export function resolveAbsoluteUrl(url: string, baseUrl: string): string {
   // Ensure baseUrl doesn't end with /
   const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
 
-  // Ensure url starts with /
-  const path = normalizeUrlPath(url);
+  // Ensure url starts with /, and a site path written as ./images/a.png reads as images/a.png
+  const path = normalizeUrlPath(url.replace(/^\.\//, ''));
 
   return `${cleanBaseUrl}${path}`;
 }

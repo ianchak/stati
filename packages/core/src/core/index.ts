@@ -19,6 +19,3 @@ export type { PreviewServerOptions } from './preview.js';
 // Cache invalidation
 export { invalidate } from './invalidate.js';
 export type { InvalidationResult } from './invalidate.js';
-
-// HTML utilities
-export { injectBeforeHeadClose, findHeadClosePosition } from './utils/index.js';

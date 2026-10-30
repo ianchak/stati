@@ -283,7 +283,7 @@ Use functions for custom transformations:
 
 An item's `guid` defaults to its link, so a custom `link` changes the `guid` too. Set `itemMapping.guid` to keep it stable.
 
-A `link` or `guid` function can return any text. A `link` that isn't an absolute URL is resolved against `site.baseUrl`, as are the feed's `link`, the `image` URLs and an enclosure's `url`. The `<guid>` is marked as a permalink (`isPermaLink="true"`) only when it is an absolute `http` or `https` URL; any other value, such as `urn:post:42`, is written with `isPermaLink="false"`.
+A `link` or `guid` function can return any text. A `link` that isn't an absolute URL is resolved against `site.baseUrl`, as are the feed's `link`, the `image` URLs and an enclosure's `url`; a protocol-relative URL (`//cdn.example.com/a.mp3`) gets the scheme of `site.baseUrl`. The `<guid>` is marked as a permalink (`isPermaLink="true"`) only when it is an absolute `http` or `https` URL; any other value, such as `urn:post:42`, is written with `isPermaLink="false"`.
 
 ### When a callback fails
 

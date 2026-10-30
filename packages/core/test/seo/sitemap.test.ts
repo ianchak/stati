@@ -568,6 +568,111 @@ describe('Sitemap Generation', () => {
         expect(entryFor('/404', { sitemap: { exclude: false } })).toBeNull();
       });
     });
+
+    // Sitemap patterns match by prefix, unlike search.exclude and the other URL patterns
+    describe('pattern rule', () => {
+      const entryFor = (url: string) =>
+        generateSitemapEntry({ ...samplePage, url }, baseConfig, baseSitemapConfig);
+
+      it('excludePatterns: a pattern without wildcards also leaves out the URLs below it', () => {
+        baseSitemapConfig.excludePatterns = ['/blog'];
+
+        expect(entryFor('/blog')).toBeNull();
+        expect(entryFor('/blog/post')).toBeNull();
+        expect(entryFor('/blogroll')).not.toBeNull();
+      });
+
+      it('includePatterns: a pattern without wildcards also keeps the URLs below it', () => {
+        baseSitemapConfig.includePatterns = ['/blog'];
+
+        expect(entryFor('/blog/post')).not.toBeNull();
+        expect(entryFor('/about')).toBeNull();
+      });
+
+      it('priorityRules: a pattern without wildcards also applies to the URLs below it', () => {
+        baseSitemapConfig.priorityRules = [{ pattern: '/blog', priority: 0.9 }];
+
+        expect(entryFor('/blog/post')?.priority).toBe(0.9);
+        expect(entryFor('/blogroll')?.priority).toBe(0.5);
+      });
+
+      it('skips a pattern that is not a valid glob with a warning, instead of throwing', () => {
+        baseSitemapConfig.excludePatterns = ['/drafts/[x*', '/private'];
+        const warning = vi.fn();
+        const logger = { warning } as unknown as Logger;
+
+        const kept = generateSitemapEntry(
+          { ...samplePage, url: '/drafts/[x-1' },
+          baseConfig,
+          baseSitemapConfig,
+          logger,
+        );
+        const left = generateSitemapEntry(
+          { ...samplePage, url: '/private/a' },
+          baseConfig,
+          baseSitemapConfig,
+          logger,
+        );
+
+        expect(kept).not.toBeNull();
+        expect(left).toBeNull();
+        expect(warning).toHaveBeenCalledWith(
+          'Ignoring invalid pattern "/drafts/[x*" in sitemap.excludePatterns: Unclosed character class at position 8',
+        );
+      });
+    });
+
+    describe('lastmod from the publish date', () => {
+      it('uses the page publish date when there is no sitemap.lastmod or updated', () => {
+        const entry = generateSitemapEntry(
+          {
+            ...samplePage,
+            frontMatter: { publishedAt: '2025-03-01' },
+            publishedAt: new Date('2025-03-01'),
+          },
+          baseConfig,
+          baseSitemapConfig,
+        );
+
+        expect(entry?.lastmod).toBe('2025-03-01');
+      });
+
+      it('takes the publish date the page was loaded with over a later date field', () => {
+        const entry = generateSitemapEntry(
+          {
+            ...samplePage,
+            frontMatter: { publishedAt: '2025-03-01', date: '2025-04-01' },
+            publishedAt: new Date('2025-03-01'),
+          },
+          baseConfig,
+          baseSitemapConfig,
+        );
+
+        expect(entry?.lastmod).toBe('2025-03-01');
+      });
+
+      it('reads the publish date from front matter for a page without publishedAt', () => {
+        samplePage.frontMatter.published = '2025-05-01';
+
+        const entry = generateSitemapEntry(samplePage, baseConfig, baseSitemapConfig);
+
+        expect(entry?.lastmod).toBe('2025-05-01');
+      });
+
+      it('still prefers updated over the publish date', () => {
+        const entry = generateSitemapEntry(
+          {
+            ...samplePage,
+            frontMatter: { updated: '2025-06-01' },
+            publishedAt: new Date('2025-03-01'),
+          },
+          baseConfig,
+          baseSitemapConfig,
+        );
+
+        expect(entry?.lastmod).toBe('2025-06-01');
+      });
+    });
   });
 
   describe('generateSitemapXml', () => {
@@ -743,6 +848,22 @@ describe('Sitemap Generation', () => {
   });
 
   describe('generateSitemap', () => {
+    it('warns once about an invalid pattern, not once per page', () => {
+      baseSitemapConfig.excludePatterns = ['/drafts/[x*'];
+      baseSitemapConfig.priorityRules = [{ pattern: '/docs/[y?', priority: 0.9 }];
+      const warning = vi.fn();
+      const logger = { warning } as unknown as Logger;
+      const pages = ['/a', '/b', '/c'].map((url) => ({ ...samplePage, url }));
+
+      const result = generateSitemap(pages, baseConfig, baseSitemapConfig, logger);
+
+      expect(result.entryCount).toBe(3);
+      expect(warning).toHaveBeenCalledTimes(2);
+      expect(warning).toHaveBeenCalledWith(
+        expect.stringContaining('"/docs/[y?" in sitemap.priorityRules'),
+      );
+    });
+
     it('should generate sitemap for single page', () => {
       const pages = [samplePage];
 

@@ -1,7 +1,9 @@
 /**
- * Date utilities for reading publish dates from front matter.
+ * Date utilities for reading publish and modified dates from front matter.
  * @module core/utils/date
  */
+
+import type { PageModel } from '../../types/content.js';
 
 /**
  * Front matter fields checked for a page's publish date, in priority order.
@@ -37,8 +39,21 @@ export function getFrontMatterDate(
     return undefined;
   }
 
-  for (const field of PUBLISHED_DATE_FIELDS) {
-    const value = frontMatter[field];
+  return firstValidDate(
+    PUBLISHED_DATE_FIELDS.map((field) => [field, frontMatter[field]]),
+    onInvalid,
+  );
+}
+
+/**
+ * Returns the first value that is a valid date, in order. Missing, `null` and empty values are
+ * skipped; other invalid values are reported through `onInvalid` and skipped.
+ */
+function firstValidDate(
+  sources: ReadonlyArray<readonly [string, unknown]>,
+  onInvalid?: (field: string, value: unknown) => void,
+): Date | undefined {
+  for (const [field, value] of sources) {
     if (value === undefined || value === null || (typeof value === 'string' && !value.trim())) {
       continue;
     }
@@ -55,6 +70,59 @@ export function getFrontMatterDate(
   }
 
   return undefined;
+}
+
+/**
+ * Returns the page's publish date: `page.publishedAt`, which Stati works out from
+ * {@link PUBLISHED_DATE_FIELDS} when it loads the page. A page without a valid one, such as a
+ * page a `beforeAll` hook adds or a page built by hand for a generator, gets the first valid of
+ * those fields in its front matter, read with {@link getFrontMatterDate}.
+ *
+ * @param page - The page
+ * @param onInvalid - Called for each present front matter field whose value is not a valid
+ *   date, when the front matter is read
+ * @returns A new `Date` instance, or `undefined` when the page has no valid date
+ */
+export function getPagePublishedDate(
+  page: PageModel,
+  onInvalid?: (field: string, value: unknown) => void,
+): Date | undefined {
+  return parseDateValue(page.publishedAt) ?? getFrontMatterDate(page.frontMatter, onInvalid);
+}
+
+/**
+ * Returns when the page last changed: the first valid of front matter `sitemap.lastmod` and
+ * `updated`, then the page's publish date ({@link getPagePublishedDate}).
+ *
+ * Missing, `null` and empty values are skipped; other invalid values are reported through
+ * `onInvalid` and skipped, so a bad `updated` does not hide a valid publish date.
+ *
+ * @param page - The page
+ * @param onInvalid - Called for each present field whose value is not a valid date
+ * @returns A new `Date` instance, or `undefined` when the page has no valid date
+ *
+ * @example
+ * ```typescript
+ * const publishedAt = new Date('2026-01-01');
+ * getPageModifiedDate({ ...page, publishedAt, frontMatter: { updated: '2026-02-01' } });
+ * // 2026-02-01T00:00:00.000Z
+ * getPageModifiedDate({ ...page, publishedAt, frontMatter: { updated: 'soon' } });
+ * // 2026-01-01T00:00:00.000Z, after onInvalid('updated', 'soon')
+ * ```
+ */
+export function getPageModifiedDate(
+  page: PageModel,
+  onInvalid?: (field: string, value: unknown) => void,
+): Date | undefined {
+  return (
+    firstValidDate(
+      [
+        ['sitemap.lastmod', page.frontMatter.sitemap?.lastmod],
+        ['updated', page.frontMatter.updated],
+      ],
+      onInvalid,
+    ) ?? getPagePublishedDate(page, onInvalid)
+  );
 }
 
 /**

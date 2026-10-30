@@ -13,6 +13,7 @@ import {
   STATI_PRINT_STYLES,
   STATI_THEME_STYLES,
 } from '../../core/utils/theme.utils.js';
+import { escapeHtml } from '../../core/utils/html.utils.js';
 import type { BuildMetrics, PageTiming } from '../types.js';
 
 /**
@@ -48,18 +49,6 @@ function formatPercent(value: number): string {
  */
 function formatCount(value: number): string {
   return value.toLocaleString('en-US');
-}
-
-/**
- * Escapes text for HTML content and attribute values.
- */
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 }
 
 /**

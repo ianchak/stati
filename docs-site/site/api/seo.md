@@ -133,7 +133,7 @@ function generateSitemap(
 - `pages` (PageModel[]): Array of page objects to include in sitemap
 - `config` (StatiConfig): Stati configuration object (used for `site.baseUrl`)
 - `sitemapConfig` (SitemapConfig): Sitemap-specific configuration options
-- `logger` (Logger, optional): Receives a warning for each invalid `sitemap.lastmod`, `updated` or `date` value, which is skipped
+- `logger` (Logger, optional): Receives a warning for each invalid `sitemap.lastmod`, `updated` or publish date value and each pattern that is not a valid glob, which are skipped
 
 **Returns:**
 
@@ -189,7 +189,7 @@ function generateNewsSitemap(
 - `pages` (PageModel[]): Array of page objects
 - `config` (StatiConfig): Stati configuration object (`site.baseUrl`, `site.title` and `site.defaultLocale`)
 - `news` (NewsSitemapConfig): The `sitemap.news` options
-- `logger` (Logger, optional): Receives warnings about matching pages that have no valid `publishedAt` or no title
+- `logger` (Logger, optional): Receives warnings about matching pages that have no valid publish date or no title
 - `now` (Date, optional): The time `maxAgeDays` counts back from (default: the current time)
 
 **Returns:**
@@ -479,7 +479,7 @@ function generateSitemapEntry(
 - `page` (PageModel): The page to generate entry for
 - `config` (StatiConfig): Stati configuration
 - `sitemapConfig` (SitemapConfig): Sitemap configuration
-- `logger` (Logger, optional): Receives a warning for each invalid `sitemap.lastmod`, `updated` or `date` value, which is skipped
+- `logger` (Logger, optional): Receives a warning for each invalid `sitemap.lastmod`, `updated` or publish date value and each pattern that is not a valid glob, which are skipped
 
 **Returns:**
 
@@ -712,7 +712,7 @@ function isValidUrl(url: string): boolean;
 ```
 
 - `normalizeUrlPath` adds a leading `/` when the path has none: `'about'` becomes `'/about'`.
-- `resolveAbsoluteUrl` returns a URL that has a scheme (`https:`, `data:` and so on) unchanged, gives a protocol-relative URL (`//cdn.example.com/og.png`) the scheme of `baseUrl` (`http:` when `baseUrl` starts with `http://`, otherwise `https:`), and otherwise joins `baseUrl`, without one trailing `/`, and the path with a leading `/`: `resolveAbsoluteUrl('/about', 'https://example.com/docs')` returns `'https://example.com/docs/about'`.
+- `resolveAbsoluteUrl` returns a URL that has a scheme (`https:`, `data:` and so on) unchanged, gives a protocol-relative URL (`//cdn.example.com/og.png`) the scheme of `baseUrl` (`http:` when `baseUrl` starts with `http://`, otherwise `https:`), and otherwise joins `baseUrl`, without one trailing `/`, and the path with a leading `/` in place of a leading `./`: `resolveAbsoluteUrl('/about', 'https://example.com/docs')` and `resolveAbsoluteUrl('./about', 'https://example.com/docs')` return `'https://example.com/docs/about'`.
 - `isValidUrl` returns `true` when the string parses as a URL with the `http:` or `https:` protocol.
 
 ---
@@ -1172,10 +1172,17 @@ interface SitemapConfig {
   /** Default change frequency (no default: omitted from entries unless set) */
   defaultChangeFreq?: ChangeFrequency;
 
-  /** Glob patterns for pages to exclude from sitemap */
+  /**
+   * URL patterns for pages to exclude from sitemap. A pattern without `*` or `?` also
+   * matches the URLs below it (`/blog` leaves out `/blog/post` too); a glob must match the
+   * whole URL.
+   */
   excludePatterns?: string[];
 
-  /** Glob patterns for pages to include in sitemap (if specified, only these are included) */
+  /**
+   * URL patterns for pages to include in sitemap (if specified, only these are included),
+   * matched like `excludePatterns`
+   */
   includePatterns?: string[];
 
   /** Filter function to include/exclude pages */

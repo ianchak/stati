@@ -812,11 +812,13 @@ describe('html-report.utils', () => {
         ...mockMetrics,
         pageTimings: [{ url: '/a?b=1&c=<x>', durationMs: 1, cached: false }],
       });
-      const jsonPreMatch = html.match(
-        /<pre class="code" id="json-content" tabindex="0">([\s\S]*?)<\/pre>/,
-      );
-      expect(jsonPreMatch).toBeTruthy();
-      const pre = jsonPreMatch![1]!;
+      // Sliced out by position: a lazy regex here is polynomial on repeated opening tags
+      const open = '<pre class="code" id="json-content" tabindex="0">';
+      const start = html.indexOf(open);
+      expect(start).toBeGreaterThan(-1);
+      const end = html.indexOf('</pre>', start);
+      expect(end).toBeGreaterThan(start);
+      const pre = html.slice(start + open.length, end);
       expect(pre).toContain('"schemaVersion": "1"');
       expect(pre).toContain('/a?b=1&amp;c=&lt;x&gt;');
       const text = pre.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');

@@ -1,13 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
-  escapeHtml,
   generateRobotsContent,
   parseRobotsDirectives,
-  percentEncodeUrl,
-  resolveAbsoluteUrl,
   validateSEOMetadata,
   detectExistingSEOTags,
 } from '../../src/seo/utils/index.js';
+import { escapeHtml } from '../../src/core/utils/html.utils.js';
+import { percentEncodeUrl, resolveAbsoluteUrl } from '../../src/core/utils/url.utils.js';
 import {
   sanitizeStructuredData,
   serializeStructuredData,
@@ -166,6 +165,19 @@ describe('SEO Utils - resolveAbsoluteUrl', () => {
 
   it('does not double the slash when the base ends with one', () => {
     expect(resolveAbsoluteUrl('/about', 'https://example.com/')).toBe('https://example.com/about');
+  });
+
+  it('reads a ./ path as a path from the site root, behind the base path', () => {
+    expect(resolveAbsoluteUrl('./images/og.png', 'https://example.com')).toBe(
+      'https://example.com/images/og.png',
+    );
+    expect(resolveAbsoluteUrl('./images/og.png', 'https://example.com/docs/')).toBe(
+      'https://example.com/docs/images/og.png',
+    );
+    // Only a leading ./ goes; a path that merely starts with a dot keeps it
+    expect(resolveAbsoluteUrl('.well-known/a', 'https://example.com')).toBe(
+      'https://example.com/.well-known/a',
+    );
   });
 });
 

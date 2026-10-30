@@ -10,7 +10,7 @@ import type { Logger } from '../types/logging.js';
 import type { GeneratedOgImage } from '../types/images.js';
 import { detectExistingSEOTags } from './utils/index.js';
 import { generateSEOMetadata } from './generator.js';
-import { injectBeforeHeadClose } from '../core/index.js';
+import { injectBeforeHeadClose } from '../core/utils/html.utils.js';
 
 /**
  * Options for auto-injection

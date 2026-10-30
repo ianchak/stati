@@ -345,7 +345,7 @@ interface FrontMatter {
    */
   publishedAt?: string | Date;
 
-  /** Publication date when `publishedAt` and `published` are absent or invalid; also the sitemap lastmod fallback */
+  /** Publication date when `publishedAt` and `published` are absent or invalid */
   date?: string | Date;
 
   /** Last updated date as ISO string */
@@ -688,7 +688,7 @@ interface BundleConfig {
    */
   include?: string[];
 
-  /** Glob patterns for pages to exclude from this bundle. Takes precedence over include. */
+  /** Glob patterns for page URLs to exclude from this bundle, matched like include. Takes precedence over include. */
   exclude?: string[];
 }
 ```
@@ -733,7 +733,7 @@ interface OgImagesConfig {
   format?: 'png' | 'jpeg';
   /** Fonts added to the bundled ones (Archivo, Inter, Fira Code) */
   fonts?: OgImageFontConfig[];
-  /** URL glob patterns of pages that get no generated image */
+  /** URL glob patterns of pages that get no generated image; a pattern must match the whole URL */
   exclude?: string[];
 }
 
