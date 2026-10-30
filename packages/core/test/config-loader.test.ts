@@ -4,6 +4,7 @@ import { mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { getConfigFilePaths, loadConfig, clearConfigCache } from '../src/config/loader.js';
 import { ConfigValidationError } from '../src/config/errors.js';
+import { getEnv, setEnv } from '../src/env.js';
 
 // Test the actual loader functionality by creating a simpler approach
 // Focus on testing the logic rather than mocking complex dynamic imports
@@ -595,6 +596,35 @@ export default config;`;
       expect(config1.srcDir).toBe('cached-src');
       expect(config2.srcDir).toBe('cached-src');
       expect(config1.site.title).toBe(config2.site.title);
+    });
+
+    it('should evaluate the config again when the environment changes', async () => {
+      // A config that branches on getEnv() gives other values in another environment,
+      // so a config evaluated in one environment is not reused in the other
+      const counter = '__statiConfigEvaluations';
+      const configPath = join(testDir, 'stati.config.mjs');
+      writeFileSync(
+        configPath,
+        `globalThis.${counter} = (globalThis.${counter} ?? 0) + 1;
+export default { site: { title: 'Evaluation ' + globalThis.${counter} } };`,
+        'utf-8',
+      );
+      const previousEnv = getEnv();
+
+      try {
+        setEnv('development');
+        const inDevelopment = await loadConfig(testDir);
+        // Unchanged file, same environment: the cached evaluation
+        expect((await loadConfig(testDir)).site.title).toBe(inDevelopment.site.title);
+
+        setEnv('production');
+        const inProduction = await loadConfig(testDir);
+        expect(inProduction.site.title).not.toBe(inDevelopment.site.title);
+        expect((await loadConfig(testDir)).site.title).toBe(inProduction.site.title);
+      } finally {
+        setEnv(previousEnv);
+        delete (globalThis as Record<string, unknown>)[counter];
+      }
     });
 
     it('should clear internal cache when clearConfigCache is called', () => {

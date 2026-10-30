@@ -7,6 +7,7 @@ import { build } from '../../src/core/build.js';
 import { invalidate } from '../../src/core/invalidate.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import * as fsUtils from '../../src/core/utils/fs.utils.js';
+import { getEnv, isProduction, setEnv } from '../../src/env.js';
 
 const { mockFg } = vi.hoisted(() => ({
   mockFg: vi.fn(),
@@ -367,6 +368,36 @@ describe('Development Server', () => {
     await expect(createDevServer(options)).rejects.toThrow('Config file not found');
   });
 
+  it('should load the config in development, whatever environment was set before', async () => {
+    // A shell with NODE_ENV=production starts Stati in production
+    const previousEnv = getEnv();
+    setEnv('production');
+
+    let envWhenLoaded: string | undefined;
+    mockLoadConfig.mockImplementationOnce(async () => {
+      envWhenLoaded = getEnv();
+      return {
+        srcDir: 'site',
+        outDir: 'dist',
+        staticDir: 'public',
+        site: {
+          title: 'Test Site',
+          baseUrl: isProduction() ? 'https://example.com/docs' : 'http://localhost:3000',
+        },
+      };
+    });
+
+    try {
+      const devServer = await createDevServer({ logger: createMockLogger() });
+
+      expect(envWhenLoaded).toBe('development');
+      // The config's development settings apply, not its production base path
+      expect(devServer.url).toBe('http://localhost:3000');
+    } finally {
+      setEnv(previousEnv);
+    }
+  });
+
   it('should pass the Tailwind files to its builds, so pages link the stylesheet', async () => {
     const mockLogger = createMockLogger();
     const tailwind = { input: 'src/styles.css', output: 'dist/styles.css' };
@@ -665,6 +696,49 @@ describe('Development Server', () => {
 
       await devServer.stop();
       delete process.env.STATI_DEV_DISABLE_WS_RELOAD;
+    });
+
+    it('should start the live reload socket and handle its connections', async () => {
+      const { WebSocketServer } = await import('ws');
+
+      const devServer = await createDevServer({ port: 8121, logger: createMockLogger() });
+      await devServer.start();
+
+      expect(vi.mocked(WebSocketServer)).toHaveBeenCalledWith(
+        expect.objectContaining({ path: '/__ws' }),
+      );
+      const wsResult = vi.mocked(WebSocketServer).mock.results[0];
+      if (!wsResult) {
+        throw new Error('Expected WebSocketServer to be instantiated');
+      }
+      const wsInstance = wsResult.value as { on: ReturnType<typeof vi.fn> };
+      const onConnection = wsInstance.on.mock.calls.find(([event]) => event === 'connection')?.[1];
+      if (typeof onConnection !== 'function') {
+        throw new Error('Expected a connection handler');
+      }
+
+      const client = { on: vi.fn() };
+      onConnection(client);
+      expect(client.on).toHaveBeenCalledWith('close', expect.any(Function));
+
+      await devServer.stop();
+    });
+
+    it('should serve without live reload when the WebSocket server cannot be created', async () => {
+      const { WebSocketServer } = await import('ws');
+      vi.mocked(WebSocketServer).mockImplementationOnce(function () {
+        throw new Error('ws unavailable');
+      });
+
+      const mockLogger = createMockLogger();
+      const devServer = await createDevServer({ port: 8122, logger: mockLogger });
+
+      await expect(devServer.start()).resolves.toBeUndefined();
+      expect(mockLogger.warning).toHaveBeenCalledWith(
+        'WebSocket server creation failed, live reload will not be available',
+      );
+
+      await devServer.stop();
     });
 
     it('should initialize TypeScript watcher before initial build', async () => {
