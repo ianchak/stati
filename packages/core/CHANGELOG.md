@@ -1,5 +1,11 @@
 # @stati/core
 
+## 2.11.2
+
+### Patch Changes
+
+- 2700486: stop empty disallow blocking the site and encode sitemap URLs
+
 ## 2.11.1
 
 ### Patch Changes
