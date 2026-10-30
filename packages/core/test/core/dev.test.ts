@@ -7,6 +7,7 @@ import { build } from '../../src/core/build.js';
 import { invalidate } from '../../src/core/invalidate.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import * as fsUtils from '../../src/core/utils/fs.utils.js';
+import { getEnv, isProduction, setEnv } from '../../src/env.js';
 
 const { mockFg } = vi.hoisted(() => ({
   mockFg: vi.fn(),
@@ -365,6 +366,36 @@ describe('Development Server', () => {
     };
 
     await expect(createDevServer(options)).rejects.toThrow('Config file not found');
+  });
+
+  it('should load the config in development, whatever environment was set before', async () => {
+    // A shell with NODE_ENV=production starts Stati in production
+    const previousEnv = getEnv();
+    setEnv('production');
+
+    let envWhenLoaded: string | undefined;
+    mockLoadConfig.mockImplementationOnce(async () => {
+      envWhenLoaded = getEnv();
+      return {
+        srcDir: 'site',
+        outDir: 'dist',
+        staticDir: 'public',
+        site: {
+          title: 'Test Site',
+          baseUrl: isProduction() ? 'https://example.com/docs' : 'http://localhost:3000',
+        },
+      };
+    });
+
+    try {
+      const devServer = await createDevServer({ logger: createMockLogger() });
+
+      expect(envWhenLoaded).toBe('development');
+      // The config's development settings apply, not its production base path
+      expect(devServer.url).toBe('http://localhost:3000');
+    } finally {
+      setEnv(previousEnv);
+    }
   });
 
   it('should pass the Tailwind files to its builds, so pages link the stylesheet', async () => {

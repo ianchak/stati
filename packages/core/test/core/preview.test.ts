@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createPreviewServer } from '../../src/core/preview.js';
 import type { PreviewServerOptions } from '../../src/core/preview.js';
 import { loadConfig } from '../../src/config/loader.js';
+import { getEnv, isProduction, setEnv } from '../../src/env.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
 // Store the request handler for testing
@@ -149,6 +150,35 @@ describe('Preview Server', () => {
     mockLoadConfig.mockRejectedValueOnce(new Error('Config not found'));
 
     await expect(createPreviewServer()).rejects.toThrow('Config not found');
+  });
+
+  it('should load the config in production, as stati build does', async () => {
+    const previousEnv = getEnv();
+    setEnv('development');
+
+    let envWhenLoaded: string | undefined;
+    mockLoadConfig.mockImplementationOnce(async () => {
+      envWhenLoaded = getEnv();
+      return {
+        srcDir: 'site',
+        outDir: 'dist',
+        staticDir: 'public',
+        site: {
+          title: 'Test Site',
+          baseUrl: isProduction() ? 'https://example.com/docs' : 'http://localhost:4000',
+        },
+      };
+    });
+
+    try {
+      const previewServer = await createPreviewServer();
+
+      expect(envWhenLoaded).toBe('production');
+      // The site is served under the base path the production build links to
+      expect(previewServer.url).toBe('http://localhost:4000/docs/');
+    } finally {
+      setEnv(previousEnv);
+    }
   });
 
   it('should use preview config values from config file', async () => {

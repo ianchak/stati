@@ -401,7 +401,7 @@ Start a development server with live reload.
 }
 ```
 
-The config is always loaded from the current working directory.
+The config is always loaded from the current working directory, after the environment is set to development.
 
 **Example:**
 
@@ -436,7 +436,7 @@ Start a production preview server to test your built site locally.
 }
 ```
 
-The config (used to find the output directory) is always loaded from the current working directory.
+The config (used to find the output directory) is always loaded from the current working directory, after the environment is set to production, as `stati build` does.
 
 **Example:**
 

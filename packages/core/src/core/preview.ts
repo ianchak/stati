@@ -2,6 +2,7 @@ import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import type { Logger, StatiConfig } from '../types/index.js';
 import { loadConfig } from '../config/loader.js';
+import { setEnv } from '../env.js';
 import {
   resolveDevPaths,
   resolvePrettyUrl,
@@ -56,11 +57,16 @@ async function loadPreviewConfig(logger: Logger): Promise<{ outDir: string; conf
 /**
  * Creates a preview server that serves the built site from the dist directory
  * without live reload functionality, perfect for previewing the production build.
+ * It sets the environment to production before loading the config, as `stati build` does.
  */
 export async function createPreviewServer(
   options: PreviewServerOptions = {},
 ): Promise<PreviewServer> {
   const logger = options.logger ?? createFallbackLogger();
+
+  // A config that branches on getEnv() then gives the output directory and base path
+  // of the production build this server serves
+  setEnv('production');
 
   // Load configuration first to get defaults from config file
   const { outDir, config } = await loadPreviewConfig(logger);

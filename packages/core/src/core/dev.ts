@@ -492,8 +492,16 @@ async function describeBuildError(error: Error): Promise<ErrorDetails> {
   return parseErrorDetails(error, errorType);
 }
 
+/**
+ * Creates a development server with incremental rebuilds and live reload.
+ * It sets the environment to development before loading the config.
+ */
 export async function createDevServer(options: DevServerOptions = {}): Promise<DevServer> {
   const logger = options.logger ?? createFallbackLogger();
+
+  // Set the environment before the config is evaluated, so a config that branches on
+  // getEnv() gets its development settings whatever NODE_ENV the shell has
+  setEnv('development');
 
   // Load configuration first to get defaults from config file
   const { config, outDir, srcDir, staticDir } = await loadDevConfig(logger);
@@ -525,8 +533,6 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
       open: false,
     },
   });
-
-  setEnv('development');
 
   // Create dev server lock manager
   const cacheDir = resolveCacheDir();
