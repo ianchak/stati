@@ -211,13 +211,20 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
     if (isStopping) {
       return;
     }
-    cssWatcher = await refreshCssOutputWatcher({
+    const nextCssWatcher = await refreshCssOutputWatcher({
       outDir,
       logger,
       reload,
       cssWatcher,
       watchedCssFiles,
     });
+    // stop() can run during the scan, and closes only the watcher it finds
+    if (isStopping) {
+      await nextCssWatcher?.close();
+      cssWatcher = null;
+      return;
+    }
+    cssWatcher = nextCssWatcher;
   };
 
   // One build at a time: the files that change while it runs are built together after it

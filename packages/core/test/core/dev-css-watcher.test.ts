@@ -137,6 +137,8 @@ async function waitFor(condition: () => boolean, timeoutMs = 1000): Promise<void
 describe('Dev Server CSS watcher reconciliation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // clearAllMocks keeps the values a test queued but never used
+    mockFg.mockReset();
     createdWatchers.length = 0;
     createdWsServers.length = 0;
     delete process.env.STATI_DEV_DISABLE_CSS_WATCHER;
@@ -213,6 +215,47 @@ describe('Dev Server CSS watcher reconciliation', () => {
     // Only the source watcher and the first CSS watcher, both closed by stop()
     expect(createdWatchers).toHaveLength(2);
     expect(mockFg).toHaveBeenCalledTimes(1);
+  });
+
+  it('closes the CSS watcher a refresh starts while the server stops', async () => {
+    const cssA = 'C:/repo/dist/styles.css';
+    const cssB = 'C:/repo/dist/chunk.css';
+    let finishScan!: (files: string[]) => void;
+    mockFg
+      .mockResolvedValueOnce([cssA])
+      .mockImplementationOnce(() => new Promise((resolve) => (finishScan = resolve)));
+
+    const devServer = await createDevServer({ port: 3197, logger: createLogger() });
+    await devServer.start();
+
+    createdWatchers[0]!.emit('change', 'public/file.txt');
+    await waitFor(() => mockFg.mock.calls.length === 2);
+    await devServer.stop();
+    finishScan([cssA, cssB]);
+
+    // The refresh replaced the CSS watcher stop() closed, and closes its replacement
+    await waitFor(() => createdWatchers.length === 3);
+    await waitFor(() => createdWatchers[2]!.close.mock.calls.length === 1);
+  });
+
+  it('starts no CSS watcher when a refresh during stop finds no CSS', async () => {
+    const logger = createLogger();
+    let finishScan!: (files: string[]) => void;
+    mockFg
+      .mockResolvedValueOnce(['C:/repo/dist/styles.css'])
+      .mockImplementationOnce(() => new Promise((resolve) => (finishScan = resolve)));
+
+    const devServer = await createDevServer({ port: 3198, logger });
+    await devServer.start();
+
+    createdWatchers[0]!.emit('change', 'public/file.txt');
+    await waitFor(() => mockFg.mock.calls.length === 2);
+    await devServer.stop();
+    finishScan([]);
+    await sleep(20);
+
+    expect(createdWatchers).toHaveLength(2);
+    expect(logger.error).not.toHaveBeenCalled();
   });
 
   it('does not recreate CSS watcher when output CSS files are unchanged', async () => {
