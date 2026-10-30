@@ -105,6 +105,17 @@ describe('generateNewsSitemap', () => {
     expect(xml).toContain('<loc>https://example.com/a?x=1&amp;y=2/news/world/a&amp;b</loc>');
   });
 
+  it('percent-encodes article URLs with spaces or non-ASCII letters', () => {
+    const pages = [article('/news/world/My Story', 1), article('/news/world/café', 2)];
+
+    const { xml } = generateNewsSitemap(pages, config(), news(), undefined, NOW);
+
+    expect(urls(xml)).toEqual([
+      'https://example.com/news/world/My%20Story',
+      'https://example.com/news/world/caf%C3%A9',
+    ]);
+  });
+
   it('drops characters XML cannot hold', () => {
     const pages = [article('/news/world/first', 1, { title: 'Bell\u0007 and null\u0000 here' })];
 
@@ -565,6 +576,36 @@ describe('validateSitemapConfig', () => {
       }),
     ).not.toThrow();
     expect(() => validateSitemapConfig({ news: { include: [] } })).not.toThrow();
+  });
+
+  it('accepts a default priority from 0.0 to 1.0 and every change frequency', () => {
+    expect(() => validateSitemapConfig({ defaultPriority: 0 })).not.toThrow();
+    expect(() => validateSitemapConfig({ defaultPriority: 1 })).not.toThrow();
+    expect(() => validateSitemapConfig({ defaultPriority: 0.7 })).not.toThrow();
+    for (const freq of ['always', 'hourly', 'daily', 'weekly', 'monthly', 'yearly', 'never']) {
+      expect(() => validateSitemapConfig({ defaultChangeFreq: freq })).not.toThrow();
+    }
+  });
+
+  it('rejects a default priority outside 0.0 to 1.0, or one that is not a number', () => {
+    const message = 'sitemap.defaultPriority must be a number from 0.0 to 1.0';
+    invalid({ defaultPriority: 5 }, `${message} (got 5).`);
+    invalid({ defaultPriority: -0.1 }, message);
+    invalid({ defaultPriority: Number.NaN }, message);
+    invalid({ defaultPriority: Infinity }, message);
+    invalid({ defaultPriority: '0.5' }, `${message} (got "0.5").`);
+  });
+
+  it('rejects a default change frequency the sitemap protocol does not define', () => {
+    const message =
+      'sitemap.defaultChangeFreq must be one of always, hourly, daily, weekly, monthly, yearly, never';
+    invalid({ defaultChangeFreq: 'sometimes' }, `${message} (got "sometimes").`);
+    invalid({ defaultChangeFreq: 'Weekly' }, message);
+    invalid({ defaultChangeFreq: 7 }, message);
+  });
+
+  it('checks the defaults before sitemap.news', () => {
+    invalid({ defaultPriority: 2, news: true }, 'sitemap.defaultPriority');
   });
 
   it('ignores a sitemap value that is not an object', () => {

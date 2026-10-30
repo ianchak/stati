@@ -123,6 +123,40 @@ describe('Sitemap Generation', () => {
       expect(warn).toHaveBeenCalled();
     });
 
+    it('keeps the moment of a date-time with a time zone instead of its UTC date', () => {
+      samplePage.frontMatter.updated = '2024-03-04T23:30:00-05:00';
+
+      const entry = generateSitemapEntry(samplePage, baseConfig, baseSitemapConfig);
+
+      expect(entry?.lastmod).toBe('2024-03-05T04:30:00Z');
+    });
+
+    it('writes a date-time as UTC, with fractional seconds only when there are any', () => {
+      samplePage.frontMatter.updated = '2024-03-04 10:15';
+      expect(generateSitemapEntry(samplePage, baseConfig, baseSitemapConfig)?.lastmod).toBe(
+        '2024-03-04T10:15:00Z',
+      );
+
+      delete samplePage.frontMatter.updated;
+      samplePage.frontMatter.date = new Date('2024-03-04T10:15:30.250+02:00');
+      expect(generateSitemapEntry(samplePage, baseConfig, baseSitemapConfig)?.lastmod).toBe(
+        '2024-03-04T08:15:30.250Z',
+      );
+    });
+
+    it('writes a date without a time, or at midnight UTC, as YYYY-MM-DD', () => {
+      // An unquoted YAML date is a Date at midnight UTC
+      samplePage.frontMatter.date = new Date(Date.UTC(2025, 0, 15));
+      expect(generateSitemapEntry(samplePage, baseConfig, baseSitemapConfig)?.lastmod).toBe(
+        '2025-01-15',
+      );
+
+      samplePage.frontMatter.updated = '2025-01-15T00:00:00Z';
+      expect(generateSitemapEntry(samplePage, baseConfig, baseSitemapConfig)?.lastmod).toBe(
+        '2025-01-15',
+      );
+    });
+
     it('should exclude page when frontmatter exclude is true', () => {
       samplePage.frontMatter.sitemap = { exclude: true };
 
@@ -253,6 +287,35 @@ describe('Sitemap Generation', () => {
       const entry = generateSitemapEntry(samplePage, baseConfig, baseSitemapConfig);
 
       expect(entry?.changefreq).toBe('monthly'); // Falls back to default
+    });
+
+    it('accepts a changefreq in any letter case', () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      samplePage.frontMatter.sitemap = { changefreq: 'Weekly' as any };
+      expect(generateSitemapEntry(samplePage, baseConfig, baseSitemapConfig)?.changefreq).toBe(
+        'weekly',
+      );
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      samplePage.frontMatter.sitemap = { changefreq: 'DAILY' as any };
+      expect(generateSitemapEntry(samplePage, baseConfig, baseSitemapConfig)?.changefreq).toBe(
+        'daily',
+      );
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      samplePage.frontMatter.sitemap = { changefreq: ' Yearly ' as any };
+      expect(generateSitemapEntry(samplePage, baseConfig, baseSitemapConfig)?.changefreq).toBe(
+        'yearly',
+      );
+    });
+
+    it('falls back to the default for a changefreq that is not a string', () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      samplePage.frontMatter.sitemap = { changefreq: 7 as any };
+
+      const entry = generateSitemapEntry(samplePage, baseConfig, baseSitemapConfig);
+
+      expect(entry?.changefreq).toBe('monthly');
     });
 
     it('should apply priority rules (exact match)', () => {
@@ -559,10 +622,35 @@ describe('Sitemap Generation', () => {
 
       const xml = generateSitemapXml(entries);
 
-      expect(xml).toContain('&amp;');
-      expect(xml).toContain('&lt;');
-      expect(xml).toContain('&gt;');
-      expect(xml).not.toContain('<test>'); // Should be escaped
+      // `<` and `>` cannot be in a URI, so they are percent-encoded; `&` is XML-escaped
+      expect(xml).toContain('<loc>https://example.com/page?param=value&amp;other=%3Ctest%3E</loc>');
+      expect(xml).not.toContain('<test>');
+    });
+
+    it('percent-encodes spaces and non-ASCII letters in URLs', () => {
+      const xml = generateSitemapXml([
+        { url: 'https://example.com/My Post' },
+        { url: 'https://example.com/café?q=ü#ő' },
+      ]);
+
+      expect(xml).toContain('<loc>https://example.com/My%20Post</loc>');
+      expect(xml).toContain('<loc>https://example.com/caf%C3%A9?q=%C3%BC#%C5%91</loc>');
+    });
+
+    it('keeps escapes a URL already has, and encodes a % that starts none', () => {
+      const xml = generateSitemapXml([
+        { url: 'https://example.com/caf%C3%A9' },
+        { url: 'https://example.com/100%' },
+      ]);
+
+      expect(xml).toContain('<loc>https://example.com/caf%C3%A9</loc>');
+      expect(xml).toContain('<loc>https://example.com/100%25</loc>');
+    });
+
+    it('writes an internationalized host in its xn-- form', () => {
+      const xml = generateSitemapXml([{ url: 'https://bücher.example/über' }]);
+
+      expect(xml).toContain('<loc>https://xn--bcher-kva.example/%C3%BCber</loc>');
     });
 
     it('should handle entry with only url (minimal)', () => {
@@ -646,6 +734,12 @@ describe('Sitemap Generation', () => {
       expect(xml).toContain('&amp;');
       expect(xml).not.toContain('&type'); // Should be &amp;type
     });
+
+    it('percent-encodes sitemap URLs under a base path with spaces or non-ASCII letters', () => {
+      const xml = generateSitemapIndexXml(['/sitemap-1.xml'], 'https://example.com/my café');
+
+      expect(xml).toContain('<loc>https://example.com/my%20caf%C3%A9/sitemap-1.xml</loc>');
+    });
   });
 
   describe('generateSitemap', () => {
@@ -657,6 +751,20 @@ describe('Sitemap Generation', () => {
       expect(result.entryCount).toBe(1);
       expect(result.xml).toContain('https://example.com/test-page');
       expect(result.sizeInBytes).toBeGreaterThan(0);
+    });
+
+    it('percent-encodes page URLs made from file names with spaces or non-ASCII letters', () => {
+      const pages = [
+        { ...samplePage, url: '/blog/My Post' },
+        { ...samplePage, url: '/blog/árvíztűrő' },
+      ];
+
+      const result = generateSitemap(pages, baseConfig, baseSitemapConfig);
+
+      expect(result.xml).toContain('<loc>https://example.com/blog/My%20Post</loc>');
+      expect(result.xml).toContain(
+        '<loc>https://example.com/blog/%C3%A1rv%C3%ADzt%C5%B1r%C5%91</loc>',
+      );
     });
 
     it('should generate sitemap for multiple pages', () => {

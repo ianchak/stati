@@ -3,6 +3,7 @@ import {
   escapeHtml,
   generateRobotsContent,
   parseRobotsDirectives,
+  percentEncodeUrl,
   resolveAbsoluteUrl,
   validateSEOMetadata,
   detectExistingSEOTags,
@@ -89,6 +90,45 @@ describe('SEO Utils - escapeHtml', () => {
     // Cache should still work after eviction
     const result = escapeHtml('<test>');
     expect(result).toBe('&lt;test&gt;');
+  });
+});
+
+describe('SEO Utils - percentEncodeUrl', () => {
+  it('encodes spaces, non-ASCII letters and characters a URI cannot hold', () => {
+    expect(percentEncodeUrl('https://example.com/My Post')).toBe('https://example.com/My%20Post');
+    expect(percentEncodeUrl('https://example.com/café')).toBe('https://example.com/caf%C3%A9');
+    expect(percentEncodeUrl('https://example.com/a|b^c?q={x}`')).toBe(
+      'https://example.com/a%7Cb%5Ec?q=%7Bx%7D%60',
+    );
+  });
+
+  it('returns an encoded URL unchanged', () => {
+    const url = 'https://example.com/caf%C3%A9/a-b_c.d~e?x=1&y=(2)#top';
+    expect(percentEncodeUrl(url)).toBe(url);
+    expect(percentEncodeUrl(percentEncodeUrl('https://example.com/My Post'))).toBe(
+      'https://example.com/My%20Post',
+    );
+  });
+
+  it('encodes a % that starts no escape', () => {
+    expect(percentEncodeUrl('https://example.com/100%')).toBe('https://example.com/100%25');
+    expect(percentEncodeUrl('https://example.com/%zz')).toBe('https://example.com/%25zz');
+  });
+
+  it('writes an internationalized host in its xn-- form', () => {
+    expect(percentEncodeUrl('https://bücher.example/')).toBe('https://xn--bcher-kva.example/');
+  });
+
+  it('encodes a URL that is not absolute as written', () => {
+    expect(percentEncodeUrl('/blog/My Post')).toBe('/blog/My%20Post');
+    expect(percentEncodeUrl('example.com/café')).toBe('example.com/caf%C3%A9');
+  });
+
+  it('writes a lone surrogate as an encoded U+FFFD', () => {
+    expect(percentEncodeUrl('/a\uD800b')).toBe('/a%EF%BF%BDb');
+    expect(percentEncodeUrl('https://example.com/a\uD800b')).toBe(
+      'https://example.com/a%EF%BF%BDb',
+    );
   });
 });
 

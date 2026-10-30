@@ -57,6 +57,44 @@ export function resolveAbsoluteUrl(url: string, baseUrl: string): string {
 }
 
 /**
+ * Characters a URI cannot hold as written: anything but RFC 3986's unreserved and reserved
+ * characters and `%XX` escapes. A `%` that starts no escape matches too, so it becomes `%25`.
+ */
+const URI_UNSAFE_CHARS = /%(?![0-9A-Fa-f]{2})|[^A-Za-z0-9\-._~:/?#[\]@!$&'()*+,;=%]/gu;
+
+/**
+ * Percent-encodes a URL for a sitemap `<loc>`, which must be an ASCII URI: spaces, non-ASCII
+ * letters and other characters a URI cannot hold become UTF-8 `%XX` escapes, and an
+ * internationalized host becomes its `xn--` form. Existing escapes are kept, so an encoded URL
+ * comes back unchanged. The result still needs XML escaping.
+ *
+ * @param url - Absolute or relative URL
+ * @returns The URL with every character outside RFC 3986 percent-encoded
+ *
+ * @example
+ * ```typescript
+ * percentEncodeUrl('https://example.com/My Post'); // 'https://example.com/My%20Post'
+ * percentEncodeUrl('https://example.com/caf%C3%A9'); // unchanged
+ * ```
+ */
+export function percentEncodeUrl(url: string): string {
+  let href = url;
+  try {
+    href = new URL(url).href;
+  } catch {
+    // Not an absolute URL: encode it as written
+  }
+  return href.replace(URI_UNSAFE_CHARS, (char) => {
+    try {
+      return encodeURIComponent(char);
+    } catch {
+      // A lone surrogate has no UTF-8 form; write U+FFFD, as URL parsers do
+      return '%EF%BF%BD';
+    }
+  });
+}
+
+/**
  * Validates a URL string
  * @param url - URL to validate
  * @returns true if valid URL with http/https protocol

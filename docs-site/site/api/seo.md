@@ -163,7 +163,7 @@ console.log(result.sitemaps); // Array of sitemap files (if split)
 
 - Automatically splits into multiple sitemaps if entries exceed 50,000
 - Returns sitemap index XML if multiple sitemaps are generated
-- Uses `config.site.baseUrl` for absolute URLs
+- Uses `config.site.baseUrl` for absolute URLs, and percent-encodes each `<loc>` (`/My Post` is written as `/My%20Post`)
 - Leaves out the 404 page and pages marked `noindex`, as [`generateSitemapEntry()`](#generatesitemapentry) does
 
 ---
@@ -512,7 +512,7 @@ function generateSitemapXml(entries: SitemapEntry[]): string;
 
 **Parameters:**
 
-- `entries` (SitemapEntry[]): Array of sitemap entries
+- `entries` (SitemapEntry[]): Array of sitemap entries. Each `url` is percent-encoded and XML-escaped when written; escapes it already has are kept
 
 **Returns:**
 
@@ -545,7 +545,7 @@ function generateSitemapIndexXml(sitemapUrls: string[], siteUrl: string): string
 
 **Parameters:**
 
-- `sitemapUrls` (string[]): Array of sitemap URLs (relative or absolute)
+- `sitemapUrls` (string[]): Array of sitemap URLs (relative or absolute), percent-encoded like entry URLs
 - `siteUrl` (string): Base site URL
 
 **Returns:**
@@ -827,7 +827,7 @@ interface SitemapEntry {
   /** The absolute URL of the page */
   url: string;
 
-  /** Last modification date (ISO 8601 format: YYYY-MM-DD) */
+  /** Last modification date: YYYY-MM-DD, or a UTC date-time such as 2024-03-05T04:30:00Z */
   lastmod?: string;
 
   /** How frequently the page changes */
@@ -1288,7 +1288,7 @@ interface RobotsTxtConfig {
 }
 ````
 
-The global `allow`, `disallow` and `crawlDelay` values form a `User-agent: *` group, written after the `userAgents` groups; within a group, `Allow` lines come before `Disallow` lines. Without any rules, Stati writes `User-agent: *` / `Allow: /`. `sitemap: true` adds the line whether or not sitemap generation is enabled, so enable `sitemap` too.
+The global `allow`, `disallow` and `crawlDelay` values form a `User-agent: *` group, written after the `userAgents` groups; within a group, `Allow` lines come before `Disallow` lines. An empty path writes the line with no value (`disallow: ['']` writes `Disallow:`, which blocks nothing), and `crawlDelay` is written only when it is greater than 0. Global values that write no line add no group. Without any group to write, Stati writes `User-agent: *` / `Allow: /`. `Sitemap:` URLs are percent-encoded like sitemap URLs. `sitemap: true` adds the line whether or not sitemap generation is enabled, so enable `sitemap` too.
 
 ## See also
 

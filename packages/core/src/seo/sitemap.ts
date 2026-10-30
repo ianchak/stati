@@ -15,6 +15,7 @@ import {
   escapeHtml,
   generateRobotsContent,
   parseRobotsDirectives,
+  percentEncodeUrl,
   resolveAbsoluteUrl,
 } from './utils/index.js';
 import { urlMatchesAnyPattern } from '../rss/utils/index.js';
@@ -27,16 +28,21 @@ import type { Logger } from '../types/logging.js';
 const MAX_SITEMAP_ENTRIES = 50000;
 
 /**
- * Formats a date for sitemap lastmod field (W3C Datetime / ISO 8601)
+ * Formats a date for sitemap lastmod field (W3C Datetime / ISO 8601).
+ *
+ * A date without a time, which parses to midnight UTC, is written as `YYYY-MM-DD`. Any other
+ * value is written as a UTC date-time, so `2024-03-04T23:30:00-05:00` stays the same moment
+ * (`2024-03-05T04:30:00Z`) instead of being cut to a UTC date the author never wrote.
+ *
  * @param date - Date to format
- * @returns ISO 8601 formatted date string (YYYY-MM-DD)
+ * @returns `YYYY-MM-DD`, or `YYYY-MM-DDThh:mm:ssZ` with fractional seconds when there are any
  */
 function formatSitemapDate(date: Date): string {
-  const parts = date.toISOString().split('T');
-  if (parts[0]) {
-    return parts[0];
+  const iso = date.toISOString();
+  if (iso.endsWith('T00:00:00.000Z')) {
+    return iso.slice(0, 10);
   }
-  return date.toISOString().substring(0, 10);
+  return iso.replace('.000Z', 'Z');
 }
 
 /**
@@ -90,16 +96,30 @@ function validatePriority(priority: number): number {
 }
 
 /**
- * Validates change frequency value
+ * The values `<changefreq>` accepts
+ */
+export const CHANGE_FREQUENCIES: readonly ChangeFrequency[] = [
+  'always',
+  'hourly',
+  'daily',
+  'weekly',
+  'monthly',
+  'yearly',
+  'never',
+];
+
+/**
+ * Validates change frequency value, in any letter case and without surrounding spaces
+ * (`' Weekly'` is `weekly`)
  * @param changefreq - Change frequency to validate
  * @returns Valid change frequency or undefined
  */
-function validateChangeFreq(changefreq?: string): ChangeFrequency | undefined {
-  const validFreqs = ['always', 'hourly', 'daily', 'weekly', 'monthly', 'yearly', 'never'];
-  if (changefreq && validFreqs.includes(changefreq)) {
-    return changefreq as ChangeFrequency;
+function validateChangeFreq(changefreq: unknown): ChangeFrequency | undefined {
+  if (typeof changefreq !== 'string') {
+    return undefined;
   }
-  return undefined;
+  const value = changefreq.trim().toLowerCase();
+  return CHANGE_FREQUENCIES.find((freq) => freq === value);
 }
 
 /**
@@ -286,7 +306,7 @@ export function generateSitemapEntry(
  */
 function generateEntryXml(entry: SitemapEntry): string {
   let xml = '  <url>\n';
-  xml += `    <loc>${escapeHtml(entry.url)}</loc>\n`;
+  xml += `    <loc>${escapeHtml(percentEncodeUrl(entry.url))}</loc>\n`;
 
   if (entry.lastmod) {
     xml += `    <lastmod>${escapeHtml(entry.lastmod)}</lastmod>\n`;
@@ -334,7 +354,7 @@ export function generateSitemapIndexXml(sitemapUrls: string[], siteUrl: string):
   for (const url of sitemapUrls) {
     const absoluteUrl = resolveAbsoluteUrl(url, siteUrl);
     xml += '  <sitemap>\n';
-    xml += `    <loc>${escapeHtml(absoluteUrl)}</loc>\n`;
+    xml += `    <loc>${escapeHtml(percentEncodeUrl(absoluteUrl))}</loc>\n`;
     xml += '  </sitemap>\n';
   }
 

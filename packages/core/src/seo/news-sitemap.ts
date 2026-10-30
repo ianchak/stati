@@ -9,8 +9,8 @@ import type { StatiConfig } from '../types/config.js';
 import type { Logger } from '../types/logging.js';
 import { ConfigValidationError } from '../config/errors.js';
 import { isVirtualPage, matchesGlob } from '../core/utils/index.js';
-import { escapeHtml, resolveAbsoluteUrl } from './utils/index.js';
-import { isLeftOutBySitemapRules } from './sitemap.js';
+import { escapeHtml, percentEncodeUrl, resolveAbsoluteUrl } from './utils/index.js';
+import { CHANGE_FREQUENCIES, isLeftOutBySitemapRules } from './sitemap.js';
 
 /** The XML namespace of Google News sitemap elements */
 const NEWS_NAMESPACE = 'http://www.google.com/schemas/sitemap-news/0.9';
@@ -58,14 +58,43 @@ function describe(value: unknown): string {
 }
 
 /**
- * Validates `sitemap.news`. Other `sitemap` options are not checked.
+ * Validates `sitemap.defaultPriority`, `sitemap.defaultChangeFreq` and `sitemap.news`. Other
+ * `sitemap` options are not checked.
  *
  * @param sitemap - The `sitemap` value from the config
- * @throws {ConfigValidationError} When `sitemap.news` is not an object with the options below,
- *   or one of them has the wrong type or value
+ * @throws {ConfigValidationError} When `defaultPriority` is not a number from 0.0 to 1.0,
+ *   `defaultChangeFreq` is not a `<changefreq>` value, or `sitemap.news` is not an object with
+ *   the options below or one of them has the wrong type or value
  */
 export function validateSitemapConfig(sitemap: unknown): void {
-  if (!isPlainObject(sitemap) || sitemap.news === undefined) {
+  if (!isPlainObject(sitemap)) {
+    return;
+  }
+
+  const defaultPriority = sitemap.defaultPriority;
+  if (
+    defaultPriority !== undefined &&
+    (typeof defaultPriority !== 'number' ||
+      !Number.isFinite(defaultPriority) ||
+      defaultPriority < 0 ||
+      defaultPriority > 1)
+  ) {
+    throw new ConfigValidationError(
+      `sitemap.defaultPriority must be a number from 0.0 to 1.0 (got ${describe(defaultPriority)}).`,
+    );
+  }
+
+  const defaultChangeFreq = sitemap.defaultChangeFreq;
+  if (
+    defaultChangeFreq !== undefined &&
+    !CHANGE_FREQUENCIES.some((freq) => freq === defaultChangeFreq)
+  ) {
+    throw new ConfigValidationError(
+      `sitemap.defaultChangeFreq must be one of ${CHANGE_FREQUENCIES.join(', ')} (got ${describe(defaultChangeFreq)}).`,
+    );
+  }
+
+  if (sitemap.news === undefined) {
     return;
   }
   const news = sitemap.news;
@@ -177,7 +206,7 @@ export function generateNewsSitemapXml(
 
   for (const entry of entries) {
     xml += '  <url>\n';
-    xml += `    <loc>${escapeXml(entry.url)}</loc>\n`;
+    xml += `    <loc>${escapeXml(percentEncodeUrl(entry.url))}</loc>\n`;
     xml += '    <news:news>\n';
     xml += '      <news:publication>\n';
     xml += `        <news:name>${escapeXml(publication.name)}</news:name>\n`;

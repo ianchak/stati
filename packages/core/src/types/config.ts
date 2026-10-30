@@ -487,11 +487,11 @@ export interface RobotsTxtConfig {
     allow?: string[];
     disallow?: string[];
   }>;
-  /** Global allow rules (applies to all user agents) */
+  /** Global allow rules (applies to all user agents); `''` writes an empty `Allow:` */
   allow?: string[];
-  /** Global disallow rules (applies to all user agents) */
+  /** Global disallow rules (applies to all user agents); `''` writes `Disallow:`, which blocks nothing */
   disallow?: string[];
-  /** Crawl delay in seconds (time between requests) */
+  /** Crawl delay in seconds (time between requests), written only when greater than 0 */
   crawlDelay?: number;
   /** Sitemap URL or boolean to auto-include sitemap.xml (default: true if sitemap enabled) */
   sitemap?: string | boolean;

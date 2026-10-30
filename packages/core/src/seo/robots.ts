@@ -4,7 +4,12 @@
  */
 
 import type { RobotsTxtConfig } from '../types/config.js';
-import { isValidUrl, resolveAbsoluteUrl, normalizeUrlPath } from './utils/index.js';
+import {
+  isValidUrl,
+  resolveAbsoluteUrl,
+  normalizeUrlPath,
+  percentEncodeUrl,
+} from './utils/index.js';
 
 /**
  * User agent rule entry for robots.txt
@@ -47,6 +52,26 @@ const DEFAULT_ROBOTS_CONFIG: RobotsTxtOptions = {
 };
 
 /**
+ * Whether a crawl delay is written: only a positive number of seconds is.
+ * @param crawlDelay - Crawl delay from the config
+ * @returns true for a number greater than 0
+ */
+function hasCrawlDelay(crawlDelay: number | undefined): crawlDelay is number {
+  return typeof crawlDelay === 'number' && crawlDelay > 0;
+}
+
+/**
+ * Formats an `Allow` or `Disallow` line. An empty path writes the directive with no value:
+ * `Disallow:` disallows nothing, while `Disallow: /` would block the whole site.
+ * @param directive - `Allow` or `Disallow`
+ * @param path - Path from the config; `/` is added in front when missing
+ * @returns The robots.txt line
+ */
+function formatPathRule(directive: 'Allow' | 'Disallow', path: string): string {
+  return path.trim() ? `${directive}: ${normalizeUrlPath(path)}` : `${directive}:`;
+}
+
+/**
  * Generates robots.txt content from options
  * @param options - Robots.txt generation options
  * @returns Generated robots.txt content
@@ -82,14 +107,14 @@ export function generateRobotsTxt(options: RobotsTxtOptions = {}): string {
     lines.push(`User-agent: ${rule.userAgent}`);
 
     if (rule.allow) {
-      rule.allow.forEach((path) => lines.push(`Allow: ${normalizeUrlPath(path)}`));
+      rule.allow.forEach((path) => lines.push(formatPathRule('Allow', path)));
     }
 
     if (rule.disallow) {
-      rule.disallow.forEach((path) => lines.push(`Disallow: ${normalizeUrlPath(path)}`));
+      rule.disallow.forEach((path) => lines.push(formatPathRule('Disallow', path)));
     }
 
-    if (typeof rule.crawlDelay === 'number' && rule.crawlDelay > 0) {
+    if (hasCrawlDelay(rule.crawlDelay)) {
       lines.push(`Crawl-delay: ${rule.crawlDelay}`);
     }
 
@@ -102,7 +127,7 @@ export function generateRobotsTxt(options: RobotsTxtOptions = {}): string {
       // Ensure sitemap URL is absolute
       const sitemapUrl =
         siteUrl && !isValidUrl(sitemap) ? resolveAbsoluteUrl(sitemap, siteUrl) : sitemap;
-      lines.push(`Sitemap: ${sitemapUrl}`);
+      lines.push(`Sitemap: ${percentEncodeUrl(sitemapUrl)}`);
     });
     lines.push(''); // Add a blank line
   }
@@ -154,8 +179,9 @@ export function configToOptions(
     }
   }
 
-  // Add global rules as wildcard user agent
-  if (config.allow || config.disallow || config.crawlDelay !== undefined) {
+  // Add global rules as wildcard user agent, unless none of them writes a line: an empty
+  // `User-agent: *` group would replace the default `Allow: /`
+  if (config.allow?.length || config.disallow?.length || hasCrawlDelay(config.crawlDelay)) {
     const rule: UserAgentRule = {
       userAgent: '*',
     };

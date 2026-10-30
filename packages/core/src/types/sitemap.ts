@@ -19,9 +19,9 @@ export type ChangeFrequency =
  * Represents one URL with its associated metadata.
  */
 export interface SitemapEntry {
-  /** Full URL of the page */
+  /** Full URL of the page; percent-encoded when the sitemap XML is written */
   url: string;
-  /** Last modification date (ISO 8601 format: YYYY-MM-DD) */
+  /** Last modification date: `YYYY-MM-DD`, or a UTC date-time such as `2024-03-05T04:30:00Z` */
   lastmod?: string;
   /** Change frequency hint */
   changefreq?: ChangeFrequency;
@@ -36,7 +36,7 @@ export interface SitemapEntry {
 export interface SitemapConfig {
   /** Enable sitemap generation (default: false) */
   enabled?: boolean;
-  /** Default priority for all pages (0.0-1.0, default: 0.5) */
+  /** Default priority for all pages (0.0-1.0, default: 0.5); other values fail config loading */
   defaultPriority?: number;
   /** Default change frequency for all pages (default: 'monthly') */
   defaultChangeFreq?: ChangeFrequency;
