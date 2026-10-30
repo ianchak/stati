@@ -286,8 +286,8 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
   // Ensure cache directory exists before acquiring build lock
   await ensureDir(cacheDir);
 
-  // In dev mode, bypass file-based build lock (dev server handles concurrency via isBuildingRef
-  // and dev server lock prevents multiple dev servers in the same directory)
+  // In dev mode, bypass file-based build lock (the dev server's rebuild queue runs one build at a
+  // time, and the dev server lock prevents multiple dev servers in the same directory)
   if (isDevelopment()) {
     return buildInternal(options);
   }

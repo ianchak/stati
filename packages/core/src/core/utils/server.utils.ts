@@ -1,7 +1,8 @@
 import { extname, join, resolve, sep } from 'node:path';
-import { stat } from 'node:fs/promises';
-import type { ServerResponse } from 'node:http';
+import { readFile, stat } from 'node:fs/promises';
+import type { Server, ServerResponse } from 'node:http';
 import { createServer } from 'node:net';
+import type { Logger } from '../../types/index.js';
 import { decodeBasePath, stripBasePath } from './base-path.utils.js';
 
 /**
@@ -220,6 +221,33 @@ export function assertPortAvailable(port: number, host: string, configKey?: stri
 }
 
 /**
+ * Starts an HTTP server on the port and host.
+ *
+ * @param server - The server to start
+ * @param port - Port to listen on
+ * @param host - Host to bind to
+ * @param configKey - Config key users can set to change the port (e.g. `dev.port`)
+ * @throws {PortUnavailableError} When the port is in use or not permitted; other listen errors
+ *   as they are
+ */
+export function listenOnPort(
+  server: Server,
+  port: number,
+  host: string,
+  configKey: string,
+): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    server.listen(port, host, () => {
+      resolve();
+    });
+
+    server.on('error', (error: unknown) => {
+      reject(toPortUnavailableError(error, port, host, configKey));
+    });
+  });
+}
+
+/**
  * Result of attempting to resolve a pretty URL path
  */
 export interface PrettyUrlResult {
@@ -318,6 +346,162 @@ export async function resolvePrettyUrl(
 }
 
 /**
+ * Whether a request asks for a page rather than a file the page loads: a path without an
+ * extension (`/`, `/about`) or an `.html` file.
+ *
+ * @param sitePath - The request path from the site root
+ */
+export function isPageRequest(sitePath: string): boolean {
+  return !sitePath.includes('.') || sitePath.endsWith('.html');
+}
+
+/**
+ * What a server answers a request with
+ */
+export interface StaticFileResponse {
+  /** The response body */
+  content: Buffer | string;
+  /** The `Content-Type` */
+  mimeType: string;
+  /** The HTTP status */
+  statusCode: number;
+}
+
+/**
+ * Options for {@link createStaticFileServer}
+ */
+export interface StaticFileServerOptions {
+  /** The directory served */
+  outDir: string;
+  /** Logs the requests that fail */
+  logger: Logger;
+  /**
+   * Answers a page request in place of the file, or returns null to serve the file. The dev
+   * server shows its error overlay this way.
+   */
+  interceptHtml?: (sitePath: string) => Promise<StaticFileResponse | null>;
+  /**
+   * Rewrites every HTML page served, the 404 page included. The dev server adds its live reload
+   * script this way.
+   */
+  transformHtml?: (html: string) => string;
+}
+
+/**
+ * Serves the files of a built site, as the dev and preview servers do
+ */
+export interface StaticFileServer {
+  /**
+   * The response for a request path: the file, a pretty URL's page, the site's 404 page or a
+   * plain 404, and a 403 for a path outside the output directory.
+   *
+   * @param sitePath - The decoded request path from the site root, with any base path removed
+   */
+  serve(sitePath: string): Promise<StaticFileResponse>;
+  /**
+   * Answers a request with {@link StaticFileServer.serve}'s response, or with a 500 when serving
+   * it fails.
+   *
+   * @param res - The response
+   * @param sitePath - The decoded request path from the site root, with any base path removed
+   */
+  respond(res: ServerResponse, sitePath: string): Promise<void>;
+}
+
+/**
+ * Creates the file server the dev and preview servers share. Responses are never cached, so a
+ * reload always shows the latest build.
+ *
+ * @param options - The directory served and the dev server's additions
+ */
+export function createStaticFileServer(options: StaticFileServerOptions): StaticFileServer {
+  const { outDir, logger, interceptHtml, transformHtml } = options;
+
+  async function serve(sitePath: string): Promise<StaticFileResponse> {
+    if (interceptHtml && isPageRequest(sitePath)) {
+      const intercepted = await interceptHtml(sitePath);
+      if (intercepted) {
+        return intercepted;
+      }
+    }
+
+    // Security: the file the request names, or null when it is outside the output directory
+    const requestFile = resolveRequestFile(outDir, sitePath);
+    if (requestFile === null) {
+      return {
+        content: '403 - Forbidden',
+        mimeType: 'text/plain',
+        statusCode: 403,
+      };
+    }
+
+    const { filePath, found } = await resolvePrettyUrl(outDir, sitePath, requestFile);
+
+    if (!found || !filePath) {
+      // Serve the site's 404 page, as static hosts do
+      const notFoundPage = await resolveNotFoundPage(outDir);
+      if (notFoundPage) {
+        return {
+          content: transformHtml
+            ? transformHtml(await readFile(notFoundPage, 'utf-8'))
+            : await readFile(notFoundPage),
+          mimeType: 'text/html',
+          statusCode: 404,
+        };
+      }
+
+      return {
+        content: sitePath.endsWith('/')
+          ? '404 - Directory listing not available'
+          : '404 - File not found',
+        mimeType: 'text/plain',
+        statusCode: 404,
+      };
+    }
+
+    try {
+      const mimeType = getMimeType(filePath);
+      const content = await readFile(filePath);
+      return {
+        content:
+          transformHtml && mimeType === 'text/html'
+            ? transformHtml(content.toString('utf-8'))
+            : content,
+        mimeType,
+        statusCode: 200,
+      };
+    } catch {
+      // This should rarely happen since resolvePrettyUrl already checked the file exists
+      return {
+        content: '500 - Error reading file',
+        mimeType: 'text/plain',
+        statusCode: 500,
+      };
+    }
+  }
+
+  async function respond(res: ServerResponse, sitePath: string): Promise<void> {
+    try {
+      const { content, mimeType, statusCode } = await serve(sitePath);
+
+      res.writeHead(statusCode, {
+        'Content-Type': mimeType,
+        'Access-Control-Allow-Origin': '*',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+      });
+
+      res.end(content);
+    } catch (error) {
+      logger.error?.(`Server error: ${error instanceof Error ? error.message : String(error)}`);
+      res.writeHead(500, { 'Content-Type': 'text/plain' });
+      res.end('500 - Internal Server Error');
+    }
+  }
+
+  return { serve, respond };
+}
+
+/**
  * Options for merging server configuration
  */
 export interface MergeServerOptionsParams<T> {
@@ -362,4 +546,20 @@ export function mergeServerOptions<T extends { port?: number; host?: string; ope
     host: options.host ?? config?.host ?? defaults.host,
     open: options.open ?? config?.open ?? defaults.open,
   };
+}
+
+/**
+ * Opens a URL in the default browser, for the `open` server option. Failing to open it is not
+ * an error: the server keeps running, and the user opens the URL themselves.
+ *
+ * @param url - The server's URL
+ * @param logger - Logs that the browser could not be opened
+ */
+export async function openInBrowser(url: string, logger: Logger): Promise<void> {
+  try {
+    const { default: openBrowser } = await import('open');
+    await openBrowser(url);
+  } catch {
+    logger.info?.('Could not open browser automatically');
+  }
 }

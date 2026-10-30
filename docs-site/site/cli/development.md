@@ -44,7 +44,7 @@ File watching is handled by `chokidar` with listeners for file additions, edits,
 
 - Starts an incremental rebuild. Changes made while a rebuild runs are queued and rebuilt together when it finishes.
 - Logs which file triggered the rebuild, for example `▸ site/blog/post.md rebuilt` followed by `Done in 95ms`.
-- Broadcasts a `reload` message over the WebSocket connection so connected browsers refresh automatically.
+- Once the rebuild succeeds, broadcasts a `reload` message over the WebSocket connection so connected browsers refresh automatically. A failed rebuild reloads nothing; see [Browser feedback](#browser-feedback).
 
 ## Template changes and cache invalidation
 

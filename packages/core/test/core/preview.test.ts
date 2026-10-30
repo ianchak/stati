@@ -139,6 +139,16 @@ describe('Preview Server', () => {
     );
   });
 
+  it('should open the browser at the server URL when open is set', async () => {
+    const { default: open } = await import('open');
+    const previewServer = await createPreviewServer({ open: true });
+
+    await previewServer.start();
+
+    expect(open).toHaveBeenCalledWith('http://localhost:4000');
+    await previewServer.stop();
+  });
+
   it('should load configuration correctly', async () => {
     await createPreviewServer();
 

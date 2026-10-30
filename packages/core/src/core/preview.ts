@@ -1,18 +1,14 @@
 import { createServer } from 'node:http';
-import { readFile } from 'node:fs/promises';
-import type { Logger, StatiConfig } from '../types/index.js';
-import { loadConfig } from '../config/loader.js';
+import type { Logger } from '../types/index.js';
+import { loadServerConfig } from './server-config.js';
 import {
-  resolveDevPaths,
-  resolvePrettyUrl,
-  resolveRequestFile,
-  resolveNotFoundPage,
-  getMimeType,
   parseRequestPath,
   createFallbackLogger,
   mergeServerOptions,
   assertPortAvailable,
-  toPortUnavailableError,
+  listenOnPort,
+  openInBrowser,
+  createStaticFileServer,
   getBasePath,
   resolveBasePathRequest,
   respondToBasePathRequest,
@@ -37,23 +33,6 @@ export interface PreviewServer {
 }
 
 /**
- * Loads and validates configuration for the preview server.
- */
-async function loadPreviewConfig(logger: Logger): Promise<{ outDir: string; config: StatiConfig }> {
-  try {
-    const config = await loadConfig(process.cwd());
-    const { outDir } = resolveDevPaths(config);
-
-    return { outDir, config };
-  } catch (error) {
-    logger.error?.(
-      `Failed to load config: ${error instanceof Error ? error.message : String(error)}`,
-    );
-    throw error;
-  }
-}
-
-/**
  * Creates a preview server that serves the built site from the dist directory
  * without live reload functionality, perfect for previewing the production build.
  */
@@ -63,7 +42,7 @@ export async function createPreviewServer(
   const logger = options.logger ?? createFallbackLogger();
 
   // Load configuration first to get defaults from config file
-  const { outDir, config } = await loadPreviewConfig(logger);
+  const { outDir, config } = await loadServerConfig(logger);
 
   // Merge config values with options (options take precedence)
   const { port, host, open } = mergeServerOptions({
@@ -81,64 +60,8 @@ export async function createPreviewServer(
   const url = `http://${host}:${port}${basePath ? `${basePath}/` : ''}`;
   let httpServer: ReturnType<typeof createServer> | null = null;
 
-  /**
-   * Serves files from the dist directory
-   */
-  async function serveFile(
-    requestPath: string,
-  ): Promise<{ content: Buffer | string; mimeType: string; statusCode: number }> {
-    // Security: the file the request names, or null when it is outside the output directory
-    const requestFile = resolveRequestFile(outDir, requestPath);
-    if (requestFile === null) {
-      return {
-        content: '403 - Forbidden',
-        mimeType: 'text/plain',
-        statusCode: 403,
-      };
-    }
-
-    // Use the shared pretty URL resolver
-    const { filePath, found } = await resolvePrettyUrl(outDir, requestPath, requestFile);
-
-    if (!found || !filePath) {
-      // Serve the site's 404 page, as static hosts do
-      const notFoundPage = await resolveNotFoundPage(outDir);
-      if (notFoundPage) {
-        return {
-          content: await readFile(notFoundPage),
-          mimeType: 'text/html',
-          statusCode: 404,
-        };
-      }
-
-      return {
-        content: requestPath.endsWith('/')
-          ? '404 - Directory listing not available'
-          : '404 - File not found',
-        mimeType: 'text/plain',
-        statusCode: 404,
-      };
-    }
-
-    try {
-      const mimeType = getMimeType(filePath);
-      const content = await readFile(filePath);
-
-      // Unlike dev server, we don't inject live reload script in preview mode
-      return {
-        content,
-        mimeType,
-        statusCode: 200,
-      };
-    } catch {
-      // This should rarely happen since resolvePrettyUrl already checked the file exists
-      return {
-        content: '500 - Error reading file',
-        mimeType: 'text/plain',
-        statusCode: 500,
-      };
-    }
-  }
+  // Unlike the dev server, pages are served as built: no error overlay or live reload script
+  const fileServer = createStaticFileServer({ outDir, logger });
 
   const previewServer: PreviewServer = {
     url,
@@ -163,33 +86,11 @@ export async function createPreviewServer(
           return;
         }
 
-        try {
-          const { content, mimeType, statusCode } = await serveFile(target.path);
-
-          res.writeHead(statusCode, {
-            'Content-Type': mimeType,
-            'Access-Control-Allow-Origin': '*',
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-          });
-
-          res.end(content);
-        } catch (error) {
-          logger.error?.(`Server error: ${error instanceof Error ? error.message : String(error)}`);
-          res.writeHead(500, { 'Content-Type': 'text/plain' });
-          res.end('500 - Internal Server Error');
-        }
+        await fileServer.respond(res, target.path);
       });
 
       // Start HTTP server
-      await new Promise<void>((resolve, reject) => {
-        httpServer!.listen(port, host, () => {
-          resolve();
-        });
-
-        httpServer!.on('error', (error: unknown) => {
-          reject(toPortUnavailableError(error, port, host, 'preview.port'));
-        });
-      });
+      await listenOnPort(httpServer, port, host, 'preview.port');
 
       logger.success?.(`Preview server running at ${url}`);
       logger.info?.(`\nServing:`);
@@ -197,12 +98,7 @@ export async function createPreviewServer(
 
       // Open browser if requested
       if (open) {
-        try {
-          const { default: openBrowser } = await import('open');
-          await openBrowser(url);
-        } catch {
-          logger.info?.('Could not open browser automatically');
-        }
+        await openInBrowser(url, logger);
       }
     },
 

@@ -57,9 +57,10 @@ Edit this file, not the tool-specific ones, when guidance changes.
 
 ## Dev + preview servers
 
-- `createDevServer` (in `core/dev.ts`) clears cache, triggers an initial build, then watches `site/` and `public/`. Template add, change and unlink events flow through `markTemplateChanges`, which marks entries stale when their `deps` hold the file or their `templateLookups` now resolve differently, and builds only when a page is affected.
+- `createDevServer` (in `core/dev.ts`) clears cache, triggers an initial build, then watches `site/` and `public/`. Each add, change and unlink goes into the rebuild queue (`createRebuildQueue`, `core/rebuild-queue.ts`): one build at a time, the changes made meanwhile batched for the next one with the last event per file winning, `onBuildEnd` (the CSS watcher refresh) before the next batch, the overlay error kept until a build succeeds, and a reload after each build that succeeds. A batch is built by `rebuildChanges` (`core/dev-rebuild.ts`), where template changes flow through `markTemplateChanges`, which marks entries stale when their `deps` hold the file or their `templateLookups` now resolve differently, and builds only when a page is affected; planning the build (`planRebuild`) and its log lines (`describeRebuild`) are pure functions.
 - Build failures feed the in-browser overlay produced by `core/utils/error-overlay.utils.ts`; prefer surfacing errors via the logger instead of throwing inside incremental rebuilds.
 - `createPreviewServer` serves the built `dist/` with the same logger expectations as dev.
+- Both servers load the config with `loadServerConfig` (`core/server-config.ts`) and serve files with `createStaticFileServer` (`core/utils/server.utils.ts`); dev adds the error overlay (`interceptHtml`) and the live reload script (`transformHtml`). The rebuild queue, the TypeScript watcher and the CSS watcher reload pages through one `createReloadBroadcaster` (`core/utils/live-reload.utils.ts`), which also holds the socket path `LIVE_RELOAD_PATH`.
 
 ## CLI surface
 
@@ -150,7 +151,8 @@ All utilities in `packages/core/src/core/utils/` follow the `*.utils.ts` naming 
 - **template-errors.utils.ts**: Formats template errors with source context for the error overlay.
 - **bundle-matching.utils.ts**: Matches pages to TypeScript bundles based on `include`/`exclude` patterns.
 - **glob-patterns.utils.ts**: Minimatch-based pattern matching for sitemap rules and bundle selection.
-- **server.utils.ts**: Shared HTTP server helpers for dev/preview.
+- **server.utils.ts**: Shared HTTP server helpers for dev/preview: `createStaticFileServer` (the file serving both use), `listenOnPort`, `openInBrowser`, `isPageRequest`, the base path, pretty URL and 404 page resolution, and the port checks.
+- **live-reload.utils.ts**: `createReloadBroadcaster` and `injectLiveReloadScript` - the dev server's live reload.
 - **version.utils.ts**: `getStatiVersion()` - reads version from package.json.
 - **tailwind-inventory.utils.ts**: Detects Tailwind CSS setup in projects.
 - **logger.utils.ts**: `createFallbackLogger()` - creates a minimal console-based logger fallback.
