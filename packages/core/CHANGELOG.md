@@ -1,5 +1,11 @@
 # @stati/core
 
+## 2.11.4
+
+### Patch Changes
+
+- 9c123cf: set the environment before dev and preview load the config
+
 ## 2.11.3
 
 ### Patch Changes
