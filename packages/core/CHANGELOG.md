@@ -1,5 +1,11 @@
 # @stati/core
 
+## 2.11.1
+
+### Patch Changes
+
+- 8cfb73e: split the page loop and stylesheets out of build.ts
+
 ## 2.11.0
 
 ### Minor Changes
