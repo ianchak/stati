@@ -704,14 +704,18 @@ describe('Development Server', () => {
       const devServer = await createDevServer({ port: 8121, logger: createMockLogger() });
       await devServer.start();
 
-      const wsInstance = vi.mocked(WebSocketServer).mock.results[0]?.value as {
-        on: ReturnType<typeof vi.fn>;
-      };
       expect(vi.mocked(WebSocketServer)).toHaveBeenCalledWith(
         expect.objectContaining({ path: '/__ws' }),
       );
+      const wsResult = vi.mocked(WebSocketServer).mock.results[0];
+      if (!wsResult) {
+        throw new Error('Expected WebSocketServer to be instantiated');
+      }
+      const wsInstance = wsResult.value as { on: ReturnType<typeof vi.fn> };
       const onConnection = wsInstance.on.mock.calls.find(([event]) => event === 'connection')?.[1];
-      expect(onConnection).toBeTypeOf('function');
+      if (typeof onConnection !== 'function') {
+        throw new Error('Expected a connection handler');
+      }
 
       const client = { on: vi.fn() };
       onConnection(client);
