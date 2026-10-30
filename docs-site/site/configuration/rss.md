@@ -309,7 +309,7 @@ Include each page's body in its feed item:
 }
 ```
 
-> **Note:** `includeContent` uses the page's **Markdown source** (the text after the front matter), not rendered HTML. It is written inside a CDATA section in `<description>`. Feed readers that expect HTML will show the Markdown as plain text. A `]]>` in the body is split across two CDATA sections, so the feed stays valid XML and readers get the body unchanged.
+> **Note:** `includeContent` uses the page's **Markdown source** (the text after the front matter), not rendered HTML. It is written inside a CDATA section in `<description>`. Feed readers that expect HTML will show the Markdown as plain text. A `]]>` in the body is split across two CDATA sections, so the feed stays valid XML and readers get the body unchanged. A page whose body is empty or only whitespace gets its `description` instead.
 
 ## Advanced features
 
@@ -423,7 +423,7 @@ If your feed is empty:
 
 If your feed has XML errors:
 
-1. **Check special characters**: Stati automatically escapes XML characters
+1. **Check special characters**: Stati escapes XML characters, and leaves out control characters (other than tabs and line breaks) that XML can't hold
 2. **Check custom elements**: Ensure custom elements use valid XML tag names
 3. **Validate feed**: Use an RSS validator to check your feed
 

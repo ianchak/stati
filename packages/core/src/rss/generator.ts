@@ -7,7 +7,7 @@ import type { PageModel } from '../types/content.js';
 import type { StatiConfig } from '../types/config.js';
 import type { RSSFeedConfig, RSSGenerationResult } from '../types/rss.js';
 import type { Logger } from '../types/logging.js';
-import { escapeHtml } from '../seo/utils/index.js';
+import { escapeHtml, removeInvalidXmlChars } from '../seo/utils/index.js';
 import { filterByPatterns } from './utils/index.js';
 import {
   createFallbackLogger,
@@ -346,8 +346,8 @@ function buildItem(page: PageModel, context: ItemContext): string[] | undefined 
 
   lines.push(`      <link>${escapeHtml(link)}</link>`);
 
-  // Description (or full content)
-  if (itemMapping.includeContent && page.content) {
+  // Description (or full content); a body of only whitespace falls back to the description
+  if (itemMapping.includeContent && page.content?.trim()) {
     lines.push(`      <description>${toCdata(page.content)}</description>`);
   } else {
     const description = getFieldValue<string>(page, itemMapping.description, 'description', logger);
@@ -570,7 +570,8 @@ export function generateRSSFeed(
   xmlLines.push('  </channel>');
   xmlLines.push('</rss>');
 
-  const xml = xmlLines.join('\n');
+  // Feed text such as a pasted body can hold characters XML has no way to write
+  const xml = removeInvalidXmlChars(xmlLines.join('\n'));
 
   return {
     filename: feedConfig.filename,

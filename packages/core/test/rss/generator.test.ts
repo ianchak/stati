@@ -190,10 +190,10 @@ describe('RSS Feed Generation', () => {
         const item = xml.slice(xml.indexOf('<item>'), xml.indexOf('</item>'));
         const start = item.indexOf('<description>') + '<description>'.length;
         const inner = item.slice(start, item.lastIndexOf('</description>'));
-        expect(inner).toMatch(/^(?:<!\[CDATA\[(?:(?!\]\]>)[\s\S])*\]\]>)+$/);
-        return [...inner.matchAll(/<!\[CDATA\[((?:(?!\]\]>)[\s\S])*)\]\]>/g)]
-          .map((section) => section[1])
-          .join('');
+        const sections = [...inner.matchAll(/<!\[CDATA\[((?:(?!\]\]>)[\s\S])*)\]\]>/g)];
+        // The sections must make up the whole element, with nothing between them
+        expect(sections.map((section) => section[0]).join('')).toBe(inner);
+        return sections.map((section) => section[1]).join('');
       }
 
       function feedFor(content: string): string {
@@ -210,7 +210,7 @@ describe('RSS Feed Generation', () => {
         ['at the end', 'The body ends with ]]>'],
         ['repeated', 'a ]]> b ]]>]]> c'],
         ['next to brackets', 'x[y[0]]]> and ]]]]>'],
-      ])('keeps the feed well formed with ]]> %s', (_where, content) => {
+      ])('writes a body with ]]> %s as CDATA that reads back unchanged', (_where, content) => {
         expect(readCdataDescription(feedFor(content))).toBe(content);
       });
 
@@ -218,6 +218,38 @@ describe('RSS Feed Generation', () => {
         const content = 'Brackets ]] and > alone, and <![CDATA[ text';
         expect(feedFor(content)).toContain(`<description><![CDATA[${content}]]></description>`);
       });
+    });
+
+    it.each([
+      ['only whitespace', '\n  \n'],
+      ['missing', undefined],
+    ])('uses the description when includeContent is on and the body is %s', (_what, content) => {
+      const page = { ...samplePages[0]!, content } as PageModel;
+      const result = generateRSSFeed([page], baseConfig, {
+        ...baseFeedConfig,
+        itemMapping: { includeContent: true },
+      });
+
+      expect(result.xml).toContain('<description>Description of first post</description>');
+      expect(result.xml).not.toContain('CDATA');
+    });
+
+    it('leaves out characters XML cannot hold, in the body and in other fields', () => {
+      const page = {
+        ...samplePages[0]!,
+        content: 'Form\u000C feed, null\u0000 and tab\there',
+        frontMatter: { ...samplePages[0]!.frontMatter, title: 'Bell\u0007 title \u{1F600}' },
+      };
+      const result = generateRSSFeed([page], baseConfig, {
+        ...baseFeedConfig,
+        itemMapping: { includeContent: true },
+      });
+
+      // eslint-disable-next-line no-control-regex
+      expect(result.xml).not.toMatch(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/);
+      expect(result.xml).toContain('<![CDATA[Form feed, null and tab\there]]>');
+      expect(result.xml).toContain('<title>Bell title \u{1F600}</title>');
+      expect(result.sizeInBytes).toBe(Buffer.byteLength(result.xml, 'utf8'));
     });
 
     it('should use custom field mapping for title', () => {

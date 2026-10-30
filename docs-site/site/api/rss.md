@@ -162,7 +162,7 @@ interface RSSItemMapping {
 
 - `guid` - Custom GUID generator (default: the item's link). The `<guid>` is a permalink (`isPermaLink="true"`) only when it is an absolute `http` or `https` URL. If the function throws, the item has no `<guid>`
 
-- `includeContent` - Whether to put the page body in `<description>` (default: `false`). The body is the page's Markdown source (`PageModel.content`), wrapped in CDATA; it is not rendered to HTML. A `]]>` in the body is split across two CDATA sections, so the text reads back unchanged.
+- `includeContent` - Whether to put the page body in `<description>` (default: `false`). The body is the page's Markdown source (`PageModel.content`), wrapped in CDATA; it is not rendered to HTML. A `]]>` in the body is split across two CDATA sections, so the text reads back unchanged. A page whose body is empty or only whitespace gets its `description` instead.
 
 ---
 
