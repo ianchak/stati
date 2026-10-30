@@ -34,3 +34,6 @@ export {
 export type { TailwindBuildOptions, StylesheetPlan, BuiltStylesheet } from './stylesheet.js';
 
 export { StaticStylesheets } from './static.js';
+
+export { StylesheetRuntime, writeDeferredPages, STAGED_PAGES_DIR } from './runtime.js';
+export type { StylesheetRuntimeOptions, StylesheetRenderInputs, DeferredPage } from './runtime.js';

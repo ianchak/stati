@@ -583,6 +583,52 @@ describe('build.ts', () => {
       expect(consoleSpy).toHaveBeenCalledWith('Copied 0 static assets');
     });
 
+    it('shows the steps and the rendering progress of a logger that has them', async () => {
+      const calls: string[] = [];
+      const record =
+        (name: string) =>
+        (...args: unknown[]) => {
+          calls.push(`${name} ${args.filter((arg) => typeof arg !== 'number').join(' ')}`.trim());
+        };
+      // The search index is written before the rendering step starts
+      mockLoadConfig.mockResolvedValue({ ...mockConfig, search: { enabled: true } });
+      mockComputeSearchIndexFilename.mockReturnValue('search-index.json');
+      mockGenerateSearchIndex.mockReturnValue({ version: 1, documents: [] });
+      mockWriteSearchIndex.mockImplementation(async () => {
+        calls.push('writeSearchIndex');
+        return { documentCount: 3 };
+      });
+
+      await build({
+        logger: {
+          info: vi.fn(),
+          success: vi.fn(),
+          warning: vi.fn(),
+          error: vi.fn(),
+          status: vi.fn(),
+          building: vi.fn(),
+          processing: vi.fn(),
+          stats: vi.fn(),
+          step: record('step'),
+          startProgress: record('startProgress'),
+          updateProgress: record('updateProgress'),
+          endProgress: record('endProgress'),
+        },
+      });
+
+      expect(calls).toEqual([
+        'step Building navigation',
+        'writeSearchIndex',
+        'step Rendering pages',
+        'startProgress',
+        'updateProgress rendered /',
+        'updateProgress rendered /about',
+        'updateProgress rendered /blog/post',
+        'endProgress',
+        'step Copying static assets',
+      ]);
+    });
+
     it('should include version in build message when provided', async () => {
       await build({ cliVersion: '1.2.3' });
 
