@@ -296,6 +296,7 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
   return withBuildLock(cacheDir, () => buildInternal(options), {
     force: Boolean(options.force || options.clean), // Allow force if user explicitly requests it
     timeout: 60000, // 1 minute timeout
+    logger: options.logger || defaultLogger,
   });
 }
 

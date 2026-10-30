@@ -1,9 +1,37 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { join } from 'node:path';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { BuildLockManager, withBuildLock } from '../../../src/core/isg/build-lock.js';
 import { DevServerLockManager } from '../../../src/core/isg/dev-server-lock.js';
+import { remove } from '../../../src/core/utils/index.js';
+import type { Logger } from '../../../src/types/index.js';
+
+// Removes files as it does without the mock, unless a test makes it fail
+vi.mock('../../../src/core/utils/index.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../src/core/utils/index.js')>();
+  return { ...actual, remove: vi.fn(actual.remove) };
+});
+
+const mockRemove = vi.mocked(remove);
+
+const createLogger = (): Logger => ({
+  info: vi.fn(),
+  success: vi.fn(),
+  warning: vi.fn(),
+  error: vi.fn(),
+  status: vi.fn(),
+  building: vi.fn(),
+  processing: vi.fn(),
+  stats: vi.fn(),
+});
+
+/** A PID no process has: Windows PIDs are multiples of 4 */
+const deadPid = 999999;
+
+/** Writes a lock file that a process which is no longer running left behind */
+const writeStaleLock = (lockPath: string) =>
+  writeFile(lockPath, JSON.stringify({ pid: deadPid, timestamp: new Date().toISOString() }));
 
 describe('BuildLockManager', () => {
   let testDir: string;
@@ -41,12 +69,60 @@ describe('BuildLockManager', () => {
   it('should force acquire lock when force option is true', async () => {
     await lockManager.acquireLock();
 
-    const secondLock = new BuildLockManager(testDir);
+    const logger = createLogger();
+    const secondLock = new BuildLockManager(testDir, logger);
     await secondLock.acquireLock({ force: true });
 
     expect(await secondLock.isLockHeld()).toBe(true);
+    expect(logger.warning).toHaveBeenCalledWith(
+      'Force acquiring build lock, removing existing lock',
+    );
     await secondLock.releaseLock();
   });
+
+  it('should remove a stale lock and warn through its logger', async () => {
+    await writeStaleLock(join(testDir, '.build-lock'));
+
+    const logger = createLogger();
+    const newLock = new BuildLockManager(testDir, logger);
+    await newLock.acquireLock();
+
+    expect(await newLock.isLockHeld()).toBe(true);
+    expect(logger.warning).toHaveBeenCalledWith(
+      `Removing stale build lock (PID ${deadPid} no longer running)`,
+    );
+    await newLock.releaseLock();
+  });
+
+  it('should warn on the console without a logger', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await writeStaleLock(join(testDir, '.build-lock'));
+
+    await lockManager.acquireLock();
+
+    expect(warn).toHaveBeenCalledWith(
+      `Removing stale build lock (PID ${deadPid} no longer running)`,
+    );
+  });
+
+  it.each([new Error('EBUSY: resource busy'), 'EBUSY: resource busy'])(
+    'should warn through its logger when the lock cannot be released (%s)',
+    async (failure) => {
+      const logger = createLogger();
+      const newLock = new BuildLockManager(testDir, logger);
+      await newLock.acquireLock();
+      mockRemove.mockRejectedValueOnce(failure);
+
+      await newLock.releaseLock();
+
+      expect(logger.warning).toHaveBeenCalledWith(
+        'Failed to release build lock: EBUSY: resource busy',
+      );
+      // The lock counts as released, so releasing again does nothing
+      await newLock.releaseLock();
+      expect(mockRemove).toHaveBeenCalledTimes(1);
+    },
+  );
 
   it('should work with withBuildLock helper', async () => {
     let executed = false;
@@ -58,6 +134,18 @@ describe('BuildLockManager', () => {
 
     expect(executed).toBe(true);
     expect(await lockManager.isLockHeld()).toBe(false);
+  });
+
+  it('should give withBuildLock its logger and lock options', async () => {
+    await lockManager.acquireLock();
+    const logger = createLogger();
+
+    const result = await withBuildLock(testDir, async () => 'built', { force: true, logger });
+
+    expect(result).toBe('built');
+    expect(logger.warning).toHaveBeenCalledWith(
+      'Force acquiring build lock, removing existing lock',
+    );
   });
 
   it('should release lock even if build function throws', async () => {
@@ -119,28 +207,28 @@ describe('DevServerLockManager', () => {
   });
 
   it('should clean up stale locks from dead processes', async () => {
-    // Create a lock with a fake PID that doesn't exist
-    const fakePid = 999999;
-    await devLock.acquireLock();
-    await devLock.releaseLock();
+    await writeStaleLock(join(testDir, '.dev-server-lock'));
 
-    // Manually create a lock file with fake PID
-    const lockPath = join(testDir, '.dev-server-lock');
-    const { writeFile } = await import('node:fs/promises');
-    await writeFile(
-      lockPath,
-      JSON.stringify({
-        pid: fakePid,
-        timestamp: new Date().toISOString(),
-        hostname: 'test-host',
-      }),
-    );
-
-    // Should detect stale lock and acquire successfully
-    const newLock = new DevServerLockManager(testDir);
+    // Should detect stale lock, warn through its logger and acquire successfully
+    const logger = createLogger();
+    const newLock = new DevServerLockManager(testDir, logger);
     await newLock.acquireLock();
     expect(await newLock.isLockHeld()).toBe(true);
+    expect(logger.warning).toHaveBeenCalledWith(
+      `Removing stale dev server lock (PID ${deadPid} no longer running)`,
+    );
     await newLock.releaseLock();
+  });
+
+  it('should warn on the console without a logger', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await writeStaleLock(join(testDir, '.dev-server-lock'));
+
+    await devLock.acquireLock();
+
+    expect(warn).toHaveBeenCalledWith(
+      `Removing stale dev server lock (PID ${deadPid} no longer running)`,
+    );
   });
 
   it('should allow multiple dev servers in different directories', async () => {
@@ -329,23 +417,34 @@ describe('DevServerLockManager', () => {
     }
   });
 
-  it('should warn when releasing lock fails', async () => {
-    // Spy on console.warn to capture warning
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it.each([new Error('EBUSY: resource busy'), 'EBUSY: resource busy'])(
+    'should warn through its logger when the lock cannot be released (%s)',
+    async (failure) => {
+      const logger = createLogger();
+      const newLock = new DevServerLockManager(testDir, logger);
+      await newLock.acquireLock();
+      mockRemove.mockRejectedValueOnce(failure);
 
-    await devLock.acquireLock();
+      await newLock.releaseLock();
 
-    // Delete the lock file to simulate failure during release
-    const lockPath = join(testDir, '.dev-server-lock');
-    const { unlink } = await import('node:fs/promises');
-    await unlink(lockPath);
+      expect(logger.warning).toHaveBeenCalledWith(
+        'Failed to release dev server lock: EBUSY: resource busy',
+      );
+      // The lock counts as released, so releasing again does nothing
+      await newLock.releaseLock();
+      expect(mockRemove).toHaveBeenCalledTimes(1);
+    },
+  );
 
-    // Manually set isLocked to true and try to release
-    // This should trigger the error path when checking lock ownership
-    await devLock.releaseLock();
+  it('should release a lock whose file is already gone without warning', async () => {
+    const logger = createLogger();
+    const newLock = new DevServerLockManager(testDir, logger);
+    await newLock.acquireLock();
+    await rm(join(testDir, '.dev-server-lock'));
 
-    // Restore console.warn
-    warnSpy.mockRestore();
+    await newLock.releaseLock();
+
+    expect(logger.warning).not.toHaveBeenCalled();
   });
 
   it('should handle isLockHeld with error gracefully', async () => {

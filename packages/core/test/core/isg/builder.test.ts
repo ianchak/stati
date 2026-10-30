@@ -161,9 +161,10 @@ describe('ISG Build Integration', () => {
     it('should hash the templates the render recorded, without reading others', async () => {
       await check(recordedEntry());
 
-      expect(mockComputeFileHash.mock.calls.map(([dep]) => dep)).toEqual([
-        testLayoutPath,
-        testHeaderPath,
+      // The logger reports a template that can't be read
+      expect(mockComputeFileHash.mock.calls).toEqual([
+        [testLayoutPath, logger],
+        [testHeaderPath, logger],
       ]);
       expect(mockComputeInputsHash).toHaveBeenCalledWith(
         'content123',
@@ -424,6 +425,15 @@ describe('ISG Build Integration', () => {
       expect(result.ttlSeconds).toBe(7200);
     });
 
+    it('should hash the templates with its logger, which reports one that cannot be read', async () => {
+      await createCacheEntry(mockPage, mockConfig, fixedDate, 'r', rendered(), logger);
+
+      expect(mockComputeFileHash.mock.calls).toEqual([
+        [testLayoutPath, logger],
+        [testHeaderPath, logger],
+      ]);
+    });
+
     it('should propagate errors from hashing a template', async () => {
       mockComputeFileHash.mockRejectedValue(new Error('File read error'));
 
@@ -497,6 +507,23 @@ describe('ISG Build Integration', () => {
         readsNav: true,
         renderedAt: fixedDate.toISOString(),
       });
+    });
+
+    it('should hash the templates with its logger', async () => {
+      await updateCacheEntry(
+        existingEntry,
+        mockPage,
+        mockConfig,
+        fixedDate,
+        'r',
+        rendered(),
+        logger,
+      );
+
+      expect(mockComputeFileHash.mock.calls).toEqual([
+        [testLayoutPath, logger],
+        [testHeaderPath, logger],
+      ]);
     });
 
     it('should drop the read flags when an update has no render to take them from', async () => {

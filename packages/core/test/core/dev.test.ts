@@ -8,8 +8,10 @@ import { invalidate } from '../../src/core/invalidate.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import * as fsUtils from '../../src/core/utils/fs.utils.js';
 
-const { mockFg } = vi.hoisted(() => ({
+const { mockFg, mockDevServerLock } = vi.hoisted(() => ({
   mockFg: vi.fn(),
+  /** Records what each DevServerLockManager is constructed with */
+  mockDevServerLock: vi.fn(),
 }));
 
 // Store the request handler for testing; the dev server's handler is async
@@ -137,6 +139,9 @@ vi.mock('../../src/core/isg/index.js', () => ({
   hasRecordedTemplates: (entry: { templatesRecorded?: boolean }) =>
     entry.templatesRecorded === true,
   DevServerLockManager: class {
+    constructor(...args: unknown[]) {
+      mockDevServerLock(...args);
+    }
     async acquireLock() {
       return Promise.resolve();
     }
@@ -268,8 +273,8 @@ describe('Development Server', () => {
     expect(devServer.stop).toBeDefined();
     expect(devServer.url).toBeDefined();
 
-    // Verify the logger option was passed correctly by checking it's being used
-    // We know the logger is stored internally and will be used when needed
+    // The dev server lock reports stale and unreleased locks through the same logger
+    expect(mockDevServerLock).toHaveBeenCalledWith(expect.any(String), mockLogger);
   });
 
   it('should clear cache during initial startup', async () => {

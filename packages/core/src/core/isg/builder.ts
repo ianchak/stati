@@ -221,7 +221,7 @@ export async function shouldRebuildPage(
     // Hash every template the page rendered; one that no longer exists rebuilds the page
     const depsHashes: string[] = [];
     for (const dep of entry.deps) {
-      const depHash = await computeFileHash(dep);
+      const depHash = await computeFileHash(dep, logger);
       if (!depHash) {
         return true;
       }
@@ -259,6 +259,7 @@ export async function shouldRebuildPage(
  * @param renderInputsHash - Optional hash of asset URLs and injection settings
  * @param rendered - What the render used: templates, lookups, images and shared data. Without
  *   recorded templates the entry is not marked `templatesRecorded` and the page rebuilds next time.
+ * @param logger - Reports a template that can't be hashed; the console when omitted
  * @returns New cache entry
  *
  * @example
@@ -272,6 +273,7 @@ export async function createCacheEntry(
   renderedAt: Date,
   renderInputsHash?: string,
   rendered?: RenderedAssets,
+  logger?: Logger,
 ): Promise<CacheEntry> {
   // Validate page-level ISG overrides first
   validatePageISGOverrides(page.frontMatter, page.sourcePath);
@@ -282,7 +284,7 @@ export async function createCacheEntry(
   const deps = [...(rendered?.templates ?? [])];
   const depsHashes: string[] = [];
   for (const dep of deps) {
-    const depHash = await computeFileHash(dep);
+    const depHash = await computeFileHash(dep, logger);
     if (depHash) {
       depsHashes.push(depHash);
     }
@@ -348,6 +350,7 @@ export async function createCacheEntry(
  * @param renderedAt - When the page was rendered
  * @param renderInputsHash - Optional hash of asset URLs and injection settings
  * @param rendered - What the render used: templates, lookups, images and shared data
+ * @param logger - Reports a template that can't be hashed; the console when omitted
  * @returns Updated cache entry
  *
  * @example
@@ -362,8 +365,16 @@ export async function updateCacheEntry(
   renderedAt: Date,
   renderInputsHash?: string,
   rendered?: RenderedAssets,
+  logger?: Logger,
 ): Promise<CacheEntry> {
-  const newEntry = await createCacheEntry(page, config, renderedAt, renderInputsHash, rendered);
+  const newEntry = await createCacheEntry(
+    page,
+    config,
+    renderedAt,
+    renderInputsHash,
+    rendered,
+    logger,
+  );
 
   // Preserve original publishedAt if no new one is specified
   if (!newEntry.publishedAt && entry.publishedAt) {
