@@ -19,7 +19,7 @@ export class PackageJsonModifier {
       // Add Stati SSG engine identifier
       packageJson.stati = {
         engine: 'stati',
-        version: packageJson.devDependencies?.['@stati/core'] || '^2.10.0',
+        version: packageJson.devDependencies?.['@stati/core'] || '^2.11.0',
       };
 
       // Add TypeScript dependencies and scripts if enabled
