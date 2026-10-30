@@ -10,6 +10,10 @@
 // Manifest management
 export { loadCacheManifest, saveCacheManifest, createEmptyManifest } from './manifest.js';
 
+// The rules for what a cache entry read from the manifest may hold
+export { parseCacheEntry } from './entry.js';
+export type { InvalidCacheEntry } from './entry.js';
+
 // Stale entries, which render again and keep their output known for pruning
 export { markStale, createStaleEntry } from './stale.js';
 
@@ -46,10 +50,9 @@ export {
 // TTL and aging
 export {
   getSafeCurrentTime,
-  parseSafeDate,
   computeEffectiveTTL,
-  computeNextRebuildAt,
   isPageFrozen,
+  isTtlExpired,
   applyAgingRules,
 } from './ttl.js';
 

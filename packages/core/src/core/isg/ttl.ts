@@ -1,10 +1,10 @@
-import type { PageModel, ISGConfig, AgingRule, CacheEntry } from '../../types/index.js';
+import type { PageModel, ISGConfig, AgingRule, CacheEntry, Logger } from '../../types/index.js';
 import {
   CLOCK_DRIFT_TOLERANCE_MS,
   DEFAULT_TTL_SECONDS,
   MILLISECONDS_PER_DAY,
 } from '../../constants.js';
-import { getFrontMatterDate } from '../utils/index.js';
+import { createFallbackLogger, getFrontMatterDate } from '../utils/index.js';
 // dedup: time constants centralized in constants.ts
 
 /**
@@ -12,50 +12,20 @@ import { getFrontMatterDate } from '../utils/index.js';
  * Ensures all ISG operations use consistent UTC time.
  *
  * @param providedDate - Optional date to use instead of system time (for testing)
+ * @param logger - Reports an invalid date; the console when omitted
  * @returns UTC Date object
  */
-export function getSafeCurrentTime(providedDate?: Date): Date {
+export function getSafeCurrentTime(providedDate?: Date, logger?: Logger): Date {
   const now = providedDate || new Date();
 
   // Ensure we're working with valid dates
   if (isNaN(now.getTime())) {
-    console.warn('Invalid system date detected, using fallback date');
+    (logger ?? createFallbackLogger()).warning('Invalid system date detected, using fallback date');
     return new Date('2025-01-01T00:00:00.000Z'); // Fallback to known good date
   }
 
   // Normalize to UTC to avoid timezone issues
   return new Date(now.toISOString());
-}
-
-/**
- * Safely parses and normalizes a date string to UTC.
- * Handles various date formats and timezone issues.
- *
- * @param dateStr - Date string to parse
- * @param context - Context for error messages
- * @returns Parsed UTC date or null if invalid
- */
-export function parseSafeDate(dateStr: string, context?: string): Date | null {
-  try {
-    const parsed = new Date(dateStr);
-
-    if (isNaN(parsed.getTime())) {
-      if (context) {
-        console.warn(`Invalid date "${dateStr}" in ${context}, ignoring`);
-      }
-      return null;
-    }
-
-    // Normalize to UTC
-    return new Date(parsed.toISOString());
-  } catch (error) {
-    if (context) {
-      console.warn(
-        `Failed to parse date "${dateStr}" in ${context}: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
-    return null;
-  }
 }
 
 /**
@@ -99,88 +69,57 @@ export function computeEffectiveTTL(
 }
 
 /**
- * Computes the next rebuild date for a page based on TTL and aging rules.
- * Returns null if the page is frozen (beyond max age cap).
- * Uses safe time handling with clock drift protection.
+ * Determines if a page is frozen: its publish date is more than `maxAgeCapDays` before `now`.
+ * Frozen pages are not rebuilt for TTL reasons, only when their inputs change. This is the one
+ * freeze rule; {@link isTtlExpired} applies it.
  *
- * @param options - Configuration options
- * @param options.now - Current date/time
- * @param options.publishedAt - When the content was originally published
- * @param options.ttlSeconds - TTL for this page in seconds
- * @param options.maxAgeCapDays - Maximum age cap in days
- * @returns Next rebuild date, or null if frozen
- *
- * @example
- * ```typescript
- * const nextRebuild = computeNextRebuildAt({
- *   now: new Date(),
- *   publishedAt: new Date('2024-01-01'),
- *   ttlSeconds: 3600,
- *   maxAgeCapDays: 365
- * });
- * ```
- */
-export function computeNextRebuildAt(options: {
-  now: Date;
-  publishedAt?: Date;
-  ttlSeconds: number;
-  maxAgeCapDays?: number;
-}): Date | null {
-  const { publishedAt, ttlSeconds, maxAgeCapDays } = options;
-
-  // Normalize the provided time to UTC
-  const now = getSafeCurrentTime(options.now);
-
-  // If there's a max age cap and published date, check if content is frozen
-  if (maxAgeCapDays && publishedAt) {
-    const normalizedPublishedAt = getSafeCurrentTime(publishedAt);
-    const maxAgeMs = maxAgeCapDays * MILLISECONDS_PER_DAY;
-    const ageMs = now.getTime() - normalizedPublishedAt.getTime();
-
-    if (ageMs > maxAgeMs) {
-      // Content is frozen, no rebuild needed
-      return null;
-    }
-  }
-
-  // Add clock drift tolerance to prevent rebuild loops
-  const nextRebuildTime = now.getTime() + ttlSeconds * 1000 + CLOCK_DRIFT_TOLERANCE_MS;
-  return new Date(nextRebuildTime);
-}
-
-/**
- * Determines if a page is frozen (beyond its max age cap).
- * Frozen pages are not rebuilt unless their content changes.
- * Uses safe time handling to avoid timezone issues.
- *
- * @param entry - Cache entry for the page
+ * @param entry - Cache entry for the page, as `parseCacheEntry` (`entry.ts`) accepts it
  * @param now - Current date/time
+ * @param logger - Reports an invalid `now`; the console when omitted
  * @returns True if the page is frozen
  *
  * @example
  * ```typescript
- * if (isPageFrozen(cacheEntry, new Date())) {
- *   console.log('Page is frozen, will not rebuild based on TTL');
+ * if (isPageFrozen(cacheEntry, new Date(), logger)) {
+ *   logger.info('Page is frozen, will not rebuild based on TTL');
  * }
  * ```
  */
-export function isPageFrozen(entry: CacheEntry, now: Date): boolean {
+export function isPageFrozen(entry: CacheEntry, now: Date, logger?: Logger): boolean {
   if (!entry.maxAgeCapDays || !entry.publishedAt) {
     return false;
   }
 
-  const safeNow = getSafeCurrentTime(now);
-  const publishedAt = parseSafeDate(entry.publishedAt, `cache entry for ${entry.path}`);
+  const ageMs = getSafeCurrentTime(now, logger).getTime() - new Date(entry.publishedAt).getTime();
+  return ageMs > entry.maxAgeCapDays * MILLISECONDS_PER_DAY;
+}
 
-  if (!publishedAt) {
-    // If we can't parse the published date, don't freeze
+/**
+ * Determines if a cached page's TTL has run out, so it rebuilds although its inputs did not
+ * change. The TTL runs from the entry's `renderedAt`, plus a clock drift tolerance that keeps
+ * pages from rebuilding in a loop. A frozen page ({@link isPageFrozen}) never expires.
+ *
+ * @param entry - Cache entry for the page, as `parseCacheEntry` (`entry.ts`) accepts it
+ * @param now - Current date/time
+ * @param logger - Reports an invalid `now`; the console when omitted
+ * @returns True if the page should rebuild because its TTL expired
+ *
+ * @example
+ * ```typescript
+ * if (isTtlExpired(cacheEntry, buildTime, logger)) {
+ *   // Render the page again
+ * }
+ * ```
+ */
+export function isTtlExpired(entry: CacheEntry, now: Date, logger?: Logger): boolean {
+  const safeNow = getSafeCurrentTime(now, logger);
+  if (isPageFrozen(entry, safeNow)) {
     return false;
   }
 
-  const maxAgeMs = entry.maxAgeCapDays * MILLISECONDS_PER_DAY;
-  const ageMs = safeNow.getTime() - publishedAt.getTime();
-
-  return ageMs > maxAgeMs;
+  const expiresAt =
+    new Date(entry.renderedAt).getTime() + entry.ttlSeconds * 1000 + CLOCK_DRIFT_TOLERANCE_MS;
+  return safeNow.getTime() >= expiresAt;
 }
 
 /**

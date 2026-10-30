@@ -231,6 +231,7 @@ async function performIncrementalRebuild(
         templateChanges,
         srcDir,
         hasBuildError?.() ?? false,
+        logger,
       );
       rebuild = templateChangeResult.rebuild;
     }
@@ -381,11 +382,13 @@ interface TemplateChangeResult {
  *
  * @param lastBuildFailed - Whether the previous build failed; then a build runs even when no
  *   recorded page uses the file, so the error clears once the template that broke it is fixed
+ * @param logger - Reports problems reading the cache manifest
  */
 async function markTemplateChanges(
   changes: Array<{ path: string; eventType: 'add' | 'change' | 'unlink' }>,
   srcDir: string,
   lastBuildFailed: boolean,
+  logger: Logger,
 ): Promise<TemplateChangeResult> {
   // Drop the cached Eta engine so the changed templates are recompiled on the next build.
   // Markdown-only edits keep reusing it.
@@ -406,7 +409,7 @@ async function markTemplateChanges(
 
   try {
     const cacheDir = resolveCacheDir();
-    const cacheManifest = await loadCacheManifest(cacheDir);
+    const cacheManifest = await loadCacheManifest(cacheDir, logger);
     if (!cacheManifest) {
       return { affectedPages: 0, totalPages: 0, rebuild: 'incremental' };
     }

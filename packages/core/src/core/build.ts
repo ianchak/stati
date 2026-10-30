@@ -321,11 +321,14 @@ async function loadAndValidateConfig(options: BuildOptions): Promise<{
 /**
  * Sets up cache manifest and initializes cache statistics.
  */
-async function setupCacheAndManifest(cacheDir: string): Promise<{
+async function setupCacheAndManifest(
+  cacheDir: string,
+  logger: Logger,
+): Promise<{
   manifest: CacheManifest;
 }> {
   // Load cache manifest for ISG
-  let cacheManifest = await loadCacheManifest(cacheDir);
+  let cacheManifest = await loadCacheManifest(cacheDir, logger);
 
   // If no cache manifest exists, create an empty one
   if (!cacheManifest) {
@@ -572,7 +575,7 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
 
   // Load cache manifest for ISG (after potential clean operation)
   const endManifestLoadSpan = recorder.startSpan('cacheManifestLoadMs');
-  const { manifest } = await setupCacheAndManifest(cacheDir);
+  const { manifest } = await setupCacheAndManifest(cacheDir, logger);
   endManifestLoadSpan();
 
   // Load content and build navigation
