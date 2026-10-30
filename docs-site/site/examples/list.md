@@ -72,7 +72,7 @@ A complete blog, ready to write in:
 
 ```text
 examples/blog/
-├── helpers/blog.js       # Template helpers for related posts and dates
+├── helpers/blog.js       # Template helpers for dates
 ├── site/
 │   ├── partials/         # Head, header, footer, post lists, page links, tag links
 │   ├── posts/            # One Markdown file per post, the archive and the post layout

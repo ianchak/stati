@@ -1,16 +1,15 @@
 /**
- * Blog helpers for Stati, used in templates as `stati.helpers.relatedPosts(...)`,
- * `stati.helpers.formatDate(...)` and `stati.helpers.isoDate(...)`.
+ * Blog helpers for Stati, used in templates as `stati.helpers.formatDate(...)`
+ * and `stati.helpers.isoDate(...)`.
  *
  * Listings come from Stati itself: `stati.collection` holds the posts in
- * site/posts/, newest first, and Stati rebuilds every page that lists them when
- * a post is added, removed, retitled or retagged. These helpers add what Stati
- * does not do for you: related posts and dates in your locale.
+ * site/posts/, newest first, and `stati.collection.related()` picks the posts
+ * that share the most tags with one of them. Stati rebuilds every page that
+ * lists them when a post is added, removed, retitled or retagged. These helpers
+ * add what Stati does not do for you: dates in your locale.
  */
 
 /**
- * @typedef {import('@stati/core').PageModel} PageModel
- *
  * @typedef {object} BlogOptions
  * @property {{ defaultLocale?: string }} site
  */
@@ -22,13 +21,6 @@ function toDate(value) {
   return Number.isNaN(date.getTime()) ? undefined : date;
 }
 
-/** @param {PageModel} post */
-function tagsOf(post) {
-  const tags = post.frontMatter.tags;
-  if (!Array.isArray(tags)) return [];
-  return tags.filter((tag) => typeof tag === 'string' && tag.trim()).map((tag) => tag.trim());
-}
-
 /**
  * @param {BlogOptions} options
  */
@@ -37,30 +29,6 @@ export function createBlog(options) {
 
   /** @type {Record<string, (...args: any[]) => unknown>} */
   const helpers = {
-    /**
-     * Posts sharing the most tags with the given one, newest first on ties.
-     * Pass the posts newest first: `stati.helpers.relatedPosts(stati.collection.recentPages, url)`.
-     * The newer and older neighbours are left out: the post layout links them already.
-     */
-    relatedPosts: (posts, url, limit = 3) => {
-      const i = posts.findIndex((post) => post.url === url);
-      const current = posts[i];
-      if (!current) return [];
-      const own = new Set(tagsOf(current).map((tag) => tag.toLowerCase()));
-      if (own.size === 0) return [];
-      const skip = new Set([url, posts[i - 1]?.url, posts[i + 1]?.url]);
-      return posts
-        .filter((post) => !skip.has(post.url))
-        .map((post) => ({
-          post,
-          score: tagsOf(post).filter((tag) => own.has(tag.toLowerCase())).length,
-        }))
-        .filter(({ score }) => score > 0)
-        .sort((a, b) => b.score - a.score)
-        .slice(0, limit)
-        .map(({ post }) => post);
-    },
-
     /**
      * Human-readable date in the site's locale. Styles: 'short' (Oct 12, 2026),
      * 'long' (October 12, 2026) and 'day' (Oct 12, for lists already grouped by year).

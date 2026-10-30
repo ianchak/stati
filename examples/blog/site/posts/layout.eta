@@ -3,9 +3,9 @@
      content and names site/base.eta, the page with the head, header and footer, with
      stati.layout().
 
-     stati.collection holds every post in this folder, newest first. The newer, older
-     and related posts come from it, so Stati rebuilds a post when its neighbours or
-     their titles change. */
+     stati.collection holds every post in this folder, newest first. The newer and older
+     posts come from it, and stati.collection.related() picks the related ones, so Stati
+     rebuilds a post when a post is added or removed, or its title or tags change. */
   const url = stati.page.url;
   const tags = Array.isArray(stati.page.tags) ? stati.page.tags : [];
   const published = stati.page.publishedAt ?? stati.page.date;
@@ -14,7 +14,9 @@
   const index = posts.findIndex((post) => post.url === url);
   const newer = index > 0 ? posts[index - 1] : undefined;
   const older = index >= 0 ? posts[index + 1] : undefined;
-  const related = stati.helpers.relatedPosts(posts, url, 3);
+  /* Up to three posts sharing the most tags, newest first on ties. The newer and older
+     posts are linked already, so they are left out. */
+  const related = stati.collection?.related(url, { limit: 3, exclude: [newer, older] }) ?? [];
   const author = stati.site.author;
   stati.layout('base');
 %>
