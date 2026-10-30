@@ -39,12 +39,13 @@ export const MAX_TEMPLATE_DEPTH = 100;
 /**
  * The values every template of one render shares, such as `site`, `page` and `helpers`, and an
  * id: the page's layout and its Open Graph template render with different values, so includes
- * cached for one must not be reused by the other. Each template adds its own `props`, `include`,
- * `layout` and `body`.
+ * cached for one must not be reused by the other. The values set every `TemplateContext` key,
+ * `undefined` where it does not apply, except the `props`, `include`, `layout` and `body` each
+ * template adds.
  */
 export interface BaseContext {
   readonly id: string;
-  readonly values: Omit<TemplateContext, 'props' | 'include' | 'layout' | 'body'>;
+  readonly values: Required<Omit<TemplateContext, 'props' | 'include' | 'layout' | 'body'>>;
 }
 
 /** Marks a render whose context has no `body` key: the page's layout and the Open Graph template */

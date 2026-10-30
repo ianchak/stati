@@ -197,3 +197,19 @@ export interface GeneratedOgImage {
   /** Alternative text, the page title */
   alt?: string;
 }
+
+/**
+ * Options for `stati.image()` in templates.
+ */
+export interface StatiImageOptions {
+  /** Alternative text; use an empty string for decorative images */
+  alt?: string;
+  /** `sizes` attribute for responsive images */
+  sizes?: string;
+  /** Load eagerly with high fetch priority, for the main image above the fold */
+  priority?: boolean;
+  /** `class` attribute */
+  class?: string;
+  /** `title` attribute */
+  title?: string;
+}

@@ -422,7 +422,7 @@ interface TemplateContext {
     url: string;
     /** Rendered HTML content */
     content: string;
-    /** Table of contents from the page's h2 to h6 headings; empty when it has none */
+    /** The page's h2 to h6 headings; empty when there are none or markdown.toc is false */
     toc: TocEntry[];
     /** Current page's navigation node */
     navNode?: NavNode;

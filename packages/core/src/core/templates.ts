@@ -33,8 +33,8 @@ import {
 import type { PageReads } from './collections.js';
 import { isDevelopment, isProduction } from '../env.js';
 import { generateSEO, resolveGeneratedImagePlaceholders } from '../seo/index.js';
-import type { OgTemplateRenderer, PageImages, StatiImageOptions } from '../images/runtime.js';
-import type { GeneratedOgImage } from '../types/index.js';
+import type { OgTemplateRenderer, PageImages } from '../images/runtime.js';
+import type { GeneratedOgImage, StatiImageOptions } from '../types/index.js';
 import { TemplateIndex, type PageLayoutResolution } from './template-index.js';
 import {
   RenderScope,

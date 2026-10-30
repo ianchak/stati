@@ -185,73 +185,22 @@ export function getCurrentNode(tree: NavNode[], currentPage: PageModel): NavNode
  *
  * @param tree - The full navigation tree
  * @param currentPage - The current page being rendered
- * @returns Object with navigation helper methods
+ * @returns The helpers templates read as `stati.nav`, documented on {@link NavigationHelpers}
  */
 export function createNavigationHelpers(
   tree: NavNode[],
   currentPage: PageModel,
 ): NavigationHelpers {
   return {
-    /**
-     * The full navigation tree.
-     * Use stati.nav.tree to access the global navigation.
-     */
     tree,
-
-    /**
-     * Gets the full navigation tree.
-     * @returns The complete navigation tree
-     */
     getTree: () => tree,
-
-    /**
-     * Finds a navigation node by path or URL.
-     * @param path - The path or URL to find
-     * @returns The found node or undefined
-     */
     findNode: (path: string) => findNode(tree, path),
-
-    /**
-     * Gets the children of a navigation node.
-     * @param path - The path of the parent node
-     * @returns Array of child navigation nodes
-     */
     getChildren: (path: string) => getChildren(tree, path),
-
-    /**
-     * Gets the parent of a navigation node.
-     * @param path - The path to find the parent for (defaults to current page)
-     * @returns The parent node or undefined
-     */
     getParent: (path?: string) => getParent(tree, path || currentPage.url),
-
-    /**
-     * Gets the siblings of a navigation node.
-     * @param path - The path to find siblings for (defaults to current page)
-     * @param includeSelf - Whether to include the node itself
-     * @returns Array of sibling nodes
-     */
     getSiblings: (path?: string, includeSelf = false) =>
       getSiblings(tree, path || currentPage.url, includeSelf),
-
-    /**
-     * Gets a subtree starting from a specific path.
-     * @param path - The root path for the subtree
-     * @returns Array containing the subtree
-     */
     getSubtree: (path: string) => getSubtree(tree, path),
-
-    /**
-     * Gets the breadcrumb trail for a path.
-     * @param path - The path to get breadcrumbs for (defaults to current page)
-     * @returns Array of nodes from root to the target
-     */
     getBreadcrumbs: (path?: string) => getBreadcrumbs(tree, path || currentPage.url),
-
-    /**
-     * Gets the current page's navigation node.
-     * @returns The navigation node for the current page or undefined
-     */
     getCurrentNode: () => getCurrentNode(tree, currentPage),
   };
 }

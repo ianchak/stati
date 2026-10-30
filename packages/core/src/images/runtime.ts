@@ -40,6 +40,7 @@ import type {
   OgImageFontConfig,
   PageModel,
   StatiConfig,
+  StatiImageOptions,
 } from '../types/index.js';
 import type { RenderedAssets } from '../core/isg/builder.js';
 import {
@@ -85,22 +86,6 @@ export interface OgTemplateRenderer {
   find(templateName: string): string | null;
   /** Renders a template that `find` returned, or the source of the built-in template */
   render(template: { path: string } | { source: string }): Promise<string>;
-}
-
-/**
- * Options for `stati.image()` in templates.
- */
-export interface StatiImageOptions {
-  /** Alternative text; use an empty string for decorative images */
-  alt?: string;
-  /** `sizes` attribute for responsive images */
-  sizes?: string;
-  /** Load eagerly with high fetch priority, for the main image above the fold */
-  priority?: boolean;
-  /** `class` attribute */
-  class?: string;
-  /** `title` attribute */
-  title?: string;
 }
 
 /** A unit of work that writes one or more files under the output directory. */

@@ -96,6 +96,7 @@ export type {
   OgFont,
   OgDefaults,
   GeneratedOgImage,
+  StatiImageOptions,
 } from './images.js';
 
 // Logging types

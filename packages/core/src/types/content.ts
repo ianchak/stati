@@ -594,7 +594,7 @@ export interface TemplateContext {
     path: string;
     url: string;
     content: string;
-    toc: TocEntry[]; // Table of contents from the page's headings; empty when it has none
+    toc: TocEntry[]; // h2 to h6 headings; empty when there are none or markdown.toc is false
     navNode?: import('./navigation.js').NavNode | undefined; // Current page's navigation node
     wordCount?: number; // Words in the Markdown body
     readingTime?: number; // Whole minutes to read, at least 1
@@ -652,10 +652,7 @@ export interface TemplateContext {
    * `images.responsive` is on. Synchronous; print it with `<%~ %>`. Relative paths resolve
    * next to the page's Markdown file, root-relative ones from the static directory.
    */
-  image: (
-    src: string,
-    options?: { alt?: string; sizes?: string; priority?: boolean; class?: string; title?: string },
-  ) => string;
+  image: (src: string, options?: import('./images.js').StatiImageOptions) => string;
   /** The page's SEO tags; `tags` limits them to some tag types */
   generateSEO: (tags?: string[]) => string;
   /** Size of the Open Graph image, set only while an Open Graph template renders */

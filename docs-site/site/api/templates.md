@@ -19,7 +19,7 @@ interface TemplateContext {
     path: string;
     url: string;
     content: string;
-    toc: TocEntry[]; // Table of contents from the page's headings; empty when it has none
+    toc: TocEntry[]; // h2 to h6 headings; empty when there are none or markdown.toc is false
     navNode?: NavNode; // Current page's navigation node
     wordCount?: number; // Words in the Markdown body
     readingTime?: number; // Whole minutes to read, at least 1
