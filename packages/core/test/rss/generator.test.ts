@@ -181,6 +181,45 @@ describe('RSS Feed Generation', () => {
       expect(result.xml).toContain('<![CDATA[<p>First post content</p>]]>');
     });
 
+    describe('includeContent with a CDATA terminator in the body', () => {
+      /**
+       * Reads an item's `<description>` the way an XML parser does: the element may hold only
+       * CDATA sections, none of which contains `]]>`, and their text joins into the value.
+       */
+      function readCdataDescription(xml: string): string {
+        const item = xml.slice(xml.indexOf('<item>'), xml.indexOf('</item>'));
+        const start = item.indexOf('<description>') + '<description>'.length;
+        const inner = item.slice(start, item.lastIndexOf('</description>'));
+        expect(inner).toMatch(/^(?:<!\[CDATA\[(?:(?!\]\]>)[\s\S])*\]\]>)+$/);
+        return [...inner.matchAll(/<!\[CDATA\[((?:(?!\]\]>)[\s\S])*)\]\]>/g)]
+          .map((section) => section[1])
+          .join('');
+      }
+
+      function feedFor(content: string): string {
+        const page = { ...samplePages[0]!, content };
+        return generateRSSFeed([page], baseConfig, {
+          ...baseFeedConfig,
+          itemMapping: { includeContent: true },
+        }).xml;
+      }
+
+      it.each([
+        ['in the middle', 'Some text with ]]> inside'],
+        ['at the start', ']]> opens the body'],
+        ['at the end', 'The body ends with ]]>'],
+        ['repeated', 'a ]]> b ]]>]]> c'],
+        ['next to brackets', 'x[y[0]]]> and ]]]]>'],
+      ])('keeps the feed well formed with ]]> %s', (_where, content) => {
+        expect(readCdataDescription(feedFor(content))).toBe(content);
+      });
+
+      it('leaves a body without the terminator in one CDATA section', () => {
+        const content = 'Brackets ]] and > alone, and <![CDATA[ text';
+        expect(feedFor(content)).toContain(`<description><![CDATA[${content}]]></description>`);
+      });
+    });
+
     it('should use custom field mapping for title', () => {
       samplePages[0]!.frontMatter.customTitle = 'Custom Title';
       baseFeedConfig.itemMapping = {

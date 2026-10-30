@@ -309,7 +309,7 @@ Include each page's body in its feed item:
 }
 ```
 
-> **Note:** `includeContent` uses the page's **Markdown source** (the text after the front matter), not rendered HTML. It is written inside a CDATA section in `<description>`. Feed readers that expect HTML will show the Markdown as plain text. The body is not escaped, so a body that contains `]]>` produces invalid XML.
+> **Note:** `includeContent` uses the page's **Markdown source** (the text after the front matter), not rendered HTML. It is written inside a CDATA section in `<description>`. Feed readers that expect HTML will show the Markdown as plain text. A `]]>` in the body is split across two CDATA sections, so the feed stays valid XML and readers get the body unchanged.
 
 ## Advanced features
 

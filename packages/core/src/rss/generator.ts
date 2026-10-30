@@ -247,6 +247,16 @@ function buildPageUrl(page: PageModel, config: StatiConfig): string {
   return toAbsoluteUrl(page.url, config);
 }
 
+/**
+ * Wraps text in a CDATA section. A `]]>` in the text would end the section early, so each
+ * one is split across two sections: the first ends after its `]]`, the next starts with `>`.
+ * @param text - Text to wrap, written unescaped
+ * @returns The CDATA section or sections
+ */
+function toCdata(text: string): string {
+  return `<![CDATA[${text.replaceAll(']]>', ']]]]><![CDATA[>')}]]>`;
+}
+
 function describeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
@@ -338,7 +348,7 @@ function buildItem(page: PageModel, context: ItemContext): string[] | undefined 
 
   // Description (or full content)
   if (itemMapping.includeContent && page.content) {
-    lines.push(`      <description><![CDATA[${page.content}]]></description>`);
+    lines.push(`      <description>${toCdata(page.content)}</description>`);
   } else {
     const description = getFieldValue<string>(page, itemMapping.description, 'description', logger);
     if (description) {
