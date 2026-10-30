@@ -217,6 +217,35 @@ describe('StylesheetRuntime', () => {
       expect(logger.info).not.toHaveBeenCalledWith('Linked /later.css as /later.css');
     });
 
+    it('links under a base URL set after the runtime was created, as a beforeAll hook does', async () => {
+      await write('public/styles.css', 'body{}');
+      const copy = hashStylesheet('body{}', '/styles.css').path;
+      const config = configWith();
+      const runtime = await StylesheetRuntime.create(config, {
+        outDir,
+        cacheDir,
+        logger,
+        recorder: createMetricRecorder({ enabled: true }),
+        development: false,
+        projectRoot: dir,
+      });
+
+      config.site = { ...config.site, baseUrl: 'https://example.com/sub' };
+
+      expect(
+        await runtime.linkPage('<link rel="stylesheet" href="/sub/styles.css">', '/', []),
+      ).toBe(`<link rel="stylesheet" href="/sub${copy}">`);
+    });
+
+    it('gives each caller a fingerprint of its own', async () => {
+      const runtime = await create();
+      const fingerprint = runtime.fingerprint() as Record<string, unknown>;
+
+      fingerprint.extra = true;
+
+      expect(runtime.fingerprint()).toEqual({ hashedStylesheets: true });
+    });
+
     it('relinks cached pages to the names this build gives and deletes the earlier copies', async () => {
       await write('public/styles.css', 'body{color:red}');
       await write('public/late.css', 'p{}');

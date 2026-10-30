@@ -510,6 +510,29 @@ describe('sites served from a base path', () => {
         );
       });
 
+      it('links the stylesheet under a base URL the beforeAll hook sets', async () => {
+        const config = vi.mocked(loadConfig).getMockImplementation()!;
+        vi.mocked(loadConfig).mockImplementation(async (...args) => ({
+          ...(await config(...args)),
+          site: { title: 'Fixture', baseUrl: 'https://example.com' },
+          hooks: {
+            beforeAll: ({ config: built }) => {
+              built.site = { ...built.site, baseUrl: 'https://example.com/sub' };
+            },
+          },
+        }));
+
+        const { warnings } = await site.build({ tailwind });
+
+        const [name] = await files();
+        for (const file of ['dist/index.html', 'dist/about.html']) {
+          expect(await site.read(file)).toContain(
+            `<link rel="stylesheet" href="/sub/_assets/${name}">`,
+          );
+        }
+        expect(warnings).toEqual([]);
+      });
+
       it('links the new name on cached pages when the CSS changes', async () => {
         await site.build({ tailwind });
         await site.write('src/styles.css', 'body { color: navy; }');

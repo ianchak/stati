@@ -154,7 +154,7 @@ export class StylesheetRuntime {
   private constructor(
     plan: StylesheetPlan | null,
     private readonly statics: StaticStylesheets | null,
-    private readonly siteUrl: string,
+    private readonly config: StatiConfig,
     private readonly outDir: string,
     private readonly cacheDir: string,
     private readonly stagingDir: string,
@@ -213,7 +213,7 @@ export class StylesheetRuntime {
     return new StylesheetRuntime(
       plan,
       statics,
-      config.site.baseUrl,
+      config,
       outDir,
       cacheDir,
       stagingDir,
@@ -232,7 +232,7 @@ export class StylesheetRuntime {
    * @returns An object to spread into the render inputs, empty without a stylesheet to link
    */
   fingerprint(): StylesheetRenderInputs {
-    return this.renderInputs;
+    return { ...this.renderInputs };
   }
 
   /** A page's `stati.assets.stylesheetPaths`: a new array each call, which the page can change */
@@ -351,6 +351,14 @@ export class StylesheetRuntime {
     for (const path of paths) {
       await removeStaleStylesheets(this.outDir, path, current[path]);
     }
+  }
+
+  /**
+   * The site's base URL, read on each use: a `beforeAll` hook can change it after the runtime
+   * is created, and the pages render with the one it leaves
+   */
+  private get siteUrl(): string {
+    return this.config.site.baseUrl;
   }
 
   private async linkHashedStylesheets(
