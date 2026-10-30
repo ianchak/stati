@@ -4,6 +4,7 @@
  */
 
 import { STATI_FAVICON_HREF, STATI_MARK_PATH, STATI_THEME_STYLES } from './theme.utils.js';
+import { LIVE_RELOAD_PATH } from './live-reload.utils.js';
 
 export interface ErrorDetails {
   type: 'template' | 'build' | 'markdown' | 'config';
@@ -650,7 +651,7 @@ const OVERLAY_SCRIPT = `
         var ws;
         try {
           var protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-          ws = new WebSocket(protocol + window.location.host + '/__ws');
+          ws = new WebSocket(protocol + window.location.host + '${LIVE_RELOAD_PATH}');
         } catch (e) {
           setStatus('off', 'Live reload unavailable');
           return;

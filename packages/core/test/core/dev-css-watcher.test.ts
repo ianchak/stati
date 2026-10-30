@@ -188,6 +188,33 @@ describe('Dev Server CSS watcher reconciliation', () => {
     await devServer.stop();
   });
 
+  it('does not start a CSS watcher for a rebuild that finishes after stop', async () => {
+    const cssA = 'C:/repo/dist/styles.css';
+    const cssB = 'C:/repo/dist/chunk.css';
+    mockFg.mockResolvedValueOnce([cssA]).mockResolvedValueOnce([cssA, cssB]);
+
+    const devServer = await createDevServer({ port: 3196, logger: createLogger() });
+    await devServer.start();
+    let finishBuild!: () => void;
+    mockBuild.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finishBuild = () =>
+            resolve({ totalPages: 1, assetsCount: 1, buildTimeMs: 5, outputSizeBytes: 128 });
+        }),
+    );
+
+    createdWatchers[0]!.emit('change', 'public/file.txt');
+    await waitFor(() => mockBuild.mock.calls.length >= 2);
+    await devServer.stop();
+    finishBuild();
+    await sleep(20);
+
+    // Only the source watcher and the first CSS watcher, both closed by stop()
+    expect(createdWatchers).toHaveLength(2);
+    expect(mockFg).toHaveBeenCalledTimes(1);
+  });
+
   it('does not recreate CSS watcher when output CSS files are unchanged', async () => {
     const cssA = 'C:/repo/dist/styles.css';
 
@@ -252,11 +279,11 @@ describe('Dev Server CSS watcher reconciliation', () => {
     expect(createdWsServers).toHaveLength(1);
     createdWsServers[0]!.clients.add(wsClient);
 
-    // Trigger source rebuild path (performIncrementalRebuild).
+    // Trigger source rebuild path (the rebuild queue).
     createdWatchers[0]!.emit('change', 'site/index.md');
     await waitFor(() => mockBuild.mock.calls.length >= 2);
 
-    // Trigger CSS output watcher change path (broadcastReload helper).
+    // Trigger CSS output watcher change path.
     expect(createdWatchers[1]).toBeDefined();
     createdWatchers[1]!.emit('change', cssA);
 
@@ -307,8 +334,7 @@ describe('refreshCssOutputWatcher', () => {
     const result = await refreshCssOutputWatcher({
       outDir: 'dist',
       logger: createLogger(),
-      wsServer: null,
-      disableWsReload: false,
+      reload: vi.fn(),
       cssWatcher: existingWatcher as never,
       watchedCssFiles: new Set(['C:/repo/dist/styles.css']),
     });
@@ -317,28 +343,26 @@ describe('refreshCssOutputWatcher', () => {
     expect(result).toBeNull();
   });
 
-  it('broadcasts reload only to open websocket clients', async () => {
+  it('reloads the open pages when a watched CSS file changes', async () => {
     const cssA = 'C:/repo/dist/styles.css';
     mockFg.mockResolvedValueOnce([cssA]);
 
     const logger = createLogger();
-    const openClient = { readyState: 1, send: vi.fn() };
-    const closedClient = { readyState: 3, send: vi.fn() };
+    const reload = vi.fn();
 
     const watcher = await refreshCssOutputWatcher({
       outDir: 'dist',
       logger,
-      wsServer: { clients: new Set([openClient, closedClient]) } as never,
-      disableWsReload: false,
+      reload,
       cssWatcher: null,
       watchedCssFiles: new Set(),
     });
 
     expect(watcher).not.toBeNull();
+    expect(reload).not.toHaveBeenCalled();
     createdWatchers[0]!.emit('change', cssA);
 
     expect(logger.info).toHaveBeenCalledWith('▸ C:/repo/dist/styles.css updated');
-    expect(openClient.send).toHaveBeenCalledWith(JSON.stringify({ type: 'reload' }));
-    expect(closedClient.send).not.toHaveBeenCalled();
+    expect(reload).toHaveBeenCalledTimes(1);
   });
 });

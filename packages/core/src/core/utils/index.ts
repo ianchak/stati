@@ -117,6 +117,10 @@ export {
   PortUnavailableError,
   resolveBasePathRequest,
   respondToBasePathRequest,
+  listenOnPort,
+  isPageRequest,
+  createStaticFileServer,
+  openInBrowser,
 } from './server.utils.js';
 export type {
   PrettyUrlResult,
@@ -124,6 +128,9 @@ export type {
   MergeServerOptionsParams,
   PortUnavailableCode,
   BasePathRequest,
+  StaticFileResponse,
+  StaticFileServerOptions,
+  StaticFileServer,
 } from './server.utils.js';
 
 // Error overlay utilities
@@ -178,6 +185,14 @@ export {
 
 // Environment utilities
 export { isEnabledEnvFlag } from './env.utils.js';
+
+// Dev-server live reload utilities
+export {
+  LIVE_RELOAD_PATH,
+  createReloadBroadcaster,
+  injectLiveReloadScript,
+} from './live-reload.utils.js';
+export type { ReloadBroadcasterOptions } from './live-reload.utils.js';
 
 // Dev-server CSS watcher utilities
 export { discoverOutputCssFiles, refreshCssOutputWatcher } from './dev-css-watcher.utils.js';

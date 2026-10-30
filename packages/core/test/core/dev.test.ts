@@ -2046,6 +2046,42 @@ describe('Development Server', () => {
       expect(await overlayFor(error)).toContain(headline);
     });
 
+    it('shows the overlay once a rebuild fails, until a rebuild succeeds', async () => {
+      const chokidar = await import('chokidar');
+      const handlers: Record<string, (path: string) => void> = {};
+      let watcherIndex = 0;
+      vi.mocked(chokidar.default.watch).mockImplementation(() => {
+        const currentIndex = watcherIndex++;
+        return {
+          on: vi.fn((event: string, handler: (path: string) => void) => {
+            if (currentIndex === 0) handlers[event] = handler;
+          }),
+          close: vi.fn(() => Promise.resolve()),
+        } as unknown as ReturnType<typeof chokidar.default.watch>;
+      });
+      const devServer = await createDevServer({ port: 8211, logger: createMockLogger() });
+      await devServer.start();
+      const statusOf = async (url: string) => {
+        const res = { writeHead: vi.fn(), end: vi.fn() };
+        await capturedRequestHandler!(
+          { url, method: 'GET' } as IncomingMessage,
+          res as unknown as ServerResponse,
+        );
+        return res.writeHead.mock.calls[0]?.[0];
+      };
+      expect(await statusOf('/blog/post')).not.toBe(500);
+
+      mockBuild.mockRejectedValueOnce(new Error('Template not found: header'));
+      handlers.change!(`${process.cwd()}/site/blog/post.md`);
+      await vi.waitFor(async () => expect(await statusOf('/blog/post')).toBe(500));
+
+      handlers.change!(`${process.cwd()}/site/blog/post.md`);
+      await vi.waitFor(async () => expect(await statusOf('/blog/post')).not.toBe(500));
+      expect(mockBuild).toHaveBeenCalledTimes(3);
+
+      await devServer.stop();
+    });
+
     it('points a front matter error at the Markdown file and line', async () => {
       const { FrontMatterError } = await import('../../src/core/utils/front-matter.utils.js');
       const file = `${process.cwd()}/site/blog/post.md`;
@@ -2098,6 +2134,62 @@ describe('Development Server', () => {
         );
         expect(endMock).toHaveBeenCalledWith('403 - Forbidden');
       }
+
+      await devServer.stop();
+    });
+  });
+
+  describe('request handling', () => {
+    function createResponse() {
+      const res = { writeHead: vi.fn(), end: vi.fn() };
+      return { res, response: res as unknown as ServerResponse };
+    }
+
+    it('leaves requests for the live reload socket to the WebSocket server', async () => {
+      const devServer = await createDevServer({ port: 8201, logger: createMockLogger() });
+      await devServer.start();
+      const { res, response } = createResponse();
+
+      await capturedRequestHandler!({ url: '/__ws', method: 'GET' } as IncomingMessage, response);
+
+      expect(res.writeHead).not.toHaveBeenCalled();
+      expect(res.end).not.toHaveBeenCalled();
+
+      await devServer.stop();
+    });
+
+    it('logs page requests, but not the files pages load', async () => {
+      const logger = createMockLogger();
+      const devServer = await createDevServer({ port: 8202, logger });
+      await devServer.start();
+
+      for (const url of ['/', '/about', '/styles.css', '/js/app.js']) {
+        await capturedRequestHandler!(
+          { url, method: 'GET' } as IncomingMessage,
+          createResponse().response,
+        );
+      }
+
+      expect(logger.processing.mock.calls).toEqual([['GET /'], ['GET /about']]);
+
+      await devServer.stop();
+    });
+
+    it('warns about a response that took longer than two seconds', async () => {
+      const logger = createMockLogger();
+      const devServer = await createDevServer({ port: 8203, logger });
+      await devServer.start();
+      // The request starts at 1000, and every later reading is 3500
+      let readings = 0;
+      vi.spyOn(Date, 'now').mockImplementation(() => (readings++ === 0 ? 1000 : 3500));
+      const { res, response } = createResponse();
+
+      await capturedRequestHandler!({ url: '/', method: 'GET' } as IncomingMessage, response);
+
+      expect(res.end).toHaveBeenCalledTimes(1);
+      expect(logger.warning).toHaveBeenCalledWith(
+        expect.stringMatching(/^Slow response: \/ took 2500ms \(heap: \d+MB, rss: \d+MB\)$/),
+      );
 
       await devServer.stop();
     });
