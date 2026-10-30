@@ -6,6 +6,7 @@
 // Re-export escape and validation utilities
 export {
   escapeHtml,
+  removeInvalidXmlChars,
   generateRobotsContent,
   parseRobotsDirectives,
   validateSEOMetadata,
