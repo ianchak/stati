@@ -89,9 +89,9 @@ export interface RSSFeedConfig {
 
   /**
    * Content directory patterns to include in this feed.
-   * Uses glob patterns to match content files: the page's source file path. A pattern without
-   * `*` or `?` also matches the files below it.
-   * @example ['blog/**', 'news/**']
+   * Uses glob patterns to match content files: the page's absolute source file path, so start
+   * folder patterns with `**\/`. A pattern without `*` or `?` also matches the files below it.
+   * @example ['**\/blog/**', '**\/news/**']
    */
   contentPatterns?: string[];
 

@@ -319,6 +319,18 @@ describe('generateNewsSitemap', () => {
       expect(logger.warning).toHaveBeenCalledWith(expect.stringContaining('/news/w/invalid'));
     });
 
+    it('reads the front matter publish date of a page without publishedAt', () => {
+      // A page a beforeAll hook adds has front matter but no publishedAt
+      const page = article('/news/w/added', undefined, { date: '2026-10-25T11:00:00Z' });
+
+      const { xml } = generateNewsSitemap([page], config(), news(), undefined, NOW);
+
+      expect(urls(xml)).toEqual(['https://example.com/news/w/added']);
+      expect(xml).toContain(
+        '<news:publication_date>2026-10-25T11:00:00.000Z</news:publication_date>',
+      );
+    });
+
     it('leaves out an undated article without a logger', () => {
       const { xml } = generateNewsSitemap(
         [article('/news/w/undated', undefined)],

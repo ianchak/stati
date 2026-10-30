@@ -189,7 +189,7 @@ function generateNewsSitemap(
 - `pages` (PageModel[]): Array of page objects
 - `config` (StatiConfig): Stati configuration object (`site.baseUrl`, `site.title` and `site.defaultLocale`)
 - `news` (NewsSitemapConfig): The `sitemap.news` options
-- `logger` (Logger, optional): Receives warnings about matching pages that have no valid `publishedAt` or no title
+- `logger` (Logger, optional): Receives warnings about matching pages that have no valid publish date or no title
 - `now` (Date, optional): The time `maxAgeDays` counts back from (default: the current time)
 
 **Returns:**

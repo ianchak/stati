@@ -11,6 +11,7 @@ import { ConfigValidationError } from '../config/errors.js';
 import {
   compileUrlPatterns,
   escapeHtml,
+  getPagePublishedDate,
   isVirtualPage,
   percentEncodeUrl,
   resolveAbsoluteUrl,
@@ -233,7 +234,7 @@ export function generateNewsSitemapXml(
  *
  * Drafts, generated pages, later pages of a paginated listing, the 404 page and noindex pages
  * (unless `sitemap.exclude: false` keeps them in) are left out, and so is a page that is
- * missing a valid `publishedAt` or a title, with a warning. Nothing to list still gives a valid
+ * missing a valid publish date or a title, with a warning. Nothing to list still gives a valid
  * `urlset`, with no `url` elements.
  *
  * @param pages - All pages of the site
@@ -265,8 +266,8 @@ export function generateNewsSitemap(
       continue;
     }
 
-    const publishedAt = page.publishedAt;
-    if (!(publishedAt instanceof Date) || Number.isNaN(publishedAt.getTime())) {
+    const publishedAt = getPagePublishedDate(page);
+    if (!publishedAt) {
       logger?.warning(
         `News sitemap: leaving out ${page.url}, which has no valid publication date (set publishedAt or date in its front matter).`,
       );

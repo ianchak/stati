@@ -192,6 +192,14 @@ describe('resolveSEODefaults', () => {
     expect(modifiedTime('soon')).toBeUndefined();
   });
 
+  it('reads the published time from front matter for a page without publishedAt', () => {
+    // A page a beforeAll hook adds has front matter but no publishedAt
+    const page = createPage({ frontMatter: { title: 'Added', date: '2026-01-05' } });
+    expect(resolveSEODefaults(page, ARTICLE_CONFIG)?.openGraph?.article?.publishedTime).toBe(
+      '2026-01-05T00:00:00.000Z',
+    );
+  });
+
   it('fills in article values one by one, keeping the ones front matter sets', () => {
     const page = createPage({
       ...POST,

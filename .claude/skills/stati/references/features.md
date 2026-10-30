@@ -34,7 +34,7 @@ Site-wide defaults (core 2.1+), each used only where front matter leaves the val
   author's name there.
 - `seo.articles` (`include` required, `exclude` wins; whole-URL globs as in
   bundles): matching pages print `og:type` `article`, `article:published_time`
-  (`page.publishedAt`, ISO), `article:modified_time` (front matter `updated`,
+  (the publish date, ISO), `article:modified_time` (front matter `updated`,
   ISO 8601 only), one `article:tag` per tag and `article:author` (the author's
   `url`), filled field by field. Generated pages and every page of a paginated
   listing never match. No `seo.articles` means no derived article tags.
@@ -312,7 +312,7 @@ sitemap: {
 ```
 
 Without `news` nothing is written. Each `<url>` has `news:publication` (name,
-language), `news:publication_date` (the page's `publishedAt`, ISO 8601 in UTC)
+language), `news:publication_date` (the page's publish date, ISO 8601 in UTC)
 and `news:title` (the `title` front matter), all XML-escaped, under `site.baseUrl`
 and its base path. Newest first, at most 1000. Left out: drafts, generated pages,
 later pages of a listing, the 404 page, noindex pages (unless `sitemap.exclude:

@@ -16,7 +16,12 @@ import type {
 } from '../types/content.js';
 import type { Logger } from '../types/logging.js';
 import { ConfigValidationError } from '../config/errors.js';
-import { compileUrlPatterns, isNotFoundPage, parseDateValue } from '../core/utils/index.js';
+import {
+  compileUrlPatterns,
+  getPagePublishedDate,
+  isNotFoundPage,
+  parseDateValue,
+} from '../core/utils/index.js';
 import { parseRobotsDirectives } from './utils/index.js';
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -157,7 +162,7 @@ function resolveArticle(
   const fill: OpenGraphArticle = {};
 
   if (isMissing(own.publishedTime)) {
-    const published = toISODate(page.publishedAt);
+    const published = getPagePublishedDate(page)?.toISOString();
     if (published) fill.publishedTime = published;
   }
   if (isMissing(own.modifiedTime)) {
