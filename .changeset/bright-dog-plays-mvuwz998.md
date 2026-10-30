@@ -2,4 +2,4 @@
 "@stati/core": patch
 ---
 
-keep includeContent feeds valid when the body contains ]]>
+keep RSS feeds valid when a body contains ]]> or control characters, and use the description for blank includeContent bodies
