@@ -30,10 +30,10 @@
     .inSection(articles, section.key, 5)
     .filter((other) => other.url !== url)
     .slice(0, 4);
-  const related = stati.helpers
-    .related(articles, url, 6)
-    .filter((other) => !moreInSection.includes(other))
-    .slice(0, 3);
+  /* Up to three stories sharing the most topics, from this section first, newest first on
+     ties, leaving out those already in "More in this section" */
+  const related =
+    stati.collection?.related(url, { limit: 3, sameFolderBonus: 1, exclude: moreInSection }) ?? [];
   const latest = articles
     .filter((other) => other.url !== url && !moreInSection.includes(other) && !related.includes(other))
     .slice(0, 5);

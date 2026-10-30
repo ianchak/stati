@@ -39,7 +39,7 @@ None of it needs JavaScript in the browser. The pages are plain HTML and one sty
 | `site/posts/layout.eta` | The layout for posts                                        |
 | `site/partials/`        | Shared pieces: head, header, footer, post lists, page links |
 | `public/styles.css`     | Every style on the site                                     |
-| `helpers/blog.js`       | Related posts and dates, used by the templates              |
+| `helpers/blog.js`       | Dates in your locale, used by the templates                 |
 | `stati.config.js`       | Your name, the feed, the sitemap and the SEO settings       |
 
 ## Next steps

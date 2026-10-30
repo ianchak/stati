@@ -5,14 +5,14 @@
        lead    the newest article with `lead: true` in its front matter, or the newest article
        top     articles with `featured: true`, topped up with the newest others
        latest  the next newest, in the strip under the nameplate
-       more    up to two stories related to the lead, under it
+       more    up to two stories that share the most topics with the lead, under it
 
      Then each section in site.sections gets a column with its newest stories that are not
      already on the page, and a last column lists the topics. Each story appears once. On
      phones the strip under the nameplate moves below the top stories. Stati rebuilds this page
      when an article is added, moved, retitled, or gets or loses `lead` or `featured`. */
   const articles = stati.helpers.articles(stati.collection?.recentPages ?? []);
-  const { lead, top, latest, more, shown } = stati.helpers.frontPage(articles);
+  const { lead, top, latest, more, shown } = stati.helpers.frontPage(stati.collection);
   const edition = lead
     ? {
         label: stati.helpers.formatDate(articles[0].publishedAt, 'edition'),

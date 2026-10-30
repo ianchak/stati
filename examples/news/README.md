@@ -107,6 +107,7 @@ Every article lives under `site/news/`, so `site/news/index.md` makes one collec
 
 - **Section and author pages** come from `collections.generate` in `helpers/news.js`: one entry per section in `site.sections` and per author in `site.authors`, each rendered with `site/news/[section].md` or `site/authors/[author].md`.
 - **Topic pages** come from `site/tags/[tag].md`, which Stati turns into one page for every tag.
+- **Related stories** under the lead on the front page and under each article come from `stati.collection.related()`: the stories that share the most topics with the lead or the article, from its own section first.
 - **Pages of stories:** `paginate` and `generate.paginate` split long listings into `/page/2` and so on; templates read the current page from `stati.pagination`.
 
 Stati rebuilds the pages that list a story when it is added, moved, retitled, or its standfirst, image, authors, topics, `lead` or `featured` change; `collections.summaryFields` in the config lists the fields that count. After changing `helpers/news.js`, build with `npx stati build --force`.

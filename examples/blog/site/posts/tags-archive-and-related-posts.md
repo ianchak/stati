@@ -45,7 +45,7 @@ The [archive](/posts) lists every post grouped by year. Its front matter asks th
 
 ## Newer, older and related
 
-Under each post, links lead to the next newer and older post, and to up to three related posts. A post is related when it shares a tag; the more tags it shares, the higher it ranks. Posts without tags have no related posts. The post layout finds all of them in `stati.collection`, the related ones with `stati.helpers.relatedPosts` from `helpers/blog.js`.
+Under each post, links lead to the next newer and older post, and to up to three related posts. A post is related when it shares a tag; the more tags it shares, the higher it ranks, and the newer post wins a tie. Posts without tags have no related posts. The post layout finds all of them in `stati.collection`, the related ones with `stati.collection.related()`.
 
 ## Why listings stay current
 

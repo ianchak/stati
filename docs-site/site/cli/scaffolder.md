@@ -174,7 +174,7 @@ Each complete template works on first run, and its sample pages explain how each
 - Open Graph and Twitter tags on every page
 - Drafts that stay out of the build until you publish them, and a 404 page
 - Light and dark themes with a self-hosted display face, styled from custom properties
-- Listings read from Stati's [collections](/core-concepts/collections): `paginate` splits the home page, `site/tags/[tag].md` generates the tag pages, and `helpers/blog.js` adds helpers for related posts and dates; the blog uses no build hooks
+- Listings read from Stati's [collections](/core-concepts/collections): `paginate` splits the home page, `site/tags/[tag].md` generates the tag pages, `stati.collection.related()` picks the related posts, and `helpers/blog.js` adds date helpers; the blog uses no build hooks
 
 The blog's `stati.config.js` holds the feed, sitemap and SEO settings, and the blog adds a `build:drafts` script (`stati build --include-drafts`).
 

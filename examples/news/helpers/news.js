@@ -7,8 +7,9 @@
  *   feeds     the site-wide RSS feed plus one per section
  *
  * Listings still come from Stati itself: every article lives in site/news/<section>/, so
- * `stati.collection` on a page with `collection: /news` holds them all, newest first, and
- * Stati rebuilds the pages that list an article when it is added, moved, retitled or retagged.
+ * `stati.collection` on a page with `collection: /news` holds them all, newest first, its
+ * `related()` method picks the stories that share the most tags with one of them, and Stati
+ * rebuilds the pages that list an article when it is added, moved, retitled or retagged.
  */
 
 /**
@@ -181,15 +182,17 @@ export function createNews(options) {
     articles: (pages) => articlesIn(pages ?? []),
 
     /**
-     * The front page's picks from the articles. Each story appears once, in this order:
+     * The front page's picks from the articles of a collection: pass `stati.collection`.
+     * Each story appears once, in this order:
      *   lead     the newest article with `lead: true`, or else the newest article
      *   top      articles with `featured: true`, newest first, topped up with the newest others
      *   latest   the newest of the rest, for the strip under the nameplate
-     *   more     up to two of the rest related to the lead, listed under it
+     *   more     up to two of the rest that share the most tags with the lead, from its own
+     *            section first, listed under it
      *   shown    all of the above, for the section columns to leave out
      */
-    frontPage: (pages, topCount = 3, latestCount = 3) => {
-      const stories = articlesIn(pages ?? []);
+    frontPage: (collection, topCount = 3, latestCount = 3) => {
+      const stories = articlesIn(collection?.recentPages ?? []);
       const lead = stories.find((story) => story.frontMatter.lead === true) ?? stories[0];
       const rest = stories.filter((story) => story !== lead);
       const top = [
@@ -199,10 +202,7 @@ export function createNews(options) {
       const latest = rest.filter((story) => !top.includes(story)).slice(0, latestCount);
       const taken = [lead, ...top, ...latest];
       const more = lead
-        ? helpers
-            .related(stories, lead.url, stories.length)
-            .filter((story) => !taken.includes(story))
-            .slice(0, 2)
+        ? collection.related(lead.url, { limit: 2, sameFolderBonus: 1, exclude: taken })
         : [];
       return { lead, top, latest, more, shown: [...taken, ...more], total: stories.length };
     },
@@ -221,30 +221,6 @@ export function createNews(options) {
         .map(([tag, pages]) => ({ tag, count: pages.length }))
         .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag))
         .slice(0, limit),
-
-    /**
-     * Articles that share the most tags with this one, preferring its own section,
-     * newest first on ties.
-     */
-    related: (pages, url, limit = 3) => {
-      const stories = articlesIn(pages ?? []);
-      const current = stories.find((story) => story.url === url);
-      if (!current) return [];
-      const own = new Set(tagsOf(current).map((tag) => tag.toLowerCase()));
-      const section = sectionOf(current.url)?.key;
-      return stories
-        .filter((story) => story !== current)
-        .map((story) => ({
-          story,
-          score:
-            tagsOf(story).filter((tag) => own.has(tag.toLowerCase())).length +
-            (sectionOf(story.url)?.key === section ? 1 : 0),
-        }))
-        .filter(({ score }) => score > 0)
-        .sort((a, b) => b.score - a.score)
-        .slice(0, limit)
-        .map(({ story }) => story);
-    },
 
     /** Articles grouped by the day they were published, for the latest-news stream. */
     byDay: (pages) => {
