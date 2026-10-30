@@ -9,7 +9,12 @@ import type { StatiConfig } from '../types/config.js';
 import type { Logger } from '../types/logging.js';
 import { ConfigValidationError } from '../config/errors.js';
 import { isVirtualPage, matchesGlob } from '../core/utils/index.js';
-import { escapeHtml, percentEncodeUrl, resolveAbsoluteUrl } from './utils/index.js';
+import {
+  escapeHtml,
+  percentEncodeUrl,
+  removeInvalidXmlChars,
+  resolveAbsoluteUrl,
+} from './utils/index.js';
 import { CHANGE_FREQUENCIES, isLeftOutBySitemapRules } from './sitemap.js';
 
 /** The XML namespace of Google News sitemap elements */
@@ -25,10 +30,6 @@ const DEFAULT_MAX_AGE_DAYS = 2;
 export const DEFAULT_NEWS_SITEMAP_FILENAME = 'news-sitemap.xml';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-
-/** Characters XML 1.0 does not allow in text, which a copy-pasted title can hold */
-// eslint-disable-next-line no-control-regex
-const INVALID_XML_CHARS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F￾￿]/g;
 
 /** The file names of the main sitemap, which the news sitemap must not overwrite */
 const MAIN_SITEMAP_FILENAME = /^sitemap(-\d+)?\.xml$/i;
@@ -180,7 +181,7 @@ function languageOfLocale(locale: string | undefined): string {
 
 /** Escapes text for an XML element, dropping the characters XML cannot hold */
 function escapeXml(text: string): string {
-  return escapeHtml(text.replace(INVALID_XML_CHARS, ''));
+  return escapeHtml(removeInvalidXmlChars(text));
 }
 
 /** One article of the news sitemap */
