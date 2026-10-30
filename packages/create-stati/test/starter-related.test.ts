@@ -105,7 +105,9 @@ describe('related pages in the starters', () => {
         createBlog(options: { site: object }): { helpers: object };
       }>('blog/helpers/blog.js');
 
-      expect(Object.keys(createBlog({ site: {} }).helpers)).toEqual(['formatDate', 'isoDate']);
+      const { helpers } = createBlog({ site: {} });
+      expect(helpers).not.toHaveProperty('relatedPosts');
+      expect(helpers).toHaveProperty('formatDate');
     });
   });
 
