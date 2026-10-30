@@ -1,4 +1,4 @@
-import type { NavNode, PageModel } from '../../types/index.js';
+import type { NavigationHelpers, NavNode, PageModel } from '../../types/index.js';
 
 /**
  * Navigation helper utilities for template context.
@@ -187,7 +187,10 @@ export function getCurrentNode(tree: NavNode[], currentPage: PageModel): NavNode
  * @param currentPage - The current page being rendered
  * @returns Object with navigation helper methods
  */
-export function createNavigationHelpers(tree: NavNode[], currentPage: PageModel) {
+export function createNavigationHelpers(
+  tree: NavNode[],
+  currentPage: PageModel,
+): NavigationHelpers {
   return {
     /**
      * The full navigation tree.

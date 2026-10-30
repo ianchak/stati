@@ -43,6 +43,7 @@ export type {
   TemplateContext,
   TemplateIncludeFunction,
   TemplateLayoutFunction,
+  PropValueArg,
   SEOMetadata,
   SitemapMetadata,
   RobotsConfig,
@@ -76,7 +77,7 @@ export type { RSSConfig, RSSFeedConfig, RSSGenerationResult } from './rss.js';
 export type { SearchConfig, SearchDocument, SearchIndex, SearchIndexMetadata } from './search.js';
 
 // Navigation types
-export type { NavNode } from './navigation.js';
+export type { NavNode, NavigationHelpers } from './navigation.js';
 
 // Image types
 export type {
