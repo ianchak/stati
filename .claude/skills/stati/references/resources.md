@@ -134,12 +134,12 @@ source rather than unsupported deep imports.
 | Includes/shells/props/names      | `packages/core/src/core/template-render.ts`, `template-index.ts`, `eta-plugin.ts`  | `packages/core/test/core/template-composition.test.ts`, `template-index.test.ts` |
 | Attribute tokens                 | `packages/core/src/core/utils/template.utils.ts`                                   | `packages/core/test/utils/template-utils.test.ts`                                |
 | Navigation helpers               | `packages/core/src/core/navigation.ts`, `core/utils/navigation-helpers.utils.ts`   | `packages/core/test/core/navigation.test.ts`, `navigation-helpers.test.ts`       |
-| Build output/hooks/injection     | `packages/core/src/core/build.ts`                                                  | `packages/core/test/core/build.test.ts`                                          |
+| Build output/hooks/injection     | `packages/core/src/core/build.ts`, `render-pages.ts`, `page-writer.ts`             | `packages/core/test/core/build.test.ts`, `render-pages.test.ts`                  |
 | Cache/TTL/invalidation           | `packages/core/src/core/isg/`, `core/invalidate.ts`, `types/isg.ts`                | ISG/invalidation tests, `template-recording.test.ts`                             |
 | Dev/preview/overlays             | `packages/core/src/core/dev.ts`, `preview.ts`, `core/utils/error-overlay.utils.ts` | Dev/preview/error-overlay integration tests                                      |
 | Browser bundles/matching         | `packages/core/src/core/utils/typescript.utils.ts`, `bundle-matching.utils.ts`     | `packages/core/test/typescript.utils.test.ts`, bundle matching tests             |
 | Tailwind inventory               | `packages/core/src/core/utils/tailwind-inventory.utils.ts`                         | `packages/core/test/core/tailwind-inventory.test.ts`                             |
-| Hashed stylesheets (build/link)  | `packages/core/src/css/`, `core/build.ts`                                          | `packages/core/test/css/`, `core/stylesheet-integration.test.ts`                 |
+| Hashed stylesheets (build/link)  | `packages/core/src/css/` (`runtime.ts` runs them per build)                        | `packages/core/test/css/`, `core/stylesheet-integration.test.ts`                 |
 | SEO/sitemap/robots               | `packages/core/src/seo/`, `types/seo.ts`, `types/sitemap.ts`                       | SEO tests                                                                        |
 | Search index/injection           | `packages/core/src/search/`, `types/search.ts`                                     | Search tests                                                                     |
 | RSS/filter/mappings              | `packages/core/src/rss/`, `types/rss.ts`                                           | RSS tests                                                                        |

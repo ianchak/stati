@@ -1,6 +1,5 @@
 import {
   ensureDir,
-  readFile,
   writeFile,
   remove,
   pathExists,
@@ -20,13 +19,8 @@ import {
   compileTypeScript,
   detectExistingBundles,
   removeStaleBundleFiles,
-  autoInjectBundles,
-  getBundlePathsForPage,
   formatBytes,
   isVirtualPage,
-  isNotFoundPage,
-  getPageOutputFile,
-  isPathWithinDirectory,
   resolveSrcDir,
   getBasePath,
 } from './utils/index.js';
@@ -38,29 +32,17 @@ import { loadConfig } from '../config/loader.js';
 import { validateDirectoryLayout } from '../config/directories.js';
 import { loadContent } from './content.js';
 import { expandPages } from './expand.js';
-import { fillTextStats } from './reading-time.js';
-import {
-  createSummaryHasher,
-  resolveCollectionPath,
-  resolveSummaryFields,
-  type PageReads,
-} from './collections.js';
-import { createMarkdownProcessor, renderMarkdown, extractToc } from './markdown.js';
-import { createTemplateEngine, renderPage } from './templates.js';
-import { loadTemplateIndex, type TemplateIndex } from './template-index.js';
+import { createMarkdownProcessor } from './markdown.js';
+import { createTemplateEngine } from './templates.js';
+import { loadTemplateIndex } from './template-index.js';
 import { buildNavigation } from './navigation.js';
-import { BasePathLinkReport } from './base-path-links.js';
+import { getPageOutput, prepareRenderSession, renderPages } from './render-pages.js';
 import {
   loadCacheManifest,
   saveCacheManifest,
-  shouldRebuildPage,
-  createCacheEntry,
-  updateCacheEntry,
-  hasRecordedReads,
   pruneOrphanedPages,
   withBuildLock,
   computeNavigationHash,
-  computeContentHash,
   clearFileHashCache,
 } from './isg/index.js';
 import {
@@ -68,58 +50,24 @@ import {
   generateNewsSitemap,
   resolveNewsSitemapFilename,
   generateRobotsTxtFromConfig,
-  autoInjectSEO,
-  applySEODefaults,
-  refreshSEODefaults,
-  type AutoInjectOptions,
 } from '../seo/index.js';
 import { generateRSSFeeds, validateRSSConfig } from '../rss/index.js';
-import {
-  computeSearchIndexFilename,
-  generateSearchIndex,
-  writeSearchIndex,
-  removeStaleSearchIndexes,
-  autoInjectSearchMeta,
-  isGeneratedPageExcludedFromSearch,
-} from '../search/index.js';
-import {
-  createStylesheetPlan,
-  checkStylesheetSources,
-  getStylesheetFingerprint,
-  getRenderStylesheetPath,
-  buildStylesheet,
-  getStaleStylesheetPaths,
-  relinkStylesheets,
-  removeStaleStylesheets,
-  autoInjectStylesheets,
-  getLinkedStylesheetPaths,
-  linksStylesheetWithIntegrity,
-  rewriteStylesheetLinks,
-  resolveCSSConfig,
-  StaticStylesheets,
-  isHashableStylesheetPath,
-  type BuiltStylesheet,
-  type StylesheetPlan,
-  type TailwindBuildOptions,
-} from '../css/index.js';
+import { removeStaleSearchIndexes } from '../search/index.js';
+import type { TailwindBuildOptions } from '../css/index.js';
+import { StylesheetRuntime } from '../css/runtime.js';
 import { getEnv, isDevelopment } from '../env.js';
-import { CSS_OUT_DIR, DEFAULT_OUT_DIR, MAX_DEFERRED_PAGES_LENGTH } from '../constants.js';
+import { DEFAULT_OUT_DIR } from '../constants.js';
 import type {
-  BuildContext,
   BuildStats,
   Logger,
   StatiConfig,
   CacheManifest,
-  CacheEntry,
   PageModel,
   NavNode,
-  StatiAssets,
-  TocEntry,
 } from '../types/index.js';
 import type { MarkdownIt } from 'markdown-it';
 import { ImageRuntime } from '../images/runtime.js';
 import type { SettleResult } from '../images/runtime.js';
-import type { RenderedAssets } from './isg/index.js';
 import type { MetricRecorder, BuildMetrics } from '../metrics/index.js';
 import { createMetricRecorder, noopMetricRecorder } from '../metrics/index.js';
 
@@ -185,20 +133,6 @@ export interface BuildOptions {
    */
   tailwind?: TailwindBuildOptions | undefined;
 }
-
-/**
- * The stylesheet pages link while they render: the build's plan and the path they carry,
- * which a hashed production build replaces once Tailwind has run.
- */
-interface RenderStylesheet {
-  plan: StylesheetPlan;
-  path: string;
-  /** Where a production build keeps the rendered pages it can't hold in memory until then */
-  stagingDir: string;
-}
-
-/** The folder in the cache directory for pages a production build holds past its memory limit */
-const STAGED_PAGES_DIR = 'pending-pages';
 
 /**
  * Extended build result including optional metrics.
@@ -455,701 +389,6 @@ async function loadContentAndBuildNavigation(
 }
 
 /**
- * Searchable page data collected during build for search index generation.
- */
-interface SearchablePageData {
-  page: PageModel;
-  toc: TocEntry[];
-  markdownContent: string;
-}
-
-/**
- * Result from processing pages with caching.
- */
-interface ProcessPagesResult {
-  cacheHits: number;
-  cacheMisses: number;
-  /** The search index file the pages link to (only when search is enabled) */
-  searchIndexFilename: string | undefined;
-  /** Rendered pages a production build writes once Tailwind has built the stylesheet */
-  deferredPages: DeferredPage[];
-  /** The output files of the pages this build rendered, written or held */
-  renderedFiles: string[];
-  /** Stylesheet paths rendered pages link that the static directory has no file for */
-  unhashedLinks: string[];
-}
-
-/**
- * A rendered page and the file it goes to. Its HTML is in memory, or past the memory limit in
- * a staged file in the cache directory, so the output directory keeps the previous build's
- * page until the stylesheet is built.
- */
-type DeferredPage =
-  { outputPath: string; content: string } | { outputPath: string; stagedFile: string };
-
-/** Pages written at once */
-const WRITE_BATCH_SIZE = 32;
-
-/**
- * Writes held pages in batches, with one stylesheet path swapped for another.
- */
-async function writeDeferredPages(
-  pages: readonly DeferredPage[],
-  from: string,
-  to: string,
-): Promise<void> {
-  await Promise.all([...new Set(pages.map((page) => dirname(page.outputPath)))].map(ensureDir));
-  for (let i = 0; i < pages.length; i += WRITE_BATCH_SIZE) {
-    await Promise.all(
-      pages.slice(i, i + WRITE_BATCH_SIZE).map(async (page) => {
-        const content = 'content' in page ? page.content : await readFile(page.stagedFile);
-        if (content === null) {
-          throw new Error(
-            `A rendered page is missing from the cache directory: ${page.outputPath}`,
-          );
-        }
-        await writeFile(
-          page.outputPath,
-          from === to ? content : content.split(from).join(to),
-          'utf-8',
-        );
-      }),
-    );
-  }
-}
-
-/**
- * Generates the search index from the page models and writes it before any page renders,
- * returning the file name pages link to. Every page links to the index, and the name is part
- * of each page's cache hash, so a production build names a hashed file after the index
- * content: a build that leaves the indexed text alone keeps the name and its cached pages.
- * Development keeps one name, so a content edit does not re-render every page. Writing the
- * index first means it is not held in memory while the pages render.
- *
- * @returns The index file name, or undefined when search is disabled
- */
-async function writeSearchIndexBeforeRendering(
-  pages: PageModel[],
-  config: StatiConfig,
-  md: MarkdownIt,
-  outDir: string,
-  logger: Logger,
-  recorder: MetricRecorder,
-): Promise<string | undefined> {
-  if (config.search?.enabled !== true) {
-    return undefined;
-  }
-  const isDevMode = isDevelopment();
-
-  const endSearchIndexSpan = recorder.startSpan('searchIndexGenerationMs');
-  // TOC entries and markdown content, the same data a render produces, without rendering.
-  // Sorted by URL, so the index content, and with it the name, changes only when pages do.
-  const tocEnabled = config.markdown?.toc !== false;
-  const byUrl = (a: PageModel, b: PageModel) =>
-    a.url.localeCompare(b.url) || a.sourcePath.localeCompare(b.sourcePath);
-  const searchablePages: SearchablePageData[] = pages
-    .filter((page) => !isGeneratedPageExcludedFromSearch(page))
-    .sort(byUrl)
-    .map((page) => ({
-      page,
-      toc: tocEnabled ? extractToc(page.content, md) : [],
-      markdownContent: page.content,
-    }));
-  const basePath = getBasePath(config.site.baseUrl);
-  const index = generateSearchIndex(searchablePages, config.search, logger, basePath);
-
-  // A production hash covers the documents, base path and schema version, not generatedAt,
-  // which changes on every build; serializing them is skipped when the name has no hash
-  const hashInput = isDevMode
-    ? 'dev'
-    : config.search.hashFilename !== false
-      ? JSON.stringify({ version: index.version, basePath, documents: index.documents })
-      : undefined;
-  const filename = computeSearchIndexFilename(config.search, hashInput);
-  endSearchIndexSpan();
-
-  // Pages still link to the name when nothing is searchable, but no file is written
-  if (searchablePages.length === 0) {
-    return filename;
-  }
-
-  logger.info('');
-  logger.info(`Generating search index to ${filename}`);
-  const writeStart = performance.now();
-  // In dev mode, skip write if content hasn't changed (template-only changes)
-  const metadata = await writeSearchIndex(index, outDir, filename, isDevMode);
-  recorder.recordPhase('searchIndexWriteMs', performance.now() - writeStart);
-  logger.success(`Generated search index with ${metadata.documentCount} documents`);
-
-  return filename;
-}
-
-/**
- * Output file and ISG cache key of a page.
- *
- * @throws Error when the page's file would not be inside the output directory
- */
-function getPageOutput(page: PageModel, outDir: string): { outputPath: string; cacheKey: string } {
-  const outputPath = join(outDir, getPageOutputFile(page.url));
-
-  // Loading and expanding skip such pages; this catches a hook that changed a page's URL
-  if (!isPathWithinDirectory(outDir, outputPath)) {
-    throw new Error(
-      `The page ${page.url} (${page.sourcePath}) would be written outside the output directory: ${outputPath}. Remove the ".." segments from its URL.`,
-    );
-  }
-
-  // Cache key is the output path relative to outDir
-  const relativePath = relative(outDir, outputPath).replace(/\\/g, '/');
-  const cacheKey = relativePath.startsWith('/') ? relativePath : `/${relativePath}`;
-  return { outputPath, cacheKey };
-}
-
-/**
- * Hashes a value for the render inputs, or returns a value that never matches when it
- * cannot be serialized, so the page rebuilds instead of keeping stale output.
- */
-function hashableData(value: unknown): unknown {
-  try {
-    JSON.stringify(value);
-    return value ?? null;
-  } catch {
-    return `unserializable:${Date.now()}:${Math.random()}`;
-  }
-}
-
-/**
- * Processes pages with ISG caching logic.
- */
-async function processPagesWithCache(
-  pages: PageModel[],
-  manifest: CacheManifest,
-  config: StatiConfig,
-  outDir: string,
-  md: MarkdownIt,
-  eta: ReturnType<typeof createTemplateEngine>,
-  navigation: NavNode[],
-  buildTime: Date,
-  options: BuildOptions,
-  logger: Logger,
-  compiledBundles: CompiledBundleInfo[],
-  recorder: MetricRecorder = noopMetricRecorder,
-  imageRuntime: ImageRuntime | null = null,
-  navigationHash: string = computeNavigationHash(navigation),
-  templateIndex?: TemplateIndex,
-  stylesheet: RenderStylesheet | null = null,
-  staticStylesheets: StaticStylesheets | null = null,
-): Promise<ProcessPagesResult> {
-  let cacheHits = 0;
-  let cacheMisses = 0;
-
-  // Every .eta file under the source directory, read once for all pages
-  const index = templateIndex ?? (await loadTemplateIndex(resolveSrcDir(config)));
-
-  // Build context
-  const buildContext: BuildContext = { config, pages };
-
-  // Run beforeAll hook
-  if (config.hooks?.beforeAll) {
-    const endHookBeforeAll = recorder.startSpan('hookBeforeAllMs');
-    await config.hooks.beforeAll(buildContext);
-    endHookBeforeAll();
-  }
-
-  // Pages the hook added get a word count and reading time; the others have had them since load
-  fillTextStats(pages, config);
-
-  // Site-wide SEO defaults go into front matter, which each page's cache hash covers, so
-  // changing one rebuilds the pages it changes. After beforeAll, whose values win.
-  applySEODefaults(pages, config, logger);
-
-  // Collection summaries, hashed after beforeAll because the hook can change front matter
-  const summaries = createSummaryHasher(pages, resolveSummaryFields(config));
-
-  // Generated after beforeAll for the same reason; pages render with its file name
-  const searchIndexFilename = await writeSearchIndexBeforeRendering(
-    pages,
-    config,
-    md,
-    outDir,
-    logger,
-    recorder,
-  );
-
-  // The pages of a listing share one array of page URLs, hashed once for all of them
-  const urlListHashes = new WeakMap<readonly string[], string>();
-  const hashUrlList = (urls: readonly string[]): string => {
-    let hash = urlListHashes.get(urls);
-    if (hash === undefined) {
-      hash = computeContentHash('', { urls });
-      urlListHashes.set(urls, hash);
-    }
-    return hash;
-  };
-
-  // Render each page with progress tracking and ISG
-  if (logger.step) {
-    logger.step(2, 3, 'Rendering pages');
-    console.log(); // Add spacing after step header
-  }
-
-  // Initialize progress tracking
-  if (logger.startProgress) {
-    logger.startProgress(pages.length);
-  }
-
-  // The path the site is served from, which every root-relative URL core emits starts with
-  const basePath = getBasePath(config.site.baseUrl);
-  const basePathLinks = new BasePathLinkReport(basePath);
-
-  // Track timing for shouldRebuildPage
-  let totalShouldRebuildTime = 0;
-  let totalMarkdownTime = 0;
-  let totalRenderTime = 0;
-  let totalPostRenderTime = 0;
-  let totalFileWriteTime = 0;
-  let totalCacheEntryTime = 0;
-
-  // Batch pending writes for parallel execution (dev mode optimization)
-  const isDevMode = isDevelopment();
-  const pendingWrites: Array<{ outputPath: string; content: string }> = [];
-  const pendingCacheUpdates: Array<{
-    cacheKey: string;
-    page: PageModel;
-    existingEntry: CacheEntry | undefined;
-    renderInputsHash: string;
-    renderedAssets: RenderedAssets | undefined;
-  }> = [];
-
-  // Image settings that change generated HTML, part of every page's render inputs
-  const imageFingerprint = imageRuntime?.fingerprint();
-
-  // Every page links the same stylesheet. Its settings go into the render inputs, but not a
-  // hashed build's file name: that is known only after the pages render, and the build writes
-  // it into cached pages too.
-  const stylesheetPaths = stylesheet ? [stylesheet.path] : [];
-  const stylesheetFingerprint = stylesheet ? getStylesheetFingerprint(stylesheet.plan) : undefined;
-  // A hashed production build points every link to a stylesheet it hashes at the hashed name:
-  // a link to the Tailwind output's path at the name this build gives it, and a link to a
-  // stylesheet in the static directory at its hashed copy
-  const tailwindTargets = new Map<string, string>(
-    stylesheet?.plan.hash ? [[stylesheet.plan.path, stylesheet.path]] : [],
-  );
-  // The names links get, which a page that links them already needs no copy for
-  const hashedNames = new Set(tailwindTargets.values());
-  // Stylesheet paths pages link that the static directory has no file for, such as one added
-  // later; the build records them, so pages kept from now on link its copy once it exists
-  const unhashedLinks = new Set<string>();
-  const linkHashedStylesheets = async (html: string, pageUrl: string): Promise<string> => {
-    const targets = new Map(tailwindTargets);
-    for (const path of getLinkedStylesheetPaths(html, pageUrl, config.site.baseUrl)) {
-      if (targets.has(path) || hashedNames.has(path)) {
-        continue;
-      }
-      const copy = await staticStylesheets?.resolve(path);
-      if (copy !== undefined) {
-        targets.set(path, copy);
-        hashedNames.add(copy);
-      } else if (isHashableStylesheetPath(path)) {
-        unhashedLinks.add(path);
-      }
-    }
-    return rewriteStylesheetLinks(html, targets, pageUrl, config.site.baseUrl);
-  };
-  const renderedFiles: string[] = [];
-  // A production build runs Tailwind after rendering: it keeps the pages it renders until then,
-  // so a Tailwind error leaves the previous build's pages in place, hashed or not, and a hashed
-  // build writes each page once with the stylesheet's final name
-  const deferWrites = !isDevMode && stylesheet !== null;
-  const deferredPages: DeferredPage[] = [];
-  let deferredLength = 0;
-
-  for (let i = 0; i < pages.length; i++) {
-    const page = pages[i];
-    if (!page) continue; // Safety check
-
-    // Determine output path and cache key
-    const { outputPath, cacheKey } = getPageOutput(page, outDir);
-    const existingEntry = manifest.entries[cacheKey];
-
-    const bundlePaths = getBundlePathsForPage(page.url, compiledBundles);
-    const searchIndexPath =
-      config.search?.enabled === true && searchIndexFilename
-        ? `/${searchIndexFilename}`
-        : undefined;
-    const assets: StatiAssets = {
-      bundlePaths,
-      // A copy per page, like bundlePaths, so a template that changes it changes only its page
-      stylesheetPaths: [...stylesheetPaths],
-      ...(searchIndexPath && { searchIndexPath }),
-    };
-
-    // Collection the page sees as stati.collection; a page whose collection appears,
-    // disappears or changes rebuilds even when it never read it
-    const collectionPath = resolveCollectionPath(page, pages);
-    const staticRenderInputs = {
-      bundlePaths,
-      ...(searchIndexPath && { searchIndexPath }),
-      // Omitted without a base path, so the hash matches builds from before Stati supported one
-      ...(basePath && { basePath }),
-      // What stati.page.readingTime shows, which a new reading speed changes without a file change
-      ...(page.wordCount !== undefined && { wordCount: page.wordCount }),
-      ...(page.readingTime !== undefined && { readingTime: page.readingTime }),
-      bundleAutoInject: config.typescript?.autoInject !== false,
-      searchAutoInject: config.search?.autoInjectMetaTag !== false,
-      // Omitted without a stylesheet, so the hash matches builds from before Stati linked one
-      ...(stylesheetFingerprint && { stylesheet: stylesheetFingerprint }),
-      // Production links hashed stylesheets, which development doesn't
-      ...(staticStylesheets && { hashedStylesheets: true }),
-      // Omitted with images: false, so the hash matches builds without the image pipeline
-      ...(imageFingerprint && { images: imageFingerprint }),
-      // The 404 page gets no Open Graph image and a noindex robots tag, so a copy cached
-      // before Stati treated it that way is rebuilt
-      ...(isNotFoundPage(page) && { notFoundPage: true }),
-      collection: collectionPath ?? null,
-      // A listing page depends on its own slice and on the page count, which every page
-      // shows in its numbered links
-      ...(page.pagination && {
-        pagination: {
-          pageNumber: page.pagination.pageNumber,
-          totalPages: page.pagination.totalPages,
-          urls: hashUrlList(page.pagination.urls),
-          items: summaries.pages(page.pagination.items),
-        },
-      }),
-      // A generated page depends on its own items only, not on the whole collection
-      ...(page.generated && {
-        generated: {
-          key: page.generated.key,
-          label: page.generated.label,
-          template: page.generated.template,
-          items: summaries.pages(page.generated.items),
-          data: hashableData(page.generated.data),
-        },
-      }),
-    };
-    // The data a render read: the collection summary and the navigation tree
-    const renderInputsHashFor = (reads: PageReads | undefined) =>
-      computeContentHash('', {
-        ...staticRenderInputs,
-        ...(reads?.collection && {
-          collectionSummary:
-            collectionPath !== undefined ? summaries.collection(collectionPath) : 'none',
-        }),
-        ...(reads?.nav && { navigation: navigationHash }),
-      });
-
-    // Entries written before Stati recorded what pages read are rebuilt once to record it
-    const readsKnown = existingEntry !== undefined && hasRecordedReads(existingEntry);
-    const renderInputsHash = renderInputsHashFor(
-      readsKnown
-        ? { collection: existingEntry.readsCollection!, nav: existingEntry.readsNav! }
-        : undefined,
-    );
-
-    // Check if we should rebuild this page (considering ISG logic)
-    const shouldRebuildStart = performance.now();
-    const shouldRebuild =
-      options.force ||
-      config.isg?.enabled === false ||
-      !(await pathExists(outputPath)) ||
-      (existingEntry !== undefined && !readsKnown) ||
-      // A cached page whose generated images are gone is rebuilt to regenerate them
-      (imageRuntime !== null && !imageRuntime.outputsExist(existingEntry?.images)) ||
-      (await shouldRebuildPage(
-        page,
-        existingEntry,
-        config,
-        pages,
-        buildTime,
-        renderInputsHash,
-        index,
-      ));
-    const shouldRebuildTime = performance.now() - shouldRebuildStart;
-    totalShouldRebuildTime += shouldRebuildTime;
-
-    if (!shouldRebuild) {
-      // Cache hit - skip rendering
-      cacheHits++;
-      if (logger.updateProgress) {
-        logger.updateProgress('cached', page.url);
-      }
-      // Record page timing for cached pages (0ms render time)
-      recorder.recordPageTiming(page.url, 0, true);
-      continue;
-    }
-
-    // Cache miss - need to rebuild
-    cacheMisses++;
-    const startTime = performance.now();
-
-    // Run beforeRender hook
-    if (config.hooks?.beforeRender) {
-      const hookStart = performance.now();
-      await config.hooks.beforeRender({ page, config });
-      // The hook can change what the SEO defaults come from, such as the page's author
-      refreshSEODefaults(page, config);
-      recorder.addToPhase('hookBeforeRenderTotalMs', performance.now() - hookStart);
-    }
-
-    // Image state for this page: markup, dependencies and generated files
-    const pageImages = imageRuntime?.createPageContext(page);
-
-    // Render markdown to HTML with TOC extraction
-    const markdownStart = performance.now();
-    const tocEnabled = config.markdown?.toc !== false;
-    const { html: htmlContent, toc } = renderMarkdown(page.content, md, tocEnabled, {
-      images: pageImages,
-      ...(basePath && { basePath }),
-    });
-    totalMarkdownTime += performance.now() - markdownStart;
-
-    // Render with template
-    const renderPageStart = performance.now();
-    const renderResult = await renderPage(
-      page,
-      htmlContent,
-      config,
-      eta,
-      navigation,
-      pages,
-      assets,
-      toc,
-      logger,
-      { images: pageImages, templateIndex: index },
-    );
-    const renderPageTime = performance.now() - renderPageStart;
-    totalRenderTime += renderPageTime;
-    const postRenderStart = performance.now();
-    let finalHtml = renderResult.html;
-
-    // Record the templates this page used and how often templates rendered
-    recorder.increment('templatesLoaded', renderResult.templatesLoaded);
-    recorder.increment('templateRenders', renderResult.templateRenders);
-    recorder.increment('includeCacheHits', renderResult.includeCacheHits);
-
-    // Auto-inject SEO tags if enabled
-    if (config.seo?.autoInject !== false) {
-      const injectOptions: AutoInjectOptions = {
-        page,
-        config,
-        siteUrl: config.site.baseUrl,
-        logger,
-      };
-
-      if (config.seo?.debug !== undefined) {
-        injectOptions.debug = config.seo.debug;
-      }
-      if (renderResult.ogImage) {
-        injectOptions.generatedImage = renderResult.ogImage;
-      }
-
-      finalHtml = autoInjectSEO(finalHtml, injectOptions);
-    }
-
-    // Auto-inject search index meta tag if enabled (default: true)
-    if (
-      config.search?.enabled === true &&
-      searchIndexFilename &&
-      config.search?.autoInjectMetaTag !== false
-    ) {
-      finalHtml = autoInjectSearchMeta(finalHtml, `${basePath}/${searchIndexFilename}`);
-    }
-
-    // A hashed build writes the Tailwind stylesheet under its hashed name only, so a link that
-    // keeps the stylesheet's own path for its integrity digest would load nothing
-    if (
-      stylesheet?.plan.hash &&
-      linksStylesheetWithIntegrity(finalHtml, stylesheet.plan.path, page.url, config.site.baseUrl)
-    ) {
-      throw new Error(
-        `The page ${page.url} links ${stylesheet.plan.path} with an integrity attribute. A hashed build writes the Tailwind stylesheet only as /${CSS_OUT_DIR}/${stylesheet.plan.name}-[hash].css, which the link can't load. Remove the integrity attribute, or set css.hash to false.`,
-      );
-    }
-
-    // Link the hashed stylesheets, then add the Tailwind stylesheet's link if enabled (default:
-    // true) where the page doesn't have one. A path a template added to stylesheetPaths can be
-    // a stylesheet from the static directory, so an added link is pointed at its copy too.
-    if (staticStylesheets) {
-      finalHtml = await linkHashedStylesheets(finalHtml, page.url);
-    }
-    if (stylesheet?.plan.autoInject) {
-      const linked = autoInjectStylesheets(
-        finalHtml,
-        assets.stylesheetPaths,
-        config.site.baseUrl,
-        page.url,
-      );
-      finalHtml =
-        staticStylesheets && linked !== finalHtml
-          ? await linkHashedStylesheets(linked, page.url)
-          : linked;
-    }
-
-    // Auto-inject TypeScript bundle script tags if available and autoInject is enabled (default: true)
-    if (config.typescript?.autoInject !== false && assets.bundlePaths.length > 0) {
-      finalHtml = autoInjectBundles(finalHtml, assets.bundlePaths, basePath);
-    }
-
-    // A root-relative link without the base path breaks when the site is served from it
-    basePathLinks.add(page.url, finalHtml);
-
-    // Start the image jobs the final HTML needs and record its image files for the cache,
-    // along with what the render read, which decides the hash it is stored under
-    const committedImages =
-      pageImages && imageRuntime
-        ? imageRuntime.commitPage(pageImages, finalHtml, { outputPath, cacheKey })
-        : undefined;
-    const renderedAssets: RenderedAssets = {
-      assetDeps: committedImages?.assetDeps ?? [],
-      images: committedImages?.images ?? [],
-      reads: renderResult.reads,
-      failed: renderResult.failed,
-      templates: renderResult.templates,
-      templateLookups: renderResult.templateLookups,
-    };
-    const renderedInputsHash = renderInputsHashFor(renderResult.reads);
-    totalPostRenderTime += performance.now() - postRenderStart;
-
-    const renderTime = performance.now() - startTime;
-
-    // Record page timing for rendered pages (includes template count)
-    recorder.recordPageTiming(
-      page.url,
-      renderTime,
-      false,
-      renderResult.templatesLoaded,
-      renderResult.templateRenders,
-    );
-
-    if (logger.updateProgress) {
-      logger.updateProgress('rendered', page.url, Math.round(renderTime));
-    }
-    renderedFiles.push(outputPath);
-
-    // In dev mode, batch writes for parallel execution to avoid Windows filesystem slowdown
-    if (isDevMode) {
-      pendingWrites.push({ outputPath, content: finalHtml });
-      pendingCacheUpdates.push({
-        cacheKey,
-        page,
-        existingEntry,
-        renderInputsHash: renderedInputsHash,
-        renderedAssets,
-      });
-    } else if (deferWrites && stylesheet) {
-      // Written after Tailwind has run, with the stylesheet's final name
-      if (deferredLength + finalHtml.length <= MAX_DEFERRED_PAGES_LENGTH) {
-        deferredPages.push({ outputPath, content: finalHtml });
-        deferredLength += finalHtml.length;
-      } else {
-        const fileWriteStart = performance.now();
-        const stagedFile = join(stylesheet.stagingDir, `${deferredPages.length}.html`);
-        await ensureDir(stylesheet.stagingDir);
-        await writeFile(stagedFile, finalHtml, 'utf-8');
-        deferredPages.push({ outputPath, stagedFile });
-        totalFileWriteTime += performance.now() - fileWriteStart;
-      }
-    } else {
-      // Production mode: write immediately
-      const fileWriteStart = performance.now();
-      await ensureDir(dirname(outputPath));
-      await writeFile(outputPath, finalHtml, 'utf-8');
-      totalFileWriteTime += performance.now() - fileWriteStart;
-    }
-
-    // Production mode: update the cache manifest now; dev mode does it after the batched writes
-    if (!isDevMode) {
-      if (!options.skipCacheUpdate) {
-        const cacheEntryStart = performance.now();
-        manifest.entries[cacheKey] = existingEntry
-          ? await updateCacheEntry(
-              existingEntry,
-              page,
-              config,
-              buildTime,
-              renderedInputsHash,
-              renderedAssets,
-            )
-          : await createCacheEntry(page, config, buildTime, renderedInputsHash, renderedAssets);
-        totalCacheEntryTime += performance.now() - cacheEntryStart;
-      }
-    }
-
-    // Run afterRender hook
-    if (config.hooks?.afterRender) {
-      const hookStart = performance.now();
-      await config.hooks.afterRender({ page, config });
-      recorder.addToPhase('hookAfterRenderTotalMs', performance.now() - hookStart);
-    }
-  }
-
-  // In dev mode, execute batched writes in parallel
-  if (isDevMode && pendingWrites.length > 0) {
-    const fileWriteStart = performance.now();
-
-    // Ensure all directories exist first
-    const uniqueDirs = [...new Set(pendingWrites.map((w) => dirname(w.outputPath)))];
-    await Promise.all(uniqueDirs.map((dir) => ensureDir(dir)));
-
-    // Write all files in parallel
-    await Promise.all(pendingWrites.map((w) => writeFile(w.outputPath, w.content, 'utf-8')));
-    totalFileWriteTime = performance.now() - fileWriteStart;
-
-    // Update cache entries sequentially, from the templates each render recorded
-    if (!options.skipCacheUpdate) {
-      const cacheEntryStart = performance.now();
-      for (const {
-        cacheKey,
-        page,
-        existingEntry,
-        renderInputsHash,
-        renderedAssets,
-      } of pendingCacheUpdates) {
-        manifest.entries[cacheKey] = existingEntry
-          ? await updateCacheEntry(
-              existingEntry,
-              page,
-              config,
-              buildTime,
-              renderInputsHash,
-              renderedAssets,
-            )
-          : await createCacheEntry(page, config, buildTime, renderInputsHash, renderedAssets);
-      }
-      totalCacheEntryTime = performance.now() - cacheEntryStart;
-    }
-  }
-
-  basePathLinks.report(logger);
-
-  // Record detailed phase timings in metrics
-  recorder.recordPhase('shouldRebuildTotalMs', totalShouldRebuildTime);
-  recorder.recordPhase('markdownRenderTotalMs', totalMarkdownTime);
-  recorder.recordPhase('renderPageTotalMs', totalRenderTime);
-  recorder.recordPhase('postRenderTotalMs', totalPostRenderTime);
-  recorder.recordPhase('fileWriteTotalMs', totalFileWriteTime);
-  recorder.recordPhase('cacheEntryTotalMs', totalCacheEntryTime);
-
-  // Display final progress summary
-  if (logger.endProgress) {
-    logger.endProgress();
-    if (logger.showRenderingSummary) {
-      logger.showRenderingSummary();
-    }
-  }
-
-  return {
-    cacheHits,
-    cacheMisses,
-    searchIndexFilename,
-    deferredPages,
-    renderedFiles,
-    unhashedLinks: [...unhashedLinks],
-  };
-}
-
-/**
  * Copies static assets and returns the count.
  */
 async function copyStaticAssets(
@@ -1272,14 +511,17 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
   const { config, outDir, cacheDir } = await loadAndValidateConfig(options);
   endConfigSpan();
 
-  // The stylesheet Stati builds with Tailwind. A production build checks the input and the
-  // Tailwind CLI now, so a missing one fails before any page renders.
-  const stylesheetPlan = options.tailwind
-    ? createStylesheetPlan(options.tailwind, config.css, outDir, isDevelopment())
-    : null;
-  if (stylesheetPlan && !isDevelopment()) {
-    await checkStylesheetSources(stylesheetPlan);
-  }
+  // The stylesheet Stati builds with Tailwind and the static directory's hashed stylesheets. A
+  // production build checks the Tailwind input and CLI now, so a missing one fails before any
+  // page renders.
+  const stylesheets = await StylesheetRuntime.create(config, {
+    tailwind: options.tailwind,
+    outDir,
+    cacheDir,
+    logger,
+    recorder,
+    development: isDevelopment(),
+  });
 
   // Clean output directory and cache if requested
   if (options.clean) {
@@ -1292,17 +534,6 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
 
   await ensureDir(outDir);
 
-  // Production links the static directory's stylesheets under hashed names, unless css.hash
-  // is false. The Tailwind output's path is Tailwind's, so a static file there isn't one.
-  const staticStylesheets = resolveCSSConfig(config.css, isDevelopment()).hash
-    ? new StaticStylesheets(
-        resolveStaticDir(config),
-        outDir,
-        stylesheetPlan?.path,
-        getBasePath(config.site.baseUrl),
-      )
-    : null;
-
   // Image pipeline; null with images: false. Fails here, before any page renders, when a
   // feature needs @stati/images and it is missing or incompatible.
   const imageRuntime = await ImageRuntime.create(config, {
@@ -1314,7 +545,7 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
 
   // Enable Tailwind class inventory tracking only if Tailwind is used
   const tailwindInitStart = performance.now();
-  const hasTailwind = stylesheetPlan !== null || (await isTailwindUsed());
+  const hasTailwind = stylesheets.plan !== null || (await isTailwindUsed());
   if (hasTailwind) {
     enableInventoryTracking();
     clearInventory(); // Clear any previous inventory
@@ -1343,20 +574,6 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
   const endManifestLoadSpan = recorder.startSpan('cacheManifestLoadMs');
   const { manifest } = await setupCacheAndManifest(cacheDir);
   endManifestLoadSpan();
-
-  // The stylesheet paths the last production build linked, which pages kept from it carry
-  const previousStylesheets = manifest.stylesheets ?? {};
-
-  // The stylesheet path pages render with: in a hashed build, a name made up for this build
-  const renderStylesheet: RenderStylesheet | null = stylesheetPlan && {
-    plan: stylesheetPlan,
-    path: getRenderStylesheetPath(stylesheetPlan),
-    stagingDir: join(cacheDir, STAGED_PAGES_DIR),
-  };
-  if (renderStylesheet && !isDevelopment()) {
-    // Pages a build that stopped before writing them left behind
-    await remove(renderStylesheet.stagingDir);
-  }
 
   // Load content and build navigation
   if (logger.step) {
@@ -1426,35 +643,34 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
   recorder.increment('templatesIndexed', templateIndex.size);
 
   const endPageRenderSpan = recorder.startSpan('pageRenderingMs');
-  const buildTime = new Date();
-  const pageProcessingResult = await processPagesWithCache(
-    pages,
-    manifest,
+  // The beforeAll hook, the SEO defaults and the search index come before the first page renders
+  const session = await prepareRenderSession({
     config,
     outDir,
+    pages,
+    manifest,
+    buildTime: new Date(),
+    force: Boolean(options.force),
+    skipCacheUpdate: Boolean(options.skipCacheUpdate),
     md,
     eta,
     navigation,
-    buildTime,
-    options,
-    logger,
-    compiledBundles,
-    recorder,
-    imageRuntime,
     navigationHash,
     templateIndex,
-    renderStylesheet,
-    staticStylesheets,
-  );
+    compiledBundles,
+    images: imageRuntime,
+    stylesheets,
+    recorder,
+    logger,
+  });
+  // Render each page with progress tracking and ISG
+  if (logger.step) {
+    logger.step(2, 3, 'Rendering pages');
+    console.log(); // Add spacing after step header
+  }
+  const { cacheHits, cacheMisses, renderedFiles } = await renderPages(session);
   endPageRenderSpan();
-  const {
-    cacheHits,
-    cacheMisses,
-    searchIndexFilename,
-    deferredPages,
-    renderedFiles,
-    unhashedLinks,
-  } = pageProcessingResult;
+  const { searchIndexFilename } = session;
 
   // Write Tailwind class inventory after all templates have been rendered (if Tailwind is used)
   const tailwindStart = performance.now();
@@ -1474,105 +690,10 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
   const tailwindInventoryTime = performance.now() - tailwindStart;
   recorder.recordPhase('tailwindInventoryMs', tailwindInventoryTime);
 
-  // Run Tailwind now that the inventory lists every class the pages use, then write the pages
-  // this build rendered, which it held until now, with the stylesheet's name. Before stale
-  // pages are removed and image failures patched, which read the written pages.
-  let builtStylesheet: BuiltStylesheet | null = null;
-  if (renderStylesheet && !isDevMode) {
-    const { plan, stagingDir } = renderStylesheet;
-    const endStylesheetSpan = recorder.startSpan('tailwindBuildMs');
-    logger.info('');
-    logger.info('Building CSS with Tailwind CSS...');
-    try {
-      builtStylesheet = await buildStylesheet(
-        plan,
-        outDir,
-        cacheDir,
-        process.cwd(),
-        getBasePath(config.site.baseUrl),
-      );
-      if (logger.file) {
-        logger.file(
-          'compiled',
-          relative(outDir, builtStylesheet.file).replace(/\\/g, '/'),
-          builtStylesheet.sizeInBytes,
-        );
-      }
-
-      const fileWriteStart = performance.now();
-      await writeDeferredPages(deferredPages, renderStylesheet.path, builtStylesheet.path);
-      recorder.addToPhase('fileWriteTotalMs', performance.now() - fileWriteStart);
-    } finally {
-      await remove(stagingDir);
-    }
-    // Let go of the held HTML
-    deferredPages.length = 0;
-    endStylesheetSpan();
-    logger.success(`Built ${builtStylesheet.path} (${formatBytes(builtStylesheet.sizeInBytes)})`);
-  }
-
-  // The name every stylesheet this build links gets: the Tailwind output and the static
-  // stylesheets the rendered pages link, a hashed name each, and a path pages link that the
-  // static directory has no file for, its own. Pages kept from earlier builds carry the names
-  // those builds gave, so the stylesheets only they link are looked up again: a changed file
-  // gets a new name, a removed one its own path back, and one added since its copy. The kept
-  // pages link the new names from here on; nothing is rendered again for them.
-  if (staticStylesheets) {
-    const rendered = new Set(renderedFiles);
-    const cachedPages = pages
-      .map((page) => ({ file: getPageOutput(page, outDir).outputPath, url: page.url }))
-      .filter(({ file }) => !rendered.has(file));
-
-    const current = await staticStylesheets.hashed();
-    if (renderStylesheet?.plan.hash && builtStylesheet) {
-      current.set(renderStylesheet.plan.path, builtStylesheet.path);
-    }
-    for (const path of unhashedLinks) {
-      if (!current.has(path)) {
-        current.set(path, path);
-      }
-    }
-    // Every page rendered again links only what this build found
-    if (cachedPages.length > 0) {
-      for (const path of Object.keys(previousStylesheets)) {
-        if (!current.has(path)) {
-          current.set(path, (await staticStylesheets.resolve(path)) ?? path);
-        }
-      }
-    }
-
-    const replacements = new Map<string, string>();
-    for (const path of new Set([...Object.keys(previousStylesheets), ...current.keys()])) {
-      const target = current.get(path) ?? path;
-      const recorded = previousStylesheets[path];
-      for (const stale of await getStaleStylesheetPaths(outDir, path, recorded, target)) {
-        replacements.set(stale, target);
-      }
-      // Linked under its own path while the static directory had no file for it
-      if (recorded === path && target !== path) {
-        replacements.set(path, target);
-      }
-    }
-    const relinked = await relinkStylesheets(cachedPages, replacements, config.site.baseUrl);
-    if (relinked > 0) {
-      logger.info(
-        `Updated the stylesheet links of ${relinked} cached page${relinked === 1 ? '' : 's'}`,
-      );
-    }
-
-    for (const [path, name] of current) {
-      if (path !== renderStylesheet?.plan.path && name !== path) {
-        logger.info(`Linked ${path} as ${name}`);
-      }
-    }
-    if (current.size > 0) {
-      manifest.stylesheets = Object.fromEntries(current);
-    } else {
-      delete manifest.stylesheets;
-    }
-  } else if (!isDevMode) {
-    delete manifest.stylesheets;
-  }
+  // Run Tailwind and write the pages held for it, then relink cached pages to this build's
+  // stylesheet names. Before stale pages are removed and image failures patched, which read
+  // the written pages.
+  await stylesheets.finalize(manifest, pages, renderedFiles);
 
   // Remove the output of pages that no longer exist, such as a deleted post or a tag no post
   // uses anymore. Runs before static assets are copied, so a file in the static directory at
@@ -1637,18 +758,7 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
   // now that every page links to this build's files. Before the static copy, so a file in the
   // static directory with such a name is copied afterwards.
   if (!isDevMode) {
-    // Hashed copies other than the ones this build links. A stylesheet this build doesn't
-    // hash, after a change of --tailwind-output, without the flags or with css.hash false,
-    // loses every copy: its pages linked the new name above or were rendered again.
-    const currentStylesheets = manifest.stylesheets ?? {};
-    const stylesheetPaths = new Set([
-      ...Object.keys(previousStylesheets),
-      ...Object.keys(currentStylesheets),
-      ...(renderStylesheet ? [renderStylesheet.plan.path] : []),
-    ]);
-    for (const path of stylesheetPaths) {
-      await removeStaleStylesheets(outDir, path, currentStylesheets[path]);
-    }
+    await stylesheets.removeStale(manifest);
     if (config.typescript?.enabled) {
       await removeStaleBundleFiles({
         projectRoot: process.cwd(),
@@ -1666,7 +776,7 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
   const endAssetSpan = recorder.startSpan('assetCopyMs');
   let assetsCount = 0;
   if (!options.skipAssetCopy) {
-    assetsCount = await copyStaticAssets(config, outDir, logger, stylesheetPlan?.outputFile);
+    assetsCount = await copyStaticAssets(config, outDir, logger, stylesheets.plan?.outputFile);
   }
   endAssetSpan();
   recorder.increment('assetsCopied', assetsCount);
