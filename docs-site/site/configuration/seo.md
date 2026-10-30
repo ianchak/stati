@@ -391,6 +391,8 @@ export default defineConfig({
 });
 ```
 
+**Validation.** `defaultPriority` must be a number from 0.0 to 1.0, and `defaultChangeFreq` one of the [change frequency values](#change-frequency-values). Any other value stops the build with an `Invalid sitemap configuration` error.
+
 **Pattern matching.** `excludePatterns`, `includePatterns` and `priorityRules[].pattern` are matched against page URLs such as `/blog/first-post` (`/` for the home page):
 
 - A pattern with `*` or `?` is a glob that must match the whole URL: `/blog/**` matches `/blog/first-post` but not the `/blog` index page.
@@ -402,7 +404,7 @@ Two more kinds of page are left out without a pattern: [the 404 page](/core-conc
 
 Pages created from a `[param].md` template and the later pages of a paginated listing (`/blog/page/2`) are in the sitemap like any other page. Leave them out with a pattern such as `excludePatterns: ['/blog/page/**']`, `sitemap: { exclude: true }` in the template's front matter, or a `filter` that checks `page.generated` and `page.pagination`.
 
-**Output.** `lastmod` comes from the page's `sitemap.lastmod`, then `updated`, then `date` front matter (not `publishedAt`). Priorities are written with one decimal place, so `0.85` becomes `0.8`. Above 50,000 URLs the sitemap is split into `sitemap-1.xml`, `sitemap-2.xml`, … with `sitemap.xml` as the index; this happens automatically (the `generateIndex` option is not used).
+**Output.** `lastmod` comes from the page's `sitemap.lastmod`, then `updated`, then `date` front matter (not `publishedAt`). A date is written as `2024-03-04`, and a value with a time as the same moment in UTC: `2024-03-04T23:30:00-05:00` becomes `2024-03-05T04:30:00Z`. URLs are percent-encoded, as the sitemap protocol requires, so a page at `/blog/My Post` or `/café` is listed as `/blog/My%20Post` or `/caf%C3%A9`, and an internationalized domain in `site.baseUrl` in its `xn--` form; escapes a URL already has are kept. Priorities are written with one decimal place, so `0.85` becomes `0.8`. Above 50,000 URLs the sitemap is split into `sitemap-1.xml`, `sitemap-2.xml`, … with `sitemap.xml` as the index; this happens automatically (the `generateIndex` option is not used).
 
 ### Per-page sitemap configuration
 
@@ -423,7 +425,7 @@ The sitemap reads only this `sitemap` block; `seo.priority` and `seo.changeFreq`
 
 ### Change frequency values
 
-`always`, `hourly`, `daily`, `weekly`, `monthly`, `yearly` and `never`. Any other `changefreq` value is ignored, and the page falls back to `defaultChangeFreq`.
+`always`, `hourly`, `daily`, `weekly`, `monthly`, `yearly` and `never`. Front matter `changefreq` is read in any letter case (`Weekly` is `weekly`). Any other `changefreq` value is ignored, and the page falls back to `defaultChangeFreq`.
 
 ### Google News sitemap
 
@@ -484,7 +486,7 @@ Without `sitemap.news` nothing changes: no file is written. With it, production 
 - **Which pages.** Pages whose URL matches `include` (the same globs as `seo.articles.include`: `*` stays within one URL segment, `**` crosses segments) and that were published within `maxAgeDays`. The publication date is the page's `publishedAt` (from `publishedAt`, `published`, `date` or `createdAt` front matter) and is written as ISO 8601 in UTC. The title is the page's `title` front matter. Stati warns about a matching page that has no valid date or no title and leaves it out, so choose `include` patterns that select articles only (`/news/*/*` skips the section pages at `/news/world`). A future date is listed as it is.
 - **Left out.** Drafts, pages created from a `[param].md` template, later pages of a paginated listing, the 404 page, pages marked `noindex`, and pages with `sitemap: { exclude: true }`. A page that sets `sitemap: { exclude: false }` stays in despite `noindex`. The sitemap's `excludePatterns`, `includePatterns`, `filter`, `transformUrl` and `transformEntry` do not apply to the news sitemap; `include` selects its pages.
 - **Order and size.** Newest first, at most 1000 URLs (the oldest are dropped, with a warning). When no article is recent enough, the file is still written as a valid `urlset` with no `<url>` elements.
-- **URLs.** Absolute, from `site.baseUrl` including its base path; titles and URLs are XML-escaped.
+- **URLs.** Absolute, from `site.baseUrl` including its base path, and percent-encoded like those in `sitemap.xml`; titles and URLs are XML-escaped.
 - **robots.txt.** With `robots.sitemap: true`, `robots.txt` lists the news sitemap after `sitemap.xml`, so no `customLines` entry is needed (an existing `Sitemap:` line for it is not repeated). An explicit `robots.sitemap` URL lists only that URL. The news sitemap is not written, nor listed, when `sitemap.enabled` is off.
 - **Validation.** `include` must be an array of strings, `language` an ISO 639 code such as `en` (or `zh-cn`, `zh-tw`) rather than a locale like `en-US`, `maxAgeDays` a number above 0, and `filename` an `.xml` file name of letters, digits, `.`, `_` and `-` (no folder) that is not `sitemap.xml` or `sitemap-<n>.xml` in any case; anything else fails the build with a message naming the option.
 
@@ -590,6 +592,8 @@ Sitemap: https://example.com/sitemap.xml
 User-agent: AnotherBot
 Disallow: /restricted/
 ```
+
+Paths without a leading `/` get one. An empty path writes the line with no value: `disallow: ['']` writes `Disallow:`, which blocks nothing, while `Disallow: /` would block the whole site. `crawlDelay` is written only when it is greater than 0. Global options that write no line (`crawlDelay: 0`, or empty `allow` and `disallow` lists) add no `User-agent: *` group, so without other rules Stati writes the default `Allow: /`.
 
 ## SEO tag types
 

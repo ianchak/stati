@@ -339,6 +339,21 @@ describe('config loader', () => {
       expect((error as Error).message).toContain('sitemap.news.include must be an array');
     });
 
+    it('should reject a sitemap default priority outside 0.0 to 1.0', async () => {
+      writeFileSync(
+        join(testDir, 'stati.config.mjs'),
+        `export default { sitemap: { enabled: true, defaultPriority: 5 } };`,
+        'utf-8',
+      );
+
+      const error = await loadConfig(testDir).catch((caught: unknown) => caught);
+      expect(error).toBeInstanceOf(ConfigValidationError);
+      expect((error as Error).message).toContain('Invalid sitemap configuration in');
+      expect((error as Error).message).toContain(
+        'sitemap.defaultPriority must be a number from 0.0 to 1.0 (got 5).',
+      );
+    });
+
     it('should load a valid sitemap.news block', async () => {
       writeFileSync(
         join(testDir, 'stati.config.mjs'),

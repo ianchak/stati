@@ -278,11 +278,15 @@ sitemap:
   priority: 0.8
 ```
 
-Defaults apply at generation. Lastmod falls back from `sitemap.lastmod` to
-`updated`, then `date` (do not assume every date alias is read everywhere).
-Priority falls back to matching rules then default; changefreq to default.
+Defaults apply at generation. Config load rejects a `defaultPriority` outside
+0.0 to 1.0 and an unknown `defaultChangeFreq`. Lastmod falls back from
+`sitemap.lastmod` to `updated`, then `date` (do not assume every date alias is
+read everywhere); a date is written `YYYY-MM-DD`, a value with a time as that
+moment in UTC (`2024-03-05T04:30:00Z`). Priority falls back to matching rules
+then default; changefreq to default.
 Frequency values: `always`, `hourly`, `daily`, `weekly`, `monthly`, `yearly`,
-`never`. URLs use `site.baseUrl`.
+`never`; front matter `changefreq` matches in any letter case. URLs use
+`site.baseUrl` and are percent-encoded (`/My Post` → `/My%20Post`).
 
 Output is `sitemap.xml`. Above 50,000 entries, generation splits files and makes
 an index automatically. In the checked source, `generateIndex` is typed but not
@@ -340,7 +344,9 @@ Fields: `enabled`, `userAgents`, global `allow`, `disallow`, `crawlDelay`,
 `sitemap: string | boolean`, `customLines`.
 Agent groups support `userAgent`, `allow`, `disallow`; per-agent crawl delay is
 supported by the lower-level API, not exposed/preserved by site config conversion.
-Without rules the low-level default allows `/` for `*`.
+Without rules the low-level default allows `/` for `*`. An empty path writes an
+empty line (`disallow: ['']` → `Disallow:`, which blocks nothing). `crawlDelay`
+is written only above 0, and global values that write no line add no `*` group.
 
 Set `robots.sitemap` **explicitly**. Type comments suggesting it is automatically
 connected to `sitemap.enabled` do not match the checked conversion logic.

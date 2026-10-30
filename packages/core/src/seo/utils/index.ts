@@ -13,4 +13,4 @@ export {
 } from './escape-and-validation.utils.js';
 
 // Re-export URL utilities
-export { normalizeUrlPath, resolveAbsoluteUrl, isValidUrl } from './url.utils.js';
+export { normalizeUrlPath, resolveAbsoluteUrl, percentEncodeUrl, isValidUrl } from './url.utils.js';

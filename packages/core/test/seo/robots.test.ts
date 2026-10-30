@@ -482,4 +482,47 @@ describe('Robots.txt Generator - generateRobotsTxtFromConfig', () => {
     expect(result).toContain('User-agent: *');
     expect(result).toContain('Allow: /');
   });
+
+  it('writes an empty disallow as an empty Disallow line, which blocks nothing', () => {
+    const result = generateRobotsTxtFromConfig({ disallow: [''] });
+
+    expect(result).toBe('User-agent: *\nDisallow:\n');
+    expect(result).not.toContain('Disallow: /');
+  });
+
+  it('writes empty and blank paths without a value in every group', () => {
+    const result = generateRobotsTxtFromConfig({
+      userAgents: [{ userAgent: 'Googlebot', allow: [''], disallow: ['  '] }],
+      disallow: ['', '/admin/'],
+    });
+
+    expect(result).toBe(
+      'User-agent: Googlebot\nAllow:\nDisallow:\n\nUser-agent: *\nDisallow:\nDisallow: /admin/\n',
+    );
+  });
+
+  it('writes the default group for a crawl delay of 0 without rules', () => {
+    expect(generateRobotsTxtFromConfig({ crawlDelay: 0 })).toBe('User-agent: *\nAllow: /\n');
+  });
+
+  it('writes no empty User-agent: * group for global options that write no line', () => {
+    const result = generateRobotsTxtFromConfig({
+      userAgents: [{ userAgent: 'Googlebot', disallow: ['/private/'] }],
+      allow: [],
+      disallow: [],
+      crawlDelay: -1,
+    });
+
+    expect(result).toBe('User-agent: Googlebot\nDisallow: /private/\n');
+  });
+
+  it('percent-encodes Sitemap URLs under a base path with spaces or non-ASCII letters', () => {
+    const result = generateRobotsTxtFromConfig({ sitemap: true }, 'https://example.com/my café');
+
+    expect(result).toContain('Sitemap: https://example.com/my%20caf%C3%A9/sitemap.xml');
+  });
+
+  it('writes the User-agent: * group for a positive crawl delay alone', () => {
+    expect(generateRobotsTxtFromConfig({ crawlDelay: 5 })).toBe('User-agent: *\nCrawl-delay: 5\n');
+  });
 });
