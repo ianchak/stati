@@ -698,6 +698,45 @@ describe('Development Server', () => {
       delete process.env.STATI_DEV_DISABLE_WS_RELOAD;
     });
 
+    it('should start the live reload socket and handle its connections', async () => {
+      const { WebSocketServer } = await import('ws');
+
+      const devServer = await createDevServer({ port: 8121, logger: createMockLogger() });
+      await devServer.start();
+
+      const wsInstance = vi.mocked(WebSocketServer).mock.results[0]?.value as {
+        on: ReturnType<typeof vi.fn>;
+      };
+      expect(vi.mocked(WebSocketServer)).toHaveBeenCalledWith(
+        expect.objectContaining({ path: '/__ws' }),
+      );
+      const onConnection = wsInstance.on.mock.calls.find(([event]) => event === 'connection')?.[1];
+      expect(onConnection).toBeTypeOf('function');
+
+      const client = { on: vi.fn() };
+      onConnection(client);
+      expect(client.on).toHaveBeenCalledWith('close', expect.any(Function));
+
+      await devServer.stop();
+    });
+
+    it('should serve without live reload when the WebSocket server cannot be created', async () => {
+      const { WebSocketServer } = await import('ws');
+      vi.mocked(WebSocketServer).mockImplementationOnce(function () {
+        throw new Error('ws unavailable');
+      });
+
+      const mockLogger = createMockLogger();
+      const devServer = await createDevServer({ port: 8122, logger: mockLogger });
+
+      await expect(devServer.start()).resolves.toBeUndefined();
+      expect(mockLogger.warning).toHaveBeenCalledWith(
+        'WebSocket server creation failed, live reload will not be available',
+      );
+
+      await devServer.stop();
+    });
+
     it('should initialize TypeScript watcher before initial build', async () => {
       const { createTypeScriptWatcher } = await import('../../src/core/utils/typescript.utils.js');
       const mockCreateTsWatcher = vi.mocked(createTypeScriptWatcher);

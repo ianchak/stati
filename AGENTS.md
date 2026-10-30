@@ -59,7 +59,7 @@ Edit this file, not the tool-specific ones, when guidance changes.
 
 - `createDevServer` (in `core/dev.ts`) sets the environment to development before it loads the config, clears cache, triggers an initial build, then watches `site/` and `public/`. Template add, change and unlink events flow through `markTemplateChanges`, which marks entries stale when their `deps` hold the file or their `templateLookups` now resolve differently, and builds only when a page is affected.
 - Build failures feed the in-browser overlay produced by `core/utils/error-overlay.utils.ts`; prefer surfacing errors via the logger instead of throwing inside incremental rebuilds.
-- `createPreviewServer` sets the environment to production before it loads the config, as `stati build` does, and serves the built `dist/` with the same logger expectations as dev.
+- `createPreviewServer` loads the config in production, as `stati build` does, then restores the caller's environment, and serves the built `dist/` with the same logger expectations as dev. `loadConfig` caches the config by path, mtime and environment, so each server gets an evaluation made in its own environment.
 
 ## CLI surface
 

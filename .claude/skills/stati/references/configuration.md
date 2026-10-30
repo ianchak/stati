@@ -54,7 +54,7 @@ returns a fully expanded configuration object.
 Missing config uses defaults. Ordinary import/compilation errors currently log
 and fall back to defaults; ISG validation errors are rethrown. Treat unexpected
 default title/domain/output or configuration errors as failed validation.
-Config caching uses path and mtime; `clearConfigCache()` is a public programmatic
+Config caching uses path, mtime and environment; `clearConfigCache()` is a public programmatic
 escape hatch, not an author requirement for every build.
 
 **`configPath` caveat:** `build({ configPath })` loads standard config filenames

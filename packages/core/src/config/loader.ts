@@ -11,6 +11,7 @@ import { validateSearchConfig } from '../search/config.js';
 import { validateReadingTimeConfig } from '../core/reading-time.js';
 import { validateDirectoryLayout } from './directories.js';
 import { ConfigValidationError } from './errors.js';
+import { getEnv } from '../env.js';
 import {
   compileStatiConfig,
   cleanupCompiledConfig,
@@ -28,12 +29,14 @@ import {
 } from '../constants.js';
 
 /**
- * Cached config entry with modification time for staleness detection
+ * Cached config entry with modification time for staleness detection, and the
+ * environment it was evaluated in, since a config can branch on getEnv()
  */
 interface CachedConfig {
   config: StatiConfig;
   configPath: string;
   mtime: number;
+  env: ReturnType<typeof getEnv>;
 }
 
 /**
@@ -153,6 +156,8 @@ export function getConfigFilePaths(cwd: string): string[] {
 /**
  * Loads and validates Stati configuration from the project directory.
  * Searches for configuration files in order: stati.config.ts, stati.config.js, stati.config.mjs
+ * The config is evaluated again when the file changes or when the environment (`getEnv()`)
+ * differs from the one it was last evaluated in, since a config can branch on it.
  *
  * @param cwd - Current working directory to search for config files
  * @returns Promise resolving to the merged configuration object
@@ -186,17 +191,18 @@ export async function loadConfig(cwd: string = process.cwd()): Promise<StatiConf
   }
 
   const resolvedConfigPath = resolve(configPath);
+  const env = getEnv();
 
   // Check if we have a cached config and if it's still valid
   const cached = configCache.get(resolvedConfigPath);
   if (cached) {
     try {
       const currentMtime = statSync(resolvedConfigPath).mtimeMs;
-      if (currentMtime === cached.mtime) {
+      if (currentMtime === cached.mtime && env === cached.env) {
         // Config file hasn't changed, return cached version
         return cached.config;
       }
-      // Config changed, clear this cache entry
+      // Config or environment changed, clear this cache entry
       configCache.delete(resolvedConfigPath);
     } catch {
       // If we can't stat the file, clear cache and reload
@@ -209,13 +215,15 @@ export async function loadConfig(cwd: string = process.cwd()): Promise<StatiConf
     let compiledPath: string | undefined;
     // Get current mtime for cache-busting
     const currentMtime = statSync(resolvedConfigPath).mtimeMs;
+    // Node.js evaluates a module once per URL, so the environment is part of it too
+    const cacheBust = `t=${currentMtime}&env=${env}`;
 
     // If it's a .ts file, compile it first
     if (configPath.endsWith('.ts')) {
       try {
         compiledPath = await compileStatiConfig(resolvedConfigPath);
         // Add cache-busting query parameter to force Node.js to re-evaluate the module
-        const configUrl = `${pathToFileURL(compiledPath).href}?t=${currentMtime}`;
+        const configUrl = `${pathToFileURL(compiledPath).href}?${cacheBust}`;
         configModule = await import(configUrl);
       } finally {
         // Clean up compiled file
@@ -226,7 +234,7 @@ export async function loadConfig(cwd: string = process.cwd()): Promise<StatiConf
     } else {
       // Existing logic for .js/.mjs
       // Add cache-busting query parameter to force Node.js to re-evaluate the module
-      const configUrl = `${pathToFileURL(resolvedConfigPath).href}?t=${currentMtime}`;
+      const configUrl = `${pathToFileURL(resolvedConfigPath).href}?${cacheBust}`;
       configModule = await import(configUrl);
     }
 
@@ -365,6 +373,7 @@ export async function loadConfig(cwd: string = process.cwd()): Promise<StatiConf
         config: mergedConfig,
         configPath: resolvedConfigPath,
         mtime,
+        env,
       });
     } catch {
       // If we can't stat, still return the config but don't cache
