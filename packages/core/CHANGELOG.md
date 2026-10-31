@@ -1,5 +1,17 @@
 # @stati/core
 
+## 2.11.4
+
+### Patch Changes
+
+- 9c123cf: set the environment before dev and preview load the config
+
+## 2.11.3
+
+### Patch Changes
+
+- d340bf0: keep RSS feeds valid when a body contains ]]> or control characters, and use the description for blank includeContent bodies
+
 ## 2.11.2
 
 ### Patch Changes

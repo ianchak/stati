@@ -57,13 +57,13 @@ Edit this file, not the tool-specific ones, when guidance changes.
 
 ## Dev + preview servers
 
-- `createDevServer` (in `core/dev.ts`) clears cache, triggers an initial build, then watches `site/` and `public/`. Template add, change and unlink events flow through `markTemplateChanges`, which marks entries stale when their `deps` hold the file or their `templateLookups` now resolve differently, and builds only when a page is affected.
+- `createDevServer` (in `core/dev.ts`) sets the environment to development before it loads the config, clears cache, triggers an initial build, then watches `site/` and `public/`. Template add, change and unlink events flow through `markTemplateChanges`, which marks entries stale when their `deps` hold the file or their `templateLookups` now resolve differently, and builds only when a page is affected.
 - Build failures feed the in-browser overlay produced by `core/utils/error-overlay.utils.ts`; prefer surfacing errors via the logger instead of throwing inside incremental rebuilds.
-- `createPreviewServer` serves the built `dist/` with the same logger expectations as dev.
+- `createPreviewServer` loads the config in production, as `stati build` does, then restores the caller's environment, and serves the built `dist/` with the same logger expectations as dev. `loadConfig` caches the config by path, mtime and environment, so each server gets an evaluation made in its own environment.
 
 ## CLI surface
 
-- yargs commands live in `packages/cli/src/cli.ts`; each command calls `setEnv` before delegating to core and reuses the shared logger factory.
+- yargs commands live in `packages/cli/src/cli.ts`; `build` calls `setEnv('production')` before delegating to core (the dev and preview servers set their own environment), and each command reuses the shared logger factory.
 - Options surfaced to users (`--force`, `--clean`, `--include-drafts`, invalidate queries like `tag:news` or `age:3months`) must line up with `BuildOptions`/`InvalidateOptions` in core.
 - Version banners rely on reading the package JSON; keep `getCliVersion()` (CLI) and `getStatiVersion()` (core) in sync when moving files.
 

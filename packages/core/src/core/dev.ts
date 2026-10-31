@@ -50,7 +50,7 @@ import {
   respondToBasePathRequest,
 } from './utils/index.js';
 import type { ErrorDetails } from './utils/index.js';
-import { setEnv, getEnv } from '../env.js';
+import { setEnv } from '../env.js';
 import { DEFAULT_DEV_PORT, DEFAULT_DEV_HOST, DEFAULT_OUT_DIR } from '../constants.js';
 import { markStale } from './isg/stale.js';
 
@@ -495,8 +495,16 @@ async function describeBuildError(error: Error): Promise<ErrorDetails> {
   return parseErrorDetails(error, errorType);
 }
 
+/**
+ * Creates a development server with incremental rebuilds and live reload.
+ * It sets the environment to development before loading the config.
+ */
 export async function createDevServer(options: DevServerOptions = {}): Promise<DevServer> {
   const logger = options.logger ?? createFallbackLogger();
+
+  // Set the environment before the config is evaluated, so a config that branches on
+  // getEnv() gets its development settings whatever NODE_ENV the shell has
+  setEnv('development');
 
   // Load configuration first to get defaults from config file
   const { config, outDir, srcDir, staticDir } = await loadDevConfig(logger);
@@ -528,8 +536,6 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
       open: false,
     },
   });
-
-  setEnv('development');
 
   // Create dev server lock manager
   const cacheDir = resolveCacheDir();
@@ -798,24 +804,22 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
       });
 
       // Create WebSocket server for live reload
-      if (getEnv() !== 'test') {
-        try {
-          wsServer = new WebSocketServer({
-            server: httpServer,
-            path: '/__ws',
-          });
+      try {
+        wsServer = new WebSocketServer({
+          server: httpServer,
+          path: '/__ws',
+        });
 
-          wsServer.on('connection', (ws: unknown) => {
-            // Suppress connection logs - not informative for users
-            const websocket = ws as { on: (event: string, handler: () => void) => void };
-            websocket.on('close', () => {
-              // Suppress disconnection logs - not informative for users
-            });
+        wsServer.on('connection', (ws: unknown) => {
+          // Suppress connection logs - not informative for users
+          const websocket = ws as { on: (event: string, handler: () => void) => void };
+          websocket.on('close', () => {
+            // Suppress disconnection logs - not informative for users
           });
-        } catch (_error) {
-          logger.warning?.('WebSocket server creation failed, live reload will not be available');
-          wsServer = null;
-        }
+        });
+      } catch (_error) {
+        logger.warning?.('WebSocket server creation failed, live reload will not be available');
+        wsServer = null;
       }
 
       // Start HTTP server
