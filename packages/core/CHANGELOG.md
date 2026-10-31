@@ -1,5 +1,11 @@
 # @stati/core
 
+## 2.11.5
+
+### Patch Changes
+
+- 05758b2: parse cache entries once and apply one TTL rule
+
 ## 2.11.4
 
 ### Patch Changes
