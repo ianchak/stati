@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { join } from 'node:path';
-import type { PageModel, CacheEntry, StatiConfig } from '../../../src/types/index.js';
+import type { PageModel, CacheEntry, StatiConfig, Logger } from '../../../src/types/index.js';
 import { TemplateIndex } from '../../../src/core/template-index.js';
 
 // Mock all ISG modules that the builder depends on - use factory functions
@@ -17,8 +17,7 @@ vi.mock('../../../src/core/isg/deps.js', () => ({
 
 vi.mock('../../../src/core/isg/ttl.js', () => ({
   computeEffectiveTTL: vi.fn(),
-  computeNextRebuildAt: vi.fn(),
-  isPageFrozen: vi.fn(),
+  isTtlExpired: vi.fn(),
 }));
 
 import {
@@ -37,19 +36,14 @@ import {
   computeInputsHash,
 } from '../../../src/core/isg/hash.js';
 import { resolveLayoutDependency } from '../../../src/core/isg/deps.js';
-import {
-  computeEffectiveTTL,
-  computeNextRebuildAt,
-  isPageFrozen,
-} from '../../../src/core/isg/ttl.js';
+import { computeEffectiveTTL, isTtlExpired } from '../../../src/core/isg/ttl.js';
 
 const mockComputeContentHash = vi.mocked(computeContentHash);
 const mockComputeFileHash = vi.mocked(computeFileHash);
 const mockComputeInputsHash = vi.mocked(computeInputsHash);
 const mockResolveLayoutDependency = vi.mocked(resolveLayoutDependency);
 const mockComputeEffectiveTTL = vi.mocked(computeEffectiveTTL);
-const mockComputeNextRebuildAt = vi.mocked(computeNextRebuildAt);
-const mockIsPageFrozen = vi.mocked(isPageFrozen);
+const mockIsTtlExpired = vi.mocked(isTtlExpired);
 
 describe('ISG Build Integration', () => {
   const srcDir = join('/test', 'site');
@@ -90,6 +84,8 @@ describe('ISG Build Integration', () => {
   /** The templates a site has: the layout and two partials */
   let index: TemplateIndex;
 
+  let logger: Logger;
+
   /** An entry as a 2.0 render records it */
   const recordedEntry = (overrides: Partial<CacheEntry> = {}): CacheEntry => ({
     path: '/test.html',
@@ -116,19 +112,28 @@ describe('ISG Build Integration', () => {
   });
 
   const check = (entry: CacheEntry | undefined, now = fixedDate) =>
-    shouldRebuildPage(mockPage, entry, mockConfig, allPages, now, undefined, index);
+    shouldRebuildPage(mockPage, entry, mockConfig, allPages, now, undefined, index, logger);
 
   beforeEach(() => {
     vi.clearAllMocks();
     index = new TemplateIndex(srcDir, ['layout.eta', 'partials/header.eta', 'partials/footer.eta']);
+    logger = {
+      info: vi.fn(),
+      success: vi.fn(),
+      warning: vi.fn(),
+      error: vi.fn(),
+      status: vi.fn(),
+      building: vi.fn(),
+      processing: vi.fn(),
+      stats: vi.fn(),
+    };
 
     mockComputeContentHash.mockReturnValue('content123');
     mockComputeFileHash.mockResolvedValue('file123');
     mockComputeInputsHash.mockReturnValue('inputs123');
     mockResolveLayoutDependency.mockReturnValue(testLayoutPath);
     mockComputeEffectiveTTL.mockReturnValue(3600);
-    mockComputeNextRebuildAt.mockReturnValue(new Date(fixedDate.getTime() + 3600000));
-    mockIsPageFrozen.mockReturnValue(false);
+    mockIsTtlExpired.mockReturnValue(false);
   });
 
   describe('shouldRebuildPage', () => {
@@ -254,20 +259,59 @@ describe('ISG Build Integration', () => {
       expect(result).toBe(false);
     });
 
-    it('should not rebuild when page is frozen', async () => {
-      mockIsPageFrozen.mockReturnValue(true);
-      const entry = recordedEntry({
-        renderedAt: new Date(fixedDate.getTime() - 7200000).toISOString(),
-      });
+    it('should leave the TTL and the age cap of an unchanged page to isTtlExpired', async () => {
+      const entry = recordedEntry();
 
       expect(await check(entry)).toBe(false);
-      expect(mockIsPageFrozen).toHaveBeenCalledWith(entry, fixedDate);
+      expect(mockIsTtlExpired).toHaveBeenCalledWith(entry, fixedDate, logger);
     });
 
-    it('should rebuild when TTL expires and page is not frozen', async () => {
-      mockComputeNextRebuildAt.mockReturnValue(new Date(fixedDate.getTime() - 1000));
+    it('should rebuild an unchanged page when its TTL has run out', async () => {
+      mockIsTtlExpired.mockReturnValue(true);
 
       expect(await check(recordedEntry())).toBe(true);
+    });
+
+    it('should not check the TTL of a page whose inputs changed', async () => {
+      mockComputeInputsHash.mockReturnValue('new_inputs123');
+
+      expect(await check(recordedEntry())).toBe(true);
+      expect(mockIsTtlExpired).not.toHaveBeenCalled();
+    });
+
+    it('should accept an entry with optional fields omitted', async () => {
+      const { templateLookups: _, publishedAt: __, maxAgeCapDays: ___, ...entry } = recordedEntry();
+      expect(await check(entry)).toBe(false);
+    });
+
+    it('should warn through the logger and rebuild when the check fails', async () => {
+      mockComputeFileHash.mockRejectedValue(new Error('disk gone'));
+
+      expect(await check(recordedEntry())).toBe(true);
+      expect(logger.warning).toHaveBeenCalledWith(
+        'Error checking rebuild status for /test, forcing rebuild: disk gone',
+      );
+    });
+
+    it('should warn on the console when the check fails without a logger', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      mockComputeFileHash.mockRejectedValue('disk gone');
+
+      const result = await shouldRebuildPage(
+        mockPage,
+        recordedEntry(),
+        mockConfig,
+        allPages,
+        fixedDate,
+        undefined,
+        index,
+      );
+
+      expect(result).toBe(true);
+      expect(warn).toHaveBeenCalledWith(
+        'Error checking rebuild status for /test, forcing rebuild: disk gone',
+      );
+      warn.mockRestore();
     });
 
     it('should handle complete build cycle', async () => {
@@ -278,8 +322,9 @@ describe('ISG Build Integration', () => {
 
       // Two hours later the TTL has expired
       const laterTime = new Date(fixedDate.getTime() + 7200000);
-      mockComputeNextRebuildAt.mockReturnValue(new Date(fixedDate.getTime() + 3600000));
+      mockIsTtlExpired.mockReturnValue(true);
       expect(await check(entry, laterTime)).toBe(true);
+      expect(mockIsTtlExpired).toHaveBeenLastCalledWith(entry, laterTime, logger);
 
       const updated = await updateCacheEntry(
         entry,
@@ -348,6 +393,28 @@ describe('ISG Build Integration', () => {
 
       const result = await createCacheEntry(pageWithoutDate, mockConfig, fixedDate);
       expect(result.publishedAt).toBeUndefined();
+    });
+
+    it("should take the age cap from the page's front matter, then from the config", async () => {
+      const config = { ...mockConfig, isg: { ...mockConfig.isg, maxAgeCapDays: 365 } };
+      const cappedPage = {
+        ...mockPage,
+        frontMatter: { ...mockPage.frontMatter, maxAgeCapDays: 30 },
+      };
+
+      expect((await createCacheEntry(cappedPage, config, fixedDate)).maxAgeCapDays).toBe(30);
+      expect((await createCacheEntry(mockPage, config, fixedDate)).maxAgeCapDays).toBe(365);
+      expect(await createCacheEntry(mockPage, mockConfig, fixedDate)).not.toHaveProperty(
+        'maxAgeCapDays',
+      );
+    });
+
+    it('should reject an age cap in front matter that is not a whole number above 0', async () => {
+      const page = { ...mockPage, frontMatter: { ...mockPage.frontMatter, maxAgeCapDays: 0 } };
+
+      await expect(createCacheEntry(page, mockConfig, fixedDate)).rejects.toThrow(
+        'Invalid maxAgeCapDays in front-matter',
+      );
     });
 
     it('should handle custom TTL from config', async () => {
@@ -455,51 +522,6 @@ describe('ISG Build Integration', () => {
 
       expect(result.path).toBe('/test.html');
       expect(result.tags).toEqual(['page']);
-    });
-  });
-
-  describe('Cache entry validation', () => {
-    const invalid = (overrides: Record<string, unknown>) =>
-      ({ ...recordedEntry(), ...overrides }) as unknown as CacheEntry;
-
-    it.each([
-      ['path is missing', { path: undefined }],
-      ['inputsHash is missing', { inputsHash: undefined }],
-      ['inputsHash is empty', { inputsHash: '' }],
-      ['renderedAt is missing', { renderedAt: undefined }],
-      ['renderedAt is empty', { renderedAt: '' }],
-      ['ttlSeconds is not a number', { ttlSeconds: 'soon' }],
-      ['ttlSeconds is NaN', { ttlSeconds: NaN }],
-      ['ttlSeconds is Infinity', { ttlSeconds: Infinity }],
-      ['deps is not an array', { deps: 'layout.eta' }],
-      ['deps contains non-strings', { deps: [testLayoutPath, 123, null] }],
-      ['tags is not an array', { tags: 'page' }],
-      ['tags contains non-strings', { tags: ['valid', 42] }],
-      ['publishedAt is not a string', { publishedAt: 12345 }],
-      ['maxAgeCapDays is not a number', { maxAgeCapDays: 'forever' }],
-      ['assetDeps is not a list of strings', { assetDeps: [42] }],
-      ['images is not a list of strings', { images: [42] }],
-      ['readsNav is not a boolean', { readsNav: 'yes' }],
-      ['templatesRecorded is not a boolean', { templatesRecorded: 'yes' }],
-      ['templateLookups is not a list', { templateLookups: 'partials/header' }],
-      ['a lookup has no name', { templateLookups: [{ from: '', file: null }] }],
-      ['a lookup file is not a string', { templateLookups: [{ name: 'x', file: 1 }] }],
-    ])('should rebuild when %s', async (_, overrides) => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      expect(await check(invalid(overrides))).toBe(true);
-      warn.mockRestore();
-    });
-
-    it('should rebuild when entry is null or not an object', async () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      expect(await check(null as unknown as CacheEntry)).toBe(true);
-      expect(await check('not an object' as unknown as CacheEntry)).toBe(true);
-      warn.mockRestore();
-    });
-
-    it('should accept an entry with optional fields omitted', async () => {
-      const { templateLookups: _, publishedAt: __, maxAgeCapDays: ___, ...entry } = recordedEntry();
-      expect(await check(entry)).toBe(false);
     });
   });
 });

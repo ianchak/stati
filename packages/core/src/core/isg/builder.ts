@@ -1,4 +1,10 @@
-import type { PageModel, CacheEntry, StatiConfig, TemplateLookup } from '../../types/index.js';
+import type {
+  PageModel,
+  CacheEntry,
+  StatiConfig,
+  TemplateLookup,
+  Logger,
+} from '../../types/index.js';
 import type { PageReads } from '../collections.js';
 import {
   computeContentHash,
@@ -8,10 +14,15 @@ import {
 } from './hash.js';
 import { resolveLayoutDependency } from './deps.js';
 import { STALE_INPUTS_HASH } from '../../constants.js';
-import { computeEffectiveTTL, computeNextRebuildAt, isPageFrozen } from './ttl.js';
+import { computeEffectiveTTL, isTtlExpired } from './ttl.js';
 import { validatePageISGOverrides, extractNumericOverride } from './validation.js';
-import { getFrontMatterDate, normalizePathForComparison, resolveSrcDir } from '../utils/index.js';
-import { TemplateIndex, isTemplateLookupList } from '../template-index.js';
+import {
+  createFallbackLogger,
+  getFrontMatterDate,
+  normalizePathForComparison,
+  resolveSrcDir,
+} from '../utils/index.js';
+import { TemplateIndex } from '../template-index.js';
 
 /**
  * Determines the output path for a page.
@@ -24,70 +35,6 @@ function getOutputPath(page: PageModel): string {
   } else {
     return `${page.url}.html`;
   }
-}
-
-/**
- * Validates a cache entry structure to ensure it has all required fields.
- * Used to detect corrupted cache entries that should trigger a rebuild.
- */
-function isValidCacheEntry(entry: CacheEntry): boolean {
-  if (!entry || typeof entry !== 'object') {
-    return false;
-  }
-
-  // Check required string fields
-  const requiredStringFields = ['path', 'inputsHash', 'renderedAt'];
-  for (const field of requiredStringFields) {
-    if (typeof entry[field as keyof CacheEntry] !== 'string') {
-      return false;
-    }
-  }
-
-  // Check required number fields
-  if (typeof entry.ttlSeconds !== 'number' || !Number.isFinite(entry.ttlSeconds)) {
-    return false;
-  }
-
-  // Check required array fields
-  if (!Array.isArray(entry.deps) || !Array.isArray(entry.tags)) {
-    return false;
-  }
-
-  // Check that arrays contain only strings
-  if (!entry.deps.every((dep) => typeof dep === 'string')) {
-    return false;
-  }
-
-  if (!entry.tags.every((tag) => typeof tag === 'string')) {
-    return false;
-  }
-
-  // Check optional fields
-  if (entry.publishedAt !== undefined && typeof entry.publishedAt !== 'string') {
-    return false;
-  }
-
-  if (entry.maxAgeCapDays !== undefined && typeof entry.maxAgeCapDays !== 'number') {
-    return false;
-  }
-
-  for (const list of [entry.assetDeps, entry.images]) {
-    if (list !== undefined && (!Array.isArray(list) || !list.every((v) => typeof v === 'string'))) {
-      return false;
-    }
-  }
-
-  for (const flag of [entry.readsCollection, entry.readsNav, entry.templatesRecorded]) {
-    if (flag !== undefined && typeof flag !== 'boolean') {
-      return false;
-    }
-  }
-
-  if (entry.templateLookups !== undefined && !isTemplateLookupList(entry.templateLookups)) {
-    return false;
-  }
-
-  return true;
 }
 
 /**
@@ -194,11 +141,14 @@ function withRenderedAssets(entry: CacheEntry, rendered: RenderedAssets | undefi
 /**
  * Determines if a page should be rebuilt based on ISG logic.
  * Checks content changes, the templates the last render recorded, the page's layout, TTL
- * expiration, and freeze status. Handles edge cases like missing dates and corrupted entries.
+ * expiration, and freeze status.
  *
  * A cached page is stale when a template it rendered changed or no longer exists, when its
  * layout would now be a different file, or when a template name it looked up would now
  * resolve differently (checked against the template index, without reading files).
+ *
+ * The entry is trusted as it is: entries come from {@link createCacheEntry} or from a manifest
+ * that `parseCacheEntry` (`entry.ts`) checked while loading it.
  *
  * @param page - The page model to check
  * @param entry - Existing cache entry, or undefined if not cached
@@ -207,6 +157,7 @@ function withRenderedAssets(entry: CacheEntry, rendered: RenderedAssets | undefi
  * @param now - Current date/time
  * @param renderInputsHash - Optional hash of asset URLs and injection settings
  * @param templateIndex - The build's template index; read from the source directory when omitted
+ * @param logger - Where warnings go; the console when omitted
  * @returns True if the page should be rebuilt
  *
  * @example
@@ -225,6 +176,7 @@ export async function shouldRebuildPage(
   now: Date,
   renderInputsHash?: string,
   templateIndex?: TemplateIndex,
+  logger?: Logger,
 ): Promise<boolean> {
   if (config.isg?.enabled === false) {
     return true;
@@ -236,12 +188,6 @@ export async function shouldRebuildPage(
   }
 
   try {
-    // Validate the cache entry structure
-    if (!isValidCacheEntry(entry)) {
-      console.warn(`Invalid cache entry for ${page.url}, forcing rebuild`);
-      return true;
-    }
-
     // Entries from before templates were recorded while rendering rebuild once to record them
     if (!hasRecordedTemplates(entry)) {
       return true;
@@ -292,96 +238,13 @@ export async function shouldRebuildPage(
       return true;
     }
 
-    // If page is frozen (beyond max age cap), don't rebuild based on TTL
-    if (isPageFrozen(entry, now)) {
-      return false;
-    }
-
-    // Check if TTL has expired with safe date handling
-    let renderedAt: Date;
-    try {
-      renderedAt = new Date(entry.renderedAt);
-      if (isNaN(renderedAt.getTime())) {
-        console.warn(`Invalid renderedAt date in cache entry for ${page.url}, forcing rebuild`);
-        return true;
-      }
-    } catch (error) {
-      console.warn(
-        `Failed to parse renderedAt for ${page.url}: ${error instanceof Error ? error.message : String(error)}`,
-      );
-      return true;
-    }
-
-    // Handle edge case: invalid TTL values
-    if (
-      typeof entry.ttlSeconds !== 'number' ||
-      entry.ttlSeconds < 0 ||
-      !Number.isFinite(entry.ttlSeconds)
-    ) {
-      console.warn(
-        `Invalid TTL value in cache entry for ${page.url}: ${entry.ttlSeconds}, forcing rebuild`,
-      );
-      return true;
-    }
-
-    const computeOptions: {
-      now: Date;
-      publishedAt?: Date;
-      ttlSeconds: number;
-      maxAgeCapDays?: number;
-    } = {
-      now: renderedAt,
-      ttlSeconds: entry.ttlSeconds,
-    };
-
-    // Handle publishedAt edge cases
-    if (entry.publishedAt) {
-      try {
-        const publishedDate = new Date(entry.publishedAt);
-        if (!isNaN(publishedDate.getTime())) {
-          computeOptions.publishedAt = publishedDate;
-        } else {
-          console.warn(
-            `Invalid publishedAt date in cache entry for ${page.url}, ignoring for TTL calculation`,
-          );
-        }
-      } catch (error) {
-        console.warn(
-          `Failed to parse publishedAt for ${page.url}: ${error instanceof Error ? error.message : String(error)}`,
-        );
-      }
-    }
-
-    // Handle maxAgeCapDays edge cases
-    if (entry.maxAgeCapDays !== undefined) {
-      if (
-        typeof entry.maxAgeCapDays === 'number' &&
-        entry.maxAgeCapDays > 0 &&
-        Number.isFinite(entry.maxAgeCapDays)
-      ) {
-        computeOptions.maxAgeCapDays = entry.maxAgeCapDays;
-      } else {
-        console.warn(
-          `Invalid maxAgeCapDays in cache entry for ${page.url}: ${entry.maxAgeCapDays}, ignoring`,
-        );
-      }
-    }
-
-    const nextRebuildAt = computeNextRebuildAt(computeOptions);
-
-    // If no next rebuild time (frozen), don't rebuild
-    if (!nextRebuildAt) {
-      return false;
-    }
-
-    // Rebuild if TTL has expired
-    return now >= nextRebuildAt;
+    // Unchanged inputs: rebuild once the TTL has run out, unless the page is frozen
+    return isTtlExpired(entry, now, logger);
   } catch (error) {
     // For any unexpected errors, log and force rebuild to be safe
-    console.warn(
-      `Error checking rebuild status for ${page.url}: ${error instanceof Error ? error.message : String(error)}`,
+    (logger ?? createFallbackLogger()).warning(
+      `Error checking rebuild status for ${page.url}, forcing rebuild: ${error instanceof Error ? error.message : String(error)}`,
     );
-    console.warn('Forcing rebuild due to error');
     return true;
   }
 }
@@ -438,23 +301,11 @@ export async function createCacheEntry(
   const isgConfig = config.isg || {};
   const ttlSeconds = computeEffectiveTTL(page, isgConfig);
 
-  // Get max age cap from front matter or config using safe extraction
-  let maxAgeCapDays = isgConfig.maxAgeCapDays;
-  try {
-    const frontMatterMaxAge = extractNumericOverride(
-      page.frontMatter.maxAgeCapDays,
-      'maxAgeCapDays',
-      page.sourcePath,
-    );
-    if (frontMatterMaxAge !== undefined) {
-      maxAgeCapDays = frontMatterMaxAge;
-    }
-  } catch (error) {
-    // Log validation error but continue with default value
-    console.warn(
-      `ISG validation warning for ${page.sourcePath}: ${error instanceof Error ? error.message : String(error)}`,
-    );
-  }
+  // Max age cap from front matter or config. validatePageISGOverrides has already rejected
+  // every value extractNumericOverride would throw for.
+  const maxAgeCapDays =
+    extractNumericOverride(page.frontMatter.maxAgeCapDays, 'maxAgeCapDays', page.sourcePath) ??
+    isgConfig.maxAgeCapDays;
 
   // Determine output path
   const outputPath = getOutputPath(page);
