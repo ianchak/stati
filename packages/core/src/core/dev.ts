@@ -539,7 +539,7 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
 
   // Create dev server lock manager
   const cacheDir = resolveCacheDir();
-  const devLock = new DevServerLockManager(cacheDir);
+  const devLock = new DevServerLockManager(cacheDir, logger);
 
   // The site is served under the path of site.baseUrl, so links behave as they do in production
   const basePath = getBasePath(config.site.baseUrl);

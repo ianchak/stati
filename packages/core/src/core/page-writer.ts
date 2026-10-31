@@ -8,7 +8,7 @@ import { dirname } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { ensureDir, writeFile } from './utils/index.js';
 import { createCacheEntry, updateCacheEntry, type RenderedAssets } from './isg/index.js';
-import type { CacheEntry, CacheManifest, PageModel, StatiConfig } from '../types/index.js';
+import type { CacheEntry, CacheManifest, Logger, PageModel, StatiConfig } from '../types/index.js';
 import type { StylesheetRuntime } from '../css/runtime.js';
 
 /** A rendered page, the file it goes to and what its cache entry records */
@@ -34,19 +34,21 @@ export interface PageWriterContext {
   /** Leave the cache entries of rendered pages alone (`BuildOptions.skipCacheUpdate`) */
   skipCacheUpdate: boolean;
   stylesheets: StylesheetRuntime;
+  /** Reports templates a cache entry can't hash */
+  logger: Logger;
 }
 
 /**
  * Writes the cache entry of a rendered page: its last entry updated, or a new one.
  *
- * @param context - The build's manifest, config and build time
+ * @param context - The build's manifest, config, build time and logger
  * @param rendered - The page and what its render recorded
  */
 export async function recordCacheEntry(
-  context: Pick<PageWriterContext, 'config' | 'manifest' | 'buildTime'>,
+  context: Pick<PageWriterContext, 'config' | 'manifest' | 'buildTime' | 'logger'>,
   rendered: RenderedPage,
 ): Promise<void> {
-  const { config, manifest, buildTime } = context;
+  const { config, manifest, buildTime, logger } = context;
   const { page, cacheKey, existingEntry, renderInputsHash, renderedAssets } = rendered;
   manifest.entries[cacheKey] = existingEntry
     ? await updateCacheEntry(
@@ -56,8 +58,9 @@ export async function recordCacheEntry(
         buildTime,
         renderInputsHash,
         renderedAssets,
+        logger,
       )
-    : await createCacheEntry(page, config, buildTime, renderInputsHash, renderedAssets);
+    : await createCacheEntry(page, config, buildTime, renderInputsHash, renderedAssets, logger);
 }
 
 /** Writes rendered pages and records their cache entries */

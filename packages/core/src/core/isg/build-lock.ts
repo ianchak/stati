@@ -1,6 +1,14 @@
-import { writeFile, readFile, pathExists, remove, ensureDir } from '../utils/index.js';
+import {
+  writeFile,
+  readFile,
+  pathExists,
+  remove,
+  ensureDir,
+  createFallbackLogger,
+} from '../utils/index.js';
 import { join, dirname } from 'node:path';
 import { hostname } from 'node:os';
+import type { Logger } from '../../types/index.js';
 
 /**
  * Interface for Node.js file system errors
@@ -26,7 +34,14 @@ export class BuildLockManager {
   private lockPath: string;
   private isLocked = false;
 
-  constructor(cacheDir: string) {
+  /**
+   * @param cacheDir - Path to the cache directory, which holds the lock file
+   * @param logger - Reports stale, forced and unreleased locks; the console when omitted
+   */
+  constructor(
+    cacheDir: string,
+    private readonly logger: Logger = createFallbackLogger(),
+  ) {
     this.lockPath = join(cacheDir, '.build-lock');
   }
 
@@ -68,11 +83,13 @@ export class BuildLockManager {
               continue;
             } else {
               // Process is dead, remove stale lock
-              console.warn(`Removing stale build lock (PID ${existingLock.pid} no longer running)`);
+              this.logger.warning(
+                `Removing stale build lock (PID ${existingLock.pid} no longer running)`,
+              );
               await this.forceRemoveLock();
             }
           } else if (force) {
-            console.warn('Force acquiring build lock, removing existing lock');
+            this.logger.warning('Force acquiring build lock, removing existing lock');
             await this.forceRemoveLock();
           }
         }
@@ -124,8 +141,8 @@ export class BuildLockManager {
       }
     } catch (error) {
       // Don't throw on release errors, just warn
-      console.warn(
-        `Warning: Failed to release build lock: ${error instanceof Error ? error.message : String(error)}`,
+      this.logger.warning(
+        `Failed to release build lock: ${error instanceof Error ? error.message : String(error)}`,
       );
     } finally {
       this.isLocked = false;
@@ -261,7 +278,7 @@ export class BuildLockManager {
  *
  * @param cacheDir - Path to the cache directory
  * @param buildFn - Function to execute while holding the lock
- * @param options - Lock options
+ * @param options - Lock options, and the logger the lock reports to (the console when omitted)
  * @returns Result of the build function
  *
  * @example
@@ -275,12 +292,13 @@ export class BuildLockManager {
 export async function withBuildLock<T>(
   cacheDir: string,
   buildFn: () => Promise<T>,
-  options: { force?: boolean; timeout?: number } = {},
+  options: { force?: boolean; timeout?: number; logger?: Logger } = {},
 ): Promise<T> {
-  const lockManager = new BuildLockManager(cacheDir);
+  const { logger, ...lockOptions } = options;
+  const lockManager = new BuildLockManager(cacheDir, logger);
 
   try {
-    await lockManager.acquireLock(options);
+    await lockManager.acquireLock(lockOptions);
     return await buildFn();
   } finally {
     await lockManager.releaseLock();

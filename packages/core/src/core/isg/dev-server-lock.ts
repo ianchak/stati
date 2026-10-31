@@ -1,7 +1,15 @@
-import { writeFile, readFile, pathExists, remove, ensureDir } from '../utils/index.js';
+import {
+  writeFile,
+  readFile,
+  pathExists,
+  remove,
+  ensureDir,
+  createFallbackLogger,
+} from '../utils/index.js';
 import { join, dirname } from 'node:path';
 import { hostname } from 'node:os';
 import { unlinkSync, existsSync } from 'node:fs';
+import type { Logger } from '../../types/index.js';
 
 /**
  * Interface for Node.js file system errors
@@ -28,7 +36,14 @@ export class DevServerLockManager {
   private isLocked = false;
   private cleanupHandlersRegistered = false;
 
-  constructor(cacheDir: string) {
+  /**
+   * @param cacheDir - Path to the cache directory, which holds the lock file
+   * @param logger - Reports stale and unreleased locks; the console when omitted
+   */
+  constructor(
+    cacheDir: string,
+    private readonly logger: Logger = createFallbackLogger(),
+  ) {
     this.lockPath = join(cacheDir, '.dev-server-lock');
   }
 
@@ -69,7 +84,7 @@ export class DevServerLockManager {
             );
           } else {
             // Process is dead, remove stale lock
-            console.warn(
+            this.logger.warning(
               `Removing stale dev server lock (PID ${existingLock.pid} no longer running)`,
             );
             await this.forceRemoveLock();
@@ -119,8 +134,8 @@ export class DevServerLockManager {
       }
     } catch (error) {
       // Don't throw on release errors, just warn
-      console.warn(
-        `Warning: Failed to release dev server lock: ${error instanceof Error ? error.message : String(error)}`,
+      this.logger.warning(
+        `Failed to release dev server lock: ${error instanceof Error ? error.message : String(error)}`,
       );
     } finally {
       this.isLocked = false;
@@ -277,7 +292,8 @@ export class DevServerLockManager {
       process.exit(0);
     });
 
-    // Handle uncaught errors
+    // Handle uncaught errors. These print to the console, not the logger: they stand in for
+    // Node's crash report, so they print the stack, and they must work when the logger failed.
     process.on('uncaughtException', async (error) => {
       console.error('Uncaught exception:', error);
       await cleanup();
