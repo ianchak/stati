@@ -11,6 +11,7 @@ import { EtaParseError, type Eta } from 'eta';
 import type {
   Logger,
   PageModel,
+  TemplateContext,
   TemplateIncludeFunction,
   TemplateLayoutFunction,
   TemplateLookup,
@@ -38,11 +39,13 @@ export const MAX_TEMPLATE_DEPTH = 100;
 /**
  * The values every template of one render shares, such as `site`, `page` and `helpers`, and an
  * id: the page's layout and its Open Graph template render with different values, so includes
- * cached for one must not be reused by the other.
+ * cached for one must not be reused by the other. The values set every `TemplateContext` key,
+ * `undefined` where it does not apply, except the `props`, `include`, `layout` and `body` each
+ * template adds.
  */
 export interface BaseContext {
   readonly id: string;
-  readonly values: Record<string, unknown>;
+  readonly values: Required<Omit<TemplateContext, 'props' | 'include' | 'layout' | 'body'>>;
 }
 
 /** Marks a render whose context has no `body` key: the page's layout and the Open Graph template */
@@ -243,8 +246,8 @@ export class RenderScope {
     this.stack.splice(this.stack.length - chain.length, chain.length);
   }
 
-  private createContext(base: BaseContext, frame: RenderFrame, slot: LayoutSlot): object {
-    const context: Record<string, unknown> = {
+  private createContext(base: BaseContext, frame: RenderFrame, slot: LayoutSlot): TemplateContext {
+    const context: TemplateContext = {
       ...base.values,
       props: frame.props,
       include: this.createInclude(base, frame.file),

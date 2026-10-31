@@ -1,5 +1,5 @@
 import { isDevelopment } from '../../env.js';
-import type { SiteConfig } from '../../types/index.js';
+import type { SiteConfig, TemplateContext } from '../../types/index.js';
 import { findSimilarNames } from './similarity.utils.js';
 
 /**
@@ -41,7 +41,7 @@ const SITE_CONFIG_KEYS: Record<keyof SiteConfig, true> = {
  * down, with keys that may be legitimately absent at runtime.
  * `page` is left out because frontmatter keys differ from page to page.
  */
-const VALIDATED_NESTED_PROPERTIES: Record<string, readonly string[]> = {
+const VALIDATED_NESTED_PROPERTIES: Partial<Record<keyof TemplateContext, readonly string[]>> = {
   site: Object.keys(SITE_CONFIG_KEYS),
   nav: [],
   collection: [],
@@ -54,13 +54,18 @@ const VALIDATED_NESTED_PROPERTIES: Record<string, readonly string[]> = {
  * root, so that `stati.title` can suggest `stati.page.title` and `stati.formatDate`
  * can suggest `stati.helpers.formatDate`.
  */
-const CROSS_LEVEL_PROPERTIES = ['page', 'site', 'nav', 'helpers'];
+const CROSS_LEVEL_PROPERTIES: readonly (keyof TemplateContext)[] = [
+  'page',
+  'site',
+  'nav',
+  'helpers',
+];
 
 /**
  * Explanations for root properties that exist only in some templates, shown instead of
  * spelling suggestions when a template reads one where it is absent.
  */
-const ABSENT_PROPERTY_HINTS: Record<string, string> = {
+const ABSENT_PROPERTY_HINTS: Partial<Record<keyof TemplateContext, string>> = {
   body: "stati.body is set only in templates rendered by stati.layout() or stati.include(); the page's Markdown is stati.content",
 };
 
@@ -191,7 +196,7 @@ export function createValidatingContextProxy<T extends object>(context: T): T {
         const value: unknown = Reflect.get(obj, prop, receiver);
         const nestedExtraKeys =
           typeof prop === 'string' && Object.hasOwn(VALIDATED_NESTED_PROPERTIES, prop)
-            ? VALIDATED_NESTED_PROPERTIES[prop]
+            ? VALIDATED_NESTED_PROPERTIES[prop as keyof TemplateContext]
             : undefined;
 
         if (nestedExtraKeys && typeof value === 'object' && value !== null) {
@@ -210,7 +215,7 @@ export function createValidatingContextProxy<T extends object>(context: T): T {
       const availableKeys = listKeys(obj, []);
 
       const hint = Object.hasOwn(ABSENT_PROPERTY_HINTS, name)
-        ? ABSENT_PROPERTY_HINTS[name]
+        ? ABSENT_PROPERTY_HINTS[name as keyof TemplateContext]
         : undefined;
       if (hint) {
         throw new UnknownTemplatePropertyError(`stati.${name}`, [], availableKeys, hint);

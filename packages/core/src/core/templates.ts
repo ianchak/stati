@@ -7,6 +7,7 @@ import type {
   CollectionData,
   TocEntry,
   Logger,
+  TemplateContext,
   TemplateLookup,
 } from '../types/index.js';
 import {
@@ -32,8 +33,8 @@ import {
 import type { PageReads } from './collections.js';
 import { isDevelopment, isProduction } from '../env.js';
 import { generateSEO, resolveGeneratedImagePlaceholders } from '../seo/index.js';
-import type { OgTemplateRenderer, PageImages, StatiImageOptions } from '../images/runtime.js';
-import type { GeneratedOgImage } from '../types/index.js';
+import type { OgTemplateRenderer, PageImages } from '../images/runtime.js';
+import type { GeneratedOgImage, StatiImageOptions } from '../types/index.js';
 import { TemplateIndex, type PageLayoutResolution } from './template-index.js';
 import {
   RenderScope,
@@ -285,7 +286,7 @@ async function renderPageInScope(
   }
 
   // The current page's navigation node counts as a navigation read
-  const pageContext: Record<string, unknown> = { ...page.frontMatter, ...pageOverrides };
+  const pageContext: TemplateContext['page'] = { ...page.frontMatter, ...pageOverrides };
   Object.defineProperty(pageContext, 'navNode', {
     enumerable: true,
     configurable: true,
@@ -297,7 +298,7 @@ async function renderPageInScope(
 
   // Values every template of the page shares. Each render adds props, body, include and layout.
   // The site's helpers live under `helpers`; the root holds only Stati's own API.
-  const values: Record<string, unknown> = {
+  const values: BaseContext['values'] = {
     site: config.site,
     page: pageContext,
     content: body,
@@ -334,9 +335,9 @@ async function renderPageInScope(
         : renderPlainImage(src, options, basePath),
     assets, // TypeScript bundle assets (available when typescript.enabled is true)
     // Set while the Open Graph template renders: { width, height }
-    og: undefined as { width: number; height: number } | undefined,
+    og: undefined,
     // The page's generated Open Graph image, once rendered: { url, path, width, height, alt }
-    ogImage: undefined as GeneratedOgImage | undefined,
+    ogImage: undefined,
   };
 
   // Render the Open Graph template with the layout's values, minus the page body, so the
@@ -347,7 +348,7 @@ async function renderPageInScope(
     const ogPage = Object.defineProperties(
       {},
       Object.getOwnPropertyDescriptors(pageContext),
-    ) as Record<string, unknown>;
+    ) as TemplateContext['page'];
     ogPage.content = '';
     const ogBase: BaseContext = {
       id: 'og',

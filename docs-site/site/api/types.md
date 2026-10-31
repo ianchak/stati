@@ -422,6 +422,8 @@ interface TemplateContext {
     url: string;
     /** Rendered HTML content */
     content: string;
+    /** The page's h2 to h6 headings; empty when there are none or markdown.toc is false */
+    toc: TocEntry[];
     /** Current page's navigation node */
     navNode?: NavNode;
     /** Words in the Markdown body */
@@ -498,7 +500,7 @@ interface TemplateContext {
   url: (path: string) => string;
 
   /** Builds space-separated attribute values, like classnames */
-  propValue: (...args: unknown[]) => string;
+  propValue: (...args: PropValueArg[]) => string;
 
   /** Renders a sized, lazy-loaded image, responsive with images.responsive */
   image: (
@@ -530,9 +532,17 @@ interface TemplateLayoutFunction {
 }
 
 type StatiHelpers = Record<string, (...args: any[]) => unknown>;
-```
 
-At render time, `page` also has `toc`: the table of contents extracted from the page's headings, always an array (empty when the page has none). The `TemplateContext` type leaves it out.
+/** Strings and numbers are kept, booleans and other falsy values skipped; arrays keep their string and number items, objects their truthy keys */
+type PropValueArg =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | Record<string, boolean | string | number | null | undefined>
+  | PropValueArg[];
+```
 
 The root of the context holds only Stati's API. Your functions are under `helpers`, so they never replace a value of Stati's. See [Template API](/api/templates) for how to use the context.
 
