@@ -1,5 +1,11 @@
 # @stati/core
 
+## 2.11.6
+
+### Patch Changes
+
+- 167e8d9: report lock and file hash warnings through the logger
+
 ## 2.11.5
 
 ### Patch Changes
