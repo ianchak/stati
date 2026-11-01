@@ -296,6 +296,40 @@ describe('build.ts', () => {
       );
     });
 
+    it('should take the build lock with its options and logger in production', async () => {
+      setEnv('production');
+      const logger = {
+        info: vi.fn(),
+        success: vi.fn(),
+        warning: vi.fn(),
+        error: vi.fn(),
+        status: vi.fn(),
+        building: vi.fn(),
+        processing: vi.fn(),
+        stats: vi.fn(),
+      };
+
+      await build({ force: true, logger });
+
+      expect(mockWithBuildLock).toHaveBeenCalledWith(
+        expect.stringMatching(/[\\/]test[\\/]project[\\/]\.stati$/),
+        expect.any(Function),
+        { force: true, timeout: 60000, logger },
+      );
+    });
+
+    it('should give the build lock the console logger when the build has none', async () => {
+      setEnv('production');
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      await build();
+
+      const [, , lockOptions] = mockWithBuildLock.mock.calls[0]!;
+      expect(lockOptions).toMatchObject({ force: false });
+      lockOptions.logger.warning('stale lock');
+      expect(warn).toHaveBeenCalledWith('stale lock');
+    });
+
     it('should load configuration from custom path when provided', async () => {
       const options: BuildOptions = {
         configPath: '/custom/path/config.js',

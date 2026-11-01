@@ -16,7 +16,7 @@ import {
   type RenderedPage,
 } from '../../src/core/page-writer.js';
 import type { StylesheetRuntime } from '../../src/css/runtime.js';
-import type { CacheEntry, PageModel, StatiConfig } from '../../src/types/index.js';
+import type { CacheEntry, Logger, PageModel, StatiConfig } from '../../src/types/index.js';
 
 const config: StatiConfig = { site: { title: 'Test', baseUrl: 'https://example.com' } };
 const buildTime = new Date('2026-10-30T10:00:00.000Z');
@@ -36,7 +36,21 @@ describe('page writers', () => {
       buildTime,
       skipCacheUpdate: false,
       stylesheets: { holdsPages: false, hold } as unknown as StylesheetRuntime,
+      logger: createLogger(),
       ...overrides,
+    };
+  }
+
+  function createLogger(): Logger {
+    return {
+      info: vi.fn(),
+      success: vi.fn(),
+      warning: vi.fn(),
+      error: vi.fn(),
+      status: vi.fn(),
+      building: vi.fn(),
+      processing: vi.fn(),
+      stats: vi.fn(),
     };
   }
 
@@ -91,6 +105,33 @@ describe('page writers', () => {
         publishedAt: '2026-01-01T00:00:00.000Z',
         renderedAt: buildTime.toISOString(),
       });
+    });
+
+    it.each([
+      ['a new entry', undefined],
+      [
+        'an updated entry',
+        {
+          path: '/about.html',
+          inputsHash: 'old',
+          deps: [],
+          tags: [],
+          renderedAt: '2026-01-01T00:00:00.000Z',
+          ttlSeconds: 3600,
+        } satisfies CacheEntry,
+      ],
+    ])('reports a template %s cannot hash through the logger', async (_, existing) => {
+      const ctx = context();
+      const page = rendered('/about', existing);
+      // A directory can't be read as a template
+      page.renderedAssets = { ...page.renderedAssets, templates: [dir] };
+
+      await recordCacheEntry(ctx, page);
+
+      expect(ctx.logger.warning).toHaveBeenCalledWith(
+        expect.stringContaining(`Failed to compute hash for ${dir}: `),
+      );
+      expect(ctx.manifest.entries['/about.html']).toMatchObject({ deps: [dir] });
     });
   });
 

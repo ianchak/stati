@@ -467,6 +467,7 @@ export async function renderPages(session: RenderSession): Promise<RenderPagesRe
         session.buildTime,
         renderInputsHash,
         session.templateIndex,
+        logger,
       ));
     totalShouldRebuildTime += performance.now() - shouldRebuildStart;
 

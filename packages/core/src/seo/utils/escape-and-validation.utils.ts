@@ -65,6 +65,20 @@ export function escapeHtml(value: unknown): string {
   return result;
 }
 
+/** Characters XML 1.0 does not allow in a document, which copy-pasted text can hold */
+// eslint-disable-next-line no-control-regex
+const INVALID_XML_CHARS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g;
+
+/**
+ * Removes the characters XML 1.0 does not allow anywhere in a document, not even as
+ * character references or inside CDATA, such as form feeds and other control characters.
+ * @param text - Text to clean
+ * @returns The text without those characters
+ */
+export function removeInvalidXmlChars(text: string): string {
+  return text.replace(INVALID_XML_CHARS, '');
+}
+
 /**
  * Copy structured data for JSON-LD output, enforcing a nesting depth limit.
  * Recursively processes objects and arrays.

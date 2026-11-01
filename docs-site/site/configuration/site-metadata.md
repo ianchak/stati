@@ -120,7 +120,7 @@ The config's `seo.defaultAuthor` is not part of the template context; auto-injec
 
 ## Environment-specific configuration
 
-Configure different metadata for different environments. `getEnv()` from `@stati/core` returns `'production'` during `stati build` and `'development'` during `stati dev`:
+Configure different metadata for different environments. `getEnv()` from `@stati/core` returns `'production'` during `stati build` and `stati preview`, and `'development'` during `stati dev`:
 
 ```javascript
 import { defineConfig, getEnv } from '@stati/core';

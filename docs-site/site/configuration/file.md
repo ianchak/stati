@@ -406,7 +406,7 @@ import { defineConfig, getEnv } from '@stati/core';
 import environments from './config/environments.js';
 
 // STATI_TARGET selects staging; otherwise follow the command:
-// `stati build` → 'production', `stati dev` → 'development'
+// `stati build` and `stati preview` → 'production', `stati dev` → 'development'
 const env = process.env.STATI_TARGET || getEnv();
 const envConfig = environments[env] || environments.development;
 

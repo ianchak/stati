@@ -252,7 +252,7 @@ Stati reads only `stati.config.ts`, `stati.config.js` or `stati.config.mjs`, so 
 SITE_URL=https://staging.example.com stati build
 ```
 
-`stati build` switches Stati's internal mode to production, but it does **not** set `process.env.NODE_ENV`. If your config branches on `NODE_ENV`, set it yourself (`NODE_ENV=production stati build`), or read the mode with `getEnv()` from `@stati/core` (see [Configuration file](/configuration/file#multi-environment-configuration)).
+`stati build` and `stati preview` switch Stati's internal mode to production and `stati dev` to development before they load the config, but none of them sets `process.env.NODE_ENV`. If your config branches on `NODE_ENV`, set it yourself (`NODE_ENV=production stati build`), or read the mode with `getEnv()` from `@stati/core` (see [Configuration file](/configuration/file#multi-environment-configuration)).
 
 ### CI/CD integration
 

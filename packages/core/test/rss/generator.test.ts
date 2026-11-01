@@ -181,6 +181,77 @@ describe('RSS Feed Generation', () => {
       expect(result.xml).toContain('<![CDATA[<p>First post content</p>]]>');
     });
 
+    describe('includeContent with a CDATA terminator in the body', () => {
+      /**
+       * Reads an item's `<description>` the way an XML parser does: the element may hold only
+       * CDATA sections, none of which contains `]]>`, and their text joins into the value.
+       */
+      function readCdataDescription(xml: string): string {
+        const item = xml.slice(xml.indexOf('<item>'), xml.indexOf('</item>'));
+        const start = item.indexOf('<description>') + '<description>'.length;
+        const inner = item.slice(start, item.lastIndexOf('</description>'));
+        const sections = [...inner.matchAll(/<!\[CDATA\[((?:(?!\]\]>)[\s\S])*)\]\]>/g)];
+        // The sections must make up the whole element, with nothing between them
+        expect(sections.map((section) => section[0]).join('')).toBe(inner);
+        return sections.map((section) => section[1]).join('');
+      }
+
+      function feedFor(content: string): string {
+        const page = { ...samplePages[0]!, content };
+        return generateRSSFeed([page], baseConfig, {
+          ...baseFeedConfig,
+          itemMapping: { includeContent: true },
+        }).xml;
+      }
+
+      it.each([
+        ['in the middle', 'Some text with ]]> inside'],
+        ['at the start', ']]> opens the body'],
+        ['at the end', 'The body ends with ]]>'],
+        ['repeated', 'a ]]> b ]]>]]> c'],
+        ['next to brackets', 'x[y[0]]]> and ]]]]>'],
+      ])('writes a body with ]]> %s as CDATA that reads back unchanged', (_where, content) => {
+        expect(readCdataDescription(feedFor(content))).toBe(content);
+      });
+
+      it('leaves a body without the terminator in one CDATA section', () => {
+        const content = 'Brackets ]] and > alone, and <![CDATA[ text';
+        expect(feedFor(content)).toContain(`<description><![CDATA[${content}]]></description>`);
+      });
+    });
+
+    it.each([
+      ['only whitespace', '\n  \n'],
+      ['missing', undefined],
+    ])('uses the description when includeContent is on and the body is %s', (_what, content) => {
+      const page = { ...samplePages[0]!, content } as PageModel;
+      const result = generateRSSFeed([page], baseConfig, {
+        ...baseFeedConfig,
+        itemMapping: { includeContent: true },
+      });
+
+      expect(result.xml).toContain('<description>Description of first post</description>');
+      expect(result.xml).not.toContain('CDATA');
+    });
+
+    it('leaves out characters XML cannot hold, in the body and in other fields', () => {
+      const page = {
+        ...samplePages[0]!,
+        content: 'Form\u000C feed, null\u0000 and tab\there',
+        frontMatter: { ...samplePages[0]!.frontMatter, title: 'Bell\u0007 title \u{1F600}' },
+      };
+      const result = generateRSSFeed([page], baseConfig, {
+        ...baseFeedConfig,
+        itemMapping: { includeContent: true },
+      });
+
+      // eslint-disable-next-line no-control-regex
+      expect(result.xml).not.toMatch(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/);
+      expect(result.xml).toContain('<![CDATA[Form feed, null and tab\there]]>');
+      expect(result.xml).toContain('<title>Bell title \u{1F600}</title>');
+      expect(result.sizeInBytes).toBe(Buffer.byteLength(result.xml, 'utf8'));
+    });
+
     it('should use custom field mapping for title', () => {
       samplePages[0]!.frontMatter.customTitle = 'Custom Title';
       baseFeedConfig.itemMapping = {

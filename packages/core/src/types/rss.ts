@@ -194,9 +194,11 @@ export interface RSSFeedConfig {
     guid?: (page: PageModel, config: StatiConfig) => string;
 
     /**
-     * Whether to include full HTML content in description
-     * If true, uses the rendered HTML content
-     * If false, uses description field only
+     * Whether to put the page body in description
+     * If true, uses the page's Markdown source (`PageModel.content`), not rendered HTML,
+     * written as CDATA (a `]]>` in it is split across two sections); a page whose body is
+     * empty or only whitespace uses the description mapping
+     * If false, uses the description mapping only
      * @default false
      */
     includeContent?: boolean;
