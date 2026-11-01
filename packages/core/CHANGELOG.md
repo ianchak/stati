@@ -1,5 +1,11 @@
 # @stati/core
 
+## 2.11.7
+
+### Patch Changes
+
+- de231d4: derive the stati template context from TemplateContext
+
 ## 2.11.6
 
 ### Patch Changes
