@@ -2,6 +2,7 @@ import { readFile } from 'fs/promises';
 import { pathExists } from './fs.utils.js';
 import type { ErrorDetails } from './error-overlay.utils.js';
 import { parseUnknownPropertyMessage } from './context-validation.utils.js';
+import type { TemplateContext } from '../../types/index.js';
 
 /**
  * Enhanced template error that includes file context and suggestions.
@@ -147,34 +148,40 @@ function causeChain(error: Error): Error[] {
 const ETA_RUNTIME_ERROR_HEADER = /^(?:(.+):(\d+)|line (\d+))\n(?:(?: >> | {4})\d+\|[^\n]*\n)+\n/;
 
 /**
- * Root template context properties, used to suggest `stati.<name>` when a
- * template references one without the `stati.` prefix.
+ * Every root template context property, used to suggest `stati.<name>` when a template
+ * references one without the `stati.` prefix. Typed as a Record so a new `TemplateContext`
+ * property fails to compile until it is added.
  */
-const CONTEXT_ROOT_NAMES = new Set([
-  'site',
-  'page',
-  'content',
-  'body',
-  'nav',
-  'collection',
-  'pagination',
-  'generated',
-  'props',
-  'helpers',
-  'assets',
-  'generator',
-  'generateSEO',
-  'propValue',
-  'slugify',
-  'image',
-]);
+const CONTEXT_ROOT_KEYS: Record<keyof TemplateContext, true> = {
+  site: true,
+  page: true,
+  content: true,
+  body: true,
+  props: true,
+  include: true,
+  layout: true,
+  helpers: true,
+  nav: true,
+  collection: true,
+  pagination: true,
+  generated: true,
+  assets: true,
+  generator: true,
+  slugify: true,
+  url: true,
+  propValue: true,
+  image: true,
+  generateSEO: true,
+  og: true,
+  ogImage: true,
+};
 
 function getReferenceErrorSuggestions(message: string): string[] {
   const name = message.match(/^(\S+) is not defined$/)?.[1];
   if (name === 'it') {
     return ['Stati templates use "stati" instead of Eta\'s default "it", e.g. stati.page.title'];
   }
-  if (name && CONTEXT_ROOT_NAMES.has(name)) {
+  if (name && Object.hasOwn(CONTEXT_ROOT_KEYS, name)) {
     return [`Did you mean "stati.${name}"?`];
   }
   return [];

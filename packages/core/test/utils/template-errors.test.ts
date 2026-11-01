@@ -11,7 +11,7 @@ import {
 import { createValidatingContextProxy } from '../../src/core/utils/context-validation.utils.js';
 import { createStatiEtaPlugin, installEtaPlugin } from '../../src/core/eta-plugin.js';
 import { TemplateIndex } from '../../src/core/template-index.js';
-import { RenderScope } from '../../src/core/template-render.js';
+import { RenderScope, type BaseContext } from '../../src/core/template-render.js';
 import { createFallbackLogger } from '../../src/core/utils/logger.utils.js';
 import { setEnv, getEnv } from '../../src/env.js';
 
@@ -102,7 +102,12 @@ describe('parseEtaError with Eta debug output', () => {
       logger: createFallbackLogger(),
       development: true,
     });
-    const values = { page: {}, site: {}, helpers: { formatDate: () => '' } };
+    // Only what the templates read
+    const values = {
+      page: {},
+      site: {},
+      helpers: { formatDate: () => '' },
+    } as unknown as BaseContext['values'];
     try {
       await scope.renderAsync({ id: 'page', values }, { file: template });
     } catch (error) {
@@ -151,6 +156,31 @@ describe('parseEtaError with Eta debug output', () => {
     expect(templateError.message).toBe('page is not defined');
     expect(templateError.suggestions).toEqual(['Did you mean "stati.page"?']);
   });
+
+  it.each([
+    ['url', `<a href="<%= url('/about') %>">About</a>`],
+    ['og', '<p><%= og.width %></p>'],
+    ['ogImage', '<p><%= ogImage.url %></p>'],
+  ])('suggests the stati prefix for a bare %s', (name, template) => {
+    let error: Error | undefined;
+    try {
+      eta.renderString(template, {});
+    } catch (e) {
+      error = e as Error;
+    }
+
+    const templateError = parseEtaError(error!, 'inline.eta');
+    expect(templateError.message).toBe(`${name} is not defined`);
+    expect(templateError.suggestions).toEqual([`Did you mean "stati.${name}"?`]);
+  });
+
+  it.each(['version', 'config', 'tags', 'generatedImage', 'deferGeneratedImage'])(
+    'gives no stati hint for %s, which is not a context property',
+    (name) => {
+      const templateError = parseEtaError(new ReferenceError(`${name} is not defined`));
+      expect(templateError.suggestions).toEqual([]);
+    },
+  );
 
   it('reads the line and column of Eta syntax errors', () => {
     let error: Error | undefined;

@@ -117,8 +117,8 @@ left as written. Build warnings name an `href` or `src` starting with `/` that
 lacks the prefix.
 
 The public `TemplateContext` type covers the runtime shape, including `include`,
-`layout`, `body`, `props` and `helpers`; `page.toc` is the one runtime field it
-leaves out. Do not infer that any other context property exists.
+`layout`, `body`, `props`, `helpers` and `page.toc`. Do not infer that any other
+context property exists.
 
 ### Unknown-property check in development
 
