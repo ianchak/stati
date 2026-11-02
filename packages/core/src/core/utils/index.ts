@@ -168,7 +168,12 @@ export type {
 } from './typescript.utils.js';
 
 // HTML manipulation utilities
-export { escapeHtml, findHeadClosePosition, injectBeforeHeadClose } from './html.utils.js';
+export {
+  escapeHtml,
+  removeInvalidXmlChars,
+  findHeadClosePosition,
+  injectBeforeHeadClose,
+} from './html.utils.js';
 
 // URL utilities
 export { normalizeUrlPath, resolveAbsoluteUrl, percentEncodeUrl, isValidUrl } from './url.utils.js';

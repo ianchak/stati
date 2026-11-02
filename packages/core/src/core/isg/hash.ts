@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
-import { readFile, pathExists } from '../utils/index.js';
+import { readFile, pathExists, createFallbackLogger } from '../utils/index.js';
 import { inspectSource } from '../../images/sources.js';
+import type { Logger } from '../../types/index.js';
 
 /**
  * Creates a SHA-256 hash instance, updates it with data, and returns the hex digest.
@@ -77,17 +78,19 @@ export function computeContentHash(content: string, frontMatter: Record<string, 
  * Used for tracking template and partial file changes.
  *
  * @param filePath - Absolute path to the file
- * @returns Promise resolving to SHA-256 hash as a hex string, or null if file doesn't exist
+ * @param logger - Reports a file that can't be read; the console when omitted
+ * @returns Promise resolving to SHA-256 hash as a hex string, or null if the file doesn't exist
+ *   or can't be read
  *
  * @example
  * ```typescript
- * const hash = await computeFileHash('/path/to/template.eta');
+ * const hash = await computeFileHash('/path/to/template.eta', logger);
  * if (hash) {
  *   console.log(`Template hash: ${hash}`);
  * }
  * ```
  */
-export async function computeFileHash(filePath: string): Promise<string | null> {
+export async function computeFileHash(filePath: string, logger?: Logger): Promise<string | null> {
   // Normalize path for consistent cache key
   const normalizedPath = filePath.replace(/\\/g, '/');
 
@@ -112,7 +115,7 @@ export async function computeFileHash(filePath: string): Promise<string | null> 
     fileHashCache.set(normalizedPath, hash);
     return hash;
   } catch (error) {
-    console.warn(
+    (logger ?? createFallbackLogger()).warning(
       `Failed to compute hash for ${filePath}: ${error instanceof Error ? error.message : String(error)}`,
     );
     fileHashCache.set(normalizedPath, null);

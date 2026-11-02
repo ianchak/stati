@@ -1,11 +1,18 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, expectTypeOf, vi, beforeEach } from 'vitest';
 import {
   createTemplateEngine,
   clearTemplateEngineCache,
   renderPage,
 } from '../../src/core/templates.js';
 import { TemplateIndex } from '../../src/core/template-index.js';
-import type { StatiConfig, PageModel, Logger } from '../../src/types/index.js';
+import { parseEtaError } from '../../src/core/utils/template-errors.utils.js';
+import type {
+  StatiConfig,
+  PageModel,
+  Logger,
+  TemplateContext,
+  TocEntry,
+} from '../../src/types/index.js';
 import type { Eta } from 'eta';
 import { join } from 'node:path';
 
@@ -184,6 +191,7 @@ describe('templates.ts', () => {
       expect(result.templatesLoaded).toBe(1);
       expect(result.templates).toEqual([`${srcDir.replace(/\\/g, '/')}/layout.eta`]);
       expect(result.templateLookups).toEqual([{ name: 'layout', from: '', file: 'layout.eta' }]);
+      expectTypeOf<TemplateContext['page']['toc']>().toEqualTypeOf<TocEntry[]>();
     });
 
     it("leaves stati.body out of the page's layout", async () => {
@@ -213,6 +221,17 @@ describe('templates.ts', () => {
         'slugify',
         'url',
       ]);
+    });
+
+    it('suggests the stati prefix for every context property a template reads without it', async () => {
+      await render(mockPage, ['layout.eta']);
+      const context = mockEtaInstance.renderAsync.mock.calls[0]![1] as Record<string, unknown>;
+
+      // body is set only in templates that stati.layout() or stati.include() rendered
+      for (const name of [...Object.keys(context), 'body']) {
+        const error = new ReferenceError(`${name} is not defined`);
+        expect(parseEtaError(error).suggestions).toEqual([`Did you mean "stati.${name}"?`]);
+      }
     });
 
     it('renders the layout named in front matter, by the name lookup', async () => {

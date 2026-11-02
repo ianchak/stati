@@ -4,7 +4,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { join } from 'node:path';
 import { EtaParseError, type Eta } from 'eta';
-import { RenderScope } from '../../src/core/template-render.js';
+import { RenderScope, type BaseContext } from '../../src/core/template-render.js';
 import { TemplateIndex } from '../../src/core/template-index.js';
 import type { Logger, PageModel } from '../../src/types/index.js';
 
@@ -62,7 +62,9 @@ describe('RenderScope', () => {
       'partials/broken.eta',
     ]);
 
-    const html = await scope.renderAsync({ id: 'page', values: {} }, { file: 'layout.eta' });
+    // The stand-in engine reads only include, which the scope adds
+    const values = {} as BaseContext['values'];
+    const html = await scope.renderAsync({ id: 'page', values }, { file: 'layout.eta' });
 
     expect(html).toMatch(/^<!-- Error rendering .*partials\/broken\.eta: .*unclosed tag/);
     expect(logger.error).toHaveBeenCalledWith(

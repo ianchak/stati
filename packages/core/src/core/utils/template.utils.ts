@@ -2,16 +2,8 @@
  * Utility functions for Eta templates
  */
 
+import type { PropValueArg } from '../../types/index.js';
 import { trackTailwindClass } from './tailwind-inventory.utils.js';
-
-type PropValueArg =
-  | string
-  | number
-  | boolean
-  | null
-  | undefined
-  | Record<string, boolean | string | number | null | undefined>
-  | PropValueArg[];
 
 /**
  * Builds a property value from various inputs, similar to classnames but for any property.

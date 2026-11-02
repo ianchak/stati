@@ -14,6 +14,7 @@ import {
   getPagePublishedDate,
   isNotFoundPage,
   isVirtualPage,
+  removeInvalidXmlChars,
   resolveAbsoluteUrl,
 } from '../core/utils/index.js';
 
@@ -233,6 +234,16 @@ function getFieldValue<T>(
   return value !== undefined && value !== null ? (value as T) : undefined;
 }
 
+/**
+ * Wraps text in a CDATA section. A `]]>` in the text would end the section early, so each
+ * one is split across two sections: the first ends after its `]]`, the next starts with `>`.
+ * @param text - Text to wrap, written unescaped
+ * @returns The CDATA section or sections
+ */
+function toCdata(text: string): string {
+  return `<![CDATA[${text.replaceAll(']]>', ']]]]><![CDATA[>')}]]>`;
+}
+
 function describeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
@@ -322,9 +333,9 @@ function buildItem(page: PageModel, context: ItemContext): string[] | undefined 
 
   lines.push(`      <link>${escapeHtml(link)}</link>`);
 
-  // Description (or full content)
-  if (itemMapping.includeContent && page.content) {
-    lines.push(`      <description><![CDATA[${page.content}]]></description>`);
+  // Description (or full content); a body of only whitespace falls back to the description
+  if (itemMapping.includeContent && page.content?.trim()) {
+    lines.push(`      <description>${toCdata(page.content)}</description>`);
   } else {
     const description = getFieldValue<string>(page, itemMapping.description, 'description', logger);
     if (description) {
@@ -550,7 +561,8 @@ export function generateRSSFeed(
   xmlLines.push('  </channel>');
   xmlLines.push('</rss>');
 
-  const xml = xmlLines.join('\n');
+  // Feed text such as a pasted body can hold characters XML has no way to write
+  const xml = removeInvalidXmlChars(xmlLines.join('\n'));
 
   return {
     filename: feedConfig.filename,

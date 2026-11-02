@@ -1,5 +1,35 @@
 # @stati/core
 
+## 2.11.7
+
+### Patch Changes
+
+- de231d4: derive the stati template context from TemplateContext
+
+## 2.11.6
+
+### Patch Changes
+
+- 167e8d9: report lock and file hash warnings through the logger
+
+## 2.11.5
+
+### Patch Changes
+
+- 05758b2: parse cache entries once and apply one TTL rule
+
+## 2.11.4
+
+### Patch Changes
+
+- 9c123cf: set the environment before dev and preview load the config
+
+## 2.11.3
+
+### Patch Changes
+
+- d340bf0: keep RSS feeds valid when a body contains ]]> or control characters, and use the description for blank includeContent bodies
+
 ## 2.11.2
 
 ### Patch Changes

@@ -1,11 +1,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   computeEffectiveTTL,
-  computeNextRebuildAt,
+  getSafeCurrentTime,
   isPageFrozen,
+  isTtlExpired,
   applyAgingRules,
 } from '../../../src/core/isg/ttl.js';
-import type { PageModel, ISGConfig, AgingRule, CacheEntry } from '../../../src/types/index.js';
+import type {
+  PageModel,
+  ISGConfig,
+  AgingRule,
+  CacheEntry,
+  Logger,
+} from '../../../src/types/index.js';
 
 describe('ISG TTL and Aging Functions', () => {
   let mockDate: Date;
@@ -19,6 +26,17 @@ describe('ISG TTL and Aging Functions', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  const createLogger = (): Logger => ({
+    info: vi.fn(),
+    success: vi.fn(),
+    warning: vi.fn(),
+    error: vi.fn(),
+    status: vi.fn(),
+    building: vi.fn(),
+    processing: vi.fn(),
+    stats: vi.fn(),
   });
 
   // Helper function to create PageModel objects
@@ -106,71 +124,100 @@ describe('ISG TTL and Aging Functions', () => {
     });
   });
 
-  describe('computeNextRebuildAt', () => {
-    it('should compute next rebuild date from current time when no publishedAt', () => {
-      const result = computeNextRebuildAt({
-        now: mockDate,
-        ttlSeconds: 3600, // 1 hour
-      });
-
-      // Should include clock drift tolerance (30 seconds)
-      const expected = new Date(mockDate.getTime() + 3600 * 1000 + 30000);
-      expect(result).toEqual(expected);
+  describe('getSafeCurrentTime', () => {
+    it('should return the given time, or the current time', () => {
+      expect(getSafeCurrentTime(mockDate)).toEqual(mockDate);
+      expect(getSafeCurrentTime()).toEqual(mockDate);
     });
 
-    it('should compute next rebuild date from current time with publishedAt', () => {
-      const publishedAt = new Date('2024-03-10T10:00:00.000Z');
+    it('should warn through the logger and fall back to a fixed date for an invalid date', () => {
+      const logger = createLogger();
 
-      const result = computeNextRebuildAt({
-        now: mockDate,
-        publishedAt,
-        ttlSeconds: 3600, // 1 hour
-      });
+      const result = getSafeCurrentTime(new Date('not a date'), logger);
 
-      // Should include clock drift tolerance (30 seconds)
-      const expected = new Date(mockDate.getTime() + 3600 * 1000 + 30000);
-      expect(result).toEqual(expected);
+      expect(result).toEqual(new Date('2025-01-01T00:00:00.000Z'));
+      expect(logger.warning).toHaveBeenCalledWith(
+        'Invalid system date detected, using fallback date',
+      );
     });
 
-    it('should return null when page is frozen due to max age cap', () => {
-      const publishedAt = new Date('2023-03-15T10:00:00.000Z'); // 1 year ago
+    it('should warn on the console for an invalid date without a logger', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-      const result = computeNextRebuildAt({
-        now: mockDate,
-        publishedAt,
-        ttlSeconds: 3600,
-        maxAgeCapDays: 365, // 1 year cap, content is exactly at the limit
-      });
+      getSafeCurrentTime(new Date(NaN));
 
-      expect(result).toBeNull();
+      expect(warn).toHaveBeenCalledWith('Invalid system date detected, using fallback date');
+      warn.mockRestore();
+    });
+  });
+
+  describe('isTtlExpired', () => {
+    const entry = (overrides: Partial<CacheEntry> = {}): CacheEntry => ({
+      path: '/test.html',
+      inputsHash: 'hash123',
+      deps: [],
+      tags: [],
+      // Rendered an hour ago
+      renderedAt: new Date(mockDate.getTime() - 3600 * 1000).toISOString(),
+      ttlSeconds: 3600,
+      ...overrides,
     });
 
-    it('should return rebuild date when within max age cap', () => {
-      const publishedAt = new Date('2024-01-15T10:00:00.000Z'); // 2 months ago
-
-      const result = computeNextRebuildAt({
-        now: mockDate,
-        publishedAt,
-        ttlSeconds: 3600,
-        maxAgeCapDays: 365, // 1 year cap
-      });
-
-      // Should include clock drift tolerance (30 seconds)
-      const expected = new Date(mockDate.getTime() + 3600 * 1000 + 30000);
-      expect(result).toEqual(expected);
+    it('should not expire within the TTL', () => {
+      expect(isTtlExpired(entry({ ttlSeconds: 7200 }), mockDate)).toBe(false);
     });
 
-    it('should handle edge case where publishedAt equals now', () => {
-      const result = computeNextRebuildAt({
-        now: mockDate,
-        publishedAt: mockDate,
-        ttlSeconds: 3600,
-        maxAgeCapDays: 30,
+    it('should expire once the TTL and the clock drift tolerance have passed', () => {
+      // The tolerance is 30 seconds
+      expect(isTtlExpired(entry(), new Date(mockDate.getTime() + 29_999))).toBe(false);
+      expect(isTtlExpired(entry(), new Date(mockDate.getTime() + 30_000))).toBe(true);
+    });
+
+    it('should expire an entry with a TTL of 0 after the tolerance', () => {
+      expect(isTtlExpired(entry({ ttlSeconds: 0 }), mockDate)).toBe(true);
+    });
+
+    it('should not expire a page rendered after the build time', () => {
+      const rendered = entry({ renderedAt: new Date(mockDate.getTime() + 60_000).toISOString() });
+
+      expect(isTtlExpired(rendered, mockDate)).toBe(false);
+    });
+
+    it('should not expire a frozen page', () => {
+      const old = entry({
+        renderedAt: '2023-01-01T00:00:00.000Z',
+        publishedAt: '2022-03-15T10:00:00.000Z',
+        maxAgeCapDays: 365,
       });
 
-      // Should include clock drift tolerance (30 seconds)
-      const expected = new Date(mockDate.getTime() + 3600 * 1000 + 30000);
-      expect(result).toEqual(expected);
+      expect(isPageFrozen(old, mockDate)).toBe(true);
+      expect(isTtlExpired(old, mockDate)).toBe(false);
+    });
+
+    it('should measure the age cap at the build time, not when the page was rendered', () => {
+      // 300 days old when rendered, 440 days old now
+      const capped = entry({
+        renderedAt: '2023-12-26T10:00:00.000Z',
+        publishedAt: '2023-03-01T10:00:00.000Z',
+        maxAgeCapDays: 365,
+      });
+
+      expect(isTtlExpired(capped, mockDate)).toBe(false);
+      expect(isTtlExpired({ ...capped, maxAgeCapDays: 500 }, mockDate)).toBe(true);
+    });
+
+    it('should expire a dated page within its age cap', () => {
+      const recent = entry({ publishedAt: '2024-03-01T10:00:00.000Z', maxAgeCapDays: 365 });
+
+      expect(isTtlExpired(recent, new Date(mockDate.getTime() + 60_000))).toBe(true);
+    });
+
+    it('should warn once through the logger for an invalid build time', () => {
+      const logger = createLogger();
+
+      // The fallback date, 2025-01-01, is past the TTL of a page rendered in 2024
+      expect(isTtlExpired(entry(), new Date(NaN), logger)).toBe(true);
+      expect(logger.warning).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -235,6 +282,26 @@ describe('ISG TTL and Aging Functions', () => {
 
       const result = isPageFrozen(entry, mockDate);
       expect(result).toBe(false);
+    });
+
+    it('should warn through the logger for an invalid current time', () => {
+      const logger = createLogger();
+      const entry: CacheEntry = {
+        path: '/test.html',
+        inputsHash: 'hash123',
+        deps: [],
+        tags: [],
+        renderedAt: mockDate.toISOString(),
+        ttlSeconds: 3600,
+        publishedAt: '2022-03-15T10:00:00.000Z',
+        maxAgeCapDays: 365,
+      };
+
+      // The fallback date, 2025-01-01, is past the age cap
+      expect(isPageFrozen(entry, new Date(NaN), logger)).toBe(true);
+      expect(logger.warning).toHaveBeenCalledWith(
+        'Invalid system date detected, using fallback date',
+      );
     });
 
     it('should handle edge case where publishedAt equals current time', () => {

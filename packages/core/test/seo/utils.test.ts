@@ -5,7 +5,7 @@ import {
   validateSEOMetadata,
   detectExistingSEOTags,
 } from '../../src/seo/utils/index.js';
-import { escapeHtml } from '../../src/core/utils/html.utils.js';
+import { escapeHtml, removeInvalidXmlChars } from '../../src/core/utils/html.utils.js';
 import { percentEncodeUrl, resolveAbsoluteUrl } from '../../src/core/utils/url.utils.js';
 import {
   sanitizeStructuredData,
@@ -89,6 +89,19 @@ describe('SEO Utils - escapeHtml', () => {
     // Cache should still work after eviction
     const result = escapeHtml('<test>');
     expect(result).toBe('&lt;test&gt;');
+  });
+});
+
+describe('SEO Utils - removeInvalidXmlChars', () => {
+  it('removes the control characters and non-characters XML 1.0 does not allow', () => {
+    expect(removeInvalidXmlChars('a\u0000b\u0008c\u000Bd\u000Ce\u000Ef\u001Fg￾h￿i')).toBe(
+      'abcdefghi',
+    );
+  });
+
+  it('keeps tabs, line breaks and characters outside the basic plane', () => {
+    const text = 'tab\there\nline\r\nemoji \u{1F600} and é and �';
+    expect(removeInvalidXmlChars(text)).toBe(text);
   });
 });
 
