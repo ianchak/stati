@@ -1868,6 +1868,9 @@ describe('Development Server', () => {
       const [saved] = watching.saved();
       expect(saved?.entries['/index.html']?.inputsHash).toBe('STALE');
       expect(saved?.entries['/about.html']?.inputsHash).toBe('STALE');
+      // Problems reading the manifest go to the dev server's logger
+      const isg = await import('../../src/core/isg/index.js');
+      expect(isg.loadCacheManifest).toHaveBeenLastCalledWith(expect.any(String), watching.logger);
       // The build saves the entries it renders, with the templates they used this time
       expect(mockBuild).toHaveBeenCalledWith(
         expect.objectContaining({ force: false, skipAssetCopy: true }),
