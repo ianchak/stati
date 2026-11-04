@@ -50,11 +50,15 @@ export type { AutoInjectOptions } from './auto-inject.js';
 
 // SEO utilities
 export {
-  escapeHtml,
   generateRobotsContent,
   validateSEOMetadata,
   detectExistingSEOTags,
+} from './utils/index.js';
+
+// Escaping and URL helpers, shared with the rest of Stati and public through this barrel
+export {
+  escapeHtml,
   normalizeUrlPath,
   resolveAbsoluteUrl,
   isValidUrl,
-} from './utils/index.js';
+} from '../core/utils/index.js';

@@ -1,8 +1,9 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   matchBundlesForPage,
   getBundlePathsForPage,
   validateUniqueBundleNames,
+  reportInvalidBundlePatterns,
   DuplicateBundleNameError,
   type CompiledBundleInfo,
 } from '../../src/core/utils/bundle-matching.utils.js';
@@ -184,6 +185,68 @@ describe('matchBundlesForPage', () => {
       // Windows-style paths should still match
       expect(matchBundlesForPage('\\docs\\api\\hooks.html', bundles)).toEqual(bundles);
     });
+
+    it('should skip a pattern that is not a valid glob', () => {
+      const bundles: BundleConfig[] = [
+        { entryPoint: 'docs.ts', bundleName: 'docs', include: ['/docs/[x', '/docs/**'] },
+      ];
+
+      expect(matchBundlesForPage('/docs/intro', bundles)).toEqual(bundles);
+      expect(matchBundlesForPage('/docs/[x', bundles)).toEqual(bundles);
+      expect(matchBundlesForPage('/about', bundles)).toEqual([]);
+    });
+  });
+
+  // Bundle patterns match the whole URL, unlike the sitemap's patterns
+  describe('pattern rule', () => {
+    it('include: a pattern without wildcards matches that URL only, not the URLs below it', () => {
+      const bundles: BundleConfig[] = [
+        { entryPoint: 'docs.ts', bundleName: 'docs', include: ['/docs'] },
+      ];
+
+      expect(matchBundlesForPage('/docs', bundles)).toEqual(bundles);
+      expect(matchBundlesForPage('/docs/intro', bundles)).toEqual([]);
+    });
+
+    it('exclude: a pattern without wildcards leaves out that URL only', () => {
+      const bundles: BundleConfig[] = [
+        { entryPoint: 'docs.ts', bundleName: 'docs', include: ['/docs/**'], exclude: ['/docs'] },
+      ];
+
+      expect(matchBundlesForPage('/docs', bundles)).toEqual([]);
+      expect(matchBundlesForPage('/docs/intro', bundles)).toEqual(bundles);
+    });
+  });
+});
+
+describe('reportInvalidBundlePatterns', () => {
+  it('warns about each invalid include or exclude pattern, naming the bundle', () => {
+    const logger = { warning: vi.fn() };
+    const bundles: BundleConfig[] = [
+      { entryPoint: 'core.ts', bundleName: 'core' },
+      { entryPoint: 'docs.ts', bundleName: 'docs', include: ['/docs/[x'], exclude: ['/[y', '/a'] },
+    ];
+
+    reportInvalidBundlePatterns(bundles, logger);
+
+    expect(logger.warning).toHaveBeenCalledTimes(2);
+    expect(logger.warning).toHaveBeenCalledWith(
+      'Ignoring invalid pattern "/docs/[x" in the include patterns of bundle \'docs\': Unclosed character class at position 6',
+    );
+    expect(logger.warning).toHaveBeenCalledWith(
+      expect.stringContaining('"/[y" in the exclude patterns of bundle \'docs\''),
+    );
+  });
+
+  it('says nothing about valid patterns', () => {
+    const logger = { warning: vi.fn() };
+
+    reportInvalidBundlePatterns(
+      [{ entryPoint: 'docs.ts', bundleName: 'docs', include: ['/docs/**'], exclude: ['/a'] }],
+      logger,
+    );
+
+    expect(logger.warning).not.toHaveBeenCalled();
   });
 });
 

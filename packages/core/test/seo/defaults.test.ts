@@ -128,6 +128,26 @@ describe('isArticlePage', () => {
   it('matches nothing without seo.articles', () => {
     expect(isArticlePage(POST, createConfig())).toBe(false);
   });
+
+  // seo.articles matches the whole URL, unlike the sitemap's patterns
+  it('include and exclude: a pattern without wildcards matches that URL only', () => {
+    const config = createConfig({
+      articles: { include: ['/blog', '/news/**'], exclude: ['/news'] },
+    });
+
+    expect(isArticlePage(createPage({ url: '/blog' }), config)).toBe(true);
+    expect(isArticlePage(createPage({ url: '/blog/post' }), config)).toBe(false);
+    expect(isArticlePage(createPage({ url: '/news' }), config)).toBe(false);
+    expect(isArticlePage(createPage({ url: '/news/story' }), config)).toBe(true);
+  });
+
+  it('skips a pattern that is not a valid glob', () => {
+    const config = createConfig({ articles: { include: ['/blog/[x', '/blog/**'] } });
+
+    expect(isArticlePage(createPage({ url: '/blog/post' }), config)).toBe(true);
+    expect(isArticlePage(createPage({ url: '/blog/[x' }), config)).toBe(true);
+    expect(isArticlePage(createPage({ url: '/about' }), config)).toBe(false);
+  });
 });
 
 describe('resolveSEODefaults', () => {
@@ -158,6 +178,25 @@ describe('resolveSEODefaults', () => {
     const page = createPage({ frontMatter: { updated } });
     expect(resolveSEODefaults(page, ARTICLE_CONFIG)?.openGraph?.article?.modifiedTime).toBe(
       '2026-03-01T12:00:00.000Z',
+    );
+  });
+
+  it('reads updated like every other front matter date: ISO 8601 only, UTC without a zone', () => {
+    const modifiedTime = (updated: string) =>
+      resolveSEODefaults(createPage({ frontMatter: { updated } }), ARTICLE_CONFIG)?.openGraph
+        ?.article?.modifiedTime;
+
+    expect(modifiedTime('2026-03-05T10:00')).toBe('2026-03-05T10:00:00.000Z');
+    expect(modifiedTime('2026-03-05T10:00:00+02:00')).toBe('2026-03-05T08:00:00.000Z');
+    expect(modifiedTime('March 5, 2026')).toBeUndefined();
+    expect(modifiedTime('soon')).toBeUndefined();
+  });
+
+  it('reads the published time from front matter for a page without publishedAt', () => {
+    // A page a beforeAll hook adds has front matter but no publishedAt
+    const page = createPage({ frontMatter: { title: 'Added', date: '2026-01-05' } });
+    expect(resolveSEODefaults(page, ARTICLE_CONFIG)?.openGraph?.article?.publishedTime).toBe(
+      '2026-01-05T00:00:00.000Z',
     );
   });
 
@@ -458,6 +497,22 @@ describe('applySEODefaults', () => {
     applySEODefaults([], createConfig({}, { defaultLocale: 'en' }), quiet);
     applySEODefaults([], createConfig({ debug: true }, { defaultLocale: 'en-US' }), quiet);
     expect(quiet.warning).not.toHaveBeenCalled();
+  });
+
+  it('warns once about each seo.articles pattern that is not a valid glob', () => {
+    const logger = createLogger();
+    const config = createConfig({ articles: { include: ['/blog/[x'], exclude: ['/[y'] } });
+    const pages = [createPage({ url: '/a' }), createPage({ url: '/b' })];
+
+    applySEODefaults(pages, config, logger);
+
+    expect(logger.warning).toHaveBeenCalledTimes(2);
+    expect(logger.warning).toHaveBeenCalledWith(
+      'Ignoring invalid pattern "/blog/[x" in seo.articles.include: Unclosed character class at position 6',
+    );
+    expect(logger.warning).toHaveBeenCalledWith(
+      expect.stringContaining('"/[y" in seo.articles.exclude'),
+    );
   });
 });
 

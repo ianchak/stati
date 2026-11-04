@@ -305,7 +305,7 @@ export function escapeHtml(text: string): string {
   const cached = escapeHtmlCache.get(text);
   if (cached !== undefined) return cached;
 
-  const result = text.replace(/[&<>"']/g, (char) => htmlEscapes[char] || char);
+  const result = text.replace(/[&<>"']/g, (char) => htmlEscapes[char]!);
 
   // Clear when full to prevent unbounded growth
   if (escapeHtmlCache.size >= ESCAPE_CACHE_MAX_SIZE) {

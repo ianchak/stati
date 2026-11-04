@@ -83,7 +83,7 @@ export interface OgImagesConfig {
   format?: 'png' | 'jpeg';
   /** Fonts added to the bundled ones (Archivo, Inter, Fira Code) */
   fonts?: OgImageFontConfig[];
-  /** URL glob patterns of pages that get no generated image */
+  /** URL glob patterns of pages that get no generated image; a pattern must match the whole URL */
   exclude?: string[];
 }
 

@@ -9,12 +9,8 @@ import type { StatiConfig, SiteConfig } from '../types/config.js';
 import type { Logger } from '../types/logging.js';
 import type { GeneratedOgImage } from '../types/images.js';
 import { SEOTagType } from '../types/seo.js';
-import {
-  escapeHtml,
-  validateSEOMetadata,
-  generateRobotsContent,
-  resolveAbsoluteUrl,
-} from './utils/index.js';
+import { escapeHtml, resolveAbsoluteUrl } from '../core/utils/index.js';
+import { validateSEOMetadata, generateRobotsContent } from './utils/index.js';
 import { serializeStructuredData } from './utils/escape-and-validation.utils.js';
 import { resolveSEODefaults } from './defaults.js';
 

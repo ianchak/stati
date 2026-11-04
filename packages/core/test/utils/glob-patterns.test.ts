@@ -1,5 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
-import { globToRegex, matchesGlob } from '../../src/core/utils/glob-patterns.utils.js';
+import {
+  compileUrlPatterns,
+  globToRegex,
+  matchesGlob,
+} from '../../src/core/utils/glob-patterns.utils.js';
 
 describe('Glob Pattern Utilities', () => {
   describe('globToRegex', () => {
@@ -332,5 +336,176 @@ describe('Glob Pattern Utilities', () => {
         expect(matchesGlob(longFileName, pattern)).toBe(true);
       });
     });
+  });
+});
+
+describe('compileUrlPatterns', () => {
+  // The prefix rule: sitemap patterns and RSS content and exclude patterns
+  const prefixMatch = (path: string, patterns: string[]) =>
+    compileUrlPatterns(patterns, { prefix: true })(path);
+  // The whole-path rule: search, Open Graph images, seo.articles, the news sitemap and bundles
+  const wholeMatch = (path: string, patterns: string[]) => compileUrlPatterns(patterns)(path);
+
+  describe('both rules', () => {
+    it('match exact paths and nothing without patterns', () => {
+      for (const match of [prefixMatch, wholeMatch]) {
+        expect(match('site/blog/post.md', ['site/blog/post.md'])).toBe(true);
+        expect(match('site/blog/post.md', ['site/other/post.md'])).toBe(false);
+        expect(match('site/blog/post.md', [])).toBe(false);
+      }
+      expect(compileUrlPatterns(undefined)('/blog')).toBe(false);
+    });
+
+    it('keep * and ? within one segment and let ** cross them', () => {
+      for (const match of [prefixMatch, wholeMatch]) {
+        expect(match('site/blog/post.md', ['site/*/post.md'])).toBe(true);
+        expect(match('site/blog/category/post.md', ['site/*/post.md'])).toBe(false);
+        expect(match('site/blog/p.md', ['site/blog/?.md'])).toBe(true);
+        expect(match('site/blog/post.md', ['site/blog/?.md'])).toBe(false);
+        expect(match('site/ab.md', ['site/??.md'])).toBe(true);
+        expect(match('site/abc.md', ['site/??.md'])).toBe(false);
+        expect(match('site/post.md', ['site/**/post.md'])).toBe(true);
+        expect(match('site/blog/category/post.md', ['site/**/post.md'])).toBe(true);
+        expect(match('post.md', ['**/post.md'])).toBe(true);
+        expect(match('blog/2024/post.md', ['**/post.md'])).toBe(true);
+        expect(match('site/blog/category/post.md', ['site/blog/**'])).toBe(true);
+        expect(match('site/news/post.md', ['site/blog/**'])).toBe(false);
+        expect(match('a/c/e.md', ['a/**/c/**/e.md'])).toBe(true);
+        expect(match('a/x/y/c/z/e.md', ['a/**/c/**/e.md'])).toBe(true);
+        expect(match('site/anything/here.md', ['site/**here.md'])).toBe(true);
+        expect(match('site/here.md', ['site/**here.md'])).toBe(true);
+      }
+    });
+
+    it('match any of several patterns, globs and plain paths mixed', () => {
+      const patterns = ['site/exact.md', 'site/blog/**', 'site/news/*.md'];
+      for (const match of [prefixMatch, wholeMatch]) {
+        expect(match('site/exact.md', patterns)).toBe(true);
+        expect(match('site/blog/deep/post.md', patterns)).toBe(true);
+        expect(match('site/news/article.md', patterns)).toBe(true);
+        expect(match('site/other/file.md', patterns)).toBe(false);
+      }
+    });
+
+    it('read backslashes in patterns and paths as /', () => {
+      for (const match of [prefixMatch, wholeMatch]) {
+        expect(match('site\\blog\\post.md', ['site/blog/**'])).toBe(true);
+        expect(match('site/blog/post.md', ['site\\blog\\**'])).toBe(true);
+      }
+      expect(prefixMatch('site\\blog\\post.md', ['site\\blog'])).toBe(true);
+    });
+
+    it('escape regular expression characters', () => {
+      for (const match of [prefixMatch, wholeMatch]) {
+        expect(match('site/(test).md', ['site/(test).md'])).toBe(true);
+        expect(match('site/test+file.md', ['site/test+file.md'])).toBe(true);
+        expect(match('/api/v1.0/a.json', ['/api/v1.0/*.json'])).toBe(true);
+        expect(match('/api/v1x0/a.json', ['/api/v1.0/*.json'])).toBe(false);
+      }
+    });
+  });
+
+  describe('prefix rule', () => {
+    it('matches the paths below a pattern without wildcards, at a segment boundary', () => {
+      expect(prefixMatch('/blog', ['/blog'])).toBe(true);
+      expect(prefixMatch('/blog/post', ['/blog'])).toBe(true);
+      expect(prefixMatch('/blog/post/', ['/blog'])).toBe(true);
+      expect(prefixMatch('/blogroll', ['/blog'])).toBe(false);
+      expect(prefixMatch('/api/foo', ['/api'])).toBe(true);
+      expect(prefixMatch('/apitest', ['/api'])).toBe(false);
+    });
+
+    it('treats a pattern ending in / as a plain prefix', () => {
+      expect(prefixMatch('/blog/post', ['/blog/'])).toBe(true);
+      expect(prefixMatch('site/blog/news/post.md', ['site/blog/'])).toBe(true);
+      expect(prefixMatch('site/news/article.md', ['site/blog/'])).toBe(false);
+      expect(prefixMatch('/blog', ['/blog/'])).toBe(false);
+    });
+
+    it('matches only the root with /', () => {
+      expect(prefixMatch('/', ['/'])).toBe(true);
+      expect(prefixMatch('/blog', ['/'])).toBe(false);
+    });
+
+    it('takes a pattern without * or ? as written, so [ is a plain character', () => {
+      expect(prefixMatch('site/[test].md', ['site/[test].md'])).toBe(true);
+      expect(prefixMatch('site/t.md', ['site/[test].md'])).toBe(false);
+      expect(prefixMatch('/blog/[draft/a', ['/blog/[draft'])).toBe(true);
+    });
+
+    it('needs a glob to match the whole path', () => {
+      expect(prefixMatch('/blog/post', ['/blog/*'])).toBe(true);
+      expect(prefixMatch('/blog/category/post', ['/blog/*'])).toBe(false);
+      expect(prefixMatch('/blog/category/post', ['/blog/**'])).toBe(true);
+      expect(prefixMatch('/docs/guide', ['/blog/**'])).toBe(false);
+    });
+  });
+
+  describe('whole-path rule', () => {
+    it('does not match the paths below a pattern', () => {
+      expect(wholeMatch('/blog', ['/blog'])).toBe(true);
+      expect(wholeMatch('/blog/post', ['/blog'])).toBe(false);
+      expect(wholeMatch('/blog/post', ['/blog/'])).toBe(false);
+      expect(wholeMatch('/blog', ['/'])).toBe(false);
+    });
+
+    it('reads [...] as a character class', () => {
+      expect(wholeMatch('/blog/post-2', ['/blog/post-[123]'])).toBe(true);
+      expect(wholeMatch('/blog/post-4', ['/blog/post-[123]'])).toBe(false);
+    });
+  });
+
+  describe('invalid patterns', () => {
+    const createLogger = () => ({ warning: vi.fn() });
+
+    it('reports a pattern that is not a valid glob once, naming the option, and skips it', () => {
+      const logger = createLogger();
+      const matches = compileUrlPatterns(['/drafts/[x', '/private/**'], {
+        option: 'search.exclude',
+        logger,
+      });
+
+      expect(logger.warning).toHaveBeenCalledTimes(1);
+      expect(logger.warning).toHaveBeenCalledWith(
+        'Ignoring invalid pattern "/drafts/[x" in search.exclude: Unclosed character class at position 8',
+      );
+      // The other patterns still work, and matching reports nothing more
+      expect(matches('/private/a')).toBe(true);
+      expect(matches('/drafts/[x')).toBe(false);
+      expect(matches('/drafts/x')).toBe(false);
+      expect(logger.warning).toHaveBeenCalledTimes(1);
+    });
+
+    it('reports a glob with an open class under the prefix rule too', () => {
+      const logger = createLogger();
+      const matches = compileUrlPatterns(['/blog/[draft*'], { prefix: true, logger });
+
+      expect(logger.warning).toHaveBeenCalledWith(
+        'Ignoring invalid pattern "/blog/[draft*": Unclosed character class at position 6',
+      );
+      expect(matches('/blog/[draft-1')).toBe(false);
+    });
+
+    it('reports the pattern again each time it is compiled', () => {
+      const logger = createLogger();
+      compileUrlPatterns(['/a/[b'], { logger });
+      compileUrlPatterns(['/a/[b'], { logger });
+
+      expect(logger.warning).toHaveBeenCalledTimes(2);
+    });
+
+    it('skips it quietly without a logger', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      expect(compileUrlPatterns(['/a/[b'])('/a/[b')).toBe(false);
+      expect(warn).not.toHaveBeenCalled();
+    });
+  });
+
+  it('keeps matching after converting more patterns than it caches', () => {
+    for (let i = 0; i < 1100; i++) {
+      expect(compileUrlPatterns([`/page-${i}/*`])(`/page-${i}/a`)).toBe(true);
+    }
+    expect(compileUrlPatterns(['/page-0/*'])('/page-0/a')).toBe(true);
   });
 });
