@@ -1,9 +1,21 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
   getFrontMatterDate,
+  getPageModifiedDate,
+  getPagePublishedDate,
   PUBLISHED_DATE_FIELDS,
   parseDateValue,
 } from '../../../src/core/utils/date.utils.js';
+import type { PageModel } from '../../../src/types/content.js';
+
+const page = (overrides: Partial<PageModel> = {}): PageModel => ({
+  slug: '/post',
+  url: '/post',
+  sourcePath: '/site/post.md',
+  content: '',
+  frontMatter: {},
+  ...overrides,
+});
 
 describe('date.utils', () => {
   describe('PUBLISHED_DATE_FIELDS', () => {
@@ -148,6 +160,89 @@ describe('date.utils', () => {
       expect(result).not.toBe(original);
       result!.setFullYear(2000);
       expect(original.getFullYear()).toBe(2026);
+    });
+  });
+
+  describe('getPagePublishedDate', () => {
+    it('returns the publish date the page was loaded with, over its front matter', () => {
+      const publishedAt = new Date('2026-01-01T00:00:00Z');
+      const onInvalid = vi.fn();
+      const result = getPagePublishedDate(
+        page({ publishedAt, frontMatter: { date: '2026-06-01', published: 'soon' } }),
+        onInvalid,
+      );
+
+      expect(result?.toISOString()).toBe('2026-01-01T00:00:00.000Z');
+      // A copy, and the front matter is not read
+      expect(result).not.toBe(publishedAt);
+      expect(onInvalid).not.toHaveBeenCalled();
+    });
+
+    it('reads the front matter of a page without a valid publishedAt', () => {
+      const onInvalid = vi.fn();
+
+      expect(
+        getPagePublishedDate(
+          page({ frontMatter: { published: 'soon', date: '2026-06-01' } }),
+          onInvalid,
+        )?.toISOString(),
+      ).toBe('2026-06-01T00:00:00.000Z');
+      expect(onInvalid).toHaveBeenCalledWith('published', 'soon');
+      expect(
+        getPagePublishedDate(
+          page({ publishedAt: new Date('invalid'), frontMatter: { createdAt: '2026-07-01' } }),
+        )?.toISOString(),
+      ).toBe('2026-07-01T00:00:00.000Z');
+    });
+
+    it('returns undefined for an undated page', () => {
+      expect(getPagePublishedDate(page())).toBeUndefined();
+    });
+  });
+
+  describe('getPageModifiedDate', () => {
+    const publishedAt = new Date('2026-01-01T00:00:00Z');
+
+    it('takes sitemap.lastmod, then updated, then the publish date', () => {
+      const iso = (overrides: Partial<PageModel>) =>
+        getPageModifiedDate(page({ publishedAt, ...overrides }))?.toISOString();
+
+      expect(
+        iso({ frontMatter: { sitemap: { lastmod: '2026-03-01' }, updated: '2026-02-01' } }),
+      ).toBe('2026-03-01T00:00:00.000Z');
+      expect(iso({ frontMatter: { updated: '2026-02-01' } })).toBe('2026-02-01T00:00:00.000Z');
+      expect(iso({ frontMatter: {} })).toBe('2026-01-01T00:00:00.000Z');
+    });
+
+    it('skips missing and empty values without reporting them', () => {
+      const onInvalid = vi.fn();
+      // YAML reads an empty `updated:` as null, whatever the FrontMatter type says
+      const updated = null as unknown as string;
+      const result = getPageModifiedDate(
+        page({ publishedAt, frontMatter: { sitemap: { lastmod: '  ' }, updated } }),
+        onInvalid,
+      );
+
+      expect(result?.toISOString()).toBe('2026-01-01T00:00:00.000Z');
+      expect(onInvalid).not.toHaveBeenCalled();
+    });
+
+    it('reports an invalid value and goes on to the next source', () => {
+      const onInvalid = vi.fn();
+      const result = getPageModifiedDate(
+        page({ frontMatter: { updated: 'soon', date: 'later', createdAt: '2026-04-01' } }),
+        onInvalid,
+      );
+
+      expect(result?.toISOString()).toBe('2026-04-01T00:00:00.000Z');
+      expect(onInvalid.mock.calls).toEqual([
+        ['updated', 'soon'],
+        ['date', 'later'],
+      ]);
+    });
+
+    it('returns undefined when the page has no valid date', () => {
+      expect(getPageModifiedDate(page({ frontMatter: { updated: 'soon' } }))).toBeUndefined();
     });
   });
 });

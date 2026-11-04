@@ -81,11 +81,13 @@ export interface RebuildContext {
  *
  * @param lastBuildFailed - Whether the previous build failed; then a build runs even when no
  *   recorded page uses the file, so the error clears once the template that broke it is fixed
+ * @param logger - Reports problems reading the cache manifest
  */
 export async function markTemplateChanges(
   changes: FileChange[],
   srcDir: string,
   lastBuildFailed: boolean,
+  logger: Logger,
 ): Promise<TemplateChangeResult> {
   // Drop the cached Eta engine so the changed templates are recompiled on the next build.
   // Markdown-only edits keep reusing it.
@@ -106,7 +108,7 @@ export async function markTemplateChanges(
 
   try {
     const cacheDir = resolveCacheDir();
-    const cacheManifest = await loadCacheManifest(cacheDir);
+    const cacheManifest = await loadCacheManifest(cacheDir, logger);
     if (!cacheManifest) {
       return { affectedPages: 0, totalPages: 0, rebuild: 'incremental' };
     }
@@ -280,7 +282,7 @@ export async function rebuildChanges(
 
   const templateResult =
     templateChanges.length > 0
-      ? await markTemplateChanges(templateChanges, srcDir, hasBuildError())
+      ? await markTemplateChanges(templateChanges, srcDir, hasBuildError(), logger)
       : null;
   const plan = planRebuild(templateResult, hasOtherChanges);
 

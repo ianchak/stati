@@ -1,8 +1,14 @@
-import { readFile, writeFile, pathExists, ensureDir } from '../utils/index.js';
+import {
+  readFile,
+  writeFile,
+  pathExists,
+  ensureDir,
+  createFallbackLogger,
+} from '../utils/index.js';
 import { join } from 'node:path';
-import type { CacheManifest, CacheEntry } from '../../types/index.js';
+import type { CacheManifest, CacheEntry, Logger } from '../../types/index.js';
 import { MANIFEST_FILENAME } from '../../constants.js';
-import { isTemplateLookupList } from '../template-index.js';
+import { parseCacheEntry } from './entry.js';
 import { createStaleEntry } from './stale.js';
 
 /**
@@ -39,18 +45,25 @@ interface NodeError extends Error {
  * Returns null if no manifest exists or if it's corrupted.
  * Provides detailed error reporting for different failure scenarios.
  *
+ * Each entry is checked with {@link parseCacheEntry}. An invalid one is reset to a stale entry
+ * with a warning, so its page renders again.
+ *
  * @param cacheDir - Path to the .stati cache directory
+ * @param logger - Where warnings go; the console when omitted
  * @returns Promise resolving to the cache manifest or null
  *
  * @example
  * ```typescript
- * const manifest = await loadCacheManifest('.stati');
+ * const manifest = await loadCacheManifest('.stati', logger);
  * if (manifest) {
- *   console.log(`Found ${Object.keys(manifest.entries).length} cached entries`);
+ *   logger.info(`Found ${Object.keys(manifest.entries).length} cached entries`);
  * }
  * ```
  */
-export async function loadCacheManifest(cacheDir: string): Promise<CacheManifest | null> {
+export async function loadCacheManifest(
+  cacheDir: string,
+  logger: Logger = createFallbackLogger(),
+): Promise<CacheManifest | null> {
   const manifestPath = join(cacheDir, MANIFEST_FILENAME);
 
   try {
@@ -61,13 +74,13 @@ export async function loadCacheManifest(cacheDir: string): Promise<CacheManifest
     const manifestContent = await readFile(manifestPath, 'utf-8');
 
     if (!manifestContent) {
-      console.warn('Cache manifest not found or empty, creating new cache');
+      logger.warning('Cache manifest not found or empty, creating new cache');
       return null;
     }
 
     // Handle empty files
     if (!manifestContent.trim()) {
-      console.warn('Cache manifest is empty, creating new cache');
+      logger.warning('Cache manifest is empty, creating new cache');
       return null;
     }
 
@@ -75,7 +88,7 @@ export async function loadCacheManifest(cacheDir: string): Promise<CacheManifest
     try {
       manifest = JSON.parse(manifestContent);
     } catch (parseError) {
-      console.warn(
+      logger.warning(
         `Cache manifest contains invalid JSON, ignoring existing cache. ` +
           `Error: ${parseError instanceof Error ? parseError.message : String(parseError)}`,
       );
@@ -85,19 +98,19 @@ export async function loadCacheManifest(cacheDir: string): Promise<CacheManifest
 
     // Detailed validation of manifest structure
     if (!manifest || typeof manifest !== 'object') {
-      console.warn('Cache manifest is not an object, ignoring existing cache');
+      logger.warning('Cache manifest is not an object, ignoring existing cache');
       return null;
     }
 
     const manifestObj = manifest as Record<string, unknown>;
 
     if (!manifestObj.entries) {
-      console.warn('Cache manifest missing "entries" field, ignoring existing cache');
+      logger.warning('Cache manifest missing "entries" field, ignoring existing cache');
       return null;
     }
 
     if (typeof manifestObj.entries !== 'object' || Array.isArray(manifestObj.entries)) {
-      console.warn('Cache manifest "entries" field is not an object, ignoring existing cache');
+      logger.warning('Cache manifest "entries" field is not an object, ignoring existing cache');
       return null;
     }
 
@@ -108,16 +121,18 @@ export async function loadCacheManifest(cacheDir: string): Promise<CacheManifest
     let invalidEntryCount = 0;
 
     for (const [path, entry] of Object.entries(entries)) {
-      if (validateCacheEntry(entry, path)) {
-        validatedEntries[path] = entry as CacheEntry;
-      } else {
+      const parsed = parseCacheEntry(entry);
+      if ('reason' in parsed) {
+        logger.warning(`Invalid cache entry for ${path}: ${parsed.reason}`);
         validatedEntries[path] = createStaleEntry(path);
         invalidEntryCount++;
+      } else {
+        validatedEntries[path] = parsed;
       }
     }
 
     if (invalidEntryCount > 0) {
-      console.warn(`Reset ${invalidEntryCount} invalid cache entries`);
+      logger.warning(`Reset ${invalidEntryCount} invalid cache entries`);
     }
 
     // Return manifest with entries AND navigationHash (if present)
@@ -141,26 +156,9 @@ export async function loadCacheManifest(cacheDir: string): Promise<CacheManifest
 
     return resultManifest;
   } catch (error) {
-    const nodeError = error as NodeError;
-    if (nodeError.code === 'ENOENT') {
-      return null; // File doesn't exist, this is normal
-    }
-    if (nodeError.code === 'EACCES') {
-      console.error(
-        `Permission denied reading cache manifest at ${manifestPath}. ` +
-          `Please check file permissions or run with appropriate privileges.`,
-      );
-      return null;
-    }
-    if (nodeError.code === 'EMFILE' || nodeError.code === 'ENFILE') {
-      console.error(
-        `Too many open files when reading cache manifest. ` +
-          `Consider reducing concurrent operations or increasing file descriptor limits.`,
-      );
-      return null;
-    }
-
-    console.warn(
+    // pathExists and readFile wrap file system errors in one that names the path and the cause,
+    // such as EACCES, and readFile returns null for a missing file
+    logger.warning(
       `Failed to load cache manifest: ${error instanceof Error ? error.message : String(error)}. ` +
         `Starting with fresh cache.`,
     );
@@ -273,122 +271,4 @@ export function createEmptyManifest(): CacheManifest {
   return {
     entries: {},
   };
-}
-
-/**
- * Validates a cache entry object to ensure it has the required structure.
- * Used when loading cache manifest to filter out corrupted entries.
- *
- * @param entry - The cache entry to validate
- * @param path - The path key for error context
- * @returns True if the entry is valid, false otherwise
- */
-function validateCacheEntry(entry: unknown, path: string): entry is CacheEntry {
-  if (!entry || typeof entry !== 'object') {
-    console.warn(`Invalid cache entry for ${path}: not an object`);
-    return false;
-  }
-
-  const entryObj = entry as Record<string, unknown>;
-
-  // Check required fields
-  const requiredFields = ['path', 'inputsHash', 'deps', 'tags', 'renderedAt', 'ttlSeconds'];
-  for (const field of requiredFields) {
-    if (!(field in entryObj)) {
-      console.warn(`Invalid cache entry for ${path}: missing required field "${field}"`);
-      return false;
-    }
-  }
-
-  // Validate field types
-  if (typeof entryObj.path !== 'string') {
-    console.warn(`Invalid cache entry for ${path}: "path" must be a string`);
-    return false;
-  }
-
-  if (typeof entryObj.inputsHash !== 'string') {
-    console.warn(`Invalid cache entry for ${path}: "inputsHash" must be a string`);
-    return false;
-  }
-
-  if (!Array.isArray(entryObj.deps)) {
-    console.warn(`Invalid cache entry for ${path}: "deps" must be an array`);
-    return false;
-  }
-
-  if (!Array.isArray(entryObj.tags)) {
-    console.warn(`Invalid cache entry for ${path}: "tags" must be an array`);
-    return false;
-  }
-
-  if (typeof entryObj.renderedAt !== 'string') {
-    console.warn(`Invalid cache entry for ${path}: "renderedAt" must be a string`);
-    return false;
-  }
-
-  if (typeof entryObj.ttlSeconds !== 'number') {
-    console.warn(`Invalid cache entry for ${path}: "ttlSeconds" must be a number`);
-    return false;
-  }
-
-  // Validate optional fields if present
-  if (entryObj.publishedAt !== undefined && typeof entryObj.publishedAt !== 'string') {
-    console.warn(`Invalid cache entry for ${path}: "publishedAt" must be a string if present`);
-    return false;
-  }
-
-  if (entryObj.maxAgeCapDays !== undefined && typeof entryObj.maxAgeCapDays !== 'number') {
-    console.warn(`Invalid cache entry for ${path}: "maxAgeCapDays" must be a number if present`);
-    return false;
-  }
-
-  for (const field of ['assetDeps', 'images'] as const) {
-    const value = entryObj[field];
-    if (
-      value !== undefined &&
-      (!Array.isArray(value) || !value.every((item: unknown) => typeof item === 'string'))
-    ) {
-      console.warn(`Invalid cache entry for ${path}: "${field}" must be an array of strings`);
-      return false;
-    }
-  }
-
-  for (const field of ['readsCollection', 'readsNav', 'templatesRecorded'] as const) {
-    if (entryObj[field] !== undefined && typeof entryObj[field] !== 'boolean') {
-      console.warn(`Invalid cache entry for ${path}: "${field}" must be a boolean if present`);
-      return false;
-    }
-  }
-
-  if (entryObj.templateLookups !== undefined && !isTemplateLookupList(entryObj.templateLookups)) {
-    console.warn(
-      `Invalid cache entry for ${path}: "templateLookups" must be a list of { name, from?, file } objects`,
-    );
-    return false;
-  }
-
-  // Validate that deps and tags arrays contain strings
-  if (!entryObj.deps.every((dep: unknown) => typeof dep === 'string')) {
-    console.warn(`Invalid cache entry for ${path}: all "deps" must be strings`);
-    return false;
-  }
-
-  if (!entryObj.tags.every((tag: unknown) => typeof tag === 'string')) {
-    console.warn(`Invalid cache entry for ${path}: all "tags" must be strings`);
-    return false;
-  }
-
-  // Validate date format for renderedAt
-  if (isNaN(new Date(entryObj.renderedAt as string).getTime())) {
-    console.warn(`Invalid cache entry for ${path}: "renderedAt" is not a valid date`);
-    return false;
-  }
-
-  // Validate date format for publishedAt if present
-  if (entryObj.publishedAt && isNaN(new Date(entryObj.publishedAt as string).getTime())) {
-    console.warn(`Invalid cache entry for ${path}: "publishedAt" is not a valid date`);
-    return false;
-  }
-
-  return true;
 }

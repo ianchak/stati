@@ -3,6 +3,7 @@
  * Provides a user-friendly interface for template rendering and build errors.
  */
 
+import { escapeHtml } from './html.utils.js';
 import { STATI_FAVICON_HREF, STATI_MARK_PATH, STATI_THEME_STYLES } from './theme.utils.js';
 import { LIVE_RELOAD_PATH } from './live-reload.utils.js';
 
@@ -840,18 +841,6 @@ export function createErrorOverlay(error: ErrorDetails, requestPath: string): st
   </script>
 </body>
 </html>`;
-}
-
-/**
- * Escapes HTML characters in a string for safe display.
- */
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 }
 
 /**

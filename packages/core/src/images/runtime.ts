@@ -10,6 +10,7 @@ import { URL } from 'node:url';
 import type { Token } from 'markdown-it';
 import {
   addBasePath,
+  compileUrlPatterns,
   copyFile,
   createTemplateError,
   ensureDir,
@@ -20,9 +21,10 @@ import {
   readFile,
   readFileBuffer,
   remove,
+  resolveAbsoluteUrl,
   writeFile,
+  type UrlPatternMatcher,
 } from '../core/utils/index.js';
-import { resolveAbsoluteUrl } from '../seo/utils/index.js';
 import { generatedOgImageTags } from '../seo/generator.js';
 import {
   DEFAULT_SRC_DIR,
@@ -40,6 +42,7 @@ import type {
   OgImageFontConfig,
   PageModel,
   StatiConfig,
+  StatiImageOptions,
 } from '../types/index.js';
 import type { RenderedAssets } from '../core/isg/builder.js';
 import {
@@ -85,22 +88,6 @@ export interface OgTemplateRenderer {
   find(templateName: string): string | null;
   /** Renders a template that `find` returned, or the source of the built-in template */
   render(template: { path: string } | { source: string }): Promise<string>;
-}
-
-/**
- * Options for `stati.image()` in templates.
- */
-export interface StatiImageOptions {
-  /** Alternative text; use an empty string for decorative images */
-  alt?: string;
-  /** `sizes` attribute for responsive images */
-  sizes?: string;
-  /** Load eagerly with high fetch priority, for the main image above the fold */
-  priority?: boolean;
-  /** `class` attribute */
-  class?: string;
-  /** `title` attribute */
-  title?: string;
 }
 
 /** A unit of work that writes one or more files under the output directory. */
@@ -376,7 +363,10 @@ export class PageImages {
   wantsOg(): boolean {
     const { og, ogState, provider } = this.runtime;
     return Boolean(
-      og && ogState && provider?.renderOgImage && !isOgImageExcluded(this.page, og.exclude),
+      og &&
+      ogState &&
+      provider?.renderOgImage &&
+      !isOgImageExcluded(this.page, this.runtime.isOgExcludedUrl),
     );
   }
 
@@ -398,7 +388,7 @@ export class PageImages {
   async renderOg(renderer: OgTemplateRenderer): Promise<GeneratedOgImage | null> {
     const { og, ogState, provider } = this.runtime;
     if (!og || !ogState || !provider?.renderOgImage) return null;
-    if (isOgImageExcluded(this.page, og.exclude)) return null;
+    if (isOgImageExcluded(this.page, this.runtime.isOgExcludedUrl)) return null;
 
     const srcDir = this.runtime.srcDir;
     const templatePath = renderer.find(og.template);
@@ -507,6 +497,8 @@ export class ImageRuntime {
   readonly responsive: ResolvedResponsiveConfig | null;
   /** Open Graph options in effect for this build; null when off or skipped in dev */
   readonly og: ResolvedOgConfig | null;
+  /** Whether `images.og.exclude` matches a URL, compiled once for the build */
+  readonly isOgExcludedUrl: UrlPatternMatcher;
   /** Counters for the build summary and metrics */
   readonly stats = { generated: 0, cached: 0, failed: 0 };
   /** The path the site is served from, which every image URL starts with */
@@ -541,6 +533,10 @@ export class ImageRuntime {
     this.basePath = getBasePath(baseUrl);
     this.responsive = generate ? settings.responsive : null;
     this.og = generate && ogState ? settings.og : null;
+    this.isOgExcludedUrl = compileUrlPatterns(this.og?.exclude, {
+      option: 'images.og.exclude',
+      logger,
+    });
   }
 
   /**

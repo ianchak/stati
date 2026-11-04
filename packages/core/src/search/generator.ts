@@ -6,7 +6,7 @@
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { writeFile, ensureDir, readdir, remove } from '../core/utils/fs.utils.js';
-import { matchesGlob } from '../core/utils/glob-patterns.utils.js';
+import { compileUrlPatterns, type UrlPatternMatcher } from '../core/utils/glob-patterns.utils.js';
 import { isNotFoundPage, isVirtualPage } from '../core/utils/template-discovery.utils.js';
 import { SEARCH_INDEX_VERSION, SEARCH_DEFAULTS } from './constants.js';
 import type { FrontMatter, PageModel, TocEntry } from '../types/content.js';
@@ -383,13 +383,37 @@ export function collectSearchFields(
 }
 
 /**
+ * Compiles `search.exclude`: globs that must match the whole URL, so `/blog` leaves out `/blog`
+ * but not `/blog/post`.
+ *
+ * @param config - Search configuration
+ * @param logger - Receives a warning for each pattern that is not a valid glob
+ * @returns Whether `search.exclude` leaves a URL out
+ */
+export function compileSearchExclude(
+  config: SearchConfig,
+  logger?: Pick<Logger, 'warning'>,
+): UrlPatternMatcher {
+  return compileUrlPatterns(config.exclude ?? SEARCH_DEFAULTS.exclude, {
+    option: 'search.exclude',
+    logger,
+  });
+}
+
+/**
  * Checks if a page should be excluded from the search index.
  *
  * @param page - Page model to check
  * @param config - Search configuration
+ * @param isExcludedUrl - `search.exclude` compiled with {@link compileSearchExclude}, to
+ *   compile it once for every page
  * @returns true if the page should be excluded
  */
-export function shouldExcludePage(page: PageModel, config: SearchConfig): boolean {
+export function shouldExcludePage(
+  page: PageModel,
+  config: SearchConfig,
+  isExcludedUrl: UrlPatternMatcher = compileSearchExclude(config),
+): boolean {
   // Exclude drafts
   if (page.frontMatter.draft) {
     return true;
@@ -413,14 +437,7 @@ export function shouldExcludePage(page: PageModel, config: SearchConfig): boolea
   }
 
   // Check exclude patterns
-  const excludePatterns = config.exclude ?? SEARCH_DEFAULTS.exclude;
-  for (const pattern of excludePatterns) {
-    if (matchesGlob(page.url, pattern)) {
-      return true;
-    }
-  }
-
-  return false;
+  return isExcludedUrl(page.url);
 }
 
 /**
@@ -457,7 +474,8 @@ export interface SearchablePage {
  *
  * @param searchablePages - Array of pages with TOC and markdown content
  * @param config - Search configuration
- * @param logger - Receives warnings for `search.fields` values that are left out
+ * @param logger - Receives warnings for `search.fields` values that are left out and for
+ *   `search.exclude` patterns that are not valid globs
  * @param basePath - The base path of `site.baseUrl` (`''` for a site served from the root), which
  *   client code puts in front of each document's site-relative `url`
  * @returns SearchIndex object
@@ -469,10 +487,11 @@ export function generateSearchIndex(
   basePath = '',
 ): SearchIndex {
   const documents: SearchDocument[] = [];
+  const isExcludedUrl = compileSearchExclude(config, logger);
 
   for (const { page, toc, markdownContent } of searchablePages) {
     // Skip excluded pages
-    if (shouldExcludePage(page, config)) {
+    if (shouldExcludePage(page, config, isExcludedUrl)) {
       continue;
     }
 

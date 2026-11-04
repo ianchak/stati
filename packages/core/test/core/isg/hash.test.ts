@@ -8,9 +8,21 @@ import {
   computeInputsHash,
   computeNavigationHash,
 } from '../../../src/core/isg/hash.js';
+import type { Logger } from '../../../src/types/index.js';
 
 describe('Hash Utilities', () => {
   let tempDir: string;
+
+  const createLogger = (): Logger => ({
+    info: vi.fn(),
+    success: vi.fn(),
+    warning: vi.fn(),
+    error: vi.fn(),
+    status: vi.fn(),
+    building: vi.fn(),
+    processing: vi.fn(),
+    stats: vi.fn(),
+  });
 
   beforeEach(async () => {
     tempDir = await mkdtemp(join(tmpdir(), 'stati-hash-test-'));
@@ -194,14 +206,28 @@ describe('Hash Utilities', () => {
       expect(hash).not.toBe(await computeFileHash(join(tempDir, 'missing.eta')));
     });
 
-    it('should handle file read errors gracefully', async () => {
+    it('should warn through the logger once when a file cannot be read', async () => {
+      const logger = createLogger();
+
+      // A directory can't be read as a file
+      expect(await computeFileHash(tempDir, logger)).toBeNull();
+      expect(await computeFileHash(tempDir, logger)).toBeNull();
+
+      expect(logger.warning).toHaveBeenCalledTimes(1);
+      expect(logger.warning).toHaveBeenCalledWith(
+        expect.stringContaining(`Failed to compute hash for ${tempDir}: `),
+      );
+    });
+
+    it('should warn on the console when a file cannot be read without a logger', async () => {
       const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-      // Try to hash a directory instead of a file to trigger an error
       const hash = await computeFileHash(tempDir);
 
       expect(hash).toBeNull();
-      expect(consoleWarnSpy).toHaveBeenCalled();
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining(`Failed to compute hash for ${tempDir}: `),
+      );
 
       consoleWarnSpy.mockRestore();
     });

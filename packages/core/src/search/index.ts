@@ -24,6 +24,7 @@ export {
   extractSectionsFromMarkdown,
   stripMarkdown,
   shouldExcludePage,
+  compileSearchExclude,
   isGeneratedPageExcludedFromSearch,
   generateContentHash,
   buildBreadcrumb,

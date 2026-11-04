@@ -85,7 +85,8 @@ Check config and CLI precedence for an existing site; use explicit flags for a
 required bind address/port. Binding `0.0.0.0` exposes the server beyond loopback:
 do it only intentionally.
 
-- `build` selects production mode.
+- `build` and `preview` select production mode and `dev` development mode
+  before the config loads, so `getEnv()` in the config matches the command.
 - `dev` builds, watches, and injects live reload/error overlay. Verify that a
   launched server is listening/responding; do not claim it is running based only
   on a process launch.

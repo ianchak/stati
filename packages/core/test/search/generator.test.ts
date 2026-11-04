@@ -10,6 +10,7 @@ import {
   buildBreadcrumb,
   extractSectionsFromMarkdown,
   shouldExcludePage,
+  compileSearchExclude,
   isGeneratedPageExcludedFromSearch,
   generateSearchIndex,
   collectSearchFields,
@@ -353,6 +354,22 @@ describe('shouldExcludePage', () => {
     expect(shouldExcludePage(page, config)).toBe(false);
   });
 
+  // search.exclude matches the whole URL, unlike the sitemap's excludePatterns
+  it('exclude: a pattern without wildcards leaves out that URL only, not the URLs below it', () => {
+    const config: SearchConfig = { enabled: true, exclude: ['/blog'] };
+    expect(shouldExcludePage(createPage({ url: '/blog' }), config)).toBe(true);
+    expect(shouldExcludePage(createPage({ url: '/blog/post' }), config)).toBe(false);
+  });
+
+  it('matches with exclude patterns compiled once by compileSearchExclude', () => {
+    const config: SearchConfig = { enabled: true, exclude: ['/private/**'] };
+    const isExcludedUrl = compileSearchExclude({ enabled: true, exclude: ['/other/**'] });
+
+    // The compiled patterns decide, not config.exclude
+    expect(shouldExcludePage(createPage({ url: '/other/a' }), config, isExcludedUrl)).toBe(true);
+    expect(shouldExcludePage(createPage({ url: '/private/a' }), config, isExcludedUrl)).toBe(false);
+  });
+
   describe('generated and pagination pages', () => {
     const generated = { key: 'css', label: 'CSS', items: [], template: 'tags/[tag].md' };
     const config: SearchConfig = { enabled: true };
@@ -489,6 +506,26 @@ describe('generateSearchIndex', () => {
     const index = generateSearchIndex(searchablePages, config);
 
     expect(() => new Date(index.generatedAt)).not.toThrow();
+  });
+
+  it('warns once through the logger about an invalid exclude pattern and keeps the others', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const logger = { warning: vi.fn() } as unknown as Logger;
+    const searchablePages = [
+      createSearchablePage('/a', 'A', '# A\n\nContent'),
+      createSearchablePage('/b', 'B', '# B\n\nContent'),
+      createSearchablePage('/private/c', 'C', '# C\n\nContent'),
+    ];
+    const config: SearchConfig = { enabled: true, exclude: ['/[x', '/private/**'] };
+
+    const index = generateSearchIndex(searchablePages, config, logger);
+
+    expect(index.documents.map((d) => d.url)).toEqual(['/a', '/b']);
+    expect(logger.warning).toHaveBeenCalledTimes(1);
+    expect(logger.warning).toHaveBeenCalledWith(
+      'Ignoring invalid pattern "/[x" in search.exclude: Unclosed character class at position 1',
+    );
+    expect(warn).not.toHaveBeenCalled();
   });
 });
 

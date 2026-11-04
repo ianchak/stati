@@ -19,7 +19,7 @@ interface TemplateContext {
     path: string;
     url: string;
     content: string;
-    toc: TocEntry[]; // Table of contents entries (added at runtime)
+    toc: TocEntry[]; // h2 to h6 headings; empty when there are none or markdown.toc is false
     navNode?: NavNode; // Current page's navigation node
     wordCount?: number; // Words in the Markdown body
     readingTime?: number; // Whole minutes to read, at least 1
@@ -48,7 +48,7 @@ interface TemplateContext {
   slugify: (text: string) => string; // The slug Stati gives generated page keys
   url: (path: string) => string; // A site path with the base path of site.baseUrl added
   assets?: StatiAssets; // Bundle, stylesheet and search index paths
-  propValue: (...args) => string; // Class/attribute value builder
+  propValue: (...args: PropValueArg[]) => string; // Class/attribute value builder
   generateSEO: (tags?: string[]) => string; // SEO tag generator
   image: (src: string, options?: ImageOptions) => string; // Sized, lazy-loaded <img> or <picture>
   ogImage?: GeneratedOgImage; // The page's generated Open Graph image, with images.og
@@ -135,7 +135,7 @@ During `stati dev`, reading a `stati.*` property that does not exist (for exampl
 
 The `nav` object provides helper methods for working with navigation. See [Navigation API](/api/navigation) for details on `getTree()`, `findNode()`, `getBreadcrumbs()`, and other navigation helpers.
 
-`page.toc` is added at render time from the page's headings, so the `TemplateContext` type in `@stati/core` does not declare it.
+`page.toc` lists the page's `h2` to `h6` headings in document order. See [Table of contents](/configuration/markdown#table-of-contents-toc).
 
 `page.wordCount` and `page.readingTime` come from Stati. They are not front matter, so a front matter key of the same name is replaced, with a warning. The pages in `stati.collection`, `stati.pagination.items` and `stati.generated.items` carry the same two properties, as `post.wordCount` and `post.readingTime`. See [Word count and reading time](/core-concepts/markdown#word-count-and-reading-time).
 

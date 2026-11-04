@@ -8,8 +8,15 @@ import type { PageModel } from '../types/content.js';
 import type { StatiConfig } from '../types/config.js';
 import type { Logger } from '../types/logging.js';
 import { ConfigValidationError } from '../config/errors.js';
-import { isVirtualPage, matchesGlob } from '../core/utils/index.js';
-import { escapeHtml, percentEncodeUrl, resolveAbsoluteUrl } from './utils/index.js';
+import {
+  compileUrlPatterns,
+  escapeHtml,
+  getPagePublishedDate,
+  isVirtualPage,
+  percentEncodeUrl,
+  removeInvalidXmlChars,
+  resolveAbsoluteUrl,
+} from '../core/utils/index.js';
 import { CHANGE_FREQUENCIES, isLeftOutBySitemapRules } from './sitemap.js';
 
 /** The XML namespace of Google News sitemap elements */
@@ -25,10 +32,6 @@ const DEFAULT_MAX_AGE_DAYS = 2;
 export const DEFAULT_NEWS_SITEMAP_FILENAME = 'news-sitemap.xml';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-
-/** Characters XML 1.0 does not allow in text, which a copy-pasted title can hold */
-// eslint-disable-next-line no-control-regex
-const INVALID_XML_CHARS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F￾￿]/g;
 
 /** The file names of the main sitemap, which the news sitemap must not overwrite */
 const MAIN_SITEMAP_FILENAME = /^sitemap(-\d+)?\.xml$/i;
@@ -180,7 +183,7 @@ function languageOfLocale(locale: string | undefined): string {
 
 /** Escapes text for an XML element, dropping the characters XML cannot hold */
 function escapeXml(text: string): string {
-  return escapeHtml(text.replace(INVALID_XML_CHARS, ''));
+  return escapeHtml(removeInvalidXmlChars(text));
 }
 
 /** One article of the news sitemap */
@@ -228,7 +231,7 @@ export function generateNewsSitemapXml(
  *
  * Drafts, generated pages, later pages of a paginated listing, the 404 page and noindex pages
  * (unless `sitemap.exclude: false` keeps them in) are left out, and so is a page that is
- * missing a valid `publishedAt` or a title, with a warning. Nothing to list still gives a valid
+ * missing a valid publish date or a title, with a warning. Nothing to list still gives a valid
  * `urlset`, with no `url` elements.
  *
  * @param pages - All pages of the site
@@ -247,19 +250,21 @@ export function generateNewsSitemap(
 ): NewsSitemapGenerationResult {
   const cutoff = now.getTime() - (news.maxAgeDays ?? DEFAULT_MAX_AGE_DAYS) * DAY_MS;
   const entries: NewsEntry[] = [];
+  // Globs that match the whole URL, like seo.articles.include
+  const isIncluded = compileUrlPatterns(news.include, { option: 'sitemap.news.include', logger });
 
   for (const page of pages) {
     if (
       page.frontMatter.draft ||
       isVirtualPage(page) ||
       isLeftOutBySitemapRules(page) ||
-      !news.include.some((pattern) => matchesGlob(page.url, pattern))
+      !isIncluded(page.url)
     ) {
       continue;
     }
 
-    const publishedAt = page.publishedAt;
-    if (!(publishedAt instanceof Date) || Number.isNaN(publishedAt.getTime())) {
+    const publishedAt = getPagePublishedDate(page);
+    if (!publishedAt) {
       logger?.warning(
         `News sitemap: leaving out ${page.url}, which has no valid publication date (set publishedAt or date in its front matter).`,
       );

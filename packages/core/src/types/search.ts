@@ -44,7 +44,10 @@ export interface SearchConfig {
   /** Heading levels to include in the index. @default [2, 3, 4, 5, 6] */
   headingLevels?: number[];
 
-  /** Glob patterns for pages to exclude from the search index. @default [] */
+  /**
+   * Glob patterns for the URLs of pages to exclude from the search index. A pattern must match
+   * the whole URL: `/blog` leaves out `/blog` but not `/blog/post`. @default []
+   */
   exclude?: string[];
 
   /** Include the home page (index) in the search index. @default false */

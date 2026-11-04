@@ -1,13 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
-  escapeHtml,
   generateRobotsContent,
   parseRobotsDirectives,
-  percentEncodeUrl,
-  resolveAbsoluteUrl,
   validateSEOMetadata,
   detectExistingSEOTags,
 } from '../../src/seo/utils/index.js';
+import { escapeHtml, removeInvalidXmlChars } from '../../src/core/utils/html.utils.js';
+import { percentEncodeUrl, resolveAbsoluteUrl } from '../../src/core/utils/url.utils.js';
 import {
   sanitizeStructuredData,
   serializeStructuredData,
@@ -93,6 +92,19 @@ describe('SEO Utils - escapeHtml', () => {
   });
 });
 
+describe('SEO Utils - removeInvalidXmlChars', () => {
+  it('removes the control characters and non-characters XML 1.0 does not allow', () => {
+    expect(removeInvalidXmlChars('a\u0000b\u0008c\u000Bd\u000Ce\u000Ef\u001Fg￾h￿i')).toBe(
+      'abcdefghi',
+    );
+  });
+
+  it('keeps tabs, line breaks and characters outside the basic plane', () => {
+    const text = 'tab\there\nline\r\nemoji \u{1F600} and é and �';
+    expect(removeInvalidXmlChars(text)).toBe(text);
+  });
+});
+
 describe('SEO Utils - percentEncodeUrl', () => {
   it('encodes spaces, non-ASCII letters and characters a URI cannot hold', () => {
     expect(percentEncodeUrl('https://example.com/My Post')).toBe('https://example.com/My%20Post');
@@ -166,6 +178,19 @@ describe('SEO Utils - resolveAbsoluteUrl', () => {
 
   it('does not double the slash when the base ends with one', () => {
     expect(resolveAbsoluteUrl('/about', 'https://example.com/')).toBe('https://example.com/about');
+  });
+
+  it('reads a ./ path as a path from the site root, behind the base path', () => {
+    expect(resolveAbsoluteUrl('./images/og.png', 'https://example.com')).toBe(
+      'https://example.com/images/og.png',
+    );
+    expect(resolveAbsoluteUrl('./images/og.png', 'https://example.com/docs/')).toBe(
+      'https://example.com/docs/images/og.png',
+    );
+    // Only a leading ./ goes; a path that merely starts with a dot keeps it
+    expect(resolveAbsoluteUrl('.well-known/a', 'https://example.com')).toBe(
+      'https://example.com/.well-known/a',
+    );
   });
 });
 

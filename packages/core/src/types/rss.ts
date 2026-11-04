@@ -89,13 +89,14 @@ export interface RSSFeedConfig {
 
   /**
    * Content directory patterns to include in this feed.
-   * Uses glob patterns to match content files.
-   * @example ['blog/**', 'news/**']
+   * Uses glob patterns to match content files: the page's absolute source file path, so start
+   * folder patterns with `**\/`. A pattern without `*` or `?` also matches the files below it.
+   * @example ['**\/blog/**', '**\/news/**']
    */
   contentPatterns?: string[];
 
   /**
-   * Glob patterns for pages to exclude from feed
+   * Glob patterns for pages to exclude from feed, matched like `contentPatterns`
    * @example ['**\/draft-*', '**\/index.md']
    */
   excludePatterns?: string[];
@@ -194,9 +195,11 @@ export interface RSSFeedConfig {
     guid?: (page: PageModel, config: StatiConfig) => string;
 
     /**
-     * Whether to include full HTML content in description
-     * If true, uses the rendered HTML content
-     * If false, uses description field only
+     * Whether to put the page body in description
+     * If true, uses the page's Markdown source (`PageModel.content`), not rendered HTML,
+     * written as CDATA (a `]]>` in it is split across two sections); a page whose body is
+     * empty or only whitespace uses the description mapping
+     * If false, uses the description mapping only
      * @default false
      */
     includeContent?: boolean;

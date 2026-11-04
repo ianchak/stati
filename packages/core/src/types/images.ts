@@ -83,7 +83,7 @@ export interface OgImagesConfig {
   format?: 'png' | 'jpeg';
   /** Fonts added to the bundled ones (Archivo, Inter, Fira Code) */
   fonts?: OgImageFontConfig[];
-  /** URL glob patterns of pages that get no generated image */
+  /** URL glob patterns of pages that get no generated image; a pattern must match the whole URL */
   exclude?: string[];
 }
 
@@ -196,4 +196,20 @@ export interface GeneratedOgImage {
   height: number;
   /** Alternative text, the page title */
   alt?: string;
+}
+
+/**
+ * Options for `stati.image()` in templates.
+ */
+export interface StatiImageOptions {
+  /** Alternative text; use an empty string for decorative images */
+  alt?: string;
+  /** `sizes` attribute for responsive images */
+  sizes?: string;
+  /** Load eagerly with high fetch priority, for the main image above the fold */
+  priority?: boolean;
+  /** `class` attribute */
+  class?: string;
+  /** `title` attribute */
+  title?: string;
 }

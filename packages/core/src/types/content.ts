@@ -568,6 +568,20 @@ export interface TemplateLayoutFunction {
 }
 
 /**
+ * A value `stati.propValue()` accepts. Strings and numbers are kept, booleans and other falsy
+ * values are skipped, arrays keep their string and number items, and objects keep the keys whose
+ * values are truthy.
+ */
+export type PropValueArg =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | Record<string, boolean | string | number | null | undefined>
+  | PropValueArg[];
+
+/**
  * Template rendering context, available to every template Stati renders as `stati`.
  * The root holds only Stati's own API; functions from the config's `helpers` are under
  * `stati.helpers`.
@@ -580,7 +594,8 @@ export interface TemplateContext {
     path: string;
     url: string;
     content: string;
-    navNode?: import('./navigation.js').NavNode; // Current page's navigation node
+    toc: TocEntry[]; // h2 to h6 headings; empty when there are none or markdown.toc is false
+    navNode?: import('./navigation.js').NavNode | undefined; // Current page's navigation node
     wordCount?: number; // Words in the Markdown body
     readingTime?: number; // Whole minutes to read, at least 1
     [key: string]: unknown; // Frontmatter fields
@@ -603,26 +618,7 @@ export interface TemplateContext {
   /** The functions registered in the config's `helpers` */
   helpers: import('./config.js').StatiHelpers;
   /** Navigation helpers and tree */
-  nav: {
-    /** The full navigation tree */
-    tree: import('./navigation.js').NavNode[];
-    /** Gets the full navigation tree */
-    getTree: () => import('./navigation.js').NavNode[];
-    /** Finds a navigation node by path or URL */
-    findNode: (path: string) => import('./navigation.js').NavNode | undefined;
-    /** Gets the children of a navigation node */
-    getChildren: (path: string) => import('./navigation.js').NavNode[];
-    /** Gets the parent of a navigation node */
-    getParent: (path?: string) => import('./navigation.js').NavNode | undefined;
-    /** Gets the siblings of a navigation node */
-    getSiblings: (path?: string, includeSelf?: boolean) => import('./navigation.js').NavNode[];
-    /** Gets a subtree starting from a specific path */
-    getSubtree: (path: string) => import('./navigation.js').NavNode[];
-    /** Gets the breadcrumb trail for a path */
-    getBreadcrumbs: (path?: string) => import('./navigation.js').NavNode[];
-    /** Gets the current page's navigation node */
-    getCurrentNode: () => import('./navigation.js').NavNode | undefined;
-  };
+  nav: import('./navigation.js').NavigationHelpers;
   /**
    * Collection data: the page's own collection on index pages, the collection the page belongs
    * to on other pages, or the one named by the `collection` front matter field
@@ -650,16 +646,13 @@ export interface TemplateContext {
    * Builds a space-separated attribute value from strings, numbers, arrays and objects whose
    * truthy keys are kept, like `classnames`
    */
-  propValue: (...args: unknown[]) => string;
+  propValue: (...args: PropValueArg[]) => string;
   /**
    * Renders an image with intrinsic dimensions and lazy loading, plus `srcset` variants when
    * `images.responsive` is on. Synchronous; print it with `<%~ %>`. Relative paths resolve
    * next to the page's Markdown file, root-relative ones from the static directory.
    */
-  image: (
-    src: string,
-    options?: { alt?: string; sizes?: string; priority?: boolean; class?: string; title?: string },
-  ) => string;
+  image: (src: string, options?: import('./images.js').StatiImageOptions) => string;
   /** The page's SEO tags; `tags` limits them to some tag types */
   generateSEO: (tags?: string[]) => string;
   /** Size of the Open Graph image, set only while an Open Graph template renders */
