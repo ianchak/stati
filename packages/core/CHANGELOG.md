@@ -1,5 +1,11 @@
 # @stati/core
 
+## 2.11.8
+
+### Patch Changes
+
+- 88ff86d: share one pattern matcher and URL, date, escape helpers
+
 ## 2.11.7
 
 ### Patch Changes
