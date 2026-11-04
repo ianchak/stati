@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { mkdir, mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { basename, join, parse, resolve, sep } from 'node:path';
 import { createServer, type Server } from 'node:net';
+import { createServer as createHttpServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import {
   getMimeType,
@@ -13,6 +14,8 @@ import {
   assertPortAvailable,
   toPortUnavailableError,
   PortUnavailableError,
+  listenOnPort,
+  isPageRequest,
 } from '../../src/core/utils/server.utils.js';
 
 describe('assertPortAvailable', () => {
@@ -55,6 +58,40 @@ describe('assertPortAvailable', () => {
     expect((error as Error).message).toBe(
       `Port ${port} is already in use on ${host}. Stop the process using it, or choose another port with --port or \`dev.port\` in your Stati config.`,
     );
+  });
+});
+
+describe('listenOnPort', () => {
+  const host = '127.0.0.1';
+
+  it('should resolve once the server listens', async () => {
+    const server = createHttpServer();
+
+    await expect(listenOnPort(server, 0, host, 'preview.port')).resolves.toBeUndefined();
+    expect(server.listening).toBe(true);
+
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  });
+
+  it('should reject with PortUnavailableError naming the config key when the port is in use', async () => {
+    const blocker = createServer();
+    await new Promise<void>((resolve) => blocker.listen(0, host, resolve));
+    const address = blocker.address();
+    if (!address || typeof address === 'string') throw new Error('Unexpected server address');
+
+    try {
+      const error = await listenOnPort(
+        createHttpServer(),
+        address.port,
+        host,
+        'preview.port',
+      ).catch((e: unknown) => e);
+
+      expect(error).toBeInstanceOf(PortUnavailableError);
+      expect((error as Error).message).toContain('`preview.port` in your Stati config');
+    } finally {
+      await new Promise<void>((resolve) => blocker.close(() => resolve()));
+    }
   });
 });
 
@@ -295,6 +332,22 @@ describe('resolvePrettyUrl', () => {
     expect(result.found).toBe(false);
     expect(result.filePath).toBe(null);
   });
+});
+
+describe('isPageRequest', () => {
+  it.each(['/', '/about', '/about/', '/blog/post.html', '/404.html'])(
+    'should treat %s as a page',
+    (path) => {
+      expect(isPageRequest(path)).toBe(true);
+    },
+  );
+
+  it.each(['/styles.css', '/js/app.js', '/images/photo.avif', '/search-index.json'])(
+    'should treat %s as a file a page loads',
+    (path) => {
+      expect(isPageRequest(path)).toBe(false);
+    },
+  );
 });
 
 describe('getMimeType', () => {

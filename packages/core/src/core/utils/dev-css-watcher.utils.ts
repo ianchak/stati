@@ -1,7 +1,6 @@
 import chokidar from 'chokidar';
 import { glob } from 'tinyglobby';
 import type { FSWatcher } from 'chokidar';
-import type { WebSocketServer } from 'ws';
 import type { Logger } from '../../types/index.js';
 import { pathExists } from './fs.utils.js';
 
@@ -34,28 +33,11 @@ function hasSameMembership(nextFiles: string[], watchedCssFiles: Set<string>): b
   return nextFiles.every((file) => watchedCssFiles.has(file));
 }
 
-function broadcastReload(
-  wsServer: WebSocketServer | null,
-  disableWsReload: boolean,
-  payload: string,
-): void {
-  if (!wsServer || disableWsReload) {
-    return;
-  }
-
-  wsServer.clients.forEach((client: unknown) => {
-    const ws = client as { readyState: number; send: (data: string) => void };
-    if (ws.readyState === 1) {
-      ws.send(payload);
-    }
-  });
-}
-
 export interface RefreshCssOutputWatcherParams {
   outDir: string;
   logger: Logger;
-  wsServer: WebSocketServer | null;
-  disableWsReload: boolean;
+  /** Reloads the open pages when a watched file changes */
+  reload: () => void;
   cssWatcher: FSWatcher | null;
   watchedCssFiles: Set<string>;
 }
@@ -69,7 +51,7 @@ export interface RefreshCssOutputWatcherParams {
 export async function refreshCssOutputWatcher(
   params: RefreshCssOutputWatcherParams,
 ): Promise<FSWatcher | null> {
-  const { outDir, logger, wsServer, disableWsReload, cssWatcher, watchedCssFiles } = params;
+  const { outDir, logger, reload, cssWatcher, watchedCssFiles } = params;
 
   const cssFiles = await discoverOutputCssFiles(outDir);
   if (hasSameMembership(cssFiles, watchedCssFiles)) {
@@ -96,7 +78,7 @@ export async function refreshCssOutputWatcher(
   nextCssWatcher.on('change', (path: string) => {
     const relativePath = path.replace(process.cwd(), '').replace(/\\/g, '/').replace(/^\//, '');
     logger.info?.(`▸ ${relativePath} updated`);
-    broadcastReload(wsServer, disableWsReload, JSON.stringify({ type: 'reload' }));
+    reload();
   });
 
   return nextCssWatcher;
