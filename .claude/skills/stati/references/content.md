@@ -178,7 +178,7 @@ Inside the current template, `stati.page.title` is flattened frontmatter and
 <% for (const post of stati.collection?.recentPages ?? []) { %>
   <article>
     <h2>
-      <a href="<%= post.url %>"><%= post.frontMatter.title ?? 'Untitled' %></a>
+      <a href="<%= stati.url(post.url) %>"><%= post.frontMatter.title ?? 'Untitled' %></a>
     </h2>
     <% if (post.frontMatter.description) { %>
       <p><%= post.frontMatter.description %></p>
@@ -217,7 +217,7 @@ before promising a clickable landing route.
   <ul>
     <% for (const node of stati.nav.getTree()) { %>
       <li>
-        <a href="<%= node.url %>"
+        <a href="<%= stati.url(node.url) %>"
           <% if (node.url === stati.page.url) { %>aria-current="page"<% } %>>
           <%= node.title %>
         </a>

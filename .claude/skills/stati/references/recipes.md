@@ -61,6 +61,8 @@ It checks:
 - Production sitemap, explicit robots sitemap link, and filtered RSS item count.
 - Cache hits and unchanged cached component output.
 - Explicit trailing-slash permalink output as a directory index.
+- A build with a path in `site.baseUrl`: every root `href` and `src` the
+  templates write, the hashed stylesheet link included, starts with the base path.
 
 This verifies the bundled teaching example on the installed version; it is not
 a substitute for browser testing, deployment checks, or the user's site tests.
@@ -90,7 +92,8 @@ In the listing:
 </section>
 ```
 
-Create `site/partials/card.eta`; it reads `stati.props`. Quote publication dates for
+Create `site/partials/card.eta`; it reads `stati.props` and prints the link as
+`href="<%= stati.url(stati.props.url) %>"`. Quote publication dates for
 reliable parsed-date sorting. Do not link tags to nonexistent archive pages.
 
 ## Component with optional props
