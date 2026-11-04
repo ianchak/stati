@@ -43,10 +43,10 @@
       <% if (author) { %>
       <section class="author-note" aria-label="About the author">
         <p>
-          <strong><a href="<%= author.url ?? '/about' %>"><%= author.name %></a></strong>
+          <strong><a href="<%= stati.url(author.url ?? '/about') %>"><%= author.name %></a></strong>
           <% if (author.bio) { %><%= author.bio %><% } %>
         </p>
-        <p class="subscribe">New posts arrive in your reader through the <a href="/feed.xml">RSS feed</a>.</p>
+        <p class="subscribe">New posts arrive in your reader through the <a href="<%= stati.url('/feed.xml') %>">RSS feed</a>.</p>
       </section>
       <% } %>
     </footer>
@@ -55,13 +55,13 @@
   <% if (newer || older) { %>
   <nav class="post-pager" aria-label="Newer and older posts">
     <% if (newer) { %>
-      <a class="pager-newer" href="<%= newer.url %>" rel="prev">
+      <a class="pager-newer" href="<%= stati.url(newer.url) %>" rel="prev">
         <span class="pager-label">Newer</span>
         <span class="pager-title"><%= newer.frontMatter.title %></span>
       </a>
     <% } %>
     <% if (older) { %>
-      <a class="pager-older" href="<%= older.url %>" rel="next">
+      <a class="pager-older" href="<%= stati.url(older.url) %>" rel="next">
         <span class="pager-label">Older</span>
         <span class="pager-title"><%= older.frontMatter.title %></span>
       </a>

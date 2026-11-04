@@ -4,16 +4,16 @@
 %>
 <header class="site-header">
   <div class="wrapper">
-    <a class="wordmark" href="/"<% if (here === '/') { %> aria-current="page"<% } %>><%= stati.site.title %></a>
+    <a class="wordmark" href="<%= stati.url('/') %>"<% if (here === '/') { %> aria-current="page"<% } %>><%= stati.site.title %></a>
     <nav aria-label="Main">
       <ul>
         <% for (const item of nav) { %>
         <li>
-          <a href="<%= item.url %>"<% if (here === item.url) { %> aria-current="page"<% } %>><%= item.label %></a>
+          <a href="<%= stati.url(item.url) %>"<% if (here === item.url) { %> aria-current="page"<% } %>><%= item.label %></a>
         </li>
         <% } %>
         <li>
-          <a class="feed-link" href="/feed.xml">
+          <a class="feed-link" href="<%= stati.url('/feed.xml') %>">
             <svg aria-hidden="true" viewBox="0 0 16 16" width="14" height="14"><circle cx="3" cy="13" r="2" /><path d="M1.5 6.5a8 8 0 0 1 8 8M1.5 1.5a13 13 0 0 1 13 13" /></svg>
             RSS
           </a>
