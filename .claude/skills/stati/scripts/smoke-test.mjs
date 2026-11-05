@@ -223,6 +223,42 @@ try {
   );
   check(named.includes('NAMED LAYOUT'), 'explicit source-root layout name resolves');
   check(custom.includes('A custom route page.'), 'trailing-slash permalink emits index.html');
+
+  // The same site served from a subfolder: the templates write every link and asset path
+  // from the site root through stati.url(), which adds the base path of site.baseUrl
+  const rootConfig = await readFile(configPath, 'utf8');
+  const servedConfig = rootConfig.replace(
+    "baseUrl: 'https://example.com'",
+    "baseUrl: 'https://example.com/docs'",
+  );
+  check(servedConfig !== rootConfig, 'starter config sets the base URL');
+  await writeFile(configPath, servedConfig);
+  clearConfigCache();
+  await build({ force: true, logger });
+
+  const servedHome = await readFile(join(out, 'index.html'), 'utf8');
+  const servedBlog = await readFile(join(out, 'blog.html'), 'utf8');
+  for (const [label, html] of [
+    ['served home', servedHome],
+    ['served blog', servedBlog],
+  ]) {
+    checkHtml(html, label);
+    const rootPaths = [...html.matchAll(/\s(?:href|src)="(\/(?!\/)[^"]*)"/g)].map(
+      (match) => match[1],
+    );
+    const unprefixed = rootPaths.filter((path) => path !== '/docs' && !path.startsWith('/docs/'));
+    check(
+      rootPaths.length > 0 && unprefixed.length === 0,
+      `${label}: links and asset paths start with the base path: ${unprefixed.join(', ')}`,
+    );
+  }
+  check(servedHome.includes('<a href="/docs/">'), 'home link carries the base path');
+  check(
+    /<link rel="stylesheet" href="\/docs\/_assets\/styles-[^"]+\.css">/.test(servedHome),
+    'stylesheet link points at the hashed copy under the base path',
+  );
+  check(servedHome.includes('href="/docs/rss.xml"'), 'feed link carries the base path');
+  check(servedBlog.includes('href="/docs/blog/hello"'), 'component link carries the base path');
   check(diagnostics.length === 0, `no warnings/errors: ${JSON.stringify(diagnostics)}`);
   console.log(`Stati skill smoke test passed (${assertions} assertions).`);
 } finally {

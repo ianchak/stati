@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><%= stati.page.title ?? stati.site.title %></title>
-  <link rel="stylesheet" href="/styles.css">
-  <link rel="alternate" type="application/rss+xml" title="Articles" href="/rss.xml">
+  <link rel="stylesheet" href="<%= stati.url('/styles.css') %>">
+  <link rel="alternate" type="application/rss+xml" title="Articles" href="<%= stati.url('/rss.xml') %>">
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
