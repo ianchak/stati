@@ -1,5 +1,12 @@
 # create-stati
 
+## 2.7.3
+
+### Patch Changes
+
+- link through stati.url() in starter template samples
+- wrap blank and blog starter links in stati.url()
+
 ## 2.7.2
 
 ### Patch Changes
