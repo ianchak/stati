@@ -54,7 +54,7 @@
         <% if (stati.pagination) { %>
           <%~ stati.include('partials/page-nav', { pagination: stati.pagination, newer: 'Newer posts', older: 'Older posts' }) %>
         <% } else if (all.length > posts.length) { %>
-          <p class="more"><a href="/posts">All <%= all.length %> posts in the archive</a></p>
+          <p class="more"><a href="<%= stati.url('/posts') %>">All <%= all.length %> posts in the archive</a></p>
         <% } %>
         <div class="end-mark" aria-hidden="true"></div>
       <% } %>
@@ -101,7 +101,7 @@
       <ul class="tag-cloud" role="list" aria-label="All tags">
         <% for (const tag of tags) { %>
           <li>
-            <a href="<%= `/tags/${stati.slugify(tag)}` %>"><%= tag %></a>
+            <a href="<%= stati.url(`/tags/${stati.slugify(tag)}`) %>"><%= tag %></a>
             <span class="count"><%= byTag[tag].length %></span>
           </li>
         <% } %>
@@ -123,7 +123,7 @@
       </h2>
       <%~ stati.include('partials/post-list', { posts, descriptions: true }) %>
       <%~ stati.include('partials/page-nav', { pagination: stati.pagination, newer: 'Newer posts', older: 'Older posts' }) %>
-      <p class="more"><a href="/tags">All tags</a></p>
+      <p class="more"><a href="<%= stati.url('/tags') %>">All tags</a></p>
     </section>
   <% } %>
 </main>

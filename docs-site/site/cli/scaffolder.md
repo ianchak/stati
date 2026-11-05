@@ -282,7 +282,7 @@ my-site/
 └── README.md            # Getting started guide
 ```
 
-For the blank template, the scaffolder writes a fresh `stati.config.ts` that sets `site.title` (your project name), `site.description` and a placeholder `site.baseUrl` of `https://example.com`, and turns on `typescript`. (The blog, docs and news templates keep their own config, which also contains a placeholder `baseUrl`.) Set `site.baseUrl` to your real address before you deploy: canonical links, the sitemap and feeds start with it. TypeScript projects also get a `typecheck` script (`tsc --noEmit`).
+For the blank template, the scaffolder writes a fresh `stati.config.ts` that sets `site.title` (your project name), `site.description` and a placeholder `site.baseUrl` of `https://example.com`, and turns on `typescript`. (The blog, docs and news templates keep their own config, which also contains a placeholder `baseUrl`.) Set `site.baseUrl` to your real address before you deploy: canonical links, the sitemap and feeds start with it. For a site served from a subfolder, include the path, such as `https://user.github.io/repo`: every template links the site's pages and files through `stati.url()`, which adds it (see [Deploying to a subfolder](/advanced/deploying-to-a-subfolder)). TypeScript projects also get a `typecheck` script (`tsc --noEmit`).
 
 ### With Sass
 

@@ -86,7 +86,7 @@ Stati rebuilds the pages that list a post when the post is added, removed, retit
 
 ## Before you deploy
 
-- Set `baseUrl` in the config to your real address; feeds and link previews use it
+- Set `baseUrl` in the config to your real address; feeds and link previews use it. For a blog served from a subfolder, include the folder (`https://user.github.io/blog`): the templates add it to their links with `stati.url()`
 - Replace `public/favicon.svg`, and give posts a link-preview image under `seo.openGraph.image` (or create the blog with image tools, which draws one for every page)
 - Build with `npm run build` and deploy the `dist/` folder to any static host
 

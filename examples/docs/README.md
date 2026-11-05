@@ -86,7 +86,7 @@ Templates can read Stati's navigation tree as `stati.nav`, but its nodes only ca
 
 ## Before you deploy
 
-- Set `baseUrl` in the config to your real address; the sitemap and link previews use it
+- Set `baseUrl` in the config to your real address; the sitemap and link previews use it. For docs served from a subfolder, include the folder (`https://user.github.io/docs`): the templates add it to their links with `stati.url()`
 - Replace `public/favicon.svg`, and give pages an `image` for link previews (or create the site with image tools, which draws one for every page)
 - Build with `npm run build` and deploy the `dist/` folder to any static host
 
