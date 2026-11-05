@@ -1,5 +1,11 @@
 # @stati/core
 
+## 2.11.9
+
+### Patch Changes
+
+- 4de2504: add a rebuild queue and share file serving with preview
+
 ## 2.11.8
 
 ### Patch Changes
