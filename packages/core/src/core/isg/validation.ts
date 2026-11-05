@@ -249,8 +249,9 @@ function validateAgingRule(rule: AgingRule, index: number): void {
  * Validates front-matter ISG overrides for a single page.
  * Provides helpful error messages for invalid page-level configuration.
  *
- * `loadContent` runs it on each Markdown file as it loads, when ISG is on, so an invalid value
- * stops the build before any page is written. A field without a value (`tags:`, which YAML reads
+ * `loadContent` runs it on each Markdown file as it loads, when ISG is on, and the render session
+ * runs it again on every page after a `beforeAll` hook, so an invalid value stops the build before
+ * any page is written. A field without a value (`tags:`, which YAML reads
  * as `null`) counts as not set.
  *
  * @param frontMatter - Page front-matter object
@@ -288,11 +289,7 @@ export function validatePageISGOverrides(
 
   // Validate page-level maxAgeCapDays override
   if (isSet(frontMatter.maxAgeCapDays)) {
-    if (
-      typeof frontMatter.maxAgeCapDays !== 'number' ||
-      !Number.isInteger(frontMatter.maxAgeCapDays) ||
-      frontMatter.maxAgeCapDays <= 0
-    ) {
+    if (getMaxAgeCapOverride(frontMatter.maxAgeCapDays) === undefined) {
       throw new ISGConfigurationError(
         ISGValidationError.INVALID_MAX_AGE_CAP,
         'maxAgeCapDays',
@@ -334,8 +331,8 @@ function isSet(value: unknown): boolean {
 
 /**
  * A page's `maxAgeCapDays` override: a whole number above 0, the values
- * {@link validatePageISGOverrides} accepts. Any other value is ignored: Markdown files are checked
- * as they load when ISG is on, and with ISG off the cap is not used.
+ * {@link validatePageISGOverrides} accepts. Any other value is ignored: with ISG on, pages are
+ * checked before any renders, and with ISG off the cap is not used.
  *
  * @param value - The page's `maxAgeCapDays` front matter
  * @returns The override, or undefined to use `isg.maxAgeCapDays`

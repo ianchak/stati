@@ -302,7 +302,7 @@ export async function createCacheEntry(
   const isgConfig = config.isg || {};
   const ttlSeconds = computeEffectiveTTL(page, isgConfig);
 
-  // Max age cap from front matter or config; loadContent has rejected invalid values with ISG on
+  // Max age cap from front matter or config; invalid values were rejected before rendering with ISG on
   const maxAgeCapDays =
     getMaxAgeCapOverride(page.frontMatter.maxAgeCapDays) ?? isgConfig.maxAgeCapDays;
 

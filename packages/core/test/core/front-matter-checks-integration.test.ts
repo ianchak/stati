@@ -62,6 +62,39 @@ describe('front matter checks in a build', () => {
     expect(await site.exists('dist/sitemap.xml')).toBe(true);
   });
 
+  it('stops at an invalid override a beforeAll hook sets, before writing a page', async () => {
+    await start({
+      hooks: {
+        beforeAll: ({ pages }) => {
+          const a = pages.find((entry) => entry.url === '/a')!;
+          a.frontMatter = {
+            ...a.frontMatter,
+            maxAgeCapDays: '30',
+          } as unknown as typeof a.frontMatter;
+        },
+      },
+    });
+
+    await expect(site.build()).rejects.toThrow('Invalid maxAgeCapDays in front-matter of');
+
+    expect(await site.exists('dist/a.html')).toBe(false);
+    expect(await site.exists('dist/index.html')).toBe(false);
+  });
+
+  it('leaves what a beforeAll hook sets unchecked when ISG is off', async () => {
+    await start({
+      isg: { enabled: false },
+      hooks: {
+        beforeAll: ({ pages }) => {
+          const a = pages.find((entry) => entry.url === '/a')!;
+          a.frontMatter = { ...a.frontMatter, ttlSeconds: 1.5 };
+        },
+      },
+    });
+
+    expect((await site.build()).rendered).toContain('/a');
+  });
+
   it('builds a page with invalid ISG overrides when ISG is off', async () => {
     await start({ isg: { enabled: false } });
     await site.write('site/z.md', page({ title: 'Z', ttlSeconds: 3600.5, maxAgeCapDays: 0 }, 'Z'));
