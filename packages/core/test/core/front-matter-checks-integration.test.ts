@@ -4,6 +4,8 @@
  * its publish date from the page as it is now.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { existsSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { loadConfig } from '../../src/config/loader.js';
 import { setEnv } from '../../src/env.js';
 import type { StatiConfig } from '../../src/types/index.js';
@@ -22,6 +24,11 @@ describe('front matter checks in a build', () => {
     site = await createSiteFixture(vi.mocked(loadConfig), {
       sitemap: { enabled: true },
       robots: { enabled: true },
+      search: { enabled: true },
+      rss: {
+        enabled: true,
+        feeds: [{ filename: 'feed.xml', title: 'Feed', description: 'All', link: '/' }],
+      },
       ...config,
     });
     await site.write('site/layout.eta', LAYOUT);
@@ -39,7 +46,13 @@ describe('front matter checks in a build', () => {
     await site.cleanup();
   });
 
-  it('stops at an invalid ttlSeconds before writing a page, the sitemap or robots.txt', async () => {
+  /** The files in the output directory, none when it doesn't exist */
+  const outputFiles = (): string[] => {
+    const dist = join(site.dir, 'dist');
+    return existsSync(dist) ? readdirSync(dist, { recursive: true }).map(String) : [];
+  };
+
+  it('stops at an invalid ttlSeconds before writing a page or any generated file', async () => {
     await start();
     await site.write('site/z.md', page({ title: 'Z', ttlSeconds: 3600.5 }));
 
@@ -49,6 +62,8 @@ describe('front matter checks in a build', () => {
     expect(await site.exists('dist/index.html')).toBe(false);
     expect(await site.exists('dist/sitemap.xml')).toBe(false);
     expect(await site.exists('dist/robots.txt')).toBe(false);
+    // Nor the search index, which is written before the first page renders, nor the feed
+    expect(outputFiles()).toEqual([]);
   });
 
   it('leaves the output of the last build when a page gets an invalid tag', async () => {
@@ -79,6 +94,7 @@ describe('front matter checks in a build', () => {
 
     expect(await site.exists('dist/a.html')).toBe(false);
     expect(await site.exists('dist/index.html')).toBe(false);
+    expect(outputFiles().filter((file) => file.startsWith('search-index'))).toEqual([]);
   });
 
   it('leaves what a beforeAll hook sets unchecked when ISG is off', async () => {

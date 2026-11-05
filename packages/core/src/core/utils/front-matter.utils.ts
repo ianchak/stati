@@ -81,7 +81,8 @@ const FRONT_MATTER_SCHEMA = DEFAULT_SCHEMA.extend({
  *
  * @param source - The file's text
  * @param filePath - The file, for error messages and warnings
- * @param onWarning - Called with a message for each part of the front matter that is ignored
+ * @param onWarning - Called with a message for each part of the front matter that is ignored, and
+ *   for a single tag that looks like a list (`tags: news, css`), which is read as one tag
  * @returns The front matter as an object, and the Markdown after it
  * @throws {FrontMatterError} When the front matter is not valid YAML, is YAML of another shape
  *   than `key: value` lines, or names another language after `---`
@@ -188,6 +189,10 @@ function parseBlock(
       }
     },
     (field) => onWarning?.(`Ignoring empty entry in "${field}" of ${displayPath(filePath)}`),
+    (tag) =>
+      onWarning?.(
+        `Reading "tags" of ${displayPath(filePath)} as one tag, ${JSON.stringify(tag)}. Write a list for more than one: tags: [${tag}]`,
+      ),
   );
   return data;
 }
@@ -256,11 +261,14 @@ const TEXT_LIST_FIELDS = new Set(['tags', 'keywords']);
  * @param readText - Parses the YAML again with every scalar as text; undefined when that fails
  *   or the front matter is not YAML. Called at most once, and only when a field needs it.
  * @param onEmpty - Called with the field for each `null` entry dropped from a list
+ * @param onListLikeTag - Called with a single tag that contains a comma, such as `news, css`,
+ *   which reads as one tag where a list was likely meant
  */
 function normalizeTextFields(
   data: Record<string, unknown>,
   readText: () => unknown,
   onEmpty: (field: string) => void,
+  onListLikeTag: (tag: string) => void,
 ): void {
   let written: { value: unknown } | undefined;
   /** The text written at a path, or undefined when the source has none there */
@@ -296,6 +304,9 @@ function normalizeTextFields(
       // A single tag is a list of one, since everything that reads tags reads a list; an empty
       // one is none
       const tag = typeof value === 'string' ? value : (textAt(path) ?? toText(value));
+      if (tag.includes(',')) {
+        onListLikeTag(tag);
+      }
       holder[key] = tag.trim() ? [tag] : [];
     } else if (isNonTextScalar(value)) {
       holder[key] = textAt(path) ?? toText(value);

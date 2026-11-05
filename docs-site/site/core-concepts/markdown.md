@@ -33,7 +33,7 @@ lastModified: '2024-01-15'
 # Your content starts here...
 ````
 
-YAML reads `title: 1984`, `tags: [2024]` and `title: 2024-01-01` as a number, a list with a number and a date. Stati uses the text you wrote for `title`, `description`, `tags`, `seo.title`, `seo.description` and `seo.keywords` (a date as `2024-01-01`), so such values need no quotes. A `null` entry in `tags` or `seo.keywords` (`tags: [~]`) is dropped, with a warning that names the file. A single tag needs no list: `tags: news` is read as `tags: [news]`, and `tags: ''` as no tags.
+YAML reads `title: 1984`, `tags: [2024]` and `title: 2024-01-01` as a number, a list with a number and a date. Stati uses the text you wrote for `title`, `description`, `tags`, `seo.title`, `seo.description` and `seo.keywords` (a date as `2024-01-01`), so such values need no quotes. A `null` entry in `tags` or `seo.keywords` (`tags: [~]`) is dropped, with a warning that names the file. A single tag needs no list: `tags: news` is read as `tags: [news]`, and `tags: ''` as no tags. A single tag with a comma (`tags: news, css`) is one tag, `news, css`, and Stati warns that a list was likely meant: `tags: [news, css]`.
 
 Only `draft: true` makes a page a draft. YAML reads `draft: no`, `draft: yes` and a quoted `draft: "true"` as text, so Stati warns that the value is not `true` or `false`, names the file, and builds the page. A date that doesn't exist, such as `date: 2025-02-30` or `2025-13-01`, quoted or not, is ignored with a warning instead of being read as a later day.
 

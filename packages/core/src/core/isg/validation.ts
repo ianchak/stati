@@ -251,8 +251,8 @@ function validateAgingRule(rule: AgingRule, index: number): void {
  *
  * `loadContent` runs it on each Markdown file as it loads, when ISG is on, and the render session
  * runs it again on every page after a `beforeAll` hook, so an invalid value stops the build before
- * any page is written. A field without a value (`tags:`, which YAML reads
- * as `null`) counts as not set.
+ * any page is written. A field without a value (`tags:`, which YAML reads as `null`) counts as
+ * not set.
  *
  * @param frontMatter - Page front-matter object
  * @param sourcePath - Path to source file for error context

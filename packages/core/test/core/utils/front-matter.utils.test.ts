@@ -307,6 +307,7 @@ describe('parseFrontMatter text fields', () => {
   it('drops null entries when nobody listens for warnings', () => {
     const { data } = parseFrontMatter('---\ntags: [~, a]\n---\n', file);
     expect(data).toEqual({ tags: ['a'] });
+    expect(parseFrontMatter('---\ntags: a, b\n---\n', file).data).toEqual({ tags: ['a, b'] });
   });
 
   it('falls back to the parsed value when the text cannot be read again', () => {
@@ -351,6 +352,16 @@ describe('parseFrontMatter text fields', () => {
     expect(parse('tags: 1.10').data).toEqual({ tags: ['1.10'] });
     expect(parse('tags: true').data).toEqual({ tags: ['true'] });
     expect(parse('tags: 2024-05-06').data).toEqual({ tags: ['2024-05-06'] });
+  });
+
+  it('warns about a single tag that looks like a list, and reads it as one tag', () => {
+    const { data, warnings } = parse('tags: news, css');
+    expect(data).toEqual({ tags: ['news, css'] });
+    expect(warnings).toEqual([
+      'Reading "tags" of site/post.md as one tag, "news, css". Write a list for more than one: tags: [news, css]',
+    ]);
+    expect(parse('tags: news').warnings).toEqual([]);
+    expect(parse('tags: [news, css]').warnings).toEqual([]);
   });
 
   it('reads a single JSON tags value as a list of one', () => {

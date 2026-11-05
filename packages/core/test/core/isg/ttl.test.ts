@@ -74,6 +74,16 @@ describe('ISG TTL and Aging Functions', () => {
       expect(result).toBe(21600); // Should fall back to default
     });
 
+    it.each([1.5, Infinity, NaN])(
+      'should ignore a TTL override of %s, which is not a whole number',
+      (ttlSeconds) => {
+        // Loading rejects these with ISG on; a hook can still set one, and ISG off doesn't check
+        const page = createTestPage({ ttlSeconds });
+
+        expect(computeEffectiveTTL(page, defaultISGConfig)).toBe(21600);
+      },
+    );
+
     it('should use default TTL when no overrides or aging rules', () => {
       const page = createTestPage();
 
