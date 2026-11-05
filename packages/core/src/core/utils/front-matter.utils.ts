@@ -4,7 +4,9 @@
  */
 
 import { relative } from 'node:path';
-import { load, FAILSAFE_SCHEMA, YAMLException } from 'js-yaml';
+import * as jsYaml from 'js-yaml';
+import { load, DEFAULT_SCHEMA, FAILSAFE_SCHEMA, Type, YAMLException } from 'js-yaml';
+import { isExistingDateTime } from './date.utils.js';
 
 /**
  * A Markdown file split into its front matter and its body.
@@ -46,6 +48,26 @@ const COMMENT_LINES = /^\s*#[^\n]+/gm;
 /** A `key: value` line whose unquoted value contains `: `, which YAML reads as a nested key */
 const UNQUOTED_COLON_VALUE = /^\s*([^\s:#'"][^:]*):\s+([^\s'"[{|>&*!#].*?:(?:\s.*)?)$/;
 
+/** js-yaml's timestamp type; js-yaml exports its types, which `@types/js-yaml` leaves out */
+const yamlTimestamp = (jsYaml as unknown as { types: { timestamp: Type } }).types.timestamp;
+
+/**
+ * js-yaml's default schema, with a timestamp type that leaves a date that doesn't exist as text.
+ * js-yaml reads `date: 2025-02-30` as 2 March; as text, the date readers reject it with the
+ * usual invalid date warning. A type with the same tag takes the place of js-yaml's own.
+ */
+const FRONT_MATTER_SCHEMA = DEFAULT_SCHEMA.extend({
+  implicit: [
+    new Type('tag:yaml.org,2002:timestamp', {
+      kind: 'scalar',
+      // js-yaml's resolve rejects anything but a timestamp's text, null included
+      resolve: (data: string) => yamlTimestamp.resolve(data) && isExistingDateTime(data),
+      construct: (data: string) => yamlTimestamp.construct(data),
+      instanceOf: Date,
+    }),
+  ],
+});
+
 /**
  * Splits a Markdown file into its front matter and its body.
  *
@@ -53,7 +75,9 @@ const UNQUOTED_COLON_VALUE = /^\s*([^\s:#'"][^:]*):\s+([^\s'"[{|>&*!#].*?:(?:\s.
  * next line that starts with `---`; without one, the whole file is front matter. A file that
  * starts with `----` or any other text has none. A byte order mark is dropped. The fields Stati
  * reads as text (`title`, `description`, `tags`, `seo.title`, `seo.description`, `seo.keywords`)
- * come back as text even when YAML reads them as a number, a boolean or a date.
+ * come back as text even when YAML reads them as a number, a boolean or a date, and a single
+ * `tags` value comes back as a list of one (`tags: news` as `['news']`). An unquoted date that
+ * doesn't exist, such as `2025-02-30`, stays text instead of becoming a later date.
  *
  * @param source - The file's text
  * @param filePath - The file, for error messages and warnings
@@ -127,7 +151,7 @@ function parseBlock(
   let data: unknown;
   if (language === '' || language === 'yaml' || language === 'yml') {
     try {
-      data = load(block);
+      data = load(block, { schema: FRONT_MATTER_SCHEMA });
     } catch (error) {
       throw describeYamlError(error, block, filePath, where);
     }
@@ -225,7 +249,8 @@ const TEXT_LIST_FIELDS = new Set(['tags', 'keywords']);
  * `title: 1984`, `tags: [2024]` and `title: 2024-01-01` as a number, a list with a number and a
  * date, and everything that escapes or compares these fields needs strings. The text is what was
  * written (`1.10` stays `1.10`), read from `readText`, which parses the same YAML with every
- * scalar left as text. `null` entries in `tags` and `seo.keywords` (`tags: [~]`) are dropped.
+ * scalar left as text. `null` entries in `tags` and `seo.keywords` (`tags: [~]`) are dropped, and
+ * a single `tags` value becomes a list of one, or an empty list when it is blank.
  *
  * @param data - Parsed front matter
  * @param readText - Parses the YAML again with every scalar as text; undefined when that fails
@@ -267,8 +292,12 @@ function normalizeTextFields(
         }
       });
       holder[key] = entries;
-    } else if (isNonTextScalar(value) && key !== 'tags') {
-      // A single tags value is not a list, and is left as it is: consumers read tags as a list
+    } else if (key === 'tags' && (typeof value === 'string' || isNonTextScalar(value))) {
+      // A single tag is a list of one, since everything that reads tags reads a list; an empty
+      // one is none
+      const tag = typeof value === 'string' ? value : (textAt(path) ?? toText(value));
+      holder[key] = tag.trim() ? [tag] : [];
+    } else if (isNonTextScalar(value)) {
       holder[key] = textAt(path) ?? toText(value);
     }
   }

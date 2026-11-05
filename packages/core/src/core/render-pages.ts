@@ -571,7 +571,6 @@ export async function renderPages(session: RenderSession): Promise<RenderPagesRe
       outputPath,
       cacheKey,
       html,
-      existingEntry,
       renderInputsHash: renderedInputsHash,
       renderedAssets,
     });

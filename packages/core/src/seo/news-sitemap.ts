@@ -12,6 +12,7 @@ import {
   compileUrlPatterns,
   escapeHtml,
   getPagePublishedDate,
+  isDraftPage,
   isVirtualPage,
   percentEncodeUrl,
   removeInvalidXmlChars,
@@ -255,7 +256,7 @@ export function generateNewsSitemap(
 
   for (const page of pages) {
     if (
-      page.frontMatter.draft ||
+      isDraftPage(page) ||
       isVirtualPage(page) ||
       isLeftOutBySitemapRules(page) ||
       !isIncluded(page.url)

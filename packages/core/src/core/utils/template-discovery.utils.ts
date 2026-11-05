@@ -3,7 +3,8 @@ import { getPageOutputFile } from './paths.utils.js';
 
 /**
  * Page list utilities shared by rendering and the ISG cache: collection index pages, virtual
- * pages and collection paths. Layout discovery uses the template index (core/template-index.ts).
+ * pages, drafts and collection paths. Layout discovery uses the template index
+ * (core/template-index.ts).
  */
 
 /**
@@ -33,6 +34,21 @@ export function isVirtualPage(page: PageModel): boolean {
  */
 export function isNotFoundPage(page: PageModel): boolean {
   return isNotFoundUrl(page.url);
+}
+
+/**
+ * Whether a page is a draft: its front matter sets `draft: true`. Any other value, such as
+ * `draft: no` or `draft: "true"`, which YAML reads as text, is not a draft; loading the page
+ * warns about it.
+ *
+ * Drafts are left out of the build, and with `--include-drafts` out of the search index and the
+ * news sitemap.
+ *
+ * @param page - The page to check
+ * @returns True when `draft` is the boolean `true`
+ */
+export function isDraftPage(page: Pick<PageModel, 'frontMatter'>): boolean {
+  return page.frontMatter.draft === true;
 }
 
 /**

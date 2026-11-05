@@ -23,7 +23,6 @@ vi.mock('../../../src/core/isg/ttl.js', () => ({
 import {
   shouldRebuildPage,
   createCacheEntry,
-  updateCacheEntry,
   hasRecordedReads,
   hasRecordedTemplates,
   type RenderedAssets,
@@ -49,7 +48,6 @@ describe('ISG Build Integration', () => {
   const srcDir = join('/test', 'site');
   const testLayoutPath = '/test/site/layout.eta';
   const testHeaderPath = '/test/site/partials/header.eta';
-  const testFooterPath = '/test/site/partials/footer.eta';
 
   const mockConfig: StatiConfig = {
     srcDir: 'site',
@@ -327,8 +325,7 @@ describe('ISG Build Integration', () => {
       expect(await check(entry, laterTime)).toBe(true);
       expect(mockIsTtlExpired).toHaveBeenLastCalledWith(entry, laterTime, logger);
 
-      const updated = await updateCacheEntry(
-        entry,
+      const updated = await createCacheEntry(
         mockPage,
         mockConfig,
         laterTime,
@@ -410,12 +407,34 @@ describe('ISG Build Integration', () => {
       );
     });
 
-    it('should reject an age cap in front matter that is not a whole number above 0', async () => {
-      const page = { ...mockPage, frontMatter: { ...mockPage.frontMatter, maxAgeCapDays: 0 } };
+    it.each([0, -1, 1.5, '30', null])(
+      'should take the age cap from the config when front matter sets %s, not a whole number above 0',
+      async (maxAgeCapDays) => {
+        const config = { ...mockConfig, isg: { ...mockConfig.isg, maxAgeCapDays: 365 } };
+        const page = {
+          ...mockPage,
+          frontMatter: { ...mockPage.frontMatter, maxAgeCapDays } as PageModel['frontMatter'],
+        };
 
-      await expect(createCacheEntry(page, mockConfig, fixedDate)).rejects.toThrow(
-        'Invalid maxAgeCapDays in front-matter',
-      );
+        expect((await createCacheEntry(page, config, fixedDate)).maxAgeCapDays).toBe(365);
+      },
+    );
+
+    it('should not check front matter, which loading does with ISG on', async () => {
+      const config = { ...mockConfig, isg: { enabled: false } };
+      const page = {
+        ...mockPage,
+        frontMatter: {
+          ...mockPage.frontMatter,
+          tags: { a: 1 },
+          ttlSeconds: 3600.5,
+        } as unknown as PageModel['frontMatter'],
+      };
+
+      const result = await createCacheEntry(page, config, fixedDate);
+
+      expect(result.tags).toEqual([]);
+      expect(result).not.toHaveProperty('maxAgeCapDays');
     });
 
     it('should handle custom TTL from config', async () => {
@@ -472,83 +491,6 @@ describe('ISG Build Integration', () => {
 
       const result = await createCacheEntry(tagPage, mockConfig, fixedDate);
       expect(result.tags).toEqual(['topic', 'css', 'CSS']);
-    });
-  });
-
-  describe('updateCacheEntry', () => {
-    const existingEntry = recordedEntry({
-      inputsHash: 'old_inputs',
-      renderedAt: new Date(fixedDate.getTime() - 3600000).toISOString(),
-      ...(mockPage.publishedAt && { publishedAt: mockPage.publishedAt.toISOString() }),
-      readsCollection: true,
-      readsNav: true,
-    });
-
-    it("should replace the templates, lookups and reads with the new render's", async () => {
-      const result = await updateCacheEntry(
-        existingEntry,
-        mockPage,
-        mockConfig,
-        fixedDate,
-        'r',
-        rendered({
-          templates: [testLayoutPath, testFooterPath],
-          templateLookups: [],
-          reads: { collection: false, nav: true },
-        }),
-      );
-
-      expect(result).toMatchObject({
-        inputsHash: 'inputs123',
-        deps: [testLayoutPath, testFooterPath],
-        templateLookups: [],
-        templatesRecorded: true,
-        readsCollection: false,
-        readsNav: true,
-        renderedAt: fixedDate.toISOString(),
-      });
-    });
-
-    it('should hash the templates with its logger', async () => {
-      await updateCacheEntry(
-        existingEntry,
-        mockPage,
-        mockConfig,
-        fixedDate,
-        'r',
-        rendered(),
-        logger,
-      );
-
-      expect(mockComputeFileHash.mock.calls).toEqual([
-        [testLayoutPath, logger],
-        [testHeaderPath, logger],
-      ]);
-    });
-
-    it('should drop the read flags when an update has no render to take them from', async () => {
-      const result = await updateCacheEntry(existingEntry, mockPage, mockConfig, fixedDate);
-
-      expect(hasRecordedReads(result)).toBe(false);
-    });
-
-    it('should preserve existing publishedAt when page has no date', async () => {
-      const { publishedAt: _, ...pageWithoutDate } = mockPage;
-
-      const result = await updateCacheEntry(existingEntry, pageWithoutDate, mockConfig, fixedDate);
-      expect(result.publishedAt).toBe(existingEntry.publishedAt);
-    });
-
-    it('should refresh the path and tags from the page', async () => {
-      const result = await updateCacheEntry(
-        { ...existingEntry, path: 'old.html', tags: ['page', 'blog', 'featured'] },
-        mockPage,
-        mockConfig,
-        fixedDate,
-      );
-
-      expect(result.path).toBe('/test.html');
-      expect(result.tags).toEqual(['page']);
     });
   });
 });

@@ -49,7 +49,8 @@ export default {
 
 - **Unreadable files**: A file that disappears during the build, or an empty file, is skipped with a warning; other read errors, such as missing permissions, stop the build with `Failed to read file <path>`
 - **Invalid front matter**: YAML that cannot be read, or front matter that is a list or a single value instead of `key: value` lines, stops the build with `Invalid front matter in <file>` and the line of the problem
-- **Invalid ISG front matter**: `tags` that is not a list of strings, a `ttlSeconds` that is not a whole number of 0 or more, or a `maxAgeCapDays` that is not a whole number above 0 stops the build, for example `Invalid tags in front-matter of <file>. Must be an array of strings.`
+- **Invalid ISG front matter**: with ISG on, `tags` that is neither a list of strings nor a single one, a `ttlSeconds` that is not a whole number of 0 or more, or a `maxAgeCapDays` that is not a whole number above 0 stops the build as the file loads, before any page is written, for example `Invalid tags in front-matter of <file>. Must be an array of strings.` With `isg.enabled: false` these values are not checked
+- **A `draft` that is not `true` or `false`**: `draft: no` or `draft: "true"` logs `Ignoring "draft" in <file>: "no" is not true or false, so the page is not a draft. Write draft: true or draft: false.`, and the page is built
 - **Missing or empty content directory**: The build succeeds with 0 pages ("Found 0 pages"), so check `srcDir` if a build produces nothing
 - **Unsupported front matter format**: A front matter block marked with an unknown language (for example `---toml`) fails the build; YAML (the default) and `---json` are supported
 
@@ -308,7 +309,7 @@ To check the configuration, run `stati build` and read the first lines. A config
 
 ### 2. Use consistent front matter
 
-Use one date field across the site. Stati reads the page's publication date (used for sorting collections, navigation, ISG aging and RSS) from the first valid value among `publishedAt`, `published`, `date` and `createdAt`, quoted or unquoted. An invalid value is skipped with a warning, so a typo silently moves the page to the end of date-sorted lists.
+Use one date field across the site. Stati reads the page's publication date (used for sorting collections, navigation, ISG aging and RSS) from the first valid value among `publishedAt`, `published`, `date` and `createdAt`, quoted or unquoted. An invalid value, including a date that doesn't exist such as `2025-02-30`, is skipped with a warning, so a typo silently moves the page to the end of date-sorted lists.
 
 ## Recovery strategies
 

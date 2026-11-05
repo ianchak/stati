@@ -5,18 +5,28 @@ import {
   getFrontMatterDate,
   parseFrontMatter,
   describeDateValue,
+  isDraftPage,
 } from './utils/index.js';
 import { relative, dirname, basename } from 'node:path';
 import type { PageModel, StatiConfig } from '../types/index.js';
 import { computeTextStats, resolveWordsPerMinute } from './reading-time.js';
+import { validatePageISGOverrides } from './isg/validation.js';
 import { MARKDOWN_EXTENSION } from '../constants.js';
 
 /**
  * Loads and parses all content files from the configured source directory.
  *
+ * Front matter is checked as each file loads, so a value that stops the build stops it before
+ * anything is written: with ISG on, the `tags`, `ttlSeconds` and `maxAgeCapDays` overrides
+ * (`validatePageISGOverrides`). A `draft` value other than `true` or `false` is reported, and
+ * the page is not a draft.
+ *
  * @param config - The STATI configuration object
  * @param includeDrafts - Whether to include draft pages (marked with draft: true)
  * @returns Array of parsed page models
+ * @throws {ISGConfigurationError} When ISG is on and a page's `tags`, `ttlSeconds` or
+ *   `maxAgeCapDays` is invalid
+ * @throws {FrontMatterError} When a file's front matter cannot be read
  *
  * @example
  * ```typescript
@@ -47,6 +57,7 @@ export async function loadContent(
 
   const pages: PageModel[] = [];
   const wordsPerMinute = resolveWordsPerMinute(config);
+  const isgEnabled = config.isg?.enabled !== false;
 
   for (const file of files) {
     const content = await readFile(file, 'utf-8');
@@ -58,9 +69,22 @@ export async function loadContent(
       console.warn(message),
     );
 
+    // YAML reads draft: no and draft: "true" as text, which neither makes a page a draft
+    const { draft } = frontMatter;
+    if (draft !== undefined && draft !== null && typeof draft !== 'boolean') {
+      console.warn(
+        `Ignoring "draft" in ${file}: ${describeDateValue(draft)} is not true or false, so the page is not a draft. Write draft: true or draft: false.`,
+      );
+    }
+
     // Skip drafts unless explicitly included
-    if (frontMatter.draft && !includeDrafts) {
+    if (isDraftPage({ frontMatter }) && !includeDrafts) {
       continue;
+    }
+
+    // Before any page renders, so an invalid value leaves the output as it was
+    if (isgEnabled) {
+      validatePageISGOverrides(frontMatter, file);
     }
 
     // POSIX separators, so a page two folders deep gets /a/b/page on Windows too

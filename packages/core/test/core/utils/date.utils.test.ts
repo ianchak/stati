@@ -3,6 +3,7 @@ import {
   getFrontMatterDate,
   getPageModifiedDate,
   getPagePublishedDate,
+  isExistingDateTime,
   PUBLISHED_DATE_FIELDS,
   parseDateValue,
 } from '../../../src/core/utils/date.utils.js';
@@ -143,6 +144,28 @@ describe('date.utils', () => {
       delete process.env.TZ;
     });
 
+    it("rejects a date that doesn't exist instead of rolling it over to a later one", () => {
+      // new Date reads each of these as a day in the next month
+      expect(parseDateValue('2025-02-30')).toBeUndefined();
+      expect(parseDateValue('2025-02-29')).toBeUndefined();
+      expect(parseDateValue('2025-04-31')).toBeUndefined();
+      expect(parseDateValue('2025-02-30T10:00:00Z')).toBeUndefined();
+      expect(parseDateValue('2025-02-30 10:00')).toBeUndefined();
+      expect(parseDateValue('2024-02-29')).toEqual(new Date('2024-02-29T00:00:00.000Z'));
+      expect(parseDateValue('2025-01-31')).toEqual(new Date('2025-01-31T00:00:00.000Z'));
+    });
+
+    it('rejects an ISO 8601 shape that new Date cannot read, such as an offset of 99 hours', () => {
+      expect(parseDateValue('2025-03-05T10:20:30+99:00')).toBeUndefined();
+      expect(parseDateValue('2025-01-01T24:00:00.5Z')).toBeUndefined();
+    });
+
+    it("reports a date that doesn't exist through onInvalid in getFrontMatterDate", () => {
+      const onInvalid = vi.fn();
+      expect(getFrontMatterDate({ date: '2025-02-30' }, onInvalid)).toBeUndefined();
+      expect(onInvalid).toHaveBeenCalledWith('date', '2025-02-30');
+    });
+
     it('reports a rejected non-ISO string through onInvalid in getFrontMatterDate', () => {
       const onInvalid = vi.fn();
       const result = getFrontMatterDate(
@@ -160,6 +183,39 @@ describe('date.utils', () => {
       expect(result).not.toBe(original);
       result!.setFullYear(2000);
       expect(original.getFullYear()).toBe(2026);
+    });
+  });
+
+  describe('isExistingDateTime', () => {
+    it('accepts dates and times that exist', () => {
+      expect(isExistingDateTime('2025-01-31')).toBe(true);
+      expect(isExistingDateTime('2024-02-29')).toBe(true);
+      expect(isExistingDateTime('2000-02-29')).toBe(true);
+      expect(isExistingDateTime('2025-12-31T23:59:59Z')).toBe(true);
+      expect(isExistingDateTime('2025-2-3 10:00:00')).toBe(true);
+      expect(isExistingDateTime('2025-01-01t10:00')).toBe(true);
+      expect(isExistingDateTime('2025-01-01T24:00:00Z')).toBe(true);
+      // Years below 100 are read as written, not as 19xx
+      expect(isExistingDateTime('0004-02-29')).toBe(true);
+    });
+
+    it("rejects a month, day, hour, minute or second that doesn't exist", () => {
+      expect(isExistingDateTime('2025-00-10')).toBe(false);
+      expect(isExistingDateTime('2025-13-01')).toBe(false);
+      expect(isExistingDateTime('2025-01-00')).toBe(false);
+      expect(isExistingDateTime('2025-02-29')).toBe(false);
+      expect(isExistingDateTime('1900-02-29')).toBe(false);
+      expect(isExistingDateTime('2025-06-31')).toBe(false);
+      expect(isExistingDateTime('2025-01-01T25:00:00Z')).toBe(false);
+      expect(isExistingDateTime('2025-01-01T24:30:00Z')).toBe(false);
+      expect(isExistingDateTime('2025-01-01T10:60:00Z')).toBe(false);
+      expect(isExistingDateTime('2025-01-01T10:00:60Z')).toBe(false);
+    });
+
+    it('rejects a text that does not start with a date', () => {
+      expect(isExistingDateTime('soon')).toBe(false);
+      expect(isExistingDateTime('March 5, 2025')).toBe(false);
+      expect(isExistingDateTime('')).toBe(false);
     });
   });
 

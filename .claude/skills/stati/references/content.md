@@ -39,7 +39,12 @@ reads as text (`title`, `description`, `tags`, `seo.title`, `seo.description`,
 `seo.keywords`) are the exception: when YAML reads one as a number, boolean or date
 (`title: 1984`, `tags: [2024]`, `title: 2024-01-01`), Stati uses the text that was
 written (a date as `2024-01-01`), and drops `null` tag entries with a warning that
-names the file.
+names the file. A single tag is read as a list of one (`tags: news` as `[news]`).
+Only `draft: true` makes a draft: `draft: no`, `draft: yes` or a quoted `"true"`
+warns, naming the file, and the page is built. A date that doesn't exist
+(`2025-02-30`, quoted or not) is ignored with the invalid-date warning, not rolled
+over to March. With ISG on, an invalid `tags`, `ttlSeconds` or `maxAgeCapDays`
+stops the build as the file loads, before anything is written.
 
 Built-in/respected metadata:
 
@@ -52,7 +57,7 @@ Built-in/respected metadata:
 | `publishedAt`                    | Canonical publication date, parsed into `PageModel.publishedAt` |
 | `published`, `date`, `createdAt` | Fallbacks, in that order, when `publishedAt` is absent/invalid  |
 | `updated`                        | Modification metadata fallback                                  |
-| `draft`                          | Omitted unless draft inclusion requested                        |
+| `draft`                          | `true` only: omitted unless draft inclusion requested           |
 | `permalink`                      | String URL override supported by loader                         |
 | `ttlSeconds`, `maxAgeCapDays`    | Page cache controls                                             |
 | `seo`                            | Page SEO settings                                               |

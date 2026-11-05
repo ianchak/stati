@@ -7,7 +7,11 @@ import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { writeFile, ensureDir, readdir, remove } from '../core/utils/fs.utils.js';
 import { compileUrlPatterns, type UrlPatternMatcher } from '../core/utils/glob-patterns.utils.js';
-import { isNotFoundPage, isVirtualPage } from '../core/utils/template-discovery.utils.js';
+import {
+  isDraftPage,
+  isNotFoundPage,
+  isVirtualPage,
+} from '../core/utils/template-discovery.utils.js';
 import { SEARCH_INDEX_VERSION, SEARCH_DEFAULTS } from './constants.js';
 import type { FrontMatter, PageModel, TocEntry } from '../types/content.js';
 import type { Logger } from '../types/logging.js';
@@ -415,7 +419,7 @@ export function shouldExcludePage(
   isExcludedUrl: UrlPatternMatcher = compileSearchExclude(config),
 ): boolean {
   // Exclude drafts
-  if (page.frontMatter.draft) {
+  if (isDraftPage(page)) {
     return true;
   }
 
