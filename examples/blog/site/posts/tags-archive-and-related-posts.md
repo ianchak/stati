@@ -13,7 +13,7 @@ Every list on this blog comes from one place: the posts in `site/posts/`. Stati 
 
 ```eta
 <% for (const post of stati.collection.recentPages.slice(0, 5)) { %>
-  <a href="<%= post.url %>"><%= post.frontMatter.title %></a>
+  <a href="<%= stati.url(post.url) %>"><%= post.frontMatter.title %></a>
 <% } %>
 ```
 

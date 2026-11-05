@@ -436,7 +436,7 @@ export default defineConfig({
 });
 ```
 
-Set `site.baseUrl` to your real address before you deploy: canonical links, the sitemap and feeds start with it. The blog, docs and news templates ship their own config, with a placeholder `baseUrl` to replace as well.
+Set `site.baseUrl` to your real address before you deploy: canonical links, the sitemap and feeds start with it. The blog, docs and news templates ship their own config, with a placeholder `baseUrl` to replace as well. For a site served from a subfolder, include the path, such as `https://user.github.io/repo`: every template links the site's pages and files through `stati.url()`, which adds it (see [Deploying to a subfolder](https://stati.build/advanced/deploying-to-a-subfolder)).
 
 You can customize this file to add features like SEO, sitemap, ISG caching, and more. See the [Configuration Guide](https://stati.build/configuration/file) for all options.
 

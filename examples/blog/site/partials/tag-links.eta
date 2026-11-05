@@ -5,6 +5,6 @@
 %>
 <ul class="tag-links" role="list" aria-label="<%= stati.props.label ?? 'Tags' %>">
   <% for (const tag of stati.props.tags) { %>
-  <li><a href="<%= `/tags/${stati.slugify(tag)}` %>"><%= tag %></a></li>
+  <li><a href="<%= stati.url(`/tags/${stati.slugify(tag)}`) %>"><%= tag %></a></li>
   <% } %>
 </ul>

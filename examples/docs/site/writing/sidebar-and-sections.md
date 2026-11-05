@@ -55,7 +55,7 @@ Every template can read Stati's navigation tree as `stati.nav`, with each page's
 <% for (const section of stati.helpers.docsSections()) { %>
   <h2><%= section.title %></h2>
   <% for (const page of section.pages) { %>
-    <a href="<%= page.url %>"><%= page.label %></a>
+    <a href="<%= stati.url(page.url) %>"><%= page.label %></a>
   <% } %>
 <% } %>
 ```

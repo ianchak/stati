@@ -15,9 +15,9 @@
     <time datetime="<%= stati.helpers.isoDate(post.publishedAt) %>"><%= post.publishedAt ? stati.helpers.formatDate(post.publishedAt, dateStyle) : 'Undated' %></time>
     <div>
       <% if (stati.props.transition) { %>
-      <a class="post-row-title" href="<%= post.url %>" style="<%= `view-transition-name: post${post.url.replace(/[^a-z0-9]+/gi, '-')}` %>"><%= title %></a>
+      <a class="post-row-title" href="<%= stati.url(post.url) %>" style="<%= `view-transition-name: post${post.url.replace(/[^a-z0-9]+/gi, '-')}` %>"><%= title %></a>
       <% } else { %>
-      <a class="post-row-title" href="<%= post.url %>"><%= title %></a>
+      <a class="post-row-title" href="<%= stati.url(post.url) %>"><%= title %></a>
       <% } %>
       <% if (draft) { %><span class="draft-label">Draft</span><% } %>
       <% if (stati.props.descriptions && description) { %>
