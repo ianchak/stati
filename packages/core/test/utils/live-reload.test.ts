@@ -57,6 +57,14 @@ describe('injectLiveReloadScript', () => {
     expect(html).toMatch(/<h1>Hi<\/h1>\s*<script>[\s\S]*<\/script>\n<\/body><\/html>$/);
   });
 
+  it('adds the script before the last </body> that is markup, in any case', () => {
+    const page = '<html><body><script>var s = "</body>";</script></BODY><!-- </body> --></html>';
+    const html = injectLiveReloadScript(page, socketUrl);
+
+    expect(html.startsWith('<html><body><script>var s = "</body>";</script>\n<script>')).toBe(true);
+    expect(html.endsWith('</script>\n</BODY><!-- </body> --></html>')).toBe(true);
+  });
+
   it('adds the script at the end of a page without </body>', () => {
     const html = injectLiveReloadScript('<p>Fragment</p>', socketUrl);
 

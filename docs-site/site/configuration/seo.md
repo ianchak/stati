@@ -599,6 +599,8 @@ Paths without a leading `/` get one. An empty path writes the line with no value
 
 ### Tag type groups
 
+Stati reads the tags in the page's head as browsers do: attributes in any order, quoted or not. A tag in a comment, a script, a style or a template doesn't count, so a commented-out `<meta name="description">` doesn't stop Stati from adding one.
+
 Some tag types are **grouped**, meaning if you manually add any tag from a group, Stati skips auto-generating **all** tags in that group:
 
 - **Open Graph Group**: If any `og:*` tag exists, all Open Graph tags are skipped
@@ -615,7 +617,7 @@ This prevents duplicate or conflicting tags.
 1. **Auto-injection disabled**: Verify `seo.autoInject` is `true` (default)
 2. **Tags already exist**: Stati skips tags that already exist in your HTML
 3. **Invalid front matter**: Check for YAML syntax errors
-4. **Missing `</head>`**: Auto-injection requires a closing `</head>` tag
+4. **Missing `</head>`**: Auto-injection requires a closing `</head>` tag before `<body>`, outside comments and scripts. Without one, the build warns `No </head> tag found in <url>, so no SEO tags were added to it`
 
 ### How do I debug SEO generation?
 

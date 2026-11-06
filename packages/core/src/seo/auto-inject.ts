@@ -10,7 +10,7 @@ import type { Logger } from '../types/logging.js';
 import type { GeneratedOgImage } from '../types/images.js';
 import { detectExistingSEOTags } from './utils/index.js';
 import { generateSEOMetadata } from './generator.js';
-import { injectBeforeHeadClose } from '../core/utils/html.utils.js';
+import { findHeadClosePosition, injectBeforeHeadClose } from '../core/utils/html.utils.js';
 
 /**
  * Options for auto-injection
@@ -75,6 +75,11 @@ export function autoInjectSEO(html: string, options: AutoInjectOptions): string 
     return html;
   }
 
+  if (findHeadClosePosition(html) === -1) {
+    logger.warning(`No </head> tag found in ${page.url}, so no SEO tags were added to it`);
+    return html;
+  }
+
   // Detect existing SEO tags in the HTML
   const existingTags = detectExistingSEOTags(html);
 
@@ -109,12 +114,6 @@ export function autoInjectSEO(html: string, options: AutoInjectOptions): string 
 
   // Inject SEO metadata before </head>
   const injected = injectBeforeHeadClose(html, seoMetadata);
-
-  // Check if injection was successful (</head> was found)
-  if (injected === html) {
-    logDebug(`No </head> tag found in ${page.url}, skipping injection`, { debug, config, logger });
-    return html;
-  }
 
   logDebug(`Injected ${existingTags.size === 0 ? 'all' : 'missing'} SEO tags into ${page.url}`, {
     debug,

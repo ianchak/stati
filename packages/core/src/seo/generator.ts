@@ -122,7 +122,7 @@ export function generateSEOMetadata(ctx: SEOContext): string {
   if (shouldGenerate(SEOTagType.Robots)) {
     const robotsContent = generateRobotsContent(resolveSEODefaults(page, config) || {});
     if (robotsContent) {
-      meta.push(`<meta name="robots" content="${robotsContent}">`);
+      meta.push(`<meta name="robots" content="${escapeHtml(robotsContent)}">`);
     }
   }
 
@@ -209,10 +209,10 @@ export function generateOpenGraphTags(ctx: SEOContext): string[] {
         tags.push(`<meta property="og:image:alt" content="${escapeHtml(image.alt)}">`);
       }
       if (image.width) {
-        tags.push(`<meta property="og:image:width" content="${image.width}">`);
+        tags.push(`<meta property="og:image:width" content="${escapeHtml(image.width)}">`);
       }
       if (image.height) {
-        tags.push(`<meta property="og:image:height" content="${image.height}">`);
+        tags.push(`<meta property="og:image:height" content="${escapeHtml(image.height)}">`);
       }
     }
   }
@@ -272,7 +272,7 @@ export function generateTwitterCardTags(ctx: SEOContext): string[] {
 
   // Card type
   const card = twitter.card || 'summary_large_image';
-  tags.push(`<meta name="twitter:card" content="${card}">`);
+  tags.push(`<meta name="twitter:card" content="${escapeHtml(card)}">`);
 
   // Twitter site: front matter, then seo.twitter.site
   if (twitter.site) {

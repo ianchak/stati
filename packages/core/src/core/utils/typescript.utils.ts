@@ -10,6 +10,7 @@ import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 import { pathExists, readdir, remove } from './fs.utils.js';
 import { validateUniqueBundleNames, type CompiledBundleInfo } from './bundle-matching.utils.js';
+import { findHtmlTags, getAttribute } from './html.utils.js';
 import type { TypeScriptConfig, BundleConfig } from '../../types/config.js';
 import type { Logger } from '../../types/logging.js';
 import {
@@ -601,19 +602,34 @@ export function isValidBundlePath(bundlePath: string): boolean {
   return safePathPattern.test(bundlePath);
 }
 
+const SCRIPT_AND_BODY = new Set(['script', 'body']);
+
 /**
- * Checks if a bundle script tag is already present in the HTML.
+ * Reads, in one pass, what bundle injection needs from a page: the `src` of each `<script>`
+ * tag, quoted or not, and where the last `</body>` is (-1 without one). Only tags that are
+ * markup count, so a script tag or a `</body>` in a comment or a script is left out.
  *
  * @param html - The HTML content to check
- * @param bundlePath - The bundle path to look for
- * @returns true if the bundle is already included, false otherwise
- *
  * @internal
  */
-function isBundleAlreadyIncluded(html: string, bundlePath: string): boolean {
-  const escapedPath = bundlePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const scriptTagPattern = new RegExp(`<script[^>]*\\ssrc=["']${escapedPath}["'][^>]*>`, 'i');
-  return scriptTagPattern.test(html);
+function readBundleTargets(html: string): { sources: Set<string>; bodyClose: number } {
+  const sources = new Set<string>();
+  let bodyClose = -1;
+  for (const { name, start, attributes, closing } of findHtmlTags(html, SCRIPT_AND_BODY, {
+    closing: true,
+  })) {
+    if (name === 'body') {
+      if (closing) {
+        bodyClose = start;
+      }
+      continue;
+    }
+    const src = getAttribute(attributes, 'src');
+    if (src !== undefined) {
+      sources.add(src.value);
+    }
+  }
+  return { sources, bodyClose };
 }
 
 /**
@@ -645,22 +661,20 @@ export function autoInjectBundles(
   }
 
   // Filter paths: must be valid and not already included in HTML
+  const { sources, bodyClose: bodyClosePos } = readBundleTargets(html);
   const validPaths = bundlePaths.filter(
-    (bundlePath) =>
-      isValidBundlePath(bundlePath) && !isBundleAlreadyIncluded(html, `${basePath}${bundlePath}`),
+    (bundlePath) => isValidBundlePath(bundlePath) && !sources.has(`${basePath}${bundlePath}`),
   );
 
   if (validPaths.length === 0) {
     return html;
   }
 
-  // Find </body> tag (case-insensitive)
-  const bodyCloseMatch = html.match(/<\/body>/i);
-  if (!bodyCloseMatch || bodyCloseMatch.index === undefined) {
+  // The last </body> that is markup, not one in a comment or a script
+  if (bodyClosePos === -1) {
     return html;
   }
 
-  const bodyClosePos = bodyCloseMatch.index;
   const before = html.substring(0, bodyClosePos);
   const after = html.substring(bodyClosePos);
 
