@@ -447,14 +447,17 @@ isg: {
 ```
 
 Actual loader default is enabled, despite older docs saying false.
-Use positive page `ttlSeconds` for an override. Aging rules sort ascending by
+Use positive page `ttlSeconds` for an override; with ISG on, a fractional or
+negative one, or a `maxAgeCapDays` that is not a whole number above 0, stops the
+build as the file loads. Aging rules sort ascending by
 `untilDays`, choose the first applicable threshold based on parsed publication
 age, and otherwise use the default TTL. Max-age capping suppresses time-based
 refresh of old dated pages, not content/dependency-driven changes. Do not use it
 as an immutable-content guarantee.
 
 Cache manifest: `.stati/manifest.json`; entries track output path, inputs
-hash, template dependencies, tags, publication/render timestamps, TTL/max age,
+hash, template dependencies, tags, publication/render timestamps (the publish
+date as the page has it now: a page whose date is removed loses it), TTL/max age,
 and from core 1.29 `readsCollection`/`readsNav`. ISG compares source/dependency
 hashes and time constraints. Do not manually edit manifest entries as an author.
 

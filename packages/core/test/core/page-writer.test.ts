@@ -16,7 +16,7 @@ import {
   type RenderedPage,
 } from '../../src/core/page-writer.js';
 import type { StylesheetRuntime } from '../../src/css/runtime.js';
-import type { CacheEntry, Logger, PageModel, StatiConfig } from '../../src/types/index.js';
+import type { Logger, PageModel, StatiConfig } from '../../src/types/index.js';
 
 const config: StatiConfig = { site: { title: 'Test', baseUrl: 'https://example.com' } };
 const buildTime = new Date('2026-10-30T10:00:00.000Z');
@@ -54,13 +54,12 @@ describe('page writers', () => {
     };
   }
 
-  function rendered(url: string, existingEntry?: CacheEntry): RenderedPage {
+  function rendered(url: string): RenderedPage {
     return {
       page: page(url),
       outputPath: join(dir, 'dist', url === '/' ? 'index.html' : `${url}.html`),
       cacheKey: url === '/' ? '/index.html' : `${url}.html`,
       html: `<h1>${url}</h1>`,
-      existingEntry,
       renderInputsHash: 'inputs',
       renderedAssets: { assetDeps: [], images: [], templates: [], templateLookups: [] },
     };
@@ -87,42 +86,51 @@ describe('page writers', () => {
       });
     });
 
-    it("keeps an earlier entry's publish date when the page no longer sets one", async () => {
+    it('replaces an earlier entry, its publish date included, when the page no longer sets one', async () => {
       const ctx = context();
-      const existing = {
+      // A page frozen by an old date (maxAgeCapDays) whose date was then removed
+      ctx.manifest.entries['/about.html'] = {
         path: '/about.html',
         inputsHash: 'old',
         deps: [],
         tags: [],
         renderedAt: '2026-01-01T00:00:00.000Z',
         ttlSeconds: 3600,
-        publishedAt: '2026-01-01T00:00:00.000Z',
-      } satisfies CacheEntry;
+        publishedAt: '2020-01-01T00:00:00.000Z',
+        maxAgeCapDays: 30,
+      };
 
-      await recordCacheEntry(ctx, rendered('/about', existing));
+      await recordCacheEntry(ctx, rendered('/about'));
 
-      expect(ctx.manifest.entries['/about.html']).toMatchObject({
-        publishedAt: '2026-01-01T00:00:00.000Z',
-        renderedAt: buildTime.toISOString(),
-      });
+      const entry = ctx.manifest.entries['/about.html'];
+      expect(entry?.inputsHash).not.toBe('old');
+      expect(entry?.renderedAt).toBe(buildTime.toISOString());
+      expect(entry).not.toHaveProperty('publishedAt');
+      expect(entry).not.toHaveProperty('maxAgeCapDays');
     });
 
-    it.each([
-      ['a new entry', undefined],
-      [
-        'an updated entry',
-        {
-          path: '/about.html',
-          inputsHash: 'old',
-          deps: [],
-          tags: [],
-          renderedAt: '2026-01-01T00:00:00.000Z',
-          ttlSeconds: 3600,
-        } satisfies CacheEntry,
-      ],
-    ])('reports a template %s cannot hash through the logger', async (_, existing) => {
+    it('takes the publish date from the page as it is now', async () => {
       const ctx = context();
-      const page = rendered('/about', existing);
+      ctx.manifest.entries['/about.html'] = {
+        path: '/about.html',
+        inputsHash: 'old',
+        deps: [],
+        tags: [],
+        renderedAt: '2026-01-01T00:00:00.000Z',
+        ttlSeconds: 3600,
+        publishedAt: '2020-01-01T00:00:00.000Z',
+      };
+      const page = rendered('/about');
+      page.page = { ...page.page, frontMatter: { date: '2026-06-01' } };
+
+      await recordCacheEntry(ctx, page);
+
+      expect(ctx.manifest.entries['/about.html']?.publishedAt).toBe('2026-06-01T00:00:00.000Z');
+    });
+
+    it('reports a template it cannot hash through the logger', async () => {
+      const ctx = context();
+      const page = rendered('/about');
       // A directory can't be read as a template
       page.renderedAssets = { ...page.renderedAssets, templates: [dir] };
 

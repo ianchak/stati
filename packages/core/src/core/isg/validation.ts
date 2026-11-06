@@ -249,6 +249,11 @@ function validateAgingRule(rule: AgingRule, index: number): void {
  * Validates front-matter ISG overrides for a single page.
  * Provides helpful error messages for invalid page-level configuration.
  *
+ * `loadContent` runs it on each Markdown file as it loads, when ISG is on, and the render session
+ * runs it again on every page after a `beforeAll` hook, so an invalid value stops the build before
+ * any page is written. A field without a value (`tags:`, which YAML reads as `null`) counts as
+ * not set.
+ *
  * @param frontMatter - Page front-matter object
  * @param sourcePath - Path to source file for error context
  * @throws {ISGConfigurationError} When front-matter overrides are invalid
@@ -267,7 +272,7 @@ export function validatePageISGOverrides(
   sourcePath: string,
 ): void {
   // Validate page-level ttlSeconds override
-  if (frontMatter.ttlSeconds !== undefined) {
+  if (isSet(frontMatter.ttlSeconds)) {
     if (
       typeof frontMatter.ttlSeconds !== 'number' ||
       !Number.isInteger(frontMatter.ttlSeconds) ||
@@ -283,12 +288,8 @@ export function validatePageISGOverrides(
   }
 
   // Validate page-level maxAgeCapDays override
-  if (frontMatter.maxAgeCapDays !== undefined) {
-    if (
-      typeof frontMatter.maxAgeCapDays !== 'number' ||
-      !Number.isInteger(frontMatter.maxAgeCapDays) ||
-      frontMatter.maxAgeCapDays <= 0
-    ) {
+  if (isSet(frontMatter.maxAgeCapDays)) {
+    if (getMaxAgeCapOverride(frontMatter.maxAgeCapDays) === undefined) {
       throw new ISGConfigurationError(
         ISGValidationError.INVALID_MAX_AGE_CAP,
         'maxAgeCapDays',
@@ -299,7 +300,7 @@ export function validatePageISGOverrides(
   }
 
   // Validate tags array
-  if (frontMatter.tags !== undefined) {
+  if (isSet(frontMatter.tags)) {
     if (!Array.isArray(frontMatter.tags)) {
       throw new ISGConfigurationError(
         ISGValidationError.INVALID_AGING_RULE, // Reusing closest error code
@@ -323,53 +324,19 @@ export function validatePageISGOverrides(
   }
 }
 
+/** Whether a front matter field has a value: `null` (a key with nothing after it) has none */
+function isSet(value: unknown): boolean {
+  return value !== undefined && value !== null;
+}
+
 /**
- * Safely extracts numeric value from front-matter with validation.
- * Used for TTL and max age cap overrides.
+ * A page's `maxAgeCapDays` override: a whole number above 0, the values
+ * {@link validatePageISGOverrides} accepts. Any other value is ignored: with ISG on, pages are
+ * checked before any renders, and with ISG off the cap is not used.
  *
- * @param value - Value from front-matter
- * @param fieldName - Name of the field for error messages
- * @param sourcePath - Source file path for error context
- * @returns Validated number or undefined if not set
+ * @param value - The page's `maxAgeCapDays` front matter
+ * @returns The override, or undefined to use `isg.maxAgeCapDays`
  */
-export function extractNumericOverride(
-  value: unknown,
-  fieldName: string,
-  sourcePath: string,
-): number | undefined {
-  if (value === undefined || value === null) {
-    return undefined;
-  }
-
-  if (typeof value === 'number') {
-    if (!Number.isFinite(value) || value < 0) {
-      throw new ISGConfigurationError(
-        ISGValidationError.INVALID_TTL,
-        fieldName,
-        value,
-        `Invalid ${fieldName} in ${sourcePath}: must be a non-negative finite number.`,
-      );
-    }
-    return Math.floor(value); // Ensure integer
-  }
-
-  if (typeof value === 'string') {
-    const parsed = parseInt(value, 10);
-    if (Number.isNaN(parsed) || parsed < 0) {
-      throw new ISGConfigurationError(
-        ISGValidationError.INVALID_TTL,
-        fieldName,
-        value,
-        `Invalid ${fieldName} in ${sourcePath}: "${value}" is not a valid non-negative number.`,
-      );
-    }
-    return parsed;
-  }
-
-  throw new ISGConfigurationError(
-    ISGValidationError.INVALID_TTL,
-    fieldName,
-    value,
-    `Invalid ${fieldName} in ${sourcePath}: must be a number or numeric string.`,
-  );
+export function getMaxAgeCapOverride(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : undefined;
 }

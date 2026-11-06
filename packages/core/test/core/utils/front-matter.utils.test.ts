@@ -122,6 +122,42 @@ describe('parseFrontMatter', () => {
     });
   });
 
+  it("reads an unquoted date that doesn't exist as text, not as a later date", () => {
+    const { data } = parseFrontMatter(
+      [
+        '---',
+        'date: 2025-02-30',
+        'month: 2025-13-01',
+        'notLeap: 2025-02-29',
+        'day: 2025-04-31T10:00:00Z',
+        'hour: 2025-01-01 25:00:00',
+        'minute: 2025-01-01T10:60:00Z',
+        'leap: 2024-02-29',
+        'endOfDay: 2025-01-01T24:00:00Z',
+        'oneDigit: 2025-2-3 10:00:00',
+        '---',
+      ].join('\n'),
+      file,
+    );
+    expect(data).toEqual({
+      date: '2025-02-30',
+      month: '2025-13-01',
+      notLeap: '2025-02-29',
+      day: '2025-04-31T10:00:00Z',
+      hour: '2025-01-01 25:00:00',
+      minute: '2025-01-01T10:60:00Z',
+      leap: new Date('2024-02-29T00:00:00.000Z'),
+      endOfDay: new Date('2025-01-02T00:00:00.000Z'),
+      oneDigit: new Date('2025-02-03T10:00:00.000Z'),
+    });
+  });
+
+  it("reports a !!timestamp tag on a date that doesn't exist with its line", () => {
+    const error = errorFor('---\ntitle: Post\ndate: !!timestamp 2025-02-30\n---\n');
+    expect(error.line).toBe(3);
+    expect(error.message).toContain('Invalid front matter in site/post.md at line 3');
+  });
+
   it('reads values by YAML 1.2: times and zero-padded numbers are not base 60 or octal', () => {
     const { data } = parseFrontMatter('---\ntime: 10:30\nmode: 0755\nbig: 1_000\n---\n', file);
     expect(data).toEqual({ time: '10:30', mode: 755, big: '1_000' });
@@ -271,6 +307,7 @@ describe('parseFrontMatter text fields', () => {
   it('drops null entries when nobody listens for warnings', () => {
     const { data } = parseFrontMatter('---\ntags: [~, a]\n---\n', file);
     expect(data).toEqual({ tags: ['a'] });
+    expect(parseFrontMatter('---\ntags: a, b\n---\n', file).data).toEqual({ tags: ['a, b'] });
   });
 
   it('falls back to the parsed value when the text cannot be read again', () => {
@@ -309,10 +346,38 @@ describe('parseFrontMatter text fields', () => {
     });
   });
 
-  it('leaves a single tags value and fields the front matter lacks alone', () => {
-    expect(parse('order: 1\ntags: 2024\nseo:\n  noindex: true').data).toEqual({
+  it('reads a single tags value as a list of one, as written', () => {
+    expect(parse('tags: news').data).toEqual({ tags: ['news'] });
+    expect(parse('tags: 2024').data).toEqual({ tags: ['2024'] });
+    expect(parse('tags: 1.10').data).toEqual({ tags: ['1.10'] });
+    expect(parse('tags: true').data).toEqual({ tags: ['true'] });
+    expect(parse('tags: 2024-05-06').data).toEqual({ tags: ['2024-05-06'] });
+  });
+
+  it('warns about a single tag that looks like a list, and reads it as one tag', () => {
+    const { data, warnings } = parse('tags: news, css');
+    expect(data).toEqual({ tags: ['news, css'] });
+    expect(warnings).toEqual([
+      'Reading "tags" of site/post.md as one tag, "news, css". Write a list for more than one: tags: [news, css]',
+    ]);
+    expect(parse('tags: news').warnings).toEqual([]);
+    expect(parse('tags: [news, css]').warnings).toEqual([]);
+  });
+
+  it('reads a single JSON tags value as a list of one', () => {
+    expect(parse('{"tags": "news"}', 'json').data).toEqual({ tags: ['news'] });
+    expect(parse('{"tags": 2024}', 'json').data).toEqual({ tags: ['2024'] });
+  });
+
+  it('reads a blank tags value as no tags, and leaves one without a value alone', () => {
+    expect(parse("tags: ''").data).toEqual({ tags: [] });
+    expect(parse("tags: '  '").data).toEqual({ tags: [] });
+    expect(parse('tags:').data).toEqual({ tags: null });
+  });
+
+  it('leaves fields the front matter lacks alone', () => {
+    expect(parse('order: 1\nseo:\n  noindex: true').data).toEqual({
       order: 1,
-      tags: 2024,
       seo: { noindex: true },
     });
   });

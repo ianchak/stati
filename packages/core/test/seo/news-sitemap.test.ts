@@ -261,6 +261,14 @@ describe('generateNewsSitemap', () => {
       expect(urls(xml)).toEqual(['https://example.com/news/w/live']);
     });
 
+    it('keeps a page whose draft is text, which only true makes a draft', () => {
+      const pages = [article('/news/w/text', 1, { draft: 'no' })];
+
+      const { xml } = generateNewsSitemap(pages, config(), news(), undefined, NOW);
+
+      expect(urls(xml)).toEqual(['https://example.com/news/w/text']);
+    });
+
     it('leaves out generated pages and later pages of a listing', () => {
       const pages = [
         article('/news/w/generated', 1, {}, { generated: { key: 'k' } } as Partial<PageModel>),

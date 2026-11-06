@@ -135,17 +135,66 @@ const ISO_DATE =
   /^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?$/;
 
 /**
+ * The date, and the time if there is one, at the start of a date text: the ISO 8601 shapes
+ * {@link parseDateValue} accepts and the YAML timestamps js-yaml reads (`2025-2-3 10:00:00`).
+ */
+const DATE_TIME_PARTS =
+  /^(\d{4})-(\d{1,2})-(\d{1,2})(?:(?:[Tt]|[ \t]+)(\d{1,2}):(\d{2})(?::(\d{2}))?)?/;
+
+/**
+ * Whether the date, and the time if there is one, that a text starts with exist: a month from 1
+ * to 12, a day the month has, an hour from 0 to 23 (or `24:00:00`, the end of the day) and
+ * minutes and seconds from 0 to 59. `new Date` and js-yaml roll a date that doesn't exist over
+ * instead of rejecting it: `2025-02-30` becomes 2 March.
+ *
+ * @param text - A date such as `2025-02-28`, or a date-time such as `2025-02-28T10:00:00Z`
+ * @returns False when the text doesn't start with a date, or its date or time doesn't exist
+ *
+ * @example
+ * ```typescript
+ * isExistingDateTime('2024-02-29'); // true
+ * isExistingDateTime('2025-02-29'); // false
+ * isExistingDateTime('2025-01-01T25:00:00Z'); // false
+ * ```
+ */
+export function isExistingDateTime(text: string): boolean {
+  const match = DATE_TIME_PARTS.exec(text);
+  if (!match) {
+    return false;
+  }
+  const [year = 0, month = 0, day = 0, hour = 0, minute = 0, second = 0] = match
+    .slice(1)
+    .map((part) => Number(part ?? 0));
+  // Day 0 of the next month is this month's last day; setUTCFullYear reads years below 100 as
+  // written, where Date.UTC would add 1900
+  const lastDay = new Date(0);
+  lastDay.setUTCFullYear(year, month, 0);
+  const endOfDay = hour === 24 && minute === 0 && second === 0;
+  return (
+    month >= 1 &&
+    month <= 12 &&
+    day >= 1 &&
+    day <= lastDay.getUTCDate() &&
+    (hour <= 23 || endOfDay) &&
+    minute <= 59 &&
+    second <= 59
+  );
+}
+
+/**
  * Parses a single front matter value into a `Date`, or returns `undefined` when
  * the value is not a usable date.
  *
  * Unlike {@link getFrontMatterDate} this does not walk a field list: it decides
  * about one value. It accepts quoted YAML dates (strings) and unquoted ones
  * (`Date` objects, which YAML parses for it). Strings must be an ISO 8601
- * shape (a date, or a date-time with an optional time and timezone); a
- * date-time without a timezone designator is read as UTC, so the result does
- * not depend on the build machine's local time. Numbers, booleans, objects and
- * strings that do not match are rejected, so a value such as `soon` reports
- * `undefined` instead of crashing the caller on `toISOString()`.
+ * shape (a date, or a date-time with an optional time and timezone) whose date
+ * and time exist ({@link isExistingDateTime}), so `2025-02-30` is rejected
+ * instead of read as 2 March; a date-time without a timezone designator is read
+ * as UTC, so the result does not depend on the build machine's local time.
+ * Numbers, booleans, objects and strings that do not match are rejected, so a
+ * value such as `soon` reports `undefined` instead of crashing the caller on
+ * `toISOString()`.
  *
  * @param value - A front matter value, anything YAML may produce
  * @returns A new `Date` instance, or `undefined`
@@ -160,7 +209,7 @@ const ISO_DATE =
 export function parseDateValue(value: unknown): Date | undefined {
   if (typeof value === 'string' && value.trim()) {
     const trimmed = value.trim();
-    if (!ISO_DATE.test(trimmed)) {
+    if (!ISO_DATE.test(trimmed) || !isExistingDateTime(trimmed)) {
       return undefined;
     }
     const hasTime = /[T ]\d{2}:\d{2}/.test(trimmed);

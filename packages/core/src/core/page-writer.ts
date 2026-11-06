@@ -7,8 +7,8 @@
 import { dirname } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { ensureDir, writeFile } from './utils/index.js';
-import { createCacheEntry, updateCacheEntry, type RenderedAssets } from './isg/index.js';
-import type { CacheEntry, CacheManifest, Logger, PageModel, StatiConfig } from '../types/index.js';
+import { createCacheEntry, type RenderedAssets } from './isg/index.js';
+import type { CacheManifest, Logger, PageModel, StatiConfig } from '../types/index.js';
 import type { StylesheetRuntime } from '../css/runtime.js';
 
 /** A rendered page, the file it goes to and what its cache entry records */
@@ -19,8 +19,6 @@ export interface RenderedPage {
   /** The page's key in the cache manifest */
   cacheKey: string;
   html: string;
-  /** The page's entry from the last build, if any */
-  existingEntry: CacheEntry | undefined;
   /** The render-inputs hash for what the render read */
   renderInputsHash: string;
   renderedAssets: RenderedAssets;
@@ -39,7 +37,8 @@ export interface PageWriterContext {
 }
 
 /**
- * Writes the cache entry of a rendered page: its last entry updated, or a new one.
+ * Writes the cache entry of a rendered page, in place of its last one: everything in it comes
+ * from this render and the page as it is now.
  *
  * @param context - The build's manifest, config, build time and logger
  * @param rendered - The page and what its render recorded
@@ -49,18 +48,15 @@ export async function recordCacheEntry(
   rendered: RenderedPage,
 ): Promise<void> {
   const { config, manifest, buildTime, logger } = context;
-  const { page, cacheKey, existingEntry, renderInputsHash, renderedAssets } = rendered;
-  manifest.entries[cacheKey] = existingEntry
-    ? await updateCacheEntry(
-        existingEntry,
-        page,
-        config,
-        buildTime,
-        renderInputsHash,
-        renderedAssets,
-        logger,
-      )
-    : await createCacheEntry(page, config, buildTime, renderInputsHash, renderedAssets, logger);
+  const { page, cacheKey, renderInputsHash, renderedAssets } = rendered;
+  manifest.entries[cacheKey] = await createCacheEntry(
+    page,
+    config,
+    buildTime,
+    renderInputsHash,
+    renderedAssets,
+    logger,
+  );
 }
 
 /** Writes rendered pages and records their cache entries */

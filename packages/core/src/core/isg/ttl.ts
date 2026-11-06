@@ -49,9 +49,11 @@ export function computeEffectiveTTL(
   isgConfig: ISGConfig,
   currentTime?: Date,
 ): number {
-  // Check for page-specific TTL override in front matter
-  if (typeof page.frontMatter.ttlSeconds === 'number' && page.frontMatter.ttlSeconds > 0) {
-    return page.frontMatter.ttlSeconds;
+  // Page-specific TTL override in front matter: a whole number above 0. With ISG on, loading
+  // rejects other values; a value a hook sets later, or one with ISG off, is ignored.
+  const { ttlSeconds } = page.frontMatter;
+  if (typeof ttlSeconds === 'number' && Number.isInteger(ttlSeconds) && ttlSeconds > 0) {
+    return ttlSeconds;
   }
 
   // Get publishedAt date for aging calculations

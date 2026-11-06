@@ -28,7 +28,6 @@ const {
   mockSaveCacheManifest,
   mockShouldRebuildPage,
   mockCreateCacheEntry,
-  mockUpdateCacheEntry,
   mockWithBuildLock,
   mockBuildNavigation,
   mockCompileTypeScript,
@@ -67,7 +66,6 @@ const {
   mockSaveCacheManifest: vi.fn(),
   mockShouldRebuildPage: vi.fn(),
   mockCreateCacheEntry: vi.fn(),
-  mockUpdateCacheEntry: vi.fn(),
   mockWithBuildLock: vi.fn(),
   // Search mocks
   mockComputeSearchIndexFilename: vi.fn(),
@@ -122,7 +120,6 @@ vi.mock('../../src/core/isg/manifest.js', () => ({
 vi.mock('../../src/core/isg/builder.js', () => ({
   shouldRebuildPage: mockShouldRebuildPage,
   createCacheEntry: mockCreateCacheEntry,
-  updateCacheEntry: mockUpdateCacheEntry,
   // Entries in these tests count as current; mockShouldRebuildPage decides
   hasRecordedReads: () => true,
 }));
@@ -225,14 +222,6 @@ describe('build.ts', () => {
     mockSaveCacheManifest.mockResolvedValue(undefined);
     mockShouldRebuildPage.mockResolvedValue(true);
     mockCreateCacheEntry.mockResolvedValue({
-      path: '/test.html',
-      inputsHash: 'hash123',
-      deps: [],
-      tags: ['page'],
-      renderedAt: new Date().toISOString(),
-      ttlSeconds: 3600,
-    });
-    mockUpdateCacheEntry.mockResolvedValue({
       path: '/test.html',
       inputsHash: 'hash123',
       deps: [],

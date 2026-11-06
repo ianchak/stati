@@ -169,6 +169,116 @@ describe('content.ts', () => {
       expect(pages[0]!.frontMatter.title).toBe('Published');
     });
 
+    it.each([
+      ['no', '"no"'],
+      ['"false"', '"false"'],
+      ['"true"', '"true"'],
+      ['yes', '"yes"'],
+      ['1', '1'],
+      ['[true]', 'a list'],
+    ])(
+      'should load a page with draft: %s, which is not a boolean, and warn',
+      async (value, described) => {
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        mockContentFiles({
+          '/test/project/src/post.md': `---\ntitle: Post\ndraft: ${value}\n---\n# Post`,
+        });
+
+        const pages = await loadContent(mockConfig);
+
+        expect(pages.map((page) => page.url)).toEqual(['/post']);
+        expect(warnSpy).toHaveBeenCalledWith(
+          `Ignoring "draft" in /test/project/src/post.md: ${described} is not true or false, so the page is not a draft. Write draft: true or draft: false.`,
+        );
+      },
+    );
+
+    it('should load draft: false and a draft without a value without a warning', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      mockContentFiles({
+        '/test/project/src/a.md': '---\ndraft: false\n---\n# A',
+        '/test/project/src/b.md': '---\ndraft:\n---\n# B',
+      });
+
+      const pages = await loadContent(mockConfig);
+
+      expect(pages.map((page) => page.url)).toEqual(['/a', '/b']);
+      expect(warnSpy).not.toHaveBeenCalled();
+    });
+
+    describe('front matter checks', () => {
+      it.each([
+        ['ttlSeconds: 3600.5', 'Invalid ttlSeconds in front-matter of /test/project/src/b.md'],
+        ['ttlSeconds: -1', 'Invalid ttlSeconds in front-matter of /test/project/src/b.md'],
+        ['maxAgeCapDays: 0', 'Invalid maxAgeCapDays in front-matter of /test/project/src/b.md'],
+        ["maxAgeCapDays: '30'", 'Invalid maxAgeCapDays in front-matter of /test/project/src/b.md'],
+        ['tags: {a: 1}', 'Invalid tags in front-matter of /test/project/src/b.md'],
+        ['tags: [news, [a]]', 'Invalid tag at index 1 in front-matter of /test/project/src/b.md'],
+      ])('should stop loading at %s with ISG on, naming the file', async (line, message) => {
+        mockContentFiles({
+          '/test/project/src/a.md': '---\ntitle: A\n---\n# A',
+          '/test/project/src/b.md': `---\ntitle: B\n${line}\n---\n# B`,
+          '/test/project/src/c.md': '---\ntitle: C\n---\n# C',
+        });
+
+        await expect(loadContent(mockConfig)).rejects.toThrow(message);
+        // The files after it are never read
+        expect(mockReadFile).not.toHaveBeenCalledWith('/test/project/src/c.md', expect.anything());
+      });
+
+      it('should not check the ISG overrides with ISG off', async () => {
+        mockContentFiles({
+          '/test/project/src/b.md':
+            '---\nttlSeconds: 3600.5\nmaxAgeCapDays: 0\ntags: {a: 1}\n---\n# B',
+        });
+
+        const pages = await loadContent({ ...mockConfig, isg: { enabled: false } });
+
+        expect(pages.map((page) => page.url)).toEqual(['/b']);
+      });
+
+      it('should not check a draft it leaves out', async () => {
+        mockContentFiles({
+          '/test/project/src/draft.md': '---\ndraft: true\nttlSeconds: 3600.5\n---\n# Draft',
+        });
+
+        await expect(loadContent(mockConfig)).resolves.toEqual([]);
+        await expect(loadContent(mockConfig, true)).rejects.toThrow('Invalid ttlSeconds');
+      });
+
+      it('should accept a single tag, valid overrides and fields without a value', async () => {
+        mockContentFiles({
+          '/test/project/src/a.md': '---\ntags: news\nttlSeconds: 60\nmaxAgeCapDays: 30\n---\n# A',
+          '/test/project/src/b.md': '---\ntags:\nttlSeconds:\nmaxAgeCapDays:\n---\n# B',
+        });
+
+        const pages = await loadContent(mockConfig);
+
+        expect(pages[0]!.frontMatter).toEqual({
+          tags: ['news'],
+          ttlSeconds: 60,
+          maxAgeCapDays: 30,
+        });
+        expect(pages[1]!.frontMatter).toEqual({
+          tags: null,
+          ttlSeconds: null,
+          maxAgeCapDays: null,
+        });
+      });
+    });
+
+    it("should warn about an unquoted date that doesn't exist and leave the page undated", async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      mockContentFiles({ '/test/project/src/post.md': '---\ndate: 2025-02-30\n---\n# Post' });
+
+      const pages = await loadContent(mockConfig);
+
+      expect(pages[0]!.publishedAt).toBeUndefined();
+      expect(warnSpy).toHaveBeenCalledWith(
+        'Ignoring invalid date in "date" of /test/project/src/post.md: "2025-02-30"',
+      );
+    });
+
     it('should parse publishedAt date from frontmatter', async () => {
       const mockFiles = ['/test/project/src/post.md'];
       mockGlob.mockResolvedValue(mockFiles);

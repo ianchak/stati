@@ -88,7 +88,7 @@ export interface FrontMatter {
   title?: string;
   /** Page description for SEO and meta tags */
   description?: string;
-  /** Array of tags for categorization */
+  /** Array of tags for categorization; a single tag (`tags: news`) is read as a list of one */
   tags?: readonly string[];
   /** Template layout to use for rendering */
   layout?: string;
@@ -107,7 +107,7 @@ export interface FrontMatter {
   ttlSeconds?: number;
   /** Custom max age cap in days (overrides global ISG settings) */
   maxAgeCapDays?: number;
-  /** Whether the page is a draft (excludes from build) */
+  /** Whether the page is a draft (excludes from build); only `true` makes it one */
   draft?: boolean;
   /** SEO configuration for the page */
   seo?: SEOMetadata;

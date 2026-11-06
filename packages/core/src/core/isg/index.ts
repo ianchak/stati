@@ -21,7 +21,6 @@ export { markStale, createStaleEntry } from './stale.js';
 export {
   shouldRebuildPage,
   createCacheEntry,
-  updateCacheEntry,
   hasRecordedReads,
   hasRecordedTemplates,
 } from './builder.js';
@@ -61,5 +60,5 @@ export {
   ISGConfigurationError,
   validateISGConfig,
   validatePageISGOverrides,
-  extractNumericOverride,
+  getMaxAgeCapOverride,
 } from './validation.js';

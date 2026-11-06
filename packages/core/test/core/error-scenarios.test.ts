@@ -25,7 +25,6 @@ const {
   mockSaveCacheManifest,
   mockShouldRebuildPage,
   mockCreateCacheEntry,
-  mockUpdateCacheEntry,
   mockWithBuildLock,
   mockBuildNavigation,
 } = vi.hoisted(() => ({
@@ -52,7 +51,6 @@ const {
   mockSaveCacheManifest: vi.fn(),
   mockShouldRebuildPage: vi.fn(),
   mockCreateCacheEntry: vi.fn(),
-  mockUpdateCacheEntry: vi.fn(),
   mockWithBuildLock: vi.fn(),
 }));
 
@@ -97,7 +95,6 @@ vi.mock('../../src/core/isg/manifest.js', () => ({
 vi.mock('../../src/core/isg/builder.js', () => ({
   shouldRebuildPage: mockShouldRebuildPage,
   createCacheEntry: mockCreateCacheEntry,
-  updateCacheEntry: mockUpdateCacheEntry,
 }));
 
 vi.mock('../../src/core/isg/build-lock.js', () => ({
@@ -163,14 +160,6 @@ describe('Error Scenario Tests', () => {
     mockCreateCacheEntry.mockResolvedValue({
       path: '/test.html',
       inputsHash: 'test-hash',
-      deps: [],
-      tags: [],
-      renderedAt: new Date().toISOString(),
-      ttlSeconds: 3600,
-    });
-    mockUpdateCacheEntry.mockResolvedValue({
-      path: '/test.html',
-      inputsHash: 'test-hash-updated',
       deps: [],
       tags: [],
       renderedAt: new Date().toISOString(),

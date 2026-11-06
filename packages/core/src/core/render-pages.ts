@@ -34,6 +34,7 @@ import {
   computeContentHash,
   hasRecordedReads,
   shouldRebuildPage,
+  validatePageISGOverrides,
   type RenderedAssets,
 } from './isg/index.js';
 import { createPageWriter } from './page-writer.js';
@@ -219,6 +220,13 @@ export async function prepareRenderSession(options: RenderSessionOptions): Promi
     const endHookBeforeAll = recorder.startSpan('hookBeforeAllMs');
     await config.hooks.beforeAll(buildContext);
     endHookBeforeAll();
+    // loadContent checked the pages as they loaded; check what the hook added or changed too,
+    // still before the search index and the first page are written
+    if (config.isg?.enabled !== false) {
+      for (const page of pages) {
+        validatePageISGOverrides(page.frontMatter, page.sourcePath);
+      }
+    }
   }
 
   fillTextStats(pages, config);
@@ -571,7 +579,6 @@ export async function renderPages(session: RenderSession): Promise<RenderPagesRe
       outputPath,
       cacheKey,
       html,
-      existingEntry,
       renderInputsHash: renderedInputsHash,
       renderedAssets,
     });

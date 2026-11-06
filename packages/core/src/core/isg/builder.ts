@@ -15,7 +15,7 @@ import {
 import { resolveLayoutDependency } from './deps.js';
 import { STALE_INPUTS_HASH } from '../../constants.js';
 import { computeEffectiveTTL, isTtlExpired } from './ttl.js';
-import { validatePageISGOverrides, extractNumericOverride } from './validation.js';
+import { getMaxAgeCapOverride } from './validation.js';
 import {
   createFallbackLogger,
   getFrontMatterDate,
@@ -250,8 +250,10 @@ export async function shouldRebuildPage(
 }
 
 /**
- * Creates a new cache entry for a page after it has been rendered, with the templates and name
- * lookups the render recorded (`rendered`).
+ * Creates the cache entry for a page after it has been rendered, with the templates and name
+ * lookups the render recorded (`rendered`). It replaces the page's last entry, and nothing is
+ * kept from that one: a page that no longer has a publish date gets none, so an old date can't
+ * keep it frozen.
  *
  * @param page - The page model
  * @param config - Stati configuration
@@ -275,9 +277,6 @@ export async function createCacheEntry(
   rendered?: RenderedAssets,
   logger?: Logger,
 ): Promise<CacheEntry> {
-  // Validate page-level ISG overrides first
-  validatePageISGOverrides(page.frontMatter, page.sourcePath);
-
   const contentHash = computeContentHash(page.content, page.frontMatter);
 
   // The templates the render used, the layout first
@@ -303,11 +302,9 @@ export async function createCacheEntry(
   const isgConfig = config.isg || {};
   const ttlSeconds = computeEffectiveTTL(page, isgConfig);
 
-  // Max age cap from front matter or config. validatePageISGOverrides has already rejected
-  // every value extractNumericOverride would throw for.
+  // Max age cap from front matter or config; with ISG on, invalid values never get this far
   const maxAgeCapDays =
-    extractNumericOverride(page.frontMatter.maxAgeCapDays, 'maxAgeCapDays', page.sourcePath) ??
-    isgConfig.maxAgeCapDays;
+    getMaxAgeCapOverride(page.frontMatter.maxAgeCapDays) ?? isgConfig.maxAgeCapDays;
 
   // Determine output path
   const outputPath = getOutputPath(page);
@@ -338,50 +335,6 @@ export async function createCacheEntry(
   }
 
   return withRenderedAssets(cacheEntry, rendered);
-}
-
-/**
- * Updates an existing cache entry after its page rendered again: a new entry from this
- * render, keeping the original publish date when the page no longer sets one.
- *
- * @param entry - Existing cache entry
- * @param page - The page model
- * @param config - Stati configuration
- * @param renderedAt - When the page was rendered
- * @param renderInputsHash - Optional hash of asset URLs and injection settings
- * @param rendered - What the render used: templates, lookups, images and shared data
- * @param logger - Reports a template that can't be hashed; the console when omitted
- * @returns Updated cache entry
- *
- * @example
- * ```typescript
- * const updatedEntry = await updateCacheEntry(existingEntry, page, config, new Date(), hash, rendered);
- * ```
- */
-export async function updateCacheEntry(
-  entry: CacheEntry,
-  page: PageModel,
-  config: StatiConfig,
-  renderedAt: Date,
-  renderInputsHash?: string,
-  rendered?: RenderedAssets,
-  logger?: Logger,
-): Promise<CacheEntry> {
-  const newEntry = await createCacheEntry(
-    page,
-    config,
-    renderedAt,
-    renderInputsHash,
-    rendered,
-    logger,
-  );
-
-  // Preserve original publishedAt if no new one is specified
-  if (!newEntry.publishedAt && entry.publishedAt) {
-    newEntry.publishedAt = entry.publishedAt;
-  }
-
-  return newEntry;
 }
 
 /**

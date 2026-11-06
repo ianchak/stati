@@ -51,6 +51,8 @@ maxAgeCapDays: 7
 ---
 ```
 
+Stati checks these values, and the page's `tags`, as each Markdown file loads, and again on every page after a [`beforeAll` hook](/api/hooks) runs: `ttlSeconds` must be a whole number of 0 or more, `maxAgeCapDays` a whole number above 0 and `tags` a list of texts (in a Markdown file, a single tag counts as a list of one). An invalid value stops the build with an error that names the file, before any page is written, so the pages of the last build stay as they were (unless `--clean` removed them first). Values a `beforeRender` hook sets are not checked: an override that isn't valid is ignored. A field without a value (`ttlSeconds:`) counts as not set. With `isg.enabled: false` they are not checked.
+
 ## TTL (time to live)
 
 Setting `isg.enabled: false` renders every page on every build, regardless of
@@ -212,7 +214,7 @@ tags: [blog, tutorial, javascript]
 ---
 ```
 
-Only values in the `tags` array, and a generated page's key and label, become tags for invalidation; other properties such as `category` don't. `tags` must be a list of strings: `tags: news` stops the build.
+Only values in the `tags` array, and a generated page's key and label, become tags for invalidation; other properties such as `category` don't. A single tag counts too: `tags: news` is read as `tags: [news]`.
 
 ## Troubleshooting
 

@@ -324,6 +324,14 @@ describe('shouldExcludePage', () => {
     expect(shouldExcludePage(page, config)).toBe(true);
   });
 
+  it.each(['no', 'false', 'true', 1])(
+    'indexes a page whose draft is %s, which only true makes a draft',
+    (draft) => {
+      const page = createPage({ frontMatter: { draft } as unknown as FrontMatter });
+      expect(shouldExcludePage(page, { enabled: true })).toBe(false);
+    },
+  );
+
   it('excludes home page by default', () => {
     const page = createPage({ url: '/' });
     const config: SearchConfig = { enabled: true };
