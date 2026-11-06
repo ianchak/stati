@@ -1,4 +1,5 @@
 import type { WebSocketServer } from 'ws';
+import { findBodyClosePosition } from './html.utils.js';
 
 /** The path of the dev server's live reload socket, outside any base path */
 export const LIVE_RELOAD_PATH = '/__ws';
@@ -69,9 +70,10 @@ export function injectLiveReloadScript(html: string, socketUrl: string): string 
 })();
 </script>`;
 
-  // Insert before closing </body> tag, or at the end if no </body>
-  if (html.includes('</body>')) {
-    return html.replace('</body>', `${script}\n</body>`);
+  // Insert before the last </body> that is markup, or at the end if there is none
+  const bodyClose = findBodyClosePosition(html);
+  if (bodyClose === -1) {
+    return html + script;
   }
-  return html + script;
+  return `${html.slice(0, bodyClose)}${script}\n${html.slice(bodyClose)}`;
 }

@@ -180,8 +180,12 @@ export {
   escapeHtml,
   removeInvalidXmlChars,
   findHeadClosePosition,
+  findBodyClosePosition,
   injectBeforeHeadClose,
+  findHtmlTags,
+  getAttribute,
 } from './html.utils.js';
+export type { HtmlTag, TagAttribute, FindHtmlTagsOptions } from './html.utils.js';
 
 // URL utilities
 export { normalizeUrlPath, resolveAbsoluteUrl, percentEncodeUrl, isValidUrl } from './url.utils.js';

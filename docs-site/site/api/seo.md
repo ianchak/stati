@@ -378,7 +378,7 @@ const enrichedHtml = autoInjectSEO(renderedHtml, {
 
 - Returns original HTML unchanged if `config.seo.autoInject === false`
 - Detects existing SEO tags and skips generation for those tag types
-- Injects generated tags before `</head>` closing tag; HTML without `</head>` is returned unchanged
+- Injects generated tags before the head's closing tag: the first `</head>` that isn't in a comment, a script, a style, a template or the title, and comes before `<body>`. HTML without one is returned unchanged, and `logger.warning` names the page
 - Preserves existing tags exactly (no modification)
 
 `Logger` is the logger interface used across Stati (`import type { Logger } from '@stati/core/types'`): an object with the required methods `info`, `success`, `warning`, `error`, `status`, `building`, `processing` and `stats`, each taking a message string, plus optional progress and formatting methods. The same `logger` field is required in `SEOContext` for `generateSEOMetadata`, `generateOpenGraphTags` and `generateTwitterCardTags`.
@@ -674,7 +674,7 @@ if (result.warnings.length > 0) {
 
 #### `detectExistingSEOTags()`
 
-Detects which SEO tag types exist in HTML content.
+Detects which SEO tag types exist in HTML content. It reads the tags before the head's closing tag, found as `autoInjectSEO` finds it, the way browsers read them: attributes in any order, quoted or not, and names and values in any case. Tags in comments, scripts, styles and templates don't count, and HTML without a closing head tag returns an empty set.
 
 **Signature:**
 
