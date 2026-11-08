@@ -3,7 +3,7 @@
  * @module core/base-path-links
  */
 
-import { findHtmlTags } from '../css/stylesheet.js';
+import { findHtmlTags } from './utils/html.utils.js';
 import type { Logger } from '../types/index.js';
 import { withBasePath } from './utils/base-path.utils.js';
 

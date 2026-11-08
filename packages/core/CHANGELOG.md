@@ -1,5 +1,11 @@
 # @stati/core
 
+## 2.11.11
+
+### Patch Changes
+
+- be7a25a: inject and detect head tags outside comments and scripts
+
 ## 2.11.10
 
 ### Patch Changes

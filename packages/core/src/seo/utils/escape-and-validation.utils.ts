@@ -7,6 +7,12 @@ import type { SEOValidationResult, SEOTagType } from '../../types/seo.js';
 import { SEOTagType as SEOTagTypeEnum } from '../../types/seo.js';
 import type { Logger } from '../../types/logging.js';
 import { isValidUrl } from '../../core/utils/url.utils.js';
+import {
+  findHeadClosePosition,
+  findHtmlTags,
+  getAttribute,
+  type HtmlTag,
+} from '../../core/utils/html.utils.js';
 
 /**
  * Copy structured data for JSON-LD output, enforcing a nesting depth limit.
@@ -303,9 +309,57 @@ export function validateSEOMetadata(seo: SEOMetadata, _pageUrl: string): SEOVali
   return { valid: errors.length === 0, errors, warnings };
 }
 
+/** The tags that can hold SEO metadata */
+const SEO_TAG_NAMES = new Set(['title', 'meta', 'link', 'script']);
+
+/** The tag type a `<meta name="…">` value is, for the names Stati generates */
+const META_NAME_TYPES = new Map<string, SEOTagType>([
+  ['description', SEOTagTypeEnum.Description],
+  ['keywords', SEOTagTypeEnum.Keywords],
+  ['author', SEOTagTypeEnum.Author],
+  ['robots', SEOTagTypeEnum.Robots],
+]);
+
+/**
+ * The SEO tag types a tag in the head holds, for the tag names in {@link SEO_TAG_NAMES}. A
+ * `<meta>` tag can be both Open Graph and Twitter metadata when it has both a `property="og:…"`
+ * and a `name="twitter:…"`.
+ */
+function getSEOTagTypes({ name, attributes }: HtmlTag): SEOTagType[] {
+  const value = (attribute: string) =>
+    getAttribute(attributes, attribute)?.value.trim().toLowerCase() ?? '';
+  switch (name) {
+    case 'title':
+      return [SEOTagTypeEnum.Title];
+    case 'meta': {
+      const metaName = value('name');
+      const types: SEOTagType[] = [];
+      if (value('property').startsWith('og:')) {
+        types.push(SEOTagTypeEnum.OpenGraph);
+      }
+      // X's crawler reads Twitter Card tags from `property` as well as `name`
+      if (metaName.startsWith('twitter:') || value('property').startsWith('twitter:')) {
+        types.push(SEOTagTypeEnum.Twitter);
+      }
+      const named = META_NAME_TYPES.get(metaName);
+      if (named !== undefined) {
+        types.push(named);
+      }
+      return types;
+    }
+    case 'link':
+      return value('rel').split(/\s+/).includes('canonical') ? [SEOTagTypeEnum.Canonical] : [];
+    // 'script', the last name in SEO_TAG_NAMES: give a name added there its own case
+    default:
+      return value('type') === 'application/ld+json' ? [SEOTagTypeEnum.StructuredData] : [];
+  }
+}
+
 /**
  * Detect existing SEO tags in HTML to avoid duplication during auto-injection.
- * Uses enhanced regex patterns to handle multi-line attributes and edge cases.
+ * Reads the tags in the head as browsers do: attributes in any order, quoted or not, and tags
+ * in comments or scripts don't count. The head runs to its closing tag, as
+ * {@link findHeadClosePosition} finds it; HTML without one has no tags to detect.
  *
  * Returns a Set of SEOTagType enum values indicating which tag types are already present.
  * This allows for granular control: only missing tags will be generated.
@@ -322,38 +376,13 @@ export function validateSEOMetadata(seo: SEOMetadata, _pageUrl: string): SEOVali
  */
 export function detectExistingSEOTags(html: string): Set<SEOTagType> {
   const existingTags = new Set<SEOTagType>();
-
-  // Extract just the <head> section for more efficient parsing
-  const headMatch = html.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
-  if (!headMatch) {
-    console.warn('No <head> tag found in HTML, SEO auto-injection may not work correctly');
+  const headEnd = findHeadClosePosition(html);
+  if (headEnd === -1) {
     return existingTags;
   }
 
-  const headContent = headMatch[1];
-
-  // More robust regex patterns that handle multi-line attributes and edge cases
-  const patterns: Array<{ regex: RegExp; type: SEOTagType }> = [
-    { regex: /<title\s*>/i, type: SEOTagTypeEnum.Title },
-    {
-      regex: /<meta\s+[^>]*name\s*=\s*["']description["'][^>]*>/i,
-      type: SEOTagTypeEnum.Description,
-    },
-    { regex: /<meta\s+[^>]*name\s*=\s*["']keywords["'][^>]*>/i, type: SEOTagTypeEnum.Keywords },
-    { regex: /<meta\s+[^>]*name\s*=\s*["']author["'][^>]*>/i, type: SEOTagTypeEnum.Author },
-    { regex: /<meta\s+[^>]*name\s*=\s*["']robots["'][^>]*>/i, type: SEOTagTypeEnum.Robots },
-    { regex: /<link\s+[^>]*rel\s*=\s*["']canonical["'][^>]*>/i, type: SEOTagTypeEnum.Canonical },
-    { regex: /<meta\s+[^>]*property\s*=\s*["']og:/i, type: SEOTagTypeEnum.OpenGraph },
-    { regex: /<meta\s+[^>]*name\s*=\s*["']twitter:/i, type: SEOTagTypeEnum.Twitter },
-    {
-      regex: /<script\s+[^>]*type\s*=\s*["']application\/ld\+json["'][^>]*>/i,
-      type: SEOTagTypeEnum.StructuredData,
-    },
-  ];
-
-  // Check all patterns in a single pass
-  for (const { regex, type } of patterns) {
-    if (headContent && regex.test(headContent)) {
+  for (const tag of findHtmlTags(html.slice(0, headEnd), SEO_TAG_NAMES)) {
+    for (const type of getSEOTagTypes(tag)) {
       existingTags.add(type);
     }
   }

@@ -134,8 +134,11 @@ SEO debug enables warning visibility. Invalid metadata may warn and continue.
 
 Avoid duplicate `<title>`, descriptions, canonical links, or OG tags. Check real
 HTML after auto-injection, especially existing manually authored head partials.
-Automatic head injection requires a closing `</head>`; malformed/empty layouts
-may silently receive no tags. Always verify the emitted document.
+Automatic head injection requires a closing `</head>` before `<body>`, outside
+comments and scripts; without one the build warns and the page gets no SEO tags
+(search meta and stylesheet links are skipped silently). Existing-tag detection
+ignores tags in comments, scripts, styles and templates. Always verify the
+emitted document.
 Robots metadata is not access control; `noindex` does not make a page private.
 
 ## The 404 page

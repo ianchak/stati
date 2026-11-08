@@ -97,6 +97,8 @@ In templates, pass the strings. The `SEOTagType` enum is for TypeScript code tha
 
 ### Tag type groups
 
+Stati reads the tags in the page's head as browsers do: attributes in any order, quoted or not. A tag in a comment, a script, a style or a template doesn't count, so a commented-out `<meta name="description">` doesn't stop Stati from adding one.
+
 Open Graph and Twitter tags are detected as groups: if the layout's `<head>` has any `og:*` tag, Stati generates no Open Graph tags, and if it has any `twitter:*` tag, no Twitter Card tags.
 
 ## SEO configuration options
@@ -595,7 +597,7 @@ Paths without a leading `/` get one. An empty path writes the line with no value
 ### Tags are missing
 
 - `seo.autoInject` is `false`.
-- The layout has no `</head>`: tags are injected before it.
+- The layout has no `</head>` before `<body>`, outside comments and scripts: tags are injected before it, and the build warns `No </head> tag found in <url>, so no SEO tags were added to it`.
 - The layout already writes that tag, or one tag of its [group](#tag-type-groups): one `og:` tag turns off every generated Open Graph tag.
 - There is nothing to print: without a page `description` or `site.description`, no description tags are written.
 

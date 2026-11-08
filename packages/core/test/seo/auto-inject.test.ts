@@ -102,8 +102,27 @@ describe('SEO Auto-Injection', () => {
       expect(result).toContain('<title>SEO Test Page</title>');
     });
 
-    it('should return original HTML if no </head> tag found', () => {
+    it('should return original HTML if no </head> tag found, and warn through the logger', () => {
       const html = '<html><body>Content</body></html>';
+      const logger = createMockLogger();
+      const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const result = autoInjectSEO(html, {
+        page: samplePage,
+        config: baseConfig,
+        siteUrl: 'https://example.com',
+        logger,
+      });
+
+      expect(result).toBe(html);
+      expect(logger.warning).toHaveBeenCalledExactlyOnceWith(
+        'No </head> tag found in /test-page, so no SEO tags were added to it',
+      );
+      expect(consoleWarn).not.toHaveBeenCalled();
+    });
+
+    it('should leave a page without a head alone when its content has a raw </head>', () => {
+      const html = '<!doctype html><body><p>Text</p></head><p>More</p></body>';
 
       const result = autoInjectSEO(html, {
         page: samplePage,
@@ -113,6 +132,57 @@ describe('SEO Auto-Injection', () => {
       });
 
       expect(result).toBe(html);
+    });
+
+    it('should inject before the real </head>, not one in a comment or a script', () => {
+      const html =
+        '<html><head><!-- extra tags go before </head> -->' +
+        '<script>var s = "</head>";</script></head><body>Content</body></html>';
+
+      const result = autoInjectSEO(html, {
+        page: samplePage,
+        config: baseConfig,
+        siteUrl: 'https://example.com',
+        logger: createMockLogger(),
+      });
+
+      expect(result).toContain('<!-- extra tags go before </head> -->');
+      expect(result).toContain('<script>var s = "</head>";</script>');
+      const realHeadClose = result.lastIndexOf('</head>');
+      expect(result.indexOf('<title>SEO Test Page</title>')).toBeGreaterThan(
+        result.indexOf('</script>'),
+      );
+      expect(result.indexOf('<title>SEO Test Page</title>')).toBeLessThan(realHeadClose);
+    });
+
+    it('should add a description when the layout only has one in a comment', () => {
+      const html =
+        '<html><head><!-- <meta name="description" content="old"> --></head><body></body></html>';
+
+      const result = autoInjectSEO(html, {
+        page: samplePage,
+        config: baseConfig,
+        siteUrl: 'https://example.com',
+        logger: createMockLogger(),
+      });
+
+      expect(result).toContain('<meta name="description" content="SEO description for test page">');
+    });
+
+    it('should not add a second title or description the layout already has', () => {
+      const html =
+        '<html><head><title data-x="1">Mine</title>' +
+        '<meta name=description content="mine"></head><body></body></html>';
+
+      const result = autoInjectSEO(html, {
+        page: samplePage,
+        config: baseConfig,
+        siteUrl: 'https://example.com',
+        logger: createMockLogger(),
+      });
+
+      expect(result.match(/<title/g)).toHaveLength(1);
+      expect(result.match(/name=("|)description/g)).toHaveLength(1);
     });
 
     it('should inject with proper indentation', () => {

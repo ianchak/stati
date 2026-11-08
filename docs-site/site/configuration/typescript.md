@@ -70,7 +70,7 @@ export default defineConfig({
 
 ## Automatic bundle injection
 
-When TypeScript is enabled, Stati **automatically injects** script tags into your HTML output before the closing `</body>` tag during both `stati dev` and `stati build`, on every page or on the pages a bundle's `include` and `exclude` patterns select. Stati does not add a script tag that is already in the page.
+When TypeScript is enabled, Stati **automatically injects** script tags into your HTML output before the closing `</body>` tag during both `stati dev` and `stati build`, on every page or on the pages a bundle's `include` and `exclude` patterns select. The tags go before the last `</body>` that isn't in a comment or a script, and a page without one gets none. Stati does not add a script tag that is already in the page; one in a comment doesn't count.
 
 ```html
 <!-- Automatically injected by Stati -->
@@ -266,4 +266,4 @@ A syntax error in a bundle fails the build with `Bundle '<name>' compilation fai
 
 Check the page's URL against the bundle's `include` and `exclude` patterns. Patterns see `/docs/intro`, not `/docs/intro.html`, and `/docs/**` does not match the `/docs` index page.
 
-Stati also injects no script, without a warning, when the bundle's path holds characters other than letters, digits, `-`, `_`, `.` and `/`, such as a space in `bundleName` or `outDir`, or when the page has no `</body>`.
+Stati also injects no script, without a warning, when the bundle's path holds characters other than letters, digits, `-`, `_`, `.` and `/`, such as a space in `bundleName` or `outDir`, or when the page has no `</body>` outside comments and scripts.
