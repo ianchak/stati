@@ -1,6 +1,6 @@
 # Blank Stati Template
 
-A minimal starter template for [Stati](https://github.com/ianchak/stati) static site generator.
+A minimal starter for [Stati](https://stati.build), the TypeScript-first static site generator.
 
 ## What's Included
 
@@ -24,28 +24,26 @@ A minimal starter template for [Stati](https://github.com/ianchak/stati) static 
 - `npm run dev` - Start the development server
 - `npm run build` - Build the site for production
 - `npm run preview` - Preview the built site
-- `npm run clean` - Clean build artifacts
+- `npm run clean` - Delete `dist/` and the `.stati/` cache
 
 ## Directory Structure
 
 ```
 ├── public/          # Static assets
-│   ├── styles.css   # Main stylesheet
+│   ├── styles.css   # Main stylesheet (src/ with Sass or Tailwind)
 │   └── favicon.svg  # Site icon
 ├── site/            # Content and templates
 │   ├── layout.eta   # Main layout template
 │   └── index.md     # Homepage content
-├── stati.config.js  # Stati configuration
+├── src/main.ts      # Client-side TypeScript (not with --no-typescript)
+├── stati.config.ts  # Stati configuration (stati.config.js with --no-typescript)
 └── package.json     # Project configuration
 ```
 
 ## Next Steps
 
-- Add more pages by creating `.md` files in the `site/` directory
-- Create additional layouts in `site/` for different page types
+- Add pages as `.md` files in `site/`: `site/about.md` becomes `/about`
+- Give a folder's pages their own layout with a `layout.eta` in that folder
 - Move shared pieces such as the header into their own templates, for example `site/partials/header.eta`, and include them with `<%~ stati.include('partials/header') %>`
-- Add collections for blog posts or documentation
-- Customize the CSS or switch to Sass/Tailwind
-- Enable [TypeScript compilation](https://stati.build/configuration/typescript) for client-side code
-
-Happy building with Stati!
+- List a folder's pages from its `index.md`, whose layout reads them as `stati.collection` (see [Collections](https://stati.build/core-concepts/collections))
+- Write client-side code in `src/main.ts`, which Stati bundles for every page (see [TypeScript](https://stati.build/configuration/typescript))

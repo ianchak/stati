@@ -81,7 +81,7 @@ Each page gets its own copy of the lists, so sorting or filtering them in place 
 <% } %>
 ```
 
-A page scores one point for each value it shares with the page, compared without regard to case. Pages with the same score are listed newest first, and pages that share no value are left out, as is the page itself. The result is empty when `url` is not a page of the collection or the page has no values. A page that belongs to no collection has no `stati.collection`, so guard it as shown. Drafts are in the collection only in builds with `--include-drafts`, and count like any other page.
+A page scores one point for each value it shares with the page, compared without regard to case. Pages with the same score are listed newest first, and pages that share no value are left out, as is the page itself. The result is empty when `url` is not a page of the collection or the page has no values.
 
 | Option            | Default    | What it does |
 | ----------------- | ---------- | ------------ |
@@ -98,7 +98,7 @@ A page scores one point for each value it shares with the page, compared without
 %>
 ```
 
-An option of the wrong type throws an error that names it, and the build reports it for the page that made the call. Calling `related()` counts as reading the collection, so the page is rebuilt when a page in the collection is added, removed or moved, or when its `title`, `description`, `tags` or `draft` change. `collections.summaryFields` replaces that list, so keep `tags` in it when you set it, and add the field when `by` names another one, so that changing it rebuilds the page too.
+An option of the wrong type throws an error that names it, and the build reports it for the page that made the call. Calling `related()` counts as reading the collection ([What rebuilds a listing](#what-rebuilds-a-listing)). When you set `collections.summaryFields`, keep `tags` in it, and add the field `by` names, so that changing it rebuilds the page too.
 
 ## Which collection a page reads
 
@@ -220,7 +220,7 @@ With posts tagged `CSS` and `JavaScript`, this creates `/blog/tags/css` and `/bl
 
 - **Keys:** `generate.from` names a front matter field of the pages in the template's collection. Lists such as `tags` give a page per value, and so do single values such as `author: ada`. Each value becomes a key through the same slugify Stati uses for heading anchors: `CSS` becomes `css`, `Node.js` becomes `node-js`.
 - **Collection:** the template reads the collection its `collection` front matter names, or else the nearest collection its folder belongs to. `site/blog/tags/[tag].md` reads `/blog`, even when `site/blog/tags/index.md` exists, because that folder holds no pages of its own.
-- **URLs:** the file's path, with the bracketed name replaced by the key. To put the pages elsewhere, write the bracketed name into `permalink`: `permalink: /topics/[tag]/` gives `/topics/css/`.
+- **URLs:** the file's path, with the bracketed name replaced by the key. To put the pages elsewhere, write the bracketed name into `permalink`: `permalink: /topics/[tag]/` gives `/topics/css/`. A `permalink` without `[tag]` is ignored, with a warning.
 - **Collisions:** values that slugify to the same key share one page, under the first value seen (newest page first), with a warning. Values whose key comes out empty get no page, also with a warning: slugify keeps only ASCII letters, digits and `_`, after dropping accents (`é` becomes `e`), so `!!!` or a tag written in another script has no key. Give such pages URLs of your own with [`collections.generate`](#pages-from-data). When another page already has a generated page's URL, or writes the same file (`/tags/` and `/tags/index` both write `tags/index.html`), that page wins.
 - **Drafts:** a tag only drafts use gets a page only when you build with `--include-drafts`.
 
@@ -315,6 +315,6 @@ Hooks see them: `beforeAll`, `afterAll` and the per-page hooks receive them like
 - **Dates:** `recentPages` sorts on `post.publishedAt`, which Stati takes from the first valid front matter field among `publishedAt`, `published`, `date` and `createdAt`. Quoted (`publishedAt: '2025-03-01'`) and unquoted (`date: 2025-03-01`) values both work. An invalid value is skipped with a warning. Navigation, ISG aging and RSS read dates in the same order.
 - **The root collection is shallow:** `site/index.md` collects only top-level pages, such as `/about` and `/blog`, not the pages inside `blog/`. Other collections include every depth.
 - **Drafts:** pages with `draft: true` are left out unless you build with `--include-drafts`.
-- **Index layouts:** an `index.eta` next to an index page is used for that page, and for the later pages of its listing, ahead of `layout.eta`. The listing can have its own template while the posts keep the folder layout. A folder's `index.md` is an index page once the folder holds another page; the root `index.md` always is.
-- **Reserved front matter:** `collection`, `paginate`, `generate`, and in templates `nav` and `search`, configure these features.
+- **Index layouts:** an `index.eta` is used ahead of `layout.eta` for index pages and the later pages of their listings; see [Template resolution order](/core-concepts/templates#template-resolution-order).
+- **Reserved front matter:** `collection`, `paginate` and `generate` configure these features. `nav` and `search` opt generated pages (in their `[param].md` template) and the 404 page into navigation and the search index.
 - **Template names:** `[tag].md`, `[author].md` and `[release-year].md` work; the name inside the brackets starts with a letter or `_` and uses letters, digits, `-` and `_`. Brackets in folder names have no meaning.

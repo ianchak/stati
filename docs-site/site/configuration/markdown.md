@@ -8,11 +8,11 @@ seo:
 
 # Markdown
 
-Stati uses [markdown-it](https://github.com/markdown-it/markdown-it) as its markdown processor. The engine is configured with sensible defaults, and you can extend it with plugins or customize rendering behavior.
+Stati renders Markdown with [markdown-it](https://github.com/markdown-it/markdown-it) 15. Extend it with plugins, or change it in `configure`.
 
 ## Configuration options
 
-Stati provides three options for markdown customization:
+The `markdown` block has three options:
 
 ```javascript
 // stati.config.js
@@ -37,8 +37,6 @@ export default defineConfig({
   },
 });
 ```
-
-> **Note:** TOC extraction and heading anchor generation are built into Stati and enabled by default. You don't need external plugins for these features.
 
 ### `markdown.toc`
 
@@ -336,71 +334,13 @@ Stati reads YAML front matter: the lines between a `---` line at the start of th
 - Values follow YAML 1.2: `time: 10:30` is the text `10:30`, `0755` is the number 755, and `1_000` is text.
 - Front matter that is not valid YAML stops the build with an error that names the file and the line. So does front matter that is a list or a single value instead of `key: value` lines, or that names another language after the opening `---`, such as `---js`. `---json` is read as JSON.
 
-**Example:**
+See [Front matter](/core-concepts/markdown#front-matter) for the fields Stati reads and how templates use the rest.
 
-```markdown
----
-title: My Page Title
-description: Page description
-date: 2024-01-15
-tags: [stati, markdown]
-author: John Doe
----
+## Plugin compatibility
 
-# Your content here
-```
-
-All front matter fields are available in templates:
-
-```eta
-<h1><%= stati.page.title %></h1>
-<p><%= stati.page.description %></p>
-<time><%= new Date(stati.page.date).toLocaleDateString() %></time>
-```
-
-## Performance
-
-Unchanged pages come from the build cache and are not rendered again (see [ISG](/core-concepts/isg)); with search on, every page's Markdown is still parsed for the search index. `configure` runs once per build, and once per dev server session. Stati uses markdown-it 15, which some older plugins don't support.
-
-## Complete example
-
-A production-ready markdown configuration:
-
-```javascript
-import { defineConfig } from '@stati/core';
-
-export default defineConfig({
-  markdown: {
-    plugins: [
-      // Syntax highlighting
-      ['prism', { defaultLanguage: 'javascript' }],
-
-      // External links
-      ['external-links', {
-        externalTarget: '_blank',
-        internalDomains: ['stati.build'],
-        internalClassName: 'internal-link',
-      }],
-
-      // Custom containers
-      ['container', 'warning'],
-      ['container', 'tip'],
-
-      // Footnotes
-      'footnote',
-    ],
-
-    configure: (md) => {
-      // Enable line breaks
-      md.set({ breaks: true });
-    },
-  },
-});
-```
+markdown-it 15 has no `markdown-it/lib/*` imports and no `md.utils.assign`, `has` or `isString`, so a plugin that uses them fails. `configure` and the plugins run once per build, and once per `stati dev` session: restart the dev server after changing them.
 
 ## Table of contents (TOC)
-
-Stati automatically extracts Table of Contents data from markdown headings and makes it available in templates via `stati.page.toc`.
 
 ### TOC entry structure
 
@@ -444,16 +384,4 @@ Stati generates URL-friendly anchor IDs from heading text:
 | `## API Reference` | `api-reference` |
 | `## What's New?` | `what-s-new` |
 
-**Duplicate Handling**: When headings have the same text, IDs are numbered:
-
-| Heading | Generated ID |
-|---------|--------------|
-| `## Example` | `example` |
-| `## Example` | `example-1` |
-| `## Example` | `example-2` |
-
-## Next steps
-
-- Learn about [Templates and layouts](/core-concepts/templates) for rendering markdown
-- Explore [Markdown concepts](/core-concepts/markdown) for content authoring
-- See [Build Hooks](/api/hooks) for programmatic customization
+Headings with the same text get numbered IDs: `example`, `example-1`, `example-2`.

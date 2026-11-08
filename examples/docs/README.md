@@ -51,7 +51,7 @@ To add a section, create a folder in `site/` with an `index.md` giving its `titl
 - `npm run build` - Build the site for production
 - `npm run build:drafts` - Build including draft pages
 - `npm run preview` - Preview the built site
-- `npm run clean` - Clean build artifacts
+- `npm run clean` - Delete `dist/` and the `.stati/` cache
 
 ## Directory structure
 
@@ -89,5 +89,3 @@ Templates can read Stati's navigation tree as `stati.nav`, but its nodes only ca
 - Set `baseUrl` in the config to your real address; the sitemap and link previews use it. For docs served from a subfolder, include the folder (`https://user.github.io/docs`): the templates add it to their links with `stati.url()`
 - Replace `public/favicon.svg`, and give pages an `image` for link previews (or create the site with image tools, which draws one for every page)
 - Build with `npm run build` and deploy the `dist/` folder to any static host
-
-Happy documenting!

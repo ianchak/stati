@@ -1,14 +1,12 @@
 ---
 title: 'Configuration file'
-description: 'Learn how to configure Stati with the stati.config.js (or stati.config.ts) file and available options.'
+description: 'Where Stati looks for stati.config.ts, how it merges and validates your config, and the main options.'
 order: 1
 seo:
   title: 'Stati configuration file'
 ---
 
 # Configuration file
-
-`stati.config.ts` (or `.js`, `.mjs`) configures your site.
 
 ## File name and location
 
@@ -23,13 +21,19 @@ Stati looks in the directory you run it from for `stati.config.ts`, then `stati.
 | `site.baseUrl` | `'http://localhost:3000'` |
 | `isg` | `{ enabled: true, ttlSeconds: 21600, maxAgeCapDays: 365 }` |
 
-Your config is merged over these defaults: `site` and `isg` are merged field by field, every other section replaces the default as a whole. If the file fails to load (for example, a syntax error), Stati prints the error and builds with the defaults, so watch the output for "Falling back to default configuration.". These stop the build with an error instead: invalid `isg`, `images`, `readingTime` or `css` blocks, an invalid `search.fields` list, invalid `seo.defaultAuthor.twitter`, `seo.twitter` or `seo.articles` values, an invalid `sitemap.news` block, `helpers` entries that are not functions, and a top-level option Stati does not know (such as a leftover `eta` block). Unknown keys stop the build at the top level and inside `css`, `images`, `readingTime`, `seo.twitter`, `seo.articles` and `sitemap.news`; an unknown key inside other blocks, such as `search` or `markdown`, is ignored (`search.fields` is checked, the other `search` options are not). An `outDir` that is, contains or sits inside `srcDir`, `staticDir`, `typescript.srcDir` (when TypeScript is enabled) or the `.stati/` cache folder, or that is the project folder or one of its parents, stops the build with an error that names both paths, because every build writes pages into `outDir` and `stati build --clean` deletes it. A `stati.config.ts` is compiled with esbuild before it loads: files it imports by relative path are bundled into it, while packages (including CommonJS ones such as `fs-extra`) stay imports that Node resolves from your project at load time, as in a `.js` config, so they must be installed and Node's rules for importing CommonJS apply (when it cannot see a package's named exports, as with `fs-extra`, use the default import). A `.js` config with `import` statements loads without `"type": "module"` in `package.json`, but Node prints a warning; add it, or name the file `.mjs`.
+Your config is merged over these defaults: `site` and `isg` field by field, every other section replaces the default as a whole.
+
+- If the file fails to load, for example with a syntax error, Stati prints the error and "Falling back to default configuration." and builds with the defaults, so watch the output.
+- These stop the build with an error instead: a top-level option Stati does not know (such as a leftover `eta` block), `helpers` entries that are not functions, invalid `isg`, `images`, `readingTime` or `css` blocks, an invalid `search.fields` list, invalid `seo.defaultAuthor.twitter`, `seo.twitter` or `seo.articles` values, and an invalid `sitemap.news` block. Unknown keys are rejected at the top level and inside `css`, `images`, `readingTime`, `seo.twitter`, `seo.articles` and `sitemap.news`, and ignored inside other blocks, such as `search` or `markdown`.
+- An `outDir` that is, contains or sits inside `srcDir`, `staticDir`, `typescript.srcDir` (when TypeScript is enabled) or the `.stati/` cache folder, or that is the project folder or one of its parents, stops the build with an error that names both paths: every build writes pages into `outDir`, and `stati build --clean` deletes it.
+- `stati.config.ts` is compiled with esbuild before it loads. Files it imports by relative path are bundled into it; packages stay imports that Node resolves from your project, as in a `.js` config, so they must be installed. When Node can't see a CommonJS package's named exports, as with `fs-extra`, use its default import.
+- A `.js` config with `import` statements loads without `"type": "module"` in `package.json`, but Node prints a warning; add it, or name the file `.mjs`.
 
 ## Basic setup
 
-Create `stati.config.js` in your project root:
+Create `stati.config.ts` (or `stati.config.js`) in your project root. `defineConfig()` types the object, so your editor checks the options and completes them:
 
-```javascript
+```typescript
 import { defineConfig } from '@stati/core';
 
 export default defineConfig({
@@ -39,36 +43,6 @@ export default defineConfig({
     defaultLocale: 'en-US',
   },
 });
-```
-
-## TypeScript configuration
-
-For full type safety, use `stati.config.ts`:
-
-```typescript
-import { defineConfig } from '@stati/core';
-import type { StatiConfig } from '@stati/core';
-
-const config: StatiConfig = {
-  site: {
-    title: 'My Stati Site',
-    baseUrl: 'https://my-site.com',
-    defaultLocale: 'en-US',
-  },
-
-  // Type-safe plugin configuration
-  markdown: {
-    plugins: ['footnote'], // loads markdown-it-footnote
-  },
-
-  // ISG options with autocomplete
-  isg: {
-    enabled: true,
-    ttlSeconds: 21600,
-  },
-};
-
-export default defineConfig(config);
 ```
 
 ## Configuration sections
@@ -94,79 +68,41 @@ The `markdown` block takes `plugins` (markdown-it plugin names or `[name, option
 
 ### Template configuration
 
-Register functions for your templates under `helpers`:
+Register functions for your templates under `helpers`, and call them as `stati.helpers.name()`:
 
 ```javascript
 export default defineConfig({
   helpers: {
-    // Date formatting
-    date: (date) => {
-      return new Intl.DateTimeFormat('en-US', {
-        dateStyle: 'long',
-      }).format(new Date(date));
-    },
-
-    // Uppercase transform
     upper: (text) => String(text).toUpperCase(),
   },
 });
 ```
 
-> **Note:** Helpers are called from templates as `stati.helpers.name()`. Stati's own functions, such as `stati.slugify()`, stay on `stati` itself.
-
-**Using helpers in templates:**
-
 ```eta
-<!-- Format a date -->
-<time><%= stati.helpers.date(stati.page.date) %></time>
-
-<!-- Uppercase text -->
 <span><%= stati.helpers.upper(stati.page.category) %></span>
-
-<!-- Combine with Stati's slugify -->
-<a href="<%= stati.url(`/${stati.slugify(stati.page.title)}`) %>"><%= stati.helpers.upper(stati.page.title) %></a>
 ```
 
-See [Template configuration](/configuration/templates) for more helper patterns.
+See [Templates](/configuration/templates#helpers) for the rules helpers follow.
 
 ### ISG configuration
 
-Configure Incremental Static Generation for smart caching:
+Incremental Static Generation keeps unchanged pages from the last build:
 
 ```javascript
 export default defineConfig({
   isg: {
-    // Enable ISG caching
-    enabled: true,
-
-    // Default cache TTL in seconds
-    ttlSeconds: 21600, // 6 hours
-
-    // Maximum age cap in days
-    maxAgeCapDays: 365,
-
-    // Aging rules: TTL by age since the page's publish date
+    enabled: true, // default
+    ttlSeconds: 21600, // default: rebuild a page after 6 hours
+    maxAgeCapDays: 365, // default: pages published longer ago are no longer rebuilt for their TTL
     aging: [
-      { untilDays: 7, ttlSeconds: 86400 },     // up to 7 days old: 1 day
-      { untilDays: 30, ttlSeconds: 604800 },   // up to 30 days old: 1 week
-      { untilDays: 365, ttlSeconds: 2592000 }, // up to 365 days old: 30 days
+      { untilDays: 7, ttlSeconds: 86400 }, // pages up to 7 days old: 1 day
+      { untilDays: 30, ttlSeconds: 604800 }, // up to 30 days old: 1 week
     ],
   },
 });
 ```
 
-**Available Options:**
-
-- `enabled` (boolean) - Enable or disable ISG caching (default: true)
-- `ttlSeconds` (number) - Cache time-to-live in seconds for pages no aging rule covers (default: 21600)
-- `maxAgeCapDays` (number) - Dated pages older than this are frozen: no longer rebuilt for TTL reasons (default: 365)
-- `aging` (array) - Array of aging rules with `untilDays` and `ttlSeconds` properties
-
-**Aging Rules:**
-
-Aging rules set a dated page's TTL from its age. A page's age is counted from its `publishedAt` (or `published`, `date`, `createdAt`) front matter. Stati applies the first rule whose `untilDays` is at least the page's age; pages older than every rule use the last rule. Pages without a publish date use `ttlSeconds`.
-
-See [ISG configuration](/configuration/isg) for validation rules and examples.
+See [ISG configuration](/configuration/isg) for how aging rules apply, validation and invalidation.
 
 ### Collections configuration
 
@@ -320,42 +256,7 @@ export default defineConfig({
 });
 ```
 
-**Available Hooks:**
-
-- `beforeAll` (function) - Called once after content is loaded, before any page renders, receives `BuildContext`
-- `afterAll` (function) - Called after completing the build process, receives `BuildContext`
-- `beforeRender` (function) - Called before rendering each page that is re-rendered (not for pages served from the ISG cache), receives `PageContext`
-- `afterRender` (function) - Called after rendering each re-rendered page, receives `PageContext`
-
-See [Build hooks](/api/hooks) for the full order and the caching notes.
-
-### Multiple configuration files
-
-You can split configuration across multiple files:
-
-```javascript
-// config/base.js
-export const baseConfig = {
-  site: {
-    title: 'My Site',
-    baseUrl: 'https://example.com',
-  },
-};
-
-// stati.config.js
-import { defineConfig } from '@stati/core';
-import { baseConfig } from './config/base.js';
-
-export default defineConfig({
-  ...baseConfig,
-
-  // Environment-specific overrides
-  site: {
-    ...baseConfig.site,
-    baseUrl: process.env.SITE_URL || baseConfig.site.baseUrl,
-  },
-});
-```
+`beforeRender` and `afterRender` run only for pages that render again, not for pages the ISG cache serves. See [Build hooks](/api/hooks) for the full order and the caching notes.
 
 ## Multi-environment configuration
 
@@ -426,20 +327,3 @@ stati dev                         # development settings
 ```
 
 Stati does not set `process.env.NODE_ENV`. A config that selects its settings with `process.env.NODE_ENV || 'development'` gets the development settings during a plain `stati build`, unless your script sets `NODE_ENV=production` itself. `getEnv()` reflects the command that is running. The dev server does not watch the config file, and some settings (such as Markdown plugins) are set up only once, so restart it after changing the config or its environment variables.
-
-## Configuration reference
-
-For detailed information about specific configuration options, see:
-
-- **[Site Metadata](/configuration/site-metadata)** - Site title, base URL, and locale settings
-- **[Templates](/configuration/templates)** - Template helpers and the Eta settings Stati fixes
-- **[Markdown Configuration](/configuration/markdown)** - Plugins and markdown-it processing
-- **[ISG Options](/configuration/isg)** - Incremental static generation and caching
-- **[Collections](/core-concepts/collections)** - Listings, pagination and generated pages
-- **[SEO Configuration](/configuration/seo)** - SEO metadata, sitemap and robots.txt
-- **[Search](/configuration/search)** - Search index generation
-- **[RSS Configuration](/configuration/rss)** - RSS feed generation
-- **[TypeScript](/configuration/typescript)** - Built-in TypeScript compilation with esbuild
-- **[Images](/configuration/images)** - Image sizes, responsive images and Open Graph cards
-- **[CSS](/configuration/css)** - Hashed production stylesheets, and Tailwind CSS in `stati dev` and `stati build`
-- **[CLI commands](/cli/commands#config-file-location)** - Where Stati looks for the config file

@@ -8,13 +8,13 @@ seo:
 
 # Recipes
 
-Practical recipes and patterns for building sites with Stati. Each recipe solves a common use case with code you can adapt. A recipe that starts with a `site/partials/` file name, such as `site/partials/menu.eta`, is a template to include from a layout: `<%~ stati.include('partials/menu') %>`. The others are layouts: they say which pages they lay out, and wrap themselves in the page shell `site/base.eta` with `stati.layout('base')` (see [Sharing a shell](/core-concepts/templates#sharing-a-shell)). Links to the site's own pages go through `stati.url()`, so the templates also work on a site served from a subfolder.
+A recipe that starts with a `site/partials/` file name, such as `site/partials/menu.eta`, is a template to include from a layout: `<%~ stati.include('partials/menu') %>`. The others are layouts: they say which pages they lay out, and wrap themselves in the page shell `site/base.eta` with `stati.layout('base')` (see [Sharing a shell](/core-concepts/templates#sharing-a-shell)). Links to the site's own pages go through `stati.url()`, so the templates also work on a site served from a subfolder.
 
 ## Content management
 
 ### Dynamic navigation menu
 
-Automatically generate navigation from your content structure using Stati's built-in navigation:
+Build a menu from the navigation tree, `stati.nav.tree`:
 
 ```eta
 <!-- site/partials/menu.eta -->
@@ -120,7 +120,7 @@ Common navigation patterns:
 
 ### Table of contents (in-page navigation)
 
-Stati automatically extracts headings (h2-h6) and makes them available via `stati.page.toc`:
+`stati.page.toc` lists the page's h2 to h6 headings; it is empty when there are none or `markdown.toc` is `false`:
 
 ```eta
 <!-- site/partials/toc.eta -->
@@ -232,7 +232,7 @@ Use collection data provided to index pages to list content and link to tag page
 ```eta
 <!-- site/blog/index.eta: layout of site/blog/index.md -->
 <% stati.layout('base') %>
-<% // Collection data is automatically provided to index pages %>
+
 <% const posts = stati.collection ? stati.collection.recentPages : [] %>
 <% const tags = stati.collection ? Object.keys(stati.collection.pagesByTag) : [] %>
 
@@ -312,7 +312,7 @@ A post reads the collection of its folder, so the post layout can ask it for rel
 <% } %>
 ```
 
-Because the layout calls `stati.collection.related()`, ISG re-renders the posts when a post is added or removed or its title or tags change. See [Related pages](/core-concepts/collections#related-pages) for the options.
+Because the layout calls `stati.collection.related()`, ISG re-renders the posts when a post is added, removed or moved, or its publish date or a field in `collections.summaryFields` (by default `title`, `description`, `tags` and `draft`) changes. See [Related pages](/core-concepts/collections#related-pages) for the options.
 
 ### Paginated listing
 
@@ -395,37 +395,17 @@ import { defineConfig } from '@stati/core';
 
 export default defineConfig({
   helpers: {
-    // Date formatting
-    formatDate: (date) => {
-      return new Date(date).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-    },
-
-    // Time ago formatting
-    timeAgo: (date) => {
-      const now = new Date();
-      const then = new Date(date);
-      const diffMs = now - then;
-      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-      if (diffDays === 0) return 'Today';
-      if (diffDays === 1) return 'Yesterday';
-      if (diffDays < 7) return `${diffDays} days ago`;
-      if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-      if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
-      return `${Math.floor(diffDays / 365)} years ago`;
-    }
-  }
+    formatDate: (date) =>
+      new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+  },
 });
 ```
 
-Call them in templates as `stati.helpers.name()`. For slugs, Stati's own `stati.slugify()` is built in, and so is the reading time: `stati.page.readingTime` holds whole minutes at `readingTime.wordsPerMinute` (default 230).
+Call them in templates as `stati.helpers.name()`. A helper runs when the page renders, so text that depends on the build date, such as "3 days ago", stays as it was on pages the ISG cache serves. For slugs, Stati's own `stati.slugify()` is built in, and so is the reading time: `stati.page.readingTime` holds whole minutes at `readingTime.wordsPerMinute` (default 230).
 
 ```eta
-<!-- Post template -->
+<!-- site/blog/layout.eta: layout of the posts -->
+<% stati.layout('base') %>
 <article class="post">
   <header>
     <h1><%= stati.page.title %></h1>
@@ -433,7 +413,6 @@ Call them in templates as `stati.helpers.name()`. For slugs, Stati's own `stati.
     <div class="meta">
       <% if (published) { %>
         <time><%= stati.helpers.formatDate(published) %></time>
-        <span><%= stati.helpers.timeAgo(published) %></span>
       <% } %>
       <span><%= stati.page.readingTime %> min read</span>
     </div>
@@ -468,9 +447,9 @@ Call them in templates as `stati.helpers.name()`. For slugs, Stati's own `stati.
 
 ## SEO & metadata
 
-### Leveraging built-in SEO
+### Built-in SEO
 
-Stati provides automatic SEO tag injection. Configure it in your config:
+Stati adds SEO tags to every page. Set the site-wide values in the config:
 
 ```javascript
 // stati.config.js
@@ -484,7 +463,6 @@ export default defineConfig({
   },
 
   seo: {
-    autoInject: true,
     defaultAuthor: {
       name: 'Your Name',
       url: 'https://yoursite.com',
@@ -558,7 +536,7 @@ export default defineConfig({
           headline: page.frontMatter.title,
           description: page.frontMatter.description,
           datePublished: page.publishedAt?.toISOString(),
-          dateModified: page.frontMatter.modifiedAt || page.publishedAt?.toISOString(),
+          dateModified: page.frontMatter.updated || page.publishedAt?.toISOString(),
           author: {
             '@type': 'Person',
             name: page.frontMatter.author || ctx.config.seo?.defaultAuthor?.name
@@ -594,7 +572,7 @@ export default defineConfig({
       const response = await fetch('https://api.example.com/data');
       const data = await response.json();
 
-      // Store in a way that templates can access
+      // Templates read it as stati.page.externalData
       ctx.pages.forEach(page => {
         if (page.frontMatter.useExternalData) {
           page.frontMatter.externalData = data;
@@ -605,85 +583,7 @@ export default defineConfig({
 });
 ```
 
-### Dynamic class names with propValue
-
-Use `stati.propValue()` for clean dynamic class generation:
-
-```eta
-<!-- Component with dynamic classes -->
-<button
-  class="<%= stati.propValue(
-    'btn',
-    `btn-${stati.page.variant || 'primary'}`,
-    stati.page.large && 'btn-lg',
-    stati.page.disabled && 'btn-disabled'
-  ) %>"
->
-  <%= stati.page.buttonText %>
-</button>
-
-<!-- Dynamic attributes -->
-<div
-  class="<%= stati.propValue('card', stati.page.featured && 'featured') %>"
-  data-category="<%= stati.page.category %>"
-  data-analytics="<%= stati.propValue('card-click', `category-${stati.page.category}`) %>"
->
-  <!-- Card content -->
-</div>
-```
-
-### ISG cache invalidation strategies
-
-Configure intelligent caching with aging rules:
-
-```javascript
-// stati.config.js
-import { defineConfig } from '@stati/core';
-
-export default defineConfig({
-  isg: {
-    enabled: true,
-    ttlSeconds: 21600, // 6 hours default
-
-    // Age-based TTL adjustment
-    aging: [
-      { untilDays: 7, ttlSeconds: 21600 },    // up to 7 days old: 6 hours
-      { untilDays: 30, ttlSeconds: 86400 },   // up to 30 days old: 1 day
-      { untilDays: 90, ttlSeconds: 259200 },  // up to 90 days old (and older): 3 days
-    ]
-  }
-});
-```
-
-**Cache Tags:**
-
-Stati automatically extracts tags from each page's front matter `tags` array field. These tags can be used for targeted cache invalidation.
-
-**Example front matter:**
-
-```markdown
----
-title: My Blog Post
-tags: [blog, tutorial, javascript]
----
-```
-
-This page will be tagged with `blog`, `tutorial`, and `javascript` in the cache, allowing you to invalidate all related content:
-
-```bash
-# Invalidate by tag from front matter
-stati invalidate "tag:blog"
-stati invalidate "tag:tutorial"
-
-# Invalidate by path prefix
-stati invalidate "path:/blog"
-
-# Invalidate by glob pattern
-stati invalidate "glob:/blog/**"
-
-# Invalidate by age
-stati invalidate "age:3months"
-```
+Front matter is part of each page's cache hash, so these pages re-render when the fetched data changes and stay cached while it does not.
 
 ### Performance monitoring
 
@@ -727,85 +627,31 @@ The render hooks only run for pages that are re-rendered, not for pages served f
 
 ### Environment-specific configuration
 
-Use environment variables for different build targets:
+`getEnv()` returns `'production'` in `stati build` and `stati preview` and `'development'` in `stati dev`:
 
 ```javascript
 // stati.config.js
 import { defineConfig, getEnv } from '@stati/core';
 
-const isDev = getEnv() === 'development';
 const isProd = getEnv() === 'production';
 
 export default defineConfig({
   site: {
     title: 'My Site',
-    baseUrl: isProd
-      ? 'https://example.com'
-      : 'http://localhost:3000'
-  },
-
-  isg: {
-    enabled: isProd // Only enable ISG in production
+    baseUrl: isProd ? 'https://example.com' : 'http://localhost:3000',
   },
 
   seo: {
-    autoInject: isProd, // Only inject SEO tags in production
-    debug: isDev // Enable SEO debugging in development
-  }
+    debug: !isProd, // SEO warnings while you develop
+  },
 });
 ```
+
+Keep ISG on in development: with `isg.enabled: false`, every rebuild renders every page. For a config per environment, see [Multi-environment configuration](/configuration/file#multi-environment-configuration).
 
 ### Markdown extensions
 
-Add custom markdown processing with plugins and the configure function. Install the plugins first: `npm install -D markdown-it-container`.
-
-```javascript
-// stati.config.js
-import { defineConfig } from '@stati/core';
-
-export default defineConfig({
-  markdown: {
-    // Load markdown-it plugins (Stati auto-prepends 'markdown-it-')
-    // Note: TOC and heading anchors are built-in, no plugins needed
-    plugins: [
-      ['container', 'tip'],
-      ['container', 'warning']
-    ],
-
-    // Custom markdown-it configuration
-    configure: (md) => {
-      // Customize renderer rules. Wrap the default image rule instead of
-      // replacing it: Stati's rule adds width, height and lazy loading, and
-      // with images.responsive it writes a <picture> with srcset.
-      const defaultImageRender = md.renderer.rules.image;
-
-      md.renderer.rules.image = (tokens, idx, options, env, self) => {
-        // Attributes set on the token, such as a class, are kept on the <img>
-        tokens[idx].attrJoin('class', 'responsive-image');
-        return defaultImageRender(tokens, idx, options, env, self);
-      };
-
-      // Customize fence (code block) rendering
-      md.renderer.rules.fence = (tokens, idx, options, env, self) => {
-        const token = tokens[idx];
-        const info = token.info ? md.utils.unescapeAll(token.info).trim() : '';
-        const langName = info ? info.split(/\s+/g)[0] : '';
-        const filename = info.split(/\s+/g).slice(1).join(' ');
-
-        return `
-          <div class="code-block">
-            ${filename ? `<div class="code-filename">${md.utils.escapeHtml(filename)}</div>` : ''}
-            <pre><code class="language-${langName}">${md.utils.escapeHtml(token.content)}</code></pre>
-            <button class="copy-button" onclick="copyCode(this)">Copy</button>
-          </div>
-        `;
-      };
-    }
-  }
-});
-```
-
-An image rule that doesn't call `defaultImageRender` replaces Stati's own, and Markdown images lose their sizes, lazy loading and [responsive versions](/configuration/images).
+For markdown-it plugins such as `markdown-it-container`, and for changing how elements render with `markdown.configure`, see [Markdown configuration](/configuration/markdown#custom-renderer-rules). Wrap Stati's `image` rule instead of replacing it, or Markdown images lose their sizes, lazy loading and [responsive versions](/configuration/images).
 
 ## Development workflow
 
@@ -823,16 +669,3 @@ An image rule that doesn't call `defaultImageRender` replaces Stati's own, and M
   }
 }
 ```
-
-### Git hooks for cache management
-
-```bash
-#!/bin/sh
-# .husky/post-merge
-# Clear the whole cache after pulling changes
-npx stati invalidate
-```
-
-`stati invalidate` without a query clears every cache entry. A `path:` query is a plain prefix (`path:/blog`), not a glob; use `glob:` for wildcards.
-
-For complete starter sites, see [Examples](/examples/list).

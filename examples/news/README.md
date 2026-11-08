@@ -118,5 +118,3 @@ Stati rebuilds the pages that list a story when it is added, moved, retitled, or
 - Replace `public/favicon.svg`, `public/images/logo.png` (the publisher logo search engines show) and `public/images/social-card.png` (the default link preview), or create the site with image tools to draw a card for every page
 - Replace the sample lead images in `public/images/news/` with your own
 - Build with `npm run build` and deploy the `dist/` folder to any static host; rebuild when you publish, or on a schedule, to keep the front page date and the Google News sitemap current
-
-Happy publishing!

@@ -1,8 +1,6 @@
 # Stati
 
-**A feature-packed, TypeScript-first static site generator that's fast to learn and even faster to build with.**
-
-Built for developers who want modern tooling without the complexity. Write in Markdown, template with Eta, and deploy anywhere.
+**A TypeScript-first static site generator.** Write in Markdown, template with Eta, and rebuild only the pages that changed.
 
 [![Build](https://github.com/ianchak/stati/actions/workflows/ci.yml/badge.svg)](https://github.com/ianchak/stati/actions/workflows/ci.yml)
 [![Coverage](https://codecov.io/github/ianchak/stati/graph/badge.svg?token=V3DWFQ2W7E)](https://codecov.io/github/ianchak/stati)
@@ -16,11 +14,11 @@ Built for developers who want modern tooling without the complexity. Write in Ma
 
 ## Why Stati?
 
-- **Fast Setup** - Create a site with `npx create-stati`
-- **Simple by Design** - Markdown files become pages. No complex configuration required.
-- **Smart Caching** - Incremental builds with intelligent cache invalidation
-- **Your Choice of CSS** - Plain CSS, Sass, or Tailwind CSS
-- **SEO Ready** - Automatic meta tags, Open Graph, and structured data
+- **Quick setup** - `npx create-stati` creates a site from a blank, blog, docs or news template
+- **Markdown pages** - Files in `site/` become pages, with no configuration required
+- **Incremental builds** - Only pages whose content, templates or data changed render again
+- **Your choice of CSS** - Plain CSS, Sass or Tailwind CSS
+- **SEO built in** - Meta, Open Graph and Twitter tags on every page; sitemap, robots.txt and RSS when you turn them on
 
 ---
 
@@ -162,7 +160,7 @@ Stati injects SEO metadata into every page during the build, with no `seo` block
 - Structured data (JSON-LD) when configured in front matter
 - `noindex` on the 404 page, which also stays out of the sitemap, search index, RSS feeds, navigation and Open Graph cards
 
-You can also enable sitemap and robots.txt generation with a single config option.
+Set `sitemap.enabled` and `robots.enabled` to write `sitemap.xml` and `robots.txt` in production builds.
 
 ### CSS Your Way
 
@@ -172,9 +170,7 @@ Choose your styling approach during setup:
 npx create-stati my-site --styling=tailwind
 ```
 
-- **Plain CSS** - Simple and straightforward
-- **Sass/SCSS** - CSS with superpowers
-- **Tailwind CSS** - Utility-first framework
+`--styling` takes `css` (the default), `sass` or `tailwind`.
 
 ---
 
@@ -191,11 +187,6 @@ npx stati build --clean --force  # Pass flags to stati directly
 
 # Preview
 npm run preview          # Test production build locally
-
-# Cache Management
-npx stati invalidate "tag:news"
-npx stati invalidate "path:/blog/"
-npx stati invalidate "age:6months"
 ```
 
 ---
@@ -217,160 +208,9 @@ export default defineConfig({
 });
 ```
 
-This is all you need! Stati automatically enables:
-- **ISG caching** with 6-hour TTL
-- **SEO auto-injection** for all pages
-- **Markdown processing** with standard features
-
-### Extended Configuration
-
-Customize behavior or enable optional features:
-
-```javascript
-import { defineConfig } from '@stati/core';
-
-export default defineConfig({
-  // Directory configuration
-  srcDir: 'site',           // Content source (default: 'site')
-  outDir: 'dist',           // Build output (default: 'dist')
-  staticDir: 'public',      // Static assets (default: 'public')
-
-  // Site metadata
-  site: {
-    title: 'My Stati Site',
-    baseUrl: 'https://example.com',
-    defaultLocale: 'en-US',
-  },
-
-  // Markdown processing
-  markdown: {
-    toc: true, // TOC + heading anchors (default: true)
-    plugins: [
-      ['external-links', { externalTarget: '_blank' }], // Open external links in new tab
-    ],
-    configure: (md) => {
-      // Configure MarkdownIt instance directly
-    },
-  },
-
-  // Template helpers, called as stati.helpers.formatDate()
-  helpers: {
-    formatDate: (date) => new Date(date).toLocaleDateString('en-US'),
-  },
-
-  // Incremental Static Generation (enabled by default)
-  isg: {
-    ttlSeconds: 86400,        // Cache TTL: 24 hours (default: 21600 / 6 hours)
-    maxAgeCapDays: 30,        // Dated pages older than this stop rebuilding on TTL (default: 365)
-    aging: [
-      { untilDays: 7, ttlSeconds: 86400 },   // up to 7 days old: 1 day
-      { untilDays: 30, ttlSeconds: 604800 }, // up to 30 days old: 1 week
-    ],
-  },
-
-  // SEO configuration (auto-injection enabled by default)
-  seo: {
-    defaultAuthor: {
-      name: 'John Doe',
-      url: 'https://johndoe.com', // article:author on article pages
-      twitter: '@johndoe',        // twitter:creator
-    },
-    twitter: { site: '@example' },          // twitter:site
-    articles: { include: ['/blog/*'] },     // og:type article + article:* tags
-    debug: false,             // Enable SEO debug logging
-  },
-
-  // Sitemap generation (opt-in)
-  sitemap: {
-    enabled: true,
-    defaultPriority: 0.5,
-    defaultChangeFreq: 'monthly',
-    excludePatterns: ['/draft/**', '/admin/**'],
-    priorityRules: [
-      { pattern: '/', priority: 1.0 },
-      { pattern: '/blog/**', priority: 0.8 },
-    ],
-  },
-
-  // Robots.txt generation (opt-in)
-  robots: {
-    enabled: true,
-    disallow: ['/admin/', '/draft/'],
-    sitemap: true,            // Auto-include sitemap URL
-  },
-
-  // Development server
-  dev: {
-    port: 3000,
-    host: 'localhost',
-    open: false,              // Auto-open browser (default: false)
-  },
-
-  // TypeScript compilation (opt-in)
-  typescript: {
-    enabled: true,            // Enable TypeScript compilation
-    srcDir: 'src',            // Source directory (default: 'src')
-    // If bundles omitted, defaults to [{ entryPoint: 'main.ts', bundleName: 'main' }]
-    // hash and minify are automatic based on build mode
-  },
-
-  // Build lifecycle hooks
-  hooks: {
-    beforeAll: async (ctx) => {
-      console.log(`Building ${ctx.pages.length} pages...`);
-    },
-    afterAll: async (ctx) => {
-      console.log('Build complete!');
-    },
-  },
-});
-```
-
-This extended configuration example covers the most common options. For a full list of available settings, see the documentation.
+With this config, ISG caching (6-hour TTL) and SEO tags on every page are on.
 
 [View full configuration options →](https://stati.build/configuration/file/)
-
----
-
-## Examples
-
-### Blog Post with SEO
-
-```markdown
----
-title: Getting Started with Stati
-description: Learn how to build fast static sites
-date: 2024-01-15
-tags: [tutorial, stati]
-seo:
-  keywords: [static site generator, typescript, markdown]
-  openGraph:
-    image: /images/tutorial-cover.jpg
----
-
-# Getting Started with Stati
-
-Your content here...
-```
-
-### Custom Layout
-
-```eta
-<!-- site/blog/layout.eta -->
-<!DOCTYPE html>
-<html>
-  <head>
-    <title><%= stati.page.title %> - My Blog</title>
-  </head>
-  <body>
-    <article>
-      <h1><%= stati.page.title %></h1>
-      <time><%= stati.helpers.formatDate(stati.page.date) %></time>
-      <%~ stati.content %>
-    </article>
-  </body>
-</html>
-```
 
 ---
 
@@ -394,35 +234,14 @@ package READMEs. Add the Context7 MCP server to your assistant, then mention
 
 ### AI agent skill
 
-The portable [Stati skill](./.claude/skills/stati/SKILL.md) teaches agents the
-site-building workflow, Stati-specific Eta/component rules, configuration, and
-generated features. It includes detailed references, a working starter, and a
-smoke test against an installed core package.
-
-`create-stati --agent-skill` installs it in a new site. To add it to an existing
-site, or update it, use the open [`skills` CLI](https://github.com/vercel-labs/skills):
+The [Stati skill](./.claude/skills/stati/SKILL.md) teaches coding agents to build Stati sites: content, Eta templates, includes and helpers, configuration and the built-in features. `create-stati --agent-skill` installs it in a new site. To add or update it in an existing site:
 
 ```bash
-# Add the skill (asks which agents; -a claude-code --copy -y skips the prompts)
-npx skills add ianchak/stati --skill stati
-
-# Update the skill
-npx skills update stati -p
+npx skills@1 add ianchak/stati --skill stati -a claude-code --copy -y
+npx skills@1 update stati -p
 ```
 
-Commit the `skills-lock.json` it writes, or `npx skills update` finds nothing
-to update. An update replaces the whole folder, so keep project rules in
-`CLAUDE.md` or `AGENTS.md`, not in the skill. `.claude/skills/stati/` serves
-both Claude Code and Copilot in VS Code; `-a universal` installs to
-`.agents/skills/stati/` for Copilot, Codex, Cursor and other agents. The CLI
-needs `git` and network access, and sends anonymous
-usage data unless `DISABLE_TELEMETRY=1` or `DO_NOT_TRACK=1` is set. See the
-[scaffolder docs](https://stati.build/cli/scaffolder/#agent-skill) for details
-and [installation and discovery](./.claude/skills/stati/references/installation.md)
-for verification and explicit `/stati` invocation. Automatic discovery does not
-guarantee automatic use on every request. See the
-[resource directory](./.claude/skills/stati/references/resources.md) for official
-documentation links, version provenance, and source-verified caveats.
+Commit the `skills-lock.json` the first command writes; the update reads it. See the [scaffolder docs](https://stati.build/cli/scaffolder/#agent-skill) for the install targets and [installation and discovery](./.claude/skills/stati/references/installation.md) for checking that the skill loads.
 
 ---
 
@@ -451,11 +270,7 @@ Contributing to this repository needs Node.js 22.20.0+ or 24+ and npm 11.5.1+ (s
 
 ## Contributing
 
-We welcome contributions! See [CONTRIBUTING.md](./CONTRIBUTING.md) for:
-- Development setup
-- Coding guidelines
-- Testing requirements
-- PR process
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for the development setup, coding guidelines, tests and the pull request process.
 
 ---
 

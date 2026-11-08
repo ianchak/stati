@@ -6,8 +6,6 @@ order: 10
 
 # AI and content policy
 
-This page describes how AI systems, LLMs, and automated tools may use the content on stati.build.
-
 ## License
 
 Stati documentation is released under the [MIT License](https://github.com/ianchak/stati/blob/main/LICENSE). You are free to:
@@ -34,27 +32,14 @@ Stati's documentation is indexed by [Context7](https://context7.com), so AI codi
 
 ## Site-building skill for AI agents
 
-The repository includes a portable
-[Stati skill bundle](https://github.com/ianchak/stati/tree/main/.claude/skills/stati)
-for agents building Stati websites. It covers Markdown, routing, Eta layouts,
-includes, props and helpers, configuration, assets, SEO, search, feeds, caching,
-and deployment.
-
-`create-stati --agent-skill` installs it in a new site. To add it to an existing
-site or update it, see
-[Add or update the skill in an existing site](/cli/scaffolder#add-or-update-the-skill-in-an-existing-site).
-
-Start a fresh Claude Code session in the project and check for `/stati` in the
-command menu. Invoke `/stati` explicitly to verify it loads. Discovery makes a
-skill available but does not guarantee automatic invocation for every request.
-See the
+The repository includes a
+[Stati skill](https://github.com/ianchak/stati/tree/main/.claude/skills/stati)
+for agents building Stati websites. `create-stati --agent-skill` installs it in a new site; see
+[Add or update the skill in an existing site](/cli/scaffolder#add-or-update-the-skill-in-an-existing-site)
+for other sites, and the
 [installation guide](https://github.com/ianchak/stati/blob/main/.claude/skills/stati/references/installation.md)
-for troubleshooting and an optional project-level reminder.
-
-The skill includes version-specific caveats and a smoke test that builds an
-isolated temporary example against the site's installed `@stati/core`. It is
-guidance, not a guarantee that an agent's output is correct: always build and
-validate the generated website.
+for checking that it loads. The skill is guidance, not a guarantee that an agent's output is
+correct: build and check the site it generates.
 
 ## Contact
 

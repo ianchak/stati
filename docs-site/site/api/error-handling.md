@@ -1,12 +1,10 @@
 ---
 title: 'Error handling'
-description: 'Learn how Stati handles errors during build and development.'
+description: 'What stops a Stati build, what a production build works around, and how errors reach the terminal and the dev error overlay.'
 order: 3
 ---
 
 # Error handling
-
-This page lists what stops a build, what a production build works around, and how errors are reported in the terminal and in the dev server's error overlay.
 
 ## Error categories
 
@@ -33,10 +31,10 @@ This page lists what stops a build, what a production build works around, and ho
 // Example: Invalid configuration
 export default {
   isg: {
-    ttlSeconds: 'invalid', // ❌ ISG_INVALID_TTL: ttlSeconds must be a positive integer representing seconds
+    ttlSeconds: 'invalid', // ISG_INVALID_TTL: ttlSeconds must be a positive integer representing seconds
   },
   images: {
-    responsive: { widht: [480, 960] }, // ❌ Unknown option images.responsive.widht. Allowed options: widths, formats, quality, sizes.
+    responsive: { widht: [480, 960] }, // Unknown option images.responsive.widht. Allowed options: widths, formats, quality, sizes.
   },
 };
 ```
@@ -54,12 +52,6 @@ export default {
 - **Missing or empty content directory**: The build succeeds with 0 pages ("Found 0 pages"), so check `srcDir` if a build produces nothing
 - **Unsupported front matter format**: A front matter block marked with an unknown language (for example `---toml`) fails the build; YAML (the default) and `---json` are supported
 
-**Common scenarios**:
-
-- Individual content files that cannot be read
-- Front matter that is not valid YAML, such as an unquoted value that contains a colon
-- A misspelled `srcDir`, which silently produces an empty site
-
 ### Template rendering errors
 
 **When they occur**: During template processing and HTML generation
@@ -67,27 +59,7 @@ export default {
 **Handling**:
 
 - **Development mode**: Throws `TemplateError` with detailed context (file, line, column) for the template that failed, even when it was included or named as a shell, shown in the error overlay
-- **Production mode**: A failing layout or shell is logged as an error and the page is written with the built-in fallback template (see Fallback Mechanisms section); a failing include is logged as an error and replaced by `<!-- Error rendering site/partials/card.eta: message -->`, and the rest of the page renders. Either way the page is not cached: each later build renders it again and logs the error again until the template is fixed (an include that names no template is handled the same way)
-
-**Common scenarios**:
-
-- A template name that matches no file
-- Template syntax errors
-- Template rendering failures (layouts, shells and included templates)
-- Missing template data
-
-**Applies to**: Layouts, the shells they name with `stati.layout()`, and templates rendered by `stati.include()`
-
-```eta
-<!-- Template syntax error -->
-<% if (stati.collection?.pages { %> <!-- ❌ Missing closing parenthesis -->
-  <ul>
-    <% stati.collection.pages.forEach(page => { %>
-      <li><%= page.frontMatter.title %></li>
-    <% }); %>
-  </ul>
-<% } %>
-```
+- **Production mode**: A failing layout or shell is logged as an error and the page is written with the built-in fallback template (see [Template fallback](#template-fallback)); a failing include is logged as an error and replaced by `<!-- Error rendering site/partials/card.eta: message -->`, and the rest of the page renders. Either way the page is not cached: each later build renders it again and logs the error again until the template is fixed (an include that names no template is handled the same way)
 
 ### Include and layout errors
 
@@ -113,16 +85,16 @@ Check an optional template with `stati.include.has(name)` instead of including i
 
 ```eta
 <title><%= stati.paeg.title %></title>
-<!-- ❌ Unknown property "stati.paeg". Did you mean "stati.page"? -->
+<!-- Unknown property "stati.paeg". Did you mean "stati.page"? -->
 
 <h1><%= stati.title %></h1>
-<!-- ❌ Unknown property "stati.title". Did you mean "stati.page.title" or "stati.site.title"? -->
+<!-- Unknown property "stati.title". Did you mean "stati.page.title" or "stati.site.title"? -->
 
 <%= stati.formatDate(stati.page.date) %>
-<!-- ❌ Unknown property "stati.formatDate". Did you mean "stati.helpers.formatDate"? -->
+<!-- Unknown property "stati.formatDate". Did you mean "stati.helpers.formatDate"? -->
 
 <%~ stati.body %>
-<!-- ❌ In the page's layout: stati.body is set only in templates rendered by stati.layout() or stati.include(); the page's Markdown is stati.content -->
+<!-- In the page's layout: Unknown property "stati.body". stati.body is set only in templates rendered by stati.layout() or stati.include(); the page's Markdown is stati.content. -->
 ```
 
 **What is checked**:
@@ -138,12 +110,6 @@ Check an optional template with `stati.include.has(name)` instead of including i
 To test whether an optional helper exists, use the `in` operator, which never throws: `<% if ('formatDate' in stati.helpers) { %>`. `stati.props` always exists, so `stati.props?.title ?? 'Default'` works in every template.
 
 The overlay also gives a hint when a template uses `it` or a bare context name such as `page`: Stati templates read their data from `stati`, not Eta's default `it`.
-
-### File system errors
-
-**When they occur**: During output file writing and static asset copying
-
-**Handling**: Immediate failure (critical for build success)
 
 ### Image errors
 
@@ -166,7 +132,7 @@ See [Images troubleshooting](/configuration/images#troubleshooting) for fixes.
 
 **Handling**:
 
-- **A callback throws for one page**: Stati logs a warning that names the feed and the page. A `link` that fails skips the item; a failing `title`, `description`, `pubDate`, `author`, `category`, `guid`, `enclosure` or `customItemElements` leaves out only that field.
+- **A callback throws for one page**: Stati logs a warning that names the page, and also the feed for `link`, `guid`, `enclosure` and `customItemElements`. A `link` that fails skips the item; a failing `title`, `description`, `pubDate`, `author`, `category`, `guid`, `enclosure` or `customItemElements` leaves out only that field.
 - **A feed fails as a whole** (its `filter` or `sortFn` throws): the error is logged, that feed is skipped and the other feeds are written. The build still finishes.
 - **Invalid RSS configuration**: the errors are logged and no feeds are written.
 
@@ -174,20 +140,13 @@ See [Images troubleshooting](/configuration/images#troubleshooting) for fixes.
 
 **When they occur**: During execution of user-defined build hooks
 
-**Handling**: Immediate failure (hooks are user-controlled)
-
-**Common scenarios**:
-
-- Hook function throws an exception
-- Async hook rejection
-
-Hooks have no timeout: a hook that never resolves makes the build wait.
+**Handling**: A hook that throws or returns a rejected promise stops the build. Hooks have no timeout: a hook that never resolves makes the build wait.
 
 ```javascript
 export default defineConfig({
   hooks: {
     beforeRender: async (ctx) => {
-      throw new Error('Hook failed'); // ❌ Will stop the build
+      throw new Error('Hook failed'); // Stops the build
     },
   },
 });
@@ -205,6 +164,7 @@ Stati's error classes are internal: `@stati/core` does not export them, so check
 | `FrontMatterError`                                | A page's front matter can't be read                                                                                                                                                                                                             |
 | `TemplateError`                                   | A template fails in development; it carries `filePath`, `line` and `column` when known                                                                                                                                                          |
 | `DuplicateBundleNameError`                        | Two TypeScript bundles share a `bundleName`                                                                                                                                                                                                     |
+| `PortUnavailableError`                            | `stati dev` or `stati preview` can't use its port; `code` is `EADDRINUSE` (in use) or `EACCES` (permission denied), with `port` and `host`                                                                                                     |
 
 ## Fallback mechanisms
 
@@ -268,46 +228,13 @@ The overlay follows your system's light or dark setting. It reloads by itself af
 <figcaption>A misspelled <code>stati.generator</code> in a footer partial, as the overlay reports it.</figcaption>
 </figure>
 
-### Error context
-
-Error messages include relevant context:
-
-```text
-× Error rendering site/blog/layout.eta for /blog/my-post: Cannot read properties of undefined (reading 'title')
-```
-
-### Build statistics
-
-Build statistics are tracked and returned from the build function:
-
-```typescript
-interface BuildStats {
-  /** Total number of pages processed */
-  totalPages: number;
-  /** Number of static assets copied */
-  assetsCount: number;
-  /** Total build time in milliseconds */
-  buildTimeMs: number;
-  /** Total size of output directory in bytes */
-  outputSizeBytes: number;
-  /** Number of cache hits (if caching enabled) */
-  cacheHits?: number;
-  /** Number of cache misses (if caching enabled) */
-  cacheMisses?: number;
-}
-```
-
-## Debugging approaches
-
-To check the configuration, run `stati build` and read the first lines. A config that fails to load prints `Error loading config from ...` followed by "Falling back to default configuration."
-
 ## Best practices
 
-### 1. Validate configuration
+### Type-check your configuration
 
-`defineConfig()` gives your editor and `tsc` the config's types. At load time Stati checks the option names, `helpers`, `outDir`, and the `isg`, `images`, `css`, `readingTime`, `seo.twitter`, `seo.articles`, `seo.defaultAuthor.twitter` and `sitemap.news` settings, so the type check is your safeguard for everything else.
+`defineConfig()` gives your editor and `tsc` the config's types. Stati checks only the settings listed under [Configuration errors](#configuration-errors) when it loads the config, so the type check is your safeguard for everything else.
 
-### 2. Use consistent front matter
+### Use consistent front matter
 
 Use one date field across the site. Stati reads the page's publication date (used for sorting collections, navigation, ISG aging and RSS) from the first valid value among `publishedAt`, `published`, `date` and `createdAt`, quoted or unquoted. An invalid value, including a date that doesn't exist such as `2025-02-30`, is skipped with a warning, so a typo silently moves the page to the end of date-sorted lists.
 

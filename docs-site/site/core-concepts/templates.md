@@ -1,6 +1,6 @@
 ---
 title: 'Templates and layouts'
-description: 'Learn how to create dynamic templates and layouts using Eta template engine.'
+description: 'Eta layouts chosen by folder, shared page shells with stati.layout(), templates included with props, and helpers.'
 order: 3
 ---
 
@@ -132,19 +132,7 @@ A section's layout replaces the root layout for the pages in its folder. The pag
 
 ### Template resolution order
 
-Stati looks for a page's layout in this order:
-
-1. **Named template** specified in front matter (e.g., `layout: 'article'`)
-2. The nearest `layout.eta`, from the page's folder up to `site/`
-
-Without either, the build warns and writes the page with a bare fallback HTML document.
-
-**Example:** For `/blog/tech/post.md`, Stati checks:
-
-1. Front matter `layout` field first
-2. `/blog/tech/layout.eta`
-3. `/blog/layout.eta`
-4. `/layout.eta`
+A page's layout is the template its front matter `layout` names, or else the nearest `layout.eta` from the page's folder up to `site/`: for `site/blog/tech/post.md`, `blog/tech/layout.eta`, then `blog/layout.eta`, then `layout.eta`. Without either, the build warns and writes the page with a bare fallback HTML document.
 
 ```yaml
 ---
@@ -156,7 +144,7 @@ title: 'My Post'
 
 The `layout` value is a template name without the `.eta` extension, looked up the same way as [`stati.include()`](#template-names): `layout: 'article'` uses the nearest `article.eta` from the page's folder up to `site/`, `layout: '/article'` uses `site/article.eta` only, and `layout: 'layouts/post'` uses the nearest `layouts/post.eta`. If no file matches, the build warns, suggests similar names, and uses the `layout.eta` lookup instead.
 
-Index pages of a [collection](#collections) check for an `index.eta` in each directory before its `layout.eta`, so a listing page can have its own layout. The root `index.md` is always an index page; a folder's `index.md` is one once the folder holds another page.
+Index pages of a [collection](#collections) check for an `index.eta` in each folder before its `layout.eta`, so a listing can have its own layout while its posts keep the folder's. The later pages of a paginated listing use the same layout as the first. The root `index.md` is always an index page; a folder's `index.md` is one once the folder holds another page.
 
 ### Root layout example
 
@@ -370,70 +358,11 @@ A component can also name a frame with `stati.layout()`, the same way a layout n
 - A template that includes itself without props, directly or through other templates, is a cycle: development shows an error naming the chain (`site/layout.eta → site/partials/a.eta → site/partials/b.eta → site/partials/a.eta`), and production logs it and skips the repeat. With props, a template can include itself, for example to render a tree, up to a depth of 100.
 - An unknown name opens the error overlay in development, with the paths of similar templates. In production the build logs the error and the include renders nothing.
 
-Eta's own `include()`, `includeAsync()`, `layout()` and `block()` are not available in Stati templates. Use `stati.include()` and `stati.layout()`, and pass content a layout should place to it as props.
-
-## Template data and context
-
-### Front matter integration
-
-Front matter from your markdown files is available in templates:
-
-```markdown
----
-title: 'My Blog Post'
-description: 'A great post about Stati'
-date: '2024-01-15'
-tags: ['stati', 'markdown', 'templates']
-author: 'John Doe'
-featured: true
----
-
-# Content goes here...
-```
-
-Template usage:
-
-```eta
-<article>
-    <h1><%= stati.page.title %></h1>
-
-    <% if (stati.page.featured) { %>
-    <div class="featured-badge">Featured Post</div>
-    <% } %>
-
-    <div class="post-meta">
-        <span>By <%= stati.page.author %></span>
-        <time><%= new Date(stati.page.date).toLocaleDateString() %></time>
-    </div>
-
-    <div class="tags">
-        <% (stati.page.tags ?? []).forEach(tag => { %>
-        <a href="<%= stati.url(`/tags#${tag}`) %>" class="tag">#<%= tag %></a>
-        <% }); %>
-    </div>
-
-    <div class="content">
-        <%~ stati.content %>
-    </div>
-</article>
-```
+Eta's own `include()`, `includeAsync()`, `layout()`, `block()` and `blockAsync()` are not available in Stati templates ([what each one does instead](/api/templates#eta-s-include-layout-and-block)). Use `stati.include()` and `stati.layout()`, and pass content a layout should place to it as props.
 
 ## Collections
 
-A folder of pages with an `index.md` is a collection. Templates read it as `stati.collection`: the pages in the folder, already sorted by date and grouped by tag. A folder's index page reads its own collection, the pages in the folder read the collection they belong to, and any page can name one with `collection: /blog` in its front matter. Blog listings, archives, tag clouds and prev/next links need no hook or helper:
-
-```eta
-<% const posts = stati.collection?.recentPages ?? []; %>
-<ul class="post-list">
-  <% posts.forEach(post => { %>
-  <li><a href="<%= stati.url(post.url) %>"><%= post.frontMatter.title %></a></li>
-  <% }) %>
-</ul>
-```
-
-Each entry is a page model, not a template context: read front matter through `frontMatter`, and use `url` for links. Stati rebuilds the pages that read a collection when one of its pages is added, removed, retitled or retagged.
-
-[Collections and generated pages](/core-concepts/collections) covers the collection data, which collection a page reads, pagination with `paginate`, and one page per tag or author from a `[param].md` template.
+A folder of pages with an `index.md` is a collection, which templates read as `stati.collection`: its pages, sorted by date and grouped by tag, for listings, tag clouds and prev/next links. Each entry is a page model, so read front matter through `post.frontMatter` and link with `post.url`. [Collections and generated pages](/core-concepts/collections) covers which collection a page reads, pagination and one page per tag.
 
 ## Helpers
 
@@ -461,40 +390,13 @@ export default defineConfig({
 <p class="excerpt"><%= stati.helpers.truncate(stati.page.description ?? '') %></p>
 ```
 
-Helpers are plain functions: they take arguments and return a value. A helper written with `function` or method syntax gets the helpers object as `this`, so it can call another helper as `this.formatDate()`. Stati's own functions stay on `stati` itself: `stati.slugify()`, `stati.url()`, `stati.propValue()`, `stati.image()` and `stati.generateSEO()`.
-
-[Template configuration](/configuration/templates) covers helpers in more detail.
+Helpers are plain functions: they take arguments and return a value. Stati's own functions stay on `stati` itself: `stati.slugify()`, `stati.url()`, `stati.propValue()`, `stati.image()` and `stati.generateSEO()`. [Template configuration](/configuration/templates#helpers) covers `this`, errors and caching.
 
 ### Inline functions
 
 A function only one template needs can live in that template:
 
 ```eta
-<%
-const now = new Date();
-const postDate = new Date(stati.page.date);
-const diffDays = Math.ceil(Math.abs(now - postDate) / (1000 * 60 * 60 * 24));
-%>
-<span class="relative-time">
-  <% if (diffDays === 0) { %>
-    Today
-  <% } else if (diffDays === 1) { %>
-    Yesterday
-  <% } else if (diffDays < 7) { %>
-    <%= diffDays %> days ago
-  <% } else { %>
-    <%= new Date(stati.page.date).toLocaleDateString() %>
-  <% } %>
-</span>
-
-<!-- Stati's own slugify for tag links -->
-<% for (const tag of stati.page.tags ?? []) { %>
-  <a href="<%= stati.url(`/tags/${stati.slugify(tag)}`) %>" class="tag-link">#<%= tag %></a>
-<% } %>
+<% const year = (date) => new Date(date).getFullYear(); %>
+<p>Published in <%= year(stati.page.date) %></p>
 ```
-
-## Performance
-
-Stati compiles each template once and reuses it for every page. A page renders only its layout, the shells it names and the templates it includes, and an include without props renders once per page however often it appears.
-
-Next, learn about the [Markdown pipeline](/core-concepts/markdown).

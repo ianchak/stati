@@ -81,7 +81,7 @@ After a build with a base path, Stati warns about each `href` or `src` in a page
 / and 12 more page(s): href="/about" does not start with the base path /docs, so it breaks when the site is served from there. Use stati.url("/about").
 ```
 
-Pages served from the ISG cache are not checked again; run `stati build --force` to check them all. There are no warnings without a base path.
+Stati lists the first 10 such links and counts the rest. Pages served from the ISG cache are not checked again; run `stati build --force` to check them all. There are no warnings without a base path.
 
 ## robots.txt
 
@@ -135,9 +135,3 @@ jobs:
 ```
 
 A site on a custom domain, or a user site at `https://my-user.github.io/`, has no path and needs none of this.
-
-## Related documentation
-
-- [`stati.url()`](/api/templates#stati-url-path)
-- [Site metadata](/configuration/site-metadata#baseurl-required)
-- [Development server](/cli/development)

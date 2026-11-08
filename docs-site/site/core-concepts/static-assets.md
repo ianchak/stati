@@ -1,14 +1,10 @@
 ---
 title: 'Static assets'
-description: 'Learn how to manage static files, images, and integrate TypeScript and Tailwind CSS.'
+description: 'Copying public/ into the output, client TypeScript bundles, stylesheets with Tailwind CSS or Sass, images and fonts.'
 order: 7
 ---
 
 # Static assets
-
-## Overview
-
-Stati handles static assets and provides built-in TypeScript compilation. It also runs Tailwind CSS when you give `stati dev` and `stati build` its input and output; other CSS processing, such as Sass or PostCSS, uses standard tooling at the project level.
 
 ## Static assets (`public/`)
 
@@ -63,21 +59,7 @@ Production builds link a copy named after its content, such as `/_assets/styles-
 
 ### Sass/SCSS projects
 
-When you select Sass during project scaffolding, `create-stati` configures npm scripts to compile SCSS:
-
-```bash
-# Development (watches and compiles SCSS alongside Stati dev server)
-npm run dev
-
-# Production build (compiles SCSS into public/, then builds the site)
-npm run build
-
-# Standalone scripts (also available)
-npm run watch:css   # Watch and compile SCSS only
-npm run build:css   # Compile SCSS only
-```
-
-The scaffolder creates an `src/styles.scss` file with your SCSS source and compiles it into `public/styles.css`, which the templates link. Production builds name it after its content, like any stylesheet in `public/`. See [CSS](/configuration/css#sass).
+Compile Sass into `public/`, and production builds name the result after its content like any stylesheet there. A project that `create-stati` scaffolds with Sass compiles `src/styles.scss` into `public/styles.css` in `npm run dev` and `npm run build` (`watch:css` and `build:css` run the Sass step alone). See [CSS](/configuration/css#sass).
 
 ## Tailwind CSS integration
 
@@ -115,8 +97,6 @@ Tailwind CSS 4 is configured in the stylesheet. Import Tailwind, then add an `@s
 
 **Important**: Tailwind finds the templates in your project by itself, but it skips everything your `.gitignore` lists, and `.stati/` is normally listed. Without the `@source` rule, classes built with `stati.propValue()` are missing from the CSS. A template folder that is ignored, or outside the project, needs an `@source` rule of its own.
 
-> **Note**: The `.stati/tailwind-classes.html` file is automatically generated during build and dev server startup. It contains all dynamic Tailwind classes used in your templates via `stati.propValue()`.
-
 > **Tailwind CSS 3:** the command is part of the `tailwindcss` package (`npm install -D tailwindcss@3`) and the configuration lives in `tailwind.config.js`. Add `./.stati/tailwind-classes.html` to its `content` array, along with globs that cover every folder that holds templates, such as `./site/**/*.{md,eta,html}`.
 
 ### Dynamic classes with propValue
@@ -134,21 +114,16 @@ const color = 'primary'; // Could come from frontMatter or config
 </button>
 
 <!-- ❌ Incorrect - Dynamic classes won't be detected by Tailwind -->
-<button class="<%= `from-${color}-50 to-${color}-100` %> px-4 py-2">
+<button class="<%= `from-${color}-50 to-${color}-100 px-4 py-2` %>">
   Click me
 </button>
 ```
 
-The `propValue()` function:
+`stati.propValue()` records every class it returns, splitting space-separated strings, so Tailwind sees each one. Its arguments are on [Dynamic attribute values](/core-concepts/templates#dynamic-attribute-values).
 
-- Tracks all classes passed to it for the Tailwind inventory
-- Filters out falsy values (null, undefined, false, empty strings)
-- Works with strings, arrays, and objects (like the classnames library)
-- Splits space-separated strings and tracks each class individually
+### Building the stylesheet
 
-### Usage in templates
-
-Link the output under its path, as in development; production builds point the link at the hashed file. A page without the link gets one before `</head>`.
+Pass `--tailwind-input src/styles.css --tailwind-output dist/styles.css` to `stati dev`, which runs Tailwind's watcher next to the dev server, and to `stati build`, which writes the stylesheet under a name made from its content. Link it under its own path; production builds point the link at the hashed file, and a page without the link gets one before `</head>`:
 
 ```eta
 <head>
@@ -156,27 +131,11 @@ Link the output under its path, as in development; production builds point the l
 </head>
 ```
 
-### Development
-
-`stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css` runs Tailwind's watcher next to the dev server. See [Development server](/cli/development#tailwind-css-integration).
-
-### Production builds
-
-`stati build` takes the same flags and writes the stylesheet under a name made from its content. See [CSS](/configuration/css#tailwind-css).
+See [CSS](/configuration/css#tailwind-css) for the flags, hashing and options.
 
 ## Images and media
 
-Images in `public/` are copied to the output as they are. When a Markdown page shows one, Stati adds its `width` and `height` and loads it lazily, except the page's first image near the top, such as a hero image, which loads eagerly:
-
-```markdown
-![Hero image](/images/hero.jpg)
-```
-
-```html
-<img src="/images/hero.jpg" alt="Hero image" width="1600" height="900" loading="eager" fetchpriority="high" decoding="async">
-```
-
-Images can also sit next to the pages that use them: `![Map](./map.png)` in `site/blog/post.md` reads `site/blog/map.png`, and Stati copies it to `/_img/` under a name that changes with its content. In layouts and included templates, `stati.image()` does the same for images such as a post's cover:
+Images in `public/` are copied to the output as they are. Markdown images get their `width` and `height` and lazy loading, and an image next to its page (`![Map](./map.png)` in `site/blog/post.md`) is copied to `/_img/` under a name that changes with its content; see [Images](/core-concepts/markdown#images). In layouts and included templates, `stati.image()` does the same for images such as a post's cover:
 
 ```eta
 <%~ stati.image(stati.page.cover, { alt: stati.page.coverAlt, priority: true }) %>
