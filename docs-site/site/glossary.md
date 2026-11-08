@@ -8,8 +8,6 @@ seo:
 
 # Glossary
 
-Key terms and concepts used throughout Stati documentation.
-
 ## Filesystem-based routing
 
 Stati maps your directory structure in `site/` directly to URL paths. A file at `site/docs/intro.md` becomes `/docs/intro` (written to `dist/docs/intro.html`).
@@ -26,10 +24,6 @@ Stati's templating engine. Eta files (`.eta`) hold HTML with embedded JavaScript
 
 The template that renders a page: the nearest `layout.eta` (on index pages, an `index.eta` in the same or a nearer folder wins), or the one named in front matter without the extension (`layout: layouts/post`). A layout can name a [shell](#shell) to wrap it with `stati.layout()`.
 
-## Layout override
-
-A `layout.eta` in a subdirectory **replaces** the layouts of parent folders for pages in that directory. For example, `site/blog/layout.eta` overrides `site/layout.eta` for all pages under `/blog/`. The document around both can live in one [shell](#shell) that each layout names.
-
 ## Shell
 
 A template that wraps a layout's output, named with `<% stati.layout('base') %>` at the top of the layout. It prints the wrapped output as `stati.body`, so the `<head>`, header and footer are written once for every layout. See [Sharing a shell](/core-concepts/templates#sharing-a-shell).
@@ -40,26 +34,7 @@ Reusable templates that layouts and other templates include, conventionally kept
 
 ## Includes
 
-Rendering another template inside the current one with `stati.include(name, props?, body?)`:
-
-```eta
-<%~ stati.include('partials/card', { title: 'Hello', featured: true }) %>
-```
-
-The included template reads the props as `stati.props`, and the optional third argument, HTML to wrap, as `stati.body`. Includes give component-like reuse: the same template renders different content for different props.
-
-**Inside the template:**
-
-```eta
-<div class="card">
-  <h2><%= stati.props.title %></h2>
-  <% if (stati.props.featured) { %>
-    <span class="badge">Featured</span>
-  <% } %>
-</div>
-```
-
-A template renders only where it is included.
+Rendering another template inside the current one with `stati.include(name, props?, body?)`, such as `<%~ stati.include('partials/card', { title: 'Hello' }) %>`. The included template reads the props as `stati.props` and the optional HTML to wrap as `stati.body`, and renders only where it is included. See [`stati.include()`](/api/templates#stati-include-name-props-body).
 
 ## Front matter
 
@@ -111,7 +86,7 @@ The duration in seconds that cached content remains valid before requiring a reb
 
 ## Cache invalidation
 
-Removing entries from the build cache with `stati invalidate`, so the next build renders those pages again. It takes queries with patterns like `tag:`, `path:`, `glob:`, or `age:`.
+Marking build cache entries stale with `stati invalidate`, so the next build renders those pages again. It takes queries such as `tag:news`, `path:/about`, `glob:/blog/**` or `age:3months`, or none for every entry.
 
 ## Draft
 
@@ -139,20 +114,7 @@ Your own functions registered in `stati.config.ts` under `helpers` and called fr
 
 ## `stati.nav`
 
-The navigation helper object available in templates with methods:
-
-- `getTree()` – Returns the full navigation tree
-- `findNode(path)` – Finds a navigation node by path or URL
-- `getChildren(path)` – Gets child nodes of a path
-- `getParent(path?)` – Gets the parent node (defaults to current page)
-- `getSiblings(path?, includeSelf?)` – Gets sibling nodes
-- `getSubtree(path)` – Gets a subtree starting from a path
-- `getBreadcrumbs(path?)` – Gets the breadcrumb trail
-- `getCurrentNode()` – Gets the current page's navigation node
-
-## NavNode
-
-A navigation tree node containing `title`, `url`, `path`, `order`, `publishedAt`, `children`, and `isCollection` properties.
+The navigation tree of the site's pages (`stati.nav.tree`) and helpers that find nodes in it, such as `getBreadcrumbs()` and `getChildren(path)`. Each node is a `NavNode` with `title`, `url`, `path` and optional `children`. See [Navigation helpers](/api/navigation#navigation-helpers).
 
 ## Sitemap
 
@@ -177,8 +139,3 @@ The output folder for images Stati copies from `site/` and for the files it gene
 ## Scaffolder (`create-stati`)
 
 The interactive CLI tool that creates a Stati project from a starter template, with a choice of styling, TypeScript, image tools, an agent skill and git initialization.
-
-## Related resources
-
-- [FAQ](/faq) – Frequently asked questions about Stati
-- [Core concepts](/core-concepts/overview) – Deep dive into Stati's architecture

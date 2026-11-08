@@ -12,25 +12,19 @@ Stati can record how long each build phase takes, what the cache saved and how m
 
 ## Quick start
 
-Enable metrics collection with the `--metrics` flag:
+Run from your project root:
 
 ```bash
 npx stati build --metrics
 ```
 
-Run the commands on this page from your project root, where `@stati/cli` is installed (inside npm scripts, plain `stati` works).
-
-This will:
-
-1. Collect timing data for all build phases
-2. Track cache hit/miss rates
-3. Save a detailed JSON file to `.stati/metrics/`
+Once the build succeeds, the metrics are written to a JSON file in `.stati/metrics/`. The examples below use plain `stati`, as in an npm script; outside one, run `npx stati`.
 
 ## CLI options
 
 ### `--metrics`
 
-Enable metrics collection. Can also be enabled via the `STATI_METRICS=1` environment variable.
+Enable metrics collection. Setting the `STATI_METRICS` environment variable to `1` or `true` does the same. `--metrics-file`, `--metrics-detailed` and `--metrics-html` do nothing without one of them.
 
 ```bash
 # Via flag
@@ -42,7 +36,7 @@ STATI_METRICS=1 stati build
 
 ### `--metrics-file <path>`
 
-Specify a custom output path for the metrics JSON file. The path is relative to `.stati/metrics/`:
+Write the metrics JSON to another file. The path is relative to `.stati/metrics/`. A path outside that folder is refused with an error, and the metrics go to the default timestamped file instead:
 
 ```bash
 # Writes to .stati/metrics/my-metrics.json
@@ -62,7 +56,7 @@ stati build --metrics --metrics-detailed
 
 ### `--metrics-html`
 
-Generate an interactive HTML report alongside the JSON file:
+Also write an HTML report next to the JSON file, with the same name ending in `.html`:
 
 ```bash
 stati build --metrics --metrics-html
@@ -79,11 +73,9 @@ The report is a single HTML file that follows your system's light or dark theme.
 ![The Stati build metrics report: a header with the Stati mark and links to its sections; the headline Built 45 pages in 4.25s; badges for a local, detailed build; the pages rendered, cache hit rate, templates loaded and peak memory; the flags, branch and versions of the build; and the phase breakdown, slowest first, starting with image generation.](/images/stati_build_metrics.jpg){.dark:hidden}
 ![The Stati build metrics report in its dark theme: the headline Built 45 pages in 4.25s, the pages rendered, cache hit rate, templates loaded and peak memory, the build's flags, branch and versions, and the phase breakdown.](/images/stati_build_metrics_dark.jpg){.hidden .dark:block}
 
-## Understanding the output
+## JSON output
 
-### JSON output
-
-Metrics are saved to `.stati/metrics/build-<timestamp>.json`:
+Without `--metrics-file`, each build writes `.stati/metrics/build-<timestamp>.json`, such as `build-2024-01-15T10-30-00Z.json`:
 
 ```json
 {
@@ -149,9 +141,9 @@ Metrics are saved to `.stati/metrics/build-<timestamp>.json`:
 
 The cache hit rate (`isg.cacheHitRate`) is the share of pages served from the cache without re-rendering, from 0 to 1:
 
-- **1**: All pages were cached (no changes detected)
-- **0**: Full rebuild (all pages rendered)
-- **0.5 to 0.9**: Incremental build (some pages changed)
+- **1**: every page came from the cache
+- **0**: every page was rendered
+- **Between 0 and 1**: some pages were rendered, the rest came from the cache
 
 `isg.invalidatedEntries` is the number of pages rendered in this build (the same as `counts.renderedPages`), and `isg.manifestEntries` the number of entries in the cache manifest.
 
@@ -169,7 +161,7 @@ The `phases` object shows how long each build phase took:
 | Phase | Description |
 |-------|-------------|
 | `configLoadMs` | Loading and parsing `stati.config.ts` |
-| `contentDiscoveryMs` | Finding and parsing markdown files |
+| `contentDiscoveryMs` | Finding and parsing Markdown files, adding generated and paginated pages, building the navigation, and creating the Markdown and Eta engines |
 | `cacheManifestLoadMs` | Loading ISG cache manifest |
 | `typescriptCompileMs` | Compiling TypeScript bundles |
 | `templateIndexMs` | Listing every `.eta` file in the source directory, once per build (a dev server keeps the list between rebuilds) |
@@ -199,7 +191,7 @@ The `phases` object shows how long each build phase took:
 >
 > `pageRenderingMs` already contains `hookBeforeAllMs`, `searchIndexGenerationMs`, `searchIndexWriteMs` and the per-page totals (`shouldRebuildTotalMs`, `hookBeforeRenderTotalMs`, `markdownRenderTotalMs`, `renderPageTotalMs`, `postRenderTotalMs`, `fileWriteTotalMs`, `cacheEntryTotalMs` and `hookAfterRenderTotalMs`), so adding them all up counts that time twice. The HTML report lists them under page rendering.
 >
-> Not all phases appear in every build. Only phases that actually run will be included in the metrics output. For example, hook timings are only recorded when the corresponding hooks are defined in your `stati.config.ts`, and TypeScript compilation only runs when TypeScript bundles are configured.
+> Phases that don't run are left out: hook timings appear only for hooks your config defines (the per-page ones only when a page rendered), `typescriptCompileMs` only with `typescript.enabled`, the search index phases only with `search.enabled`, `imageSettleMs` unless `images: false`, `sitemapGenerationMs` only with `sitemap.enabled`, and `tailwindBuildMs` only with `--tailwind-input`. `tailwindInitMs` and `tailwindInventoryMs` are always recorded, close to 0 without Tailwind.
 
 ### Counts
 
@@ -282,7 +274,7 @@ jq -r '.totals.durationMs' .stati/metrics/baseline.json .stati/metrics/current.j
 
 ## Programmatic access
 
-Access metrics programmatically in Node.js:
+`build()` returns the metrics in `buildMetrics` and writes no file. To write them as the CLI does, pass them to `writeMetrics(metrics, { cacheDir: '.stati', generateHtml: true })`, also exported from `@stati/core`.
 
 ```typescript
 import { build, setEnv } from '@stati/core';

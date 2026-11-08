@@ -8,8 +8,6 @@ seo:
 
 # Quick start
 
-This guide takes you from nothing to a running Stati site, then through the first changes you'll make: content, layout, styling, config and a production build.
-
 ## The short version
 
 ```bash
@@ -40,7 +38,7 @@ The scaffolder asks, in order:
 - **CSS solution** - Plain CSS, Sass/SCSS, or Tailwind CSS
 - **TypeScript** - On by default, for a typed `stati.config.ts` and client TypeScript bundles; answer no for JavaScript
 - **Image tools** - Off by default; yes adds `@stati/images` for responsive images and link preview cards
-- **Agent skill** - Optionally install the Stati skill for Claude Code or GitHub Copilot
+- **Agent skill** - Where to install the Stati skill for AI coding assistants: `.claude/skills` (the default; Claude Code and Copilot in VS Code), `.agents/skills` (Copilot, Codex, Cursor and others), or No
 - **Git** - Initialize a git repository (on by default)
 - **Install dependencies** - Run the install for you (on by default)
 - **Package manager** - npm, yarn, pnpm or bun, when more than one is installed
@@ -59,8 +57,11 @@ Your new project will have this structure:
 
 ```text
 my-first-site/
+├── .claude/skills/stati/ # The agent skill, when installed
+├── .gitignore            # Written with the git repository
 ├── package.json          # Project dependencies and scripts
 ├── README.md             # The template's notes
+├── skills-lock.json      # Where the agent skill came from, for updates
 ├── stati.config.ts       # Stati configuration (stati.config.js for JavaScript projects)
 ├── tsconfig.json         # TypeScript compiler configuration
 ├── src/
@@ -87,7 +88,7 @@ The dev server will:
 - Watch for file changes in `site/` and `public/`
 - Automatically rebuild and reload the browser when you save changes
 
-Open your browser and navigate to the URL shown in the terminal. Your site is running; the rest of this guide makes it yours.
+Open the URL shown in the terminal.
 
 <figure>
 
@@ -98,8 +99,6 @@ Open your browser and navigate to the URL shown in the terminal. Your site is ru
 </figure>
 
 ## Next: Make it yours
-
-Work through these in order, or jump to the one you need.
 
 ### Step 4: Edit your first page
 
@@ -215,40 +214,8 @@ When you're ready to deploy, build your site:
 npm run build
 ```
 
-This creates a `dist/` directory with your optimized site ready for deployment.
+This writes the site to `dist/`. Set `site.baseUrl` to your real address first: canonical URLs, the sitemap and RSS feeds are built from it.
 
 ### Step 10: Deploy your site
 
-You can deploy the `dist/` folder to any static hosting service:
-
-- **Netlify**: Drag and drop the `dist/` folder
-- **Vercel**: Import your GitHub repository
-- **GitHub Pages**: Push the `dist/` contents to a `gh-pages` branch
-- **Any web server**: Upload the `dist/` contents
-
-## What's Next?
-
-Now that you have a working Stati site, explore these topics:
-
-### Learn core concepts
-
-- [Filesystem-based Routing](/core-concepts/routing)
-- [Templates and layouts](/core-concepts/templates)
-- [Markdown Pipeline](/core-concepts/markdown)
-- [Incremental Static Generation](/core-concepts/isg)
-
-### Advanced configuration
-
-- [Site Metadata](/configuration/site-metadata)
-- [Template Helpers](/configuration/templates)
-- [Markdown Configuration](/configuration/markdown)
-
-### Examples and learning resources
-
-- [Available Examples](/examples/list) - Explore currently implemented templates
-- [Configuration Reference](/configuration/file) - Detailed configuration options
-
-## Need help?
-
-- Check the [API overview](/api/reference) for detailed documentation
-- Visit the [Contributing](/advanced/contributing) section to help improve Stati
+Upload `dist/` to any static host. On a host that builds for you, set the build command to `npm run build` and the output folder to `dist`; [CI/CD integration](/cli/commands#ci-cd-integration) has GitHub Actions, Netlify and Vercel settings.

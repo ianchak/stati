@@ -1,6 +1,6 @@
 ---
 title: 'Routing'
-description: 'Learn how Stati uses filesystem-based routing to generate URLs from your content.'
+description: 'How file paths in site/ become URLs and output files, which files are not pages, the 404 page, and permalinks.'
 order: 2
 seo:
   title: 'Filesystem routing in Stati'
@@ -8,157 +8,36 @@ seo:
 
 # Routing
 
-Stati uses filesystem-based routing, which means the structure of your `site/` directory directly determines the URLs of your website.
-
-## Basic routing
-
-### Files to URLs
-
-The mapping from files to URLs is straightforward:
+The path of each Markdown file in `site/`, without `.md`, is the page's URL. An `index.md` takes its folder's URL, without a trailing slash, and every page is written to a `.html` file named after its URL; only the root page becomes an `index.html`:
 
 ```text
-site/
-├── index.md              → /
-├── about.md               → /about
-├── contact.md             → /contact
-└── blog/
-    ├── index.md           → /blog
-    ├── first-post.md      → /blog/first-post
-    └── second-post.md     → /blog/second-post
+site/index.md               → /                    → dist/index.html
+site/about.md               → /about               → dist/about.html
+site/blog/index.md          → /blog                → dist/blog.html
+site/blog/first-post.md     → /blog/first-post     → dist/blog/first-post.html
+site/docs/api/reference.md  → /docs/api/reference  → dist/docs/api/reference.html
 ```
 
-### Directory structure
-
-Every directory can have its own `index.md` file, which becomes the homepage for that section:
-
-```text
-site/
-├── index.md              → / (site homepage)
-├── docs/
-│   ├── index.md          → /docs (docs homepage)
-│   ├── getting-started.md → /docs/getting-started
-│   └── api/
-│       ├── index.md      → /docs/api (API section homepage)
-│       └── reference.md  → /docs/api/reference
-```
-
-## URL generation rules
-
-### Clean URLs
-
-Stati generates URLs by:
-
-- Removing the `.md` file extension
-- Mapping an `index.md` file to its folder's URL, without a trailing slash (the root `index.md` becomes `/`)
-
-```text
-about.md        → /about           → dist/about.html
-blog/index.md   → /blog            → dist/blog.html
-blog/my-post.md → /blog/my-post    → dist/blog/my-post.html
-index.md        → /                → dist/index.html
-```
-
-Every page is written as a `.html` file named after its URL. Only the root page becomes an `index.html`. A URL that ends in `/`, from a `permalink` or a `collections.generate` entry, is the way to get a folder-style `…/index.html` output (see [Front matter URL override](#front-matter-url-override)).
+Folders nest to any depth. A URL that ends in `/`, from a `permalink` or a `collections.generate` entry, is written as a folder-style `…/index.html` (see [Front matter URL override](#front-matter-url-override)).
 
 `stati preview` serves `/blog`, `/blog.html` and `/blog/` from `dist/blog.html`. On your production host, check that an extensionless URL such as `/blog` is served from `blog.html`, including when a `blog/` folder sits next to it. Many static hosts do this by default; others need a "clean URLs" or rewrite setting.
 
-### Important: No automatic slug transformation
+## No slug transformation
 
-**Stati preserves filenames exactly as written** (minus the `.md` extension). There is NO automatic:
-
-- Lowercase conversion
-- Space/underscore to hyphen conversion
-- Special character removal
-- Slug beautification
-
-This means you must use URL-safe filenames from the start:
+Stati keeps file names as written: it doesn't lowercase them or replace spaces, underscores or other characters. Use lowercase, hyphenated file names:
 
 ```text
-✅ Good (URL-safe):
-about.md → /about
-my-post.md → /my-post
-getting-started.md → /getting-started
-
-⚠️ Problematic (not URL-safe):
-About.md → /About (case-sensitive URL)
-my_post.md → /my_post (underscore in URL)
-my post.md → /my post (space in URL, must be written %20 in links)
-post!.md → /post! (special chars - problematic)
+my-post.md  → /my-post
+About.md    → /About     (URLs are case-sensitive)
+my_post.md  → /my_post
+my post.md  → /my post   (links must write it as /my%20post)
 ```
 
-## Nested routing
+## Files that aren't pages
 
-### Deep nesting
+Only `.md` files become pages. Markdown in a folder whose name starts with `_`, such as `site/_drafts/`, is skipped; a single file that starts with `_`, such as `site/_notes.md`, is still a page (`/_notes`), so keep one file out with `draft: true` instead. Templates (`.eta`) and every other file in `site/` never become pages, so `site/partials/` needs no underscore. A `README.md` in `site/` is a page (`/README`), so keep READMEs out of `site/`. Which layout a page uses is on [Templates and layouts](/core-concepts/templates#template-resolution-order).
 
-Stati supports unlimited nesting levels:
-
-```text
-site/
-└── docs/
-    └── guides/
-        └── advanced/
-            └── customization.md → /docs/guides/advanced/customization
-```
-
-## Special files and directories
-
-### Files and directories excluded from routing
-
-Stati excludes certain files and directories from URL generation:
-
-#### **Directories starting with `_` (underscore)**
-
-**Critical Rule**: Any **directory** starting with `_` (and all files within it) is excluded from routing. Individual files starting with `_` are NOT automatically excluded:
-
-```text
-site/
-├── _drafts/             ❌ Not routed - Draft content
-│   └── upcoming-post.md
-├── _data/               ❌ Not routed - Data files
-│   └── config.json
-├── _notes.md            ✅ ROUTED! - Individual files with _ ARE processed → /_notes
-├── guides/              ✅ Routed (no underscore)
-│   └── setup.md         ✅ Routed - Creates /guides/setup
-└── published.md         ✅ Routed - Creates /published
-```
-
-The underscore matters only for Markdown files. Other files in `site/` never become pages, so templates such as `site/partials/header.eta` need no underscore folder. See [Non-Markdown files](#non-markdown-files).
-
-> **Tip:** To exclude individual files, use `draft: true` in front matter instead of filename prefixes.
-
-#### **Non-Markdown files**
-
-Only `.md` files become pages. All other file types are automatically excluded:
-
-```text
-site/
-├── layout.eta           ❌ Not routed - Template file (.eta)
-├── config.js            ❌ Not routed - JavaScript file
-├── styles.css           ❌ Not routed - Stylesheet
-├── image.png            ❌ Not routed - Image file
-├── .DS_Store            ❌ Not routed - Not markdown
-├── .gitkeep             ❌ Not routed - Not markdown
-├── README.md            ✅ Routed - Creates /README (is markdown!)
-└── index.md             ✅ Routed - Creates / homepage
-```
-
-**Note:** `README.md` files ARE routed because they are markdown files. Don't place README files in your `site/` directory, keep them in your project root or other non-site directories.
-
-### Layout files
-
-`layout.eta` files are special template files that don't generate routes but define the layout for their directory and subdirectories. Other templates, such as a shared `base.eta` shell or the files in `partials/`, don't generate routes either:
-
-```text
-site/
-├── layout.eta          # Root layout
-├── index.md            → / (uses root layout)
-├── blog/
-│   ├── layout.eta      # Blog-specific layout
-│   ├── index.md        → /blog (uses blog layout)
-│   └── post.md         → /blog/post (uses blog layout)
-```
-
-### The 404 page
+## The 404 page
 
 `site/404.md` is the page for addresses that don't exist. It builds to `dist/404.html`, which most static hosts serve for a missing address, and `stati dev` and `stati preview` serve it the same way. With `permalink: /404/` it builds to `dist/404/index.html` and works the same.
 
@@ -175,29 +54,15 @@ The page is only there for readers who followed a broken link, so Stati keeps it
 
 The `noindex` matters because a host sends the 404 status only for missing addresses. Requested by its own address, `/404` or `/404.html`, the page is an ordinary file that most hosts send with a 200, and a search engine could list it. Don't add `Disallow: /404` to `robots.txt` for the same reason: a crawler that may not fetch the page never sees its `noindex`.
 
-Only the page at the site root counts: `site/docs/404.md` is an ordinary page at `/docs/404`. Collections don't change, so the 404 page is still one of the top-level pages in the root collection. Settings that sites used to keep it out, such as `excludePatterns: ['/404']` or `seo.noindex: true` in its front matter, keep working but are no longer needed.
+Only the page at the site root counts: `site/docs/404.md` is an ordinary page at `/docs/404`. The 404 page stays one of the top-level pages of the root collection.
 
 ## Generated and paginated URLs
 
-Two kinds of pages get their URLs from data rather than from a file of their own. See [Collections and generated pages](/core-concepts/collections).
-
-```text
-site/
-├── blog/
-│   ├── index.md         → /blog, with `paginate: 10`
-│   │                    → /blog/page/2, /blog/page/3… (dist/blog/page/2.html)
-│   └── tags/
-│       └── [tag].md     → /blog/tags/css, /blog/tags/javascript… (one per tag)
-```
-
-- **Pagination:** `paginate` in front matter adds `/page/2`, `/page/3` and so on after the page's URL. With a trailing-slash permalink such as `/blog/`, page 2 is `/blog/page/2/`.
-- **Templates:** a file named `[tag].md` (a name of letters, digits, `-` and `_` in brackets, starting with a letter or `_`) renders nothing at its own URL. It becomes one page per key, at its URL with the bracketed part replaced by the key, or at its `permalink` with `[tag]` replaced.
-
-Stati deletes the output of these pages when they are no longer needed, such as a tag that no post uses.
+`paginate: 10` in a listing's front matter adds `/blog/page/2`, `/blog/page/3` and so on after its URL (`/blog/page/2/` after a trailing-slash `/blog/`). A `[tag].md` file renders nothing at its own URL and becomes one page per key instead, such as `/blog/tags/css`. Stati deletes their output once they are no longer needed. See [Collections and generated pages](/core-concepts/collections).
 
 ## Front matter URL override
 
-You can completely override the automatic URL generation using the `permalink` field in front matter:
+`permalink` in front matter replaces the URL Stati takes from the file path:
 
 ```markdown
 ---
@@ -242,9 +107,9 @@ Visit the [Blog homepage](/blog) to see all posts.
 
 Markdown links get the base path of a site served from a subfolder automatically. In templates, print links with [`stati.url()`](/advanced/deploying-to-a-subfolder#link-with-stati-url).
 
-### Navigation helpers
+### Active links
 
-In templates, you can access routing information:
+Compare `stati.page.url` to mark the current section:
 
 ```eta
 <% const inBlog = stati.page.url === '/blog' || stati.page.url.startsWith('/blog/'); %>
@@ -263,5 +128,3 @@ The `getBreadcrumbs()` method returns an array of `NavNode` objects, each with `
 ## Multilingual sites
 
 Stati has no language routing. Keep each language in its own folder, such as `site/en/` and `site/es/`; each folder with an `index.md` is a [collection](/core-concepts/collections).
-
-Next, learn about [Templates and layouts](/core-concepts/templates) to understand how your content gets rendered.

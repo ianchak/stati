@@ -1,6 +1,6 @@
 ---
 title: 'Incremental Static Generation'
-description: 'Learn about Incremental Static Generation and build caching.'
+description: 'How Stati caches pages between builds, what makes a page render again, and what to keep between builds in CI.'
 order: 6
 ---
 
@@ -51,7 +51,7 @@ Data that reaches a template some other way is not tracked, for example a helper
 
 ### Pages that fail to render
 
-A page that logged an error while it rendered in a production build (a failed layout, shell or include, or an include that names no template) is never served from the cache. Every build renders it again and logs the error again, until the error is fixed, so a build that reuses `.stati/` still shows it. Its cache entry stays in the manifest, so its HTML is still removed when the page is deleted.
+A page that logged an error while it rendered in a production build (a failed layout, shell or include, a template name that finds no template, or a template that leads back to itself) is never served from the cache. Every build renders it again and logs the error again, until the error is fixed, so a build that reuses `.stati/` still shows it. Its cache entry stays in the manifest, so its HTML is still removed when the page is deleted.
 
 ### Removing pages that no longer exist
 
@@ -92,23 +92,13 @@ Stati maintains a cache manifest at `.stati/manifest.json`. Entries are keyed by
 }
 ```
 
-`deps` lists the template files the page rendered, layout first, and `templateLookups` the names it looked up, each with the folder the lookup started from and the file it found. `readsCollection` and `readsNav` record whether the last render read `stati.collection` and the navigation. An entry without these records, such as one an older Stati release wrote, makes its page rebuild once. `templatesRecorded` marks an entry whose `deps` and `templateLookups` were recorded while the page rendered, and `ttlSeconds` is the page's effective TTL. `images` lists the generated images the page references.
+`deps` lists the template files the page rendered, layout first, and `templateLookups` the names it looked up, each with the folder the lookup started from and the file it found. `readsCollection` and `readsNav` record whether the last render read `stati.collection` and the navigation. `templatesRecorded` marks an entry whose `deps` and `templateLookups` were recorded while the page rendered; an entry without these records makes its page rebuild once. `ttlSeconds` is the page's effective TTL, `assetDeps` the source images it showed, and `images` the generated images it references.
 
-### Build process
+## Configuration and invalidation
 
-1. **Content discovery** - Find all Markdown pages, create [generated and paginated pages](/core-concepts/collections), and build the navigation tree
-2. **Cache check** - For each page, compare its content, template and data hashes with the manifest, and check its TTL
-3. **Selective rendering** - Render only the pages that changed, expired, or have no output file yet
-4. **Cleanup** - Delete the output of pages that no longer exist
-5. **Manifest update** - Save new cache entries, including each page's template dependencies and what it read
+Set the default TTL, aging rules and the age cap in the [`isg` options](/configuration/isg). A page can override its TTL and age cap with `ttlSeconds` and `maxAgeCapDays` in front matter.
 
-## Configuration
-
-Set the default TTL, aging rules and the age cap in the [`isg` options](/configuration/isg). A page can override its TTL and age cap in front matter.
-
-## Invalidation
-
-`stati invalidate` removes cache entries by tag, path, glob or render age, so the next build renders those pages again. See [Cache invalidation](/configuration/isg#cache-invalidation).
+`stati invalidate` marks the cache entries that match a tag, path, glob or render age, so the next build renders those pages again. See [Cache invalidation](/configuration/isg#cache-invalidation).
 
 ## Development
 
@@ -158,10 +148,6 @@ cache:
     - dist/
 ```
 
-## Monitoring and debugging
+## Build output
 
-### Build output
-
-Stati reports cache performance during builds, showing how many pages were generated vs cached and the cache hit rate. Use the `--metrics` flag for detailed build performance data.
-
-Next, learn about [Static Assets & Bundling](/core-concepts/static-assets) to understand how Stati handles CSS, JavaScript, and other assets.
+Each build reports how many pages it rendered and how many came from the cache, with the cache hit rate. `stati build --metrics` records detailed timings; see [Build metrics](/advanced/metrics).

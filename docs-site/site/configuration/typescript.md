@@ -1,6 +1,6 @@
 ---
 title: 'TypeScript'
-description: 'Configure TypeScript compilation for your Stati site with esbuild-powered builds.'
+description: 'Compile client-side TypeScript into bundles with esbuild, and choose which pages load each one.'
 order: 8
 seo:
   title: 'TypeScript configuration'
@@ -60,22 +60,13 @@ export default defineConfig({
 
 ## Development vs production
 
-Stati automatically adjusts TypeScript settings based on the build mode:
+| | `stati dev` | `stati build` |
+|---|---|---|
+| File name | `main.js` | `main-A1B2C3D4.js` (`hash`) |
+| Minified | No | Yes (`minify`) |
+| Source maps | Yes | No |
 
-### Development (`stati dev`)
-
-- **Stable filenames** - No hash
-- **Source maps enabled** - Full debugging support
-- **No minification** - Readable output
-- **Watch mode** - Automatic recompilation on changes
-
-### Production (`stati build`)
-
-- **Hashed filenames** - `main-A1B2C3D4.js` for cache busting
-- **No source maps** - Smaller bundle size, no source code exposure
-- **Minified** - Optimized for production
-
-The `hash` and `minify` options only take effect in production builds. Set them to `false` if you need to debug production output.
+`stati dev` recompiles a bundle when its files change. `hash` and `minify` apply to production builds only; set them to `false` to debug production output.
 
 ## Automatic bundle injection
 
@@ -114,12 +105,6 @@ When `autoInject: false`, you must manually add script tags in your templates us
   <% } %>
 </body>
 ```
-
-This is useful when you need to:
-
-- Place scripts in a specific location (e.g., before other scripts)
-- Add custom attributes to script tags (e.g., `defer`, `async`)
-- Conditionally include scripts based on template logic
 
 ### Accessing bundle info in templates
 
@@ -232,14 +217,7 @@ Patterns match against the page's **URL**, not its source file or output file:
 
 ### Matching logic
 
-For each page, Stati determines which bundles to inject:
-
-1. Iterate through all bundles in configuration order
-2. For each bundle:
-   - If no `include` patterns: bundle matches (global bundle)
-   - If `include` patterns exist: page must match at least one pattern
-   - If page matches any `exclude` pattern: bundle is excluded (exclude takes precedence)
-3. All matching bundles are injected in configuration order
+A bundle without `include`, or with an empty `include`, goes on every page; with `include`, a page must match one of its patterns. A page that matches an `exclude` pattern never gets the bundle. A page's bundles are injected in configuration order.
 
 **Example matching:**
 
@@ -254,29 +232,6 @@ Bundle 'home':       include=['/']            → NO MATCH
 Result: ['core', 'docs'] scripts injected
 ```
 
-## Project structure
-
-A TypeScript-enabled Stati project typically looks like:
-
-```text
-my-site/
-├── dist/                    # Build output
-│   ├── _assets/
-│   │   ├── main-A1B2C3D4.js
-│   │   └── docs-E5F6G7H8.js
-│   └── index.html
-├── public/                  # Static assets
-├── site/                    # Content and templates
-│   ├── index.md
-│   └── layout.eta
-├── src/                     # TypeScript source
-│   ├── main.ts
-│   └── docs.ts
-├── package.json
-├── stati.config.ts
-└── tsconfig.json
-```
-
 ## Type checking
 
 Run the TypeScript compiler to check for type errors:
@@ -289,31 +244,7 @@ This runs `tsc --noEmit` to validate your TypeScript without generating output. 
 
 ## Shared code between bundles
 
-For code shared between bundles, use standard ES module imports. esbuild will bundle all imports into each output file:
-
-### src/core.ts
-
-```typescript
-import { initNavigation } from './shared/navigation';
-import { initThemeToggle } from './shared/theme';
-
-document.addEventListener('DOMContentLoaded', () => {
-  initNavigation();
-  initThemeToggle();
-});
-```
-
-### src/docs.ts
-
-```typescript
-import { initSearch } from './shared/search';
-import { initCodeHighlight } from './shared/code-highlight';
-
-document.addEventListener('DOMContentLoaded', () => {
-  initSearch();
-  initCodeHighlight();
-});
-```
+Share code between bundles with ordinary imports. Each bundle is built on its own, so every bundle that imports a module gets its own copy of it.
 
 ## Troubleshooting
 
@@ -334,3 +265,5 @@ A syntax error in a bundle fails the build with `Bundle '<name>' compilation fai
 ### Bundle missing on a page
 
 Check the page's URL against the bundle's `include` and `exclude` patterns. Patterns see `/docs/intro`, not `/docs/intro.html`, and `/docs/**` does not match the `/docs` index page.
+
+Stati also injects no script, without a warning, when the bundle's path holds characters other than letters, digits, `-`, `_`, `.` and `/`, such as a space in `bundleName` or `outDir`, or when the page has no `</body>`.

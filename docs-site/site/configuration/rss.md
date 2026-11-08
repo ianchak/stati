@@ -1,6 +1,6 @@
 ---
 title: 'RSS feeds'
-description: Learn how to configure and generate RSS feeds for your Stati site
+description: Write RSS 2.0 feeds in production builds, choose their pages and map front matter to feed items.
 order: 6
 seo:
   title: 'RSS feed configuration'
@@ -63,7 +63,7 @@ rss: {
 }
 ```
 
-> **How patterns match:** `contentPatterns` and `excludePatterns` are tested against each page's **source file path**, which is an absolute path such as `/home/me/my-site/site/blog/post.md`. Start folder patterns with `**/` (`'**/blog/**'`). A pattern like `'blog/**'` or `'site/blog/**'` matches nothing and produces an empty feed. Patterns without `*` or `?` must equal the path or be a prefix of it, so prefer glob patterns. `**/blog/**` also matches `blog/index.md`; add `excludePatterns: ['**/blog/index.md']` to leave the listing page out. An empty `contentPatterns` array includes every page. Pages created from a `[param].md` template, the later pages of a paginated listing and [the 404 page](/core-concepts/routing#the-404-page) are never in a feed, whatever the patterns.
+> **How patterns match:** `contentPatterns` and `excludePatterns` are tested against each page's **source file path**, which is an absolute path such as `/home/me/my-site/site/blog/post.md`. Start folder patterns with `**/` (`'**/blog/**'`). A pattern like `'blog/**'` or `'site/blog/**'` matches nothing and produces an empty feed. A pattern without `*` or `?` matches that exact path and the files below it, so prefer glob patterns. `**/blog/**` also matches `blog/index.md`. An empty `contentPatterns` array includes every page. Pages created from a `[param].md` template, the later pages of a paginated listing and [the 404 page](/core-concepts/routing#the-404-page) are never in a feed, whatever the patterns.
 
 ### Exclude patterns
 
@@ -143,6 +143,7 @@ Customize your feed with optional metadata:
   description: 'Articles about web development',
 
   // Optional metadata
+  link: '/blog/',  // Channel <link>, resolved against site.baseUrl (default: site.baseUrl)
   language: 'en-US',
   copyright: 'Copyright 2025 My Company',
   category: 'Technology',
@@ -221,7 +222,6 @@ By default, Stati uses these front matter fields:
 - `title` → RSS item title
 - `description` → RSS item description
 - `publishedAt`, `published`, `date` or `createdAt` (first valid one) → RSS item pubDate
-- `author` → RSS item author
 - `tags` → RSS item categories
 - `author` → RSS item author. Text is used as written; an object is written as `email (name)`, or as just the email or name when it has only one of them. A list of authors is joined with commas:
 
@@ -287,7 +287,7 @@ A `link` or `guid` function can return any text. A `link` that isn't an absolute
 
 ### When a callback fails
 
-A callback that throws for one page doesn't stop the feed. Stati logs a warning that names the feed and the page, and leaves out what failed:
+A callback that throws for one page doesn't stop the feed. Stati logs a warning that names the page, and leaves out what failed:
 
 - `link`: the item is skipped, since Stati can't know where it points.
 - `title`, `description`, `pubDate`, `author` and `category`, `guid`, `enclosure` and `customItemElements`: the item stays and only that field is left out.
@@ -402,33 +402,14 @@ To validate a config in your own code, use [`validateRSSConfig()`](/api/rss#vali
 
 ### Feed not generated
 
-If your feed isn't being generated:
-
-1. **Check environment**: Ensure you're running a production build (`npm run build`, not `npm run dev`)
-2. **Verify enabled**: Ensure `rss.enabled: true` in your config
-3. **Check feed config**: Verify your feed has required fields (`filename`, `title`, `description`)
-4. **Check validation errors**: Look for validation errors in the build output
-5. **Check content patterns**: If using `contentPatterns`, ensure they match your content
-6. **Check maxItems**: `maxItems` must be 1 or more; `0` fails validation, and then no feed is written
+- Feeds are written by `stati build` only, with `rss.enabled: true`.
+- Any [validation error](#validation-rules), such as a missing `title` or `maxItems: 0`, stops every feed for that build; the errors are in the build output.
 
 ### Empty feed
 
-If your feed is empty:
-
-1. **Check content patterns**: Patterns are matched against absolute source file paths, so folder patterns need a leading `**/` (`'**/blog/**'`, not `'blog/**'`)
-2. **Check exclude patterns**: Ensure you're not excluding all content
-3. **Check filter function**: Verify your custom filter isn't too restrictive
+- Folder patterns need a leading `**/` (`'**/blog/**'`, not `'blog/**'`), because they are matched against absolute source paths.
+- Check that `excludePatterns` and `filter` leave some pages in.
 
 ### Invalid XML
 
-If your feed has XML errors:
-
-1. **Check special characters**: Stati escapes XML characters, and leaves out control characters (other than tabs and line breaks) that XML can't hold
-2. **Check custom elements**: Ensure custom elements use valid XML tag names
-3. **Validate feed**: Use an RSS validator to check your feed
-
-## Next steps
-
-- Learn about [SEO configuration](/configuration/seo)
-- Configure [Sitemap generation](/configuration/seo#sitemap-configuration)
-- Explore [Build hooks](/api/hooks)
+Stati escapes text and leaves out characters XML can't hold, and skips `customItemElements` keys that aren't valid element names. Declare every prefix you use in `namespaces`; an undeclared prefix (`dc:creator` without `dc`) makes the feed invalid.

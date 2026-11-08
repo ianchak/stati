@@ -59,5 +59,4 @@ build("Inter[opsz,wght].ttf", {"wght": 500, "opsz": 32}, "inter-medium.woff")
 build("FiraCode[wght].ttf", {"wght": 400}, "fira-code-regular.woff")
 ```
 
-The `og/fonts` folders of the blog and docs starters in `examples/` were built the same way:
-Young Serif 400 for the blog (`ofl/youngserif`), Inter 600 and 800 for docs.
+The `og/fonts` folders of the starters in `examples/` hold the same kind of static WOFF files: Young Serif 400 for the blog (`ofl/youngserif`), Inter 600 and 800 for docs, and Libre Franklin 600 and 900 for news.

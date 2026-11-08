@@ -1,14 +1,12 @@
 ---
 title: 'Scaffolder'
-description: 'Interactive scaffolding tool to quickly set up new Stati projects.'
+description: 'Create a Stati project with create-stati: templates, styling, TypeScript, image tools, the agent skill and the files it generates.'
 order: 2
 seo:
   title: 'Scaffolder (create-stati)'
 ---
 
 # Scaffolder
-
-The `create-stati` package provides an interactive scaffolding tool to quickly set up new Stati projects with styling options.
 
 ## Quick start
 
@@ -36,7 +34,7 @@ npx create-stati my-site --no-typescript
 
 Running the scaffolder will:
 
-- Create a new project directory
+- Create the project directory, which must not exist yet
 - Copy the chosen template's files into that directory
 - Update `package.json` with your project name and Stati metadata
 - Set up optional styling scripts based on the chosen styling option
@@ -56,11 +54,11 @@ The scaffolder will prompt you for:
 6. **Agent skill** - Where to install the Stati agent skill, if at all
 7. **Git initialization** - Whether to initialize a Git repository (skipped with `--no-git`)
 8. **Dependency installation** - Whether to install dependencies automatically (skipped with `--no-install`)
-9. **Package manager** - Which package manager to use (only when several are detected and another prompt was shown)
+9. **Package manager** - Which package manager to use (only when installing and more than one is detected)
 
 ### Running without prompts
 
-When the project name, `--template` and `--styling` are all given, the TypeScript, image tools and agent-skill prompts are skipped: the project uses TypeScript (unless `--no-typescript`) and gets neither image tools (unless `--images`) nor an agent skill (unless `--agent-skill`). The Git and install prompts still appear unless you pass `--no-git` and `--no-install`; there are no `--git` or `--install` flags. So a fully unattended run looks like this:
+When the project name, `--template` and `--styling` are all given, the TypeScript, image tools and agent-skill prompts are skipped: the project uses TypeScript (unless `--no-typescript`) and gets neither image tools (unless `--images`) nor an agent skill (unless `--agent-skill`). The Git and install prompts still appear unless you pass `--no-git` and `--no-install`; there are no `--git` or `--install` flags, and the scaffolder ignores options it does not know. A fully unattended run looks like this:
 
 ```bash
 npx create-stati my-site --template=blank --styling=css --no-git --no-install
@@ -116,7 +114,7 @@ The scaffolder can add the Stati agent skill to your project. The skill teaches 
 | `claude` (default) | `claude-code`  | `.claude/skills/stati/` | Claude Code, GitHub Copilot in VS Code   |
 | `agents`           | `universal`    | `.agents/skills/stati/` | GitHub Copilot, Codex, Cursor and others |
 
-In interactive mode you choose a target (or skip) when prompted. In non-interactive mode the skill is only installed when `--agent-skill` is passed. In Claude Code, invoke it with `/stati`. `--agent-skill=github` still works and installs to `.agents/skills/stati/`, which Copilot reads.
+In interactive mode you choose a target (or skip) when prompted. In non-interactive mode the skill is only installed when `--agent-skill` is passed. In Claude Code, invoke it with `/stati`.
 
 ```bash
 npx create-stati my-site --agent-skill
@@ -161,8 +159,6 @@ Each complete template works on first run, and its sample pages explain how each
 - Basic site structure (`site/`, `public/`)
 - A homepage that walks through the project, and a layout with header, navigation and footer
 - One stylesheet with light and dark themes; colors and fonts are CSS custom properties
-- Configuration file with sensible defaults
-- Package.json with development scripts
 
 ### Blog template
 
@@ -219,8 +215,7 @@ The blog's `stati.config.js` holds the feed, sitemap and SEO settings, and the b
 
 - Creates `src/styles.scss` from the template's stylesheet, with `$primary-color`, `$font-stack` and a breakpoint as Sass variables
 - Compiles it into `public/styles.css`, which the templates link: `build:css` before `stati build`, and `watch:css` next to `stati dev`. Production builds name the stylesheet after its content, like any stylesheet in `public/` (see [CSS](/configuration/css#sass))
-- Scripts added: `build:css`, `watch:css`
-- Modified scripts: `build` and `dev` to include CSS compilation
+
 - Lists `public/styles.css` in the generated `.gitignore`
 
 ### Tailwind CSS
@@ -260,7 +255,7 @@ All created projects include these base scripts:
 }
 ```
 
-> **Note:** When using Sass or Tailwind CSS, the `build` and `dev` scripts are automatically modified to compile the CSS: Sass adds steps around the Stati commands, Tailwind adds flags to them. See the [Styling Solutions](#styling-solutions) section for details.
+> **Note:** With Sass or Tailwind CSS, the `build` and `dev` scripts also build the CSS; see [Styling solutions](#styling-solutions).
 
 ## Generated project structure
 
@@ -342,15 +337,3 @@ my-site/
 ├── skills-lock.json          # Where the skill came from, for updates
 └── ...
 ```
-
-## Requirements
-
-- Node.js 22.20 or later on the 22.x line, or 24 and later
-- npm, yarn, pnpm, or bun
-
-## Next steps
-
-- Add content to the `site/` directory
-- Customize the layout in `site/layout.eta`
-- Configure your site in `stati.config.ts` (or `stati.config.js` for JavaScript projects)
-- Learn more about [TypeScript support](/configuration/typescript)

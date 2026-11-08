@@ -1,6 +1,6 @@
 ---
 title: 'SEO and sitemap'
-description: Complete guide to SEO metadata generation, sitemap, and robots.txt configuration in Stati
+description: SEO tags, Open Graph and Twitter defaults, the sitemap, the Google News sitemap and robots.txt in Stati.
 order: 6
 seo:
   title: 'SEO and sitemap configuration'
@@ -8,7 +8,7 @@ seo:
     "@context": "https://schema.org"
     "@type": "TechArticle"
     "headline": "SEO Configuration in Stati"
-    "description": "Complete guide to SEO metadata generation, sitemap, and robots.txt configuration in Stati."
+    "description": "SEO tags, Open Graph and Twitter defaults, the sitemap, the Google News sitemap and robots.txt in Stati."
     "about":
       - "SEO"
       - "meta tags"
@@ -22,14 +22,7 @@ Stati adds SEO metadata to every page and can write a sitemap and a robots.txt f
 
 ## Automatic SEO injection
 
-By default, Stati injects SEO metadata into every page during the build.
-
-### How it works
-
-1. Stati analyzes your rendered HTML before writing it to disk
-2. Detects any existing SEO tags in the `<head>` section
-3. Generates missing SEO metadata based on page content and configuration
-4. Injects the generated tags before `</head>`
+By default, Stati looks for SEO tags already in each rendered page's `<head>` and adds the missing ones before `</head>`.
 
 ### What gets generated
 
@@ -63,7 +56,7 @@ export default defineConfig({
 
 ## Manual SEO generation
 
-For complete control, you can generate SEO tags in your templates with Stati's own `stati.generateSEO()`. Auto-injection still runs and adds only the tags your template does not write; set `seo.autoInject: false` to stop it.
+To place SEO tags yourself, call `stati.generateSEO()` in a layout. Auto-injection still runs and adds only the tags your template does not write; set `seo.autoInject: false` to stop it.
 
 ### Basic usage
 
@@ -101,6 +94,10 @@ In templates, pass the strings. The `SEOTagType` enum is for TypeScript code tha
 - `'opengraph'` or `SEOTagType.OpenGraph` - All Open Graph tags
 - `'twitter'` or `SEOTagType.Twitter` - All Twitter Card tags
 - `'structuredData'` or `SEOTagType.StructuredData` - JSON-LD structured data
+
+### Tag type groups
+
+Open Graph and Twitter tags are detected as groups: if the layout's `<head>` has any `og:*` tag, Stati generates no Open Graph tags, and if it has any `twitter:*` tag, no Twitter Card tags.
 
 ## SEO configuration options
 
@@ -179,7 +176,7 @@ A `seo.author` that is a plain name gives the page no `twitter:creator` and no `
 
 ### Article pages
 
-`seo.articles.include` and `exclude` are glob patterns matched against the page URL, with the same rules as [bundle targeting](/configuration/typescript#pattern-matching): a pattern must match the whole URL, so `/blog/*` matches `/blog/hello` but not the `/blog` index page, and `exclude` wins over `include`. Generated pages (from a `[param].md` template or `collections.generate`) and every page of a paginated listing never match. Without `seo.articles`, no page is an article unless its front matter sets `type: article`.
+`seo.articles.include` and `exclude` are glob patterns matched against the page URL, with the same rules as [bundle targeting](/configuration/typescript#pattern-matching): a pattern must match the whole URL, so `/blog/*` matches `/blog/hello` but not the `/blog` index page, and `exclude` wins over `include`. Generated pages (from a `[param].md` template or `collections.generate`) and every page of a paginated listing never match. Without `seo.articles`, no page is an article unless its front matter sets `seo.openGraph.type: article`.
 
 On a matching page, Stati fills in each value the front matter leaves out. A page that sets only `section` still gets its dates and tags:
 
@@ -215,7 +212,7 @@ Customize SEO metadata for individual pages using front matter:
 
 ### Open Graph configuration
 
-With [`images.og`](/configuration/images#open-graph-images), every page that sets no image gets a generated card, and its `og:image`, `twitter:image` and image size tags are added for you. Set `image: false` under `openGraph` to give a page no image at all.
+With [`images.og`](/configuration/images#open-graph-images), a page that sets no image gets a generated card, and its `og:image`, `twitter:image` and image size tags are added for you (not on the 404 page or pages `images.og.exclude` matches). Set `image: false` under `openGraph` to give a page no image at all.
 
 ```markdown
 ---
@@ -306,13 +303,11 @@ seo:
 ---
 ```
 
-A page that sets `index: false` here, `seo.noindex: true`, or a `seo.robots` string with a `noindex` or `none` directive is left out of the [sitemap](#advanced-sitemap-options).
-
 ## Sitemap configuration
 
 Stati can automatically generate XML sitemaps for your site.
 
-> **Production Only**: Sitemaps are only generated during production builds (`stati build`). They are skipped in development mode to improve build performance.
+> **Production only**: sitemaps are written by production builds (`stati build`), not by `stati dev`.
 
 ### Enable sitemap generation
 
@@ -496,7 +491,7 @@ Without `sitemap.news` nothing changes: no file is written. With it, production 
 
 Generate a `robots.txt` file to control search engine crawling.
 
-> **Production Only**: The robots.txt file is only generated during production builds (`stati build`). It is skipped in development mode to improve build performance.
+> **Production only**: `robots.txt` is written by production builds (`stati build`), not by `stati dev`.
 
 ### Enable robots.txt
 
@@ -552,8 +547,8 @@ export default defineConfig({
       '/api/public/',
     ],
 
-    // Crawl delay in seconds, written in the "User-agent: *" group (be careful with this)
-    crawlDelay: undefined,
+    // Crawl delay in seconds, written in the "User-agent: *" group when above 0
+    // crawlDelay: 10,
 
     // Sitemap reference: a URL, or true for <baseUrl>/sitemap.xml and, with sitemap.news,
     // the Google News sitemap (not added when unset)
@@ -595,64 +590,18 @@ Disallow: /restricted/
 
 Paths without a leading `/` get one. An empty path writes the line with no value: `disallow: ['']` writes `Disallow:`, which blocks nothing, while `Disallow: /` would block the whole site. `crawlDelay` is written only when it is greater than 0. Global options that write no line (`crawlDelay: 0`, or empty `allow` and `disallow` lists) add no `User-agent: *` group, so without other rules Stati writes the default `Allow: /`.
 
-## SEO tag types
-
-### Tag type groups
-
-Some tag types are **grouped**, meaning if you manually add any tag from a group, Stati skips auto-generating **all** tags in that group:
-
-- **Open Graph Group**: If any `og:*` tag exists, all Open Graph tags are skipped
-- **Twitter Group**: If any `twitter:*` tag exists, all Twitter Card tags are skipped
-
-This prevents duplicate or conflicting tags.
-
 ## Troubleshooting
 
-### Why aren't my SEO tags being injected?
+### Tags are missing
 
-**Check these common issues:**
+- `seo.autoInject` is `false`.
+- The layout has no `</head>`: tags are injected before it.
+- The layout already writes that tag, or one tag of its [group](#tag-type-groups): one `og:` tag turns off every generated Open Graph tag.
+- There is nothing to print: without a page `description` or `site.description`, no description tags are written.
 
-1. **Auto-injection disabled**: Verify `seo.autoInject` is `true` (default)
-2. **Tags already exist**: Stati skips tags that already exist in your HTML
-3. **Invalid front matter**: Check for YAML syntax errors
-4. **Missing `</head>`**: Auto-injection requires a closing `</head>` tag
+Set `seo.debug: true` to log, for each page, which tags were found and which were injected.
 
-### How do I debug SEO generation?
-
-Enable debug mode to see detailed logs:
-
-```typescript
-// stati.config.ts
-import { defineConfig } from '@stati/core';
-
-export default defineConfig({
-  // site: { … },
-  seo: {
-    debug: true, // Enable detailed SEO logging
-  },
-});
-```
-
-### Why are some tags missing?
-
-**Common reasons:**
-
-- **Group behavior**: Adding any Open Graph tag manually skips all OG tags
-- **Missing data**: No source data available (e.g., no page description, so no description tags)
-- **No `</head>`**: Tags are injected before `</head>`; a layout without it gets none
-
-### How do I override specific tags?
-
-Use **hybrid mode** - keep auto-injection enabled and add manual tags for specific fields:
-
-```html
-<head>
-  <!-- Manual title overrides auto-generated title -->
-  <title>Custom Title</title>
-
-  <!-- All other tags are auto-generated -->
-</head>
-```
+To override one tag, write it in the layout's `<head>`; Stati generates the rest.
 
 ### Front matter validation
 

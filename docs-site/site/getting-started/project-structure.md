@@ -76,37 +76,9 @@ The folder name is a convention: any `.eta` file under `site/` can be included b
 - **`site/partials/footer.eta`** - Site footer
 - **`site/partials/nav/sidebar.eta`** - Navigation sidebar, included with `stati.include('partials/nav/sidebar')`
 
-## Configuration files
+## Configuration file
 
-### `stati.config.js` (or `stati.config.ts`)
-
-The main configuration file where you define site metadata, template helpers, Markdown plugins, and more. Use `.ts` for TypeScript projects with full type safety.
-
-```javascript
-import { defineConfig } from '@stati/core';
-
-export default defineConfig({
-  site: {
-    title: 'My Stati Site',
-    baseUrl: 'https://example.com',
-  },
-  // Additional configuration...
-});
-```
-
-For TypeScript projects, you can also configure the built-in TypeScript compilation:
-
-```typescript
-export default defineConfig({
-  site: { title: 'My Stati Site', baseUrl: 'https://example.com' },
-  typescript: {
-    enabled: true,
-    // bundles defaults to [{ entryPoint: 'main.ts', bundleName: 'main' }]
-  },
-});
-```
-
-See the [TypeScript Configuration](/configuration/typescript) guide for more details on multiple bundles and per-page targeting.
+Stati reads the first of `stati.config.ts`, `stati.config.js` and `stati.config.mjs` it finds in the project root, and uses its defaults when there is none. See [Configuration file](/configuration/file) for the options, and [TypeScript](/configuration/typescript) for client bundles.
 
 ## Template files
 
@@ -126,36 +98,6 @@ You can also give a page its own layout by naming it in the page's front matter,
 - **`.md` files** - Markdown content with front matter; every `.md` file outside an underscore folder becomes a page, apart from drafts and `[param].md` templates
 - **`.eta` files** - Layouts, shells and included templates; an `.eta` file never becomes a page on its own
 - **`og.eta`** - With [`images.og`](/configuration/images#open-graph-images), the template for the link preview image of the pages in its folder and below
-
-## Advanced structure
-
-For larger sites, you might organize content like this:
-
-```text
-site/
-├── index.md
-├── layout.eta
-├── about.md
-├── blog/
-│   ├── index.md
-│   ├── layout.eta
-│   ├── 2024/
-│   │   ├── first-post.md
-│   │   └── second-post.md
-│   └── partials/
-│       └── post-meta.eta
-├── docs/
-│   ├── index.md
-│   ├── layout.eta
-│   └── api/
-│       ├── index.md
-│       └── reference.md
-├── base.eta
-└── partials/
-    ├── header.eta
-    ├── footer.eta
-    └── nav.eta
-```
 
 ## Special files and directories
 
@@ -189,11 +131,3 @@ dist/
 ├── favicon.svg
 └── styles.css
 ```
-
-## Next steps
-
-- Learn about [Templates and layouts](/core-concepts/templates)
-- Understand [Filesystem-based Routing](/core-concepts/routing)
-- Explore [Static Assets](/core-concepts/static-assets)
-- Configure your [Site Metadata](/configuration/site-metadata)
-- Enable [TypeScript Compilation](/configuration/typescript)

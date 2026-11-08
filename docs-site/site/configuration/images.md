@@ -15,7 +15,6 @@ Stati gives every image in your Markdown its width and height and loads it lazil
 | Markdown images | `width`, `height`, `loading="lazy"`, `decoding="async"` | `<picture>` with AVIF and WebP at several widths |
 | Images next to a page | Copied to the output | Responsive variants instead of the copy (animated images are still copied) |
 | Link previews | `og:image` from front matter | A generated card for every page |
-| Configuration | None | `images.responsive`, `images.og` |
 
 ## Built-in behavior
 
@@ -41,7 +40,7 @@ img {
 }
 ```
 
-> **Note:** Without `height: auto`, an image with a `height` attribute keeps that height when `max-width` narrows it. If your site's CSS lacks the rule, add it, or turn the built-in behavior off with `images: false`.
+Without `height: auto`, an image keeps its `height` attribute when `max-width` narrows it, so it looks stretched. Add the rule, or turn the built-in behavior off with `images: false`.
 
 ### Turning it off
 
@@ -111,7 +110,7 @@ images: {
 ```
 
 - **Widths** larger than the image itself are skipped, and the image's own width is added when it is smaller than the largest width. Images are never enlarged.
-- **The fallback** keeps the image's format: JPEG stays JPEG, PNG stays PNG and keeps its transparency, and GIF becomes PNG. PNG is lossless unless you set `quality.png`.
+- **The fallback** keeps the image's format: JPEG stays JPEG, PNG stays PNG and keeps its transparency, and GIF becomes PNG. PNG is lossless unless you set `quality.png`. A WebP or AVIF image gets no `<source>` in its own format, since the fallback already is one, and with `formats: []` every image is a plain `<img srcset>`.
 - **`sizes`** tells the browser how wide the image is shown. The default, `100vw`, suits full-width images; give the real width of your content column for smaller downloads on large screens.
 - **Animated images** (GIF, WebP, PNG and AVIF) keep the built-in behavior.
 
@@ -130,7 +129,7 @@ export default defineConfig({
 });
 ```
 
-Stati adds `og:image`, `og:image:width`, `og:image:height`, `og:image:alt`, `twitter:image` and `twitter:image:alt` to each page, pointing to a 1200 by 630 PNG under `/_img/og/`. Social networks need absolute URLs, so production builds stop with an error unless `site.baseUrl` is your site's public address.
+Stati adds `og:image`, `og:image:width`, `og:image:height` and `twitter:image` to each page, pointing to a 1200 by 630 PNG under `/_img/og/`, plus `og:image:alt` and `twitter:image:alt` with the page's `title`. Social networks need absolute URLs, so production builds stop with an error unless `site.baseUrl` is your site's public address.
 
 A page keeps the image it sets in front matter, and `false` gives it none:
 
@@ -161,7 +160,7 @@ images: {
 
 ### Designing the card
 
-Without a template, pages use the card built into `@stati/images`: the site name, the page's section, its title and description, and its address, in Stati's own typefaces.
+Without a template, pages use the card built into `@stati/images`: the site name, the page's section, its title and description, and its address, in the [bundled fonts](#fonts).
 
 To design your own, add `og.eta` to `site/`. For a section with its own card, add one to the section's folder, such as `site/blog/og.eta`; each page uses the nearest one. The built-in card, in `node_modules/@stati/images/templates/og.eta`, is a good starting point.
 
@@ -254,7 +253,7 @@ A feature that needs the package is on, but the package is not installed. Run `n
 
 Update both packages to their latest versions.
 
-### `images.og needs site.baseUrl set to your site's public address`
+### `images.og needs site.baseUrl`
 
 Set `site.baseUrl` to the address the site is published at, such as `https://example.com`.
 
@@ -262,6 +261,6 @@ Set `site.baseUrl` to the address the site is published at, such as `https://exa
 
 The image encoder has a native part for each operating system. If your lockfile was created on another system, run `npm install` again so it lists every platform's optional `@img/sharp-*` package. See the [sharp installation guide](https://sharp.pixelplumbing.com/install).
 
-### An image shows without variants and the build logged a warning
+### An image has no variants and the build warned
 
 Encoding failed, for example because the file is damaged. The page shows the original image and is rebuilt on the next build.

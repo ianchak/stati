@@ -48,6 +48,8 @@ Requires `@stati/core` 1.28 or later and Node.js 22.20 or later on the 22.x line
 
 ## Responsive images
 
+The options, with their defaults:
+
 ```ts
 images: {
   responsive: {
@@ -80,6 +82,8 @@ In templates, use `stati.image()`:
 
 ## Open Graph images
 
+`width`, `height` and `format` below are the defaults; `exclude` takes URL globs that match the whole URL:
+
 ```ts
 images: {
   og: {
@@ -91,7 +95,7 @@ images: {
 },
 ```
 
-Each page gets `og:image`, its size and `twitter:image`, pointing to a card rendered for that page. A page that sets `seo.openGraph.image` in its front matter keeps its own image; `image: false` gives it none. With `@stati/core` 2.2 or later, the site's 404 page gets no card.
+Each page gets `og:image`, its size and `twitter:image`, pointing to a card rendered for that page. A page that sets `seo.openGraph.image` in its front matter keeps its own image; `image: false` gives it none. The site's 404 page gets no card.
 
 ### Designing the card
 

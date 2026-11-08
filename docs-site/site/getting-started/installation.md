@@ -11,55 +11,15 @@ order: 2
 - **Node.js** 22.20 or later on the 22.x line, or 24 and later
 - **A package manager**: npm, pnpm, yarn or bun
 
-## Interactive scaffolder
-
-The easiest way to get started with Stati is using the `create-stati` interactive scaffolder.
+## Scaffolder
 
 ```bash
 npx create-stati
 ```
 
-This command will launch an interactive setup wizard that guides you through creating a new project. You'll be prompted for:
+The scaffolder asks for a project name, a template (`blank`, `blog`, `docs` or `news`), the styling (plain CSS, Sass or Tailwind CSS), TypeScript (on by default), image tools (off by default), where to install the Stati agent skill, Git and dependency installation. A flag such as `--styling tailwind` answers its prompt in advance. [Scaffolder](/cli/scaffolder) lists every prompt and flag, and how to run without prompts.
 
-- **Project name**: The directory for your new site.
-- **Template**: Start from the `blank`, `blog`, `docs` or `news` template.
-- **Styling solution**: Choose between plain CSS, Sass, or Tailwind CSS.
-- **TypeScript**: On by default, with a typed `stati.config.ts` and esbuild-compiled client code. Answer no for a JavaScript project.
-- **Image tools**: Off by default. Answer yes to add `@stati/images` for responsive images and link preview cards.
-- **Agent skill**: Optionally install the Stati agent skill for AI coding assistants.
-- **Git initialization**: Optionally initialize a new Git repository.
-- **Dependency installation**: Choose whether to install dependencies automatically.
-- **Package manager**: Select your preferred package manager (npm, yarn, pnpm, or bun) if multiple are available.
-
-### Command-line options
-
-You can also pass command-line arguments to pre-configure the scaffolder and skip some interactive prompts.
-
-```bash
-npx create-stati my-site --styling tailwind
-```
-
-This creates a project in `my-site` with Tailwind CSS and asks only the remaining questions (template, TypeScript, image tools, agent skill, Git, dependency installation and, when several are detected, the package manager). To skip every prompt, see [Running without prompts](/cli/scaffolder#running-without-prompts). See [Command line options](/cli/scaffolder#command-line-options) for every flag.
-
-### TypeScript by default
-
-New projects use TypeScript unless you opt out:
-
-```bash
-npx create-stati my-site
-```
-
-This creates a project with:
-
-- `stati.config.ts` - Type-safe configuration file
-- `tsconfig.json` - TypeScript compiler configuration
-- `src/main.ts` - Entry point for client-side TypeScript code
-
-Stati compiles your TypeScript files from `src/` using esbuild. Run `npm run typecheck` to validate your TypeScript code. Learn more in the [TypeScript configuration guide](/configuration/typescript).
-
-For a JavaScript project instead, pass `--no-typescript` (you get `stati.config.js` and no `src/` entry point).
-
-> **Tip:** If you choose Tailwind CSS, the scaffolder sets up Stati's built-in Tailwind integration in the dev and build scripts. `stati dev` and `stati build` run Tailwind themselves, so you need no separate CSS scripts. See [Tailwind CSS](/cli/scaffolder#tailwind-css).
+A TypeScript project gets `stati.config.ts`, `tsconfig.json` and `src/main.ts`, the client entry point Stati compiles with esbuild; `npm run typecheck` checks it. Pass `--no-typescript` for a JavaScript project with `stati.config.js`. See [TypeScript](/configuration/typescript).
 
 ## Manual installation
 
@@ -149,9 +109,3 @@ npm run preview
 ```
 
 The development server runs at `http://localhost:3000` and the preview server at `http://localhost:4000`.
-
-## Next steps
-
-- Learn about the [Project Structure](/getting-started/project-structure)
-- Follow the [quick start](/getting-started/quick-start)
-- Explore [core concepts](/core-concepts/overview)
