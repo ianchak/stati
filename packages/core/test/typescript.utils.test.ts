@@ -875,6 +875,35 @@ export default { site: { title: 'CJS' }, outDir: outDir as string, other: helper
       expect(result).toContain('/_assets/docs.js');
     });
 
+    it('should inject before the last </body> that is markup', () => {
+      const html =
+        '<html><body><script>var s = "</body>";</script><!-- </body> -->' +
+        '<p>Raw </body> in content</p></BODY><!-- </body> --></html>';
+      const result = autoInjectBundles(html, ['/_assets/core.js']);
+      expect(result).toBe(
+        '<html><body><script>var s = "</body>";</script><!-- </body> -->' +
+          '<p>Raw </body> in content</p><script type="module" src="/_assets/core.js"></script>\n' +
+          '</BODY><!-- </body> --></html>',
+      );
+    });
+
+    it('should not count a commented-out script tag as including the bundle', () => {
+      const html =
+        '<html><body><!-- <script type="module" src="/_assets/core.js"></script> --></body></html>';
+      const result = autoInjectBundles(html, ['/_assets/core.js']);
+      expect(result.match(/src="\/_assets\/core\.js"/g)).toHaveLength(2);
+    });
+
+    it('should count an unquoted script src as including the bundle', () => {
+      const html = '<html><body><script type=module src=/_assets/core.js></script></body></html>';
+      expect(autoInjectBundles(html, ['/_assets/core.js'])).toBe(html);
+    });
+
+    it('should count a script without a src as including no bundle', () => {
+      const html = '<html><body><script>console.log(1)</script></body></html>';
+      expect(autoInjectBundles(html, ['/_assets/core.js'])).toContain('src="/_assets/core.js"');
+    });
+
     it('should return original html if no </body> tag found', () => {
       const html = '<html><div>No body close</div></html>';
       const result = autoInjectBundles(html, ['/_assets/bundle.js']);

@@ -192,7 +192,7 @@ Access the search index path in your templates via `stati.assets.searchIndexPath
 
 ## Auto-injected meta tag
 
-When `autoInjectMetaTag` is enabled (default), Stati automatically injects a meta tag into your HTML:
+When `autoInjectMetaTag` is enabled (default), Stati automatically injects a meta tag before `</head>`, unless the page already has one (one in a comment or a script doesn't count):
 
 ```html
 <meta name="stati:search-index" content="/search-index-a1b2c3d4.json">

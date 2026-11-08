@@ -57,6 +57,22 @@ describe('autoInjectSearchMeta', () => {
     expect(matches).toHaveLength(1);
   });
 
+  it('handles an unquoted, differently cased meta tag', () => {
+    const html = `<html><head><META NAME=STATI:SEARCH-INDEX content=/x.json></head><body></body></html>`;
+    expect(autoInjectSearchMeta(html, searchIndexPath)).toBe(html);
+  });
+
+  it('injects when the meta tag is only in a comment or a script, before the real </head>', () => {
+    const html =
+      `<html><head><!-- <meta name="${SEARCH_INDEX_META_NAME}" content="/old.json"> </head> -->` +
+      `<script>var m = '<meta name="${SEARCH_INDEX_META_NAME}">';</script></head><body></body></html>`;
+    const result = autoInjectSearchMeta(html, searchIndexPath);
+
+    expect(result).toContain(
+      `</script>    <meta name="${SEARCH_INDEX_META_NAME}" content="${searchIndexPath}">\n</head>`,
+    );
+  });
+
   it('returns original HTML if no </head> tag found', () => {
     const html = '<html><body>No head tag</body></html>';
     const result = autoInjectSearchMeta(html, searchIndexPath);

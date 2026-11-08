@@ -157,7 +157,7 @@ describe('sites served from a base path', () => {
         await site.write('site/index.md', page({ title: 'Home' }, '[About](/about)'));
         await site.write(
           'site/layout.eta',
-          `<html><body><a href="/hard-coded">x</a><a href="<%= stati.url('/about') %>">y</a><%~ stati.content %></body></html>`,
+          `<html><head></head><body><a href="/hard-coded">x</a><a href="<%= stati.url('/about') %>">y</a><%~ stati.content %></body></html>`,
         );
 
         const { warnings } = await site.build();

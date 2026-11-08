@@ -71,7 +71,7 @@ Auto-injection disabled or manual generation not called.
 1. Check `seo.autoInject` is not set to `false`
 2. If using manual mode, add `<%~ stati.generateSEO() %>` to your layout's `<head>`
 3. Ensure `site.baseUrl` is set for canonical URLs
-4. Make sure the layout or shell has a `<head>` element: auto-injection writes the tags before `</head>`
+4. Make sure the layout or shell has a `<head>` element: auto-injection writes the tags before `</head>`, and the build warns `No </head> tag found in <url>, so no SEO tags were added to it` for a page without one. A `</head>` in a comment or a script doesn't count
 
 ---
 

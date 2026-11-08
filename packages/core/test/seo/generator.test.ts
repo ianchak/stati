@@ -254,6 +254,32 @@ describe('SEO Generator - generateSEOMetadata', () => {
     expect(robotsFor('/docs/404')).toBeUndefined();
   });
 
+  it('should escape the robots, twitter:card and og:image size values', () => {
+    // Front matter is YAML, so these can be any string whatever the types say
+    const seo = {
+      robots: 'noindex" onload="x',
+      twitter: { card: 'summary" onload="y' },
+      openGraph: {
+        image: { url: '/og.png', width: '1200" a="1', height: '630" b="2' },
+      },
+    } as unknown as NonNullable<PageModel['frontMatter']['seo']>;
+    const page = createMockPage({ frontMatter: { seo } });
+    const ctx: SEOContext = {
+      logger: createMockLogger(),
+      page,
+      config: createMockConfig(),
+      siteUrl: 'https://example.com',
+    };
+
+    const result = generateSEOMetadata(ctx);
+
+    expect(result).toContain('<meta name="robots" content="noindex&quot; onload=&quot;x">');
+    expect(result).toContain('<meta name="twitter:card" content="summary&quot; onload=&quot;y">');
+    expect(result).toContain('<meta property="og:image:width" content="1200&quot; a=&quot;1">');
+    expect(result).toContain('<meta property="og:image:height" content="630&quot; b=&quot;2">');
+    expect(result).not.toContain('onload="');
+  });
+
   it('should generate author meta tag from string', () => {
     const page = createMockPage({
       frontMatter: {

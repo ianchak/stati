@@ -79,7 +79,7 @@ The `hash` and `minify` options only take effect in production builds. Set them 
 
 ## Automatic bundle injection
 
-When TypeScript is enabled, Stati **automatically injects** script tags into your HTML output before the closing `</body>` tag during both `stati dev` and `stati build`, on every page or on the pages a bundle's `include` and `exclude` patterns select. Stati does not add a script tag that is already in the page.
+When TypeScript is enabled, Stati **automatically injects** script tags into your HTML output before the closing `</body>` tag during both `stati dev` and `stati build`, on every page or on the pages a bundle's `include` and `exclude` patterns select. The tags go before the last `</body>` that isn't in a comment or a script, and a page without one gets none. Stati does not add a script tag that is already in the page; one in a comment doesn't count.
 
 ```html
 <!-- Automatically injected by Stati -->

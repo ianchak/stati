@@ -19,7 +19,13 @@ import {
   writeFile,
 } from '../core/utils/fs.utils.js';
 import { getBasePath, stripBasePath } from '../core/utils/base-path.utils.js';
-import { injectBeforeHeadClose } from '../core/utils/html.utils.js';
+import {
+  findHtmlTags,
+  getAttribute,
+  injectBeforeHeadClose,
+  type HtmlTag,
+  type TagAttribute,
+} from '../core/utils/html.utils.js';
 import { CSS_OUT_DIR } from '../constants.js';
 import type { CSSConfig } from '../types/index.js';
 import { resolveCSSConfig } from './config.js';
@@ -102,15 +108,6 @@ const CSS_ESCAPE = /\\(?:([0-9a-f]{1,6})(?:\r\n|[ \t\r\n\f])?|([\s\S]))/gi;
 
 /** References that don't depend on where the stylesheet is: a scheme, the site root, a fragment */
 const LOCATION_INDEPENDENT_URL = /^(?:[a-z][a-z0-9+.-]*:|\/|#)/i;
-
-/** A tag name after `<` or `</`: a letter, then anything up to whitespace, `/` or `>` */
-const HTML_TAG_NAME = /[A-Za-z][^\t\n\f\r />]*/y;
-
-/** Whitespace as HTML reads it between attributes */
-const HTML_WHITESPACE = /[\t\n\f\r ]/;
-
-/** Elements whose contents browsers read as text or keep inert, so tags in them aren't markup */
-const HTML_TEXT_ELEMENTS = new Set(['script', 'style', 'template', 'textarea', 'title']);
 
 /** Origin for resolving paths with `URL`, never printed */
 const URL_BASE = 'http://stati.invalid';
@@ -615,109 +612,6 @@ function parseSiteHref(
   return sitePath === undefined ? undefined : { origin, path: sitePath, suffix };
 }
 
-/** An attribute of a tag: its name in lowercase, its value, and where the value is in the tag */
-export interface TagAttribute {
-  name: string;
-  value: string;
-  /** Where the value starts in the tag, after an opening quote */
-  start: number;
-  /** Where the value ends in the tag, before a closing quote */
-  end: number;
-}
-
-/** A tag of a page: its name in lowercase, where it starts and ends, and its attributes */
-export interface HtmlTag {
-  name: string;
-  start: number;
-  end: number;
-  attributes: TagAttribute[];
-}
-
-/**
- * The index of the `>` that ends a tag, scanning from `from`, or -1 when the tag never closes.
- * A `>` in a quoted attribute value doesn't end the tag.
- */
-function findTagEnd(html: string, from: number): number {
-  let i = from;
-  while (i < html.length) {
-    const char = html.charAt(i);
-    if (char === '>') {
-      return i;
-    }
-    i++;
-    if (char === '=') {
-      while (i < html.length && HTML_WHITESPACE.test(html.charAt(i))) {
-        i++;
-      }
-      const quote = html.charAt(i);
-      if (quote === '"' || quote === "'") {
-        const close = html.indexOf(quote, i + 1);
-        if (close === -1) {
-          return -1;
-        }
-        i = close + 1;
-      }
-    }
-  }
-  return -1;
-}
-
-/** The attributes of a tag, read as browsers read them: quoted, unquoted or without a value */
-function parseAttributes(tag: string): TagAttribute[] {
-  const attributes: TagAttribute[] = [];
-  const isSpace = (at: number) => HTML_WHITESPACE.test(tag.charAt(at));
-  const isNameEnd = (at: number) => isSpace(at) || '/>='.includes(tag.charAt(at));
-  // Past '<' and the tag name
-  let i = 1;
-  while (i < tag.length && !isSpace(i) && !'/>'.includes(tag.charAt(i))) {
-    i++;
-  }
-  while (i < tag.length) {
-    while (i < tag.length && (isSpace(i) || tag.charAt(i) === '/')) {
-      i++;
-    }
-    if (i >= tag.length || tag.charAt(i) === '>') {
-      break;
-    }
-    // A name runs to whitespace, '/', '>' or '='; a '=' it starts with is part of it
-    const nameStart = i++;
-    while (i < tag.length && !isNameEnd(i)) {
-      i++;
-    }
-    const name = tag.slice(nameStart, i).toLowerCase();
-    while (i < tag.length && isSpace(i)) {
-      i++;
-    }
-    if (tag.charAt(i) !== '=') {
-      attributes.push({ name, value: '', start: i, end: i });
-      continue;
-    }
-    i++;
-    while (i < tag.length && isSpace(i)) {
-      i++;
-    }
-    const quote = tag.charAt(i);
-    if (quote === '"' || quote === "'") {
-      const close = tag.indexOf(quote, i + 1);
-      const end = close === -1 ? tag.length : close;
-      attributes.push({ name, value: tag.slice(i + 1, end), start: i + 1, end });
-      i = end + 1;
-    } else {
-      const start = i;
-      while (i < tag.length && !isSpace(i) && tag.charAt(i) !== '>') {
-        i++;
-      }
-      attributes.push({ name, value: tag.slice(start, i), start, end: i });
-    }
-  }
-  return attributes;
-}
-
-/** The first attribute with this name, as browsers use it */
-function getAttribute(attributes: readonly TagAttribute[], name: string): TagAttribute | undefined {
-  return attributes.find((attribute) => attribute.name === name);
-}
-
 function getRelTokens(attributes: readonly TagAttribute[]): string[] {
   return (getAttribute(attributes, 'rel')?.value ?? '').toLowerCase().split(/\s+/);
 }
@@ -749,74 +643,6 @@ function loadsStylesheet(attributes: readonly TagAttribute[]): boolean {
  */
 function isHashableLink(attributes: readonly TagAttribute[]): boolean {
   return loadsStylesheet(attributes) && getAttribute(attributes, 'integrity') === undefined;
-}
-
-/**
- * The tags of a page, named in `names` (lowercase), that are markup: every tag is read with its
- * quoted attribute values, so a `>` or a `<link>` in one is text, and tags in a comment, or in a
- * script, style, template, textarea or title, aren't markup. A tag, comment or element left open
- * runs to the end of the page, as browsers read it. One pass over the page, whatever it holds.
- *
- * @param html - The page's HTML
- * @param names - The tag names to find, in lowercase, such as `link` or `a`
- */
-export function findHtmlTags(html: string, names: ReadonlySet<string>): HtmlTag[] {
-  const tags: HtmlTag[] = [];
-  const tagName = new RegExp(HTML_TAG_NAME.source, 'y');
-  // The closing tag of an element whose contents are text, found from where the scan is
-  const findClose = (element: string, from: number): number => {
-    const closeTag = new RegExp(`</${element}(?=[\\t\\n\\f\\r />])`, 'gi');
-    closeTag.lastIndex = from;
-    return closeTag.exec(html)?.index ?? -1;
-  };
-
-  let i = html.indexOf('<');
-  while (i !== -1) {
-    let next = i + 1;
-    if (html.startsWith('<!--', i)) {
-      const close = html.indexOf('-->', i + 4);
-      if (close === -1) {
-        break;
-      }
-      next = close + 3;
-    } else if (html.charAt(i + 1) === '!' || html.charAt(i + 1) === '?') {
-      // A doctype, or markup browsers read as a comment
-      const close = html.indexOf('>', i + 2);
-      if (close === -1) {
-        break;
-      }
-      next = close + 1;
-    } else {
-      const closing = html.charAt(i + 1) === '/';
-      tagName.lastIndex = i + (closing ? 2 : 1);
-      const name = tagName.exec(html)?.[0].toLowerCase();
-      // A '<' without a tag name is text
-      if (name !== undefined) {
-        const end = findTagEnd(html, tagName.lastIndex);
-        if (end === -1) {
-          break;
-        }
-        next = end + 1;
-        if (!closing && names.has(name)) {
-          tags.push({
-            name,
-            start: i,
-            end: next,
-            attributes: parseAttributes(html.slice(i, next)),
-          });
-        }
-        if (!closing && HTML_TEXT_ELEMENTS.has(name)) {
-          const close = findClose(name, next);
-          if (close === -1) {
-            break;
-          }
-          next = close;
-        }
-      }
-    }
-    i = html.indexOf('<', next);
-  }
-  return tags;
 }
 
 const LINK_TAG = new Set(['link']);

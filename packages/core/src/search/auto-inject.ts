@@ -3,8 +3,10 @@
  * @module search/auto-inject
  */
 
-import { injectBeforeHeadClose } from '../core/utils/html.utils.js';
+import { findHtmlTags, getAttribute, injectBeforeHeadClose } from '../core/utils/html.utils.js';
 import { SEARCH_INDEX_META_NAME } from './constants.js';
+
+const META_TAG = new Set(['meta']);
 
 /**
  * Injects a meta tag with the search index path into HTML.
@@ -22,13 +24,12 @@ import { SEARCH_INDEX_META_NAME } from './constants.js';
  * ```
  */
 export function autoInjectSearchMeta(html: string, searchIndexPath: string): string {
-  // Check if meta tag already exists using regex to handle attribute order variations
-  // Matches: <meta name="stati:search-index" ...> or <meta content="..." name="stati:search-index" ...>
-  const existingMetaPattern = new RegExp(
-    `<meta[^>]*name=["']${SEARCH_INDEX_META_NAME}["'][^>]*>`,
-    'i',
+  // A page that has the meta tag keeps it; one in a comment or a script doesn't count
+  const hasMetaTag = findHtmlTags(html, META_TAG).some(
+    ({ attributes }) =>
+      getAttribute(attributes, 'name')?.value.toLowerCase() === SEARCH_INDEX_META_NAME,
   );
-  if (existingMetaPattern.test(html)) {
+  if (hasMetaTag) {
     return html;
   }
 

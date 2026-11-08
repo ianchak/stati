@@ -827,21 +827,79 @@ describe('SEO Utils - detectExistingSEOTags', () => {
     expect(tags.has(SEOTagType.Description)).toBe(true);
   });
 
-  it('should return empty set for HTML without head tag', () => {
+  it('should return empty set for HTML without head tag, without printing to the console', () => {
     const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const html = '<html><body><p>No head tag</p></body></html>';
     const tags = detectExistingSEOTags(html);
     expect(tags.size).toBe(0);
-    expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('No <head> tag found'));
+    expect(consoleWarnSpy).not.toHaveBeenCalled();
     consoleWarnSpy.mockRestore();
   });
 
   it('should return empty set for empty HTML', () => {
-    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const html = '';
-    const tags = detectExistingSEOTags(html);
+    const tags = detectExistingSEOTags('');
     expect(tags.size).toBe(0);
-    consoleWarnSpy.mockRestore();
+  });
+
+  it('should not count tags in comments', () => {
+    const html =
+      '<html><head><!-- <title>Old</title> <meta name="description" content="x"> ' +
+      '<link rel="canonical" href="/x"> --></head><body></body></html>';
+    expect(detectExistingSEOTags(html).size).toBe(0);
+  });
+
+  it('should not count tags in a script, style or template', () => {
+    const html =
+      '<html><head><script>document.write(\'<meta name="description" content="x">\')</script>' +
+      '<style>/* <meta name="author"> */</style>' +
+      '<template><meta property="og:title" content="x"></template></head><body></body></html>';
+    expect(detectExistingSEOTags(html).size).toBe(0);
+  });
+
+  it('should detect a title tag with attributes', () => {
+    const html = '<html><head><title data-x="1">My Page</title></head><body></body></html>';
+    expect(detectExistingSEOTags(html).has(SEOTagType.Title)).toBe(true);
+  });
+
+  it('should detect unquoted and differently cased attribute values', () => {
+    const html =
+      '<html><head><meta name=description content="mine"><META NAME="Robots" content=noindex>' +
+      '<link href="/x" rel="alternate Canonical"><script type=application/ld+json>{}</script>' +
+      '</head><body></body></html>';
+    const tags = detectExistingSEOTags(html);
+    expect(tags).toEqual(
+      new Set([
+        SEOTagType.Description,
+        SEOTagType.Robots,
+        SEOTagType.Canonical,
+        SEOTagType.StructuredData,
+      ]),
+    );
+  });
+
+  it('should detect one meta tag as both Open Graph and Twitter metadata', () => {
+    const html =
+      '<html><head><meta property="og:title" name="twitter:title" content="T"></head></html>';
+    expect(detectExistingSEOTags(html)).toEqual(
+      new Set([SEOTagType.OpenGraph, SEOTagType.Twitter]),
+    );
+  });
+
+  it('should detect Twitter Card tags written with property', () => {
+    const html = '<html><head><meta property="twitter:card" content="summary"></head></html>';
+    expect(detectExistingSEOTags(html)).toEqual(new Set([SEOTagType.Twitter]));
+  });
+
+  it('should ignore meta, link and script tags that hold no SEO metadata', () => {
+    const html =
+      '<html><head><meta charset="utf-8"><meta name="constructor" content="x">' +
+      '<link rel="stylesheet" href="/s.css"><script src="/a.js"></script></head></html>';
+    expect(detectExistingSEOTags(html).size).toBe(0);
+  });
+
+  it('should read a head without a start tag up to its closing tag', () => {
+    const html = '<!doctype html><title>T</title></head><body></body>';
+    expect(detectExistingSEOTags(html)).toEqual(new Set([SEOTagType.Title]));
   });
 
   it('should only check within head tag', () => {
