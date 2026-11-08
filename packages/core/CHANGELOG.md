@@ -1,5 +1,12 @@
 # @stati/core
 
+## 2.11.10
+
+### Patch Changes
+
+- 1ab1db9: check ISG front matter a beforeAll hook sets before rendering
+- 1ab1db9: check front matter on load, read drafts and dates strictly
+
 ## 2.11.9
 
 ### Patch Changes
