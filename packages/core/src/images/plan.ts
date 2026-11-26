@@ -100,18 +100,25 @@ export interface CopyPlan {
  *
  * @param filePath - Absolute source path
  * @param sourceHash - SHA-256 of the source bytes
- * @param format - Source format
+ * @param format - Source format, or null for a file Stati does not read, which keeps its own
+ *   extension in lower case when the extension is URL-safe
  * @param basePath - The path the site is served from (`getBasePath()`), in front of the URL
  */
 export function planCopy(
   filePath: string,
   sourceHash: string,
-  format: ImageSourceFormat,
+  format: ImageSourceFormat | null,
   basePath: string = '',
 ): CopyPlan {
+  const ownExtension = extname(filePath).toLowerCase();
+  const extension = format
+    ? `.${extensionFor(format)}`
+    : /^\.[a-z0-9]+$/.test(ownExtension)
+      ? ownExtension
+      : '';
   const relPath = posix.join(
     IMAGES_OUTPUT_DIR,
-    `${imageBaseName(filePath)}-${sourceHash.slice(0, NAME_HASH_LENGTH)}.${extensionFor(format)}`,
+    `${imageBaseName(filePath)}-${sourceHash.slice(0, NAME_HASH_LENGTH)}${extension}`,
   );
   return { key: `copy:${relPath}`, relPath, url: `${basePath}/${relPath}` };
 }

@@ -208,9 +208,16 @@ blocks loads eagerly with `fetchpriority="high"` (`images.eagerFirst: false` tur
 that off).
 
 - `/images/a.jpg` resolves from `public/`; `./a.jpg` resolves next to the page's
-  Markdown file and is copied to `/_img/{name}-{hash}.{ext}`.
-- Left as authored: remote URLs, `data:` URIs, SVG and other formats, paths ending
-  in `?raw` (the suffix is removed), and raw `<img>` HTML. Missing files warn.
+  Markdown file and is copied to `/_img/{name}-{hash}.{ext}`. Co-located files
+  Stati can't size (SVG, ICO, anything marked `?raw`) are copied there too, with no
+  `width` or `height`; as Markdown images they also get no loading attributes. A
+  `#fragment` is kept. `.md` and `.eta` files are never copied.
+- Left as authored: remote URLs, `data:` URIs, SVG and other formats under
+  `public/`, `public/` paths ending in `?raw` (the suffix is removed), and raw
+  `<img>` HTML. Missing files warn.
+- An authored `width` or `height` (the `attrs` plugin) is kept; when only one is
+  set, the other is scaled to the image's proportions, or left out for a value
+  such as `50%`.
 - The site CSS needs `img { max-width: 100%; height: auto; }`, or sized images
   stretch when narrowed. The starters have it.
 - `images: false` turns all of this off.

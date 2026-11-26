@@ -39,8 +39,33 @@ describe('resolveImageSource', () => {
     });
   });
 
+  it('publishes co-located files it does not size, and ?raw ones, as they are', () => {
+    expect(resolveImageSource('./diagram.svg', context)).toEqual({
+      kind: 'asset',
+      src: './diagram.svg',
+      filePath: join(root, 'site', 'blog', 'diagram.svg'),
+    });
+    expect(resolveImageSource('favicon.ICO', context)).toMatchObject({
+      kind: 'asset',
+      filePath: join(root, 'site', 'blog', 'favicon.ICO'),
+    });
+    expect(resolveImageSource('./hero.png?raw', context)).toEqual({
+      kind: 'asset',
+      src: './hero.png',
+      filePath: join(root, 'site', 'blog', 'hero.png'),
+    });
+  });
+
+  it.each(['../../../etc/a.svg', '#top', '?v=1', './%E0%A4%A.svg', './draft.md', '../layout.ETA'])(
+    'does not publish %j',
+    (src) => {
+      expect(resolveImageSource(src, context)).toMatchObject({ kind: 'skip' });
+    },
+  );
+
   it.each([
     'https://cdn.example.com/a.jpg',
+    'https://cdn.example.com/a.svg?raw',
     '//cdn.example.com/a.jpg',
     'data:image/png;base64,AAAA',
     '/images/logo.svg',

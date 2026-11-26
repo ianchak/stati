@@ -259,6 +259,130 @@ describe('image pipeline in builds', () => {
       expect(await read('dist/about.html')).toContain('<img src="/images/hero.png" alt="Raw">');
     });
 
+    it('publishes co-located files it does not size, such as SVG, ICO and ?raw images', async () => {
+      await write('site/blog/v.svg', '<svg xmlns="http://www.w3.org/2000/svg"/>');
+      await write('site/blog/favicon.ico', 'ico');
+      await write('site/blog/a.png', pngBytes(40, 20));
+      await write(
+        'site/blog/post.md',
+        '---\ntitle: Post\n---\n![Diagram](./v.svg)\n\n![Icon](./favicon.ico)\n\n![Raw](./a.png?raw)\n\n![Star](./v.svg?x=1#star)\n\n![Notes](./notes.md)',
+      );
+      await write('site/blog/notes.md', '---\ntitle: Notes\ndraft: true\n---\nSecret.');
+      await runBuild();
+
+      const post = await read('dist/blog/post.html');
+      const svg = post.match(/<img src="\/(_img\/v-[0-9a-f]{8}\.svg)" alt="Diagram">/);
+      expect(post).toContain(`<img src="/${svg?.[1]}#star" alt="Star">`);
+      expect(post).toContain('<img src="./notes.md" alt="Notes">');
+      // The SVG, the ICO and the PNG; never the Markdown source
+      expect(await readdir(join(projectDir, 'dist', '_img'))).toHaveLength(3);
+      const ico = post.match(/<img src="\/(_img\/favicon-[0-9a-f]{8}\.ico)" alt="Icon">/);
+      const raw = post.match(/<img src="\/(_img\/a-[0-9a-f]{8}\.png)" alt="Raw">/);
+      expect(svg).not.toBeNull();
+      expect(ico).not.toBeNull();
+      expect(raw).not.toBeNull();
+      expect(await read(`dist/${svg![1]}`)).toBe('<svg xmlns="http://www.w3.org/2000/svg"/>');
+      expect(await exists(`dist/${ico![1]}`)).toBe(true);
+      expect(await exists(`dist/${raw![1]}`)).toBe(true);
+      expect(logger.warning).not.toHaveBeenCalled();
+
+      // Copies follow the file's content, and the old one goes once no page uses it
+      await replace('site/blog/v.svg', '<svg xmlns="http://www.w3.org/2000/svg" width="1"/>');
+      expect(await runBuild()).toMatchObject({ cacheMisses: 1 });
+      const newSvg = (await read('dist/blog/post.html')).match(/\/(_img\/v-[0-9a-f]{8}\.svg)/)![1];
+      expect(newSvg).not.toBe(svg![1]);
+      expect(await exists(`dist/${newSvg}`)).toBe(true);
+      expect(await exists(`dist/${svg![1]}`)).toBe(false);
+    });
+
+    it('publishes co-located files from stati.image() relative to the page', async () => {
+      await write('site/blog/v.svg', '<svg/>');
+      await write(
+        'site/blog/post.eta',
+        "<html><head></head><body><%~ stati.image('./v.svg', { alt: 'Diagram' }) %></body></html>",
+      );
+      await write('site/blog/post.md', '---\ntitle: Post\nlayout: post\n---\nText.');
+      await runBuild();
+
+      const post = await read('dist/blog/post.html');
+      const svg = post.match(
+        /<img src="\/(_img\/v-[0-9a-f]{8}\.svg)" alt="Diagram" loading="lazy" decoding="async">/,
+      );
+      expect(svg).not.toBeNull();
+      expect(await exists(`dist/${svg![1]}`)).toBe(true);
+    });
+
+    it('publishes a co-located image whose dimensions it cannot read, and warns', async () => {
+      await write('site/blog/photo.png', 'not a png');
+      await runBuild();
+
+      const post = await read('dist/blog/post.html');
+      const copy = post.match(/<img src="\/(_img\/photo-[0-9a-f]{8}\.png)" alt="Photo">/);
+      expect(copy).not.toBeNull();
+      expect(await read(`dist/${copy![1]}`)).toBe('not a png');
+      expect(logger.warning).toHaveBeenCalledWith(
+        'Could not read the dimensions of site/blog/photo.png. It is published without them.',
+      );
+    });
+
+    it('warns about a missing co-located file and leaves it as written', async () => {
+      await write('site/blog/post.md', '---\ntitle: Post\n---\n![Gone](./gone.svg)');
+      await runBuild();
+
+      expect(await read('dist/blog/post.html')).toContain('<img src="./gone.svg" alt="Gone">');
+      expect(logger.warning).toHaveBeenCalledWith(
+        'Image not found: site/blog/gone.svg (used by /blog/post). It is left as written.',
+      );
+
+      await write('site/blog/gone.svg', '<svg/>');
+      expect(await runBuild()).toMatchObject({ cacheMisses: 1 });
+      expect(await read('dist/blog/post.html')).toMatch(/src="\/_img\/gone-[0-9a-f]{8}\.svg"/);
+    });
+
+    it('scales the missing dimension when an image sets only its width or height', async () => {
+      await write('public/images/wide.png', pngBytes(40, 20));
+      await write(
+        'site/about.md',
+        '---\ntitle: About\n---\n' +
+          ['W', 'N', 'H', 'P', 'Z', 'B'].map((alt) => `![${alt}](/images/wide.png)`).join('\n\n'),
+      );
+      // markdown-it types attribute values as strings, but plugins can set numbers
+      const sizes: Record<string, Array<[string, string | number]>> = {
+        W: [['width', '10']],
+        N: [['width', 20]],
+        H: [['height', '5']],
+        P: [['width', '50%']],
+        Z: [['width', '0']],
+        B: [
+          ['width', '30'],
+          ['height', '30'],
+        ],
+      };
+      config.markdown = {
+        configure: (md) => {
+          md.core.ruler.push('test_image_sizes', (state) => {
+            for (const token of state.tokens) {
+              for (const child of token.children ?? []) {
+                if (child.type !== 'image') continue;
+                for (const [name, value] of sizes[child.content] ?? []) {
+                  child.attrSet(name, value as string);
+                }
+              }
+            }
+          });
+        },
+      };
+      await runBuild();
+
+      const about = await read('dist/about.html');
+      expect(about).toContain('alt="W" width="10" height="5" loading');
+      expect(about).toContain('alt="H" width="10" height="5" loading');
+      expect(about).toContain('alt="N" width="20" height="10" loading');
+      expect(about).toContain('alt="P" width="50%" loading');
+      expect(about).toContain('alt="Z" width="0" loading');
+      expect(about).toContain('alt="B" width="30" height="30" loading');
+    });
+
     it('keeps attributes that plugins set on a Markdown image, numbers included', async () => {
       config.markdown = {
         configure: (md) => {
@@ -435,6 +559,21 @@ describe('image pipeline in builds', () => {
       );
       expect(copy).not.toBeNull();
       expect(await exists(`dist/${copy![1]}`)).toBe(true);
+    });
+
+    it('copies a co-located ?raw image as it is, without variants', async () => {
+      await installFakeImagesPackage(projectDir);
+      config.images = { responsive: true };
+      await write('site/blog/post.md', '---\ntitle: Post\n---\n![Photo](./photo.png?raw)');
+      await runBuild();
+
+      const post = await read('dist/blog/post.html');
+      const copy = post.match(/<img src="\/(_img\/photo-[0-9a-f]{8}\.png)" alt="Photo">/);
+      expect(copy).not.toBeNull();
+      expect(await exists(`dist/${copy![1]}`)).toBe(true);
+      expect(globalThis.__statiImagesCalls!.variants.map((call) => call.sourcePath)).not.toContain(
+        join(projectDir, 'site', 'blog', 'photo.png'),
+      );
     });
 
     it('explains a package that does not export createImageProvider', async () => {

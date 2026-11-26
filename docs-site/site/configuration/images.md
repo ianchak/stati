@@ -26,9 +26,10 @@ When Stati renders a Markdown image such as `![Harbour at dawn](/images/harbour.
 
 The `width` and `height` let the browser reserve space before the image loads, so the page does not shift. Stati reads PNG, JPEG, GIF, WebP and AVIF files, and swaps the width and height of photos that are rotated by their EXIF orientation.
 
-- **Where images are found.** A path that starts with `/` is read from your static directory (`public/`). A relative path such as `./harbour.jpg` is read next to the page's Markdown file, so a post's images can live in the post's folder. Stati copies those images to `/_img/` under a name that changes with the file's content.
+- **Where images are found.** A path that starts with `/` is read from your static directory (`public/`). A relative path such as `./harbour.jpg` is read next to the page's Markdown file, so a post's images can live in the post's folder. Stati copies those images to `/_img/` under a name that changes with the file's content. Files it can't read a size from, such as SVG or ICO, are copied the same way, without `width`, `height` or lazy loading.
 - **The first image.** When a page's first image sits in its first few blocks, it loads eagerly with `fetchpriority="high"`, because it is likely the largest thing on screen. Set `images.eagerFirst: false` to load every image lazily.
-- **Images left alone.** Remote URLs, `data:` URIs, SVG files and other formats are written as authored. Add `?raw` to a path to opt one image out: `![Logo](/images/logo.png?raw)`. Raw `<img>` tags in Markdown are not changed.
+- **Images left alone.** Remote URLs, `data:` URIs, and SVG files and other formats in `public/` are written as authored. Add `?raw` to a path to opt one image out of sizing: `![Logo](/images/logo.png?raw)`. An image next to the page marked `?raw` is still copied to `/_img/`, as it is. Raw `<img>` tags in Markdown are not changed.
+- **Your own size.** A `width` or `height` set on the image, for example with the `attrs` plugin (`![Logo](/images/logo.png){width=200}`), is kept. When only one is set, Stati scales the other to the image's proportions, unless the value is not a number of pixels, such as `50%`.
 - **Missing files.** Stati warns and writes the image as authored. The page rebuilds once the file appears.
 
 Your stylesheet should let images shrink with their container without stretching. The starters already include:
