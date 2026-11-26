@@ -389,7 +389,7 @@ export interface TypeScriptConfig {
   hash?: boolean;
 
   /**
-   * Minify JavaScript output in production builds.
+   * Minify the JavaScript, and the CSS bundles import, in production builds.
    * This option only applies to production builds; development output is never minified.
    * @default true
    */
@@ -407,10 +407,12 @@ export interface TypeScriptConfig {
 
   /**
    * Automatically inject bundle script tags before </body>.
-   * When enabled (default), Stati automatically adds script tags for matched bundles.
+   * When enabled (default), Stati automatically adds script tags for matched bundles, and a
+   * link before </head> to the stylesheet of the CSS each one imports.
    * Disable if you want manual control over script placement in templates.
    *
-   * When disabled, use `stati.assets.bundlePaths` in templates to access bundle paths.
+   * When disabled, use `stati.assets.bundlePaths` and `stati.assets.stylesheetPaths` in
+   * templates to access bundle paths.
    *
    * @default true
    */

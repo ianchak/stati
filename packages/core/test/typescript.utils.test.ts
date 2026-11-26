@@ -651,10 +651,9 @@ export default { site: { title: 'CJS' }, outDir: outDir as string, other: helper
         logger: mockLogger,
         onRebuild,
         outDir: 'dist',
+        // Resolves once the initial build has written its files
+        awaitInitialBuild: true,
       });
-
-      // Wait a bit for initial build
-      await setTimeout(100);
 
       // Assert - output should be in dist/js
       const outputPath = join(testDir, 'dist', 'js', 'main.js');
@@ -677,10 +676,9 @@ export default { site: { title: 'CJS' }, outDir: outDir as string, other: helper
         logger: mockLogger,
         onRebuild,
         outDir: 'dist',
+        // Resolves once the initial build has written its files
+        awaitInitialBuild: true,
       });
-
-      // Wait a bit for initial build
-      await setTimeout(100);
 
       // Assert - should use stable filename without hash
       const outputPath = join(testDir, 'dist', '_assets', 'main.js');

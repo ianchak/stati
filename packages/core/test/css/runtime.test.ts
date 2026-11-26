@@ -276,6 +276,38 @@ describe('StylesheetRuntime', () => {
       );
     });
 
+    it("never takes a bundle's stylesheet for a copy of the static stylesheet with its name", async () => {
+      // public/main.css and a bundle named main whose esbuild hash is hexadecimal too
+      await write('public/main.css', 'body{}');
+      const copy = hashStylesheet('body{}', '/main.css').path;
+      const bundleStylesheet = '/_assets/main-ABCD2345.css';
+      await write(`dist${bundleStylesheet}`, 'a{}');
+      const linksBundle = `<link rel="stylesheet" href="${bundleStylesheet}">`;
+      await write('dist/cached.html', linksBundle);
+      const manifest: CacheManifest = { entries: {}, stylesheets: { '/main.css': copy } };
+      const runtime = await create();
+      runtime.addBundleStylesheets([bundleStylesheet]);
+
+      // A link the template wrote keeps its path and isn't recorded as a static stylesheet
+      expect(await runtime.linkPage(linksBundle, '/', [])).toBe(linksBundle);
+      expect(
+        await runtime.linkPage('<link rel="stylesheet" href="/main.css">', '/rendered', []),
+      ).toBe(`<link rel="stylesheet" href="${copy}">`);
+      await runtime.finalize(
+        manifest,
+        [page('/cached'), page('/rendered')],
+        [join(outDir, 'rendered.html')],
+      );
+
+      expect(await read('dist/cached.html')).toBe(linksBundle);
+      expect(manifest.stylesheets).toEqual({ '/main.css': copy });
+
+      await runtime.removeStale(manifest);
+      expect((await readdir(join(outDir, '_assets'))).sort()).toEqual(
+        [copy, bundleStylesheet].map((path) => path.slice('/_assets/'.length)).sort(),
+      );
+    });
+
     it('counts the cached pages it relinks', async () => {
       await write('public/styles.css', 'body{}');
       const copy = hashStylesheet('body{}', '/styles.css').path;

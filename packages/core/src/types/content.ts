@@ -27,10 +27,12 @@ export interface StatiAssets {
 
   /**
    * Paths of the stylesheets Stati builds, such as ['/_assets/styles-A1B2C3D4.css'] in
-   * production and ['/styles.css'] in development. Always an array, empty [] when
-   * `--tailwind-input` and `--tailwind-output` are not given. A production build learns the
-   * hash after every page has rendered and writes it into each page then, so print the path
-   * as it is rather than changing it.
+   * production and ['/styles.css'] in development: the Tailwind stylesheet, when
+   * `--tailwind-input` and `--tailwind-output` are given, then the stylesheets esbuild writes for
+   * the CSS this page's bundles import (`typescript.autoInject` links those). Always an array,
+   * empty [] without either. A production build learns the Tailwind stylesheet's hash after
+   * every page has rendered and writes it into each page then, so print the path as it is
+   * rather than changing it.
    */
   stylesheetPaths: string[];
 

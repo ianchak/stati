@@ -84,6 +84,47 @@ describe('removeStaleBundleFiles', () => {
     expect(readdirSync(assetsDir).sort()).toEqual(['main-extra.js', 'main.js']);
   });
 
+  it("deletes earlier copies of a bundle's stylesheet and keeps this build's", async () => {
+    writeFileSync(join(projectDir, 'src', 'main.ts'), "import './main.css';\nconsole.log(1);");
+    writeFileSync(join(projectDir, 'src', 'main.css'), 'body { color: red; }');
+    // Earlier production copies, and the dev server's stable names and source maps
+    for (const file of ['main-OLDCSS22.css', 'main.css', 'main.css.map', 'main-OLDJS222.js']) {
+      writeFileSync(join(assetsDir, file), 'stale');
+    }
+    const config: TypeScriptConfig = {
+      enabled: true,
+      bundles: [{ entryPoint: 'main.ts', bundleName: 'main' }],
+    };
+
+    const compiled = await compile(config);
+    await removeStaleBundleFiles({ projectRoot: projectDir, config, outDir: 'dist', compiled });
+
+    const stylesheet = compiled[0]!.stylesheetPath!.split('/').pop()!;
+    expect(readdirSync(assetsDir).sort()).toEqual([compiled[0]!.filename, stylesheet].sort());
+  });
+
+  it('keeps the hashed copy of a static stylesheet that shares the bundle name', async () => {
+    // public/main.css, which production links as /_assets/main-A1B2C3D4.css
+    writeFileSync(join(assetsDir, 'main-A1B2C3D4.css'), 'static copy');
+    const config: TypeScriptConfig = {
+      enabled: true,
+      bundles: [{ entryPoint: 'main.ts', bundleName: 'main' }],
+    };
+
+    const compiled = await compile(config);
+    await removeStaleBundleFiles({
+      projectRoot: projectDir,
+      config,
+      outDir: 'dist',
+      compiled,
+      keep: ['/_assets/main-A1B2C3D4.css'],
+    });
+
+    expect(readdirSync(assetsDir).sort()).toEqual(
+      [compiled[0]!.filename, 'main-A1B2C3D4.css'].sort(),
+    );
+  });
+
   it('does nothing when no bundle compiled', async () => {
     writeFileSync(join(assetsDir, 'main-ABCDEFGH.js'), 'stale');
 

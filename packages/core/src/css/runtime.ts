@@ -146,6 +146,8 @@ export class StylesheetRuntime {
    * later; the build records them, so pages kept from now on link its copy once it exists
    */
   private readonly unhashedLinks = new Set<string>();
+  /** The stylesheets of the CSS TypeScript bundles import, which esbuild writes and names */
+  private readonly bundleStylesheets = new Set<string>();
   private held: DeferredPage[] = [];
   private heldLength = 0;
   /** The stylesheet paths the last production build linked, which pages kept from it carry */
@@ -233,6 +235,20 @@ export class StylesheetRuntime {
    */
   fingerprint(): StylesheetRenderInputs {
     return { ...this.renderInputs };
+  }
+
+  /**
+   * Records the stylesheets of the CSS this build's TypeScript bundles import, which esbuild
+   * names after their content in the same folder as the hashed copies: links to them keep
+   * their paths, and none is taken for an earlier copy of a stylesheet with the bundle's name,
+   * such as `public/main.css` next to a bundle named `main`. Call it before pages render.
+   *
+   * @param paths - The bundles' stylesheet paths, such as '/_assets/main-E5F6G7H8.css'
+   */
+  addBundleStylesheets(paths: Iterable<string>): void {
+    for (const path of paths) {
+      this.bundleStylesheets.add(path);
+    }
   }
 
   /** A page's `stati.assets.stylesheetPaths`: a new array each call, which the page can change */
@@ -349,7 +365,7 @@ export class StylesheetRuntime {
       ...(this.plan ? [this.plan.path] : []),
     ]);
     for (const path of paths) {
-      await removeStaleStylesheets(this.outDir, path, current[path]);
+      await removeStaleStylesheets(this.outDir, path, current[path], this.bundleStylesheets);
     }
   }
 
@@ -368,7 +384,7 @@ export class StylesheetRuntime {
   ): Promise<string> {
     const targets = new Map(this.tailwindTargets);
     for (const path of getLinkedStylesheetPaths(html, pageUrl, this.siteUrl)) {
-      if (targets.has(path) || this.hashedNames.has(path)) {
+      if (targets.has(path) || this.hashedNames.has(path) || this.bundleStylesheets.has(path)) {
         continue;
       }
       const copy = await statics.resolve(path);
@@ -461,7 +477,9 @@ export class StylesheetRuntime {
       const target = current.get(path) ?? path;
       const recorded = this.previous[path];
       for (const stale of await getStaleStylesheetPaths(this.outDir, path, recorded, target)) {
-        replacements.set(stale, target);
+        if (!this.bundleStylesheets.has(stale)) {
+          replacements.set(stale, target);
+        }
       }
       // Linked under its own path while the static directory had no file for it
       if (recorded === path && target !== path) {

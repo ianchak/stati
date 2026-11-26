@@ -633,10 +633,72 @@ describe('Development Server', () => {
         throw new Error('Expected TypeScript watcher to be created');
       }
       const createWatcherArg = createWatcherCall[0];
-      createWatcherArg.onRebuild([], 17);
+      createWatcherArg.onRebuild([], 17, {
+        bundle: {
+          config: { entryPoint: 'main.ts', bundleName: 'main' },
+          filename: 'main.js',
+          path: '/_assets/main.js',
+        },
+        entryPath: '/project/src/main.ts',
+        stylesheetChanged: false,
+      });
 
       expect(mockLogger.info).toHaveBeenCalledWith('▸ TypeScript recompiled in 17ms');
       expect(send).toHaveBeenCalledWith(JSON.stringify({ type: 'reload' }));
+
+      await devServer.stop();
+    });
+
+    it('renders the pages again when a bundle starts importing CSS, then reloads', async () => {
+      const { createTypeScriptWatcher } = await import('../../src/core/utils/typescript.utils.js');
+      const { WebSocketServer } = await import('ws');
+
+      const mockCreateTsWatcher = vi.mocked(createTypeScriptWatcher);
+      mockCreateTsWatcher.mockResolvedValue([
+        {
+          dispose: vi.fn().mockResolvedValue(undefined),
+          watch: vi.fn().mockResolvedValue(undefined),
+          rebuild: vi.fn(),
+          serve: vi.fn(),
+          cancel: vi.fn(),
+        },
+      ]);
+      mockLoadConfig.mockResolvedValueOnce({
+        srcDir: 'site',
+        outDir: 'dist',
+        staticDir: 'public',
+        site: { title: 'Test Site', baseUrl: 'http://localhost:3000' },
+        typescript: { enabled: true },
+      });
+
+      const mockLogger = createMockLogger();
+      const devServer = await createDevServer({ port: 8122, logger: mockLogger });
+      await devServer.start();
+
+      const wsInstance = vi.mocked(WebSocketServer).mock.results[0]!.value as {
+        clients: Set<{ readyState: number; send: (data: string) => void }>;
+      };
+      const send = vi.fn();
+      wsInstance.clients.add({ readyState: 1, send });
+      const buildsBefore = mockBuild.mock.calls.length;
+
+      mockCreateTsWatcher.mock.calls[0]![0].onRebuild([], 9, {
+        bundle: {
+          config: { entryPoint: 'main.ts', bundleName: 'main' },
+          filename: 'main.js',
+          path: '/_assets/main.js',
+          stylesheetPath: '/_assets/main.css',
+        },
+        entryPath: `${process.cwd()}/src/main.ts`,
+        stylesheetChanged: true,
+      });
+
+      // No reload before the pages that link the stylesheet are rebuilt
+      expect(send).not.toHaveBeenCalled();
+      await vi.waitFor(() => expect(send).toHaveBeenCalledWith(JSON.stringify({ type: 'reload' })));
+      expect(mockBuild.mock.calls.length).toBe(buildsBefore + 1);
+      expect(mockBuild.mock.calls.at(-1)![0]).toEqual(expect.objectContaining({ force: false }));
+      expect(mockLogger.info).toHaveBeenCalledWith('▸ src/main.ts rebuilt');
 
       await devServer.stop();
     });
@@ -694,7 +756,15 @@ describe('Development Server', () => {
         throw new Error('Expected TypeScript watcher to be created');
       }
       const createWatcherArg = createWatcherCall[0];
-      createWatcherArg.onRebuild([], 22);
+      createWatcherArg.onRebuild([], 22, {
+        bundle: {
+          config: { entryPoint: 'main.ts', bundleName: 'main' },
+          filename: 'main.js',
+          path: '/_assets/main.js',
+        },
+        entryPath: '/project/src/main.ts',
+        stylesheetChanged: false,
+      });
 
       expect(mockLogger.info).toHaveBeenCalledWith('▸ TypeScript recompiled in 22ms');
       expect(send).not.toHaveBeenCalled();

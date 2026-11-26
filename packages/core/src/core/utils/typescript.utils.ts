@@ -62,13 +62,33 @@ export interface WatchOptions {
   outDir?: string;
   /** Logger instance for output */
   logger: Logger;
-  /** Callback invoked when files are recompiled, receives results and compile time in ms */
-  onRebuild: (results: CompiledBundleInfo[], compileTimeMs: number) => void;
+  /**
+   * Callback invoked when files are recompiled, receives results, compile time in ms and the
+   * bundle that was recompiled
+   */
+  onRebuild: (
+    results: CompiledBundleInfo[],
+    compileTimeMs: number,
+    rebuild: TypeScriptRebuild,
+  ) => void;
   /**
    * Whether to wait for the initial watch build to finish for all bundles.
    * Useful during dev-server startup to ensure bundle files exist before page rendering.
    */
   awaitInitialBuild?: boolean;
+}
+
+/** The bundle a watcher recompiled, passed to {@link WatchOptions.onRebuild} */
+export interface TypeScriptRebuild {
+  /** The bundle as it is now */
+  bundle: CompiledBundleInfo;
+  /** Its entry point, absolute */
+  entryPath: string;
+  /**
+   * Whether the bundle started or stopped importing CSS, which changes the stylesheet links
+   * of the pages that get it: they need to render again, not only to reload
+   */
+  stylesheetChanged: boolean;
 }
 
 /**
@@ -147,11 +167,19 @@ export async function detectExistingBundles(
 
       if (matchingFile) {
         const bundlePath = path.posix.join('/', resolved.outDir, matchingFile);
-        results.push({
+        const bundle: CompiledBundleInfo = {
           config: bundleConfig,
           filename: matchingFile,
           path: bundlePath,
-        });
+        };
+        // The dev server's stylesheet for the CSS the bundle imports, which its watcher deletes
+        // once the bundle imports none. Production names it after its content, and compiling
+        // the bundle reads the name from esbuild rather than from the files.
+        const stylesheet = `${bundleConfig.bundleName}.css`;
+        if (mode === 'development' && files.includes(stylesheet)) {
+          bundle.stylesheetPath = path.posix.join('/', resolved.outDir, stylesheet);
+        }
+        results.push(bundle);
       }
     }
   } catch {
@@ -173,32 +201,47 @@ export interface RemoveStaleBundlesOptions {
   outDir?: string;
   /** The bundles this build compiled */
   compiled: CompiledBundleInfo[];
+  /**
+   * Site paths of other files this build links from the folder, which stay: the hashed
+   * stylesheets (`CacheManifest.stylesheets`), whose names a bundle's can share, such as
+   * '/_assets/main-A1B2C3D4.css' for `public/main.css` next to a bundle named `main`
+   */
+  keep?: Iterable<string>;
 }
 
 /**
  * Deletes the files of compiled bundles that earlier builds left in the bundle output
- * directory: hashed copies from builds whose code differed, and the unhashed file and source
- * map the dev server writes, which production pages never load. Only files named after a
- * bundle compiled in this build are deleted, and never a file this build wrote, so other files
- * in the directory stay.
+ * directory: hashed copies of the scripts and of the stylesheets of the CSS they import, from
+ * builds whose code differed, and the unhashed files and source maps the dev server writes,
+ * which production pages never load. Only files named after a bundle compiled in this build
+ * are deleted, and never a file this build wrote or links, so other files in the directory
+ * stay.
  *
  * The build calls this after every page is written: until then, pages from the previous
  * build still load the old files.
  *
- * @param options - The project, its TypeScript config and output directory, and the bundles
- *   this build compiled
+ * @param options - The project, its TypeScript config and output directory, the bundles this
+ *   build compiled and the other files it links from the folder
  */
 export async function removeStaleBundleFiles(options: RemoveStaleBundlesOptions): Promise<void> {
   const { projectRoot, config, outDir: globalOutDir = DEFAULT_OUT_DIR, compiled } = options;
   if (compiled.length === 0) {
     return;
   }
-  const outDir = path.join(projectRoot, globalOutDir, resolveConfig(config, 'production').outDir);
-  const current = new Set(compiled.map((bundle) => bundle.filename));
-  // name.js, name-HASH.js (esbuild's 8-character hash) and their source maps
+  const folder = resolveConfig(config, 'production').outDir;
+  const outDir = path.join(projectRoot, globalOutDir, folder);
+  const keep = new Set(options.keep);
+  const current = new Set(
+    compiled.flatMap((bundle) => [
+      bundle.filename,
+      ...(bundle.stylesheetPath ? [path.posix.basename(bundle.stylesheetPath)] : []),
+    ]),
+  );
+  // name.js and name.css, name-HASH.js and name-HASH.css (esbuild's 8-character hash), and
+  // their source maps
   const patterns = compiled.map(({ config }) => {
     const name = config.bundleName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    return new RegExp(`^${name}(?:-[A-Z0-9]{8})?\\.js(?:\\.map)?$`);
+    return new RegExp(`^${name}(?:-[A-Z0-9]{8})?\\.(?:js|css)(?:\\.map)?$`);
   });
 
   const entries = await readdir(outDir, { withFileTypes: true }).catch(() => []);
@@ -207,8 +250,46 @@ export async function removeStaleBundleFiles(options: RemoveStaleBundlesOptions)
   const stale = entries
     .filter((entry) => entry.isFile())
     .map((entry) => entry.name)
-    .filter((file) => !current.has(file) && patterns.some((pattern) => pattern.test(file)));
+    .filter(
+      (file) =>
+        !current.has(file) &&
+        !keep.has(path.posix.join('/', folder, file)) &&
+        patterns.some((pattern) => pattern.test(file)),
+    );
   await Promise.all(stale.map((file) => remove(path.join(outDir, file))));
+}
+
+/**
+ * What a bundle's build wrote, from its metafile: the script, its size, and the stylesheet of
+ * the CSS it imports (the JS output's `cssBundle`), if any.
+ *
+ * @param bundleConfig - The bundle
+ * @param metafile - The build's metafile
+ * @param folder - The bundle output directory, from the site root (`typescript.outDir`)
+ */
+function readBundleOutputs(
+  bundleConfig: BundleConfig,
+  metafile: esbuild.Metafile | undefined,
+  folder: string,
+): CompiledBundleInfo {
+  const outputs = metafile?.outputs ?? {};
+  const bundleFile = Object.keys(outputs).find((f) => f.endsWith('.js'));
+  const bundleOutput = bundleFile ? outputs[bundleFile] : undefined;
+  const filename = bundleFile ? path.basename(bundleFile) : `${bundleConfig.bundleName}.js`;
+
+  const bundleInfo: CompiledBundleInfo = {
+    config: bundleConfig,
+    filename,
+    // The path relative to the site root
+    path: path.posix.join('/', folder, filename),
+  };
+  if (bundleOutput?.bytes !== undefined) {
+    bundleInfo.sizeInBytes = bundleOutput.bytes;
+  }
+  if (bundleOutput?.cssBundle) {
+    bundleInfo.stylesheetPath = path.posix.join('/', folder, path.basename(bundleOutput.cssBundle));
+  }
+  return bundleInfo;
 }
 
 /**
@@ -250,28 +331,7 @@ async function compileSingleBundle(
       metafile: true,
     });
 
-    // Extract the generated filename for this bundle
-    const outputs = Object.keys(result.metafile?.outputs ?? {});
-    const bundleFile = outputs.find((f) => f.endsWith('.js'));
-    const bundleFilename = bundleFile ? path.basename(bundleFile) : `${bundleConfig.bundleName}.js`;
-
-    // Get the bundle size from metafile
-    const bundleSize = bundleFile ? result.metafile?.outputs[bundleFile]?.bytes : undefined;
-
-    // Construct the path relative to site root
-    const bundlePath = path.posix.join('/', resolvedConfig.outDir, bundleFilename);
-
-    const bundleInfo: CompiledBundleInfo = {
-      config: bundleConfig,
-      filename: bundleFilename,
-      path: bundlePath,
-    };
-
-    if (bundleSize !== undefined) {
-      bundleInfo.sizeInBytes = bundleSize;
-    }
-
-    return bundleInfo;
+    return readBundleOutputs(bundleConfig, result.metafile, resolvedConfig.outDir);
   } catch (error) {
     if (error instanceof Error) {
       logger.error(`Bundle '${bundleConfig.bundleName}' compilation failed: ${error.message}`);
@@ -340,6 +400,9 @@ export async function compileTypeScript(options: CompileOptions): Promise<Compil
     for (const r of successfulResults) {
       if (logger.file) {
         logger.file('compiled', r.filename, r.sizeInBytes);
+        if (r.stylesheetPath) {
+          logger.file('compiled', path.posix.basename(r.stylesheetPath));
+        }
       }
     }
 
@@ -436,27 +499,31 @@ export async function createTypeScriptWatcher(
             build.onStart(() => {
               startTime = Date.now();
             });
-            build.onEnd((result) => {
+            build.onEnd(async (result) => {
               const compileTime = Date.now() - startTime;
               if (result.errors.length > 0) {
                 result.errors.forEach((err) => {
                   logger.error(`TypeScript error in '${bundleConfig.bundleName}': ${err.text}`);
                 });
               } else {
-                // Extract the generated filename
-                const outputs = Object.keys(result.metafile?.outputs ?? {});
-                const bundleFile = outputs.find((f) => f.endsWith('.js'));
-                const bundleFilename = bundleFile
-                  ? path.basename(bundleFile)
-                  : `${bundleConfig.bundleName}.js`;
-                const bundlePath = path.posix.join('/', resolved.outDir, bundleFilename);
-
-                const bundleResult: CompiledBundleInfo = {
-                  config: bundleConfig,
-                  filename: bundleFilename,
-                  path: bundlePath,
-                };
-
+                const bundleResult = readBundleOutputs(
+                  bundleConfig,
+                  result.metafile,
+                  resolved.outDir,
+                );
+                // esbuild leaves the stylesheet of CSS the bundle no longer imports, which
+                // pages would go on linking: dev builds find the bundle's files on disk
+                if (!bundleResult.stylesheetPath) {
+                  const stylesheet = path.join(outDir, `${bundleConfig.bundleName}.css`);
+                  try {
+                    await Promise.all([remove(stylesheet), remove(`${stylesheet}.map`)]);
+                  } catch (error) {
+                    logger.warning(
+                      `Could not remove ${stylesheet}, which pages go on linking: ${error instanceof Error ? error.message : String(error)}`,
+                    );
+                  }
+                }
+                const previous = latestResults.get(bundleConfig.bundleName);
                 latestResults.set(bundleConfig.bundleName, bundleResult);
 
                 // Skip notifications for the initial build triggered by context.watch().
@@ -469,8 +536,16 @@ export async function createTypeScriptWatcher(
 
                 logger.info(`TypeScript '${bundleConfig.bundleName}' recompiled.`);
 
-                // Notify with all current results and compile time
-                onRebuild(Array.from(latestResults.values()), compileTime);
+                // Notify with all current results, compile time and what changed. Before a
+                // successful build there's nothing to compare with, and pages render with what
+                // is on disk.
+                onRebuild(Array.from(latestResults.values()), compileTime, {
+                  bundle: bundleResult,
+                  entryPath,
+                  stylesheetChanged:
+                    previous === undefined ||
+                    previous.stylesheetPath !== bundleResult.stylesheetPath,
+                });
                 return;
               }
 
