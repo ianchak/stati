@@ -118,7 +118,7 @@ The added link goes at the end of `<head>`, after the page's other stylesheets. 
 </head>
 ```
 
-`stati.assets.stylesheetPaths` is `['/styles.css']` in development and with `css.hash: false`, and an empty array without the Tailwind flags. In a hashed production build it holds a temporary path that becomes `/_assets/styles-A1B2C3D4.css` when the page is written. Print each path as it is, or through `stati.url()` when the site is [served from a subfolder](/advanced/deploying-to-a-subfolder): a production build writes the final name into the page after rendering, by replacing the path the template printed, so a path the template changes, such as one it encodes or takes apart, keeps a name no file has.
+`stati.assets.stylesheetPaths` starts with `'/styles.css'` in development and with `css.hash: false`, and has no Tailwind path without the Tailwind flags. After it come the stylesheets of [CSS your bundles import](/configuration/typescript#importing-css), which `typescript.autoInject` links. In a hashed production build the Tailwind path is a temporary one that becomes `/_assets/styles-A1B2C3D4.css` when the page is written. Print each path as it is, or through `stati.url()` when the site is [served from a subfolder](/advanced/deploying-to-a-subfolder): a production build writes the final name into the page after rendering, by replacing the path the template printed, so a path the template changes, such as one it encodes or takes apart, keeps a name no file has.
 
 ## Options
 

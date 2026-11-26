@@ -537,14 +537,19 @@ export async function relinkStylesheets(
  * @param outDir - The output directory, absolute
  * @param path - The stylesheet's path under its own name, such as '/styles.css'
  * @param current - The path this build links, which stays
+ * @param keep - Other files this build links that can look like a copy, which stay: the
+ *   stylesheets of TypeScript bundles, whose names esbuild hashes in the same folder
  * @returns The deleted files, relative to the output directory
  */
 export async function removeStaleStylesheets(
   outDir: string,
   path: string,
   current?: string,
+  keep: ReadonlySet<string> = new Set(),
 ): Promise<string[]> {
-  const stale = (await findHashedStylesheets(outDir, path)).filter((file) => file !== current);
+  const stale = (await findHashedStylesheets(outDir, path)).filter(
+    (file) => file !== current && !keep.has(file),
+  );
   await Promise.all(stale.map((file) => remove(join(outDir, ...file.split('/')))));
   return stale.map((file) => file.slice(1));
 }

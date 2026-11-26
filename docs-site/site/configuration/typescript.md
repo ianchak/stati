@@ -55,14 +55,15 @@ export default defineConfig({
 | `outDir` | `string` | `'_assets'` | Output subdirectory within `dist/` |
 | `bundles` | `BundleConfig[]` | `[{ entryPoint: 'main.ts', bundleName: 'main' }]` | Array of bundle configurations (see [Multiple Bundles](#multiple-bundles)) |
 | `hash` | `boolean` | `true` | Add content hash to filename (production only) |
-| `minify` | `boolean` | `true` | Minify JavaScript output (production only) |
-| `autoInject` | `boolean` | `true` | Automatically inject bundle script tags before `</body>` |
+| `minify` | `boolean` | `true` | Minify the JavaScript and imported CSS (production only) |
+| `autoInject` | `boolean` | `true` | Automatically inject bundle script tags before `</body>`, and links to the stylesheets of [CSS they import](#importing-css) before `</head>` |
 
 ## Development vs production
 
 | | `stati dev` | `stati build` |
 |---|---|---|
 | File name | `main.js` | `main-A1B2C3D4.js` (`hash`) |
+| [Imported CSS](#importing-css) | `main.css` | `main-E5F6G7H8.css` (`hash`) |
 | Minified | No | Yes (`minify`) |
 | Source maps | Yes | No |
 
@@ -117,6 +118,31 @@ When `autoInject: false`, you must manually add script tags in your templates us
   <% } %>
 </head>
 ```
+
+## Importing CSS
+
+A bundle can import CSS:
+
+```typescript
+// src/blog.ts
+import './blog.css';
+```
+
+esbuild writes the CSS a bundle imports as one stylesheet next to its script, named after its own content: `/_assets/blog-E5F6G7H8.css` in a production build, `/_assets/blog.css` in `stati dev`. Every page that gets the bundle links it, with a `<link rel="stylesheet">` at the end of `<head>`, after the [Tailwind stylesheet](/configuration/css) Stati links. A page that already links it gets no second link. Its path is also in `stati.assets.stylesheetPaths`, after the Tailwind stylesheet's.
+
+Editing only the CSS gives the stylesheet a new name, and the pages that link it are rendered again. A production build deletes the copies earlier builds wrote, as it does for scripts. In `stati dev`, adding or removing a bundle's CSS import renders the pages that get the bundle again.
+
+With `autoInject: false`, print the stylesheets yourself:
+
+```eta
+<head>
+  <% for (const href of stati.assets.stylesheetPaths) { %>
+  <link rel="stylesheet" href="<%= stati.url(href) %>">
+  <% } %>
+</head>
+```
+
+esbuild resolves every `url()` in the CSS as a file on disk, so one that points at a site path, such as `url(/fonts/inter.woff2)`, or at a font or image next to the CSS, such as `url(./bg.png)`, fails the bundle: esbuild can't find the first and has no loader for the second. A `url()` to another site is kept. Keep CSS that references your fonts and images in `public/`, where [Stati links it under a hashed name](/configuration/css#stylesheets-in-public).
 
 ## Multiple bundles
 
@@ -266,4 +292,4 @@ A syntax error in a bundle fails the build with `Bundle '<name>' compilation fai
 
 Check the page's URL against the bundle's `include` and `exclude` patterns. Patterns see `/docs/intro`, not `/docs/intro.html`, and `/docs/**` does not match the `/docs` index page.
 
-Stati also injects no script, without a warning, when the bundle's path holds characters other than letters, digits, `-`, `_`, `.` and `/`, such as a space in `bundleName` or `outDir`, or when the page has no `</body>` outside comments and scripts.
+Stati also injects no script, without a warning, when the bundle's path holds characters other than letters, digits, `-`, `_`, `.` and `/`, such as a space in `bundleName` or `outDir`, or when the page has no `</body>` outside comments and scripts. The same characters keep the link to its stylesheet out, as does a page without `</head>`.

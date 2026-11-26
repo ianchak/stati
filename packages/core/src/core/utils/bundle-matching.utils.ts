@@ -77,6 +77,11 @@ export interface CompiledBundleInfo {
   path: string;
   /** The size of the compiled bundle in bytes */
   sizeInBytes?: number;
+  /**
+   * The stylesheet esbuild writes for the CSS the bundle imports (e.g.,
+   * '/_assets/core-E5F6G7H8.css'), linked wherever the bundle is; undefined when it imports none
+   */
+  stylesheetPath?: string;
 }
 
 /**
@@ -170,6 +175,31 @@ export function reportInvalidBundlePatterns(
 }
 
 /**
+ * Gets the compiled bundles a page gets, by their `include` and `exclude` patterns.
+ *
+ * @param pageUrl - The page URL (e.g., '/docs/api/hooks'), not its output file
+ * @param compiledBundles - Array of compiled bundle info
+ * @returns The bundles matched for this page, in config order
+ */
+export function getBundlesForPage(
+  pageUrl: string,
+  compiledBundles: CompiledBundleInfo[],
+): CompiledBundleInfo[] {
+  if (!compiledBundles || compiledBundles.length === 0) {
+    return [];
+  }
+
+  const matchedConfigs = matchBundlesForPage(
+    pageUrl,
+    compiledBundles.map((b) => b.config),
+  );
+
+  // Map matched configs back to their bundles, preserving order
+  const matchedNames = new Set(matchedConfigs.map((c) => c.bundleName));
+  return compiledBundles.filter((b) => matchedNames.has(b.config.bundleName));
+}
+
+/**
  * Gets bundle paths for a page from compiled bundle info.
  * Filters compiled bundles based on page matching and returns only the paths.
  *
@@ -192,16 +222,5 @@ export function getBundlePathsForPage(
   pageUrl: string,
   compiledBundles: CompiledBundleInfo[],
 ): string[] {
-  if (!compiledBundles || compiledBundles.length === 0) {
-    return [];
-  }
-
-  const matchedConfigs = matchBundlesForPage(
-    pageUrl,
-    compiledBundles.map((b) => b.config),
-  );
-
-  // Map matched configs back to their paths, preserving order
-  const matchedNames = new Set(matchedConfigs.map((c) => c.bundleName));
-  return compiledBundles.filter((b) => matchedNames.has(b.config.bundleName)).map((b) => b.path);
+  return getBundlesForPage(pageUrl, compiledBundles).map((b) => b.path);
 }

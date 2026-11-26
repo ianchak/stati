@@ -640,6 +640,11 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
     compiledBundles.map((bundle) => bundle.config),
     logger,
   );
+  // The stylesheets of the CSS bundles import keep esbuild's names, which can look like hashed
+  // copies of a static stylesheet of the same name
+  stylesheets.addBundleStylesheets(
+    compiledBundles.flatMap((bundle) => bundle.stylesheetPath ?? []),
+  );
 
   // Process pages with ISG caching logic
   if (logger.step) {
@@ -775,6 +780,7 @@ async function buildInternal(options: BuildOptions = {}): Promise<BuildResult> {
         config: config.typescript,
         outDir: config.outDir || DEFAULT_OUT_DIR,
         compiled: compiledBundles,
+        keep: Object.values(manifest.stylesheets ?? {}),
       });
     }
     if (config.search?.enabled && searchIndexFilename) {

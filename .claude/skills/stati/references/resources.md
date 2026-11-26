@@ -27,7 +27,8 @@ defaults against the core 2.2 branch on the same day. Hashed
 stylesheets (`css`, `stati build --tailwind-input`, `stati.assets.stylesheetPaths`)
 were verified against the source and tests on 2026-10-24. The base path of
 `site.baseUrl` and `stati.url()` were verified against the source and tests on
-2026-10-25.
+2026-10-25. Stylesheets of CSS that TypeScript bundles import were verified
+against the source and tests on 2026-11-26.
 Package versions may differ across workspaces/releases. Revalidate after upgrades.
 
 Official entry points:

@@ -289,7 +289,7 @@ runs Tailwind once after the last page renders, minified, and writes
   otherwise, and when the input or the Tailwind CLI is missing, before rendering.
 - Pages without a `<link rel="stylesheet">` to the output get one before
   `</head>` (a preload or an alternate stylesheet doesn't count); turn that off
-  with `css.autoInject: false`. `stati.assets.stylesheetPaths` holds the path;
+  with `css.autoInject: false`. `stati.assets.stylesheetPaths` holds the path first;
   print it unchanged, because a hashed build writes the final name into the page
   after rendering. If Tailwind fails, the previous pages stay as they were.
 - A file in `public/` at the Tailwind output's path is never copied, in dev or in
@@ -362,6 +362,15 @@ typescript: {
   copy of the same scripts without verifying the injector's deduplication.
 - For manual placement set `typescript.autoInject: false`, then emit guarded
   `bundlePaths` as `<script type="module" src="<%= path %>"></script>`.
+- An entry can `import './blog.css'`. esbuild writes one stylesheet per bundle
+  next to its script, `_assets/<bundleName>-[hash].css` (`<bundleName>.css` in
+  dev). Pages that get the bundle link it before `</head>` under
+  `typescript.autoInject`, after the Tailwind link, and
+  `stati.assets.stylesheetPaths` lists it after the Tailwind path. A CSS-only
+  edit renames it and re-renders those pages; production deletes old copies.
+- esbuild resolves `url()`s in that CSS as files on disk: a site path such as
+  `url(/fonts/a.woff2)` (not found) or a font or image such as `url(./bg.png)`
+  (no loader) fails the bundle. Keep such CSS in `public/`, linked from the layout.
 - Bundling is not type checking. Run the site's `typecheck` script when one exists.
 - Browser scripts must handle missing DOM elements on pages sharing a global
   bundle. Use progressive enhancement; readable content and links should work

@@ -405,7 +405,7 @@ interface TypeScriptConfig {
   /** Add content hash to filename in production (default: true, ignored in development) */
   hash?: boolean;
 
-  /** Minify JavaScript output in production (default: true, ignored in development) */
+  /** Minify the JavaScript and imported CSS in production (default: true, ignored in development) */
   minify?: boolean;
 
   /**
@@ -416,8 +416,9 @@ interface TypeScriptConfig {
   bundles?: BundleConfig[];
 
   /**
-   * Automatically inject bundle script tags before </body>.
-   * When disabled, use stati.assets.bundlePaths in templates for manual control.
+   * Automatically inject bundle script tags before </body>, and links to the stylesheets of
+   * CSS the bundles import before </head>.
+   * When disabled, use stati.assets.bundlePaths and stati.assets.stylesheetPaths in templates.
    * @default true
    */
   autoInject?: boolean;

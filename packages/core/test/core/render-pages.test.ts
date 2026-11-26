@@ -210,6 +210,56 @@ describe('render pages', () => {
       expect(second.hashFor(undefined)).toBe(first.hashFor(undefined));
     });
 
+    it("adds a bundle's stylesheet to the assets and the hash of the pages that get the bundle only", async () => {
+      const blogBundle = (stylesheetPath?: string): CompiledBundleInfo => ({
+        config: { entryPoint: 'blog.ts', bundleName: 'blog', include: ['/blog/**'] },
+        filename: 'blog-1234.js',
+        path: '/_assets/blog-1234.js',
+        ...(stylesheetPath && { stylesheetPath }),
+      });
+      const main: CompiledBundleInfo = {
+        config: { entryPoint: 'main.ts', bundleName: 'main' },
+        filename: 'main-1234.js',
+        path: '/_assets/main-1234.js',
+      };
+      const home = page('/');
+      const post = page('/blog/post');
+      const inputs = async (target: PageModel, bundles: CompiledBundleInfo[]) =>
+        computeRenderInputs(target, await session([home, post], { compiledBundles: bundles }));
+
+      const withCss = [main, blogBundle('/_assets/blog-AAAA1111.css')];
+      expect((await inputs(post, withCss)).assets.stylesheetPaths).toEqual([
+        '/_assets/blog-AAAA1111.css',
+      ]);
+      expect((await inputs(home, withCss)).assets.stylesheetPaths).toEqual([]);
+
+      const hash = async (target: PageModel, bundles: CompiledBundleInfo[]) =>
+        (await inputs(target, bundles)).hashFor(undefined);
+      // Editing only the CSS renames the stylesheet, which rebuilds the pages that link it
+      expect(await hash(post, withCss)).not.toBe(
+        await hash(post, [main, blogBundle('/_assets/blog-BBBB2222.css')]),
+      );
+      // Pages without the bundle, and bundles without CSS, keep the hash they had
+      expect(await hash(home, withCss)).toBe(await hash(home, [main, blogBundle()]));
+    });
+
+    it('lists the Tailwind stylesheet before the bundle stylesheets', async () => {
+      await write('src/styles.css', 'body{}');
+      const bundle: CompiledBundleInfo = {
+        config: { entryPoint: 'main.ts', bundleName: 'main' },
+        filename: 'main.js',
+        path: '/_assets/main.js',
+        stylesheetPath: '/_assets/main.css',
+      };
+      const home = page('/');
+      const result = await session([home], { tailwind: true, compiledBundles: [bundle] });
+
+      expect(computeRenderInputs(home, result).assets.stylesheetPaths).toEqual([
+        '/styles.css',
+        '/_assets/main.css',
+      ]);
+    });
+
     it('adds the collection summary and the navigation hash only for what the render read', async () => {
       const post = page('/blog/post');
       const pages = [page('/blog/', { sourcePath: '/site/blog/index.md' }), post];
@@ -323,6 +373,94 @@ describe('render pages', () => {
       const assets = { bundlePaths: ['/_assets/main.js'], stylesheetPaths: ['/styles.css'] };
 
       expect(await postProcessHtml(home, renderResult(html), assets, result)).toBe(html);
+    });
+
+    describe('bundle stylesheets', () => {
+      const bundle: CompiledBundleInfo = {
+        config: { entryPoint: 'blog.ts', bundleName: 'blog' },
+        filename: 'blog-1234.js',
+        path: '/_assets/blog-1234.js',
+        stylesheetPath: '/_assets/blog-AAAA1111.css',
+      };
+      const assets = {
+        bundlePaths: ['/_assets/blog-1234.js'],
+        stylesheetPaths: ['/_assets/blog-AAAA1111.css'],
+      };
+      const link = '<link rel="stylesheet" href="/_assets/blog-AAAA1111.css">';
+      const count = (text: string, part: string) => text.split(part).length - 1;
+
+      it("links a bundle's stylesheet in the head where its script is injected", async () => {
+        const home = page('/');
+        const result = await session([home], { compiledBundles: [bundle] });
+
+        const final = await postProcessHtml(home, renderResult(html), assets, result);
+
+        expect(count(final, link)).toBe(1);
+        expect(final.indexOf(link)).toBeLessThan(final.indexOf('</head>'));
+        expect(final).toContain('<script type="module" src="/_assets/blog-1234.js"></script>');
+      });
+
+      it('prefixes the base path and keeps a link the template wrote', async () => {
+        const home = page('/');
+        const result = await session([home], {
+          config: { site: { title: 'Test', baseUrl: 'https://example.com/sub' } },
+          compiledBundles: [bundle],
+        });
+        const own = html.replace(
+          '</head>',
+          '<link rel="stylesheet" href="/sub/_assets/blog-AAAA1111.css"></head>',
+        );
+
+        const injected = await postProcessHtml(home, renderResult(html), assets, result);
+        const kept = await postProcessHtml(home, renderResult(own), assets, result);
+
+        expect(injected).toContain('<link rel="stylesheet" href="/sub/_assets/blog-AAAA1111.css">');
+        expect(count(kept, 'href="/sub/_assets/blog-AAAA1111.css"')).toBe(1);
+      });
+
+      it('links it once next to the Tailwind stylesheet, after it', async () => {
+        const home = page('/');
+        const result = await session([home], { tailwind: true, compiledBundles: [bundle] });
+
+        const final = await postProcessHtml(
+          home,
+          renderResult(html),
+          { ...assets, stylesheetPaths: ['/styles.css', ...assets.stylesheetPaths] },
+          result,
+        );
+
+        expect(count(final, link)).toBe(1);
+        expect(final.indexOf('href="/styles.css"')).toBeLessThan(final.indexOf(link));
+      });
+
+      it('leaves it out with typescript.autoInject false, or when the template removed it', async () => {
+        const home = page('/');
+        const off = await session([home], {
+          config: { typescript: { enabled: true, autoInject: false } },
+          compiledBundles: [bundle],
+        });
+        const on = await session([home], { compiledBundles: [bundle] });
+
+        expect(await postProcessHtml(home, renderResult(html), assets, off)).not.toContain(link);
+        expect(
+          await postProcessHtml(home, renderResult(html), { ...assets, stylesheetPaths: [] }, on),
+        ).not.toContain(link);
+      });
+
+      it('never prints a path HTML cannot carry as it is', async () => {
+        const home = page('/');
+        const unsafe = { ...bundle, stylesheetPath: '/_assets/"><script>x</script>.css' };
+        const result = await session([home], { compiledBundles: [unsafe] });
+
+        const final = await postProcessHtml(
+          home,
+          renderResult(html),
+          { ...assets, stylesheetPaths: [unsafe.stylesheetPath] },
+          result,
+        );
+
+        expect(final).not.toContain('<script>x</script>');
+      });
     });
 
     it("passes the page's Open Graph image and seo.debug to the SEO tags", async () => {

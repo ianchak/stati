@@ -148,6 +148,7 @@ export type { UrlPatternOptions, UrlPatternMatcher } from './glob-patterns.utils
 // Bundle matching utilities
 export {
   matchBundlesForPage,
+  getBundlesForPage,
   getBundlePathsForPage,
   reportInvalidBundlePatterns,
   validateUniqueBundleNames,
@@ -172,6 +173,7 @@ export {
 export type {
   CompileOptions,
   WatchOptions,
+  TypeScriptRebuild,
   RemoveStaleBundlesOptions,
 } from './typescript.utils.js';
 

@@ -11,7 +11,7 @@ import type { MarkdownIt } from 'markdown-it';
 import {
   autoInjectBundles,
   getBasePath,
-  getBundlePathsForPage,
+  getBundlesForPage,
   getPageOutputFile,
   isNotFoundPage,
   isPathWithinDirectory,
@@ -54,6 +54,7 @@ import {
 import { isDevelopment } from '../env.js';
 import type { ImageRuntime } from '../images/runtime.js';
 import type { StylesheetRuntime } from '../css/runtime.js';
+import { autoInjectStylesheets, isHashableStylesheetPath } from '../css/stylesheet.js';
 import type { MetricRecorder } from '../metrics/index.js';
 import type {
   BuildContext,
@@ -307,10 +308,14 @@ function hashableData(value: unknown): unknown {
  */
 export function computeRenderInputs(page: PageModel, session: RenderSession): PageRenderInputs {
   const { config, pages, basePath, searchIndexPath, summaries, stylesheets } = session;
-  const bundlePaths = getBundlePathsForPage(page.url, session.compiledBundles);
+  const bundles = getBundlesForPage(page.url, session.compiledBundles);
+  const bundlePaths = bundles.map((bundle) => bundle.path);
+  // The stylesheets esbuild writes for the CSS the page's bundles import, named after their
+  // content, so editing only the CSS gives a new name
+  const bundleStylesheetPaths = bundles.flatMap((bundle) => bundle.stylesheetPath ?? []);
   const assets: StatiAssets = {
     bundlePaths,
-    stylesheetPaths: stylesheets.stylesheetPaths(),
+    stylesheetPaths: [...stylesheets.stylesheetPaths(), ...bundleStylesheetPaths],
     ...(searchIndexPath && { searchIndexPath }),
   };
 
@@ -319,6 +324,8 @@ export function computeRenderInputs(page: PageModel, session: RenderSession): Pa
   const collectionPath = resolveCollectionPath(page, pages);
   const staticRenderInputs = {
     bundlePaths,
+    // Omitted without one, so the hash matches builds from before Stati linked them
+    ...(bundleStylesheetPaths.length > 0 && { bundleStylesheetPaths }),
     ...(searchIndexPath && { searchIndexPath }),
     // Omitted without a base path, so the hash matches builds from before Stati supported one
     ...(basePath && { basePath }),
@@ -373,8 +380,10 @@ export function computeRenderInputs(page: PageModel, session: RenderSession): Pa
 
 /**
  * Adds what a rendered page gets after its template, in this order: the SEO tags, the search
- * index meta tag, its stylesheet links ({@link StylesheetRuntime.linkPage}) and the bundles'
- * script tags, each unless its `autoInject` setting is false.
+ * index meta tag, its stylesheet links ({@link StylesheetRuntime.linkPage}), then the links to
+ * its bundles' stylesheets and the bundles' script tags, each unless its `autoInject` setting
+ * is false. A bundle's stylesheet goes with its script, under `typescript.autoInject`, and
+ * keeps the name esbuild gave it.
  *
  * @param page - The page
  * @param renderResult - What its template rendered
@@ -411,10 +420,27 @@ export async function postProcessHtml(
     html = autoInjectSearchMeta(html, `${basePath}${searchIndexPath}`);
   }
 
-  html = await session.stylesheets.linkPage(html, page.url, assets.stylesheetPaths);
+  const bundleStylesheets = new Set(
+    session.compiledBundles.flatMap((bundle) => bundle.stylesheetPath ?? []),
+  );
+  html = await session.stylesheets.linkPage(
+    html,
+    page.url,
+    assets.stylesheetPaths.filter((path) => !bundleStylesheets.has(path)),
+  );
 
-  if (config.typescript?.autoInject !== false && assets.bundlePaths.length > 0) {
-    html = autoInjectBundles(html, assets.bundlePaths, basePath);
+  if (config.typescript?.autoInject !== false) {
+    html = autoInjectStylesheets(
+      html,
+      assets.stylesheetPaths.filter(
+        (path) => bundleStylesheets.has(path) && isHashableStylesheetPath(path),
+      ),
+      config.site.baseUrl,
+      page.url,
+    );
+    if (assets.bundlePaths.length > 0) {
+      html = autoInjectBundles(html, assets.bundlePaths, basePath);
+    }
   }
   return html;
 }

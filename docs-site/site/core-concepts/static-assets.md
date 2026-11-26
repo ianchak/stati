@@ -39,7 +39,7 @@ src/
     └── nav.ts           # Component modules
 ```
 
-Your compiled bundles are automatically injected into pages before the closing `</body>` tag. Stati supports multiple bundles with per-page targeting via include/exclude patterns, so you can ship only the JavaScript each page needs. For full TypeScript configuration options, see the [TypeScript Configuration Guide](/configuration/typescript).
+Your compiled bundles are automatically injected into pages before the closing `</body>` tag, and the [CSS they import](/configuration/typescript#importing-css) is linked in `<head>`. Stati supports multiple bundles with per-page targeting via include/exclude patterns, so you can ship only the JavaScript each page needs. For full TypeScript configuration options, see the [TypeScript Configuration Guide](/configuration/typescript).
 
 ## CSS processing
 

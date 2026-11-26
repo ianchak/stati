@@ -296,9 +296,15 @@ export async function createDevServer(options: DevServerOptions = {}): Promise<D
             outDir: config.outDir || DEFAULT_OUT_DIR,
             logger,
             awaitInitialBuild: true,
-            onRebuild: (_results, compileTimeMs) => {
+            onRebuild: (_results, compileTimeMs, { entryPath, stylesheetChanged }) => {
               logger.info?.(`▸ TypeScript recompiled in ${compileTimeMs}ms`);
-              reload();
+              if (stylesheetChanged) {
+                // The bundle started or stopped importing CSS: the pages that get it render
+                // again with the link added or removed, and reload after that build
+                void rebuildQueue.enqueue(entryPath, 'change');
+              } else {
+                reload();
+              }
             },
           });
         } catch (error) {
