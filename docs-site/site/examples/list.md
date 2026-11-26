@@ -1,6 +1,6 @@
 ---
 title: 'Example sites'
-description: 'Learn Stati by exploring examples and getting started templates.'
+description: 'The four Stati starter templates, blank, blog, docs and news: what each includes, its key files and the command that creates it.'
 order: 1
 seo:
   title: 'Stati example sites'
@@ -8,7 +8,7 @@ seo:
 
 # Example sites
 
-Learn Stati by exploring examples and real-world implementations. Stati provides four starter templates: a minimal one for any kind of site, a complete blog, a complete documentation site, and a complete news site.
+Stati has four starter templates: a minimal one for any kind of site, a complete blog, a complete documentation site and a complete news site.
 
 ## Available examples
 
@@ -47,7 +47,7 @@ examples/blank/
 The scaffolder copies this template into a new project:
 
 ```bash
-npx create-stati my-site
+npx create-stati my-site --template=blank
 ```
 
 The [quick start](/getting-started/quick-start) walks through the prompts and the first edits. To set up a project without the scaffolder, see [Manual installation](/getting-started/installation#manual-installation).
@@ -170,15 +170,7 @@ examples/news/
 npx create-stati my-news --template=news
 ```
 
-## Learning resources
-
-- **Getting started** - [/getting-started/installation](/getting-started/installation)
-- **Configuration Reference** - [/configuration/file](/configuration/file)
-- **CLI commands** - [/cli/commands](/cli/commands)
-- **Project structure** - [/getting-started/project-structure](/getting-started/project-structure)
-
 ## Need help?
 
-- **Documentation** - Browse the full [Stati documentation](/)
-- **GitHub Issues** - [Report bugs or request features](https://github.com/ianchak/stati/issues)
-- **Discussions** - [Ask questions and share ideas](https://github.com/ianchak/stati/discussions)
+- [Report bugs or request features](https://github.com/ianchak/stati/issues)
+- [Ask questions and share ideas](https://github.com/ianchak/stati/discussions)

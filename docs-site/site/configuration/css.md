@@ -12,7 +12,7 @@ A production build names your stylesheets after their content, such as `/_assets
 
 ## Why the name changes
 
-Pages are usually served with no caching or a short one, but a stylesheet with a fixed name can stay in a browser's cache for hours: some hosts and CDNs cache every `.css` file by default. After a deploy that adds markup together with the CSS for it, those browsers show the new markup without its styles until their copy expires. A stylesheet named after its content gets a new URL whenever it changes, so browsers load it with the pages that need it.
+A stylesheet with a fixed name can stay in a browser's or CDN's cache after a deploy, so new markup shows up without its styles. A name taken from the content changes whenever the CSS does, so browsers load the new file with the pages that need it.
 
 ## How pages link the hashed name
 
@@ -46,7 +46,7 @@ A `.css` file in `public/` that a page links gets a hashed copy in `dist/_assets
 - The file is still copied under its own name, so a stylesheet that `@import`s it, or a script that loads it, keeps working. A file only another stylesheet imports keeps its fixed name.
 - A stylesheet a page links can't `@import` or `url()` the Tailwind stylesheet, such as `@import "/styles.css"`: a hashed build writes that one under its hashed name only, so the build stops. Import it in the Tailwind input instead, or link both stylesheets from the page.
 - A stylesheet no page links gets no copy.
-- Stati copies the CSS as it is: it doesn't minify it.
+- Stati doesn't minify the copy.
 - A path holding characters other than letters, digits, `-`, `_`, `.` and `/` keeps its name.
 
 ## Sass
@@ -86,13 +86,13 @@ Pass the same two flags to both commands:
 
 `stati build` stops with an error when it gets only one of the two; `stati dev` then starts no watcher and links nothing. Tailwind CSS 4 needs `tailwindcss` and `@tailwindcss/cli` installed in the project, Tailwind CSS 3 needs `tailwindcss`. See [Tailwind CSS integration](/core-concepts/static-assets#tailwind-css-integration) for the stylesheet itself, including the `@source` rule for classes your templates build at render time.
 
-A template can link `/styles.css` or leave the link out: Stati adds `<link rel="stylesheet">` before `</head>` on every page that doesn't have one to the path. A preload of the path, and a link in a comment or script, don't count.
+A template can link `/styles.css` or leave the link out: Stati adds `<link rel="stylesheet">` before `</head>` on every page that doesn't have one to the path. A preload, an alternate stylesheet, and a link in a comment or script don't count.
 
 ### What a production build does
 
 1. Before any page renders, it checks that the input file exists and that Tailwind CSS is installed.
 2. It renders the pages. Every class a template builds with `stati.propValue()` goes into `.stati/tailwind-classes.html`.
-3. With that list complete, it runs Tailwind once, with `--minify`, and writes `dist/_assets/styles-A1B2C3D4.css`.
+3. With that list complete, it runs Tailwind once (with `--minify` unless `css.minify` is `false`) and writes `dist/_assets/styles-A1B2C3D4.css`, or the `--tailwind-output` file itself with `css.hash: false`.
 4. It writes the pages it rendered, with their links to `/styles.css` pointed at that file.
 
 Tailwind runs after the pages, so the build holds the pages it renders until then (in memory, or in `.stati/pending-pages/` for a very large site), with `css.hash: false` too, and writes each once, with the final file name, after the [`afterRender`](/api/hooks) hook has run for it. If Tailwind fails, the build stops with Tailwind's error and the previous build's pages and stylesheet stay as they were.
@@ -176,4 +176,4 @@ To move a Tailwind project:
 
 To move a Sass project, have `build:css` write `public/styles.css` instead of `dist/styles.css`, run it before `stati build`, and list `public/styles.css` in `.gitignore`. See [Sass](#sass).
 
-Your templates keep their `<link rel="stylesheet" href="/styles.css">`. The first build renders every page again.
+Your templates keep their `<link rel="stylesheet" href="/styles.css">`.

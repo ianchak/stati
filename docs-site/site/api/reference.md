@@ -8,7 +8,7 @@ seo:
 
 # Overview
 
-The main parts of Stati's public API on one page. Everything below is exported from `@stati/core` or available in templates as `stati`. Each section links to its full reference, and [Types](/api/types#module-exports) lists every export.
+Everything below is exported from `@stati/core` or available in templates as `stati`. Each section links to its full reference, and [Types](/api/types#module-exports) lists every export.
 
 ## Configuration
 
@@ -65,7 +65,7 @@ Every Eta template Stati renders receives a `stati` object: layouts, the shells 
 | Member                               | What it holds                                                                                                                                                              |
 | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `stati.site`                         | Site config (`title`, `baseUrl`, `defaultLocale`, …)                                                                                                                       |
-| `stati.page`                         | The current page: `url`, `path` and every front matter field                                                                                                               |
+| `stati.page`                         | The current page: `url`, `path`, `toc`, `navNode`, `wordCount`, `readingTime` and every front matter field                                                                 |
 | `stati.content`                      | The rendered Markdown body                                                                                                                                                 |
 | `stati.include(name, props?, body?)` | Renders another template and returns its HTML; `stati.include.has(name)` tells whether `name` resolves                                                                     |
 | `stati.layout(name, props?)`         | Wraps this template's output in another template, which prints it as `stati.body`                                                                                          |
@@ -74,7 +74,7 @@ Every Eta template Stati renders receives a `stati` object: layouts, the shells 
 | `stati.collection`                   | Pages of the page's collection: its own on index pages, the one it belongs to on others, or the one named by `collection`; `stati.collection.related(url, options?)` picks the pages most related to one of them |
 | `stati.pagination`                   | This page's part of a listing with `paginate`: `pageNumber`, `totalPages`, `items`, `prevUrl`, `nextUrl`, `urls`                                                           |
 | `stati.generated`                    | On pages from a `[param].md` template: `key`, `label`, `items`, `template`, `data`                                                                                         |
-| `stati.slugify(text)`                | The URL slug Stati gives a generated page's key                                                                                                                            |
+| `stati.slugify(text)`                | The URL slug Stati makes for generated page keys and heading anchors                                                                                                       |
 | `stati.url(path)`                    | A site path with the base path of `site.baseUrl` added, for a site [served from a subfolder](/advanced/deploying-to-a-subfolder)                                           |
 | `stati.image(src, options?)`         | An image with its intrinsic size and lazy loading; a `<picture>` with AVIF and WebP variants under `images.responsive`                                                     |
 | `stati.assets`                       | `bundlePaths` for this page (empty when no bundle matches), `stylesheetPaths` (the [Tailwind stylesheet](/configuration/css)) and `searchIndexPath` when search is enabled |

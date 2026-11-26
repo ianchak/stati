@@ -49,7 +49,7 @@ const html = generateSEOMetadata({
 
 - Validation errors are logged as warnings rather than throwing to allow builds to continue with degraded SEO
 - Validation warnings are logged when `config.seo.debug` is enabled
-- The robots meta tag gets `noindex` on the 404 page (`/404` or `/404/`) unless the page sets `seo.noindex`, or a `seo.robots` value that says whether to index it (`index`, `noindex`, `all`, `none` or `index:`)
+- The robots meta tag gets `noindex` on the 404 page (`/404` or `/404/`) unless the page sets `seo.noindex`, a `seo.robots` string with an `index`, `noindex`, `all` or `none` directive, or a `seo.robots` object that sets `index`
 
 ---
 
@@ -82,18 +82,13 @@ function generateSEO(
 
 - `string`: HTML string containing generated SEO meta tags
 
-**Examples:**
+**Example:**
 
 ```eta
-<!-- Generate all SEO tags -->
-<%~ stati.generateSEO() %>
-
-<!-- Generate specific tags using strings (in Eta templates) -->
 <%~ stati.generateSEO(['title', 'description', 'canonical']) %>
-
-<!-- Generate specific tags with Open Graph and Twitter -->
-<%~ stati.generateSEO(['title', 'opengraph', 'twitter']) %>
 ```
+
+A missing or empty `tags` list prints every tag type. Names that are not tag types are ignored, so a list of only unknown names prints nothing. Validation messages are not logged. More template examples are in [Manual SEO generation](/configuration/seo#manual-seo-generation).
 
 **Programmatic Usage (TypeScript):**
 
@@ -348,6 +343,8 @@ interface AutoInjectOptions {
   logger: Logger;
   /** Enable debug logging */
   debug?: boolean;
+  /** Open Graph image generated for the page, printed when front matter sets none */
+  generatedImage?: GeneratedOgImage;
 }
 ```
 
@@ -403,21 +400,6 @@ function generateOpenGraphTags(context: SEOContext): string[];
 
 - `string[]`: Array of Open Graph meta tag strings
 
-**Example:**
-
-```typescript
-import { generateOpenGraphTags } from '@stati/core';
-
-const ogTags = generateOpenGraphTags({
-  page: pageModel,
-  config: statiConfig,
-  siteUrl: 'https://example.com',
-  logger,
-});
-
-console.log(ogTags.join('\n'));
-```
-
 Values the page's front matter leaves out come from the config, as during a build: `og:locale` from `site.defaultLocale` in Open Graph form, and on the pages `seo.articles` matches, `og:type` `article` and the `article:*` tags. See [site-wide defaults](/configuration/seo#site-wide-defaults).
 
 ---
@@ -439,21 +421,6 @@ function generateTwitterCardTags(context: SEOContext): string[];
 **Returns:**
 
 - `string[]`: Array of Twitter Card meta tag strings
-
-**Example:**
-
-```typescript
-import { generateTwitterCardTags } from '@stati/core';
-
-const twitterTags = generateTwitterCardTags({
-  page: pageModel,
-  config: statiConfig,
-  siteUrl: 'https://example.com',
-  logger,
-});
-
-console.log(twitterTags.join('\n'));
-```
 
 `twitter:site` falls back to `seo.twitter.site`, and `twitter:creator` to the `twitter` handle of the page's own `seo.author`, then of `seo.defaultAuthor`. An author's name is never printed as `twitter:creator`.
 
@@ -578,21 +545,11 @@ function shouldAutoInject(config: StatiConfig, page: PageModel): boolean;
 **Parameters:**
 
 - `config` (StatiConfig): Stati configuration
-- `page` (PageModel): Page to check (reserved for future page-level overrides)
+- `page` (PageModel): Not read
 
 **Returns:**
 
-- `boolean`: True if auto-injection should run
-
-**Example:**
-
-```typescript
-import { shouldAutoInject } from '@stati/core';
-
-if (shouldAutoInject(config, page)) {
-  // Auto-injection is enabled
-}
-```
+- `boolean`: `true` unless `config.seo.autoInject` is `false`
 
 ---
 
@@ -770,6 +727,9 @@ interface SEOContext {
 
   /** Set of tag types to include in generation (whitelist mode) */
   include?: Set<SEOTagType>;
+
+  /** Open Graph image generated for the page, used when front matter sets none */
+  generatedImage?: GeneratedOgImage;
 }
 ```
 
@@ -1122,7 +1082,7 @@ interface OpenGraphArticle {
 }
 ```
 
-On the pages [`seo.articles`](#seoarticlesconfig) matches, each field the front matter leaves out except `section` is filled in from the page: `publishedTime` from the publish date, `modifiedTime` from `updated`, `tags` from `tags` and `author` from the author's `url`. Dates are printed in ISO 8601 form, such as `2026-01-10T00:00:00.000Z`.
+On the pages [`seo.articles`](#seoarticlesconfig) matches, Stati fills in every field but `section` that the front matter leaves out. The dates it fills in are ISO 8601, such as `2026-01-10T00:00:00.000Z`.
 
 ---
 
@@ -1287,7 +1247,7 @@ interface RobotsTxtConfig {
   /** Crawl delay in seconds (written in the `User-agent: *` group) */
   crawlDelay?: number;
 
-  /** `true` adds `Sitemap: <baseUrl>/sitemap.xml`, and the news sitemap with sitemap.news; a string adds that URL only; unset adds nothing */
+  /** `true` adds `Sitemap: <baseUrl>/sitemap.xml`, and the news sitemap when sitemap.enabled and sitemap.news are set; a string adds that URL only; unset adds nothing */
   sitemap?: string | boolean;
 
   /** Custom lines to add to robots.txt */
@@ -1295,9 +1255,4 @@ interface RobotsTxtConfig {
 }
 ````
 
-The global `allow`, `disallow` and `crawlDelay` values form a `User-agent: *` group, written after the `userAgents` groups; within a group, `Allow` lines come before `Disallow` lines. An empty path writes the line with no value (`disallow: ['']` writes `Disallow:`, which blocks nothing), and `crawlDelay` is written only when it is greater than 0. Global values that write no line add no group. Without any group to write, Stati writes `User-agent: *` / `Allow: /`. `Sitemap:` URLs are percent-encoded like sitemap URLs. `sitemap: true` adds the line whether or not sitemap generation is enabled, so enable `sitemap` too.
-
-## See also
-
-- [SEO Configuration Guide](/configuration/seo) - User-friendly configuration guide
-- [SEO Usage Scenarios](/advanced/seo-usage-scenarios) - Usage strategies for different project needs
+How these options become `robots.txt` lines is shown in [robots.txt configuration](/configuration/seo#robots-txt-configuration). `Sitemap:` URLs are percent-encoded like sitemap URLs. `sitemap: true` adds the `sitemap.xml` line whether or not sitemap generation is enabled, so enable `sitemap` too.

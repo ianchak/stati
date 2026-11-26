@@ -18,7 +18,7 @@ seo:
 
 # SEO scenarios
 
-Five ways to use Stati's SEO features, from automatic injection to writing every tag yourself.
+Five ways to use Stati's SEO features, from automatic injection to writing every tag yourself. Start with Scenario 1, and move to Scenario 3 when some pages need tags of their own.
 
 ---
 
@@ -199,7 +199,7 @@ Pages marked `noindex` and the 404 page are left out without it.
 
 ## Scenario 3: Hybrid mode
 
-**Best for:** Projects that need custom control over specific tags while automating the rest. Move here from Scenario 1 when you need per-page control.
+**Best for:** Projects that need custom control over specific tags while automating the rest.
 
 ### Concept
 
@@ -322,12 +322,13 @@ On pages with a `shareImage`, the layout writes `og:*` tags, so Stati skips its 
 
 ### Tag groups
 
-Understanding tag groups is critical for hybrid mode:
+Auto-injection skips generated tags by group, judging by the tags already in the page's `<head>`:
 
 | Group | Behavior |
 |-------|----------|
 | **Open Graph** | If **any** `og:*` tag exists, **all** OG tags are skipped |
 | **Twitter Cards** | If **any** `twitter:*` tag exists, **all** Twitter tags are skipped |
+| **Structured data** | If any `<script type="application/ld+json">` exists, `seo.structuredData` is not printed |
 | **Individual Tags** | Title, description, keywords, author, robots, canonical are independent |
 
 So a layout should not add one `og:` or `twitter:` tag just to set a value that is the same on every page, such as `og:locale` or `twitter:site`: it would turn off the whole group, the generated `og:image` included. Set those in the config instead ([site-wide defaults](/configuration/seo#site-wide-defaults)).
@@ -497,8 +498,8 @@ export default defineConfig({
   <meta property="og:type" content="<%= stati.page.type || 'website' %>">
 
   <% if (stati.page.shareImage) { %>
-    <!-- new URL() accepts both absolute URLs and paths such as /images/og.png -->
-    <meta property="og:image" content="<%= new URL(stati.page.shareImage, stati.site.baseUrl).href %>">
+    <!-- stati.url() adds the base path to a path such as /images/og.png; new URL() makes it absolute -->
+    <meta property="og:image" content="<%= new URL(stati.url(stati.page.shareImage), stati.site.baseUrl).href %>">
     <% if (stati.page.shareImageWidth) { %>
       <meta property="og:image:width" content="<%= stati.page.shareImageWidth %>">
     <% } %>
@@ -515,7 +516,7 @@ export default defineConfig({
     <meta name="twitter:description" content="<%= stati.page.description %>">
   <% } %>
   <% if (stati.page.twitterImage || stati.page.shareImage) { %>
-    <meta name="twitter:image" content="<%= new URL(stati.page.twitterImage || stati.page.shareImage, stati.site.baseUrl).href %>">
+    <meta name="twitter:image" content="<%= new URL(stati.url(stati.page.twitterImage || stati.page.shareImage), stati.site.baseUrl).href %>">
   <% } %>
 
   <!-- Manual structured data (escape "<" so the JSON cannot close the script tag) -->
@@ -540,89 +541,3 @@ export default defineConfig({
 - No automatic fallbacks
 - Higher chance of errors (missing tags, typos)
 - More testing required
-
----
-
-## Comparison table
-
-| Feature | Scenario 1: Automatic | Scenario 2: Enhanced | Scenario 3: Hybrid | Scenario 4: Selective | Scenario 5: Full Custom |
-|---------|----------------------|---------------------|-------------------|----------------------|------------------------|
-| **Setup Effort** | None | Low | Low | Medium | High |
-| **Code Changes** | None | None | Minimal | Medium | Extensive |
-| **Control Level** | Low | Medium | High | High | Complete |
-| **Auto-Injection** | Yes | Yes | Yes | No | No |
-| **Custom Tags** | No | Front matter | Template | Template | Full |
-| **Fallback** | Always | Always | Partial | No | No |
-| **Maintenance** | Minimal | Low | Low | Medium | High |
-| **Best For** | New projects | SEO values in front matter | Per-page control | Specific control | Complex SEO |
-
----
-
-## Testing & validation
-
-### Checklist
-
-After implementing SEO, validate your setup:
-
-- **Build succeeds** without errors
-- **View page source** - verify SEO tags are present
-- **Check title tags** - correct format and no duplicates
-- **Check meta descriptions** - present and under 160 characters
-- **Check canonical URLs** - absolute URLs, correct protocol
-- **Check Open Graph tags** - og:title, og:description, og:image, og:url
-- **Check Twitter Cards** - twitter:card, twitter:title, twitter:image
-- **Check sitemap.xml** - exists at `/sitemap.xml`, valid XML
-- **Check robots.txt** - exists at `/robots.txt`, correct directives
-- **Validate structured data** - use [Google Rich Results Test](https://search.google.com/test/rich-results)
-- **Test social sharing** - use [Facebook Debugger](https://developers.facebook.com/tools/debug/)
-
-### Validation tools
-
-**HTML & SEO:**
-
-- [W3C HTML Validator](https://validator.w3.org/)
-- [Google Rich Results Test](https://search.google.com/test/rich-results)
-- [Schema.org Validator](https://validator.schema.org/)
-
-**Social Media:**
-
-- [Facebook Sharing Debugger](https://developers.facebook.com/tools/debug/)
-- [LinkedIn Post Inspector](https://www.linkedin.com/post-inspector/)
-
-**Search Console:**
-
-- [Google Search Console](https://search.google.com/search-console)
-- [Bing Webmaster Tools](https://www.bing.com/webmasters)
-
-### Common issues
-
-**Issue:** Open Graph tags not generated
-
-**Solution:** Check for existing `og:*` tags in your HTML (any OG tag skips all OG generation)
-
-**Issue:** Sitemap not generated
-
-**Solution:** Ensure sitemap is enabled, `site.baseUrl` is set, and you ran a production build (`stati build`; the dev server does not write `sitemap.xml`):
-
-```typescript
-export default defineConfig({
-  site: {
-    title: 'My Site',
-    baseUrl: 'https://example.com' // Used for the sitemap URLs
-  },
-  sitemap: {
-    enabled: true,
-  }
-});
-```
-
----
-
-## Recommended approach
-
-Start with Scenario 1 (Automatic), and move to Scenario 3 (Hybrid) when you need per-page control.
-
-## Next steps
-
-- [SEO Configuration Guide](/configuration/seo) - Complete SEO configuration reference
-- [SEO API](/api/seo) - Detailed API documentation

@@ -1,6 +1,6 @@
 ---
 title: 'Markdown pipeline'
-description: 'Learn how Stati processes and renders Markdown content with advanced features.'
+description: 'How Stati renders Markdown: front matter rules, image sizes, auto-linking, word counts and your own markdown-it plugins.'
 order: 5
 ---
 
@@ -10,7 +10,7 @@ Stati renders Markdown with [markdown-it](https://github.com/markdown-it/markdow
 
 ## Core features
 
-markdown-it follows CommonMark and adds tables and strikethrough (`~~text~~`). Stati also turns on raw HTML in Markdown, linkify and typographer.
+markdown-it follows CommonMark and adds tables and strikethrough (`~~text~~`). Stati also turns on raw HTML in Markdown, linkify (see [Auto-linking](#auto-linking)) and typographer, which turns straight quotes into curly ones, `--` and `---` into en and em dashes, and `...` into an ellipsis.
 
 ### Front matter
 
@@ -27,7 +27,7 @@ draft: false
 layout: 'post'
 difficulty: 'advanced'
 estimatedTime: '30 minutes'
-lastModified: '2024-01-15'
+updated: '2024-01-15'
 ---
 
 # Your content starts here...
@@ -37,7 +37,7 @@ YAML reads `title: 1984`, `tags: [2024]` and `title: 2024-01-01` as a number, a 
 
 Only `draft: true` makes a page a draft. YAML reads `draft: no`, `draft: yes` and a quoted `draft: "true"` as text, so Stati warns that the value is not `true` or `false`, names the file, and builds the page. A date that doesn't exist, such as `date: 2025-02-30` or `2025-13-01`, quoted or not, is ignored with a warning instead of being read as a later day.
 
-Stati reads fields such as `title`, `description`, `tags`, `layout`, `date`, `order` and `draft`. Any other field, such as `difficulty` above, is available in templates as `stati.page.*`:
+Stati reads fields such as `title`, `description`, `tags`, `layout`, `date`, `updated`, `order` and `draft`. Every field, including your own such as `difficulty` above, is available in templates as `stati.page.*`:
 
 ```eta
 <article class="<%= stati.propValue('difficulty', `difficulty-${stati.page.difficulty}`) %>">
@@ -46,7 +46,7 @@ Stati reads fields such as `title`, `description`, `tags`, `layout`, `date`, `or
     <div class="meta">
       <span>Difficulty: <%= stati.page.difficulty %></span>
       <span>Est. time: <%= stati.page.estimatedTime %></span>
-      <span>Last updated: <%= new Date(stati.page.lastModified).toLocaleDateString() %></span>
+      <span>Last updated: <%= new Date(stati.page.updated).toLocaleDateString() %></span>
     </div>
   </header>
 
@@ -98,20 +98,6 @@ URLs with a scheme (`https://stati.build`) are converted to links, and so is tex
 Visit https://stati.build for more information.
 Contact us at [hello@stati.build](mailto:hello@stati.build) for support.
 ```
-
-### Typography enhancements
-
-Smart quotes, em-dashes, and ellipses:
-
-```markdown
-"Smart quotes" and 'apostrophes'
-En-dash (--) and em-dash (---)
-Ellipsis (...)
-```
-
-## Configuration
-
-Plugins, the markdown-it instance (`markdown.configure`) and the table of contents (`markdown.toc`) are set in `stati.config.ts`. See [Markdown configuration](/configuration/markdown).
 
 ## Custom plugins
 
@@ -196,5 +182,3 @@ A listing that shows `post.readingTime` or `post.wordCount` rebuilds when they c
 ### Content excerpts
 
 Stati has no excerpt feature. Write one in front matter (`excerpt: 'A short summary.'`) and print it as `stati.page.excerpt` on the page or `post.frontMatter.excerpt` in a listing. Add `excerpt` to [`collections.summaryFields`](/core-concepts/collections#what-rebuilds-a-listing) so listings rebuild when it changes.
-
-Next, learn about [Incremental Static Generation](/core-concepts/isg) to understand how Stati handles caching and rebuilds.

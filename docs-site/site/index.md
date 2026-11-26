@@ -56,7 +56,7 @@ hero:
 
 inventory:
   title: 'Everything a content site needs, in the box'
-  lede: 'Every feature below is part of Stati and documented here. Most switch on with one line in a config file.'
+  lede: 'Every feature below ships with Stati and is documented here. Responsive images and link preview cards add the optional @stati/images package.'
   groups:
     - title: 'Write'
       items:

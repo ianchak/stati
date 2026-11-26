@@ -1,6 +1,6 @@
 ---
 title: 'Site metadata'
-description: 'Configure site title, URL, and SEO metadata for your Stati site.'
+description: 'The site block: title, baseUrl and its base path, defaultLocale and the fallback description.'
 order: 2
 seo:
   title: 'Site metadata configuration'
@@ -30,7 +30,7 @@ export default defineConfig({
 
 #### `title` (required)
 
-The site's title, used in templates and metadata. Access it in templates:
+The site's title, as `stati.site.title` in templates. Stati's SEO tags use it as `og:site_name` and, on a page without a title, for `<title>`, `og:title` and `twitter:title`; the Google News sitemap uses it as the publication name unless `sitemap.news.publicationName` is set.
 
 ```eta
 <title><%= stati.page.title %> | <%= stati.site.title %></title>
@@ -81,7 +81,7 @@ A script subtag is dropped (`zh-Hant-TW` becomes `zh_TW`). A tag without a regio
 
 Default site description used as a fallback for meta tags when a page doesn't have its own description. It is the last fallback in the description chain:
 
-1. Page front matter `seo.description`
+1. Page front matter `seo.description` (for `og:description` and `twitter:description`, `seo.openGraph.description` and `seo.twitter.description` come first)
 2. Page front matter `description`
 3. Site config `description` (this field)
 
@@ -97,62 +97,14 @@ The default author is `seo.defaultAuthor`, not part of `site`. Each page's SEO t
 
 ## Template usage
 
-Access site configuration in Eta templates:
+Templates read the block as `stati.site`:
 
 ```eta
-<!-- Site title -->
-<title><%= stati.page.title %> | <%= stati.site.title %></title>
-
-<!-- Base URL for absolute links -->
-<link rel="canonical" href="<%= stati.site.baseUrl + stati.page.url %>" />
-
-<!-- Locale -->
 <html lang="<%= stati.site.defaultLocale || 'en' %>">
-
-<!-- Author from the page's seo front matter (if set) -->
-<% const author = stati.page.seo?.author; %>
-<% if (author) { %>
-  <meta name="author" content="<%= typeof author === 'string' ? author : author.name %>" />
-<% } %>
 ```
 
-The config's `seo.defaultAuthor` is not part of the template context; auto-injection uses it when a page has no `seo.author`.
+You don't need to write the canonical link or the author tag: Stati's [SEO auto-injection](/configuration/seo#automatic-seo-injection) writes both from these values and the `seo` config, `seo.defaultAuthor` included. A tag of the same kind in your layout replaces Stati's.
 
-## Environment-specific configuration
+## Environment-specific values
 
-Configure different metadata for different environments. `getEnv()` from `@stati/core` returns `'production'` during `stati build` and `stati preview`, and `'development'` during `stati dev`:
-
-```javascript
-import { defineConfig, getEnv } from '@stati/core';
-
-const isProd = getEnv() === 'production';
-
-export default defineConfig({
-  site: {
-    title: 'My Site',
-    baseUrl: isProd ? 'https://mysite.com' : 'http://localhost:3000',
-    defaultLocale: 'en-US',
-  },
-  seo: {
-    // Log SEO warnings while developing
-    debug: !isProd,
-  },
-});
-```
-
-Stati does not set `process.env.NODE_ENV`; if your config reads it, set it in your scripts yourself (for example `NODE_ENV=production stati build`).
-
-## Metadata validation
-
-Test your metadata with external validation tools:
-
-- [Facebook Sharing Debugger](https://developers.facebook.com/tools/debug/)
-- [LinkedIn Post Inspector](https://www.linkedin.com/post-inspector/)
-- [Google Rich Results Test](https://search.google.com/test/rich-results)
-
-## Related configuration
-
-- [SEO Configuration](/configuration/seo) - Complete SEO setup including Open Graph and Twitter Cards
-- [RSS Configuration](/configuration/rss) - RSS feed generation
-- [Sitemap Configuration](/configuration/seo#sitemap-configuration) - XML sitemap generation
-- [Template context](/api/templates#template-context-stati) - `stati.site` and `stati.page` in templates
+To give `stati dev` and `stati build` different values, such as another `baseUrl`, branch on `getEnv()`: see [Multi-environment configuration](/configuration/file#multi-environment-configuration).

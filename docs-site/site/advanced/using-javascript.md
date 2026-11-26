@@ -1,6 +1,6 @@
 ---
 title: 'Using JavaScript'
-description: 'Learn four powerful ways to add JavaScript functionality to your Stati site: inline scripts, external files, built-in TypeScript compilation, and build hooks.'
+description: 'Add JavaScript to a Stati site with inline scripts, files in public/, built-in TypeScript bundles or build hooks.'
 order: 4
 seo:
   title: 'Using JavaScript in Stati'
@@ -12,13 +12,7 @@ You can add JavaScript in four ways: inline scripts in templates, external JavaS
 
 ## Method 1: Inline scripts in templates
 
-The most straightforward way to add JavaScript is by including inline `<script>` tags directly in your Eta templates. This is ideal for small, page-specific scripts that enhance the user experience.
-
-### When to use
-
-- **Small interactive features**: Scroll-to-top buttons, mobile navigation toggles, etc.
-- **Page-specific behavior**: Form validation, animations specific to one page
-- **Quick enhancements**: When you don't need a separate file
+Put small, page-specific scripts in a `<script>` tag in a template.
 
 ### Example: Scroll to top button
 
@@ -65,59 +59,11 @@ In the template that writes the page's `<body>`:
 </html>
 ```
 
-### Example: Mobile navigation toggle
-
-```eta
-<!-- Header with mobile menu -->
-<header>
-    <nav>
-        <button id="menu-toggle" class="mobile-menu-btn">
-            Menu
-        </button>
-        <ul id="nav-menu" class="nav-menu">
-            <li><a href="<%= stati.url('/') %>">Home</a></li>
-            <li><a href="<%= stati.url('/docs') %>">Docs</a></li>
-            <li><a href="<%= stati.url('/blog') %>">Blog</a></li>
-        </ul>
-    </nav>
-</header>
-
-<script>
-    // Mobile menu toggle
-    const menuToggle = document.getElementById('menu-toggle');
-    const navMenu = document.getElementById('nav-menu');
-
-    menuToggle.addEventListener('click', () => {
-        navMenu.classList.toggle('active');
-        menuToggle.setAttribute(
-            'aria-expanded',
-            navMenu.classList.contains('active')
-        );
-    });
-
-    // Close menu on outside click
-    document.addEventListener('click', (e) => {
-        if (!menuToggle.contains(e.target) && !navMenu.contains(e.target)) {
-            navMenu.classList.remove('active');
-            menuToggle.setAttribute('aria-expanded', 'false');
-        }
-    });
-</script>
-```
-
 ---
 
 ## Method 2: External JavaScript files
 
-For larger scripts or reusable functionality, place your JavaScript in separate files within the `public/` directory. Stati will copy these files to your build output automatically.
-
-### When to use external files
-
-- **Large scripts**: Any JavaScript over 20-30 lines
-- **Reusable functionality**: Code used across multiple pages
-- **Third-party integrations**: Analytics, chat widgets, etc.
-- **Module-based code**: When you want to use ES modules
-- **Separation of concerns**: Keep templates clean and focused
+Put larger or shared scripts in files in the `public/` directory. Stati copies them to `dist/` as they are.
 
 ### File structure
 
@@ -135,95 +81,12 @@ my-stati-site/
     └── index.md
 ```
 
-### Example: Theme switcher
+### Example: Load a script from `public/`
 
-Create `public/js/theme-switcher.js`:
-
-```javascript
-// Theme switcher with localStorage persistence
-(function() {
-    const STORAGE_KEY = 'stati-theme';
-    const DARK_CLASS = 'dark';
-
-    // Get saved theme or default to light
-    function getTheme() {
-        return localStorage.getItem(STORAGE_KEY) || 'light';
-    }
-
-    // Save theme preference
-    function saveTheme(theme) {
-        localStorage.setItem(STORAGE_KEY, theme);
-    }
-
-    // Apply theme to document
-    function applyTheme(theme) {
-        if (theme === 'dark') {
-            document.documentElement.classList.add(DARK_CLASS);
-        } else {
-            document.documentElement.classList.remove(DARK_CLASS);
-        }
-    }
-
-    // Toggle between themes
-    function toggleTheme() {
-        const currentTheme = getTheme();
-        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-        saveTheme(newTheme);
-        applyTheme(newTheme);
-        return newTheme;
-    }
-
-    // Initialize theme on page load
-    function init() {
-        const theme = getTheme();
-        applyTheme(theme);
-
-        // Set up toggle button
-        const toggleBtn = document.getElementById('theme-toggle');
-        if (toggleBtn) {
-            toggleBtn.addEventListener('click', () => {
-                const newTheme = toggleTheme();
-                toggleBtn.setAttribute('aria-label',
-                    `Switch to ${newTheme === 'light' ? 'dark' : 'light'} mode`
-                );
-            });
-        }
-    }
-
-    // Run on DOM ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
-    }
-})();
-```
-
-Include it in the template that writes the page's `<body>`:
+Save the script as `public/js/theme-switcher.js` and load it from the template that writes the page's `<body>`:
 
 ```eta
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title><%= stati.page.title %></title>
-    <link rel="stylesheet" href="<%= stati.url('/styles.css') %>">
-</head>
-<body>
-    <header>
-        <button id="theme-toggle" aria-label="Switch to dark mode">
-            Toggle theme
-        </button>
-    </header>
-
-    <main>
-        <%~ stati.content %>
-    </main>
-
-    <!-- Load external script -->
-    <script src="<%= stati.url('/js/theme-switcher.js') %>"></script>
-</body>
-</html>
+<script src="<%= stati.url('/js/theme-switcher.js') %>"></script>
 ```
 
 ### Example: Search functionality
@@ -235,7 +98,9 @@ This example searches the index that Stati builds when `search: { enabled: true 
 ```javascript
 // Client-side search using Fuse.js over Stati's search index
 class SiteSearch {
-    constructor(documents) {
+    constructor(documents, basePath) {
+        // Entry URLs are relative to the site root; basePath is '' for a site at the root
+        this.basePath = basePath;
         this.fuse = new Fuse(documents, {
             keys: ['title', 'heading', 'content'],
             threshold: 0.3,
@@ -260,7 +125,8 @@ class SiteSearch {
 
         for (const { item } of results) {
             const link = document.createElement('a');
-            link.href = item.anchor ? `${item.url}#${item.anchor}` : item.url;
+            const url = this.basePath + item.url;
+            link.href = item.anchor ? `${url}#${item.anchor}` : url;
             link.textContent = item.breadcrumb;
             const article = document.createElement('article');
             article.className = 'search-result';
@@ -283,7 +149,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const response = await fetch(meta.getAttribute('content'));
     const searchIndex = await response.json();
 
-    const search = new SiteSearch(searchIndex.documents);
+    const search = new SiteSearch(searchIndex.documents, searchIndex.basePath);
 
     // Handle search input
     let debounceTimer;
@@ -317,27 +183,11 @@ For substantial client-side code, let Stati compile TypeScript with [esbuild](ht
 
 ## Method 4: Build hooks (build-time JavaScript)
 
-Build hooks in your config run JavaScript during the build. They can modify content, fetch data, generate files, and more.
-
-### When to use build hooks
-
-- **Data fetching**: Load data from APIs at build time
-- **Content transformation**: Adjust page data and Markdown before rendering
-- **Integration with external services**: CMS, analytics, databases
-- **Build-time calculations**: Reading time, related posts, etc.
+Build hooks run JavaScript in Node.js during the build, for example to load data from an API or CMS, or to adjust page data before pages render.
 
 A `beforeAll` hook can push pages onto `ctx.pages`, and Stati renders them, but navigation and generated pages are worked out before it runs. For pages from data, [`collections.generate`](/core-concepts/collections#pages-from-data) is the better fit: it may be async, so it can fetch from a CMS or API, and the pages it returns are rendered by a `[param].md` template, with their data as `stati.generated.data`. Pages that each need their own Markdown body suit a script that writes the files before `stati build` (for example a `prebuild` npm script).
 
-### Hook types
-
-Stati provides four main hooks:
-
-1. **`beforeAll`** - Runs once after the pages are loaded, before any page renders
-2. **`beforeRender`** - Runs before rendering each page that is re-rendered (cached pages skip it)
-3. **`afterRender`** - Runs after rendering each re-rendered page
-4. **`afterAll`** - Runs once after the build completes
-
-> **Important:** a page whose front matter `beforeRender` changes is re-rendered on every build (see the [caching note](/api/hooks#beforerender)). Add data in `beforeAll` instead, which runs before the cache check, so a page rebuilds only when its data changes.
+The four hooks, `beforeAll`, `beforeRender`, `afterRender` and `afterAll`, and when each runs are described in [Build hooks](/api/hooks#hook-lifecycle). Per-page hooks run only for pages the cache can't serve, and a page whose front matter `beforeRender` changes renders again on every build, so add data in `beforeAll`, which runs before the cache check.
 
 ### Example: Fetch data at build time
 
@@ -383,71 +233,7 @@ Access the data in your templates:
 </div>
 ```
 
-### Example: Show the reading time
-
-Stati counts the words of every page and sets `wordCount` and `readingTime`, so no hook is needed. Set the reading speed in the config if the default of 230 words a minute does not suit your readers:
-
-```javascript
-export default defineConfig({
-    readingTime: { wordsPerMinute: 200 },
-});
-```
-
-Use in your template:
-
-```eta
-<% if (stati.page.readingTime) { %>
-    <p class="meta">
-        <%= stati.page.readingTime %> min read • <%= stati.page.wordCount %> words
-    </p>
-<% } %>
-```
-
-### Example: Generate related posts
-
-A post layout can read its folder's posts from [`stati.collection`](/core-concepts/collections) and pick related ones there. To compute them in config instead: `beforeRender` only receives the current page, so collect the posts in `beforeAll`, which sees every page:
-
-```javascript
-export default defineConfig({
-    hooks: {
-        beforeAll: async (ctx) => {
-            // Get all blog posts, newest first
-            const blogPosts = ctx.pages
-                .filter(p => p.url.startsWith('/blog/'))
-                .sort((a, b) => new Date(b.frontMatter.date) - new Date(a.frontMatter.date));
-
-            for (const page of blogPosts) {
-                // Find related posts by tags
-                const currentTags = page.frontMatter.tags || [];
-                page.frontMatter.relatedPosts = blogPosts
-                    .filter(post => post.url !== page.url)
-                    .filter(post => (post.frontMatter.tags || []).some(tag => currentTags.includes(tag)))
-                    .slice(0, 3)
-                    .map(post => ({ url: post.url, frontMatter: { title: post.frontMatter.title } }));
-            }
-        }
-    }
-});
-```
-
-Display related posts:
-
-```eta
-<% if (stati.page.relatedPosts && stati.page.relatedPosts.length > 0) { %>
-    <aside class="related-posts">
-        <h2>Related Posts</h2>
-        <ul>
-            <% stati.page.relatedPosts.forEach(post => { %>
-                <li>
-                    <a href="<%= stati.url(post.url) %>">
-                        <%= post.frontMatter.title %>
-                    </a>
-                </li>
-            <% }); %>
-        </ul>
-    </aside>
-<% } %>
-```
+Reading time and related posts need no hook: every page has `stati.page.readingTime` and `stati.page.wordCount` (see [Word count and reading time](/core-concepts/markdown#word-count-and-reading-time)), and a post layout picks related posts with [`stati.collection.related()`](/core-concepts/collections#related-pages).
 
 ### Example: Write an extra file after the build
 
@@ -505,22 +291,3 @@ console.log(`Wrote ${posts.length} posts from the CMS`);
 ```
 
 npm runs a `prebuild` script automatically before `npm run build`.
-
----
-
-## Comparison
-
-| Method | Best For | Performance | Complexity | Runs At |
-|--------|----------|-------------|------------|---------|
-| **Inline Scripts** | Small UI enhancements, page-specific logic | Good (inline) | Low | Runtime (browser) |
-| **External Files** | Simple reusable scripts, no bundling needed | Good (cached) | Low | Runtime (browser) |
-| **TypeScript** | Type-safe code, modern development, production apps | Excellent (bundled, minified) | Medium | Runtime (browser) |
-| **Build Hooks** | Data fetching, content generation, SEO | Excellent (build-time) | High | Build time (Node.js) |
-
-## Learn more
-
-- [TypeScript Configuration](/configuration/typescript)
-- [Build Hooks API](/api/hooks)
-- [Templates and layouts](/core-concepts/templates)
-- [Template Configuration](/configuration/templates)
-- [Eta Template Documentation](https://eta.js.org/), for the tag syntax: Stati templates combine with `stati.include()` and `stati.layout()`, not Eta's `include()` and `layout()`

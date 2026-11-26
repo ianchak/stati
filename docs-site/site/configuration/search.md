@@ -1,6 +1,6 @@
 ---
 title: 'Search'
-description: Learn how to configure and generate a search index for your Stati site
+description: Generate a JSON search index at build time and load it for client-side search.
 order: 7
 seo:
   title: 'Search index configuration'
@@ -25,7 +25,7 @@ export default defineConfig({
 });
 ```
 
-This generates a `search-index-[hash].json` file in your output directory containing all your pages except the home page (see `includeHomePage`).
+This writes a `search-index-[hash].json` file to your output directory. Drafts are left out, and so are the home page, the 404 page and generated pages unless you opt them in (see below).
 
 ## Configuration options
 
@@ -115,7 +115,7 @@ search: {
 ```
 
 - Only page-level entries (`level: 1`) carry `fields`, so the entries for a page's headings do not repeat them.
-- A page that does not set a field, or sets it to `null`, leaves it out; a page with none of the listed fields has no `fields` key. Without the `fields` option the index is the same as before.
+- A page that does not set a field, or sets it to `null`, leaves it out; a page with none of the listed fields has no `fields` key.
 - Values must be JSON-serializable. Dates (YAML reads `date: 2026-10-25` as one) are written as ISO strings. A value JSON cannot hold, such as a function, a circular structure or an invalid date, is left out with a warning that names the page and the field.
 - The values are read from each page's front matter after the `beforeAll` hook and before any page renders. Collections and navigation are not available there, so a value derived from them, such as a page's section, has to be front matter: write it in the page, or set it in `beforeAll`.
 - The fields are part of the index content, so changing a listed field changes the index file name, and every page renders again with the new name (see [Cache busting](#cache-busting)).
@@ -198,20 +198,7 @@ When `autoInjectMetaTag` is enabled (default), Stati automatically injects a met
 <meta name="stati:search-index" content="/search-index-a1b2c3d4.json">
 ```
 
-On a site [served from a subfolder](/advanced/deploying-to-a-subfolder), the path in the tag includes the base path (`/docs/search-index-a1b2c3d4.json`), while the index file is still written at the root of `dist/`. The `url` of each entry stays relative to the site root, so client code builds links with the index's `basePath`: `${index.basePath}${doc.url}`.
-
-This allows client-side JavaScript to discover the search index location:
-
-```javascript
-const metaTag = document.querySelector('meta[name="stati:search-index"]');
-const searchIndexPath = metaTag?.getAttribute('content');
-
-if (searchIndexPath) {
-  const response = await fetch(searchIndexPath);
-  const searchIndex = await response.json();
-  // Use searchIndex for client-side search
-}
-```
+On a site [served from a subfolder](/advanced/deploying-to-a-subfolder), the path in the tag includes the base path (`/docs/search-index-a1b2c3d4.json`), while the index file is still written at the root of `dist/`.
 
 ## Implementing client-side search
 

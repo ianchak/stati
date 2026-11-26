@@ -10,7 +10,7 @@ seo:
 
 ## Template context (`stati`)
 
-Every Eta template receives a `TemplateContext` object with site metadata, front matter, and rendered content:
+Every template Stati renders receives `stati`, typed `TemplateContext` (a type export of `@stati/core`):
 
 ```typescript
 interface TemplateContext {
@@ -50,7 +50,7 @@ interface TemplateContext {
   assets?: StatiAssets; // Bundle, stylesheet and search index paths
   propValue: (...args: PropValueArg[]) => string; // Class/attribute value builder
   generateSEO: (tags?: string[]) => string; // SEO tag generator
-  image: (src: string, options?: ImageOptions) => string; // Sized, lazy-loaded <img> or <picture>
+  image: (src: string, options?: StatiImageOptions) => string; // Sized, lazy-loaded <img> or <picture>
   ogImage?: GeneratedOgImage; // The page's generated Open Graph image, with images.og
   og?: { width: number; height: number }; // Card size, only while og.eta renders
   generator: { version: string }; // Stati core version
@@ -63,7 +63,7 @@ interface TemplateIncludeFunction {
 
 interface TemplateLayoutFunction {
   (name: string, props?: Record<string, unknown> | null): string; // Returns ''
-  has(name: string): boolean; // The same function as stati.include.has
+  has(name: string): boolean; // The same check as stati.include.has
 }
 
 interface TocEntry {
@@ -82,7 +82,7 @@ interface SiteConfig {
   description?: string;
 }
 
-interface ImageOptions {
+interface StatiImageOptions {
   alt?: string;
   sizes?: string;
   priority?: boolean;
@@ -125,7 +125,7 @@ interface GeneratedPageData {
 }
 ```
 
-`stati.collection` is the page's own collection on a folder's index page, the collection it belongs to on other pages, or the one its `collection` front matter names. `stati.pagination` and `stati.generated` are set on the pages they describe and `undefined` elsewhere. `stati.collection.related(url, options?)` lists the pages most related to one of its pages (see [Related pages](/core-concepts/collections#related-pages)). Reading `stati.collection` or `stati.nav`, or calling `related()`, makes the page depend on that data for [ISG](/core-concepts/isg#dependency-tracking). See [Collections and generated pages](/core-concepts/collections).
+`stati.collection` is the page's own collection on a folder's index page, the collection it belongs to on other pages, or the one its `collection` front matter names. `stati.pagination` and `stati.generated` are set on the pages they describe and `undefined` elsewhere. `stati.collection.related(url, options?)` lists the pages most related to one of its pages (see [Related pages](/core-concepts/collections#related-pages)). Reading `stati.collection`, `stati.nav` or `stati.page.navNode`, or calling `related()`, makes the page depend on that data for [ISG](/core-concepts/isg#dependency-tracking). See [Collections and generated pages](/core-concepts/collections).
 
 The root of `stati` holds only Stati's own API. Your functions live under [`stati.helpers`](#helpers), so a helper named `page` or `slugify` never replaces Stati's value.
 
@@ -179,7 +179,7 @@ Wraps the output of the calling template in the template `name`, once the callin
 
 ### `stati.include.has(name)` and `stati.layout.has(name)`
 
-Whether `name` resolves to a template for the current page, with the lookup the call would use. The two are the same function:
+Whether `name` resolves to a template for the current page, with the lookup the call would use. The two give the same answer:
 
 ```eta
 <% if (stati.include.has('partials/sidebar')) { %>
@@ -222,7 +222,7 @@ The suggested name keeps Eta's resolution: a name that does not start with `/`, 
 
 ### `stati.propValue(...args)`
 
-Builds property values from various inputs, similar to the `classnames` library. Accepts strings, arrays, and objects, filtering out falsy values. Especially useful for building dynamic HTML attributes that support space-separated tokens (like `class` or `data-analytics`).
+Joins its arguments into one space-separated value, like the `classnames` library: strings and numbers are kept, booleans and other falsy values are skipped, arrays keep their string and number items (nested arrays are skipped), and objects keep the keys whose values are truthy. Use it for attributes that hold space-separated tokens, such as `class` or `data-analytics`.
 
 **Signature:**
 
@@ -271,13 +271,13 @@ stati.propValue(...args: PropValueArg[]): string
 </div>
 ```
 
-`propValue()` also tracks Tailwind classes for inventory when Tailwind integration is enabled, ensuring dynamically-generated classes are included in the CSS build.
+When the build uses Tailwind, `propValue()` also records each class in the Tailwind class inventory, so classes built at render time end up in the CSS.
 
 See [Dynamic attribute values](/core-concepts/templates#dynamic-attribute-values) for the attribute convention.
 
 ### `stati.url(path)`
 
-Adds the base path of [`site.baseUrl`](/configuration/site-metadata#baseurl-required) to a path from the site root, so a link works when the site is [served from a subfolder](/advanced/deploying-to-a-subfolder). With `baseUrl: 'https://example.com/docs'`, `stati.url('/posts/hello')` is `/docs/posts/hello`. Without a path in `baseUrl` it returns the path as it is, so templates that use it build the same site as before.
+Adds the base path of [`site.baseUrl`](/configuration/site-metadata#baseurl-required) to a path from the site root, so a link works when the site is [served from a subfolder](/advanced/deploying-to-a-subfolder). With `baseUrl: 'https://example.com/docs'`, `stati.url('/posts/hello')` is `/docs/posts/hello`. Without a path in `baseUrl` it returns the path as it is.
 
 ```eta
 <a href="<%= stati.url('/') %>">Home</a>
@@ -332,11 +332,3 @@ Register your own functions under [`helpers`](/configuration/templates#helpers) 
 ```
 
 `helpers` is typed `Record<string, (...args: any[]) => unknown>`, so a helper declares whatever parameters it needs. Helpers reach every template Stati renders: layouts, the shells they name, included templates and the Open Graph template. A helper written with `function` or method syntax gets the helpers object as `this`.
-
-## Related documentation
-
-- [Templates and layouts](/core-concepts/templates) - Layouts, shells and includes, with examples
-- [TypeScript Types](/api/types) - Full type definitions for template context
-- [Build Hooks](/api/hooks) - Customize rendering with lifecycle hooks
-- [Template Configuration](/configuration/templates) - Configure helpers and template options
-- [Navigation API](/api/navigation) - Working with navigation data in templates

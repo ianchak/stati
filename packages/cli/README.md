@@ -1,8 +1,6 @@
 # @stati/cli
 
-**The command-line interface for Stati - a minimal, TypeScript-first static site generator that's fast to learn and even faster to build with.**
-
-Run your development server, build for production, and manage your site's cache with simple commands.
+**The command-line interface for [Stati](https://stati.build), a TypeScript-first static site generator.**
 
 ---
 
@@ -59,228 +57,20 @@ This works for a folder of Markdown and templates without a config file. A `stat
 
 ## Commands
 
-### `stati dev` - Development Server
-
-Start a development server with live reload and instant feedback:
-
-```bash
-npm run dev
-# or
-stati dev [options]
-```
-
-**What it does:**
-
-- Starts a local development server (default: `http://localhost:3000`)
-- Watches your files for changes and rebuilds automatically
-- Compiles TypeScript with source maps (when `typescript.enabled` is true)
-- Live reloads your browser when content or templates change
-- Shows build errors in an overlay for quick debugging
-
-**Options:**
-
-- `--port <number>` - Server port (default: 3000)
-- `--host <string>` - Host address (default: localhost)
-- `--open` - Open browser automatically
-- `--tailwind-input <path>` - Tailwind CSS input file; starts a Tailwind watcher alongside the dev server
-- `--tailwind-output <path>` - Output file for the compiled Tailwind CSS; pages link it when it is in the output directory
-- `--tailwind-verbose` - Show all Tailwind output (default: errors only)
-
-**Examples:**
+| Command | What it does |
+| --- | --- |
+| `stati dev` | Development server with live reload and incremental rebuilds, at `http://localhost:3000` by default |
+| `stati build` | Production build into `dist/` |
+| `stati preview` | Serves the built `dist/`, at `http://localhost:4000` by default |
+| `stati invalidate [query]` | Marks cache entries to render again on the next build: by `tag:`, `path:`, `glob:` or `age:`, or every entry |
 
 ```bash
-# Start on default port
-npm run dev
-
-# Start on custom port and open browser
 stati dev --port 8080 --open
-
-# Run the Tailwind watcher in the same process
-stati dev --tailwind-input src/styles.css --tailwind-output dist/styles.css
-```
-
----
-
-### `stati build` - Production Build
-
-Build your site for production deployment:
-
-```bash
-npm run build
-# or
-stati build [options]
-```
-
-**What it does:**
-
-- Generates static HTML files from your content and templates
-- Runs in production mode: minified, hashed TypeScript bundles
-- Names stylesheets after their content, such as `/_assets/styles-[hash].css`, and points the pages' `<link>` tags at them: the stylesheets in `public/` that pages link, and, with the Tailwind flags, the stylesheet Tailwind CSS builds after the last page renders
-- Uses smart caching to skip unchanged pages (ISG)
-- Creates sitemap, robots.txt and RSS feeds (if configured)
-- Reports build statistics, and with `--metrics` writes performance metrics
-
-**Options:**
-
-- `--force` - Re-render every page, ignoring the ISG cache (the cache is kept and updated)
-- `--clean` - Delete the output directory and the `.stati/` cache before building
-- `--include-drafts` - Include draft pages in the build
-- `--metrics` - Collect build metrics (also enabled by `STATI_METRICS=1`)
-- `--metrics-file <name>` - Metrics file name inside `.stati/metrics/`
-- `--metrics-detailed` - Include per-page timings in the metrics
-- `--metrics-html` - Write an HTML report next to the metrics JSON
-- `--tailwind-input <path>` - Tailwind CSS input file; give it with `--tailwind-output`
-- `--tailwind-output <path>` - The stylesheet's file in the output directory, such as `dist/styles.css`; production writes `dist/_assets/styles-[hash].css` instead unless `css.hash` is `false`
-
-**Examples:**
-
-```bash
-# Standard production build
-npm run build
-
-# Clean build (removes dist/ and the cache first)
 stati build --clean
-
-# Force rebuild without clearing cache
-stati build --force
-
-# Include draft pages
-stati build --include-drafts
-
-# Build the Tailwind CSS stylesheet with the site
-stati build --tailwind-input src/styles.css --tailwind-output dist/styles.css
+stati invalidate "tag:blog age:1week"
 ```
 
----
-
-### `stati preview` - Preview Production Build
-
-Preview your built site locally before deployment:
-
-```bash
-npm run preview
-# or
-stati preview [options]
-```
-
-**What it does:**
-
-- Serves static files from your `dist/` directory
-- Tests your production build locally
-- No live reload or rebuilding (serves files as-is)
-- Perfect for final testing before deployment
-
-**Options:**
-
-- `--port <number>` - Server port (default: 4000)
-- `--host <string>` - Host address (default: localhost)
-- `--open` - Open browser automatically
-
-**Examples:**
-
-```bash
-# Preview on default port
-npm run preview
-
-# Preview on custom port and open browser
-stati preview --port 8000 --open
-```
-
----
-
-### `stati invalidate` - Cache Management
-
-Selectively clear your site's cache to force rebuilds:
-
-```bash
-stati invalidate [query]
-```
-
-**What it does:**
-
-- Removes specific pages from the ISG cache
-- Forces them to rebuild on next build
-- Supports multiple query types for flexible targeting
-- Useful for updating related content together
-
-**Query Formats:**
-
-- `tag:value` - Invalidate pages with specific tag
-- `path:value` - Invalidate cache entries whose key starts with this prefix (keys are output paths such as `/blog/post.html`)
-- `glob:pattern` - Invalidate by a glob pattern matched against the whole key
-- `age:duration` - Invalidate pages rendered within the specified period
-- No query - Invalidate every entry
-
-**Examples:**
-
-```bash
-# Invalidate all blog posts
-stati invalidate "tag:blog"
-
-# Invalidate specific path
-stati invalidate "path:/posts"
-
-# Invalidate using glob pattern
-stati invalidate "glob:/blog/**"
-
-# Invalidate pages rendered within the last 3 months
-stati invalidate "age:3months"
-
-# Invalidate pages rendered within the last week
-stati invalidate "age:1week"
-
-# Multiple criteria (OR logic)
-stati invalidate "tag:blog age:1month"
-
-# Invalidate every entry
-stati invalidate
-```
-
-**Age Formats:**
-
-- `age:30days` or `age:30day` - Rendered within the last 30 days
-- `age:2weeks` or `age:2week` - Rendered within the last 2 weeks
-- `age:6months` or `age:6month` - Rendered within the last 6 months
-- `age:1year` or `age:1years` - Rendered within the last year
-
-**Note:** Age calculations use exact calendar arithmetic. Months and years account for varying month lengths and leap years.
-
----
-
-## Common Workflows
-
-### Editing Your Site
-
-- Edit `site/index.md` for your homepage content
-- Modify the `.eta` templates in `site/` for your HTML structure
-- Update your stylesheet (`public/styles.css`, or `src/` with Sass or Tailwind)
-- Configure `stati.config.ts` (or `stati.config.js`) for site settings
-
-### Deployment Workflow
-
-```bash
-# Clean build for production
-npm run build -- --clean
-
-# Test production build locally
-npm run preview
-
-# Deploy dist/ folder to your hosting provider
-# (Netlify, Vercel, GitHub Pages, etc.)
-```
-
-### Cache Management Workflow
-
-```bash
-# After changing data Stati can't track, such as a file a helper reads
-stati invalidate "tag:blog"
-
-# Rebuild affected pages
-npm run build
-
-# Or do a clean build
-npm run build -- --clean
-```
+Run `stati <command> --help` for its options. The [CLI reference](https://stati.build/cli/commands/) documents every flag, query and exit code.
 
 ---
 

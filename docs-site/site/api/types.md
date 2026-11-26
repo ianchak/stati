@@ -1,6 +1,6 @@
 ---
 title: 'Types'
-description: 'Reference for TypeScript type definitions in Stati.'
+description: 'The TypeScript types for stati.config.ts, hooks and build scripts, and which @stati/core entry point exports each one.'
 order: 5
 seo:
   title: 'TypeScript types'
@@ -135,21 +135,6 @@ See [Collections and generated pages](/core-concepts/collections).
 
 ### Site configuration
 
-Import `SiteConfig` from `@stati/core` or `@stati/core/types` to type the `site`
-metadata separately from the full `StatiConfig`:
-
-```typescript
-import { defineConfig } from '@stati/core';
-import type { SiteConfig } from '@stati/core';
-
-const site: SiteConfig = {
-  title: 'My Site',
-  baseUrl: 'https://example.com',
-};
-
-export default defineConfig({ site });
-```
-
 ```typescript
 interface SiteConfig {
   /** The site's title, used in templates and metadata (required) */
@@ -166,55 +151,9 @@ interface SiteConfig {
 }
 ```
 
-### SEO configuration
+### SEO, sitemap and robots.txt configuration
 
-```typescript
-interface SEOConfig {
-  /** Default author for all pages; a page's own seo.author replaces it */
-  defaultAuthor?: AuthorConfig;
-
-  /** Site-wide Twitter Card values */
-  twitter?: SEOTwitterConfig;
-
-  /** Pages that get Open Graph article metadata, chosen by URL */
-  articles?: SEOArticlesConfig;
-
-  /** Automatically inject SEO tags into <head> if not present (default: true) */
-  autoInject?: boolean;
-
-  /** Enable debug logging for SEO generation (default: false) */
-  debug?: boolean;
-}
-
-interface SEOTwitterConfig {
-  /** The site's Twitter/X handle, with or without '@', printed as twitter:site */
-  site?: string;
-}
-
-interface SEOArticlesConfig {
-  /** Glob patterns matched against the whole page URL, as in bundle include */
-  include: string[];
-
-  /** Glob patterns for page URLs that are never articles; win over include */
-  exclude?: string[];
-}
-
-interface AuthorConfig {
-  /** Author's full name */
-  name: string;
-
-  /** Author's email address; not printed in any tag */
-  email?: string;
-
-  /** Author's website or profile URL, printed as article:author on article pages */
-  url?: string;
-
-  /** Author's Twitter/X handle, with or without '@', printed as twitter:creator */
-  twitter?: string;
-}
-```
-
-See [site-wide SEO defaults](/configuration/seo#site-wide-defaults) for what these values print.
+`SEOConfig`, `SEOTwitterConfig`, `SEOArticlesConfig`, `AuthorConfig`, `SitemapConfig`, `NewsSitemapConfig` and `RobotsTxtConfig` are listed with the other SEO types under [SEO API: configuration interfaces](/api/seo#configuration-interfaces).
 
 ### Build hooks
 
@@ -250,7 +189,36 @@ interface PageContext {
 }
 ```
 
-### Build statistics
+### Build options and result
+
+`build(options?)` takes a `BuildOptions` object, the options the `stati build` flags set:
+
+```typescript
+interface BuildOptions {
+  /** Render every page, whatever the ISG cache holds (--force) */
+  force?: boolean;
+
+  /** Delete the output directory and the .stati cache before building (--clean) */
+  clean?: boolean;
+
+  /** A config file path; Stati loads the stati.config.* file in its folder */
+  configPath?: string;
+
+  /** Build pages with draft: true (--include-drafts) */
+  includeDrafts?: boolean;
+
+  /** Receives the build's output; the console by default */
+  logger?: Logger;
+
+  /** Collect build metrics into BuildResult.buildMetrics (--metrics, --metrics-detailed) */
+  metrics?: { enabled?: boolean; detailed?: boolean };
+
+  /** Build a stylesheet with Tailwind CSS (--tailwind-input, --tailwind-output) */
+  tailwind?: { input: string; output: string };
+}
+```
+
+It returns a `BuildResult`: the statistics below, plus `buildMetrics` when `metrics.enabled` is true.
 
 ```typescript
 interface BuildStats {
@@ -273,8 +241,6 @@ interface BuildStats {
   cacheMisses?: number;
 }
 ```
-
-`build()` returns a `BuildResult`: these statistics plus `buildMetrics` when metrics are enabled.
 
 ## Content types
 
@@ -316,7 +282,7 @@ interface PageModel {
 }
 ```
 
-Generated pages and the pages after the first of a listing share the template's or the first page's `sourcePath`, `content` and front matter, with `{param}` placeholders filled in. `PaginationData` and `GeneratedPageData` are described under [Template API](/api/templates#template-context-stati).
+Generated pages and the pages after the first of a listing share the template's or the first page's `sourcePath`, `content` and front matter; in generated pages' front matter, `{param}` placeholders are filled in. `PaginationData` and `GeneratedPageData` are described under [Template API](/api/templates#template-context-stati).
 
 ### FrontMatter interface
 
@@ -386,165 +352,9 @@ interface FrontMatter {
 }
 ```
 
-### TocEntry interface
-
-Table of contents entry extracted from page headings (available in template context via `stati.page.toc`):
-
-```typescript
-interface TocEntry {
-  /** Anchor ID for the heading (used in href="#id") */
-  id: string;
-
-  /** Plain text content of the heading */
-  text: string;
-
-  /** Heading level (2-6) */
-  level: number;
-}
-```
-
 ## Template types
 
-### TemplateContext interface
-
-The context object passed to Eta templates during rendering:
-
-```typescript
-interface TemplateContext {
-  /** Site configuration (title, baseUrl, defaultLocale) */
-  site: SiteConfig;
-
-  /** Current page data */
-  page: {
-    /** URL path of the page (same value as url) */
-    path: string;
-    /** URL for the page */
-    url: string;
-    /** Rendered HTML content */
-    content: string;
-    /** The page's h2 to h6 headings; empty when there are none or markdown.toc is false */
-    toc: TocEntry[];
-    /** Current page's navigation node */
-    navNode?: NavNode;
-    /** Words in the Markdown body */
-    wordCount?: number;
-    /** Whole minutes to read the page, at least 1 */
-    readingTime?: number;
-    /** Front matter fields spread into page object */
-    [key: string]: unknown;
-  };
-
-  /** Rendered markdown content (same as page.content) */
-  content: string;
-
-  /**
-   * The HTML this template wraps: the wrapped output in a template named by stati.layout(),
-   * the body argument (or undefined) in one rendered by stati.include(). Absent in the
-   * page's own layout and in the Open Graph template.
-   */
-  body?: string;
-
-  /** Props of the stati.include() or stati.layout() call that rendered this template */
-  props: Record<string, unknown> | undefined;
-
-  /** Renders another template here and returns its HTML */
-  include: TemplateIncludeFunction;
-
-  /** Wraps this template's output in another template */
-  layout: TemplateLayoutFunction;
-
-  /** The functions registered in the config's helpers */
-  helpers: StatiHelpers;
-
-  /** Navigation helpers and tree */
-  nav: {
-    /** The full navigation tree */
-    tree: NavNode[];
-    /** Gets the full navigation tree */
-    getTree: () => NavNode[];
-    /** Finds a navigation node by path or URL */
-    findNode: (path: string) => NavNode | undefined;
-    /** Gets the children of a navigation node */
-    getChildren: (path: string) => NavNode[];
-    /** Gets the parent of a navigation node */
-    getParent: (path?: string) => NavNode | undefined;
-    /** Gets the siblings of a navigation node */
-    getSiblings: (path?: string, includeSelf?: boolean) => NavNode[];
-    /** Gets a subtree starting from a specific path */
-    getSubtree: (path: string) => NavNode[];
-    /** Gets the breadcrumb trail for a path */
-    getBreadcrumbs: (path?: string) => NavNode[];
-    /** Gets the current page's navigation node */
-    getCurrentNode: () => NavNode | undefined;
-  };
-
-  /** The page's collection: its own, the one it belongs to, or the one `collection` names */
-  collection?: CollectionData;
-
-  /** This page's part of a listing with `paginate` */
-  pagination?: PaginationData;
-
-  /** Key and items of a page created from a [param].md template */
-  generated?: GeneratedPageData;
-
-  /** Bundle, stylesheet and search index paths (passed on every render) */
-  assets?: StatiAssets;
-
-  /** The Stati version that rendered the page */
-  generator: { version: string };
-
-  /** The URL slug Stati gives generated page keys */
-  slugify: (text: string) => string;
-
-  /** Adds the base path of site.baseUrl to a site path; absolute, #hash, ?query and prefixed values are unchanged */
-  url: (path: string) => string;
-
-  /** Builds space-separated attribute values, like classnames */
-  propValue: (...args: PropValueArg[]) => string;
-
-  /** Renders a sized, lazy-loaded image, responsive with images.responsive */
-  image: (
-    src: string,
-    options?: { alt?: string; sizes?: string; priority?: boolean; class?: string; title?: string },
-  ) => string;
-
-  /** Renders SEO tags for manual placement */
-  generateSEO: (tags?: string[]) => string;
-
-  /** The card's width and height, only while an og.eta card template renders */
-  og?: { width: number; height: number };
-
-  /** The page's generated Open Graph image, when images.og made one */
-  ogImage?: GeneratedOgImage;
-}
-
-interface TemplateIncludeFunction {
-  (name: string, props?: Record<string, unknown> | null, body?: string | null): string;
-  /** Whether name resolves to a template for this page */
-  has(name: string): boolean;
-}
-
-interface TemplateLayoutFunction {
-  /** Returns an empty string, so the call can be printed */
-  (name: string, props?: Record<string, unknown> | null): string;
-  /** The same function as stati.include.has */
-  has(name: string): boolean;
-}
-
-type StatiHelpers = Record<string, (...args: any[]) => unknown>;
-
-/** Strings and numbers are kept, booleans and other falsy values skipped; arrays keep their string and number items, objects their truthy keys */
-type PropValueArg =
-  | string
-  | number
-  | boolean
-  | null
-  | undefined
-  | Record<string, boolean | string | number | null | undefined>
-  | PropValueArg[];
-```
-
-The root of the context holds only Stati's API. Your functions are under `helpers`, so they never replace a value of Stati's. See [Template API](/api/templates) for how to use the context.
+`TemplateContext` is the `stati` object every template receives, with `TemplateIncludeFunction` (`stati.include`), `TemplateLayoutFunction` (`stati.layout`), `StatiHelpers` (`stati.helpers`) and the types of its members (`TocEntry`, `StatiAssets`, `PaginationData`, `GeneratedPageData`, `GeneratedOgImage`, `PropValueArg`). They are defined under [Template API](/api/templates#template-context-stati). Templates are not type-checked; use these types to type helpers and build scripts.
 
 ## ISG types
 
@@ -575,66 +385,11 @@ interface AgingRule {
   /** Cache time-to-live in seconds for content matching this age */
   ttlSeconds: number;
 }
-
-interface CacheEntry {
-  /** Output path of the rendered page */
-  readonly path: string;
-
-  /** Hash of page content, template dependencies and rendering asset inputs */
-  readonly inputsHash: string;
-
-  /** Every template file the last render used: the layout, the shells it names, the templates it included and the Open Graph template, as absolute paths, the layout first */
-  readonly deps: readonly string[];
-
-  /** Template names the last render looked up and the file each resolved to, including names that matched none; the page rebuilds when one would now resolve to another file */
-  templateLookups?: readonly TemplateLookup[];
-
-  /** Whether deps and templateLookups were recorded while the page rendered */
-  templatesRecorded?: boolean;
-
-  /** Tags for invalidation and organization */
-  readonly tags: readonly string[];
-
-  /** ISO date when content was originally published */
-  publishedAt?: string;
-
-  /** ISO date when page was last rendered */
-  readonly renderedAt: string;
-
-  /** Effective TTL for this page in seconds */
-  readonly ttlSeconds: number;
-
-  /** Maximum age cap for this page in days */
-  maxAgeCapDays?: number;
-
-  /** Files found while rendering, such as the images the page shows; their content is part of inputsHash */
-  assetDeps?: readonly string[];
-
-  /** Generated image files the page references, relative to the output directory */
-  images?: readonly string[];
-
-  /** Whether the last render read stati.collection; its summary is then part of inputsHash */
-  readsCollection?: boolean;
-
-  /** Whether the last render read stati.nav or stati.page.navNode */
-  readsNav?: boolean;
-}
-
-interface TemplateLookup {
-  /** The name as looked up, such as 'partials/header'; for /, ./ and ../ names, the file's path from the source directory with a leading / */
-  readonly name: string;
-
-  /** The folder the name was looked up from, relative to the source directory ('' for the source directory); absent for paths */
-  readonly from?: string;
-
-  /** The template file the name resolved to, relative to the source directory, or null when none matched */
-  readonly file: string | null;
-}
 ```
 
-An entry without `templatesRecorded`, `readsCollection` or `readsNav` was written before Stati recorded them; its page rebuilds once.
+`CacheManifest`, `CacheEntry` and `TemplateLookup` (from `@stati/core/types`) describe `.stati/manifest.json`; see [Cache manifest](/core-concepts/isg#cache-manifest).
 
-### TypeScript configuration
+## TypeScript and CSS types
 
 ```typescript
 interface TypeScriptConfig {
@@ -692,9 +447,9 @@ interface BundleConfig {
   bundleName: string;
 
   /**
-   * Glob patterns for pages that should include this bundle.
-   * Matches against the page URL (e.g., '/docs/api/hooks', or '/' for the home page).
-   * If omitted, bundle is included on ALL pages (global bundle).
+   * Glob patterns for pages that should include this bundle, matched against the whole page URL
+   * (e.g., '/docs/api/hooks', or '/' for the home page): '/docs/**' does not match '/docs'.
+   * Supports *, **, ? and [abc], not {a,b}. If omitted, the bundle is included on every page.
    */
   include?: string[];
 
@@ -705,7 +460,7 @@ interface BundleConfig {
 
 > **Note:** Development builds always write source maps for TypeScript bundles; production builds never do.
 
-### Image configuration
+## Image types
 
 Types for the `images` block. `responsive` and `og` need the `@stati/images` package. See [Images](/configuration/images) for defaults and behavior.
 
@@ -759,71 +514,7 @@ interface OgImageFontConfig {
 }
 ```
 
-`GeneratedOgImage` is the generated card a template reads as `stati.ogImage`:
-
-```typescript
-interface GeneratedOgImage {
-  /** Absolute URL */
-  url: string;
-  /** Root-relative path */
-  path: string;
-  width: number;
-  height: number;
-  /** Alternative text, the page title */
-  alt?: string;
-}
-```
-
-`ImageProvider`, `VariantRequest`, `VariantOutput`, `OgImageRequest`, `OgFont` and `OgDefaults` describe the contract between `@stati/core` and `@stati/images`. Sites don't need them.
-
-### StatiAssets interface
-
-Available in every template as `stati.assets`. Bundle script tags and the stylesheet link are injected into your HTML automatically (unless `typescript.autoInject` or `css.autoInject` is `false`), so you only need these paths for custom markup.
-
-```typescript
-interface StatiAssets {
-  /**
-   * Array of all bundle paths matched for this page.
-   * Paths are in config order: ['/_assets/core-abc.js', '/_assets/docs-def.js']
-   * Always an array, empty [] if no TypeScript enabled or no bundles match.
-   * Relative to the site root; print them with stati.url().
-   */
-  bundlePaths: string[];
-
-  /**
-   * Paths of the stylesheet Stati builds with Tailwind CSS (--tailwind-input, --tailwind-output):
-   * ['/styles.css'] in development, ['/_assets/styles-A1B2C3D4.css'] in production.
-   * Always an array, empty [] without the Tailwind flags. Print each path through stati.url()
-   * without changing it: a production build writes the final name into the page after rendering.
-   */
-  stylesheetPaths: string[];
-
-  /**
-   * Path to the search index (e.g., '/search-index-a1b2c3d4.json') when search is enabled;
-   * relative to the site root, like the others
-   */
-  searchIndexPath?: string;
-}
-```
-
-For advanced use cases like preloading, access via `stati.assets`:
-
-```eta
-<% if (stati.assets?.bundlePaths?.length) { %>
-  <% for (const path of stati.assets.bundlePaths) { %>
-  <link rel="modulepreload" href="<%= stati.url(path) %>">
-  <% } %>
-<% } %>
-```
-
-## Utility types
-
-### Configuration helper
-
-```typescript
-/** Helper function for type-safe configuration */
-declare function defineConfig(config: StatiConfig): StatiConfig;
-```
+`GeneratedOgImage` (`stati.ogImage`) is defined under [Template API](/api/templates#template-context-stati). `ImageProvider`, `VariantRequest`, `VariantOutput`, `OgImageRequest`, `OgFont` and `OgDefaults` describe the contract between `@stati/core` and `@stati/images`. Sites don't need them.
 
 ## Module exports
 
@@ -981,7 +672,7 @@ import type {
 
 `SEOTagType` is exported from `@stati/core` as a type only. To use its values (such as `SEOTagType.Title`), import it from `@stati/core/types`.
 
-**`@stati/core/types`** exports type declarations only (plus the `SEOTagType` enum), including the template and cache types that the main entry point leaves out: `StatiAssets`, `TocEntry`, `CacheEntry`, `CacheManifest`, `TemplateLookup`, `RobotsTxtConfig`, `TypeScriptConfig`, `SearchConfig`, `SearchDocument`, `SearchIndex`, `SearchIndexMetadata` and `Logger`.
+**`@stati/core/types`** exports type declarations only (plus the `SEOTagType` enum), including these the main entry point leaves out: `StatiAssets`, `TocEntry`, `PropValueArg`, `NavigationHelpers` (`stati.nav`), `StatiImageOptions` (the options of `stati.image()`), `SitemapMetadata` (front matter `sitemap`), `CacheEntry`, `CacheManifest`, `TemplateLookup`, `RobotsTxtConfig`, `TypeScriptConfig`, `SearchConfig`, `SearchDocument`, `SearchIndex`, `SearchIndexMetadata` and `Logger`.
 
 ```typescript
 import type { CacheManifest, Logger, TocEntry } from '@stati/core/types';

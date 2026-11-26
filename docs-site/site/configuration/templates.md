@@ -10,32 +10,17 @@ seo:
 
 Stati uses the [Eta template engine](https://eta.js.org/) to process templates and layouts. Its settings are fixed, but you can register your own helper functions for templates to call.
 
-## Configuration options
-
-The only template option is `helpers`, at the top level of the config:
-
-```javascript
-// stati.config.js
-import { defineConfig } from '@stati/core';
-
-export default defineConfig({
-  // Functions templates call as stati.helpers.name()
-  helpers: {
-    uppercase: (str) => String(str).toUpperCase(),
-    lowercase: (str) => String(str).toLowerCase(),
-  },
-});
-```
-
 ## Helpers
 
-Helpers are functions your templates call. They're useful for formatting dates, manipulating strings, or performing calculations that several templates share.
+The only template option is `helpers`, at the top level of the config: functions your templates call as `stati.helpers.name()`, for formatting that several templates share.
 
 ### Defining helpers
 
 ```javascript
 export default defineConfig({
   helpers: {
+    uppercase: (str) => String(str).toUpperCase(),
+
     // Date formatting
     formatDate: (date) => {
       return new Date(date).toLocaleDateString('en-US', {
@@ -49,32 +34,6 @@ export default defineConfig({
     truncate: (text, length = 100) => {
       if (!text || text.length <= length) return text;
       return text.substring(0, length) + '...';
-    },
-
-    // Number formatting
-    formatNumber: (num) => {
-      return Number(num).toLocaleString('en-US');
-    },
-
-    // Relative time
-    timeAgo: (date) => {
-      const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
-      const intervals = {
-        year: 31536000,
-        month: 2592000,
-        week: 604800,
-        day: 86400,
-        hour: 3600,
-        minute: 60,
-      };
-
-      for (const [unit, secondsInUnit] of Object.entries(intervals)) {
-        const interval = Math.floor(seconds / secondsInUnit);
-        if (interval >= 1) {
-          return `${interval} ${unit}${interval !== 1 ? 's' : ''} ago`;
-        }
-      }
-      return 'just now';
     },
   },
 });
@@ -96,8 +55,6 @@ Call helpers from any template as `stati.helpers.name()`:
 <p><%= stati.helpers.truncate(stati.page.description, 150) %></p>
 <!-- Result: First 150 characters... -->
 
-<span><%= stati.helpers.timeAgo(stati.page.publishedAt) %></span>
-<!-- Result: 3 days ago -->
 ```
 
 Helpers reach every template Stati renders: layouts, the shells they name with `stati.layout()`, templates included with `stati.include()` and the Open Graph template.
@@ -146,17 +103,3 @@ export default defineConfig({
 ```
 
 These helpers return HTML, so print them raw: `<%~ stati.helpers.highlight(snippet, 'ts') %>`. Only pass trusted content.
-
-## TypeScript bundles
-
-`stati.assets.bundlePaths` lists the bundles matched for the page, in config order. Unless `typescript.autoInject` is `false`, Stati injects their scripts before `</body>`. The paths are relative to the site root, so pass them through [`stati.url()`](/api/templates#stati-url-path) when you print them. See [TypeScript](/configuration/typescript#accessing-bundle-info-in-templates).
-
-## Stylesheet access
-
-With `--tailwind-input` and `--tailwind-output`, `stati.assets.stylesheetPaths` holds the path of the stylesheet Stati builds with Tailwind, and Stati links it on every page. See [Linking it yourself](/configuration/css#linking-it-yourself) for placing the link with `css.autoInject: false`.
-
-## Next steps
-
-- See [Templates and layouts](/core-concepts/templates) for template usage
-- Learn about [built-in functions](/api/templates#built-in-functions) like `stati.propValue()`
-- Explore [SEO configuration](/configuration/seo) for meta tag generation

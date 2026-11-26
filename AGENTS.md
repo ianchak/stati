@@ -247,7 +247,7 @@ The official Stati documentation lives in `docs-site/site/`. Read these files di
 - `docs-site/site/advanced/metrics.md` - Build performance measurement and reporting
 - `docs-site/site/advanced/troubleshooting.md` - Common issues and solutions
 - `docs-site/site/advanced/contributing.md` - Development setup and contribution guide
-- `docs-site/site/advanced/using-javascript.md` - JS config files instead of TypeScript
+- `docs-site/site/advanced/using-javascript.md` - Inline scripts, `public/` files, TypeScript bundles and build hooks
 - `docs-site/site/advanced/seo-usage-scenarios.md` - Real-world SEO patterns
 
 ### Other Resources

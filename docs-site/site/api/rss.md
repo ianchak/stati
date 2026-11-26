@@ -1,7 +1,7 @@
 ---
 title: 'RSS'
 description: API reference for RSS feed generation in Stati
-order: 6
+order: 7
 seo:
   title: 'RSS API'
 ---
@@ -93,7 +93,7 @@ interface RSSFeedConfig {
 - `filter` - Custom filter function for fine-grained control
 - `maxItems` - Maximum number of items to include in feed
 
-Both pattern lists are matched against each page's absolute source file path (`PageModel.sourcePath`), so folder patterns need a leading `**/`. A pattern such as `'blog/**'` matches nothing.
+Both pattern lists are matched against each page's absolute source file path (`PageModel.sourcePath`), so start folder patterns with `**/`; `'blog/**'` matches nothing. Pages from a `[param].md` template, later pages of a paginated listing and the 404 page are never in a feed. See [Filter by directory](/configuration/rss#filter-by-directory).
 
 **Sorting:**
 
@@ -162,7 +162,7 @@ interface RSSItemMapping {
 
 - `guid` - Custom GUID generator (default: the item's link). The `<guid>` is a permalink (`isPermaLink="true"`) only when it is an absolute `http` or `https` URL. If the function throws, the item has no `<guid>`
 
-- `includeContent` - Whether to put the page body in `<description>` (default: `false`). The body is the page's Markdown source (`PageModel.content`), wrapped in CDATA; it is not rendered to HTML. A `]]>` in the body is split across two CDATA sections, so the text reads back unchanged. A page whose body is empty or only whitespace gets its `description` instead.
+- `includeContent` - Put the page's Markdown source (`PageModel.content`, not rendered HTML) in `<description>` as CDATA (default: `false`). A page whose body is empty or only whitespace gets its `description` instead. See [Include full content](/configuration/rss#include-full-content).
 
 ---
 
@@ -387,7 +387,7 @@ function generateRSSFeeds(
 - `config` - Stati configuration (with RSS config)
 - `logger` - Optional logger instance for warnings and errors (default: the console)
 
-**Returns:** Array of RSS generation results. A feed that fails is logged with `logger.error` and left out of the array; the other feeds are still generated.
+**Returns:** Array of RSS generation results. A feed that fails is logged with `logger.error` and left out of the array; the other feeds are still generated. The array is empty unless `config.rss.enabled` is `true` and `config.rss.feeds` is set. It does not run `validateRSSConfig()`; the build runs that first and writes no feed when it reports an error.
 
 **Example:**
 
@@ -400,9 +400,3 @@ for (const result of results) {
   console.log(`Generated ${result.filename} (${result.itemCount} items)`);
 }
 ```
-
-## See also
-
-- [RSS Configuration Guide](/configuration/rss)
-- [SEO API](/api/seo)
-- [Build Configuration](/configuration/file)

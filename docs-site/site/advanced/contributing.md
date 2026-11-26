@@ -1,6 +1,6 @@
 ---
 title: 'Contributing'
-description: 'Learn how to contribute to Stati development, report issues, and help improve the project.'
+description: 'Set up the Stati monorepo, run its tests and benchmarks, and follow its commit and release conventions.'
 order: 3
 seo:
   title: 'Contributing to Stati'
@@ -196,151 +196,12 @@ Every type except `feat` produces a patch release, and `!` produces a major rele
 
 ## Development guidelines
 
-### TypeScript standards
-
-```typescript
-// Use strict TypeScript and prefer interfaces for object shapes
-export interface BuildResult extends BuildStats {
-  /** Build metrics (only present when metrics are enabled) */
-  buildMetrics?: BuildMetrics;
-}
-
-// Use JSDoc for public APIs
-/**
- * Builds the site in the current working directory.
- * @param options - Build options
- * @returns Build statistics, plus metrics when they are enabled
- */
-export async function build(options: BuildOptions = {}): Promise<BuildResult> {
-  // Implementation
-}
-```
-
-### Error handling
-
-Stati uses domain-specific error classes rather than a generic error class. Each error type captures relevant context for debugging:
-
-```typescript
-// Domain-specific errors with context
-export class ISGConfigurationError extends Error {
-  constructor(
-    public readonly code: ISGValidationError,
-    public readonly field: string,
-    public readonly value: unknown,
-    message: string,
-  ) {
-    super(message);
-    this.name = 'ISGConfigurationError';
-  }
-}
-
-// Error that carries the fixes the dev server's error overlay shows
-export class TemplateUsageError extends Error {
-  /** Fixes to show in the error overlay */
-  public readonly suggestions: string[];
-
-  constructor(message: string, suggestions: string[] = []) {
-    super(message);
-    this.name = 'TemplateUsageError';
-    this.suggestions = suggestions;
-  }
-}
-
-// Self-documenting error messages
-export class DuplicateBundleNameError extends Error {
-  constructor(duplicates: string[]) {
-    super(
-      `Duplicate bundleName(s) found in configuration: ${duplicates.join(', ')}. ` +
-        'Each bundle must have a unique bundleName.',
-    );
-    this.name = 'DuplicateBundleNameError';
-  }
-}
-```
-
-**Guidelines:**
-
-- Create domain-specific error classes (e.g., `TemplateError`, `ISGConfigurationError`)
-- Include relevant context as public readonly properties
-- Provide actionable error messages that explain what went wrong and how to fix it
-- Use error codes (enums) for structured error identification where appropriate
-
-### Performance considerations
-
-Stati uses several patterns to optimize build performance:
-
-**Module-level caches with clear functions:**
-
-```typescript
-// Cache expensive operations at module level
-const fileHashCache = new Map<string, string | null>();
-
-// Clear at the start of each build
-export function clearFileHashCache(): void {
-  fileHashCache.clear();
-}
-
-// Use cache in hot paths
-export async function computeFileHash(filePath: string): Promise<string | null> {
-  const normalizedPath = filePath.replace(/\\/g, '/');
-
-  if (fileHashCache.has(normalizedPath)) {
-    return fileHashCache.get(normalizedPath) ?? null;
-  }
-
-  const content = await readFile(filePath, 'utf-8');
-  const hash = content === null ? null : createSha256Hash(content);
-  fileHashCache.set(normalizedPath, hash);
-  return hash;
-}
-```
-
-**Bounded caches that clear when full:**
-
-```typescript
-const escapeHtmlCache = new Map<string, string>();
-const ESCAPE_CACHE_MAX_SIZE = 1000;
-
-export function escapeHtml(text: string): string {
-  const cached = escapeHtmlCache.get(text);
-  if (cached !== undefined) return cached;
-
-  const result = text.replace(/[&<>"']/g, (char) => htmlEscapes[char]!);
-
-  // Clear when full to prevent unbounded growth
-  if (escapeHtmlCache.size >= ESCAPE_CACHE_MAX_SIZE) {
-    escapeHtmlCache.clear();
-  }
-  escapeHtmlCache.set(text, result);
-  return result;
-}
-```
-
-**Parallel I/O operations:**
-
-```typescript
-// Batch file writes in dev mode for Windows filesystem performance
-const uniqueDirs = [...new Set(pendingWrites.map((w) => dirname(w.outputPath)))];
-await Promise.all(uniqueDirs.map((dir) => ensureDir(dir)));
-await Promise.all(pendingWrites.map((w) => writeFile(w.outputPath, w.content, 'utf-8')));
-```
-
-**Guidelines:**
-
-- Use module-level `Map` caches with explicit `clear()` functions
-- Implement size limits on caches to prevent memory leaks
-- Batch I/O operations with `Promise.all` for parallel execution
-- Normalize paths before using as cache keys (`/` not `\`)
+- Strict TypeScript, ESM with explicit `.js` extensions on local imports, and JSDoc on public APIs.
+- Throw domain-specific error classes that carry their context as readonly properties, such as `ISGConfigurationError` (`code`, `field`, `value`) or `TemplateUsageError` (the `suggestions` the dev server's error overlay shows), with messages that say what went wrong and how to fix it.
+- Keep per-build caches in module-level `Map`s with an explicit `clear()` function, such as `clearFileHashCache()`, which runs at the start of every build. Cap caches that could grow without limit, and normalize paths to `/` before using them as keys.
+- Run independent file system work in parallel with `Promise.all`.
 
 ## Release process
-
-### Versioning
-
-Stati follows [Semantic Versioning](https://semver.org/):
-
-- **MAJOR** - Breaking changes
-- **MINOR** - New features (backward compatible)
-- **PATCH** - Bug fixes (backward compatible)
 
 ### Changesets
 
@@ -375,16 +236,6 @@ Add ISG aging algorithm for cache TTL management
 
 Pages live in `docs-site/site/`. `docs-site/README.md` explains how to run the docs site with the local packages and the checks to run before a pull request.
 
-## Community
+## Getting help
 
-### Getting help
-
-- **GitHub Discussions** - Ask questions and share ideas
-- **GitHub Issues** - Report bugs and request features
-
-## Getting started contributing
-
-1. **Browse Issues** - Look for "good first issue" labels
-2. **Join Discussions** - Introduce yourself and ask questions
-3. **Start Small** - Fix typos, add tests, improve docs
-4. **Ask for Help** - Don't hesitate to ask for guidance
+Ask questions and share ideas in [GitHub Discussions](https://github.com/ianchak/stati/discussions), and report bugs and request features in [GitHub Issues](https://github.com/ianchak/stati/issues). Issues labeled `good first issue` are a good place to start.

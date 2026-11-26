@@ -1,6 +1,6 @@
 ---
 title: 'Navigation'
-description: Complete guide to Stati's navigation system and helper methods
+description: 'The navigation tree Stati builds from your pages, its shape, and the stati.nav helpers that query it in templates.'
 order: 4
 seo:
   title: 'Navigation API'
@@ -8,15 +8,7 @@ seo:
 
 # Navigation
 
-Stati automatically generates a navigation tree from your content and provides helper methods to query and traverse it in templates.
-
-## Overview
-
-The navigation system is available in all templates via the `stati.nav` object, which provides:
-
-- **Full navigation tree** (`stati.nav.tree`)
-- **Helper methods** for querying and traversing
-- **Current page context** via `stati.page.navNode`
+Stati builds a navigation tree from your pages. Templates read it as `stati.nav.tree`, query it with the `stati.nav` helpers, and get the current page's node as `stati.page.navNode`.
 
 A page that reads `stati.nav` or `stati.page.navNode` depends on the navigation tree: when a page is added, removed or renamed, or its `order` or date changes, Stati rebuilds every page that read the tree, in `stati build` and in the dev server. Pages that don't read it stay cached. See [ISG](/core-concepts/isg#dependency-tracking).
 
@@ -392,7 +384,7 @@ getCurrentNode(): NavNode | undefined
 
 ### `stati.page.navNode`
 
-Direct access to the current page's navigation node with all its properties and children. For the index page of a top-level folder this is the collection node, so `children` lists the folder's pages; for other pages it is a page node without `children` (nested folders: see the note under [Tree shape](#tree-shape)).
+The node `stati.nav.getCurrentNode()` returns. For the index page of a top-level folder this is the collection node, so `children` lists the folder's pages; for other pages it is a page node without `children` (nested folders: see the note under [Tree shape](#tree-shape)).
 
 **Type:** `NavNode | undefined`
 
@@ -417,60 +409,6 @@ Direct access to the current page's navigation node with all its properties and 
 ---
 
 ## Common patterns
-
-### Multi-level nested navigation
-
-```eta
-<!-- site/partials/nested-nav.eta -->
-<% function renderNavTree(nodes, level = 0) { %>
-  <ul class="<%= stati.propValue(`nav-level-${level}`) %>">
-    <% nodes.forEach(node => { %>
-      <li>
-        <a
-          href="<%= stati.url(node.url) %>"
-          class="<%= stati.page.url === node.url ? 'active' : '' %>"
-        >
-          <%= node.title %>
-        </a>
-        <% if (node.children && node.children.length > 0) { %>
-          <% renderNavTree(node.children, level + 1) %>
-        <% } %>
-      </li>
-    <% }) %>
-  </ul>
-<% } %>
-
-<nav class="site-navigation">
-  <% renderNavTree(stati.nav.tree) %>
-</nav>
-```
-
-Because every collection folder is a top-level node, this renders at most two levels: top-level pages and collections, and each collection's pages.
-
-### Section navigation with active state
-
-```eta
-<!-- Show navigation for current section only -->
-<% const parent = stati.nav.getParent() %>
-
-<% if (parent?.children) { %>
-  <nav class="section-nav">
-    <h2><%= parent.title %></h2>
-    <ul>
-      <% parent.children.forEach(page => { %>
-        <li>
-          <a
-            href="<%= stati.url(page.url) %>"
-            class="<%= stati.page.url === page.url ? 'active' : '' %>"
-          >
-            <%= page.title %>
-          </a>
-        </li>
-      <% }) %>
-    </ul>
-  </nav>
-<% } %>
-```
 
 ### Table of contents for collection
 
@@ -505,11 +443,3 @@ A subsection's pages are not under its node in `children`, so look each subsecti
   </aside>
 <% } %>
 ```
-
----
-
-## See also
-
-- [Template Data and Context](/core-concepts/templates#template-data-and-context)
-- [API overview](/api/reference)
-- [Routing System](/core-concepts/routing)

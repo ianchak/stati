@@ -45,7 +45,7 @@ It appears on the home page, in the archive, under its tags and in the feed. Add
 - `npm run build` - Build the site for production
 - `npm run build:drafts` - Build including draft posts
 - `npm run preview` - Preview the built site
-- `npm run clean` - Clean build artifacts
+- `npm run clean` - Delete `dist/` and the `.stati/` cache
 
 ## Directory structure
 
@@ -82,12 +82,10 @@ Every list comes from Stati's collection of the posts in `site/posts/`. The arch
 - **Tag pages:** `site/tags/[tag].md` is a template. Stati makes one page from it for every tag, with `{tag}` in its front matter replaced by the tag, and gives each page its tag and posts as `stati.generated`.
 - **Under each post:** the post layout finds the newer and older posts in `stati.collection`, and `stati.collection.related()` picks up to three others that share the most tags with the post, leaving out those two.
 
-Stati rebuilds the pages that list a post when the post is added, removed, retitled or retagged, and removes the pages of deleted posts and unused tags.
+Stati rebuilds the pages that list a post when the post is added or removed, or its title, description, date or tags change, and removes the pages of deleted posts and unused tags.
 
 ## Before you deploy
 
 - Set `baseUrl` in the config to your real address; feeds and link previews use it. For a blog served from a subfolder, include the folder (`https://user.github.io/blog`): the templates add it to their links with `stati.url()`
 - Replace `public/favicon.svg`, and give posts a link-preview image under `seo.openGraph.image` (or create the blog with image tools, which draws one for every page)
 - Build with `npm run build` and deploy the `dist/` folder to any static host
-
-Happy writing!

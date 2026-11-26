@@ -1,6 +1,6 @@
 ---
 title: 'Build hooks'
-description: 'Learn how to use build hooks to customize the Stati build process.'
+description: 'beforeAll, beforeRender, afterRender and afterAll: when each build hook runs, what it receives, and how it interacts with the ISG cache.'
 order: 2
 ---
 
@@ -38,11 +38,11 @@ A hook that throws, or returns a rejected promise, fails the build. Hooks have n
 
 ### `beforeAll`
 
-Called once, after the content has been loaded and before any page is rendered. `ctx.pages` holds every page, including [generated and paginated pages](/core-concepts/collections) (with `page.generated` or `page.pagination` set), so this is the place to build indexes or other data that templates read through [helpers](/configuration/templates#helpers) or module-level variables. Listings of a folder's pages need no hook: templates read them from [`stati.collection`](/core-concepts/collections).
+Called once, after the content has been loaded and before any page is rendered. `ctx.pages` holds every page, including [generated and paginated pages](/core-concepts/collections) (with `page.generated` or `page.pagination` set), so this is the place to build indexes or other data that templates read through [helpers](/configuration/templates#helpers). A page you push onto `ctx.pages` is rendered too, and gets `wordCount` and `readingTime`. Listings of a folder's pages need no hook: templates read them from [`stati.collection`](/core-concepts/collections).
 
 `beforeAll` runs before the cache check, so values it writes into `page.frontMatter` are part of each page's cache hash. Data a helper hands to templates is not: Stati can't tell which pages use it. To make a page rebuild when such data changes, write what the page shows into its front matter here; see [Dependency tracking](/core-concepts/isg#dependency-tracking).
 
-Generated pages and pagination are worked out before `beforeAll` runs, from the content as loaded: tags a hook adds don't create tag pages.
+Generated pages, pagination and the navigation tree are worked out before `beforeAll` runs, from the content as loaded: tags a hook adds don't create tag pages, and a title or `order` it changes, or a page it adds, doesn't change `stati.nav`.
 
 ```javascript
 export default defineConfig({
@@ -137,25 +137,7 @@ export default defineConfig({
 
 ## Hook context
 
-Each hook receives a context object with different properties:
-
-### `beforeAll` and `afterAll` context
-
-```typescript
-interface BuildContext {
-  config: StatiConfig;          // Build configuration
-  pages: PageModel[];           // All pages, generated and paginated ones included
-}
-```
-
-### `beforeRender` and `afterRender` context
-
-```typescript
-interface PageContext {
-  page: PageModel;             // Current page being processed
-  config: StatiConfig;         // Build configuration
-}
-```
+`beforeAll` and `afterAll` receive a `BuildContext` (`config`, `pages`); `beforeRender` and `afterRender` receive a `PageContext` (`page`, `config`). See [Build hooks types](/api/types#build-hooks) and [`PageModel`](/api/types#pagemodel-interface).
 
 ## Advanced hook patterns
 
@@ -190,64 +172,7 @@ export default defineConfig({
 
 Pages served from the cache are not re-rendered when this shared data changes; see [Dependency tracking](/core-concepts/isg#dependency-tracking).
 
-### Conditional hook execution
-
-```javascript
-import { getEnv } from '@stati/core';
-
-export default defineConfig({
-  hooks: {
-    beforeAll: async (ctx) => {
-      // Only blog posts; values set here are part of each page's cache hash
-      for (const page of ctx.pages) {
-        if (page.url.startsWith('/blog/')) {
-          page.frontMatter.category = extractCategory(page.url);
-        }
-      }
-    },
-
-    afterRender: async (ctx) => {
-      // Only log in production builds (`stati build`)
-      if (getEnv() === 'production') {
-        console.log(`Built production page: ${ctx.page.url}`);
-      }
-    }
-  }
-});
-```
-
-## Hook utilities
-
-### Page filtering helpers
-
-```javascript
-const isPost = (page) => page.frontMatter.type === 'post';
-const isBlogContent = (page) => page.url.startsWith('/blog/');
-
-export default defineConfig({
-  hooks: {
-    beforeAll: async (ctx) => {
-      // Drafts are only in ctx.pages with --include-drafts
-      const publishedPosts = ctx.pages
-        .filter(isPost)
-        .filter(isBlogContent)
-        .sort((a, b) => new Date(b.frontMatter.date) - new Date(a.frontMatter.date));
-
-      // Give the blog index its list; changing a listed post rebuilds it
-      const blogIndex = ctx.pages.find((page) => page.url === '/blog');
-      if (blogIndex) {
-        blogIndex.frontMatter.recentPosts = publishedPosts
-          .slice(0, 5)
-          .map((post) => ({ url: post.url, title: post.frontMatter.title }));
-      }
-    }
-  }
-});
-```
-
-## Real-world examples
-
-### Blog with related posts
+### Related posts across collections
 
 Posts read the collection of their folder, so a post layout can also find related posts with [`stati.collection.related()`](/core-concepts/collections#related-pages). Computing them in a hook suits data that templates can't reach, such as posts from several collections:
 

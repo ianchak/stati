@@ -6,12 +6,10 @@ order: 5
 
 # Troubleshooting
 
-Common errors you may encounter when using Stati and how to fix them.
-
 ## Site uses the default title or `localhost` URLs
 
 **Cause:**
-Stati did not use your configuration. Without a `stati.config.ts`, `stati.config.js` or `stati.config.mjs` in the current directory, Stati silently uses its defaults (site title "My Stati Site", base URL `http://localhost:3000`). If the file exists but fails to load, the build prints the error followed by "Falling back to default configuration." and continues with the defaults. Validation errors are different: a top-level option Stati does not know (such as Stati 1's `eta`), `helpers` that are not functions, an `outDir` that is the project folder or overlaps `srcDir`, `staticDir`, `typescript.srcDir` or `.stati`, and invalid `isg`, `images`, `readingTime`, `seo.twitter`, `seo.articles`, `seo.defaultAuthor.twitter`, `sitemap.news` or `css` settings stop the build with an error that names the setting.
+Stati did not use your configuration. Without a `stati.config.ts`, `stati.config.js` or `stati.config.mjs` in the current directory, Stati silently uses its defaults (site title "My Stati Site", base URL `http://localhost:3000`). If the file exists but fails to load, the build prints the error followed by "Falling back to default configuration." and continues with the defaults. Validation errors are different: an unknown top-level option (such as Stati 1's `eta`), `helpers` that are not functions, an `outDir` that overlaps the site's folders and invalid values in the settings Stati checks stop the build with an error that names the setting. [Configuration errors](/api/error-handling#configuration-errors) lists them.
 
 **Solution:**
 
@@ -34,10 +32,10 @@ A `layout` named in front matter that names no template logs a warning with simi
 
 ---
 
-## Error: Template syntax error
+## Template syntax errors
 
 **Cause:**
-Invalid Eta template syntax.
+Eta can't compile a template: the error reads `Bad template syntax`, `unclosed tag` or `unclosed string` and names the template.
 
 **Solution:**
 
@@ -45,19 +43,20 @@ Invalid Eta template syntax.
 2. Use `<%~` for unescaped output (HTML), `<%=` for escaped output
 3. Write JavaScript only inside `<% %>`: TypeScript annotations and `as` casts are syntax errors in templates
 4. Read the data from `stati`, not Eta's default `it`
+5. Don't use `await` in a template that `stati.include()` renders: includes render synchronously, so move the awaited work into a build hook or into data a helper prepares
 
 ---
 
 ## Build is slow
 
 **Cause:**
-Full rebuilds on every change, or ISG cache may be corrupted.
+Pages render again on every build instead of coming from the ISG cache, or one step of the build takes most of the time.
 
 **Solution:**
 
-1. ISG is enabled by default; if disabled, re-enable with `isg: { enabled: true }` in `stati.config.ts`
-2. Use `stati dev` during development for incremental rebuilds and live reload
-3. Run `stati build --clean` if the cache is corrupted
+1. Run `stati build --metrics --metrics-html` and read the phase breakdown and the [cache hit rate](/advanced/metrics#cache-hit-rate)
+2. ISG is on by default; check that `isg.enabled` is not `false`
+3. Use `stati dev` during development for incremental rebuilds and live reload
 
 ---
 
@@ -72,6 +71,7 @@ Auto-injection disabled or manual generation not called.
 2. If using manual mode, add `<%~ stati.generateSEO() %>` to your layout's `<head>`
 3. Ensure `site.baseUrl` is set for canonical URLs
 4. Make sure the layout or shell has a `<head>` element: auto-injection writes the tags before `</head>`, and the build warns `No </head> tag found in <url>, so no SEO tags were added to it` for a page without one. A `</head>` in a comment or a script doesn't count
+5. One `og:` or `twitter:` tag written in your layout turns off that whole group of generated tags (see [Tag groups](/advanced/seo-usage-scenarios#tag-groups))
 
 ---
 
@@ -140,7 +140,7 @@ The front matter may not start on the file's first line, or the Markdown may hav
 
 ---
 
-## Error: Assets not loading
+## Assets not loading
 
 **Cause:**
 Static assets may not be copied or paths may be incorrect.
@@ -215,15 +215,15 @@ TypeScript bundles may not be compiling or bundle patterns may not match your pa
 ## Navigation not showing pages
 
 **Cause:**
-Navigation generation may have failed or pages are excluded.
+The page is left out of the navigation, or sits elsewhere in the tree than you expect.
 
 **Solution:**
 
-1. Give pages a `title` in front matter; without one, the node is labeled with the file name
-2. Check that pages don't have `draft: true` (unless using `--include-drafts`)
-3. Verify markdown files have `.md` extension
-4. Folders starting with `_` are excluded from pages and navigation (individual files starting with `_` are not)
-5. Remember that every folder of pages is a top-level node in `stati.nav.tree`; nested folders are not inside their parent's `children` (see [Navigation](/api/navigation#tree-shape))
+1. Check that pages don't have `draft: true` (unless using `--include-drafts`)
+2. Folders starting with `_` are excluded from pages and navigation (individual files starting with `_` are not)
+3. Generated pages and the 404 page appear only with `nav: true` in front matter, and the later pages of a paginated listing never do
+4. Every folder of pages is a top-level node in `stati.nav.tree`; nested folders are not inside their parent's `children` (see [Navigation](/api/navigation#tree-shape))
+5. Give pages a `title` in front matter; without one, the node is labeled with the last part of its URL
 
 ---
 
@@ -235,6 +235,7 @@ Stati preserves filenames exactly (no automatic slug transformation). Spaces, un
 **Solution:**
 
 1. Name files with lowercase letters, digits and hyphens: `my-post.md`, not `my post.md` or `my_post.md`
+2. Or keep the file name and set the URL with `permalink` in front matter (see [Front matter URL override](/core-concepts/routing#front-matter-url-override))
 
 ---
 
