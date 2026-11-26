@@ -68,7 +68,7 @@ import { displayTemplatePath, inlineLocalImages, isOgImageExcluded, ogImageSlug 
 /**
  * Bumped when the generated markup changes, so pages rendered by an older pipeline rebuild.
  */
-const IMAGE_PIPELINE_VERSION = 1;
+const IMAGE_PIPELINE_VERSION = 2;
 
 /** Host names that cannot appear in an absolute og:image URL. */
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '0.0.0.0', '[::1]']);
@@ -147,6 +147,35 @@ function toPosix(path: string): string {
 
 function sha256(input: string | Buffer): string {
   return createHash('sha256').update(input).digest('hex');
+}
+
+/**
+ * The `width` and `height` an image prints: the authored ones, the intrinsic size when neither
+ * is set, and, when only one is set, the other one scaled to the image's aspect ratio. The
+ * other one is left out when the authored value is not a number of pixels, such as `50%`.
+ */
+function displaySize(
+  width: number | string | undefined,
+  height: number | string | undefined,
+  intrinsic: { width: number; height: number },
+): Pick<ImgMarkupOptions, 'width' | 'height'> {
+  if (width === undefined && height === undefined) {
+    return { width: intrinsic.width, height: intrinsic.height };
+  }
+  if (width !== undefined && height !== undefined) {
+    return { width, height };
+  }
+  if (width !== undefined) {
+    return { width, height: scaleDimension(width, intrinsic.height / intrinsic.width) };
+  }
+  return { width: scaleDimension(height!, intrinsic.width / intrinsic.height), height };
+}
+
+function scaleDimension(value: number | string, ratio: number): number | undefined {
+  const pixels =
+    typeof value === 'number' ? value : /^\s*\d+(?:\.\d+)?\s*$/.test(value) ? Number(value) : NaN;
+  if (!Number.isFinite(pixels) || pixels <= 0) return undefined;
+  return Math.max(1, Math.round(pixels * ratio));
 }
 
 /**
@@ -301,7 +330,20 @@ export class PageImages {
       );
       return { src: asWritten };
     }
+    // The source directory is not published, so files next to the page are copied as they are.
+    // The fragment stays: it can pick a view or symbol out of an SVG.
+    if (resolved.kind === 'asset') {
+      const copyUrl = this.publishCopy(planCopy(filePath, info.hash, null, basePath), filePath);
+      return { src: `${copyUrl}${/#.*$/.exec(resolved.src)?.[0] ?? ''}` };
+    }
     if (!info.probe) {
+      if (resolved.kind === 'colocated') {
+        this.runtime.warnOnce(
+          `unreadable:${filePath}`,
+          `Could not read the dimensions of ${shownPath}. It is published without them.`,
+        );
+        return { src: this.publishCopy(planCopy(filePath, info.hash, null, basePath), filePath) };
+      }
       this.runtime.warnOnce(
         `unreadable:${filePath}`,
         `Could not read the dimensions of ${shownPath}. It is left as written.`,
@@ -312,8 +354,7 @@ export class PageImages {
     const probe = info.probe;
     const base: ImgMarkupOptions = {
       ...options,
-      width: options.width ?? probe.width,
-      height: options.height ?? probe.height,
+      ...displaySize(options.width, options.height, probe),
     };
 
     let tier1Src = asWritten;
@@ -350,11 +391,21 @@ export class PageImages {
     }
 
     if (copy) {
-      const job = this.runtime.copyJob(copy, filePath);
-      this.runtime.registerJob(job);
-      this.uses.push({ jobKey: job.key, outputs: [copy.relPath], marker: copy.url });
+      this.publishCopy(copy, filePath);
     }
     return { html: tier1Markup };
+  }
+
+  /**
+   * Registers the copy of a co-located file, made once the written page references it.
+   *
+   * @returns The copy's URL
+   */
+  private publishCopy(copy: CopyPlan, filePath: string): string {
+    const job = this.runtime.copyJob(copy, filePath);
+    this.runtime.registerJob(job);
+    this.uses.push({ jobKey: job.key, outputs: [copy.relPath], marker: copy.url });
+    return copy.url;
   }
 
   /**

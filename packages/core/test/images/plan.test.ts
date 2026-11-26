@@ -57,6 +57,20 @@ describe('planCopy', () => {
       url: '/_img/hero-abcdef01.jpg',
     });
   });
+
+  it('keeps the extension of a file it does not read, in lower case and when URL-safe', () => {
+    expect(planCopy('/site/blog/Diagram.SVG', 'abcdef0123456789', null)).toMatchObject({
+      relPath: '_img/diagram-abcdef01.svg',
+    });
+    expect(planCopy('/site/blog/notes', 'abcdef0123456789', null)).toMatchObject({
+      relPath: '_img/notes-abcdef01',
+    });
+    expect(planCopy('/site/blog/a.s v', 'abcdef0123456789', null, '/sub')).toEqual({
+      key: 'copy:_img/a-abcdef01',
+      relPath: '_img/a-abcdef01',
+      url: '/sub/_img/a-abcdef01',
+    });
+  });
 });
 
 describe('planVariants', () => {
