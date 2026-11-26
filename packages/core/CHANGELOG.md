@@ -1,5 +1,11 @@
 # @stati/core
 
+## 2.11.12
+
+### Patch Changes
+
+- b67b8a0: verify docs against source and trim duplicated content
+
 ## 2.11.11
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @stati/images
 
+## 1.1.2
+
+### Patch Changes
+
+- b67b8a0: verify docs against source and trim duplicated content
+
 ## 1.1.1
 
 ### Patch Changes

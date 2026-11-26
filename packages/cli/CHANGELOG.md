@@ -1,5 +1,13 @@
 # @stati/cli
 
+## 2.4.4
+
+### Patch Changes
+
+- b67b8a0: verify docs against source and trim duplicated content
+- Updated dependencies [b67b8a0]
+  - @stati/core@2.11.12
+
 ## 2.4.3
 
 ### Patch Changes

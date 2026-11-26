@@ -1,5 +1,11 @@
 # create-stati
 
+## 2.7.4
+
+### Patch Changes
+
+- b67b8a0: verify docs against source and trim duplicated content
+
 ## 2.7.3
 
 ### Patch Changes
